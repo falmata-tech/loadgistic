@@ -1,0 +1,10 @@
+import Link from 'next/link';
+import { requireUser } from '@/lib/auth';
+import { getOwnCompanyPage } from '@/lib/repository.js';
+import { PageHeader } from '@/components/page-header';
+import { Flash } from '@/components/flash';
+
+export default async function CompanyPageEditor({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
+ const user=await requireUser(['SHIPPER','RECEIVER','PARCEL','TRANSPORTER','DRIVER']); const query=await searchParams; const page:any=getOwnCompanyPage(user); const handle=user.provider_handle||user.organization_handle;
+ return <div className="page"><PageHeader title="Company page" subtitle="Keep public services, routes, corridors, and contact information current." action={handle?<Link className="button secondary" href={`/companies/${handle}`} target="_blank">View public page</Link>:undefined}/><Flash error={query.error} success={query.success}/><form action="/api/company-page" method="post" className="form-card stack"><div className="form-grid"><div className="form-group full"><label>Headline</label><input name="headline" defaultValue={page?.headline||''} placeholder="Simple B2B logistics service"/></div><div className="form-group full"><label>About</label><textarea name="about" defaultValue={page?.about||''}/></div><div className="form-group full"><label>Services</label><textarea name="services" defaultValue={page?.services||''} placeholder="Separate services with semicolons"/></div><div className="form-group full"><label>Routes or corridors</label><textarea name="corridors" defaultValue={page?.corridors||''}/></div><div className="form-group"><label>Business phone</label><input name="contactPhone" defaultValue={page?.contact_phone||''}/></div><div className="form-group"><label>Business email</label><input name="contactEmail" type="email" defaultValue={page?.contact_email||''}/></div></div><label style={{display:'flex',gap:8,alignItems:'center'}}><input style={{width:18,minHeight:18}} type="checkbox" name="published" defaultChecked={Boolean(page?.published)}/>Publish approved company information</label><button className="button">Save company page</button></form></div>;
+}

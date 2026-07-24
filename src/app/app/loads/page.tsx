@@ -1,0 +1,12 @@
+import Link from 'next/link';
+import { requireUser } from '@/lib/auth';
+import { listLoads } from '@/lib/repository.js';
+import { PageHeader } from '@/components/page-header';
+import { Flash } from '@/components/flash';
+import { priceDisplay } from '@/lib/ui';
+import { StatusPill } from '@/components/status-pill';
+
+export default async function LoadsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
+ const user=await requireUser(['TRANSPORTER','DRIVER','ADMIN']); const query=await searchParams; const mode=query.mode||'ALL'; const loads:any[]=listLoads(user,mode);
+ return <div className="page"><PageHeader title="Find B2B loads" subtitle="Direct requests, saved-business loads, and open loads. No auction or automatic award."/><Flash error={query.error} success={query.success}/><div className="hero-actions" style={{margin:'0 0 20px'}}>{[['ALL','All'],['DIRECT','Direct'],['PARTNERS','My Partners'],['OPEN','Open Loads']].map(([v,l])=><Link className={`button ${mode===v?'':'secondary'}`} href={`/app/loads?mode=${v}`} key={v}>{l}</Link>)}</div><div className="stack" data-testid="load-list">{loads.map((load:any)=><article className="card" key={load.id}><div style={{display:'flex',justifyContent:'space-between',gap:16,flexWrap:'wrap'}}><div><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><StatusPill status={load.distribution_mode}/><span className="status">{load.shipper_name}</span></div><h3 style={{fontSize:'1.25rem',marginTop:12}}>{load.title}</h3><div className="route">{load.origin}<span>→</span>{load.destination}</div><div className="meta">Pickup {load.pickup_date} · {load.vehicle_category||'Vehicle discussed directly'} · {load.load_type?.replaceAll('_',' ')||'Load type not specified'}</div><p>{load.cargo_description}{load.estimated_weight?` · ${load.estimated_weight} kg`:''}</p></div><div style={{minWidth:190,textAlign:'right'}}><strong style={{fontSize:'1.25rem'}}>{priceDisplay(load)}</strong><div className="meta">Posted {new Date(load.created_at).toLocaleString()}</div><div className="hero-actions" style={{justifyContent:'flex-end'}}><Link className="button secondary" href={`/app/shipments/${load.id}`}>View details</Link>{!load.interested?<form action={`/api/shipments/${load.id}/interest`} method="post"><button className="button">Express interest</button></form>:<StatusPill status="Contacted"/>}</div></div></div></article>)}</div>{!loads.length?<div className="empty">No loads match this view.</div>:null}</div>;
+}

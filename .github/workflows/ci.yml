@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      SESSION_SECRET: ci-only-session-secret-not-for-production-123456
+      DATABASE_PATH: /tmp/loadgistic-ci.db
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate specifications and source
+        run: npm run check
+
+      - name: Run domain and repository tests
+        run: npm test
+
+      - name: Type-check application
+        run: npm run typecheck
+
+      - name: Build production artifact
+        run: npm run build
+
+  e2e:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+      SESSION_SECRET: ci-only-session-secret-not-for-production-123456
+      DATABASE_PATH: /tmp/loadgistic-e2e.db
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Chromium runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Run desktop and mobile browser workflows
+        run: npm run test:e2e

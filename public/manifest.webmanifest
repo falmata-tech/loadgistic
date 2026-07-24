@@ -1,0 +1,12 @@
+{
+  "name": "Loadgistic",
+  "short_name": "Loadgistic",
+  "description": "B2B logistics for Ethiopian enterprises and logistics providers.",
+  "start_url": "/app/home",
+  "display": "standalone",
+  "background_color": "#f6f8fb",
+  "theme_color": "#1769e0",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
