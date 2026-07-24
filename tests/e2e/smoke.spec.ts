@@ -8,6 +8,31 @@ async function login(page: any, email: string) {
   await expect(page).toHaveURL(/\/app\/home/);
 }
 
+test('login keeps local fixture credentials out of the public page', async ({ page }: { page: any }) => {
+  await page.goto('/login');
+  await expect(page.getByLabel('Email')).toHaveValue('');
+  await expect(page.getByLabel('Password')).toHaveValue('');
+  await expect(page.getByText('@loadgistic.local')).toHaveCount(0);
+  await expect(page.getByText('Loadgistic123!', { exact: false })).toHaveCount(0);
+});
+
+test('authenticated company browsing preserves the session and selected provider', async ({ page }: { page: any }) => {
+  await login(page, 'shipper@loadgistic.local');
+  await page.goto('/app/providers');
+  await page.getByRole('link', { name: 'View company' }).first().click();
+  await expect(page.getByTestId('public-session-action')).toHaveText('Workspace');
+  await expect(page.getByRole('link', { name: 'Login' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Send business request' }).click();
+  await expect(page).toHaveURL(/\/app\/shipments\/new\?provider=/);
+  await expect(page.getByRole('combobox', { name: 'Selected provider' })).not.toHaveValue('');
+  await page.goto('/app/providers?type=DRIVER');
+  await page.getByRole('link', { name: 'View company' }).click();
+  await page.getByRole('link', { name: 'Send business request' }).click();
+  await expect(page.getByRole('combobox', { name: 'Selected provider' })).toHaveValue('profile:provider-driver');
+  await page.goto('/login');
+  await expect(page).toHaveURL(/\/app\/home/);
+});
+
 test('shipper can open new shipment workflow', async ({ page }: { page: any }) => {
   await login(page, 'shipper@loadgistic.local');
   await page.getByRole('link', { name: /Create shipment/i }).click();

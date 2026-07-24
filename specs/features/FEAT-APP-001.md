@@ -38,6 +38,13 @@ When an administrator attempts another review\
 Then the command is rejected\
 And no second workspace, subscription, or review audit is created.
 
+### Scenario: pending seed application respects the approval boundary
+
+Given the deterministic local fixture database is initialized\
+When the seeded pending application is inspected\
+Then its applicant is inactive and has no organization or provider profile\
+And no active workspace user is also represented as that pending applicant.
+
 ## Contract ownership
 
 - Inbound adapters: `/apply`, `/admin/applications`, related route handlers

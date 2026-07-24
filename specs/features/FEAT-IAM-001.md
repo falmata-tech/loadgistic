@@ -4,7 +4,7 @@ title: Local identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Approved business users need secure workspace access while inactive or unauthorized accounts remain blocked.
 behavior: Valid active users receive a signed HTTP-only session and are routed to role-scoped pages on the current browser origin.
-contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy]
+contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, CredentialFixtureBoundary]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Keep local auth demo-only; migrate to managed identity before public production launch.
 ---
@@ -38,6 +38,20 @@ Given a browser submits login from the same public origin through a proxy that r
 When the browser supplies its protected same-origin fetch metadata\
 Then the mutation origin guard accepts the request\
 And an explicitly cross-site request remains denied.
+
+### Scenario: authenticated public navigation preserves session context
+
+Given an active user has an authenticated workspace session\
+When they open a public company page or revisit the login route\
+Then the public navigation offers a return to their workspace\
+And the login route redirects them to `/app/home` without requesting credentials again.
+
+### Scenario: local fixture credentials are not publicly presented
+
+Given the local database contains deterministic accounts for development and automated tests\
+When an anonymous visitor opens the login page\
+Then credential fields are empty\
+And seeded emails and passwords are not rendered in the public response.
 
 ## Contract ownership
 

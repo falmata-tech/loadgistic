@@ -17,6 +17,20 @@ test('seeded users and role workspaces exist',()=>{
  assert.ok(repo.getDashboard(shipper).actions.length>=2);
 });
 
+test('seeded pending application belongs only to an inactive tenantless applicant',()=>{
+ const db=dbModule.getDb();
+ const pending=db.prepare(`SELECT a.id,u.active,u.organization_id,u.provider_profile_id
+   FROM applications a JOIN users u ON u.id=a.user_id
+   WHERE a.id='app-pending' AND a.status='PENDING'`).get();
+ assert.ok(pending);
+ assert.equal(pending.active,0);
+ assert.equal(pending.organization_id,null);
+ assert.equal(pending.provider_profile_id,null);
+ const activePending=db.prepare(`SELECT COUNT(*) AS n FROM applications a
+   JOIN users u ON u.id=a.user_id WHERE a.status='PENDING' AND u.active=1`).get();
+ assert.equal(activePending.n,0);
+});
+
 test('provider discovery includes parcel, transporter, and independent provider',()=>{
  const providers=repo.listProviders('ALL');
  assert.ok(providers.some(p=>p.type==='PARCEL_OPERATOR'));

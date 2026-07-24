@@ -35,3 +35,7 @@ GitHub Actions performs locked dependency installation, specification and source
 ## ADR-009 — Browse permission is not shipment-party permission
 
 Treat public/open and saved-partner load visibility as read-only discovery. Internal notes, proof files, and execution transitions require an actual shipment party: shipper, receiver, assigned provider organization/profile, or administrator. Saved-partner visibility requires an explicit active relationship to the shipment owner. Application and payment-proof approvals/rejections are terminal in the MVP.
+
+## ADR-010 — Browser fixtures are isolated from development data
+
+Run Playwright against a reset, dedicated SQLite database and port rather than reusing the local development server. Local fixture credentials remain in setup documentation and test code, while public authentication pages render empty credential fields. This keeps test convenience from changing public UI or developer business records.

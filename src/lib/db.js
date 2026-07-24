@@ -363,12 +363,13 @@ function seed(db) {
     ['user-receiver','receiver@loadgistic.local','Marta Alemu','RECEIVER',orgs.receiver.id,null],
     ['user-parcel','parcel@loadgistic.local','Dawit Bekele','PARCEL',orgs.parcel.id,null],
     ['user-transporter','transporter@loadgistic.local','Samuel Tesfaye','TRANSPORTER',orgs.transporter.id,null],
-    ['user-driver','driver@loadgistic.local','Abebe Kebede','DRIVER',null,'provider-driver']
+    ['user-driver','driver@loadgistic.local','Abebe Kebede','DRIVER',null,'provider-driver',1],
+    ['user-applicant','pending-applicant@fixtures.loadgistic.test','Liya Bekele','RECEIVER',null,null,0]
   ];
   const insertUser = db.prepare(`INSERT INTO users
     (id,email,password_hash,name,role,organization_id,provider_profile_id,active,created_at)
     VALUES (?,?,?,?,?,?,?,?,?)`);
-  for (const user of users) insertUser.run(user[0],user[1],passwordHash,user[2],user[3],user[4],user[5],1,iso);
+  for (const user of users) insertUser.run(user[0],user[1],passwordHash,user[2],user[3],user[4],user[5],user[6] ?? 1,iso);
 
   const insertMembership = db.prepare('INSERT INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,?)');
   insertMembership.run(randomId('mem-'),'user-shipper',orgs.shipper.id,'OWNER');
@@ -459,7 +460,7 @@ function seed(db) {
   subInsert.run('sub-driver',null,'provider-driver','plan-solo','ACTIVE','FLAT_MONTHLY',iso,null);
 
   db.prepare(`INSERT INTO applications (id,user_id,business_name,application_type,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`)
-    .run('app-pending','user-receiver','Fresh Foods Distribution PLC','ENTERPRISE_RECEIVER','PENDING','Confirm business registration document',iso,iso);
+    .run('app-pending','user-applicant','Hawassa Retail Distribution PLC','ENTERPRISE_RECEIVER','PENDING','Confirm business registration document',iso,iso);
 
   const notify = db.prepare(`INSERT INTO notifications (id,user_id,title,body,read_at,created_at) VALUES (?,?,?,?,?,?)`);
   notify.run(randomId('ntf-'),'user-parcel','New B2B parcel request','Blue Nile Trading PLC sent LGX-P1001.',null,iso);

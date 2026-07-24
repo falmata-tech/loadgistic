@@ -29,6 +29,13 @@ Given an authorized parcel operator\
 When they add a center or route with valid locations\
 Then the record belongs to that operator and public visibility follows the explicit setting.
 
+### Scenario: authenticated directory request keeps workspace context
+
+Given an authenticated shipper or receiver browses the provider directory\
+When they open a public company page and choose to send a business request\
+Then their session remains active\
+And the new-shipment form opens with that provider selected.
+
 ## Contract ownership
 
 - Pages: `/companies`, `/companies/[handle]`, `/app/providers`, `/app/routes-centers`

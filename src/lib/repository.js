@@ -51,10 +51,6 @@ export function findUserByEmail(email) {
   return getDb().prepare('SELECT * FROM users WHERE lower(email) = lower(?)').get(email) || null;
 }
 
-export function listDemoUsers() {
-  return getDb().prepare(`SELECT email,name,role FROM users WHERE email LIKE '%@loadgistic.local' ORDER BY role`).all();
-}
-
 export function listNotifications(user) {
   return getDb().prepare(`SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`).all(user.id);
 }

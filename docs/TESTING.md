@@ -34,10 +34,14 @@ The specification check validates required front matter, stable unique IDs, link
 npm run test:e2e
 ```
 
+Playwright resets `data/test-e2e.db` and starts a dedicated application server on port `3100`. It never reuses the development server on port `3000`, so browser scenarios cannot mutate or depend on a developer's local business records. Fixture credentials stay in the test source and local setup documentation; they are not rendered by the public login page.
+
 Covered workflows:
 
 - Shipper opens new shipment workflow
 - Parcel company uses manual code lookup
 - Transporter opens loads and capacity
+- Authenticated public-company navigation retains its session and preselects the requested provider
+- Public login does not expose local fixture credentials
 
 Add tests for every permission or state-transition change.

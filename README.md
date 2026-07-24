@@ -51,22 +51,9 @@ Open `http://127.0.0.1:3000`.
 
 The database is created at `data/loadgistic.db` and seeded automatically.
 
-## Demo accounts
+## Local fixture accounts
 
-All seeded users use:
-
-```text
-Loadgistic123!
-```
-
-| Workspace | Email |
-|---|---|
-| Enterprise Shipper | `shipper@loadgistic.local` |
-| Enterprise Receiver | `receiver@loadgistic.local` |
-| Parcel Delivery Company | `parcel@loadgistic.local` |
-| Transport Company | `transporter@loadgistic.local` |
-| Independent Owner-Operator | `driver@loadgistic.local` |
-| Platform Administrator | `admin@loadgistic.local` |
+Development-only fixture credentials are documented in `docs/LOCAL_SETUP.md`. They are kept in repository-local setup and automated test code, not presented in the public login UI.
 
 ## Quality commands
 

@@ -30,6 +30,9 @@
 - Saved-partner relationship filtering for freight discovery
 - Immutable terminal application and payment-proof reviews
 - Negative authorization contract suite and browse-only E2E coverage
+- Session-aware public navigation and authenticated provider-request continuity
+- Public login credential-fixture removal and pending-applicant seed correction
+- Dedicated Playwright database and server isolation from local development data
 
 ## Requires an internet-enabled environment
 
