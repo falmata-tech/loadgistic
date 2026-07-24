@@ -31,3 +31,7 @@ Adopt ports/adapters, SOLID dependency direction, and DDD vocabulary without man
 ## ADR-008 — CI as a release guardrail
 
 GitHub Actions performs locked dependency installation, specification and source validation, tests, TypeScript checking, a production build, and desktop/mobile Chromium workflows with read-only repository permissions. Dependabot maintains npm and workflow dependencies. Branch protection should require the `validate` and `e2e` jobs before merge.
+
+## ADR-009 — Browse permission is not shipment-party permission
+
+Treat public/open and saved-partner load visibility as read-only discovery. Internal notes, proof files, and execution transitions require an actual shipment party: shipper, receiver, assigned provider organization/profile, or administrator. Saved-partner visibility requires an explicit active relationship to the shipment owner. Application and payment-proof approvals/rejections are terminal in the MVP.

@@ -23,6 +23,13 @@ Given a user lacks access to the proof shipment\
 When the proof URL is requested\
 Then no file metadata or bytes are disclosed.
 
+### Scenario: browse visibility does not grant proof permission
+
+Given a provider can browse an open or saved-partner load but is not assigned to it\
+When the provider attempts to upload or download shipment proof\
+Then the service returns no protected record\
+And no proof row, bytes, or success audit is created.
+
 ### Scenario: public tracking
 
 Given tracking is enabled with an opaque token\

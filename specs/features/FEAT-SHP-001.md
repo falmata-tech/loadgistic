@@ -32,6 +32,26 @@ When an actor requests a transition absent from the parcel or freight transition
 Then the domain rejects the command\
 And no status event is persisted.
 
+### Scenario: browsing provider cannot operate an unassigned load
+
+Given a provider can browse an open freight load but is not assigned to it\
+When the provider attempts to change status or add an internal note\
+Then the command is denied as not found or forbidden\
+And no shipment, note, event, or success audit changes.
+
+### Scenario: saved-partner visibility is relationship-scoped
+
+Given a freight load is visible to Saved Partners\
+When providers browse available loads\
+Then only providers with an active saved relationship to the shipment owner can see it.
+
+### Scenario: direct acceptance is single-use
+
+Given the addressed provider has a direct request in Sent state\
+When it accepts the request once\
+Then the request becomes Agreed\
+And any later acceptance attempt is rejected without changing state.
+
 ## Contract ownership
 
 - Aggregate rules: `src/lib/domain.js`

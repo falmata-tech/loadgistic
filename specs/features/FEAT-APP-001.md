@@ -31,6 +31,13 @@ Given a non-administrator\
 When they attempt to review an application\
 Then the command is rejected and no application state changes.
 
+### Scenario: terminal application review is immutable
+
+Given an application has been approved or rejected\
+When an administrator attempts another review\
+Then the command is rejected\
+And no second workspace, subscription, or review audit is created.
+
 ## Contract ownership
 
 - Inbound adapters: `/apply`, `/admin/applications`, related route handlers

@@ -30,6 +30,13 @@ Given a non-admin user from another workspace\
 When they request or mutate a payment proof\
 Then access is denied without disclosing proof-file details.
 
+### Scenario: terminal payment review is immutable
+
+Given a payment proof has been approved or rejected\
+When an administrator attempts another review\
+Then the command is rejected\
+And the proof and subscription retain their terminal result.
+
 ## Contract ownership
 
 - Pages and adapters: `/app/more`, `/admin/billing`, billing route handlers

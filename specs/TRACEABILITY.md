@@ -11,3 +11,5 @@
 | `FEAT-BIL-001` | Workspace/admin billing | Proof review and tenant scope | Private storage and audit | repository |
 
 All features depend on `BASE-BE-001`; user-facing features depend on `BASE-FE-001`; runtime and release constraints derive from `BASE-DEP-001`.
+
+Cross-feature authorization contracts are mapped in `docs/AUTHORIZATION_MATRIX.md` and verified by `tests/authorization.test.mjs`.

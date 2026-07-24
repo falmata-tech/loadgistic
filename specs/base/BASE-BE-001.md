@@ -54,6 +54,8 @@ And Supabase RLS independently enforces tenant scope.
 
 `CommandHandler` accepts authenticated actor plus validated input. `AuthorizationPolicy` denies by default. `DomainRule` is deterministic and side-effect free. `RepositoryPort` persists aggregate changes atomically. `AuditPort` records sensitive outcomes without secrets. `FilePort` stores private proof objects and resolves them only after shipment authorization.
 
+The normative actor, tenant, record, and denial contracts are listed in `docs/AUTHORIZATION_MATRIX.md`. Public browse permission never grants mutation or private-file permission.
+
 ## Required verification
 
 - `tests/domain.test.mjs`

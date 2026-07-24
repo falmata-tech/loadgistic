@@ -29,3 +29,14 @@ test('transporter sees load and capacity pages', async ({ page }: { page: any })
   await page.goto('/app/capacity');
   await expect(page.getByRole('heading', { name: 'Truck capacity' })).toBeVisible();
 });
+
+test('browse-only provider cannot see party controls or unrelated saved loads', async ({ page }: { page: any }) => {
+  await login(page, 'driver@loadgistic.local');
+  await page.goto('/app/loads');
+  await expect(page.getByText('Packaged food to Hawassa')).toHaveCount(0);
+  await page.goto('/app/shipments/shp-freight-fixed');
+  await expect(page.getByRole('heading', { name: 'Interested in this load?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Internal note' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Next status' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Upload proof' })).toHaveCount(0);
+});

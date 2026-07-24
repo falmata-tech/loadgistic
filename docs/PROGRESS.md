@@ -25,6 +25,11 @@
 - Executable specification integrity and traceability checks
 - Major-action engineering guardrails and pull-request evidence template
 - GitHub Actions CI and Dependabot configuration
+- Explicit actor/tenant/record authorization matrix
+- Default-deny shipment-party policy shared by status, note, and proof services
+- Saved-partner relationship filtering for freight discovery
+- Immutable terminal application and payment-proof reviews
+- Negative authorization contract suite and browse-only E2E coverage
 
 ## Requires an internet-enabled environment
 

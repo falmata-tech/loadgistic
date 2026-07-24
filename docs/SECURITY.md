@@ -14,6 +14,10 @@
 - Capacity expiry and visibility filtering
 - External open-load viewers do not receive internal notes, proof, other-provider interest, or receiver details
 - Audit records for sensitive mutations
+- Explicit authorization contracts in `docs/AUTHORIZATION_MATRIX.md`
+- Browse-only load visibility cannot grant status, internal-note, or private-proof access
+- Saved-partner loads require a recorded provider relationship
+- Terminal application and payment-proof decisions cannot be overwritten
 
 ## Required before public launch
 

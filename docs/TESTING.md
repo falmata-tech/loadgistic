@@ -8,6 +8,8 @@ npm test
 
 These tests use Node's test runner and an isolated SQLite file.
 
+`tests/authorization.test.mjs` is the negative contract suite for role, tenant, record-party, saved-partner, proof-file, and terminal-review boundaries. Add denial coverage there whenever a protected service changes.
+
 ## Type and source checks
 
 ```bash

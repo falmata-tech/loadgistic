@@ -151,7 +151,7 @@ export function listVisibleShipments(user) {
     sql += ` WHERE s.provider_profile_id=? OR (s.service_mode='FREIGHT' AND s.operational_status='POSTED' AND s.distribution_mode IN ('OPEN_MARKET','SAVED_PARTNERS')) ORDER BY s.updated_at DESC`;
     args.push(user.provider_profile_id);
   }
-  return db.prepare(sql).all(...args);
+  return db.prepare(sql).all(...args).filter(shipment => canViewShipment(user,shipment));
 }
 
 export function getShipmentForUser(user, idOrCode) {
@@ -166,7 +166,7 @@ export function getShipmentForUser(user, idOrCode) {
     WHERE s.id=? OR s.code=?`).get(idOrCode,idOrCode);
   if (!shipment) return null;
   if (!canViewShipment(user, shipment)) return null;
-  const isParty = user.role === USER_ROLES.ADMIN || (user.organization_id && [shipment.shipper_organization_id,shipment.receiver_organization_id,shipment.provider_organization_id].includes(user.organization_id)) || (user.provider_profile_id && shipment.provider_profile_id === user.provider_profile_id);
+  const isParty = isShipmentParty(user,shipment);
   shipment.events = db.prepare(`SELECT e.*, u.name AS actor_name FROM shipment_events e LEFT JOIN users u ON u.id=e.created_by WHERE e.shipment_id=? ${isParty ? '' : 'AND e.public=1'} ORDER BY e.created_at ASC`).all(shipment.id);
   if (isParty) {
     shipment.interests = db.prepare(`SELECT i.*, o.name AS organization_name, p.business_name AS provider_name FROM shipment_interests i LEFT JOIN organizations o ON o.id=i.provider_organization_id LEFT JOIN provider_profiles p ON p.id=i.provider_profile_id WHERE i.shipment_id=? ORDER BY i.created_at DESC`).all(shipment.id);
@@ -181,12 +181,32 @@ export function getShipmentForUser(user, idOrCode) {
   return shipment;
 }
 
-function canViewShipment(user, shipment) {
+function isShipmentParty(user, shipment) {
   if (user.role === USER_ROLES.ADMIN) return true;
   if (user.organization_id && [shipment.shipper_organization_id,shipment.receiver_organization_id,shipment.provider_organization_id].includes(user.organization_id)) return true;
   if (user.provider_profile_id && shipment.provider_profile_id === user.provider_profile_id) return true;
-  if (roleCanBrowseLoads(user.role) && shipment.service_mode === SERVICE_MODES.FREIGHT && shipment.operational_status === 'POSTED' && ['OPEN_MARKET','SAVED_PARTNERS'].includes(shipment.distribution_mode)) return true;
   return false;
+}
+
+function isSavedPartnerForShipment(user, shipment) {
+  if (!roleCanBrowseLoads(user.role) || shipment.distribution_mode !== DISTRIBUTION_MODES.SAVED_PARTNERS) return false;
+  const relationship = getDb().prepare(`SELECT 1 FROM partner_relationships
+    WHERE owner_organization_id=? AND status='SAVED'
+      AND (provider_organization_id=? OR provider_profile_id=?) LIMIT 1`)
+    .get(shipment.shipper_organization_id,user.organization_id || '',user.provider_profile_id || '');
+  return Boolean(relationship);
+}
+
+function canViewShipment(user, shipment) {
+  if (isShipmentParty(user, shipment)) return true;
+  if (!roleCanBrowseLoads(user.role) || shipment.service_mode !== SERVICE_MODES.FREIGHT || shipment.operational_status !== 'POSTED') return false;
+  if (shipment.distribution_mode === DISTRIBUTION_MODES.OPEN_MARKET) return true;
+  return isSavedPartnerForShipment(user, shipment);
+}
+
+function getShipmentParty(user, idOrCode) {
+  const shipment = getShipmentForUser(user,idOrCode);
+  return shipment && isShipmentParty(user,shipment) ? shipment : null;
 }
 
 export function createShipment(user, input) {
@@ -241,7 +261,7 @@ export function createShipment(user, input) {
 
 export function transitionShipment(user, shipmentId, nextStatus, note = '') {
   const db = getDb();
-  const shipment = getShipmentForUser(user, shipmentId);
+  const shipment = getShipmentParty(user, shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
   if (shipment.service_mode === SERVICE_MODES.PARCEL && !roleCanOperateParcel(user.role) && user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
   if (shipment.service_mode === SERVICE_MODES.FREIGHT && ![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER,USER_ROLES.ADMIN].includes(user.role)) throw new Error('FORBIDDEN');
@@ -261,7 +281,7 @@ export function transitionShipment(user, shipmentId, nextStatus, note = '') {
 }
 
 export function addShipmentNote(user, shipmentId, note) {
-  const shipment = getShipmentForUser(user, shipmentId);
+  const shipment = getShipmentParty(user, shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
   if (!note?.trim()) throw new Error('NOTE_REQUIRED');
   const db = getDb();
@@ -364,7 +384,8 @@ export function listLoads(user, mode = 'ALL') {
   return db.prepare(`SELECT s.*,o.name AS shipper_name,r.name AS receiver_name,
     EXISTS(SELECT 1 FROM shipment_interests i WHERE i.shipment_id=s.id AND (i.provider_organization_id=? OR i.provider_profile_id=?)) AS interested
     FROM shipments s JOIN organizations o ON o.id=s.shipper_organization_id LEFT JOIN organizations r ON r.id=s.receiver_organization_id
-    WHERE ${where} ORDER BY s.created_at DESC`).all(user.organization_id || '',user.provider_profile_id || '',...args);
+    WHERE ${where} ORDER BY s.created_at DESC`).all(user.organization_id || '',user.provider_profile_id || '',...args)
+    .filter(shipment => canViewShipment(user,shipment));
 }
 
 export function expressInterest(user, shipmentId, note = '') {
@@ -372,6 +393,7 @@ export function expressInterest(user, shipmentId, note = '') {
   const db = getDb();
   const shipment = getShipmentForUser(user, shipmentId);
   if (!shipment || shipment.service_mode !== SERVICE_MODES.FREIGHT) throw new Error('NOT_FOUND');
+  if (![DISTRIBUTION_MODES.OPEN_MARKET,DISTRIBUTION_MODES.SAVED_PARTNERS].includes(shipment.distribution_mode)) throw new Error('NOT_FOUND');
   db.prepare(`INSERT OR IGNORE INTO shipment_interests
     (id,shipment_id,provider_organization_id,provider_profile_id,status,note,created_at) VALUES (?,?,?,?,?,?,?)`)
     .run(randomId('int-'),shipment.id,user.role === USER_ROLES.TRANSPORTER ? user.organization_id : null,user.role === USER_ROLES.DRIVER ? user.provider_profile_id : null,'INTERESTED',note || null,nowIso());
@@ -384,9 +406,11 @@ export function acceptDirectedShipment(user, shipmentId) {
   if (!roleCanBrowseLoads(user.role)) throw new Error('FORBIDDEN');
   const db = getDb();
   const shipment = getShipmentForUser(user, shipmentId);
-  if (!shipment || shipment.distribution_mode !== DISTRIBUTION_MODES.DIRECT_TO_PROVIDER) throw new Error('NOT_DIRECT_REQUEST');
+  if (!shipment) throw new Error('NOT_FOUND');
+  if (shipment.distribution_mode !== DISTRIBUTION_MODES.DIRECT_TO_PROVIDER) throw new Error('NOT_DIRECT_REQUEST');
   const matches = (user.role === USER_ROLES.TRANSPORTER && shipment.provider_organization_id === user.organization_id) || (user.role === USER_ROLES.DRIVER && shipment.provider_profile_id === user.provider_profile_id);
   if (!matches) throw new Error('FORBIDDEN');
+  if (shipment.operational_status !== 'SENT' || shipment.commercial_status !== 'SENT') throw new Error('DIRECT_REQUEST_NOT_PENDING');
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE shipments SET commercial_status='AGREED', operational_status='AGREED', updated_at=? WHERE id=?`).run(nowIso(),shipment.id);
@@ -516,6 +540,7 @@ export function reviewApplication(user, applicationId, status, notes = '') {
   const db = getDb();
   const application = db.prepare(`SELECT a.*,u.role,u.organization_id,u.provider_profile_id FROM applications a JOIN users u ON u.id=a.user_id WHERE a.id=?`).get(applicationId);
   if (!application) throw new Error('NOT_FOUND');
+  if (['APPROVED','REJECTED'].includes(application.status)) throw new Error('APPLICATION_ALREADY_REVIEWED');
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare('UPDATE applications SET status=?,notes=?,updated_at=? WHERE id=?').run(status,notes || null,nowIso(),applicationId);
@@ -572,7 +597,7 @@ export function saveUpload(file, prefix = 'file') {
 }
 
 export function addProof(user, shipmentId, proofType, upload, note = '') {
-  const shipment = getShipmentForUser(user,shipmentId);
+  const shipment = getShipmentParty(user,shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
   if (!['LOADING','DELIVERY','ISSUE'].includes(proofType)) throw new Error('INVALID_PROOF_TYPE');
   if (!upload) throw new Error('FILE_REQUIRED');
@@ -588,7 +613,7 @@ export function getProofFile(user, proofId) {
   const db = getDb();
   const proof = db.prepare('SELECT * FROM proof_files WHERE id=?').get(proofId);
   if (!proof) return null;
-  const shipment = getShipmentForUser(user,proof.shipment_id);
+  const shipment = getShipmentParty(user,proof.shipment_id);
   if (!shipment) return null;
   return proof;
 }
@@ -683,6 +708,7 @@ export function reviewPaymentProof(user, proofId, status) {
   const db = getDb();
   const proof = db.prepare('SELECT * FROM payment_proofs WHERE id=?').get(proofId);
   if (!proof) throw new Error('NOT_FOUND');
+  if (['APPROVED','REJECTED'].includes(proof.status)) throw new Error('PAYMENT_PROOF_ALREADY_REVIEWED');
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare('UPDATE payment_proofs SET status=?,reviewed_at=? WHERE id=?').run(status,nowIso(),proofId);
