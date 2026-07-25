@@ -1,0 +1,45 @@
+# Progress
+
+## Complete
+
+- Next.js App Router source structure
+- Local persistent database and deterministic seed
+- Signed local authentication
+- Role-aware navigation and workspaces
+- Applications and admin approval
+- Company pages and provider directory
+- Parcel routes and centers
+- B2B shipment creation
+- Parcel and freight workflows
+- Load discovery and provider interest
+- Capacity update, freshness, expiry, and photo support
+- Tracking and proof
+- Manual billing proof and review
+- PWA and responsive UI
+- Supabase migration and RLS target
+- Unit and repository tests
+- Playwright workflow definitions
+- Browserbase configuration boundary
+- Linked frontend, backend, and deployment base specifications
+- End-to-end feature specifications for all implemented capability areas
+- Executable specification integrity and traceability checks
+- Major-action engineering guardrails and pull-request evidence template
+- GitHub Actions CI and Dependabot configuration
+- Explicit actor/tenant/record authorization matrix
+- Default-deny shipment-party policy shared by status, note, and proof services
+- Saved-partner relationship filtering for freight discovery
+- Immutable terminal application and payment-proof reviews
+- Negative authorization contract suite and browse-only E2E coverage
+- Session-aware public navigation and authenticated provider-request continuity
+- Public login credential-fixture removal and pending-applicant seed correction
+- Dedicated Playwright database and server isolation from local development data
+
+## Requires an internet-enabled environment
+
+- Execute browser E2E tests against the running Next.js server
+- Apply Supabase migration through Supabase CLI
+
+## Repository administration still required
+
+- Enable branch protection for `main` and require the GitHub Actions `validate` and `e2e` jobs.
+- Configure production environment secrets and deployment approval rules in the selected hosting platform.
