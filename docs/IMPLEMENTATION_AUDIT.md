@@ -11,7 +11,7 @@ This rebuild is a real Next.js App Router codebase running on Node.js.
 - Node SQLite schema creation and deterministic reset
 - 12 domain/repository tests passing
 - Capacity validation and expiry behavior
-- Parcel and freight transition rules
+- Freight transition and tracking-obligation rules
 - ETB, target-price, and Quote Requested pricing
 - Provider discovery
 - Shipment creation

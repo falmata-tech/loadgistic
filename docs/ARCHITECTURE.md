@@ -32,7 +32,7 @@ This is an adapter choice, not a second product model. The Supabase migration mi
 - User
 - Organization or independent provider profile
 - Company Page
-- Location and parcel route
+- Privacy-obscured capacity and shipment-tracking location
 - Vehicle and driver
 - Shipment and immutable events
 - Provider interest

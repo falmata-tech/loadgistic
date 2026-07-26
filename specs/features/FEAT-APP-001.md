@@ -2,8 +2,8 @@
 id: FEAT-APP-001
 title: Business application and approval
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001]
-problem: Enterprise shippers, receivers, and providers require reviewed accounts before accessing operating features.
-behavior: A public applicant submits required facts; an administrator approves or rejects once; only approval activates the user and workspace.
+problem: Businesses looking for logistics capacity and transporters looking for shipment demand require reviewed accounts before accessing operating features.
+behavior: A public applicant chooses either a Business account or a Transporter category; an administrator approves or rejects once; only approval activates the user and workspace.
 contracts: [ApplicationCommand, ApplicationStatus, AdminReviewPolicy, WorkspaceProvisioner]
 observability: [application_audit, review_outcome, rate_limit_outcome]
 rollout: Monitor failed submissions and approval errors; keep activation transactional.
@@ -17,6 +17,14 @@ Given a unique email, supported account type, and password of at least ten chara
 When the public application is submitted\
 Then an inactive user and pending application are created atomically\
 And the applicant is told approval is required before login.
+
+### Scenario: application choices use demand and transporter language
+
+Given an applicant opens the application form\
+When they choose an account type\
+Then demand-side companies are presented as Businesses looking for capacity\
+And supply-side applicants are presented as Fleet Transporter or Self-managed Driver / Owner-Operator\
+And no additional provider category is available.
 
 ### Scenario: administrator approves
 

@@ -12,7 +12,7 @@
 - Opaque tracking tokens
 - Security headers and Content Security Policy
 - Capacity expiry and visibility filtering
-- External open-load viewers do not receive internal notes, proof, other-provider interest, or receiver details
+- Anonymous visitors cannot access company pages, transporter directory, loads, capacity, internal notes, proof, other-provider interest, or receiver details
 - Audit records for sensitive mutations
 - Explicit authorization contracts in `docs/AUTHORIZATION_MATRIX.md`
 - Browse-only load visibility cannot grant status, internal-note, or private-proof access
@@ -31,4 +31,4 @@
 - HTTPS-only deployment
 - Central logging and alerting
 - Database backups and recovery exercises
-- Security review of every public-company-page field
+- Security review of every authenticated company-page field before it is exposed beyond the owning workspace

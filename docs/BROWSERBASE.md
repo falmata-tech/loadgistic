@@ -20,4 +20,4 @@ npm run test:e2e
 npm run test:e2e:browserbase
 ```
 
-The project uses stable labels and route names so an AI agent can log in, create a shipment, find a load, publish capacity, update a parcel status, and review an application.
+The project uses stable labels and route names so an AI agent can log in, create a shipment, find a load, publish capacity, record an assigned-load tracking update, and review an application.

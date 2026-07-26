@@ -2,9 +2,9 @@
 
 ## Product invariant
 
-Loadgistic connects enterprise shippers and receivers with parcel delivery companies, freight transporters, and independent providers for B2B shipping.
+Loadgistic connects businesses looking for road-freight capacity with fleet transporters and self-managed drivers looking for reviewed B2B demand.
 
-Do not add consumer-delivery framing, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
+Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
 
 ## Commands
 
@@ -43,7 +43,7 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 1. Keep state transitions explicit in `domain.js`.
 2. Authorize every mutation in server-side repository services.
 3. Do not expose proof files without shipment authorization.
-4. Do not show expired capacity publicly.
+4. Do not show expired, full, or off-duty capacity in marketplace discovery.
 5. Use ETB or Quote Requested; do not introduce USD marketplace prices.
 6. Show only data derived from actual records or verified inputs.
 7. Preserve mobile-first simplicity.

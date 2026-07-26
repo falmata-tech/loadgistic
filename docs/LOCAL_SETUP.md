@@ -26,11 +26,10 @@ All accounts use the local password `Loadgistic123!`.
 
 | Workspace | Email |
 |---|---|
-| Enterprise Shipper | `shipper@loadgistic.local` |
-| Enterprise Receiver | `receiver@loadgistic.local` |
-| Parcel Delivery Company | `parcel@loadgistic.local` |
-| Transport Company | `transporter@loadgistic.local` |
-| Independent Owner-Operator | `driver@loadgistic.local` |
+| Business looking for capacity | `shipper@loadgistic.local` |
+| Business receiving shipments | `receiver@loadgistic.local` |
+| Fleet Transporter | `transporter@loadgistic.local` |
+| Self-managed Driver / Owner-Operator | `driver@loadgistic.local` |
 | Platform Administrator | `admin@loadgistic.local` |
 
 ## Reset

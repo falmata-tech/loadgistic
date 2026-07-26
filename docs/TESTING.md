@@ -39,7 +39,7 @@ Playwright resets `data/test-e2e.db` and starts a dedicated application server o
 Covered workflows:
 
 - Shipper opens new shipment workflow
-- Parcel company uses manual code lookup
+- Assigned-provider tracking enforces the load's selected mode
 - Transporter opens loads and capacity
 - Authenticated public-company navigation retains its session and preselects the requested provider
 - Public login does not expose local fixture credentials
