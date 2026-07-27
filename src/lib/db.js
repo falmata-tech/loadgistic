@@ -42,6 +42,7 @@ function migrate(db) {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
+      phone TEXT,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('ADMIN','SHIPPER','RECEIVER','TRANSPORTER','DRIVER')),
@@ -271,6 +272,38 @@ function migrate(db) {
 
     CREATE INDEX IF NOT EXISTS idx_load_proof_share_access ON load_proof_shares(interest_id, expires_at, revoked_at);
 
+    CREATE TABLE IF NOT EXISTS business_reviews (
+      id TEXT PRIMARY KEY,
+      shipment_id TEXT NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+      reviewer_organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      subject_organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+      note TEXT,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      UNIQUE(shipment_id, reviewer_organization_id, subject_organization_id),
+      CHECK(reviewer_organization_id <> subject_organization_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS verification_requests (
+      id TEXT PRIMARY KEY,
+      subject_type TEXT NOT NULL CHECK(subject_type IN ('ORGANIZATION','PROVIDER_PROFILE','DRIVER','VEHICLE')),
+      subject_id TEXT NOT NULL,
+      verification_type TEXT NOT NULL CHECK(verification_type IN ('IDENTITY','BUSINESS_LICENSE','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION')),
+      document_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('PENDING','APPROVED','MORE_INFO','REJECTED')),
+      submitted_by TEXT NOT NULL REFERENCES users(id),
+      reviewed_by TEXT REFERENCES users(id),
+      review_note TEXT,
+      submitted_at TEXT NOT NULL,
+      reviewed_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_verification_subject ON verification_requests(subject_type, subject_id, verification_type, status);
+
     CREATE TABLE IF NOT EXISTS applications (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id),
@@ -333,6 +366,8 @@ function migrate(db) {
       created_at TEXT NOT NULL
     );
   `);
+  const userColumns = new Set(db.prepare('PRAGMA table_info(users)').all().map(column => column.name));
+  if (!userColumns.has('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
 
   const capacityColumns = new Set(db.prepare('PRAGMA table_info(capacities)').all().map(column => column.name));
   const additiveCapacityColumns = [
@@ -418,9 +453,9 @@ function seed(db) {
     ['user-applicant','pending-applicant@fixtures.loadgistic.test','Liya Bekele','RECEIVER',null,null,0]
   ];
   const insertUser = db.prepare(`INSERT INTO users
-    (id,email,password_hash,name,role,organization_id,provider_profile_id,active,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?)`);
-  for (const user of users) insertUser.run(user[0],user[1],passwordHash,user[2],user[3],user[4],user[5],user[6] ?? 1,iso);
+    (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)`);
+  for (const user of users) insertUser.run(user[0],user[1],'+251 900 000 000',passwordHash,user[2],user[3],user[4],user[5],user[6] ?? 1,iso);
 
   const insertMembership = db.prepare('INSERT INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,?)');
   insertMembership.run(randomId('mem-'),'user-shipper',orgs.shipper.id,'OWNER');
@@ -481,6 +516,25 @@ function seed(db) {
   db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,public,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(randomId('evt-'),'shp-freight-active','IN_TRANSIT','STATUS','Truck departed Addis Ababa','Around Addis Ababa',9,38.5,40,'DEVICE_OBSCURED','user-transporter',1,new Date(now.getTime()-90*60*1000).toISOString());
+
+  const verificationInsert = db.prepare(`INSERT INTO verification_requests
+    (id,subject_type,subject_id,verification_type,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const demoDocument = path.resolve(process.cwd(),'public/vehicle-configurations/cargo-van.jpg');
+  const seededVerifications = [
+    ['verification-business-id','ORGANIZATION',orgs.shipper.id,'IDENTITY','Owner national identity','user-shipper'],
+    ['verification-business-license','ORGANIZATION',orgs.shipper.id,'BUSINESS_LICENSE','Business license','user-shipper'],
+    ['verification-receiver-id','ORGANIZATION',orgs.receiver.id,'IDENTITY','Owner national identity','user-receiver'],
+    ['verification-transporter-id','ORGANIZATION',orgs.transporter.id,'IDENTITY','Owner national identity','user-transporter'],
+    ['verification-transporter-license','ORGANIZATION',orgs.transporter.id,'BUSINESS_LICENSE','Transport business license','user-transporter'],
+    ['verification-driver-id','PROVIDER_PROFILE','provider-driver','IDENTITY','National identity','user-driver'],
+    ['verification-driver-license','PROVIDER_PROFILE','provider-driver','DRIVER_IDENTITY','Driver license','user-driver'],
+    ['verification-truck-1','VEHICLE','veh-trans-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-transporter'],
+    ['verification-truck-driver','VEHICLE','veh-driver-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-driver']
+  ];
+  for (const item of seededVerifications) {
+    verificationInsert.run(item[0],item[1],item[2],item[3],item[4],demoDocument,'Demo verification record.jpg','image/jpeg','APPROVED',item[5],'user-admin','Approved demo fixture',iso,iso);
+  }
 
   const planInsert = db.prepare('INSERT INTO plans (id,code,name,audience,active) VALUES (?,?,?,?,1)');
   planInsert.run('plan-business','BUSINESS_CAPACITY','Business Capacity','BUSINESS');

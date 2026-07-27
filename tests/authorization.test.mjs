@@ -49,6 +49,15 @@ test('browse visibility cannot change an unassigned shipment status', () => {
   assert.equal(repo.getShipmentForUser(users.shipper, shipment.id).operational_status, 'POSTED');
 });
 
+test('Load Board discovery does not add an unrelated load to provider Tracking', () => {
+  const shipment=createFreight();
+  assert.ok(repo.listLoads(users.driver).some(row=>row.id===shipment.id));
+  assert.equal(repo.listVisibleShipments(users.driver).some(row=>row.id===shipment.id),false);
+  assert.ok(repo.listVisibleShipments(users.shipper).some(row=>row.id===shipment.id));
+  const direct=createFreight('DIRECT_TO_PROVIDER','profile:provider-driver');
+  assert.ok(repo.listVisibleShipments(users.driver).some(row=>row.id===direct.id));
+});
+
 test('browse visibility cannot add an internal shipment note', () => {
   const shipment = createFreight();
   const db = dbModule.getDb();
@@ -160,6 +169,7 @@ test('application review is admin-only and terminal outcomes are immutable', () 
     name: 'Authorization Applicant',
     businessName: 'Authorization Freight PLC',
     email: `authorization-${Date.now()}@loadgistic.local`,
+    phone: '+251 911 700 200',
     password: 'StrongPass123!',
     applicationType: 'TRANSPORT_COMPANY',
     notes: 'Permission test'
@@ -167,6 +177,35 @@ test('application review is admin-only and terminal outcomes are immutable', () 
   assert.throws(() => repo.reviewApplication(users.shipper, applicationId, 'APPROVED'), /FORBIDDEN/);
   repo.reviewApplication(users.admin, applicationId, 'REJECTED', 'Rejected once');
   assert.throws(() => repo.reviewApplication(users.admin, applicationId, 'APPROVED'), /APPLICATION_ALREADY_REVIEWED/);
+});
+
+test('verification submission enforces ownership and admin-only review', () => {
+  const upload={path:'/tmp/verification-test.pdf',originalName:'license.pdf',mimeType:'application/pdf'};
+  assert.throws(()=>repo.submitVerification(users.driver,{subjectType:'VEHICLE',subjectId:'veh-trans-2',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Owner authority'},upload),/FORBIDDEN/);
+  const requestId=repo.submitVerification(users.transporter,{subjectType:'VEHICLE',subjectId:'veh-trans-2',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Owner authority'},upload);
+  assert.equal(repo.getVerificationFile(users.driver,requestId),null);
+  assert.equal(repo.getVerificationFile(users.transporter,requestId).id,requestId);
+  assert.throws(()=>repo.reviewVerification(users.shipper,requestId,'APPROVED'),/FORBIDDEN/);
+  repo.reviewVerification(users.admin,requestId,'APPROVED','Ownership authority confirmed');
+  assert.equal(repo.listVerificationRequests(users.admin).find(row=>row.id===requestId).status,'APPROVED');
+  assert.throws(()=>repo.reviewVerification(users.admin,requestId,'REJECTED'),/VERIFICATION_ALREADY_REVIEWED/);
+});
+
+test('only completed shipper and receiver Businesses can review each other once', () => {
+  const shipment=repo.createShipment(users.shipper,{
+    title:'Completed review fixture',serviceMode:'FREIGHT',distributionMode:'DIRECT_TO_PROVIDER',providerRef:'org:org-transporter',
+    priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Hawassa',cargoDescription:'Review fixture',loadType:'PTL',
+    packageCount:'1',pickupDate:new Date(Date.now()+86_400_000).toISOString().slice(0,10),receiverOrganizationId:users.receiver.organization_id,trackingMode:'STATUS_ONLY'
+  });
+  assert.throws(()=>repo.submitBusinessReview(users.shipper,shipment.id,'5','Too early'),/REVIEW_NOT_ALLOWED/);
+  dbModule.getDb().prepare(`UPDATE shipments SET operational_status='COMPLETED' WHERE id=?`).run(shipment.id);
+  const reviewId=repo.submitBusinessReview(users.shipper,shipment.id,'5','Reliable receiving team');
+  assert.ok(reviewId);
+  assert.throws(()=>repo.submitBusinessReview(users.shipper,shipment.id,'4','Duplicate'),/REVIEW_ALREADY_SUBMITTED/);
+  assert.throws(()=>repo.submitBusinessReview(users.transporter,shipment.id,'5','Not a Business party'),/REVIEW_NOT_ALLOWED/);
+  repo.submitBusinessReview(users.receiver,shipment.id,'4','Clear load information');
+  const shipperProfile=repo.getPublicCompany('blue-nile-trading');
+  assert.ok(shipperProfile.review_count>=1);
 });
 
 test('payment review is admin-only and terminal outcomes are immutable', () => {
@@ -185,6 +224,7 @@ test('role and tenant checks guard remaining mutation boundaries', () => {
   assert.throws(() => repo.publishCapacity(users.driver, { vehicleId: 'veh-trans-1', status: 'EMPTY' }), /INVALID_VEHICLE/);
   assert.throws(() => repo.listApplications(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.listPaymentProofs(users.shipper), /FORBIDDEN/);
+  assert.throws(() => repo.listVerificationRequests(users.shipper), /FORBIDDEN/);
 });
 
 test.after(() => {

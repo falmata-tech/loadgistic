@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       deliveryDate: text(form,'deliveryDate'),
       trackingMode: text(form,'trackingMode') || 'STATUS_ONLY'
     });
-    return NextResponse.redirect(new URL(`/app/shipments/${result.id}?success=Shipment+created`, request.url), 303);
+    return NextResponse.redirect(new URL(`/app/shipments/${result.id}?success=Load+posted`, request.url), 303);
   } catch (error) {
     return redirectWith(request, '/app/shipments/new', 'error', errorMessage(error));
   }

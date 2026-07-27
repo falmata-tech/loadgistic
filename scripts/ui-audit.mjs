@@ -10,27 +10,27 @@ const personas = [
   {
     name: 'business-shipper',
     email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/app/providers', '/app/capacity', '/app/company-page', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/app/providers', '/app/providers?type=BUSINESS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'business-receiver',
     email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/app/providers', '/app/capacity', '/app/company-page', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/app/providers', '/app/providers?type=BUSINESS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/loads', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/company-page', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/loads', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'self-managed-driver',
     email: 'driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/company-page', '/app/more']
+    routes: ['/app/home', '/app/loads', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/applications', '/admin/billing', '/app/shipments', '/companies', '/app/more']
+    routes: ['/app/home', '/admin/applications', '/admin/verifications', '/admin/billing', '/app/shipments', '/companies', '/app/more']
   }
 ];
 
@@ -121,7 +121,7 @@ try {
 
         if (['business-shipper', 'business-receiver'].includes(persona.name)) {
           await page.goto(`${baseURL}/app/providers`, { waitUntil: 'networkidle' });
-          const companyHref = await page.getByRole('link', { name: 'View Public Profile' }).first().getAttribute('href');
+          const companyHref = await page.getByRole('link', { name: 'View Profile' }).first().getAttribute('href');
           if (companyHref) {
             const result = await inspectPage(
               page,
@@ -143,7 +143,8 @@ try {
         }
 
         await page.goto(`${baseURL}/app/shipments`, { waitUntil: 'networkidle' });
-        const shipmentHref = await page.locator('a[href^="/app/shipments/"]').first().getAttribute('href');
+        const trackingRows = page.locator('a[href^="/app/shipments/"]');
+        const shipmentHref = await trackingRows.count() ? await trackingRows.first().getAttribute('href') : null;
         if (shipmentHref) {
           const result = await inspectPage(
             page,

@@ -39,13 +39,19 @@ test('seeded assigned load has a chronological tracking history that satisfies i
  assert.ok(shipment.events.every((event,index,events)=>index===0||new Date(event.created_at)>=new Date(events[index-1].created_at)));
 });
 
-test('provider discovery includes fleet and independent transporters with authoritative truck counts',()=>{
+test('member directory includes Businesses and transporters with authoritative facts',()=>{
  const providers=repo.listProviders('ALL');
  const fleet=providers.find(p=>p.type==='TRANSPORT_COMPANY');
  assert.equal(fleet.fleet_size,2);
  assert.equal(fleet.active_capacity_count,1);
  assert.ok(providers.some(p=>p.type==='INDEPENDENT_PROVIDER'));
- assert.equal(repo.getPublicCompany('blue-nile-trading'),null);
+ const directory=repo.listDirectoryProfiles('ALL');
+ assert.ok(directory.some(profile=>profile.is_business&&profile.id==='org-shipper'));
+ const business=repo.getPublicCompany('blue-nile-trading');
+ assert.equal(business.is_business,true);
+ assert.equal(business.fleet_size,0);
+ assert.equal(Object.hasOwn(business,'email'),false);
+ assert.equal(Object.hasOwn(business,'phone'),false);
  const company=repo.getPublicCompany('blueline-transport');
  assert.equal(company.fleet_size,2);
  assert.equal(company.vehicles.length,2);
@@ -99,14 +105,15 @@ test('saved relationship capacity is visible only to the related business',()=>{
 });
 
 
-test('business application approval provisions a workspace and subscription',()=>{
- const appId=repo.createBusinessApplication({name:'Test Applicant',businessName:'Test Freight PLC',email:'test-applicant@loadgistic.local',password:'StrongPass123!',applicationType:'TRANSPORT_COMPANY',notes:'Local test'});
+test('business application approval provisions a workspace and keeps account phone private',()=>{
+ const appId=repo.createBusinessApplication({name:'Test Applicant',businessName:'Test Freight PLC',email:'test-applicant@loadgistic.local',phone:'+251 911 700 100',password:'StrongPass123!',applicationType:'TRANSPORT_COMPANY',notes:'Local test'});
  const pending=repo.getApplicationStatus('test-applicant@loadgistic.local');
  assert.equal(pending.status,'PENDING');
  const admin=repo.getUserById('user-admin');
  repo.reviewApplication(admin,appId,'APPROVED','Verified in local test');
  const user=repo.findUserByEmail('test-applicant@loadgistic.local');
  assert.equal(user.active,1);
+ assert.equal(user.phone,'+251 911 700 100');
  const hydrated=repo.getUserById(user.id);
  assert.ok(hydrated.organization_id);
  const billing=repo.getBillingSummary(hydrated);

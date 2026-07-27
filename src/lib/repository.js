@@ -63,7 +63,7 @@ export function getDashboard(user) {
     data.counts = {
       Applications: db.prepare(`SELECT COUNT(*) AS n FROM applications WHERE status='PENDING'`).get().n,
       Organizations: db.prepare('SELECT COUNT(*) AS n FROM organizations').get().n,
-      Shipments: db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
+      Loads: db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
       'Fresh Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE expires_at > ?`).get(nowIso()).n
     };
     data.actions = [
@@ -77,14 +77,14 @@ export function getDashboard(user) {
   if (user.role === USER_ROLES.SHIPPER || user.role === USER_ROLES.RECEIVER) {
     const condition = 'shipper_organization_id = ? OR receiver_organization_id = ?';
     data.counts = {
-      'Active Shipments': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND operational_status NOT IN ('COMPLETED','CANCELLED','RETURNED')`).get(user.organization_id,user.organization_id).n,
+      'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND operational_status NOT IN ('COMPLETED','CANCELLED','RETURNED')`).get(user.organization_id,user.organization_id).n,
       'Open Requests': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND commercial_status IN ('POSTED','SENT','CONTACTED')`).get(user.organization_id,user.organization_id).n,
       'Saved Providers': db.prepare(`SELECT COUNT(*) AS n FROM partner_relationships WHERE owner_organization_id = ?`).get(user.organization_id).n,
       'Recent Updates': db.prepare(`SELECT COUNT(*) AS n FROM shipment_events e JOIN shipments s ON s.id=e.shipment_id WHERE (s.shipper_organization_id=? OR s.receiver_organization_id=?) AND e.created_at >= datetime('now','-7 days')`).get(user.organization_id,user.organization_id).n
     };
     data.actions = [
       { href: '/app/shipments/new', label: 'Post a load', description: 'Request quotes or publish a road-freight load.' },
-      { href: '/app/providers', label: 'Find transporters', description: 'Discover fleet transporters and self-managed drivers.' },
+      { href: '/app/providers', label: 'Open directory', description: 'Confirm Businesses, fleet transporters, and self-managed drivers.' },
       { href: '/app/capacity', label: 'Open Capacity Board', description: 'See fresh truck availability on active corridors.' }
     ];
     data.recent = db.prepare(`SELECT code,title,service_mode,operational_status,origin,destination,created_at FROM shipments WHERE ${condition} ORDER BY updated_at DESC LIMIT 6`).all(user.organization_id,user.organization_id);
@@ -93,7 +93,7 @@ export function getDashboard(user) {
 
   data.counts = {
     'Available Loads': listLoads(user).length,
-    'Active Shipments': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${user.role === USER_ROLES.DRIVER ? 'provider_profile_id=?' : 'provider_organization_id=?'} AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id).n,
+    'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${user.role === USER_ROLES.DRIVER ? 'provider_profile_id=?' : 'provider_organization_id=?'} AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id).n,
     'Current Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE ${user.role === USER_ROLES.DRIVER ? 'provider_profile_id=?' : 'provider_organization_id=?'} AND expires_at > ?`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id, nowIso()).n,
     'Proof Pending': db.prepare(`SELECT COUNT(*) AS n FROM shipments s WHERE ${user.role === USER_ROLES.DRIVER ? 's.provider_profile_id=?' : 's.provider_organization_id=?'} AND s.operational_status IN ('DELIVERED','IN_TRANSIT') AND NOT EXISTS (SELECT 1 FROM proof_files p WHERE p.shipment_id=s.id AND p.proof_type='DELIVERY')`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id).n
   };
@@ -109,7 +109,7 @@ export function getDashboard(user) {
 
 export function listVisibleShipments(user) {
   const db = getDb();
-  let sql = `SELECT s.*, so.name AS shipper_name, ro.name AS receiver_name, po.name AS provider_name,
+  let sql = `SELECT s.*, so.name AS shipper_name,so.handle AS shipper_handle,ro.name AS receiver_name,ro.handle AS receiver_handle,po.name AS provider_name,
     pp.business_name AS provider_profile_name
     FROM shipments s
     LEFT JOIN organizations so ON so.id=s.shipper_organization_id
@@ -123,18 +123,18 @@ export function listVisibleShipments(user) {
     sql += ' WHERE s.shipper_organization_id=? OR s.receiver_organization_id=? ORDER BY s.updated_at DESC';
     args.push(user.organization_id,user.organization_id);
   } else if (user.role === USER_ROLES.TRANSPORTER) {
-    sql += ` WHERE s.provider_organization_id=? OR (s.service_mode='FREIGHT' AND s.operational_status='POSTED' AND s.distribution_mode IN ('OPEN_MARKET','SAVED_PARTNERS')) ORDER BY s.updated_at DESC`;
+    sql += ' WHERE s.provider_organization_id=? ORDER BY s.updated_at DESC';
     args.push(user.organization_id);
   } else {
-    sql += ` WHERE s.provider_profile_id=? OR (s.service_mode='FREIGHT' AND s.operational_status='POSTED' AND s.distribution_mode IN ('OPEN_MARKET','SAVED_PARTNERS')) ORDER BY s.updated_at DESC`;
+    sql += ' WHERE s.provider_profile_id=? ORDER BY s.updated_at DESC';
     args.push(user.provider_profile_id);
   }
-  return db.prepare(sql).all(...args).filter(shipment => canViewShipment(user,shipment));
+  return db.prepare(sql).all(...args);
 }
 
 export function getShipmentForUser(user, idOrCode) {
   const db = getDb();
-  const shipment = db.prepare(`SELECT s.*, so.name AS shipper_name, ro.name AS receiver_name, po.name AS provider_name,
+  const shipment = db.prepare(`SELECT s.*, so.name AS shipper_name,so.handle AS shipper_handle,ro.name AS receiver_name,ro.handle AS receiver_handle,po.name AS provider_name,po.handle AS provider_handle,
     pp.business_name AS provider_profile_name,
     CASE WHEN cp.show_contact_phone_on_loads=1 THEN cp.contact_phone ELSE NULL END AS load_contact_phone
     FROM shipments s
@@ -155,6 +155,10 @@ export function getShipmentForUser(user, idOrCode) {
       LEFT JOIN load_proof_requests r ON r.interest_id=i.id WHERE i.shipment_id=? ORDER BY i.created_at DESC`).all(shipment.id);
     shipment.proofs = db.prepare(`SELECT p.*, u.name AS uploaded_by_name FROM proof_files p JOIN users u ON u.id=p.uploaded_by WHERE p.shipment_id=? ORDER BY p.created_at DESC`).all(shipment.id);
     shipment.notes = db.prepare(`SELECT n.*,u.name AS author_name FROM shipment_notes n JOIN users u ON u.id=n.author_user_id WHERE n.shipment_id=? ORDER BY n.created_at DESC`).all(shipment.id);
+    shipment.business_reviews = db.prepare(`SELECT r.*,reviewer.name AS reviewer_name,subject.name AS subject_name
+      FROM business_reviews r JOIN organizations reviewer ON reviewer.id=r.reviewer_organization_id
+      JOIN organizations subject ON subject.id=r.subject_organization_id
+      WHERE r.shipment_id=? ORDER BY r.created_at DESC`).all(shipment.id);
   } else {
     shipment.receiver_name = null;
     shipment.receiver_first_name = null;
@@ -166,6 +170,7 @@ export function getShipmentForUser(user, idOrCode) {
       WHERE i.shipment_id=? AND (i.provider_organization_id=? OR i.provider_profile_id=?) ORDER BY i.created_at DESC`).all(shipment.id,user.organization_id || '',user.provider_profile_id || '');
     shipment.proofs = [];
     shipment.notes = [];
+    shipment.business_reviews = [];
   }
   const ownsLoad = user.role === USER_ROLES.ADMIN || Boolean(user.organization_id && shipment.shipper_organization_id === user.organization_id);
   const proofScope = ownsLoad ? 'i.shipment_id=?' : 'i.shipment_id=? AND (i.provider_organization_id=? OR i.provider_profile_id=?)';
@@ -377,28 +382,73 @@ export function listOrganizationsByType(types = []) {
 }
 
 export function listProviders(kind = 'ALL') {
+  return listDirectoryProfiles(kind).filter(profile => !profile.is_business);
+}
+
+function verificationBadges(db, subjectType, subjectId) {
+  const approved = new Set(db.prepare(`SELECT verification_type FROM verification_requests
+    WHERE subject_type=? AND subject_id=? AND status='APPROVED'`).all(subjectType,subjectId).map(row => row.verification_type));
+  if (subjectType === 'VEHICLE') {
+    return [{type:'VEHICLE_AUTHORITY',verified:approved.has('VEHICLE_OWNERSHIP')||approved.has('VEHICLE_AUTHORIZATION')}];
+  }
+  const required = subjectType === 'ORGANIZATION'
+    ? ['IDENTITY','BUSINESS_LICENSE']
+    : subjectType === 'PROVIDER_PROFILE'
+      ? ['IDENTITY','DRIVER_IDENTITY']
+      : ['DRIVER_IDENTITY'];
+  return required.map(type => ({ type, verified: approved.has(type) }));
+}
+
+function ratingSummary(db, organizationId) {
+  return db.prepare(`SELECT COUNT(*) AS review_count,ROUND(AVG(rating),1) AS average_rating
+    FROM business_reviews WHERE subject_organization_id=?`).get(organizationId);
+}
+
+export function listDirectoryProfiles(kind = 'ALL') {
   const db = getDb();
-  const providers = [];
+  const profiles = [];
+  if (kind === 'ALL' || kind === 'BUSINESS') {
+    const businesses = db.prepare(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,cp.headline,cp.about,cp.services,
+      cp.contact_phone,cp.contact_email,1 AS is_business,0 AS fleet_size,0 AS active_capacity_count
+      FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER') ORDER BY o.name`).all();
+    for (const business of businesses) {
+      business.verification_badges = verificationBadges(db,'ORGANIZATION',business.id);
+      business.verified = business.verification_badges.every(badge => badge.verified);
+      Object.assign(business,ratingSummary(db,business.id));
+      profiles.push(business);
+    }
+  }
   if (kind === 'ALL' || kind === 'TRANSPORT') {
-    providers.push(...db.prepare(`SELECT o.id, 'org' AS ref_kind, o.name, o.handle, o.type, o.verified, o.city, cp.about, cp.services, cp.corridors, cp.contact_phone,
+    const transporters = db.prepare(`SELECT o.id, 'org' AS ref_kind, o.name, o.handle, o.type, o.city, cp.headline,cp.about, cp.services, cp.corridors, cp.contact_phone,cp.contact_email,0 AS is_business,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
        WHERE v.organization_id=o.id AND v.active=1 AND c.visibility='OPEN' AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?) AS active_capacity_count
-      FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1 WHERE o.type='TRANSPORT_COMPANY'`).all(nowIso()));
+      FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1 WHERE o.type='TRANSPORT_COMPANY'`).all(nowIso());
+    for (const transporter of transporters) {
+      transporter.verification_badges = verificationBadges(db,'ORGANIZATION',transporter.id);
+      transporter.verified = transporter.verification_badges.every(badge => badge.verified);
+      profiles.push(transporter);
+    }
   }
   if (kind === 'ALL' || kind === 'DRIVER') {
-    providers.push(...db.prepare(`SELECT p.id, 'profile' AS ref_kind, p.business_name AS name, p.handle, 'INDEPENDENT_PROVIDER' AS type,
-      (p.verified_identity AND p.verified_license) AS verified, p.city, p.about, cp.services, cp.corridors, cp.contact_phone,
+    const drivers = db.prepare(`SELECT p.id, 'profile' AS ref_kind, p.business_name AS name, p.handle, 'INDEPENDENT_PROVIDER' AS type,
+      p.city, p.about, cp.headline,cp.services, cp.corridors, cp.contact_phone,cp.contact_email,0 AS is_business,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
        WHERE v.provider_profile_id=p.id AND v.active=1 AND c.visibility='OPEN' AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?) AS active_capacity_count
-      FROM provider_profiles p JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.public_visibility='PUBLIC'`).all(nowIso()));
+      FROM provider_profiles p JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.public_visibility='PUBLIC'`).all(nowIso());
+    for (const driver of drivers) {
+      driver.verification_badges = verificationBadges(db,'PROVIDER_PROFILE',driver.id);
+      driver.verified = driver.verification_badges.every(badge => badge.verified);
+      profiles.push(driver);
+    }
   }
-  return providers;
+  return profiles;
 }
 
 function listProviderVehicles(db, ownerColumn, ownerId) {
-  return db.prepare(`SELECT v.id AS vehicle_id,v.label,v.category,v.plate,v.make,v.model,v.cargo_configuration,
+  const vehicles = db.prepare(`SELECT v.id AS vehicle_id,v.label,v.category,v.plate,v.make,v.model,v.cargo_configuration,
     c.id AS capacity_id,c.status,c.available_percent,c.visibility,c.updated_at,c.expires_at,u.name AS updated_by_name
     FROM vehicles v
     LEFT JOIN capacities c ON c.id=(
@@ -407,26 +457,35 @@ function listProviderVehicles(db, ownerColumn, ownerId) {
     LEFT JOIN users u ON u.id=c.updated_by
     WHERE v.${ownerColumn}=? AND v.active=1
     ORDER BY v.label,v.make,v.model`).all(ownerId);
+  return vehicles.map(vehicle => ({...vehicle,verification_badges:verificationBadges(db,'VEHICLE',vehicle.vehicle_id)}));
 }
 
 export function getPublicCompany(handle) {
   const db = getDb();
-  const org = db.prepare(`SELECT o.*,cp.headline,cp.about,cp.services,cp.corridors,cp.contact_phone,cp.contact_email
+  const org = db.prepare(`SELECT o.id,o.name,o.handle,o.type,o.industry,o.description,o.city,o.public_visibility,
+    cp.headline,cp.about,cp.services,cp.corridors,cp.contact_phone,cp.contact_email
     FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1
-    WHERE o.handle=? AND o.type='TRANSPORT_COMPANY'`).get(handle);
+    WHERE o.handle=?`).get(handle);
   if (org) {
     org.page_kind = 'organization';
-    org.vehicles = listProviderVehicles(db,'organization_id',org.id);
+    org.is_business = ['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER'].includes(org.type);
+    org.verification_badges = verificationBadges(db,'ORGANIZATION',org.id);
+    org.verified = org.verification_badges.every(badge => badge.verified);
+    Object.assign(org,ratingSummary(db,org.id));
+    org.vehicles = org.is_business ? [] : listProviderVehicles(db,'organization_id',org.id);
     org.fleet_size = org.vehicles.length;
-    org.capacities = listPublicCapacity().filter(c => c.provider_organization_id === org.id);
+    org.capacities = org.is_business ? [] : listPublicCapacity().filter(c => c.provider_organization_id === org.id);
     return org;
   }
-  const provider = db.prepare(`SELECT p.*,p.business_name AS name,cp.headline,cp.about,cp.services,cp.corridors,cp.contact_phone,cp.contact_email
+  const provider = db.prepare(`SELECT p.id,p.business_name,p.business_name AS name,p.handle,p.city,p.about,p.public_visibility,
+    cp.headline,cp.services,cp.corridors,cp.contact_phone,cp.contact_email
     FROM provider_profiles p JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.handle=?`).get(handle);
   if (provider) {
     provider.page_kind = 'provider';
     provider.type = 'INDEPENDENT_PROVIDER';
-    provider.verified = provider.verified_identity && provider.verified_license;
+    provider.is_business = false;
+    provider.verification_badges = verificationBadges(db,'PROVIDER_PROFILE',provider.id);
+    provider.verified = provider.verification_badges.every(badge => badge.verified);
     provider.vehicles = listProviderVehicles(db,'provider_profile_id',provider.id);
     provider.fleet_size = provider.vehicles.length;
     provider.capacities = listPublicCapacity().filter(c => c.provider_profile_id === provider.id);
@@ -441,7 +500,7 @@ export function updateCompanyPage(user, input) {
   const condition = isProvider ? 'provider_profile_id=?' : 'organization_id=?';
   const id = isProvider ? user.provider_profile_id : user.organization_id;
   if (!id) throw new Error('FORBIDDEN');
-  const published = [USER_ROLES.TRANSPORTER, USER_ROLES.DRIVER].includes(user.role) && input.published ? 1 : 0;
+  const published = input.published ? 1 : 0;
   const showContactPhoneOnLoads = [USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) && input.showContactPhoneOnLoads ? 1 : 0;
   db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,corridors=?,contact_phone=?,show_contact_phone_on_loads=?,contact_email=?,published=?,updated_at=? WHERE ${condition}`)
     .run(input.headline || '',input.about || '',input.services || '',input.corridors || '',input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,nowIso(),id);
@@ -452,6 +511,127 @@ export function getOwnCompanyPage(user) {
   const db = getDb();
   if (user.role === USER_ROLES.DRIVER) return db.prepare('SELECT * FROM company_pages WHERE provider_profile_id=?').get(user.provider_profile_id);
   return db.prepare('SELECT * FROM company_pages WHERE organization_id=?').get(user.organization_id);
+}
+
+const VERIFICATION_TYPES = Object.freeze({
+  ORGANIZATION: ['IDENTITY','BUSINESS_LICENSE'],
+  PROVIDER_PROFILE: ['IDENTITY','DRIVER_IDENTITY'],
+  DRIVER: ['DRIVER_IDENTITY'],
+  VEHICLE: ['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION']
+});
+
+function ownsVerificationSubject(db,user,subjectType,subjectId) {
+  if (user.role === USER_ROLES.ADMIN) return true;
+  if (subjectType === 'ORGANIZATION') return Boolean(user.organization_id && user.organization_id === subjectId);
+  if (subjectType === 'PROVIDER_PROFILE') return Boolean(user.provider_profile_id && user.provider_profile_id === subjectId);
+  if (subjectType === 'DRIVER') return Boolean(user.organization_id && db.prepare('SELECT 1 FROM drivers WHERE id=? AND organization_id=?').get(subjectId,user.organization_id));
+  if (subjectType === 'VEHICLE') {
+    return Boolean(db.prepare(`SELECT 1 FROM vehicles WHERE id=? AND
+      ((organization_id IS NOT NULL AND organization_id=?) OR (provider_profile_id IS NOT NULL AND provider_profile_id=?))`)
+      .get(subjectId,user.organization_id || '',user.provider_profile_id || ''));
+  }
+  return false;
+}
+
+export function getVerificationCenter(user) {
+  const db = getDb();
+  const subjects = [];
+  if (user.organization_id) {
+    subjects.push({subject_type:'ORGANIZATION',subject_id:user.organization_id,name:user.organization_name,type:'Workspace'});
+    subjects.push(...db.prepare(`SELECT 'VEHICLE' AS subject_type,id AS subject_id,make || ' ' || model AS name,'Truck' AS type
+      FROM vehicles WHERE organization_id=? AND active=1 ORDER BY label`).all(user.organization_id));
+    subjects.push(...db.prepare(`SELECT 'DRIVER' AS subject_type,id AS subject_id,name,'Driver' AS type
+      FROM drivers WHERE organization_id=? AND active=1 ORDER BY name`).all(user.organization_id));
+  }
+  if (user.provider_profile_id) {
+    subjects.push({subject_type:'PROVIDER_PROFILE',subject_id:user.provider_profile_id,name:user.provider_business_name,type:'Self-managed driver'});
+    subjects.push(...db.prepare(`SELECT 'VEHICLE' AS subject_type,id AS subject_id,make || ' ' || model AS name,'Truck' AS type
+      FROM vehicles WHERE provider_profile_id=? AND active=1 ORDER BY label`).all(user.provider_profile_id));
+  }
+  const requests = db.prepare(`SELECT vr.*,reviewer.name AS reviewer_name FROM verification_requests vr
+    LEFT JOIN users reviewer ON reviewer.id=vr.reviewed_by WHERE submitted_by=? ORDER BY submitted_at DESC`).all(user.id);
+  const availableTypes = subject => {
+    const approved = new Set(db.prepare(`SELECT verification_type FROM verification_requests
+      WHERE subject_type=? AND subject_id=? AND status='APPROVED'`).all(subject.subject_type,subject.subject_id).map(row=>row.verification_type));
+    if (subject.subject_type === 'VEHICLE' && (approved.has('VEHICLE_OWNERSHIP') || approved.has('VEHICLE_AUTHORIZATION'))) return [];
+    return VERIFICATION_TYPES[subject.subject_type].filter(type=>!approved.has(type));
+  };
+  return {
+    subjects: subjects.map(subject => ({...subject,allowed_types:availableTypes(subject),badges:verificationBadges(db,subject.subject_type,subject.subject_id)})),
+    requests
+  };
+}
+
+export function submitVerification(user,input,upload) {
+  const db = getDb();
+  const subjectType = String(input.subjectType || '');
+  const subjectId = String(input.subjectId || '');
+  const verificationType = String(input.verificationType || '');
+  const documentName = String(input.documentName || '').trim();
+  if (!VERIFICATION_TYPES[subjectType]?.includes(verificationType)) throw new Error('INVALID_VERIFICATION_TYPE');
+  if (!ownsVerificationSubject(db,user,subjectType,subjectId)) throw new Error('FORBIDDEN');
+  if (!documentName || !upload) throw new Error('VERIFICATION_DOCUMENT_REQUIRED');
+  const existing = db.prepare(`SELECT 1 FROM verification_requests WHERE subject_type=? AND subject_id=? AND verification_type=?
+    AND status IN ('PENDING','APPROVED')`).get(subjectType,subjectId,verificationType);
+  if (existing) throw new Error('VERIFICATION_ALREADY_SUBMITTED');
+  const id = randomId('verification-');
+  db.prepare(`INSERT INTO verification_requests
+    (id,subject_type,subject_id,verification_type,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+    VALUES (?,?,?,?,?,?,?,?, 'PENDING',?,NULL,NULL,?,NULL)`)
+    .run(id,subjectType,subjectId,verificationType,documentName,upload.path,upload.originalName,upload.mimeType,user.id,nowIso());
+  audit(db,user,'VERIFICATION_SUBMITTED','verification_request',id,{subjectType,subjectId,verificationType});
+  return id;
+}
+
+export function listVerificationRequests(user) {
+  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  return getDb().prepare(`SELECT vr.*,submitter.name AS submitter_name,reviewer.name AS reviewer_name
+    FROM verification_requests vr JOIN users submitter ON submitter.id=vr.submitted_by
+    LEFT JOIN users reviewer ON reviewer.id=vr.reviewed_by
+    ORDER BY CASE vr.status WHEN 'PENDING' THEN 0 WHEN 'MORE_INFO' THEN 1 ELSE 2 END,vr.submitted_at DESC`).all();
+}
+
+export function reviewVerification(user,requestId,status,note='') {
+  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  if (!['APPROVED','REJECTED','MORE_INFO'].includes(status)) throw new Error('INVALID_STATUS');
+  const db = getDb();
+  const request = db.prepare('SELECT * FROM verification_requests WHERE id=?').get(requestId);
+  if (!request) throw new Error('NOT_FOUND');
+  if (['APPROVED','REJECTED'].includes(request.status)) throw new Error('VERIFICATION_ALREADY_REVIEWED');
+  const timestamp = nowIso();
+  db.prepare(`UPDATE verification_requests SET status=?,reviewed_by=?,review_note=?,reviewed_at=? WHERE id=?`)
+    .run(status,user.id,String(note || '').trim() || null,timestamp,requestId);
+  audit(db,user,'VERIFICATION_REVIEWED','verification_request',requestId,{status,subjectType:request.subject_type,subjectId:request.subject_id,verificationType:request.verification_type});
+}
+
+export function getVerificationFile(user,requestId) {
+  const db = getDb();
+  const request = db.prepare('SELECT * FROM verification_requests WHERE id=?').get(requestId);
+  if (!request) return null;
+  if (user.role !== USER_ROLES.ADMIN && request.submitted_by !== user.id) return null;
+  return request;
+}
+
+export function submitBusinessReview(user,shipmentId,rating,note='') {
+  const db = getDb();
+  const shipment = db.prepare('SELECT * FROM shipments WHERE id=? OR code=?').get(shipmentId,shipmentId);
+  if (!shipment || shipment.operational_status !== 'COMPLETED' || !user.organization_id) throw new Error('REVIEW_NOT_ALLOWED');
+  const parties = [shipment.shipper_organization_id,shipment.receiver_organization_id].filter(Boolean);
+  if (parties.length !== 2 || !parties.includes(user.organization_id)) throw new Error('REVIEW_NOT_ALLOWED');
+  const subjectOrganizationId = parties.find(id => id !== user.organization_id);
+  const value = Number(rating);
+  if (!Number.isInteger(value) || value < 1 || value > 5) throw new Error('INVALID_RATING');
+  try {
+    const id = randomId('review-');
+    db.prepare(`INSERT INTO business_reviews
+      (id,shipment_id,reviewer_organization_id,subject_organization_id,rating,note,created_by,created_at)
+      VALUES (?,?,?,?,?,?,?,?)`).run(id,shipment.id,user.organization_id,subjectOrganizationId,value,String(note || '').trim() || null,user.id,nowIso());
+    audit(db,user,'BUSINESS_REVIEW_SUBMITTED','business_review',id,{shipmentId:shipment.id,subjectOrganizationId,rating:value});
+    return id;
+  } catch (error) {
+    if (String(error?.message || '').includes('UNIQUE')) throw new Error('REVIEW_ALREADY_SUBMITTED');
+    throw error;
+  }
 }
 
 export function listLoads(user, mode = 'ALL') {
@@ -824,7 +1004,7 @@ function slugify(value) {
 
 export function createBusinessApplication(input) {
   const db = getDb();
-  if (!input.name || !input.email || !input.password || !input.businessName || !input.applicationType) throw new Error('MISSING_REQUIRED_FIELDS');
+  if (!input.name || !input.email || !input.phone || !input.password || !input.businessName || !input.applicationType) throw new Error('MISSING_REQUIRED_FIELDS');
   if (String(input.password).length < 10) throw new Error('PASSWORD_TOO_SHORT');
   if (findUserByEmail(input.email)) throw new Error('EMAIL_ALREADY_EXISTS');
   const roleMap = {
@@ -840,8 +1020,8 @@ export function createBusinessApplication(input) {
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
-    db.prepare(`INSERT INTO users (id,email,password_hash,name,role,organization_id,provider_profile_id,active,created_at) VALUES (?,?,?,?,?,?,?,0,?)`)
-      .run(userId,input.email.toLowerCase(),hashPassword(input.password),input.name,role,null,null,timestamp);
+    db.prepare(`INSERT INTO users (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at) VALUES (?,?,?,?,?,?,?,?,0,?)`)
+      .run(userId,input.email.toLowerCase(),String(input.phone).trim(),hashPassword(input.password),input.name,role,null,null,timestamp);
     db.prepare(`INSERT INTO applications (id,user_id,business_name,application_type,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`)
       .run(applicationId,userId,input.businessName,input.applicationType,'PENDING',input.notes || null,timestamp,timestamp);
     audit(db,{id:userId,organization_id:null},'BUSINESS_APPLICATION_CREATED','application',applicationId,{ applicationType: input.applicationType });

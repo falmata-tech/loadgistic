@@ -12,10 +12,14 @@ create type public.price_mode as enum ('FIXED_PRICE','QUOTE_REQUESTED','TARGET_P
 create type public.tracking_mode as enum ('STATUS_ONLY','LOCATION_AND_STATUS');
 create type public.capacity_status as enum ('EMPTY','PARTIAL','OFF_DUTY');
 create type public.capacity_visibility as enum ('PRIVATE','SAVED_PARTNERS','DIRECT_TO_SELECTED_BUSINESS','OPEN');
+create type public.verification_subject_type as enum ('ORGANIZATION','PROVIDER_PROFILE','DRIVER','VEHICLE');
+create type public.verification_type as enum ('IDENTITY','BUSINESS_LICENSE','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION');
+create type public.verification_status as enum ('PENDING','APPROVED','MORE_INFO','REJECTED');
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
+  phone text,
   full_name text not null,
   role public.user_role not null,
   active boolean not null default true,
@@ -160,6 +164,36 @@ create table public.shipment_interests (
   )
 );
 
+create table public.business_reviews (
+  id uuid primary key default gen_random_uuid(),
+  shipment_id uuid not null references public.shipments(id) on delete cascade,
+  reviewer_organization_id uuid not null references public.organizations(id) on delete cascade,
+  subject_organization_id uuid not null references public.organizations(id) on delete cascade,
+  rating integer not null check(rating between 1 and 5),
+  note text,
+  created_by uuid not null references public.profiles(id),
+  created_at timestamptz not null default now(),
+  unique(shipment_id, reviewer_organization_id, subject_organization_id),
+  check(reviewer_organization_id <> subject_organization_id)
+);
+
+create table public.verification_requests (
+  id uuid primary key default gen_random_uuid(),
+  subject_type public.verification_subject_type not null,
+  subject_id uuid not null,
+  verification_type public.verification_type not null,
+  document_name text not null,
+  storage_path text not null,
+  original_name text not null,
+  mime_type text not null,
+  status public.verification_status not null default 'PENDING',
+  submitted_by uuid not null references public.profiles(id),
+  reviewed_by uuid references public.profiles(id),
+  review_note text,
+  submitted_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
 create table public.capacity_updates (
   id uuid primary key default gen_random_uuid(),
   provider_organization_id uuid references public.organizations(id) on delete cascade,
@@ -234,6 +268,8 @@ alter table public.organization_members enable row level security;
 alter table public.provider_profiles enable row level security;
 alter table public.company_pages enable row level security;
 alter table public.vehicles enable row level security;
+alter table public.business_reviews enable row level security;
+alter table public.verification_requests enable row level security;
 alter table public.shipments enable row level security;
 alter table public.shipment_events enable row level security;
 alter table public.shipment_interests enable row level security;
@@ -252,6 +288,25 @@ create policy "members update company page" on public.company_pages for update u
 
 create policy "vehicle owner read" on public.vehicles for select using ((organization_id is not null and public.is_org_member(organization_id)) or provider_profile_id in (select id from public.provider_profiles where user_id = auth.uid()));
 create policy "vehicle owner manage" on public.vehicles for all using ((organization_id is not null and public.is_org_member(organization_id)) or provider_profile_id in (select id from public.provider_profiles where user_id = auth.uid()));
+create policy "completed participant reviews read" on public.business_reviews for select using (auth.uid() is not null);
+create policy "participant review insert" on public.business_reviews for insert with check (
+  created_by = auth.uid()
+  and reviewer_organization_id in (select organization_id from public.organization_members where user_id=auth.uid())
+  and exists (
+    select 1 from public.shipments s
+    where s.id=shipment_id and s.operational_status='COMPLETED'
+      and reviewer_organization_id in (s.shipper_organization_id,s.receiver_organization_id)
+      and subject_organization_id in (s.shipper_organization_id,s.receiver_organization_id)
+  )
+);
+create policy "verification owner or admin read" on public.verification_requests for select using (
+  submitted_by=auth.uid()
+  or exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='ADMIN')
+);
+create policy "verification owner submit" on public.verification_requests for insert with check (submitted_by=auth.uid());
+create policy "verification admin update" on public.verification_requests for update using (
+  exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='ADMIN')
+);
 
 create policy "shipment parties read" on public.shipments for select using (
   public.is_org_member(shipper_organization_id)
