@@ -15,7 +15,9 @@ Live loads, Capacity Board data, Public Profiles, and interactions require authe
 
 ## Current Audience
 
-The initial Business audience is artisans, farmers, producers, and small manufacturers that move cartons, pallets, quarter-truck, half-truck, or full-truck freight without maintaining a large private fleet. Authenticated product language remains neutral enough for larger enterprises.
+The initial Business audience is artisans, growers, farmers, processors, producers, distributors, and small manufacturers that move cartons, pallets, sacks, crates, quarter-truck, half-truck, or full-truck freight without maintaining a large private fleet. The public story centers production-to-market movement and the practical ability to access existing road capacity. Authenticated product language remains neutral enough for larger enterprises.
+
+This positioning is informed by Ethiopia's manufacturing policy and enterprise-development priorities, which identify manufacturing SMEs, domestic production linkages, and fair, sector-aligned transport and logistics as development needs. Loadgistic may describe that alignment but must never imply government sponsorship or endorsement. Research and source links are recorded in `docs/ETHIOPIA_MARKET_CONTEXT.md`.
 
 ## Boards
 
@@ -24,6 +26,10 @@ The initial Business audience is artisans, farmers, producers, and small manufac
 - Every Capacity Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
 - Off Duty trucks never appear on the Capacity Board.
+- Both boards support plain search and filters for route cities, FTL/PTL, and cargo configuration.
+- A provider may rank permitted loads against one of its own recorded truck routes.
+- A Business may rank permitted trucks against one of its own open load routes.
+- Matching is deliberately simple: both cities align, one city aligns, or no recorded match. It is not dispatch, assignment, distance calculation, or a guarantee.
 
 ## Fleet Truth
 
@@ -44,9 +50,11 @@ Supported cargo configurations:
 
 Generic tonnage labels are not truck identities.
 
-## Driver Capacity Home
+## Role Homes
 
-Home for a company driver or self-managed driver is the rich capacity control panel. It controls:
+Home for a self-managed driver is the rich capacity control panel. A Fleet Transporter's Home is a company management dashboard with demand, assigned work, fleet-capacity summaries, recent Tracking, and network corridor coverage. Fleet Transporters update individual truck capacity inside My Fleet.
+
+The rich truck capacity control panel controls:
 
 - On Duty or Off Duty
 - Empty or Partial cargo space
@@ -91,7 +99,9 @@ Operational proof and temporary load-size proof are separate from tracking mode.
 
 ## Directory, Profiles, And Contact
 
-Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver. Transporter profiles additionally show fleet roster, corridors, service summary, and current public capacity.
+Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Transporter profiles additionally show fleet roster, corridors, service regions, service summary, and current public capacity.
+
+Fleet Transporter Home compares preferred-corridor place names with operating regions declared by Businesses in that transporter's saved network. The coverage view is schematic and text-based. It uses no exact map pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
 
 A Business may explicitly opt to display its separate public phone beside loads visible to transporters. The receiver first name and phone recorded after agreement remain private load-party data.
 

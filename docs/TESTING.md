@@ -38,9 +38,13 @@ Playwright resets `data/test-e2e.db` and starts a dedicated application server o
 
 Covered workflows:
 
+- Public homepage identifies Ethiopian producer audiences and preserves separate Business, Fleet Transporter, and Self-managed Driver application paths
 - Business opens the rich Post Load workflow
-- Provider sees marketplace demand on the Load Board but only involved loads in Tracking
-- Signed-in members browse Business and transporter profiles without private account contacts
+- Fleet Transporter lands on a management dashboard and updates an individual truck inside My Fleet
+- Self-managed Driver retains the rich capacity control panel as Home
+- Provider searches marketplace demand by truck route but sees only involved loads in Tracking
+- Business ranks Capacity Board trucks against an owned open load
+- Signed-in members browse Business and transporter profiles with declared regions but without private account contacts
 - Members and administrators open their role-specific verification workflows
 - Assigned-provider tracking enforces the load's selected mode
 - Transporter opens loads and capacity

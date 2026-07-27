@@ -42,7 +42,7 @@ Run Playwright against a reset, dedicated SQLite database and port rather than r
 
 ## ADR-011 — Driver home and temporary load proof
 
-Company and self-managed drivers land on their truck capacity control panel; fleet-wide reporting is a separate dispatcher view. The Capacity Board is read only for providers. Freight loads use the same FTL/PTL language as capacity. Load-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
+Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. The Capacity Board is read only for providers. Freight loads use the same FTL/PTL language as capacity. Load-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
 Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. Shipper or receiver Businesses may reduce it to Status timeline. Exact browser geolocation is snapped to a half-degree grid before submission and only a 40 km privacy area is retained.
 
@@ -59,3 +59,11 @@ Use one authenticated directory for Businesses, fleet transporters, and self-man
 ## ADR-014 — Evidence-derived entity verification
 
 Store verification as immutable-subject requests reviewed by administrators rather than mutable decorative booleans. A request identifies its subject type and ID, verification category, private file, submitter, state, reviewer, notes, and timestamps. Public badges are projections of approved requests. The initial categories cover identity, Business license, driver identity, vehicle ownership, and owner authorization; later document-name detail extends the catalog without changing historical records.
+
+## ADR-015 — Declared-region coverage and explainable route matching
+
+Store Business operating regions as member-entered city or regional names on the authenticated Public Profile. Compare those names with a Fleet Transporter's declared corridor endpoints to produce a schematic network coverage projection. Do not infer coordinates, exact facilities, drive distance, or serviceability from profile text.
+
+Load Board and Capacity Board matching uses normalized recorded endpoint names. Results receive only three explainable strengths: both route cities align, one city aligns, or no recorded match. Matching affects filtering and order but never visibility, assignment, pricing, or authorization.
+
+The public homepage centers Ethiopian makers, growers, processors, producers, and the small transport providers that connect them to markets. This reflects documented manufacturing and logistics priorities without claiming public-sector sponsorship.

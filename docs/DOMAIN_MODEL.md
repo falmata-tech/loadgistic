@@ -12,6 +12,7 @@
 - Fleet Transporter
 - Self-managed Driver / Owner-Operator
 - Freight corridors and truck capacity
+- Explainable load-to-truck route match
 
 ## Shared execution
 
@@ -43,6 +44,14 @@
 - Update actor and time
 - Optional timestamped capacity photo
 - Expiry
+
+## Member network
+
+- Business operating regions or cities declared on its authenticated Public Profile
+- Transporter preferred corridors declared as endpoint names
+- Saved Business-to-provider relationship
+- Fleet network coverage projection: matching declared Business places against recorded corridor endpoints
+- No inferred facility coordinate, live Business location, distance, or service guarantee
 
 ## Trust
 

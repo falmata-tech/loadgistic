@@ -3,8 +3,8 @@ id: FEAT-CAP-001
 title: Truck-first Capacity Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Company and self-managed drivers use a truck-level control panel to publish duty state, Empty or Partial cargo space, accepted load sizes, general current area, planned movement, contract-lane openness, visibility, and optional timestamped proof; each visible truck stands alone on the Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
-contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, Expiry]
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, planned movement, contract-lane openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
+contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, Expiry]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, expires_at]
 rollout: Preserve minimal capacity semantics and validate public expiry filtering before release.
 ---
@@ -69,12 +69,32 @@ Then the driver explicitly chooses FTL, PTL, or Both\
 And the driver chooses Direct only or Open to multi-stop\
 And both acceptance policies are displayed independently from cargo-space status.
 
-### Scenario: the driver home prioritizes live capacity controls
+### Scenario: self-managed driver Home prioritizes live capacity controls
 
-Given a company or self-managed driver signs in or opens Home\
+Given a self-managed driver signs in or opens Home\
 When the workspace loads\
 Then their truck capacity control panel is the first operational view\
-And fleet-wide reporting remains a separate destination for fleet staff.
+And they do not have to open a general dashboard before updating their truck.
+
+### Scenario: fleet transporter Home remains a management dashboard
+
+Given a fleet transporter manages multiple active vehicles\
+When they sign in or open Home\
+Then they see company-wide load, capacity, fleet, and workflow summaries\
+And truck capacity controls remain inside Fleet\
+And selecting a truck in Fleet opens the update controls for that truck.
+
+### Scenario: Capacity Board supports route-aware discovery
+
+Given an authenticated member opens the Capacity Board\
+When they search by text, route cities, cargo configuration, capacity status, or accepted load type\
+Then only trucks satisfying every supplied filter are displayed\
+And clearing the filters restores all capacity permitted by visibility policy.
+
+Given a Business chooses one of its own open load routes\
+When Capacity Board results are displayed\
+Then trucks with both route endpoints aligned are ranked before one-endpoint and unmatched trucks\
+And each result explains its route-match strength without claiming dispatch suitability or availability beyond the recorded capacity.
 
 ### Scenario: a general location update protects precise movement
 

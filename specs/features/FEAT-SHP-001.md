@@ -4,7 +4,7 @@ title: B2B shipment creation and execution
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
 behavior: Authorized Business actors create road-freight loads, transporters discover or accept permitted work through the Load Board, only shipment parties see records in Tracking, and explicit domain transitions govern execution.
-contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, EtbAmount, StatusTransition, BusinessParticipantReview]
+contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
@@ -81,6 +81,18 @@ Given a fleet transporter or self-managed driver\
 When they browse the Load Board\
 Then only open, directed, or saved-partner records permitted by visibility policy appear\
 And internal notes and competing interest remain hidden.
+
+### Scenario: Load Board supports truck-aware discovery
+
+Given a fleet transporter or self-managed driver opens the Load Board\
+When they search by text, route cities, cargo configuration, load type, or visibility mode\
+Then only loads satisfying every supplied filter are displayed\
+And clearing the filters restores all loads permitted by visibility policy.
+
+Given a provider chooses one of its own trucks with a current planned route\
+When Load Board results are displayed\
+Then loads with both route endpoints aligned are ranked before one-endpoint and unmatched loads\
+And each result explains its route-match strength without claiming that the truck is assigned.
 
 ### Scenario: Tracking contains only involved loads
 

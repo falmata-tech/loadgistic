@@ -3,8 +3,8 @@ id: FEAT-PRV-001
 title: Authenticated Business and Transporter Directory
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001]
 problem: Signed-in members need one trustworthy directory for confirming Businesses, fleet transporters, and self-managed drivers without exposing account credentials or marketplace data anonymously.
-behavior: Authenticated Public Profiles expose permitted organization identity, explicit public contact information, verification state, and participant ratings; transporter profiles additionally expose services, corridors, authoritative active-truck roster, truck verification, and current capacity.
-contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, ProfileRatingSummary]
+behavior: Authenticated Public Profiles expose permitted organization identity, explicit public contact information, declared operating regions, verification state, and participant ratings; transporter profiles additionally expose services, corridors, authoritative active-truck roster, truck verification, and current capacity. Fleet dashboards compare saved Business regions with declared provider corridors using a non-geographic coverage view.
+contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, OperatingRegion, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, NetworkCoverageProjection, ProfileRatingSummary]
 observability: [company_update_audit, route_update_audit, request_outcome]
 rollout: Review every newly public field for authorization, accuracy, and privacy before release.
 ---
@@ -36,7 +36,23 @@ Then only their own profile changes and an audit record is created.
 Given an authenticated Business account has a basic company profile\
 When another logged-in user browses the directory or selects that Business as a load participant\
 Then its Public Profile can be opened to confirm the Business\
+And its declared city and operating regions are shown to help transporters assess corridor relevance\
 And transporter-only fleet and capacity sections are absent.
+
+### Scenario: Business maintains declared operating regions
+
+Given an authenticated Business edits its Public Profile\
+When it saves one or more operating regions or cities\
+Then those member-entered locations are shown on its authenticated profile and directory card\
+And no exact facility coordinate or inferred live location is created.
+
+### Scenario: fleet dashboard compares network coverage
+
+Given a fleet transporter has saved Business relationships and declared preferred corridors\
+When the transporter opens Home\
+Then a visual coverage panel lists the related Businesses and their declared operating regions\
+And it identifies exact endpoint, corridor-area, or no recorded match from normalized member-entered place names\
+And it does not render an exact map pin or imply that an unmatched Business cannot be served.
 
 ### Scenario: Business controls load-phone visibility
 

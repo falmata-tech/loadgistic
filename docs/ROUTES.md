@@ -2,7 +2,7 @@
 
 ## Public
 
-- `/` — B2B platform homepage
+- `/` — producer- and transporter-focused Ethiopia B2B road-freight homepage
 - `/apply` — business/provider application
 - `/login` — direct login
 - `/companies` — authenticated Business and Transporter Directory
@@ -16,9 +16,9 @@
 - `/app/shipments/new` — rich Post Load workflow
 - `/app/shipments/[id]`
 - `/app/providers` — Business and Transporter Directory
-- `/app/loads`
-- `/app/capacity`
-- `/app/fleet`
+- `/app/loads` — searchable Load Board with optional owned-truck route ranking
+- `/app/capacity` — searchable Capacity Board with optional owned-load route ranking
+- `/app/fleet` — fleet roster and per-truck capacity controls for Fleet Transporters
 - `/app/company-page` — Public Profile editor
 - `/app/verification` — owned entity and truck verification
 - `/app/more`
