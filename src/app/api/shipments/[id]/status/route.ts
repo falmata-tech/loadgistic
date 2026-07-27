@@ -10,7 +10,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const form = await request.formData();
   try {
-    transitionShipment(user,id,text(form,'nextStatus'),text(form,'note'));
+    transitionShipment(user,id,text(form,'nextStatus'),text(form,'note'),{locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')});
     return redirectWith(request,`/app/shipments/${id}`,'success','Shipment status updated.');
   } catch (error) {
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));

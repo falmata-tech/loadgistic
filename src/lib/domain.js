@@ -2,13 +2,11 @@ export const USER_ROLES = Object.freeze({
   ADMIN: 'ADMIN',
   SHIPPER: 'SHIPPER',
   RECEIVER: 'RECEIVER',
-  PARCEL: 'PARCEL',
   TRANSPORTER: 'TRANSPORTER',
   DRIVER: 'DRIVER'
 });
 
 export const SERVICE_MODES = Object.freeze({
-  PARCEL: 'PARCEL',
   FREIGHT: 'FREIGHT'
 });
 
@@ -27,22 +25,7 @@ export const PRICE_MODES = Object.freeze({
 export const CAPACITY_STATUSES = Object.freeze({
   EMPTY: 'EMPTY',
   PARTIAL: 'PARTIAL',
-  FULL: 'FULL'
-});
-
-export const PARCEL_TRANSITIONS = Object.freeze({
-  NEW: ['CONTACTED', 'CANCELLED'],
-  CONTACTED: ['COLLECTED', 'ON_HOLD', 'CANCELLED'],
-  COLLECTED: ['IN_ROUTE', 'ISSUE', 'CANCELLED'],
-  IN_ROUTE: ['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY', 'ISSUE', 'ON_HOLD'],
-  READY_FOR_PICKUP: ['COMPLETED', 'RETURNING', 'ISSUE'],
-  OUT_FOR_DELIVERY: ['COMPLETED', 'RETURNING', 'ISSUE'],
-  ON_HOLD: ['CONTACTED', 'COLLECTED', 'IN_ROUTE', 'CANCELLED'],
-  ISSUE: ['ON_HOLD', 'RETURNING', 'CANCELLED'],
-  RETURNING: ['RETURNED'],
-  RETURNED: [],
-  COMPLETED: [],
-  CANCELLED: []
+  OFF_DUTY: 'OFF_DUTY'
 });
 
 export const FREIGHT_TRANSITIONS = Object.freeze({
@@ -90,7 +73,7 @@ export function validatePriceMode({ priceMode, priceEtb, targetPriceEtb }) {
 export function validateCapacity(status, availablePercent) {
   if (!Object.values(CAPACITY_STATUSES).includes(status)) throw new Error('INVALID_CAPACITY_STATUS');
   if (status === CAPACITY_STATUSES.EMPTY) return 100;
-  if (status === CAPACITY_STATUSES.FULL) return 0;
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return 0;
   const percentage = Number(availablePercent);
   if (!Number.isInteger(percentage) || percentage < 1 || percentage > 99) {
     throw new Error('CAPACITY_PERCENT_REQUIRED');
@@ -98,9 +81,23 @@ export function validateCapacity(status, availablePercent) {
   return percentage;
 }
 
+export function validateAcceptedLoads(status, acceptedLoads) {
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return { acceptsFullLoad: false, acceptsPartialLoad: false };
+  if (acceptedLoads === 'FTL') return { acceptsFullLoad: true, acceptsPartialLoad: false };
+  if (acceptedLoads === 'PTL') return { acceptsFullLoad: false, acceptsPartialLoad: true };
+  if (acceptedLoads === 'BOTH') return { acceptsFullLoad: true, acceptsPartialLoad: true };
+  throw new Error('ACCEPTED_LOADS_REQUIRED');
+}
+
+export function validateFreightLoadType(serviceMode, loadType) {
+  if (serviceMode !== SERVICE_MODES.FREIGHT) throw new Error('INVALID_SERVICE_MODE');
+  if (!['FTL','PTL'].includes(loadType)) throw new Error('FREIGHT_LOAD_TYPE_REQUIRED');
+  return loadType;
+}
+
 export function canTransition(serviceMode, currentStatus, nextStatus) {
-  const transitions = serviceMode === SERVICE_MODES.PARCEL ? PARCEL_TRANSITIONS : FREIGHT_TRANSITIONS;
-  return Boolean(transitions[currentStatus]?.includes(nextStatus));
+  if (serviceMode !== SERVICE_MODES.FREIGHT) return false;
+  return Boolean(FREIGHT_TRANSITIONS[currentStatus]?.includes(nextStatus));
 }
 
 export function assertTransition(serviceMode, currentStatus, nextStatus) {
@@ -113,8 +110,8 @@ export function assertTransition(serviceMode, currentStatus, nextStatus) {
 }
 
 export function nextStatuses(serviceMode, currentStatus) {
-  const transitions = serviceMode === SERVICE_MODES.PARCEL ? PARCEL_TRANSITIONS : FREIGHT_TRANSITIONS;
-  return transitions[currentStatus] || [];
+  if (serviceMode !== SERVICE_MODES.FREIGHT) return [];
+  return FREIGHT_TRANSITIONS[currentStatus] || [];
 }
 
 export function capacityFreshness(updatedAt, expiresAt, freshHours = 12) {
@@ -128,20 +125,16 @@ export function capacityFreshness(updatedAt, expiresAt, freshHours = 12) {
 
 export function capacityLabel(status, percent) {
   if (status === CAPACITY_STATUSES.EMPTY) return 'Empty · 100% available';
-  if (status === CAPACITY_STATUSES.FULL) return 'Full · Not currently available';
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return 'Off duty · Not shown';
   return `Partial · ${percent}% available`;
 }
 
 export function roleCanCreateShipment(role) {
-  return role === USER_ROLES.SHIPPER || role === USER_ROLES.RECEIVER || role === USER_ROLES.ADMIN;
+  return role === USER_ROLES.SHIPPER || role === USER_ROLES.RECEIVER;
 }
 
 export function roleCanPublishCapacity(role) {
   return role === USER_ROLES.TRANSPORTER || role === USER_ROLES.DRIVER || role === USER_ROLES.ADMIN;
-}
-
-export function roleCanOperateParcel(role) {
-  return role === USER_ROLES.PARCEL || role === USER_ROLES.ADMIN;
 }
 
 export function roleCanBrowseLoads(role) {

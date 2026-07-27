@@ -16,43 +16,120 @@ test('login keeps local fixture credentials out of the public page', async ({ pa
   await expect(page.getByText('Loadgistic123!', { exact: false })).toHaveCount(0);
 });
 
+test('PWA manifest and service worker are active', async ({ page, request }: { page: any; request: any }) => {
+  const manifestResponse = await request.get('/manifest.webmanifest');
+  expect(manifestResponse.ok()).toBeTruthy();
+  const manifest = await manifestResponse.json();
+  expect(manifest.display).toBe('standalone');
+  expect(manifest.start_url).toBe('/app/home');
+  await page.goto('/login');
+  const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+  expect(scope).toContain('/');
+});
+
+test('anonymous users cannot browse transporter company information', async ({ page }: { page: any }) => {
+  await page.goto('/companies');
+  await expect(page).toHaveURL(/\/login\?error=Please\+log\+in/);
+  await expect(page.getByText('BlueLine Transport')).toHaveCount(0);
+  await page.goto('/companies/blueline-transport');
+  await expect(page).toHaveURL(/\/login\?error=Please\+log\+in/);
+  await expect(page.getByText('Truck 01')).toHaveCount(0);
+});
+
 test('authenticated company browsing preserves the session and selected provider', async ({ page }: { page: any }) => {
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/providers');
-  await page.getByRole('link', { name: 'View company' }).first().click();
+  await page.getByRole('link', { name: 'View Public Profile' }).first().click();
   await expect(page.getByTestId('public-session-action')).toHaveText('Workspace');
   await expect(page.getByRole('link', { name: 'Login' })).toHaveCount(0);
   await page.getByRole('link', { name: 'Send business request' }).click();
   await expect(page).toHaveURL(/\/app\/shipments\/new\?provider=/);
-  await expect(page.getByRole('combobox', { name: 'Selected provider' })).not.toHaveValue('');
+  await expect(page.getByRole('combobox', { name: 'Selected transporter' })).not.toHaveValue('');
   await page.goto('/app/providers?type=DRIVER');
-  await page.getByRole('link', { name: 'View company' }).click();
+  await page.getByRole('link', { name: 'View Public Profile' }).click();
   await page.getByRole('link', { name: 'Send business request' }).click();
-  await expect(page.getByRole('combobox', { name: 'Selected provider' })).toHaveValue('profile:provider-driver');
+  await expect(page.getByRole('combobox', { name: 'Selected transporter' })).toHaveValue('profile:provider-driver');
   await page.goto('/login');
   await expect(page).toHaveURL(/\/app\/home/);
 });
 
 test('shipper can open new shipment workflow', async ({ page }: { page: any }) => {
   await login(page, 'shipper@loadgistic.local');
-  await page.getByRole('link', { name: /Create shipment/i }).click();
-  await expect(page.getByRole('heading', { name: 'New B2B shipment' })).toBeVisible();
+  await page.getByRole('link', { name: /Post a load/i }).click();
+  await expect(page.getByRole('heading', { name: 'New freight load' })).toBeVisible();
+  await expect(page.getByText('Cargo configuration (optional)', { exact: true })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /FTL/i })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /PTL/i })).toBeVisible();
+  await expect(page.getByLabel('Tracking required after assignment')).toHaveValue('STATUS_ONLY');
+  await expect(page.getByLabel('Package count')).toHaveCount(0);
 });
 
-test('parcel operator can use manual code lookup', async ({ page }: { page: any }) => {
-  await login(page, 'parcel@loadgistic.local');
-  await page.goto('/app/shipments');
-  await page.getByPlaceholder(/Enter shipment code/i).fill('LGX-P1001');
-  await page.getByRole('button', { name: 'Look up' }).click();
-  await expect(page.getByText('LGX-P1001')).toBeVisible();
+test('mobile workspace menu exposes secondary business pages', async ({ page }: { page: any }) => {
+  test.skip((page.viewportSize()?.width || 1000) >= 980, 'Mobile navigation audit');
+  await login(page, 'shipper@loadgistic.local');
+  await page.getByText('Menu', { exact: true }).click();
+  await expect(page.getByRole('navigation', { name: 'All workspace navigation' }).getByRole('link', { name: 'Business Profile' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'All workspace navigation' }).getByRole('link', { name: 'Shipments', exact: true })).toBeVisible();
 });
 
-test('transporter sees load and capacity pages', async ({ page }: { page: any }) => {
+test('application presents one business category and two transporter categories', async ({ page }: { page: any }) => {
+  await page.goto('/apply');
+  const accountType = page.getByLabel('Account type');
+  await expect(accountType.locator('option')).toHaveText([
+    'Business',
+    'Self-managed Driver / Owner-Operator',
+    'Fleet Transporter'
+  ]);
+  await expect(page.getByText('Business receiving shipments')).toHaveCount(0);
+});
+
+test('transporter lands on rich driver capacity home and Capacity Board is read only', async ({ page }: { page: any }) => {
   await login(page, 'transporter@loadgistic.local');
+  await expect(page.getByRole('heading', { name: 'Driver capacity' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'On Duty' })).toBeChecked();
+  await expect(page.getByRole('heading', { name: 'Loads you will accept' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'Both' })).toBeVisible();
+  await expect(page.getByLabel('Current general area')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Use device location|Refresh area/ })).toBeVisible();
+  await expect(page.getByText('Capacity proof', { exact: true })).toBeVisible();
   await page.goto('/app/loads');
-  await expect(page.getByRole('heading', { name: 'Find B2B loads' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Load Board' })).toBeVisible();
   await page.goto('/app/capacity');
-  await expect(page.getByRole('heading', { name: 'Truck capacity' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Capacity Board' })).toBeVisible();
+  await expect(page.getByText(/read only for transporters and drivers/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: /view transporter/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /interest|contact/i })).toHaveCount(0);
+});
+
+test('Business sees truck-first capacity detail and the full fleet roster', async ({ page }: { page: any }) => {
+  await login(page, 'shipper@loadgistic.local');
+  await page.goto('/app/capacity');
+  await expect(page.getByRole('link', { name: 'View truck details' })).toHaveCount(3);
+  await page.getByRole('link', { name: 'View truck details' }).first().click();
+  await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View Public Profile' })).toBeVisible();
+  await page.goto('/companies/blueline-transport');
+  await expect(page.getByText(/2 active trucks registered/)).toBeVisible();
+  await expect(page.getByText('Isuzu · FSR').first()).toBeVisible();
+  await expect(page.getByText('Sinotruk · HOWO TX')).toBeVisible();
+});
+
+test('assigned load shows enforced approximate tracking and a real authenticated timeline', async ({ page }: { page: any }) => {
+  await login(page, 'transporter@loadgistic.local');
+  await page.goto('/app/shipments/shp-freight-active');
+  await expect(page.getByText('Location + status', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Current general area')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Use device location/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Record tracking update' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Interested in this load?' })).toHaveCount(0);
+  const trackingHref = await page.getByRole('link', { name: 'Open tracking view' }).getAttribute('href');
+  expect(trackingHref).toBeTruthy();
+  await page.goto(trackingHref!);
+  await expect(page).toHaveURL(/\/track\//);
+  await expect(page.getByText('Approximate location + status', { exact: true })).toBeVisible();
+  await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();
+  await expect(page.getByText('Around Addis Ababa').first()).toBeVisible();
+  await expect(page.locator('.timeline li')).toHaveCount(4);
 });
 
 test('browse-only provider cannot see party controls or unrelated saved loads', async ({ page }: { page: any }) => {

@@ -1,11 +1,20 @@
 {
   "name": "Loadgistic",
   "short_name": "Loadgistic",
-  "description": "B2B logistics for Ethiopian enterprises and logistics providers.",
+  "description": "Road freight capacity and load management for Ethiopian businesses and transporters.",
+  "id": "/app/home",
   "start_url": "/app/home",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#f6f8fb",
   "theme_color": "#1769e0",
+  "categories": ["business", "productivity", "navigation"],
+  "shortcuts": [
+    { "name": "Update capacity", "short_name": "Capacity", "url": "/app/home", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Load Board", "short_name": "Loads", "url": "/app/loads", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+  ],
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]

@@ -4,13 +4,13 @@
 
 create extension if not exists pgcrypto;
 
-create type public.user_role as enum ('ADMIN','SHIPPER','RECEIVER','PARCEL','TRANSPORTER','DRIVER');
-create type public.organization_type as enum ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER','PARCEL_OPERATOR','TRANSPORT_COMPANY');
-create type public.service_mode as enum ('PARCEL','FREIGHT');
+create type public.user_role as enum ('ADMIN','SHIPPER','RECEIVER','TRANSPORTER','DRIVER');
+create type public.organization_type as enum ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER','TRANSPORT_COMPANY');
+create type public.service_mode as enum ('FREIGHT');
 create type public.distribution_mode as enum ('DIRECT_TO_PROVIDER','SAVED_PARTNERS','OPEN_MARKET');
 create type public.price_mode as enum ('FIXED_PRICE','QUOTE_REQUESTED','TARGET_PRICE');
-create type public.tracking_mode as enum ('NONE','STATUS_ONLY','LOCATION_AND_PROOF');
-create type public.capacity_status as enum ('EMPTY','PARTIAL','FULL');
+create type public.tracking_mode as enum ('STATUS_ONLY','LOCATION_AND_STATUS');
+create type public.capacity_status as enum ('EMPTY','PARTIAL','OFF_DUTY');
 create type public.capacity_visibility as enum ('PRIVATE','SAVED_PARTNERS','DIRECT_TO_SELECTED_BUSINESS','OPEN');
 
 create table public.profiles (
@@ -80,42 +80,15 @@ create table public.company_pages (
   )
 );
 
-create table public.company_locations (
-  id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
-  name text not null,
-  city text not null,
-  details text,
-  phone text,
-  accepts_dropoff boolean not null default false,
-  receiver_pickup boolean not null default false,
-  supports_transfer boolean not null default false,
-  direct_delivery boolean not null default false,
-  business_hours text,
-  active boolean not null default true
-);
-
-create table public.parcel_routes (
-  id uuid primary key default gen_random_uuid(),
-  organization_id uuid not null references public.organizations(id) on delete cascade,
-  origin_location_id uuid not null references public.company_locations(id),
-  destination_location_id uuid not null references public.company_locations(id),
-  service_days text,
-  estimated_time text,
-  branch_dropoff boolean not null default false,
-  receiver_pickup boolean not null default false,
-  direct_delivery boolean not null default false,
-  public_visibility boolean not null default true,
-  active boolean not null default true,
-  check(origin_location_id <> destination_location_id)
-);
-
 create table public.vehicles (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references public.organizations(id) on delete cascade,
   provider_profile_id uuid references public.provider_profiles(id) on delete cascade,
   label text not null,
   category text not null,
+  make text,
+  model text,
+  cargo_configuration text,
   plate text,
   active boolean not null default true,
   constraint vehicle_owner_check check (
@@ -144,11 +117,13 @@ create table public.shipments (
   estimated_weight numeric,
   vehicle_category text,
   load_type text,
+  receiver_first_name text,
+  receiver_phone text,
   pickup_date date not null,
   delivery_date date,
   commercial_status text not null,
   operational_status text not null,
-  tracking_mode public.tracking_mode not null default 'NONE',
+  tracking_mode public.tracking_mode not null default 'STATUS_ONLY',
   tracking_token text unique,
   created_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now(),
@@ -161,6 +136,11 @@ create table public.shipment_events (
   status text not null,
   event_type text not null,
   note text,
+  location_area text,
+  location_lat numeric,
+  location_lng numeric,
+  location_precision_km integer,
+  location_source text,
   created_by uuid not null references public.profiles(id),
   public boolean not null default true,
   created_at timestamptz not null default now()
@@ -194,6 +174,17 @@ create table public.capacity_updates (
   next_available text,
   visibility public.capacity_visibility not null,
   photo_storage_path text,
+  location_area text,
+  location_updated_at timestamptz,
+  location_lat numeric,
+  location_lng numeric,
+  location_precision_km integer,
+  location_source text,
+  accepts_full_load boolean not null default true,
+  accepts_partial_load boolean not null default false,
+  open_to_contract_lanes boolean not null default false,
+  accepts_multi_stop boolean not null default false,
+  proof_recorded_at timestamptz,
   updated_by uuid not null references public.profiles(id),
   updated_at timestamptz not null default now(),
   expires_at timestamptz not null,
@@ -203,7 +194,7 @@ create table public.capacity_updates (
   ),
   constraint capacity_percentage_check check (
     (status = 'EMPTY' and available_percent = 100)
-    or (status = 'FULL' and available_percent = 0)
+    or (status = 'OFF_DUTY' and available_percent = 0)
     or (status = 'PARTIAL' and available_percent between 1 and 99)
   )
 );
@@ -242,8 +233,6 @@ alter table public.organizations enable row level security;
 alter table public.organization_members enable row level security;
 alter table public.provider_profiles enable row level security;
 alter table public.company_pages enable row level security;
-alter table public.company_locations enable row level security;
-alter table public.parcel_routes enable row level security;
 alter table public.vehicles enable row level security;
 alter table public.shipments enable row level security;
 alter table public.shipment_events enable row level security;
@@ -260,11 +249,6 @@ create policy "organization members read membership" on public.organization_memb
 
 create policy "public company pages read" on public.company_pages for select using (published = true or (organization_id is not null and public.is_org_member(organization_id)) or provider_profile_id in (select id from public.provider_profiles where user_id = auth.uid()));
 create policy "members update company page" on public.company_pages for update using ((organization_id is not null and public.is_org_member(organization_id)) or provider_profile_id in (select id from public.provider_profiles where user_id = auth.uid()));
-
-create policy "public locations read" on public.company_locations for select using (active = true or public.is_org_member(organization_id));
-create policy "members manage locations" on public.company_locations for all using (public.is_org_member(organization_id)) with check (public.is_org_member(organization_id));
-create policy "public parcel routes read" on public.parcel_routes for select using ((active and public_visibility) or public.is_org_member(organization_id));
-create policy "members manage parcel routes" on public.parcel_routes for all using (public.is_org_member(organization_id)) with check (public.is_org_member(organization_id));
 
 create policy "vehicle owner read" on public.vehicles for select using ((organization_id is not null and public.is_org_member(organization_id)) or provider_profile_id in (select id from public.provider_profiles where user_id = auth.uid()));
 create policy "vehicle owner manage" on public.vehicles for all using ((organization_id is not null and public.is_org_member(organization_id)) or provider_profile_id in (select id from public.provider_profiles where user_id = auth.uid()));

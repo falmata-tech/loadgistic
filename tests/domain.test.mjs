@@ -1,14 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validatePriceMode, canTransition, capacityFreshness, formatEtb } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
- assert.equal(validateCapacity('FULL',''),0);
+ assert.equal(validateCapacity('OFF_DUTY',''),0);
  assert.equal(validateCapacity('PARTIAL','40'),40);
+ assert.throws(()=>validateCapacity('FULL',''),/INVALID_CAPACITY_STATUS/);
  assert.throws(()=>validateCapacity('PARTIAL','0'),/CAPACITY_PERCENT_REQUIRED/);
  assert.throws(()=>validateCapacity('PARTIAL','100'),/CAPACITY_PERCENT_REQUIRED/);
+});
+
+test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
+ assert.deepEqual(validateAcceptedLoads('EMPTY','FTL'),{acceptsFullLoad:true,acceptsPartialLoad:false});
+ assert.deepEqual(validateAcceptedLoads('EMPTY','PTL'),{acceptsFullLoad:false,acceptsPartialLoad:true});
+ assert.deepEqual(validateAcceptedLoads('EMPTY','BOTH'),{acceptsFullLoad:true,acceptsPartialLoad:true});
+ assert.deepEqual(validateAcceptedLoads('OFF_DUTY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
+ assert.throws(()=>validateAcceptedLoads('PARTIAL',''),/ACCEPTED_LOADS_REQUIRED/);
+});
+
+test('road freight requires the same FTL or PTL language',()=>{
+ assert.equal(validateFreightLoadType('FREIGHT','FTL'),'FTL');
+ assert.equal(validateFreightLoadType('FREIGHT','PTL'),'PTL');
+ assert.throws(()=>validateFreightLoadType('UNSUPPORTED',''),/INVALID_SERVICE_MODE/);
+ assert.throws(()=>validateFreightLoadType('FREIGHT','FULL_LOAD'),/FREIGHT_LOAD_TYPE_REQUIRED/);
 });
 
 test('ETB price modes support fixed, target, and quote',()=>{
@@ -18,17 +34,17 @@ test('ETB price modes support fixed, target, and quote',()=>{
  assert.equal(formatEtb(3500000),'ETB 35,000');
 });
 
-test('parcel status transitions preserve simple workflow',()=>{
- assert.equal(canTransition('PARCEL','NEW','CONTACTED'),true);
- assert.equal(canTransition('PARCEL','NEW','COMPLETED'),false);
- assert.equal(canTransition('PARCEL','IN_ROUTE','READY_FOR_PICKUP'),true);
- assert.equal(canTransition('PARCEL','IN_ROUTE','OUT_FOR_DELIVERY'),true);
-});
-
 test('freight status transitions preserve agreement before movement',()=>{
  assert.equal(canTransition('FREIGHT','POSTED','CONTACTED'),true);
  assert.equal(canTransition('FREIGHT','POSTED','IN_TRANSIT'),false);
  assert.equal(canTransition('FREIGHT','ASSIGNED','IN_TRANSIT'),true);
+});
+
+test('only business workspace roles can originate shipment demand',()=>{
+ assert.equal(roleCanCreateShipment('SHIPPER'),true);
+ assert.equal(roleCanCreateShipment('RECEIVER'),true);
+ assert.equal(roleCanCreateShipment('ADMIN'),false);
+ assert.equal(roleCanCreateShipment('TRANSPORTER'),false);
 });
 
 test('capacity freshness labels expired data honestly',()=>{
