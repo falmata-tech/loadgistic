@@ -25,6 +25,8 @@
 - Proof Files
 - Temporary Load Proof Request and recipient grant
 - Party-only receiver first name and phone, recorded after agreement and before assignment
+- Business Review tied to one Completed load, one reviewing Business, and the other Business participant
+- Tracking workspace projection that contains only records involving the signed-in workspace
 
 ## Capacity
 
@@ -45,8 +47,10 @@
 ## Trust
 
 - Business Application
-- Verification state
-- Provider Public Profile or private Business Profile
+- Verification Request for an owned organization, provider profile, driver, or vehicle
+- Evidence-derived gray or blue verification badge
+- Authenticated Business and Transporter Public Profile
+- Separate private account and explicit public contact fields
 - Business-designated load phone with explicit marketplace opt in
 - Audit Log
 - Subscription and Payment Proof

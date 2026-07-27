@@ -7,7 +7,7 @@
 - Signed local authentication
 - Role-aware navigation and workspaces
 - Applications and admin approval
-- Authenticated provider Public Profiles and transporter directory
+- Authenticated Business and Transporter Directory with Public Profiles
 - B2B shipment creation
 - Road-freight workflows
 - Load discovery and provider interest
@@ -20,6 +20,11 @@
 - Separate city-pair route controls across freight and capacity forms
 - Public member-marketplace examples that reveal no live marketplace records
 - Enforceable Status timeline or Approximate location + status tracking, with real in-between events
+- Party-only Tracking separated from Load Board discovery
+- Rich icon-led Post Load composer with operational deadline labels
+- Completed-load shipper/receiver Business reviews and profile rating summaries
+- Entity and truck verification submissions, private documents, admin review, and evidence-derived badges
+- Separate private account and explicit Public Profile phone/email fields
 - Browser-obscured device areas with a 40 km privacy zone for capacity and assigned-load tracking
 - Tracking and proof kept as separate contracts
 - Manual billing proof and review
@@ -43,8 +48,8 @@
 - Dedicated Playwright database and server isolation from local development data
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
-- Reusable all-role visual audit with 110 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
-- Local Playwright E2E evidence: 21 passed and one expected desktop skip for a mobile-only assertion
+- Reusable all-role visual audit with 124 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
+- Local Playwright E2E evidence: 23 passed and one expected desktop skip for a mobile-only assertion
 
 ## Requires an internet-enabled environment
 

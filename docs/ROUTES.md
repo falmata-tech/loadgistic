@@ -5,26 +5,28 @@
 - `/` — B2B platform homepage
 - `/apply` — business/provider application
 - `/login` — direct login
-- `/companies` — authenticated transporter directory
-- `/companies/[handle]` — authenticated transporter Public Profile
+- `/companies` — authenticated Business and Transporter Directory
+- `/companies/[handle]` — authenticated Business or Transporter Public Profile
 - `/track/[token]` — authenticated opaque-token tracking
 
 ## Workspace
 
 - `/app/home`
-- `/app/shipments`
-- `/app/shipments/new`
+- `/app/shipments` — party-only Tracking
+- `/app/shipments/new` — rich Post Load workflow
 - `/app/shipments/[id]`
-- `/app/providers`
+- `/app/providers` — Business and Transporter Directory
 - `/app/loads`
 - `/app/capacity`
 - `/app/fleet`
-- `/app/company-page` — Public Profile editor for providers; private Business Profile editor for Businesses
+- `/app/company-page` — Public Profile editor
+- `/app/verification` — owned entity and truck verification
 - `/app/more`
 
 ## Administration
 
 - `/admin/applications`
+- `/admin/verifications`
 - `/admin/billing`
 
 ## System

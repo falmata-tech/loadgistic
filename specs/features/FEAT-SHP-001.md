@@ -1,10 +1,10 @@
 ---
 id: FEAT-SHP-001
 title: B2B shipment creation and execution
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
-behavior: Authorized Business actors create Road Freight loads, transporters discover or accept permitted work through the Load Board, and explicit domain transitions govern execution; unsupported service modes are rejected.
-contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, FreightLoadPolicy, EtbAmount, StatusTransition]
+behavior: Authorized Business actors create road-freight loads, transporters discover or accept permitted work through the Load Board, only shipment parties see records in Tracking, and explicit domain transitions govern execution.
+contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
@@ -23,8 +23,15 @@ And pricing is Fixed ETB, Target ETB, or Quote Requested.
 Given an authenticated Business user opens shipment creation\
 When the form is displayed\
 Then Road Freight is the only service mode\
-And non-freight provider selection is absent\
+And no redundant service selector or service label is displayed\
 And the selected pricing mode shows only its applicable ETB amount field.
+
+### Scenario: freight deadlines use operational language
+
+Given a Business creates or reviews a load\
+When pickup and delivery deadlines are displayed\
+Then they are labeled Pick up before and Drop off before\
+And the saved values remain the canonical pickup and delivery deadlines.
 
 ### Scenario: unsupported service creation is rejected at the service boundary
 
@@ -75,6 +82,17 @@ When they browse the Load Board\
 Then only open, directed, or saved-partner records permitted by visibility policy appear\
 And internal notes and competing interest remain hidden.
 
+### Scenario: Tracking contains only involved loads
+
+Given a fleet transporter or self-managed driver can discover an unassigned posted load\
+When they open Tracking\
+Then that unrelated posted load is absent\
+And it remains available on the Load Board according to discovery visibility.
+
+Given the transporter organization, self-managed driver, shipper Business, or receiver Business is a party to a load\
+When that actor opens Tracking\
+Then the load is listed regardless of whether it is awaiting agreement, active, or completed.
+
 ### Scenario: invalid transition
 
 Given a shipment in a known state\
@@ -101,6 +119,17 @@ Given the addressed provider has a direct request in Sent state\
 When it accepts the request once\
 Then the request becomes Agreed\
 And any later acceptance attempt is rejected without changing state.
+
+### Scenario: shipper and receiver review each other
+
+Given a completed load has distinct shipper and receiver Business organizations\
+When an authenticated member of either Business submits one rating from one to five with an optional note\
+Then the review is attached to the completed load and the other Business\
+And it contributes to the reviewed Business profile rating.
+
+Given a user is not a shipper or receiver party, the load is not completed, or the same Business already reviewed the same counterparty for that load\
+When a review is submitted\
+Then it is rejected without creating or replacing a review.
 
 ## Contract ownership
 

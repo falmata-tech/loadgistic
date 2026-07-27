@@ -4,7 +4,7 @@ title: Local identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Approved businesses and transporters need secure workspace access while inactive, anonymous, or unauthorized accounts remain blocked from marketplace information.
 behavior: Valid active users receive a signed HTTP-only session, are routed to role-scoped pages on the current browser origin, and must be authenticated before reading company, provider, capacity, or shipment-marketplace information.
-contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, CredentialFixtureBoundary]
+contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Keep local auth demo-only; migrate to managed identity before public production launch.
 ---
@@ -59,6 +59,13 @@ Given the local database contains deterministic accounts for development and aut
 When an anonymous visitor opens the login page\
 Then credential fields are empty\
 And seeded emails and passwords are not rendered in the public response.
+
+### Scenario: account contacts remain private
+
+Given an account stores an email and optional phone for login or account administration\
+When any profile or directory view is rendered\
+Then those values are never used as public contact fallbacks\
+And public contact fields are maintained separately with explicit profile intent.
 
 ### Scenario: authenticated workspace is installable
 

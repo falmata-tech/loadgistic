@@ -38,7 +38,10 @@ Playwright resets `data/test-e2e.db` and starts a dedicated application server o
 
 Covered workflows:
 
-- Shipper opens new shipment workflow
+- Business opens the rich Post Load workflow
+- Provider sees marketplace demand on the Load Board but only involved loads in Tracking
+- Signed-in members browse Business and transporter profiles without private account contacts
+- Members and administrators open their role-specific verification workflows
 - Assigned-provider tracking enforces the load's selected mode
 - Transporter opens loads and capacity
 - Authenticated public-company navigation retains its session and preselects the requested provider

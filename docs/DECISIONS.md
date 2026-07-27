@@ -49,3 +49,13 @@ Tracking is a load-level Business choice: Status timeline or Approximate locatio
 ## ADR-012 — Visual trucks and staged contact disclosure
 
 Use one image-backed cargo-configuration catalog across freight creation, driver Home, Fleet, and Capacity instead of tonnage labels. A Business may expose one designated load phone to authenticated transporters only through an explicit opt in. Receiver first name and phone are shipment-party data entered after commercial agreement; Freight assignment is blocked until both are present.
+
+## ADR-013 — Discovery, Tracking, and authenticated directory
+
+Keep one canonical load record while separating its UI by permission and stage. The Load Board is read-only discovery plus interest; Tracking lists only shipper, receiver, assigned or directly addressed provider parties, with administrators retaining operational oversight. A discoverable posted load never appears in an unrelated provider's Tracking workspace.
+
+Use one authenticated directory for Businesses, fleet transporters, and self-managed drivers. Business profiles support participant confirmation and completed-load reputation. Private account email and phone are never public-profile fallbacks; only explicitly maintained profile contacts are displayed.
+
+## ADR-014 — Evidence-derived entity verification
+
+Store verification as immutable-subject requests reviewed by administrators rather than mutable decorative booleans. A request identifies its subject type and ID, verification category, private file, submitter, state, reviewer, notes, and timestamps. Public badges are projections of approved requests. The initial categories cover identity, Business license, driver identity, vehicle ownership, and owner authorization; later document-name detail extends the catalog without changing historical records.

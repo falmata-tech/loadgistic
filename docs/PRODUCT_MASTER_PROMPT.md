@@ -7,11 +7,11 @@ Loadgistic is an authenticated B2B road-freight network for Ethiopia.
 - **Businesses** are shippers and receivers. The same workspace may send or receive freight.
 - **Fleet Transporters** manage multiple real trucks and the people operating them.
 - **Self-managed Drivers / Owner-Operators** manage their own truck and capacity.
-- **Administrators** review applications, billing evidence, and platform activity.
+- **Administrators** review applications, billing evidence, document verification, and platform activity.
 
 Businesses currently join free to find capacity, publish freight loads, request quotes, and maintain private transporter relationships. Transporters pay for access to reviewed Business demand and the organized workflow.
 
-Live loads, Capacity Board data, transporter Public Profiles, and interactions require authentication. Business Profiles are private.
+Live loads, Capacity Board data, Public Profiles, and interactions require authentication. Every signed-in account may browse the Business and Transporter Directory.
 
 ## Current Audience
 
@@ -70,6 +70,12 @@ Saved relationships allow a Business and transporter to exchange private demand 
 
 After agreement and before assignment, receiver first name and phone are required. Those fields are visible only to shipment parties.
 
+The Load Board is provider discovery. Tracking is the post or direct-request workspace and lists only loads where the signed-in Business, transporter organization, self-managed driver, or administrator is a party. Browse permission never adds a load to Tracking.
+
+Load dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
+
+After a completed load, the shipper and receiver Businesses may rate each other once for that load. These are shipment-domain roles; both accounts remain the same Business account type. The Business that created the load remains its owner and provider-facing decision maker.
+
 ## Tracking
 
 Every load has one tracking obligation:
@@ -83,11 +89,25 @@ Assigned providers may record in-between tracking updates without inventing a st
 
 Operational proof and temporary load-size proof are separate from tracking mode.
 
-## Profiles And Contact
+## Directory, Profiles, And Contact
 
-Fleet Transporters and Self-managed Drivers have authenticated Public Profiles. The profile shows fleet roster, corridors, service summary, and designated public contact details.
+Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver. Transporter profiles additionally show fleet roster, corridors, service summary, and current public capacity.
 
-A Business may explicitly opt to display a designated phone beside loads visible to transporters. A Business Profile itself remains private.
+A Business may explicitly opt to display its separate public phone beside loads visible to transporters. The receiver first name and phone recorded after agreement remain private load-party data.
+
+The account email and account phone used for access or account administration are private fields. Public Profile email and phone are separate, explicitly maintained fields. A profile must never fall back to account contacts.
+
+## Verification
+
+Verification is evidence-based and separate from workspace approval. Every supported entity displays gray Not verified or blue Verified badges derived from administrator-reviewed requests.
+
+- Businesses: Identity and Business license
+- Fleet transporters: Identity and Business license
+- Self-managed drivers: Identity and Driver identity
+- Company drivers: Driver identity, with transporter affiliation shown separately
+- Trucks: Vehicle ownership or Owner authorization
+
+Transporters are responsible for documenting vehicle ownership or owner authorization and the identity of their drivers. Verification documents remain private to their submitting owner and administrators. The exact country- and actor-specific document catalog will expand without changing this subject-level model.
 
 ## PWA
 

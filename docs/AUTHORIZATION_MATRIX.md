@@ -4,7 +4,8 @@ This matrix defines the application-service boundary. Route handlers authenticat
 
 | Capability | Allowed actor and scope | Denial behavior |
 |---|---|---|
-| Create shipment | Active Shipper or Receiver with its organization | `FORBIDDEN`; no shipment or event |
+| Post load | Active Shipper or Receiver with its organization | `FORBIDDEN`; no load or event |
+| Read Tracking workspace | Shipper, receiver, directly addressed or assigned provider; Admin oversight | Discoverable unrelated Load Board records are excluded |
 | View shipment party data | Admin or shipment shipper, receiver, assigned provider organization, or assigned provider profile | Return no record |
 | Set receiver contact | Business that owns an Agreed shipment, or Admin; first name and phone are required | `NOT_FOUND`, `RECEIVER_CONTACT_NOT_READY`, or `RECEIVER_CONTACT_REQUIRED`; no contact update |
 | Browse open freight | Authenticated Transporter or Driver; Freight, Posted, Open Market only | Return no record |
@@ -22,7 +23,12 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Download temporary load-size proof | Owning Business, Admin, or the exact selected interested provider while the grant is active and compatible with assignment | Return no record or bytes |
 | View marketplace capacity | Authenticated Business, Transporter, Driver, or Admin; Open Empty/Partial capacity, plus saved-relationship Empty/Partial capacity for the related Business | Return no record |
 | Publish capacity | Transporter for its organization vehicle; Driver for its provider-profile vehicle; Empty/Partial may be visible, Off Duty is hidden | `FORBIDDEN` or `INVALID_VEHICLE`; no visible capacity |
-| Update profile | User with its own organization or provider profile; providers maintain a Public Profile while Businesses maintain only a private Business Profile | `FORBIDDEN`; no cross-tenant update |
+| Browse member directory/profile | Any authenticated user; profile must be published | Redirect to login or return no record |
+| Update profile | User with its own organization or provider profile; public contacts remain separate from account contacts | `FORBIDDEN`; no cross-tenant update |
+| Submit Business participant review | Shipper or receiver organization after Completed; one per direction and load | `REVIEW_NOT_ALLOWED` or `REVIEW_ALREADY_SUBMITTED`; no review |
+| Submit verification | Authenticated owner of the organization, provider profile, driver, or truck; type must apply | `FORBIDDEN` or `INVALID_VERIFICATION_TYPE`; no request |
+| Read verification document | Submitting user or Admin | Return no record or bytes |
+| Review verification | Admin only; terminal decisions are immutable | `FORBIDDEN` or `VERIFICATION_ALREADY_REVIEWED`; no badge change |
 | Review application | Admin; only non-terminal Pending/More Info application | `FORBIDDEN` or `APPLICATION_ALREADY_REVIEWED`; no provisioning |
 | Submit payment proof | User with a subscription belonging to its organization or provider profile | `SUBSCRIPTION_NOT_FOUND`; no proof |
 | Review payment proof | Admin; only non-terminal Pending/More Info proof | `FORBIDDEN` or `PAYMENT_PROOF_ALREADY_REVIEWED`; no subscription change |
@@ -30,7 +36,7 @@ This matrix defines the application-service boundary. Route handlers authenticat
 ## Default-deny rules
 
 - Public or browse visibility never implies mutation or protected-file access.
-- Anonymous visitors cannot read company pages, transporter directory, capacity, loads, or shipment marketplace information.
+- Anonymous visitors cannot read Public Profiles, the member directory, capacity, loads, or marketplace information.
 - Interest in a shipment does not make the provider an execution party.
 - Receiver first name and phone are never returned to marketplace-only viewers and are required before a Freight shipment moves from Agreed to Assigned.
 - A provider becomes an execution party only when its organization/profile is assigned on the shipment.
