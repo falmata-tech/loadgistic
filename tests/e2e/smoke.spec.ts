@@ -91,17 +91,31 @@ test('application presents one business category and two transporter categories'
   await expect(page.getByLabel('Private account phone')).toBeVisible();
 });
 
-test('transporter lands on rich driver capacity home and Capacity Board is read only', async ({ page }: { page: any }) => {
+test('homepage centers Ethiopian producers and gives each market side a direct path', async ({ page }: { page: any }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Road freight for the businesses that make Ethiopia.' })).toBeVisible();
+  await expect(page.getByText('Manufacturers', { exact: true })).toBeVisible();
+  await expect(page.getByText('Artisans', { exact: true })).toBeVisible();
+  await expect(page.getByText('Growers', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Find transport capacity/ }).first()).toHaveAttribute('href','/apply?type=ENTERPRISE_SHIPPER');
+  await expect(page.getByRole('link', { name: /Bring my fleet to demand/ })).toHaveAttribute('href','/apply?type=TRANSPORT_COMPANY');
+  await expect(page.getByRole('link', { name: /Join as owner-operator/ })).toHaveAttribute('href','/apply?type=INDEPENDENT_PROVIDER');
+});
+
+test('fleet transporter lands on a management dashboard and updates capacity in My Fleet', async ({ page }: { page: any }) => {
   await login(page, 'transporter@loadgistic.local');
-  await expect(page.getByRole('heading', { name: 'Driver capacity' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Welcome, BlueLine Transport/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Network corridor coverage' })).toBeVisible();
+  await expect(page.getByText(/location.*recorded corridors/i)).toBeVisible();
+  await expect(page.getByTestId('capacity-form')).toHaveCount(0);
+  await page.goto('/app/fleet');
+  await expect(page.getByRole('heading', { name: 'My Fleet' })).toBeVisible();
+  await expect(page.getByTestId('capacity-form')).toBeVisible();
   await expect(page.getByRole('radio', { name: 'On Duty' })).toBeChecked();
   await expect(page.getByRole('heading', { name: 'Loads you will accept' })).toBeVisible();
-  await expect(page.getByRole('radio', { name: 'Both' })).toBeVisible();
-  await expect(page.getByLabel('Current general area')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Use device location|Refresh area/ })).toBeVisible();
-  await expect(page.getByText('Capacity proof', { exact: true })).toBeVisible();
   await page.goto('/app/loads');
   await expect(page.getByRole('heading', { name: 'Load Board' })).toBeVisible();
+  await expect(page.getByLabel('Match one truck route')).toBeVisible();
   await expect(page.getByText('Beverage load to Dire Dawa')).toBeVisible();
   await page.goto('/app/shipments');
   await expect(page.getByRole('heading', { name: 'Tracking' })).toBeVisible();
@@ -114,9 +128,21 @@ test('transporter lands on rich driver capacity home and Capacity Board is read 
   await expect(page.getByRole('button', { name: /interest|contact/i })).toHaveCount(0);
 });
 
+test('self-managed driver keeps the rich capacity control panel as Home', async ({ page }: { page: any }) => {
+  await login(page, 'driver@loadgistic.local');
+  await expect(page.getByRole('heading', { name: 'My capacity' })).toBeVisible();
+  await expect(page.getByTestId('capacity-form')).toBeVisible();
+  await expect(page.getByLabel('Current general area')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Use device location|Refresh area/ })).toBeVisible();
+});
+
 test('Business sees truck-first capacity detail and the full fleet roster', async ({ page }: { page: any }) => {
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/capacity');
+  await expect(page.getByLabel('Match a posted load')).toBeVisible();
+  await page.getByLabel('Match a posted load').selectOption('shp-freight-fixed');
+  await page.getByRole('button', { name: 'Show matching trucks' }).click();
+  await expect(page.getByText('Full route match').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'View truck details' })).toHaveCount(3);
   await page.getByRole('link', { name: 'View truck details' }).first().click();
   await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();

@@ -110,6 +110,7 @@ function migrate(db) {
       about TEXT,
       services TEXT,
       corridors TEXT,
+      operating_regions TEXT,
       contact_phone TEXT,
       show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0,
       contact_email TEXT,
@@ -391,6 +392,9 @@ function migrate(db) {
     if (!vehicleColumns.has(name)) db.exec(`ALTER TABLE vehicles ADD COLUMN ${name} ${definition}`);
   }
   const companyPageColumns = new Set(db.prepare('PRAGMA table_info(company_pages)').all().map(column => column.name));
+  if (!companyPageColumns.has('operating_regions')) {
+    db.exec('ALTER TABLE company_pages ADD COLUMN operating_regions TEXT');
+  }
   if (!companyPageColumns.has('show_contact_phone_on_loads')) {
     db.exec('ALTER TABLE company_pages ADD COLUMN show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0');
   }
@@ -471,12 +475,12 @@ function seed(db) {
     .run('partner-1',orgs.shipper.id,orgs.transporter.id,null,'SAVED',iso);
 
   const insertPage = db.prepare(`INSERT INTO company_pages
-    (id,organization_id,provider_profile_id,headline,about,services,corridors,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
-  insertPage.run('page-shipper',orgs.shipper.id,null,'Business shipments across Ethiopia','Small manufacturer using trusted freight partners for B2B shipping.','FTL and PTL freight loads','Addis Ababa; Dire Dawa; Hawassa','+251 911 111 111',1,'logistics@blue-nile.local',1,iso);
-  insertPage.run('page-receiver',orgs.receiver.id,null,'Reliable receiving operations','Distribution business receiving goods from enterprise suppliers.','Business receiving; branch distribution','Hawassa; Addis Ababa','+251 911 222 222',0,'receiving@fresh-foods.local',1,iso);
-  insertPage.run('page-transporter',orgs.transporter.id,null,'Road freight for Ethiopian enterprises','Transport company serving business freight on major domestic corridors.','Full-load and shared-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Mekelle; Addis Ababa ↔ Hawassa','+251 911 444 444',0,'dispatch@blueline.local',1,iso);
-  insertPage.run('page-driver',null,'provider-driver','Independent freight capacity','Owner-operated truck available for direct and open B2B loads.','Full-load and partial-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','+251 911 234 567',0,'abebe@owneroperator.local',1,iso);
+    (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  insertPage.run('page-shipper',orgs.shipper.id,null,'Locally made goods for regional buyers','Small manufacturer using trusted freight partners for B2B shipping.','Woven home goods; packaged products','Addis Ababa; Dire Dawa; Hawassa','Addis Ababa; Adama; Dire Dawa','+251 911 111 111',1,'logistics@blue-nile.local',1,iso);
+  insertPage.run('page-receiver',orgs.receiver.id,null,'Reliable receiving operations','Distribution business receiving goods from enterprise suppliers.','Food distribution; wholesale receiving','Hawassa; Addis Ababa','Hawassa; Shashamane; Addis Ababa','+251 911 222 222',0,'receiving@fresh-foods.local',1,iso);
+  insertPage.run('page-transporter',orgs.transporter.id,null,'Road freight for Ethiopian businesses','Transport company serving business freight on major domestic corridors.','Full-load and shared-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Mekelle; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Mekelle; Hawassa','+251 911 444 444',0,'dispatch@blueline.local',1,iso);
+  insertPage.run('page-driver',null,'provider-driver','Independent freight capacity','Owner-operated truck available for direct and open B2B loads.','Full-load and partial-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Hawassa','+251 911 234 567',0,'abebe@owneroperator.local',1,iso);
 
   const vehicleInsert = db.prepare(`INSERT INTO vehicles (id,organization_id,provider_profile_id,label,category,plate,active,make,model,cargo_configuration) VALUES (?,?,?,?,?,?,?,?,?,?)`);
   vehicleInsert.run('veh-trans-1',orgs.transporter.id,null,'Truck 01','Medium Box Truck','AA-3-10001',1,'Isuzu','FSR','Medium Box Truck');

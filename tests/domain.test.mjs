@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
 import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
+import { normalizePlace, routeMatch, splitPlaces } from '../src/lib/route-matching.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
@@ -52,6 +53,14 @@ test('capacity freshness labels expired data honestly',()=>{
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now+3_600_000).toISOString(),12),'FRESH');
  assert.equal(capacityFreshness(new Date(now-13*3_600_000).toISOString(),new Date(now+3_600_000).toISOString(),12),'UPDATE_NEEDED');
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now-1).toISOString(),12),'EXPIRED');
+});
+
+test('route matching is simple, order independent, and explainable',()=>{
+ assert.deepEqual(routeMatch('Addis Ababa','Hawassa','Hawassa','Addis Ababa'),{score:2,label:'Full route match'});
+ assert.deepEqual(routeMatch('Addis Ababa','Hawassa','Addis Ababa','Dire Dawa'),{score:1,label:'One city aligns'});
+ assert.deepEqual(routeMatch('Jimma','Nekemte','Addis Ababa','Dire Dawa'),{score:0,label:'No route match'});
+ assert.equal(normalizePlace('  Addis-Ababa '),'addis ababa');
+ assert.deepEqual(splitPlaces('Addis Ababa ↔ Hawassa; Dire Dawa'),['addis ababa','hawassa','dire dawa']);
 });
 
 test('mutation origin guard accepts browser-confirmed same-origin proxy requests',()=>{

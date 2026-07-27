@@ -40,8 +40,9 @@ function acceptedLoadValue(current?: CapacitySnapshot | null) {
   return 'FTL';
 }
 
-export function CapacityForm({ vehicles }: { vehicles: VehicleOption[] }) {
-  const [vehicleId, setVehicleId] = React.useState(vehicles[0]?.id || '');
+export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: VehicleOption[]; initialVehicleId?: string }) {
+  const validInitialVehicleId = vehicles.some(vehicle => vehicle.id === initialVehicleId) ? initialVehicleId : vehicles[0]?.id;
+  const [vehicleId, setVehicleId] = React.useState(validInitialVehicleId || '');
   const selectedVehicle = vehicles.find(vehicle => vehicle.id === vehicleId);
   const current = selectedVehicle?.current;
   const [status, setStatus] = React.useState(current?.status || 'EMPTY');

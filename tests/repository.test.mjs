@@ -49,12 +49,39 @@ test('member directory includes Businesses and transporters with authoritative f
  assert.ok(directory.some(profile=>profile.is_business&&profile.id==='org-shipper'));
  const business=repo.getPublicCompany('blue-nile-trading');
  assert.equal(business.is_business,true);
+ assert.equal(business.operating_regions,'Addis Ababa; Adama; Dire Dawa');
  assert.equal(business.fleet_size,0);
  assert.equal(Object.hasOwn(business,'email'),false);
  assert.equal(Object.hasOwn(business,'phone'),false);
  const company=repo.getPublicCompany('blueline-transport');
  assert.equal(company.fleet_size,2);
  assert.equal(company.vehicles.length,2);
+});
+
+test('fleet dashboard compares saved Business regions with recorded corridors',()=>{
+ const transporter=repo.getUserById('user-transporter');
+ const coverage=repo.getFleetNetworkCoverage(transporter);
+ assert.ok(coverage.corridors.includes('Addis Ababa ↔ Dire Dawa'));
+ assert.equal(coverage.businesses.length,1);
+ assert.equal(coverage.businesses[0].name,'Blue Nile Trading PLC');
+ assert.ok(coverage.businesses[0].matched_places.includes('addis ababa'));
+ assert.match(coverage.businesses[0].coverage_label,/recorded corridors/);
+});
+
+test('Load and Capacity Boards filter and rank by an owned route',()=>{
+ const transporter=repo.getUserById('user-transporter');
+ const loads=repo.listLoads(transporter,'ALL',{matchCapacityId:'cap-empty'});
+ assert.ok(loads.length>1);
+ assert.equal(loads[0].route_match_score,2);
+ assert.equal(loads[0].destination,'Dire Dawa');
+ assert.ok(loads.every((load,index)=>index===0||loads[index-1].route_match_score>=load.route_match_score));
+ assert.ok(repo.listLoads(transporter,'ALL',{q:'beverage'}).every(load=>load.title.includes('Beverage')));
+
+ const shipper=repo.getUserById('user-shipper');
+ const capacity=repo.listMarketCapacity(shipper,{matchLoadId:'shp-freight-fixed'});
+ assert.equal(capacity[0].route_match_score,2);
+ assert.equal(capacity[0].destination,'Dire Dawa');
+ assert.ok(repo.listMarketCapacity(shipper,{status:'PARTIAL'}).every(truck=>truck.status==='PARTIAL'));
 });
 
 test('shipper creates quote-requested open freight load',()=>{

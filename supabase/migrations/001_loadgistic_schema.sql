@@ -74,6 +74,7 @@ create table public.company_pages (
   about text,
   services text,
   corridors text,
+  operating_regions text,
   contact_phone text,
   contact_email text,
   published boolean not null default false,
