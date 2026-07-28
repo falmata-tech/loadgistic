@@ -40,6 +40,9 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   });
   expect(executableChunkResult.status).toBe(404);
   expect(executableChunkResult.body).not.toBe('stale-runtime');
+  await page.getByRole('link', { name: 'Loadgistic home' }).click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { name: 'Road freight for the businesses that make Ethiopia.' })).toBeVisible();
 });
 
 test('anonymous users cannot browse Business or transporter profiles', async ({ page }: { page: any }) => {

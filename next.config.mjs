@@ -4,6 +4,7 @@ const scriptPolicy = process.env.NODE_ENV !== 'production'
   : "script-src 'self' 'unsafe-inline'";
 
 const nextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
   poweredByHeader: false,
   async headers() {

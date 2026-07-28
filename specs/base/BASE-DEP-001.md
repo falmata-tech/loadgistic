@@ -37,7 +37,8 @@ And application compatibility across the rollout window is documented.
 Given Playwright starts the application for a browser suite\
 When the suite initializes its runtime\
 Then it resets and uses a dedicated test database on a dedicated port\
-And it does not reuse a running development server or its business records.
+And it does not reuse a running development server or its business records\
+And its generated Next.js artifacts are isolated from both the live development server and production build output.
 
 ## Contract details
 

@@ -54,7 +54,7 @@
 - Negative authorization contract suite and browse-only E2E coverage
 - Session-aware public navigation and authenticated provider-request continuity
 - Public login credential-fixture removal and pending-applicant seed correction
-- Dedicated Playwright database and server isolation from local development data
+- Dedicated Playwright database, server, and `.next-e2e` artifact isolation from the live `.next` application
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reusable all-role visual audit with 146 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors

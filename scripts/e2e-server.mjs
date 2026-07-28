@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 
 process.env.DATABASE_PATH = './data/test-e2e.db';
+process.env.NEXT_DIST_DIR = '.next-e2e';
 const { resetDb, closeDb } = await import('../src/lib/db.js');
 resetDb();
 closeDb();

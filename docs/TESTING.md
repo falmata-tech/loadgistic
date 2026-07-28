@@ -34,7 +34,7 @@ The specification check validates required front matter, stable unique IDs, link
 npm run test:e2e
 ```
 
-Playwright resets `data/test-e2e.db` and starts a dedicated application server on port `3100`. It never reuses the development server on port `3000`, so browser scenarios cannot mutate or depend on a developer's local business records. Fixture credentials stay in the test source and local setup documentation; they are not rendered by the public login page.
+Playwright resets `data/test-e2e.db`, writes generated Next.js artifacts to `.next-e2e`, and starts a dedicated application server on port `3100`. Normal development and production builds retain the standard `.next` path, and the parent E2E runner restores Next's generated TypeScript metadata after Playwright exits. Browser scenarios therefore cannot mutate developer business records or remove generated files from the live application. Fixture credentials stay in the test source and local setup documentation; they are not rendered by the public login page.
 
 Covered workflows:
 

@@ -38,7 +38,7 @@ Treat open and saved-partner load visibility as authenticated read-only discover
 
 ## ADR-010 — Browser fixtures are isolated from development data
 
-Run Playwright against a reset, dedicated SQLite database and port rather than reusing the local development server. Local fixture credentials remain in setup documentation and test code, while public authentication pages render empty credential fields. This keeps test convenience from changing public UI or developer business records.
+Run Playwright against a reset, dedicated SQLite database, port, and `.next-e2e` artifact directory rather than reusing the local development server's standard `.next` output. The parent E2E runner restores Next's generated TypeScript metadata after Playwright exits. Local fixture credentials remain in setup documentation and test code, while public authentication pages render empty credential fields. This keeps test convenience from changing public UI, developer business records, tracked type metadata, or live generated modules.
 
 ## ADR-011 — Driver home and temporary load proof
 
