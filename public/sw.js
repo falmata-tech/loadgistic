@@ -1,4 +1,4 @@
-const CACHE = 'loadgistic-static-v2';
+const CACHE = 'loadgistic-static-v3';
 const STATIC = ['/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', event => {
@@ -19,8 +19,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
   const cacheable = url.pathname === '/icon.svg'
     || url.pathname === '/manifest.webmanifest'
-    || url.pathname.startsWith('/vehicle-configurations/')
-    || url.pathname.startsWith('/_next/static/');
+    || url.pathname.startsWith('/vehicle-configurations/');
   if (!cacheable) return;
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {

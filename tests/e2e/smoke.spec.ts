@@ -22,9 +22,24 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   const manifest = await manifestResponse.json();
   expect(manifest.display).toBe('standalone');
   expect(manifest.start_url).toBe('/app/home');
+  const workerSource = await (await request.get('/sw.js')).text();
+  expect(workerSource).toContain("loadgistic-static-v3");
+  expect(workerSource).not.toContain("startsWith('/_next/static/')");
   await page.goto('/login');
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
   expect(scope).toContain('/');
+  await page.waitForTimeout(1_000);
+  await expect(page.getByRole('heading', { name: 'Log in to Loadgistic' })).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  const executableChunkResult = await page.evaluate(async () => {
+    const cache = await caches.open('loadgistic-runtime-regression');
+    await cache.put('/_next/static/runtime-probe.js', new Response('stale-runtime'));
+    const response = await fetch('/_next/static/runtime-probe.js');
+    await caches.delete('loadgistic-runtime-regression');
+    return { status: response.status, body: await response.text() };
+  });
+  expect(executableChunkResult.status).toBe(404);
+  expect(executableChunkResult.body).not.toBe('stale-runtime');
 });
 
 test('anonymous users cannot browse Business or transporter profiles', async ({ page }: { page: any }) => {

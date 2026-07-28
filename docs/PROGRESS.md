@@ -37,6 +37,7 @@
 - Tracking and proof kept as separate contracts
 - Manual billing proof and review
 - PWA and responsive UI
+- Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
 - Supabase migration and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
