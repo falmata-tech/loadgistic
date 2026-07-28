@@ -72,7 +72,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
     { href: '/admin/billing', label: 'Billing Review', icon: ClipboardCheck },
     { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
-    { href: '/companies', label: 'Directory', icon: Users },
+    { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ]
 };

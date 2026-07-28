@@ -135,7 +135,7 @@ export function getDashboard(user) {
     };
     data.actions = [
       { href: '/admin/applications', label: 'Review applications', description: 'Approve or request more information.' },
-      { href: '/companies', label: 'View transporter directory', description: 'Inspect authenticated transporter pages.' }
+      { href: '/app/providers', label: 'View transporter directory', description: 'Inspect authenticated transporter pages.' }
     ];
     data.recent = db.prepare('SELECT code,title,service_mode,operational_status,origin,destination,created_at FROM shipments ORDER BY created_at DESC LIMIT 6').all();
     return data;

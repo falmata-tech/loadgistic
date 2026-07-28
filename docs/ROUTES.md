@@ -5,8 +5,8 @@
 - `/` — producer- and transporter-focused Ethiopia B2B road-freight homepage
 - `/apply` — business/provider application
 - `/login` — direct login
-- `/companies` — authenticated Business and Transporter Directory
-- `/companies/[handle]` — authenticated Business or Transporter Public Profile
+- `/companies` — authenticated compatibility redirect to the workspace Directory
+- `/companies/[handle]` — authenticated compatibility redirect to the workspace Public Profile
 - `/track` — Business-party secret tracking-code unlock
 - `/track/[id]` — user/load-bound customer tracking after unlock
 
@@ -17,6 +17,7 @@
 - `/app/shipments/new` — rich Post Load workflow
 - `/app/shipments/[id]`
 - `/app/providers` — Business and Transporter Directory
+- `/app/providers/[handle]` — Business or Transporter Public Profile inside the workspace shell
 - `/app/network` — Connected relationships, requests, and private Favorites
 - `/app/loads` — searchable Load Board with optional owned-truck route ranking
 - `/app/capacity` — searchable Capacity Board with optional owned-load route ranking

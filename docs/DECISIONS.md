@@ -85,3 +85,9 @@ Model Business-provider relationships as three distinct meanings: a private Favo
 Customer tracking is an additional Business-party view, not a bearer link. Its human-entered code is derived with the server secret, stored only as a keyed digest, omitted from URLs, and accepted only for an authenticated shipper or receiver Business on that load. Unlock creates a five-minute HTTP-only grant bound to the user and shipment. Browser activity may refresh the grant; five minutes without activity clears it. Assigned providers continue to see the same real tracking events in their internal shipment workspace and cannot unlock the customer view.
 
 Fleet owners edit capacity on one truck-specific Fleet page. They may declare a general area but cannot submit device-assisted location, because the owner's phone does not establish the truck's position. Only an authorized assigned company driver or self-managed driver may submit an already obscured device area. Ethiopian place suggestions and nearest-city labels use the reviewed local place catalog, keeping exact coordinates and third-party API keys out of the request path.
+
+## ADR-018 — Authenticated profiles stay inside the workspace shell
+
+`/app/providers` and `/app/providers/[handle]` are the canonical authenticated Directory routes. Legacy `/companies` URLs authenticate and redirect into those routes.
+
+Public Profiles are member-only operational screens. Keeping them under the role-aware app shell preserves the user's sidebar or mobile navigation when moving between Directory, Network, Capacity, Tracking, and a profile. The compatibility routes preserve old bookmarks without maintaining a second profile UI.

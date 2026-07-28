@@ -10,7 +10,7 @@ export async function PublicHeader() {
         <Logo />
         <nav className="public-links" aria-label="Public navigation">
           <Link href="/#solutions">Solutions</Link>
-          <Link href="/companies">Transporters</Link>
+          <Link href="/app/providers">Directory</Link>
           <Link href="/#how">How It Works</Link>
           <Link href="/#plans">Plans</Link>
           <Link href="/apply">Apply</Link>

@@ -58,8 +58,9 @@ test('authenticated directory browsing preserves the session and selected partic
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/providers?type=TRANSPORT');
   await page.getByRole('link', { name: 'View Profile' }).first().click();
-  await expect(page.getByTestId('public-session-action')).toHaveText('Workspace');
-  await expect(page.getByRole('link', { name: 'Login' })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/app\/providers\/blueline-transport/);
+  await expect(page.getByText('B2B logistics workspace')).toBeVisible();
+  await expect(page.getByTestId('public-session-action')).toHaveCount(0);
   await page.getByRole('link', { name: 'Send request' }).click();
   await expect(page).toHaveURL(/\/app\/shipments\/new\?provider=/);
   await expect(page.getByRole('combobox', { name: 'Selected transporter' })).not.toHaveValue('');
@@ -204,7 +205,7 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await page.getByRole('link', { name: 'View truck details' }).first().click();
   await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'View Profile' })).toBeVisible();
-  await page.goto('/companies/blueline-transport');
+  await page.goto('/app/providers/blueline-transport');
   await expect(page.locator('.leaflet-container')).toBeVisible();
   await expect(page.getByText('Tracked activity').first()).toBeVisible();
   await page.getByRole('link',{name:'Compare routes'}).click();
@@ -278,7 +279,7 @@ test('assigned load shows enforced approximate tracking and a real authenticated
 test('cross-market members can favorite, request, and accept a network connection',async({page}:{page:any})=>{
   test.skip((page.viewportSize()?.width||0)<980,'Stateful network mutation runs once; mobile layout is covered by UI audit.');
   await login(page,'receiver@loadgistic.local');
-  await page.goto('/companies/abebe-owner-operator');
+  await page.goto('/app/providers/abebe-owner-operator');
   await page.getByRole('button',{name:'Favorite'}).click();
   await expect(page.getByText('Network updated.')).toBeVisible();
   await page.getByRole('button',{name:'Connect'}).click();

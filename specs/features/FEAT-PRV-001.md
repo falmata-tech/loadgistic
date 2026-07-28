@@ -16,7 +16,8 @@ rollout: Review every newly public field for authorization, accuracy, and privac
 Given a Business, fleet transporter, or self-managed driver has a published profile\
 When any logged-in user browses the directory or opens its profile\
 Then the account can be found by its correct account-type filter\
-And only allowed profile and verified operational facts are returned.
+And only allowed profile and verified operational facts are returned\
+And the directory and profile remain inside the role-aware workspace shell.
 
 ### Scenario: directory supports cross-market network actions
 
@@ -137,6 +138,7 @@ And the displayed fleet count is derived from those records.
 Given an authenticated Business user browses the transporter directory\
 When they open an authenticated company page and choose to send a business request\
 Then their session remains active\
+And the profile URL, desktop sidebar, and mobile navigation remain in the workspace\
 And the new-shipment form opens with that provider selected.
 
 ### Scenario: Business profile shows participant reputation
@@ -148,6 +150,6 @@ And no private receiver contact from any load is exposed.
 
 ## Contract ownership
 
-- Pages: `/companies`, `/companies/[handle]`, `/app/providers`
+- Pages: `/app/providers`, `/app/providers/[handle]`; `/companies` and `/companies/[handle]` are compatibility redirects
 - Application services: provider, company, vehicle, and capacity functions in `src/lib/repository.js`
 - Tests: `tests/repository.test.mjs`

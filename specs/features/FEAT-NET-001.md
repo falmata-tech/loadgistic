@@ -54,7 +54,7 @@ And each row links to the member's authenticated Public Profile.
 
 ## Contract ownership
 
-- Pages: `/app/network`, authenticated directory cards, and `/companies/[handle]`
+- Pages: `/app/network`, authenticated directory cards, and `/app/providers/[handle]`
 - Inbound adapter: `/api/network`
 - Application services: `listNetwork`, `getNetworkState`, `changeNetworkRelationship`
 - Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`

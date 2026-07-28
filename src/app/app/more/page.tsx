@@ -18,7 +18,7 @@ const roleLabels:Record<string,string>={SHIPPER:'Business',RECEIVER:'Business',T
 function workspaceLinks(role:string){
  if(role==='SHIPPER'||role==='RECEIVER')return [['/app/shipments/new','Post load'],['/app/shipments','Tracking'],['/app/providers','Directory'],['/app/capacity','Capacity Board'],['/app/company-page','Public Profile'],['/app/verification','Verification']];
  if(role==='TRANSPORTER'||role==='DRIVER')return [['/app/loads','Load Board'],['/app/capacity','Capacity Board'],['/app/shipments','Tracking'],['/app/providers','Directory'],['/app/company-page','Public Profile'],['/app/verification','Verification']];
- return [['/admin/applications','Applications'],['/admin/verifications','Verification requests'],['/admin/billing','Billing review'],['/app/shipments','Tracking'],['/companies','Directory']];
+ return [['/admin/applications','Applications'],['/admin/verifications','Verification requests'],['/admin/billing','Billing review'],['/app/shipments','Tracking'],['/app/providers','Directory']];
 }
 
 export default async function MorePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){

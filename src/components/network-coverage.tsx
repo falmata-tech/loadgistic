@@ -18,7 +18,7 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
     </div>
     {coverage.routes?.length?<RouteCoverageMap routes={coverage.routes}/>:null}
     <div className="coverage-businesses">
-      {coverage.businesses.map((business:any) => <Link href={`/companies/${business.handle}`} className="coverage-business" key={business.id}>
+      {coverage.businesses.map((business:any) => <Link href={`/app/providers/${business.handle}`} className="coverage-business" key={business.id}>
         <Building2 aria-hidden="true"/>
         <span><strong>{business.name}</strong><small><MapPin aria-hidden="true"/>{business.operating_regions || business.city || 'Locations not added'}</small></span>
         <span className={`status ${business.matched_places.length ? 'green' : 'expired'}`}>{business.coverage_label}</span>

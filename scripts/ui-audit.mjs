@@ -35,7 +35,7 @@ const personas = [
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/applications', '/admin/verifications', '/admin/billing', '/app/shipments', '/companies', '/app/more']
+    routes: ['/app/home', '/admin/applications', '/admin/verifications', '/admin/billing', '/app/shipments', '/app/providers', '/app/more']
   }
 ];
 
@@ -49,9 +49,16 @@ function fileName(value) {
 }
 
 async function gotoReady(page, route) {
-  const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(750);
-  return response;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(750);
+      return response;
+    } catch (error) {
+      if (!String(error).includes('ERR_ABORTED') || attempt === 2) throw error;
+      await page.waitForTimeout(500);
+    }
+  }
 }
 
 async function login(page, email) {
@@ -167,7 +174,7 @@ try {
               path.join(outputDir, `${viewport.name}-${persona.name}-company-detail.png`)
             );
             report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-            const comparisonHref = persona.name === 'business-shipper' ? '/companies/blueline-transport?compare=routes' : '/companies/blue-nile-trading?compare=routes';
+            const comparisonHref = persona.name === 'business-shipper' ? '/app/providers/blueline-transport?compare=routes' : '/app/providers/blue-nile-trading?compare=routes';
             const comparisonResult = await inspectPage(
               page,
               comparisonHref,

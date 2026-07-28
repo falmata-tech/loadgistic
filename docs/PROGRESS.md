@@ -8,6 +8,7 @@
 - Role-aware navigation and workspaces
 - Applications and admin approval
 - Authenticated Business and Transporter Directory with Public Profiles
+- Workspace-contained Directory and Public Profile navigation with authenticated legacy redirects
 - My Network with private Favorites, directional requests, mutual Connected relationships, and profile/directory actions
 - B2B shipment creation
 - Road-freight workflows
