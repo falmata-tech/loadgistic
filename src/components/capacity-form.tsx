@@ -98,7 +98,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
       const lng = Math.round(position.coords.longitude * 2) / 2;
       setApproximateLocation({ lat, lng });
       const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
-      if(nearest)setLocationArea(`Around ${nearest.name}`);
+      if(nearest)setLocationArea(`Around ${nearest.name}, Ethiopia`);
       setLocationState('captured');
     }, error => {
       setApproximateLocation(null);
@@ -149,7 +149,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
 
           <section className="control-panel">
             <div className="control-panel-title"><div><h2>Where you are now</h2><p>Share a general area, never an exact live position.</p></div><span className="status fresh">Updates now</span></div>
-            <div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" name="locationArea" required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Addis Ababa" aria-label="Current general area"/></div>
+            <div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" name="locationArea" required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Addis Ababa, Ethiopia" aria-label="Current general area"/></div>
             {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
               <div>
                 <strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use your phone location'}</strong>
@@ -173,9 +173,9 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
 
           <section className="control-panel">
             <div className="control-panel-title"><div><h2>Truck routes</h2><p>Keep current partial movement separate from a future planned trip.</p></div></div>
-            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama"/></div></div></>:null}
+            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama, Ethiopia"/></div></div></>:null}
             <h3 className="compact-section-title">Future planned travel</h3>
-            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Planned origin</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="capacity-destination">Planned destination</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa"/></div></div>
+            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Planned origin</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="capacity-destination">Planned destination</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa, Ethiopia"/></div></div>
             <div className="form-grid"><div className="form-group"><label htmlFor="capacity-travel-date">Planned travel date</label><input id="capacity-travel-date" name="travelDate" type="date" defaultValue={current?.travel_date || ''}/></div><div className="form-group"><label htmlFor="capacity-next">Next available</label><input id="capacity-next" name="nextAvailable" defaultValue={current?.next_available || ''} placeholder="Tomorrow morning"/></div></div>
             <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract lanes</strong><small>Interested in recurring work on preferred corridors</small></span></label>
             <p className="meta panel-note">Regular preferred corridors are managed separately in Public Profile Info.</p>

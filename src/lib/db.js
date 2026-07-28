@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { trackingAccessCode, hashPassword, hashTrackingAccessCode, randomId } from './security.js';
+import { placeLabel, qualifyAreaLabel, qualifyCorridorList, qualifyPlaceList } from './place-labels.js';
 
 let database;
 
@@ -18,6 +19,7 @@ export function getDb() {
   database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   migrate(database);
   seed(database);
+  qualifyExistingEthiopiaData(database);
   return database;
 }
 
@@ -442,6 +444,9 @@ function migrate(db) {
   `);
   const userColumns = new Set(db.prepare('PRAGMA table_info(users)').all().map(column => column.name));
   if (!userColumns.has('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
+  const placeColumns = new Set(db.prepare('PRAGMA table_info(place_catalog)').all().map(column => column.name));
+  if (!placeColumns.has('country_name')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_name TEXT NOT NULL DEFAULT 'Ethiopia'");
+  if (!placeColumns.has('country_code')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_code TEXT NOT NULL DEFAULT 'ET'");
   const driverColumns = new Set(db.prepare('PRAGMA table_info(drivers)').all().map(column => column.name));
   if (!driverColumns.has('user_id')) db.exec('ALTER TABLE drivers ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL');
   const relationshipColumns = new Set(db.prepare('PRAGMA table_info(partner_relationships)').all().map(column => column.name));
@@ -549,6 +554,64 @@ function migrate(db) {
         insertRoute.run(randomId('route-'),page.organization_id,page.provider_profile_id,endpoints[0],endpoints[1],new Date().toISOString());
       }
     }
+  }
+}
+
+function qualifyExistingEthiopiaData(db) {
+  const qualifySimpleColumns = [
+    ['organizations','city'],
+    ['provider_profiles','city'],
+    ['profile_routes','origin'],
+    ['profile_routes','destination'],
+    ['shipments','origin'],
+    ['shipments','destination'],
+    ['capacities','origin'],
+    ['capacities','destination'],
+    ['capacities','current_route_origin'],
+    ['capacities','current_route_destination']
+  ];
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    for (const [table,column] of qualifySimpleColumns) {
+      const rows=db.prepare(`SELECT id,${column} AS value FROM ${table} WHERE ${column} IS NOT NULL AND trim(${column})<>''`).all();
+      const update=db.prepare(`UPDATE ${table} SET ${column}=? WHERE id=?`);
+      for(const row of rows) {
+        const qualified=placeLabel(row.value);
+        if(qualified!==row.value)update.run(qualified,row.id);
+      }
+    }
+    for (const [table,column] of [['capacities','location_area'],['shipment_events','location_area']]) {
+      const rows=db.prepare(`SELECT id,${column} AS value FROM ${table} WHERE ${column} IS NOT NULL AND trim(${column})<>''`).all();
+      const update=db.prepare(`UPDATE ${table} SET ${column}=? WHERE id=?`);
+      for(const row of rows) {
+        const qualified=qualifyAreaLabel(row.value);
+        if(qualified!==row.value)update.run(qualified,row.id);
+      }
+    }
+    const pages=db.prepare('SELECT id,corridors,operating_regions FROM company_pages').all();
+    const updatePage=db.prepare('UPDATE company_pages SET corridors=?,operating_regions=? WHERE id=?');
+    for(const page of pages) {
+      const corridors=qualifyCorridorList(page.corridors);
+      const regions=qualifyPlaceList(page.operating_regions);
+      if(corridors!==page.corridors||regions!==page.operating_regions)updatePage.run(corridors,regions,page.id);
+    }
+    const profiles=db.prepare('SELECT id,corridors FROM provider_profiles').all();
+    const updateProfile=db.prepare('UPDATE provider_profiles SET corridors=? WHERE id=?');
+    for(const profile of profiles) {
+      const corridors=qualifyCorridorList(profile.corridors);
+      if(corridors!==profile.corridors)updateProfile.run(corridors,profile.id);
+    }
+    const capacities=db.prepare('SELECT id,origin,destination,corridor FROM capacities').all();
+    const updateCapacity=db.prepare('UPDATE capacities SET corridor=? WHERE id=?');
+    for(const capacity of capacities) {
+      const corridor=capacity.origin&&capacity.destination?`${capacity.origin} ↔ ${capacity.destination}`:null;
+      if(corridor!==capacity.corridor)updateCapacity.run(corridor,capacity.id);
+    }
+    db.prepare("UPDATE place_catalog SET country_name='Ethiopia',country_code='ET' WHERE country_name IS NULL OR trim(country_name)='' OR country_code IS NULL OR trim(country_code)=''").run();
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
   }
 }
 

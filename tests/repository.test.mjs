@@ -49,7 +49,7 @@ test('member directory includes Businesses and transporters with authoritative f
  assert.ok(directory.some(profile=>profile.is_business&&profile.id==='org-shipper'));
  const business=repo.getPublicCompany('blue-nile-trading');
  assert.equal(business.is_business,true);
- assert.equal(business.operating_regions,'Addis Ababa; Adama; Dire Dawa');
+ assert.equal(business.operating_regions,'Addis Ababa, Ethiopia; Adama, Ethiopia; Dire Dawa, Ethiopia');
  assert.equal(business.fleet_size,0);
  assert.equal(Object.hasOwn(business,'email'),false);
  assert.equal(Object.hasOwn(business,'phone'),false);
@@ -61,24 +61,24 @@ test('member directory includes Businesses and transporters with authoritative f
 test('fleet dashboard compares saved Business regions with recorded corridors',()=>{
  const transporter=repo.getUserById('user-transporter');
  const coverage=repo.getFleetNetworkCoverage(transporter);
- assert.ok(coverage.corridors.includes('Addis Ababa ↔ Dire Dawa'));
+ assert.ok(coverage.corridors.includes('Addis Ababa, Ethiopia ↔ Dire Dawa, Ethiopia'));
  assert.equal(coverage.businesses.length,1);
  assert.equal(coverage.businesses[0].name,'Blue Nile Trading PLC');
- assert.ok(coverage.businesses[0].matched_places.includes('addis ababa'));
+ assert.ok(coverage.businesses[0].matched_places.includes('addis ababa ethiopia'));
  assert.match(coverage.businesses[0].coverage_label,/recorded corridors/);
- assert.ok(coverage.routes.some(route=>route.origin==='Addis Ababa'&&route.destination==='Dire Dawa'));
+ assert.ok(coverage.routes.some(route=>route.origin==='Addis Ababa, Ethiopia'&&route.destination==='Dire Dawa, Ethiopia'));
 });
 
 test('profile routes separate declarations, reported records, and tracked evidence',()=>{
  const shipper=repo.getUserById('user-shipper');
  const transporter=repo.getUserById('user-transporter');
  const business=repo.getPublicCompany('blue-nile-trading');
- const businessRoute=business.routes.find(route=>route.origin==='Addis Ababa'&&route.destination==='Dire Dawa');
+ const businessRoute=business.routes.find(route=>route.origin==='Addis Ababa, Ethiopia'&&route.destination==='Dire Dawa, Ethiopia');
  assert.ok(businessRoute.reported_count>=2);
  assert.ok(businessRoute.tracked_count>=1);
  assert.equal(businessRoute.evidence_label,'Tracked activity');
  const fleet=repo.getPublicCompany('blueline-transport');
- const fleetRoute=fleet.routes.find(route=>route.origin==='Addis Ababa'&&route.destination==='Dire Dawa');
+ const fleetRoute=fleet.routes.find(route=>route.origin==='Addis Ababa, Ethiopia'&&route.destination==='Dire Dawa, Ethiopia');
  assert.ok(fleetRoute.reported_count>=1);
  assert.ok(fleetRoute.tracked_count>=1);
  const comparison=repo.getProfileRouteComparison(shipper,fleet);
@@ -96,7 +96,7 @@ test('profile routes separate declarations, reported records, and tracked eviden
    published:true
  });
  const updated=repo.getPublicCompany('blue-nile-trading');
- const declaredOnly=updated.routes.find(route=>route.destination==='Unmapped Market');
+ const declaredOnly=updated.routes.find(route=>route.destination==='Unmapped Market, Ethiopia');
  assert.equal(declaredOnly.reported_count,0);
  assert.equal(declaredOnly.tracked_count,0);
  assert.equal(declaredOnly.evidence_label,'Declared only');
@@ -121,14 +121,14 @@ test('Load and Capacity Boards filter and rank by an owned route',()=>{
  const loads=repo.listLoads(transporter,'ALL',{matchCapacityId:'cap-empty'});
  assert.ok(loads.length>1);
  assert.equal(loads[0].route_match_score,2);
- assert.equal(loads[0].destination,'Dire Dawa');
+ assert.equal(loads[0].destination,'Dire Dawa, Ethiopia');
  assert.ok(loads.every((load,index)=>index===0||loads[index-1].route_match_score>=load.route_match_score));
  assert.ok(repo.listLoads(transporter,'ALL',{q:'beverage'}).every(load=>load.title.includes('Beverage')));
 
  const shipper=repo.getUserById('user-shipper');
  const capacity=repo.listMarketCapacity(shipper,{matchLoadId:'shp-freight-fixed'});
  assert.equal(capacity[0].route_match_score,2);
- assert.equal(capacity[0].destination,'Dire Dawa');
+ assert.equal(capacity[0].destination,'Dire Dawa, Ethiopia');
  assert.ok(repo.listMarketCapacity(shipper,{status:'PARTIAL'}).every(truck=>truck.status==='PARTIAL'));
 });
 
@@ -195,7 +195,9 @@ test('Business favorites rank first in bounded member search',()=>{
 test('place search falls back locally and compatible PTL loads form a virtual pool',()=>{
  const driver=repo.getUserById('user-driver');
  const shipper=repo.getUserById('user-shipper');
- assert.ok(repo.searchPlaces('Add',20).some(place=>place.name==='Addis Ababa'));
+ const addis=repo.searchPlaces('Add',20).find(place=>place.name==='Addis Ababa');
+ assert.equal(addis?.display_name,'Addis Ababa, Ethiopia');
+ assert.equal(addis?.country_code,'ET');
  const pickupDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
  const ids=['one','two'].map((suffix,index)=>repo.createShipment(shipper,{
   title:`Pool fixture ${suffix}`,
@@ -224,7 +226,7 @@ test('capacity update enforces partial percentage and expires old vehicle record
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'5'}),/INVALID_APPROXIMATE_LOCATION/);
  const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
  const rows=repo.listCapacity(user);
- assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
+ assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
  const audit=dbModule.getDb().prepare(`SELECT details FROM audit_logs WHERE entity_id=?`).get(id);
  assert.equal(audit.details.includes('38.5'),false);
  const offDutyId=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'OFF_DUTY',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'});

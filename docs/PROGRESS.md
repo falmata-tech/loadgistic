@@ -42,6 +42,7 @@
 - Browser-obscured device areas with 40 km capacity/PTL and 20 km FTL privacy zones
 - Driver-only device location with fleet-owner manual-area enforcement
 - Local OpenStreetMap Ethiopia settlement catalog with 3,405 imported records
+- Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
 - Tracking and proof kept as separate contracts
 - Manual billing proof and review

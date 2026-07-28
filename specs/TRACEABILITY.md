@@ -12,7 +12,7 @@
 | `FEAT-MKT-001` | Full-bleed Ethiopian producer and transporter homepage with audience-specific application paths | Public-example boundary and no live marketplace reads | Respectful generated imagery review and no endorsement claim | E2E, UI audit |
 | `FEAT-VER-001` | Verification center, admin review queue, profile badges, and truck badges | Subject ownership, type policy, review state, and private-file authorization | Private storage, file limits, admin audit | repository, authorization, E2E |
 | `FEAT-TRK-001` | Enforced tracking controls, party-code unlock and idle lock, operational proof, and temporary load-proof sharing UI | Business-selected mode, assigned-provider obligation, load-type privacy radius, keyed code digest, browser/load grant, file authorization, and temporary grants | Private storage, location privacy, expiry, and scanning | repository, authorization, E2E |
-| `FEAT-PLC-001` | Async Ethiopia-first place comboboxes | Repeatable OSM settlement import, bounded local search, coordinates, and built-in fallback | Local PBF input, Osmium tool, import metrics | repository, E2E |
+| `FEAT-PLC-001` | Async Ethiopia-first place comboboxes with country-qualified labels | Repeatable OSM settlement import, country metadata, legacy-label normalization, bounded local search, coordinates, and built-in fallback | Local PBF input, Osmium tool, import metrics | domain, repository, E2E |
 | `FEAT-PST-001` | Pooled loads tab and virtual group detail | Deterministic distance-bounded projection over authorized Posted PTL loads | Feature-disable rollback leaves source loads unchanged | domain, repository, authorization, E2E |
 | `FEAT-BIL-001` | Workspace/admin billing | Proof review and tenant scope | Private storage and audit | repository |
 

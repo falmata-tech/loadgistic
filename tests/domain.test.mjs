@@ -4,6 +4,7 @@ import { mutationOriginAllowed } from '../src/lib/origin.js';
 import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
 import { normalizePlace, routeMatch, splitPlaces } from '../src/lib/route-matching.js';
 import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
+import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
@@ -72,10 +73,17 @@ test('capacity freshness labels expired data honestly',()=>{
 
 test('route matching is simple, order independent, and explainable',()=>{
  assert.deepEqual(routeMatch('Addis Ababa','Hawassa','Hawassa','Addis Ababa'),{score:2,label:'Full route match'});
+ assert.deepEqual(routeMatch('Adaba','Hawassa','Adaba, Ethiopia','Hawassa, Ethiopia'),{score:2,label:'Full route match'});
+ assert.deepEqual(routeMatch('Adaba, Kenya','Hawassa, Ethiopia','Adaba, Ethiopia','Hawassa, Ethiopia'),{score:1,label:'One city aligns'});
  assert.deepEqual(routeMatch('Addis Ababa','Hawassa','Addis Ababa','Dire Dawa'),{score:1,label:'One city aligns'});
  assert.deepEqual(routeMatch('Jimma','Nekemte','Addis Ababa','Dire Dawa'),{score:0,label:'No route match'});
  assert.equal(normalizePlace('  Addis-Ababa '),'addis ababa');
- assert.deepEqual(splitPlaces('Addis Ababa ↔ Hawassa; Dire Dawa'),['addis ababa','hawassa','dire dawa']);
+ assert.equal(placeLabel('Adaba'),'Adaba, Ethiopia');
+ assert.equal(placeLabel('Adaba, Kenya'),'Adaba, Kenya');
+ assert.equal(placeIdentity('Adaba'),placeIdentity('Adaba, Ethiopia'));
+ assert.deepEqual(splitPlaces('Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia; Dire Dawa, Ethiopia'),['addis ababa ethiopia','hawassa ethiopia','dire dawa ethiopia']);
+ assert.equal(qualifyPlaceList('Oromia; Somali, Ethiopia'),'Oromia, Ethiopia; Somali, Ethiopia');
+ assert.equal(qualifyCorridorList('Addis Ababa ↔ Hawassa'),'Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia');
 });
 
 test('mutation origin guard accepts browser-confirmed same-origin proxy requests',()=>{

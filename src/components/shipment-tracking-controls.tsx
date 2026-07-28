@@ -44,7 +44,7 @@ export function ShipmentTrackingControls({
         lng: Math.round(position.coords.longitude * gridFactor) / gridFactor
       });
       const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
-      if(nearest)setLocationArea(`Around ${nearest.name}`);
+      if(nearest)setLocationArea(`Around ${nearest.name}, Ethiopia`);
       setLocationState('captured');
     }, error => {
       setApproximateLocation(null);
@@ -65,7 +65,7 @@ export function ShipmentTrackingControls({
       <span className={`status ${requiresLocation ? 'green' : ''}`}>{requiresLocation ? 'Location + status' : 'Status timeline'}</span>
     </div>
     {requiresLocation ? <div className="stack">
-      <div className="form-group"><label htmlFor="tracking-location-area">Current general area</label><EthiopiaPlaceInput id="tracking-location-area" value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Adama" required/></div>
+      <div className="form-group"><label htmlFor="tracking-location-area">Current general area</label><EthiopiaPlaceInput id="tracking-location-area" value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Adama, Ethiopia" required/></div>
       {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
         <div><strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use phone location'}</strong><span>{locationState === 'captured' ? `Only an obscured area with a ${privacyRadius} km privacy zone will be recorded.` : locationState === 'denied' ? 'Permission declined. Entering a general area is enough.' : locationState === 'error' ? 'Location unavailable. Entering a general area is enough.' : 'The exact point stays on this device.'}</span></div>
         <button type="button" className="button secondary compact" onClick={useDeviceLocation} disabled={locationState === 'requesting'}>{locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh area' : 'Use device location'}</button>

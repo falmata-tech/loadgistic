@@ -67,9 +67,9 @@ export default function HomePage() {
         <div className="container">
           <div className="section-title"><span className="eyebrow">Illustrative member view</span><h2>Match demand and truck capacity by route</h2><p className="lede">Live marketplace records stay behind login. These examples show the practical facts members use to decide what deserves a conversation.</p></div>
           <div className="market-preview-grid">
-            <article className="market-preview-panel"><div className="status-row"><span className="status green">PTL</span><span className="status">Quote requested</span></div><h3>Woven home goods · 18 cartons</h3><div className="preview-route"><strong>Addis Ababa</strong><span>→</span><strong>Adama</strong></div><dl><div><dt>Business</dt><dd>Local artisan cooperative</dd></div><div><dt>Pick up before</dt><dd>Wednesday morning</dd></div><div><dt>Need</dt><dd>Partial truckload</dd></div></dl></article>
-            <article className="market-preview-panel"><div className="preview-truck"><Image src="/vehicle-configurations/light-stake-body-truck.jpg" alt="Light stake body truck" width={180} height={180}/><div><span className="status green">Partial · 40%</span><h3>Isuzu NPR · open capacity</h3></div></div><dl><div><dt>Current area</dt><dd>Around Addis Ababa · privacy protected</dd></div><div><dt>Corridor</dt><dd>Addis Ababa ↔ Hawassa</dd></div><div><dt>Accepting</dt><dd>FTL + PTL · direct only</dd></div></dl></article>
-            <article className="market-preview-panel"><div className="status-row"><span className="status">Route match</span><span className="status green">Both cities align</span></div><h3>Truck route compared with load route</h3><div className="route-comparison"><span><Route aria-hidden="true"/>Truck</span><strong>Addis Ababa ↔ Hawassa</strong><span><Boxes aria-hidden="true"/>Load</span><strong>Addis Ababa → Hawassa</strong></div><p className="meta">Matching helps members search. It never assigns a truck or guarantees a job.</p></article>
+            <article className="market-preview-panel"><div className="status-row"><span className="status green">PTL</span><span className="status">Quote requested</span></div><h3>Woven home goods · 18 cartons</h3><div className="preview-route"><strong>Addis Ababa, Ethiopia</strong><span>→</span><strong>Adama, Ethiopia</strong></div><dl><div><dt>Business</dt><dd>Local artisan cooperative</dd></div><div><dt>Pick up before</dt><dd>Wednesday morning</dd></div><div><dt>Need</dt><dd>Partial truckload</dd></div></dl></article>
+            <article className="market-preview-panel"><div className="preview-truck"><Image src="/vehicle-configurations/light-stake-body-truck.jpg" alt="Light stake body truck" width={180} height={180}/><div><span className="status green">Partial · 40%</span><h3>Isuzu NPR · open capacity</h3></div></div><dl><div><dt>Current area</dt><dd>Around Addis Ababa, Ethiopia · privacy protected</dd></div><div><dt>Corridor</dt><dd>Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia</dd></div><div><dt>Accepting</dt><dd>FTL + PTL · direct only</dd></div></dl></article>
+            <article className="market-preview-panel"><div className="status-row"><span className="status">Route match</span><span className="status green">Both cities align</span></div><h3>Truck route compared with load route</h3><div className="route-comparison"><span><Route aria-hidden="true"/>Truck</span><strong>Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia</strong><span><Boxes aria-hidden="true"/>Load</span><strong>Addis Ababa, Ethiopia → Hawassa, Ethiopia</strong></div><p className="meta">Matching helps members search. It never assigns a truck or guarantees a job.</p></article>
           </div>
         </div>
       </section>
@@ -87,9 +87,9 @@ export default function HomePage() {
           </div>
           <div className="fleet-signal">
             <div className="fleet-signal-header"><span>Fleet demand view</span><span className="status green">Illustrative</span></div>
-            <div className="fleet-signal-row"><strong>Addis Ababa ↔ Hawassa</strong><span>2 matching Business areas</span></div>
-            <div className="fleet-signal-row"><strong>Addis Ababa ↔ Dire Dawa</strong><span>1 matching open load</span></div>
-            <div className="fleet-signal-row"><strong>Mekelle ↔ Addis Ababa</strong><span>Truck route ready to compare</span></div>
+            <div className="fleet-signal-row"><strong>Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia</strong><span>2 matching Business areas</span></div>
+            <div className="fleet-signal-row"><strong>Addis Ababa, Ethiopia ↔ Dire Dawa, Ethiopia</strong><span>1 matching open load</span></div>
+            <div className="fleet-signal-row"><strong>Mekelle, Ethiopia ↔ Addis Ababa, Ethiopia</strong><span>Truck route ready to compare</span></div>
             <p>Signals are based on recorded routes and declared regional locations, not exact live positions.</p>
           </div>
         </div>

@@ -12,9 +12,9 @@ export function ProfileRouteFields({ initialRoutes = [] }: { initialRoutes?:Rout
     <div className="section-heading-icon"><Route aria-hidden="true"/><div><h2>Coverage routes</h2><p className="meta">Add the city pairs where you regularly ship or transport goods.</p></div></div>
     <div className="profile-route-rows">
       {routes.map((route,index)=><div className="profile-route-row" key={route.id||index}>
-        <div className="form-group"><label htmlFor={`route-origin-${index}`}>City 1</label><EthiopiaPlaceInput id={`route-origin-${index}`} name="routeOrigin" defaultValue={route.origin} placeholder="Addis Ababa"/></div>
+        <div className="form-group"><label htmlFor={`route-origin-${index}`}>City 1</label><EthiopiaPlaceInput id={`route-origin-${index}`} name="routeOrigin" defaultValue={route.origin} placeholder="Addis Ababa, Ethiopia"/></div>
         <span className="route-pair-arrow" aria-hidden="true">↔</span>
-        <div className="form-group"><label htmlFor={`route-destination-${index}`}>City 2</label><EthiopiaPlaceInput id={`route-destination-${index}`} name="routeDestination" defaultValue={route.destination} placeholder="Hawassa"/></div>
+        <div className="form-group"><label htmlFor={`route-destination-${index}`}>City 2</label><EthiopiaPlaceInput id={`route-destination-${index}`} name="routeDestination" defaultValue={route.destination} placeholder="Hawassa, Ethiopia"/></div>
         <button type="button" className="icon-action danger-outline" aria-label={`Remove route ${index+1}`} title="Remove route" onClick={()=>setRoutes(current=>current.filter((_,rowIndex)=>rowIndex!==index))}><Trash2 aria-hidden="true"/></button>
       </div>)}
     </div>

@@ -1,3 +1,5 @@
+import { placeIdentity } from './place-labels.js';
+
 export function normalizePlace(value) {
   return String(value || '')
     .toLowerCase()
@@ -8,14 +10,14 @@ export function normalizePlace(value) {
 
 export function splitPlaces(value) {
   return String(value || '')
-    .split(/[;,\n]|(?:\s+[↔→-]\s+)/)
-    .map(normalizePlace)
+    .split(/[;\n]|(?:\s+[↔→-]\s+)/)
+    .map(placeIdentity)
     .filter(Boolean);
 }
 
 export function routeMatch(origin, destination, targetOrigin, targetDestination) {
-  const route = [normalizePlace(origin), normalizePlace(destination)].filter(Boolean);
-  const target = [normalizePlace(targetOrigin), normalizePlace(targetDestination)].filter(Boolean);
+  const route = [placeIdentity(origin), placeIdentity(destination)].filter(Boolean);
+  const target = [placeIdentity(targetOrigin), placeIdentity(targetDestination)].filter(Boolean);
   if (!route.length || !target.length) return { score: 0, label: 'Route not recorded' };
 
   const matches = target.filter(place => route.includes(place)).length;

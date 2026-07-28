@@ -93,6 +93,11 @@ test('shipper can open rich load posting workflow', async ({ page }: { page: any
   await expect(page.getByLabel('Package count')).toHaveCount(0);
   await expect(page.getByLabel('Estimated kg')).toHaveCount(0);
   await expect(page.getByLabel('Load detail')).toBeVisible();
+  const origin=page.getByLabel('From city');
+  await origin.fill('Addis');
+  await expect(page.getByRole('option', { name: /Addis Ababa, Ethiopia/i }).first()).toBeVisible();
+  await page.getByRole('option', { name: /Addis Ababa, Ethiopia/i }).first().click();
+  await expect(origin).toHaveValue('Addis Ababa, Ethiopia');
   await page.locator('.segmented-control label').filter({hasText:'Receiver'}).click();
   await expect(page.getByText('Who ships it?')).toBeVisible();
   await page.locator('.segmented-control label').filter({hasText:'External Business'}).click();
@@ -257,11 +262,11 @@ test('Business profile editor uses paired coverage route inputs', async ({ page 
   await login(page,'shipper@loadgistic.local');
   await page.goto('/app/company-page');
   await expect(page.getByRole('heading',{name:'Coverage routes'})).toBeVisible();
-  await expect(page.getByLabel('City 1').first()).toHaveValue('Addis Ababa');
-  await expect(page.getByLabel('City 2').first()).toHaveValue('Dire Dawa');
+  await expect(page.getByLabel('City 1').first()).toHaveValue('Addis Ababa, Ethiopia');
+  await expect(page.getByLabel('City 2').first()).toHaveValue('Dire Dawa, Ethiopia');
   const placeResponse=await page.request.get('/api/places?q=Add');
   expect(placeResponse.ok()).toBeTruthy();
-  expect((await placeResponse.json()).results.some((place:any)=>place.name==='Addis Ababa')).toBeTruthy();
+  expect((await placeResponse.json()).results.some((place:any)=>place.display_name==='Addis Ababa, Ethiopia')).toBeTruthy();
   await page.getByRole('button',{name:'Add route'}).click();
   await expect(page.getByLabel('City 1')).toHaveCount(3);
 });

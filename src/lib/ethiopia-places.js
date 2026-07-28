@@ -1,4 +1,5 @@
 import { normalizePlace } from './route-matching.js';
+import { placeLocalName } from './place-labels.js';
 
 const PLACE_COORDINATES = Object.freeze({
   'addis ababa': { name:'Addis Ababa', lat:9.03, lng:38.74 },
@@ -44,7 +45,7 @@ export const ETHIOPIA_PLACES = Object.freeze(
 );
 
 export function getPlaceCoordinate(value) {
-  return PLACE_COORDINATES[normalizePlace(value)] || null;
+  return PLACE_COORDINATES[normalizePlace(placeLocalName(value))] || null;
 }
 
 export function nearestEthiopiaPlace(lat,lng) {

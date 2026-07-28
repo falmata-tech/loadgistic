@@ -3,10 +3,10 @@ id: FEAT-PLC-001
 title: Local Ethiopia place catalog
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001]
 problem: A small hard-coded city list excludes Ethiopian towns and cannot support distance-aware route discovery.
-behavior: An offline import builds a local searchable settlement catalog from an OpenStreetMap Ethiopia settlement extract or Geofabrik PBF while operational place inputs use bounded server-side search and retain a small built-in fallback.
-contracts: [PlaceCatalogImport, PlaceSearch, PlaceRecord, PlaceCoordinateLookup, AsyncPlaceCombobox]
+behavior: An offline import builds a local searchable settlement catalog from an OpenStreetMap Ethiopia settlement extract or Geofabrik PBF while operational place inputs use bounded server-side search, display and store country-qualified labels, and retain a small built-in fallback.
+contracts: [PlaceCatalogImport, PlaceSearch, PlaceRecord, CountryQualifiedPlaceLabel, PlaceCoordinateLookup, AsyncPlaceCombobox]
 observability: [place_import_count, place_import_timestamp, place_search_latency, place_search_result_count]
-rollout: The importer is repeatable and additive; keep the built-in fallback when an extract or Osmium is unavailable and never commit the large source PBF.
+rollout: The importer is repeatable and additive; local startup idempotently qualifies legacy Ethiopian place fields, the built-in fallback remains available when an extract or Osmium is unavailable, and the large source PBF is never committed.
 ---
 
 # Ethiopia place catalog
@@ -16,7 +16,7 @@ rollout: The importer is repeatable and additive; keep the built-in fallback whe
 Given an Ethiopia OpenStreetMap Overpass settlement extract or a Geofabrik PBF with the Osmium command-line tool\
 When the place import command runs\
 Then city, town, village, and hamlet nodes with names and coordinates are upserted locally\
-And useful metadata such as place type, alternate name, population, Wikidata ID, and OSM ID is retained when available\
+And country name and code are stored with useful metadata such as place type, alternate name, population, Wikidata ID, and OSM ID\
 And the source PBF remains an ignored local build input.
 
 ### Scenario: search a large place catalog
@@ -34,9 +34,17 @@ When a user searches a place\
 Then matching reviewed built-in Ethiopian cities are still suggested\
 And free text remains accepted so operations are not blocked.
 
+### Scenario: places include country context
+
+Given a city, town, village, hamlet, or region is entered or displayed\
+When it is selected from the Ethiopian catalog or an older unqualified Ethiopian record is loaded\
+Then its label includes `, Ethiopia`\
+And `Adaba` remains route-compatible with `Adaba, Ethiopia` for legacy records\
+And `Adaba, Kenya` remains a distinct place identity.
+
 ### Scenario: resolve route coordinates
 
-Given a stored origin or destination matches a catalog name or alternate name\
+Given a country-qualified stored origin or destination matches a catalog name or alternate name\
 When distance-aware discovery needs its coordinates\
 Then the local catalog supplies latitude and longitude\
 And no exact member or truck position is inferred from a settlement coordinate.

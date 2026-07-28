@@ -13,13 +13,14 @@ const accepted=new Set(['city','town','village','hamlet']);
 const timestamp=new Date().toISOString();
 const db=getDb();
 const upsert=db.prepare(`INSERT INTO place_catalog
-  (id,name,normalized_name,alternate_names,place_type,latitude,longitude,population,wikidata_id,osm_type,osm_id,source,updated_at)
-  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+  (id,name,normalized_name,alternate_names,place_type,latitude,longitude,population,wikidata_id,osm_type,osm_id,source,updated_at,country_name,country_code)
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(id) DO UPDATE SET
     name=excluded.name,normalized_name=excluded.normalized_name,alternate_names=excluded.alternate_names,
     place_type=excluded.place_type,latitude=excluded.latitude,longitude=excluded.longitude,
     population=excluded.population,wikidata_id=excluded.wikidata_id,osm_type=excluded.osm_type,
-    osm_id=excluded.osm_id,source=excluded.source,updated_at=excluded.updated_at`);
+    osm_id=excluded.osm_id,source=excluded.source,updated_at=excluded.updated_at,
+    country_name=excluded.country_name,country_code=excluded.country_code`);
 let imported=0;
 let skipped=0;
 
@@ -65,7 +66,9 @@ function storePlace({id,type='node',lat,lng,tags={},source}){
     type,
     String(id),
     source,
-    timestamp
+    timestamp,
+    'Ethiopia',
+    'ET'
   );
   imported+=1;
 }

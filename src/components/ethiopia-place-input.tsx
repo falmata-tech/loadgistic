@@ -6,6 +6,9 @@ import { LoaderCircle, MapPin } from 'lucide-react';
 type PlaceResult={
   id:string;
   name:string;
+  display_name:string;
+  country_name:string;
+  country_code:string;
   place_type:string;
   lat:number;
   lng:number;
@@ -52,11 +55,11 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,...pro
   }
 
   function choose(place:PlaceResult){
-    setText(place.name);
+    setText(place.display_name);
     setOpen(false);
     setDirty(false);
     setResults([]);
-    onChange?.({target:{value:place.name}} as React.ChangeEvent<HTMLInputElement>);
+    onChange?.({target:{value:place.display_name}} as React.ChangeEvent<HTMLInputElement>);
   }
 
   return <div className="place-combobox">
@@ -67,7 +70,7 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,...pro
     {loading?<LoaderCircle className="place-loading" aria-label="Searching places"/>:null}
     {open&&results.length?<div className="place-results" id={`${id}-results`} role="listbox">
       {results.map((place:PlaceResult)=><button type="button" role="option" className="place-result" key={place.id} onMouseDown={event=>event.preventDefault()} onClick={()=>choose(place)}>
-        <MapPin aria-hidden="true"/><span><strong>{place.name}</strong><small>{place.place_type}</small></span>
+        <MapPin aria-hidden="true"/><span><strong>{place.display_name}</strong><small>{place.place_type}</small></span>
       </button>)}
     </div>:null}
   </div>;

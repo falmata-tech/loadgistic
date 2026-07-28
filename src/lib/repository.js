@@ -26,6 +26,7 @@ import {
 import { normalizePlace, routeMatch, splitPlaces, textIncludes } from './route-matching.js';
 import { ETHIOPIA_PLACES, getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
 import { poolCompatibleLoads } from './pstl.js';
+import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel, qualifyPlaceList } from './place-labels.js';
 
 function nowIso() {
   return new Date().toISOString();
@@ -100,11 +101,12 @@ function canNegotiateLoads(user) {
 }
 
 export function searchPlaces(query,limit=20) {
-  const normalized = normalizePlace(query);
+  const normalized = normalizePlace(placeLocalName(query));
   if (normalized.length < 2) return [];
   const boundedLimit = Math.max(1,Math.min(Number(limit)||20,50));
   const db = getDb();
-  const imported = db.prepare(`SELECT id,name,place_type,latitude AS lat,longitude AS lng,population,wikidata_id,source
+  const imported = db.prepare(`SELECT id,name,name || ', ' || country_name AS display_name,country_name,country_code,
+      place_type,latitude AS lat,longitude AS lng,population,wikidata_id,source
     FROM place_catalog
     WHERE normalized_name LIKE ? OR lower(COALESCE(alternate_names,'')) LIKE ?
     ORDER BY
@@ -112,15 +114,15 @@ export function searchPlaces(query,limit=20) {
       CASE place_type WHEN 'city' THEN 0 WHEN 'town' THEN 1 WHEN 'village' THEN 2 ELSE 3 END,
       COALESCE(population,0) DESC,name
     LIMIT ?`).all(`%${normalized}%`,`%${normalized}%`,normalized,`${normalized}%`,boundedLimit);
-  const seen = new Set(imported.map(place=>normalizePlace(place.name)));
+  const seen = new Set(imported.map(place=>placeIdentity(place.display_name)));
   const fallback = ETHIOPIA_PLACES
-    .filter(place=>normalizePlace(place.name).includes(normalized)&&!seen.has(normalizePlace(place.name)))
-    .map(place=>({id:`builtin:${normalizePlace(place.name)}`,name:place.name,place_type:'city',lat:place.lat,lng:place.lng,population:null,wikidata_id:null,source:'BUILT_IN'}));
+    .filter(place=>normalizePlace(place.name).includes(normalized)&&!seen.has(placeIdentity(place.name)))
+    .map(place=>({id:`builtin:${normalizePlace(place.name)}`,name:place.name,display_name:placeLabel(place.name),country_name:'Ethiopia',country_code:'ET',place_type:'city',lat:place.lat,lng:place.lng,population:null,wikidata_id:null,source:'BUILT_IN'}));
   return [...imported,...fallback].slice(0,boundedLimit);
 }
 
 export function getPlaceCoordinate(value) {
-  const normalized = normalizePlace(value);
+  const normalized = normalizePlace(placeLocalName(value));
   if (!normalized) return null;
   const imported = getDb().prepare(`SELECT name,latitude AS lat,longitude AS lng,place_type
     FROM place_catalog
@@ -458,6 +460,8 @@ export function createShipment(user, input) {
   const operationalStatus = distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER ? 'SENT' : 'POSTED';
   const commercialStatus = distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER ? 'SENT' : 'POSTED';
   const timestamp = nowIso();
+  const origin=placeLabel(input.origin);
+  const destination=placeLabel(input.destination);
 
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -478,7 +482,7 @@ export function createShipment(user, input) {
         id,code,title:input.title,serviceMode,distributionMode,priceMode:input.priceMode,priceMinor,targetMinor,
         shipperOrganizationId,receiverOrganizationId,loadOwnerOrganizationId:user.organization_id,loadOwnerPartyRole:ownerPartyRole,
         externalShipperName,externalShipperPhone,externalReceiverName,externalReceiverPhone,
-        providerOrganizationId,providerProfileId,origin:input.origin,destination:input.destination,
+        providerOrganizationId,providerProfileId,origin,destination,
         cargoDescription:input.cargoDescription,packageCount:Number(input.packageCount||1),
         vehicleCategory:input.vehicleCategory||null,loadType,pickupDate:input.pickupDate,deliveryDate:input.deliveryDate||null,
         commercialStatus,operationalStatus,trackingMode,trackingCodeHash,createdBy:user.id,createdAt:timestamp,updatedAt:timestamp
@@ -499,7 +503,7 @@ export function createShipment(user, input) {
 }
 
 function trackingLocation(input = {}, required = false,allowDeviceLocation = true,expectedPrecisionKm=40) {
-  const area = String(input.locationArea || '').trim();
+  const area = qualifyAreaLabel(input.locationArea);
   const device = input.locationSource === 'DEVICE_OBSCURED';
   if (device && !allowDeviceLocation) throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
   const lat = device ? Number(input.approximateLat) : null;
@@ -982,19 +986,19 @@ export function updateCompanyPage(user, input) {
   if (!id) throw new Error('FORBIDDEN');
   const published = input.published ? 1 : 0;
   const showContactPhoneOnLoads = [USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) && input.showContactPhoneOnLoads ? 1 : 0;
-  const routes = (input.routes || []).map(route => ({origin:String(route.origin || '').trim(),destination:String(route.destination || '').trim()}))
+  const routes = (input.routes || []).map(route => ({origin:placeLabel(route.origin),destination:placeLabel(route.destination)}))
     .filter(route => route.origin || route.destination);
   for (const route of routes) {
     if (!route.origin || !route.destination) throw new Error('MISSING_REQUIRED_FIELDS');
-    if (normalizePlace(route.origin) === normalizePlace(route.destination)) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+    if (placeIdentity(route.origin) === placeIdentity(route.destination)) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   }
-  const uniqueRoutes = [...new Map(routes.map(route => [`${normalizePlace(route.origin)}|${normalizePlace(route.destination)}`.split('|').sort().join('|'),route])).values()];
+  const uniqueRoutes = [...new Map(routes.map(route => [`${placeIdentity(route.origin)}|${placeIdentity(route.destination)}`.split('|').sort().join('|'),route])).values()];
   const corridors = uniqueRoutes.map(route => `${route.origin} ↔ ${route.destination}`).join('; ');
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,corridors=?,operating_regions=?,contact_phone=?,show_contact_phone_on_loads=?,contact_email=?,published=?,updated_at=? WHERE ${condition}`)
-      .run(input.headline || '',input.about || '',input.services || '',corridors,input.operatingRegions || '',input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,timestamp,id);
+      .run(input.headline || '',input.about || '',input.services || '',corridors,qualifyPlaceList(input.operatingRegions),input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,timestamp,id);
     db.prepare(`DELETE FROM profile_routes WHERE ${condition}`).run(id);
     const insert = db.prepare(`INSERT INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,?,?)`);
     for (const route of uniqueRoutes) insert.run(randomId('route-'),isProvider ? null : id,isProvider ? id : null,route.origin,route.destination,user.id,timestamp);
@@ -1052,14 +1056,14 @@ export function getFleetNetworkCoverage(user) {
     FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id WHERE o.id=?`).get(user.organization_id);
   const routes = page ? listProfileRoutesWithEvidence(db,page) : [];
   const corridorLabels = routes.map(route => `${route.origin} ↔ ${route.destination}`);
-  const corridorPlaces = new Set(routes.flatMap(route => [normalizePlace(route.origin),normalizePlace(route.destination)]));
+  const corridorPlaces = new Set(routes.flatMap(route => [placeIdentity(route.origin),placeIdentity(route.destination)]));
   const businesses = db.prepare(`SELECT o.id,o.name,o.handle,o.city,cp.operating_regions
     FROM partner_relationships rel
     JOIN organizations o ON o.id=rel.owner_organization_id
     LEFT JOIN company_pages cp ON cp.organization_id=o.id
     WHERE rel.provider_organization_id=? AND rel.status='CONNECTED'
     ORDER BY o.name`).all(user.organization_id).map(business => {
-      const places = [...new Set([normalizePlace(business.city),...splitPlaces(business.operating_regions)].filter(Boolean))];
+      const places = [...new Set([placeIdentity(business.city),...splitPlaces(business.operating_regions)].filter(Boolean))];
       const matched = places.filter(place => corridorPlaces.has(place));
       return {...business,places,matched_places:matched,coverage_label:matched.length ? `${matched.length} location${matched.length === 1 ? '' : 's'} on recorded corridors` : 'No recorded corridor match'};
     });
@@ -1544,14 +1548,19 @@ export function publishCapacity(user, input, photo = null) {
   const timestamp = nowIso();
   const expiresAt = hoursFromNow(expiresHours);
   const id = randomId('cap-');
+  const origin=input.origin?placeLabel(input.origin):null;
+  const destination=input.destination?placeLabel(input.destination):null;
+  const currentRouteOrigin=input.currentRouteOrigin?placeLabel(input.currentRouteOrigin):null;
+  const currentRouteDestination=input.currentRouteDestination?placeLabel(input.currentRouteDestination):null;
+  const locationArea=input.status==='OFF_DUTY'?null:qualifyAreaLabel(input.locationArea);
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE capacities SET expires_at=? WHERE vehicle_id=? AND expires_at>?`).run(timestamp,vehicle.id,timestamp);
     db.prepare(`INSERT INTO capacities
       (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,accepts_multi_pick,accepts_multi_drop)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicle.id,input.status,percent,input.origin || null,input.destination || null,input.corridor || `${input.origin || ''} → ${input.destination || ''}`,input.travelDate || null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,input.status === 'OFF_DUTY' ? null : input.locationArea.trim(),input.status === 'OFF_DUTY' ? null : timestamp,locationLat,locationLng,locationPrecisionKm,hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,input.status==='PARTIAL'?input.currentRouteOrigin||null:null,input.status==='PARTIAL'?input.currentRouteDestination||null:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0);
-    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, locationArea: input.status === 'OFF_DUTY' ? null : input.locationArea.trim(), locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
+      .run(id,scope.organizationId,scope.profileId,vehicle.id,input.status,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,input.travelDate || null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,locationLat,locationLng,locationPrecisionKm,hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,input.status==='PARTIAL'?currentRouteOrigin:null,input.status==='PARTIAL'?currentRouteDestination:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0);
+    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, locationArea, locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
