@@ -66,6 +66,54 @@ test('fleet dashboard compares saved Business regions with recorded corridors',(
  assert.equal(coverage.businesses[0].name,'Blue Nile Trading PLC');
  assert.ok(coverage.businesses[0].matched_places.includes('addis ababa'));
  assert.match(coverage.businesses[0].coverage_label,/recorded corridors/);
+ assert.ok(coverage.routes.some(route=>route.origin==='Addis Ababa'&&route.destination==='Dire Dawa'));
+});
+
+test('profile routes separate declarations, reported records, and tracked evidence',()=>{
+ const shipper=repo.getUserById('user-shipper');
+ const transporter=repo.getUserById('user-transporter');
+ const business=repo.getPublicCompany('blue-nile-trading');
+ const businessRoute=business.routes.find(route=>route.origin==='Addis Ababa'&&route.destination==='Dire Dawa');
+ assert.ok(businessRoute.reported_count>=2);
+ assert.ok(businessRoute.tracked_count>=1);
+ assert.equal(businessRoute.evidence_label,'Tracked activity');
+ const fleet=repo.getPublicCompany('blueline-transport');
+ const fleetRoute=fleet.routes.find(route=>route.origin==='Addis Ababa'&&route.destination==='Dire Dawa');
+ assert.ok(fleetRoute.reported_count>=1);
+ assert.ok(fleetRoute.tracked_count>=1);
+ const comparison=repo.getProfileRouteComparison(shipper,fleet);
+ assert.ok(comparison.exact_count>=1);
+ assert.match(comparison.evidence_label,/tracked/i);
+
+ const own=repo.getOwnCompanyPage(shipper);
+ repo.updateCompanyPage(shipper,{
+   ...own,
+   routes:[...own.routes.map(route=>({origin:route.origin,destination:route.destination})),{origin:'Addis Ababa',destination:'Unmapped Market'}],
+   operatingRegions:own.operating_regions,
+   contactPhone:own.contact_phone,
+   contactEmail:own.contact_email,
+   showContactPhoneOnLoads:Boolean(own.show_contact_phone_on_loads),
+   published:true
+ });
+ const updated=repo.getPublicCompany('blue-nile-trading');
+ const declaredOnly=updated.routes.find(route=>route.destination==='Unmapped Market');
+ assert.equal(declaredOnly.reported_count,0);
+ assert.equal(declaredOnly.tracked_count,0);
+ assert.equal(declaredOnly.evidence_label,'Declared only');
+ assert.throws(()=>repo.updateCompanyPage(transporter,{...repo.getOwnCompanyPage(transporter),routes:[{origin:'Adama',destination:'Adama'}]}),/ROUTE_LOCATIONS_MUST_DIFFER/);
+});
+
+test('company driver is assigned to one fleet truck and defaults to full owner-delegated authority',()=>{
+ const owner=repo.getUserById('user-transporter');
+ const driver=repo.getUserById('user-company-driver');
+ const access=repo.getDriverAccess(driver);
+ assert.equal(access.kind,'COMPANY');
+ assert.equal(access.can_negotiate_loads,true);
+ assert.deepEqual(repo.listOwnVehicles(driver).map(vehicle=>vehicle.id),['veh-trans-1']);
+ const team=repo.listFleetDrivers(owner);
+ assert.equal(team.length,1);
+ assert.match(team[0].assigned_vehicles,/Isuzu FSR/);
+ assert.throws(()=>repo.listFleetDrivers(driver),/FORBIDDEN/);
 });
 
 test('Load and Capacity Boards filter and rank by an owned route',()=>{

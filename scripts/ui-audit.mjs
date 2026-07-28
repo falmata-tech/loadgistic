@@ -28,6 +28,11 @@ const personas = [
     routes: ['/app/home', '/app/loads', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/company-page', '/app/verification', '/app/more']
   },
   {
+    name: 'company-driver',
+    email: 'company-driver@loadgistic.local',
+    routes: ['/app/home', '/app/loads', '/app/capacity', '/app/shipments', '/app/providers', '/app/verification', '/app/more']
+  },
+  {
     name: 'admin',
     email: 'admin@loadgistic.local',
     routes: ['/app/home', '/admin/applications', '/admin/verifications', '/admin/billing', '/app/shipments', '/companies', '/app/more']
@@ -43,8 +48,14 @@ function fileName(value) {
   return value.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/-+$/, '') || 'home';
 }
 
+async function gotoReady(page, route) {
+  const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(750);
+  return response;
+}
+
 async function login(page, email) {
-  await page.goto(`${baseURL}/login`, { waitUntil: 'networkidle' });
+  await gotoReady(page, '/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await Promise.all([
@@ -54,7 +65,7 @@ async function login(page, email) {
 }
 
 async function inspectPage(page, route, screenshotPath) {
-  const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'networkidle' });
+  const response = await gotoReady(page, route);
   return inspectCurrentPage(page,route,screenshotPath,response?.status() || null);
 }
 
@@ -120,7 +131,7 @@ try {
         }
 
         if (['business-shipper', 'business-receiver'].includes(persona.name)) {
-          await page.goto(`${baseURL}/app/providers`, { waitUntil: 'networkidle' });
+          await gotoReady(page, '/app/providers');
           const companyHref = await page.getByRole('link', { name: 'View Profile' }).first().getAttribute('href');
           if (companyHref) {
             const result = await inspectPage(
@@ -129,8 +140,15 @@ try {
               path.join(outputDir, `${viewport.name}-${persona.name}-company-detail.png`)
             );
             report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
+            const comparisonHref = persona.name === 'business-shipper' ? '/companies/blueline-transport?compare=routes' : '/companies/blue-nile-trading?compare=routes';
+            const comparisonResult = await inspectPage(
+              page,
+              comparisonHref,
+              path.join(outputDir, `${viewport.name}-${persona.name}-company-route-comparison.png`)
+            );
+            report.results.push({ viewport: viewport.name, persona: persona.name, ...comparisonResult });
           }
-          await page.goto(`${baseURL}/app/capacity`, { waitUntil: 'networkidle' });
+          await gotoReady(page, '/app/capacity');
           const capacityHref = await page.getByRole('link', { name: 'View truck details' }).first().getAttribute('href');
           if (capacityHref) {
             const result = await inspectPage(
@@ -142,7 +160,7 @@ try {
           }
         }
 
-        await page.goto(`${baseURL}/app/shipments`, { waitUntil: 'networkidle' });
+        await gotoReady(page, '/app/shipments');
         const trackingRows = page.locator('a[href^="/app/shipments/"]');
         const shipmentHref = await trackingRows.count() ? await trackingRows.first().getAttribute('href') : null;
         if (shipmentHref) {
@@ -164,7 +182,7 @@ try {
         }
 
         if (persona.name === 'fleet-transporter') {
-          await page.goto(`${baseURL}/app/shipments/shp-freight-active`, { waitUntil: 'networkidle' });
+          await gotoReady(page, '/app/shipments/shp-freight-active');
           const activeResult = await inspectCurrentPage(
             page,
             '/app/shipments/shp-freight-active#assigned-tracking',

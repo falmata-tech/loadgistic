@@ -110,6 +110,9 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading', { name: 'My Fleet' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Driver access' })).toBeVisible();
+  await expect(page.getByText('Yonas Alemu')).toBeVisible();
+  await expect(page.getByText(/Isuzu FSR/)).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await expect(page.getByRole('radio', { name: 'On Duty' })).toBeChecked();
   await expect(page.getByRole('heading', { name: 'Loads you will accept' })).toBeVisible();
@@ -126,6 +129,36 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByText(/read only for transporters and drivers/i)).toBeVisible();
   await expect(page.getByRole('link', { name: /view transporter/i })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /interest|contact/i })).toHaveCount(0);
+});
+
+test('fleet owner can reduce a company driver to duty-only Home and restore access', async ({ page }: { page: any }) => {
+  test.skip((page.viewportSize()?.width || 0)<980,'Stateful owner permission mutation runs once; mobile layout is covered by UI audit.');
+  await login(page,'transporter@loadgistic.local');
+  await page.goto('/app/fleet');
+  const driverForm=page.locator('form').filter({hasText:'Yonas Alemu'});
+  await driverForm.getByRole('checkbox',{name:'Load Board'}).uncheck();
+  await driverForm.getByRole('checkbox',{name:'Business contact'}).uncheck();
+  await driverForm.getByRole('checkbox',{name:'Load agreements'}).uncheck();
+  await driverForm.getByRole('checkbox',{name:'Rich capacity'}).uncheck();
+  await driverForm.getByRole('button',{name:'Save access'}).click();
+  await expect(page.getByText('Driver permissions updated.')).toBeVisible();
+
+  await page.context().clearCookies();
+  await login(page,'company-driver@loadgistic.local');
+  await expect(page.getByRole('heading',{name:'My duty status'})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Go Off Duty|Go On Duty/})).toBeVisible();
+  await expect(page.getByTestId('capacity-form')).toHaveCount(0);
+  await page.goto('/app/loads');
+  await expect(page.getByText(/Load Board access is managed by your fleet owner/)).toBeVisible();
+  await expect(page.getByText('Beverage load to Dire Dawa')).toHaveCount(0);
+
+  await page.context().clearCookies();
+  await login(page,'transporter@loadgistic.local');
+  await page.goto('/app/fleet');
+  const restoreForm=page.locator('form').filter({hasText:'Yonas Alemu'});
+  for(const name of ['Load Board','Business contact','Load agreements','Rich capacity'])await restoreForm.getByRole('checkbox',{name}).check();
+  await restoreForm.getByRole('button',{name:'Save access'}).click();
+  await expect(page.getByText('Driver permissions updated.')).toBeVisible();
 });
 
 test('self-managed driver keeps the rich capacity control panel as Home', async ({ page }: { page: any }) => {
@@ -148,10 +181,25 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'View Profile' })).toBeVisible();
   await page.goto('/companies/blueline-transport');
+  await expect(page.locator('.leaflet-container')).toBeVisible();
+  await expect(page.getByText('Tracked activity').first()).toBeVisible();
+  await page.getByRole('link',{name:'Compare routes'}).click();
+  await expect(page.getByText('How this comparison works')).toBeVisible();
+  await expect(page.getByText(/full corridor match/).first()).toBeVisible();
   await expect(page.getByText(/2 active trucks registered/)).toBeVisible();
   await expect(page.getByText('Isuzu · FSR').first()).toBeVisible();
   await expect(page.getByText('Sinotruk · HOWO TX')).toBeVisible();
   await expect(page.getByTitle('Vehicle authority: Verified')).toBeVisible();
+});
+
+test('Business profile editor uses paired coverage route inputs', async ({ page }: { page: any }) => {
+  await login(page,'shipper@loadgistic.local');
+  await page.goto('/app/company-page');
+  await expect(page.getByRole('heading',{name:'Coverage routes'})).toBeVisible();
+  await expect(page.getByLabel('City 1').first()).toHaveValue('Addis Ababa');
+  await expect(page.getByLabel('City 2').first()).toHaveValue('Dire Dawa');
+  await page.getByRole('button',{name:'Add route'}).click();
+  await expect(page.getByLabel('City 1')).toHaveCount(3);
 });
 
 test('member verification center and admin review queue are available', async ({ page }: { page: any }) => {

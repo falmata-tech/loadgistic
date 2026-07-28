@@ -38,13 +38,73 @@ function notify(db, userId, title, body) {
     .run(randomId('ntf-'), userId, title, body, null, nowIso());
 }
 
+function isSelfManagedDriver(user) {
+  return user.role === USER_ROLES.DRIVER && Boolean(user.provider_profile_id);
+}
+
+function isCompanyDriver(user) {
+  return user.role === USER_ROLES.DRIVER && Boolean(user.organization_id) && !user.provider_profile_id;
+}
+
+function providerScope(user) {
+  if (isSelfManagedDriver(user)) return { column:'provider_profile_id', id:user.provider_profile_id, organizationId:null, profileId:user.provider_profile_id };
+  if ([USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role) && user.organization_id) {
+    return { column:'provider_organization_id', id:user.organization_id, organizationId:user.organization_id, profileId:null };
+  }
+  return null;
+}
+
+export function getDriverAccess(user) {
+  if (isSelfManagedDriver(user)) {
+    return {
+      kind:'SELF_MANAGED',
+      can_browse_load_board:true,
+      can_contact_businesses:true,
+      can_negotiate_loads:true,
+      can_manage_capacity:true
+    };
+  }
+  if (!isCompanyDriver(user)) return null;
+  const stored = getDb().prepare('SELECT * FROM driver_permissions WHERE user_id=?').get(user.id);
+  return {
+    kind:'COMPANY',
+    can_browse_load_board:Boolean(stored?.can_browse_load_board ?? 1),
+    can_contact_businesses:Boolean(stored?.can_contact_businesses ?? 1),
+    can_negotiate_loads:Boolean(stored?.can_negotiate_loads ?? 1),
+    can_manage_capacity:Boolean(stored?.can_manage_capacity ?? 1)
+  };
+}
+
+function canBrowseLoads(user) {
+  if (!roleCanBrowseLoads(user.role)) return false;
+  const access = getDriverAccess(user);
+  return access ? access.can_browse_load_board : true;
+}
+
+function canContactBusinesses(user) {
+  const access = getDriverAccess(user);
+  return access ? access.can_contact_businesses && access.can_browse_load_board : true;
+}
+
+function canNegotiateLoads(user) {
+  const access = getDriverAccess(user);
+  return access ? access.can_negotiate_loads && access.can_contact_businesses && access.can_browse_load_board : true;
+}
+
 export function getUserById(id) {
   return getDb().prepare(`
     SELECT u.*, o.name AS organization_name, o.handle AS organization_handle, o.type AS organization_type,
-           p.business_name AS provider_business_name, p.handle AS provider_handle
+           p.business_name AS provider_business_name, p.handle AS provider_handle,
+           CASE WHEN u.role='DRIVER' AND u.provider_profile_id IS NOT NULL THEN 'SELF_MANAGED'
+                WHEN u.role='DRIVER' AND u.organization_id IS NOT NULL THEN 'COMPANY' END AS driver_kind,
+           COALESCE(dp.can_browse_load_board,1) AS can_browse_load_board,
+           COALESCE(dp.can_contact_businesses,1) AS can_contact_businesses,
+           COALESCE(dp.can_negotiate_loads,1) AS can_negotiate_loads,
+           COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity
     FROM users u
     LEFT JOIN organizations o ON o.id = u.organization_id
     LEFT JOIN provider_profiles p ON p.id = u.provider_profile_id
+    LEFT JOIN driver_permissions dp ON dp.user_id=u.id
     WHERE u.id = ?
   `).get(id) || null;
 }
@@ -92,11 +152,13 @@ export function getDashboard(user) {
     return data;
   }
 
+  const scope = providerScope(user);
+  if (!scope) return data;
   data.counts = {
     'Available Loads': listLoads(user).length,
-    'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${user.role === USER_ROLES.DRIVER ? 'provider_profile_id=?' : 'provider_organization_id=?'} AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id).n,
-    'Current Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE ${user.role === USER_ROLES.DRIVER ? 'provider_profile_id=?' : 'provider_organization_id=?'} AND expires_at > ?`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id, nowIso()).n,
-    'Proof Pending': db.prepare(`SELECT COUNT(*) AS n FROM shipments s WHERE ${user.role === USER_ROLES.DRIVER ? 's.provider_profile_id=?' : 's.provider_organization_id=?'} AND s.operational_status IN ('DELIVERED','IN_TRANSIT') AND NOT EXISTS (SELECT 1 FROM proof_files p WHERE p.shipment_id=s.id AND p.proof_type='DELIVERY')`).get(user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id).n
+    'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${scope.column}=? AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(scope.id).n,
+    'Current Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE ${scope.column}=? AND expires_at > ?`).get(scope.id,nowIso()).n,
+    'Proof Pending': db.prepare(`SELECT COUNT(*) AS n FROM shipments s WHERE s.${scope.column}=? AND s.operational_status IN ('DELIVERED','IN_TRANSIT') AND NOT EXISTS (SELECT 1 FROM proof_files p WHERE p.shipment_id=s.id AND p.proof_type='DELIVERY')`).get(scope.id).n
   };
   data.actions = [
     { href: '/app/loads', label: 'Open Load Board', description: 'View direct, partner, and open B2B freight.' },
@@ -123,7 +185,7 @@ export function listVisibleShipments(user) {
   } else if (user.role === USER_ROLES.SHIPPER || user.role === USER_ROLES.RECEIVER) {
     sql += ' WHERE s.shipper_organization_id=? OR s.receiver_organization_id=? ORDER BY s.updated_at DESC';
     args.push(user.organization_id,user.organization_id);
-  } else if (user.role === USER_ROLES.TRANSPORTER) {
+  } else if (user.role === USER_ROLES.TRANSPORTER || isCompanyDriver(user)) {
     sql += ' WHERE s.provider_organization_id=? ORDER BY s.updated_at DESC';
     args.push(user.organization_id);
   } else {
@@ -147,12 +209,14 @@ export function getShipmentForUser(user, idOrCode) {
     WHERE s.id=? OR s.code=?`).get(idOrCode,idOrCode);
   if (!shipment) return null;
   if (!canViewShipment(user, shipment)) return null;
+  if (!canContactBusinesses(user)) shipment.load_contact_phone = null;
   const isParty = isShipmentParty(user,shipment);
   shipment.events = db.prepare(`SELECT e.*, u.name AS actor_name FROM shipment_events e LEFT JOIN users u ON u.id=e.created_by WHERE e.shipment_id=? ${isParty ? '' : 'AND e.public=1'} ORDER BY e.created_at ASC`).all(shipment.id);
   if (isParty) {
-    shipment.interests = db.prepare(`SELECT i.*, o.name AS organization_name, p.business_name AS provider_name,
+    shipment.interests = db.prepare(`SELECT i.*, o.name AS organization_name, p.business_name AS provider_name,actor.name AS created_by_name,
       r.id AS proof_request_id,r.requested_at AS proof_requested_at,r.fulfilled_at AS proof_fulfilled_at
       FROM shipment_interests i LEFT JOIN organizations o ON o.id=i.provider_organization_id LEFT JOIN provider_profiles p ON p.id=i.provider_profile_id
+      LEFT JOIN users actor ON actor.id=i.created_by
       LEFT JOIN load_proof_requests r ON r.interest_id=i.id WHERE i.shipment_id=? ORDER BY i.created_at DESC`).all(shipment.id);
     shipment.proofs = db.prepare(`SELECT p.*, u.name AS uploaded_by_name FROM proof_files p JOIN users u ON u.id=p.uploaded_by WHERE p.shipment_id=? ORDER BY p.created_at DESC`).all(shipment.id);
     shipment.notes = db.prepare(`SELECT n.*,u.name AS author_name FROM shipment_notes n JOIN users u ON u.id=n.author_user_id WHERE n.shipment_id=? ORDER BY n.created_at DESC`).all(shipment.id);
@@ -164,9 +228,10 @@ export function getShipmentForUser(user, idOrCode) {
     shipment.receiver_name = null;
     shipment.receiver_first_name = null;
     shipment.receiver_phone = null;
-    shipment.interests = db.prepare(`SELECT i.*, o.name AS organization_name, p.business_name AS provider_name,
+    shipment.interests = db.prepare(`SELECT i.*, o.name AS organization_name, p.business_name AS provider_name,actor.name AS created_by_name,
       r.id AS proof_request_id,r.requested_at AS proof_requested_at,r.fulfilled_at AS proof_fulfilled_at
       FROM shipment_interests i LEFT JOIN organizations o ON o.id=i.provider_organization_id LEFT JOIN provider_profiles p ON p.id=i.provider_profile_id
+      LEFT JOIN users actor ON actor.id=i.created_by
       LEFT JOIN load_proof_requests r ON r.interest_id=i.id
       WHERE i.shipment_id=? AND (i.provider_organization_id=? OR i.provider_profile_id=?) ORDER BY i.created_at DESC`).all(shipment.id,user.organization_id || '',user.provider_profile_id || '');
     shipment.proofs = [];
@@ -192,7 +257,7 @@ function isShipmentParty(user, shipment) {
 }
 
 function isSavedPartnerForShipment(user, shipment) {
-  if (!roleCanBrowseLoads(user.role) || shipment.distribution_mode !== DISTRIBUTION_MODES.SAVED_PARTNERS) return false;
+  if (!canBrowseLoads(user) || shipment.distribution_mode !== DISTRIBUTION_MODES.SAVED_PARTNERS) return false;
   const relationship = getDb().prepare(`SELECT 1 FROM partner_relationships
     WHERE owner_organization_id=? AND status='SAVED'
       AND (provider_organization_id=? OR provider_profile_id=?) LIMIT 1`)
@@ -202,7 +267,7 @@ function isSavedPartnerForShipment(user, shipment) {
 
 function canViewShipment(user, shipment) {
   if (isShipmentParty(user, shipment)) return true;
-  if (!roleCanBrowseLoads(user.role) || shipment.service_mode !== SERVICE_MODES.FREIGHT || shipment.operational_status !== 'POSTED') return false;
+  if (!canBrowseLoads(user) || shipment.service_mode !== SERVICE_MODES.FREIGHT || shipment.operational_status !== 'POSTED') return false;
   if (shipment.distribution_mode === DISTRIBUTION_MODES.OPEN_MARKET) return true;
   return isSavedPartnerForShipment(user, shipment);
 }
@@ -316,7 +381,8 @@ export function addTrackingUpdate(user, shipmentId, input) {
   const shipment = getShipmentParty(user,shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
   const assignedProvider = (user.role === USER_ROLES.TRANSPORTER && shipment.provider_organization_id === user.organization_id)
-    || (user.role === USER_ROLES.DRIVER && shipment.provider_profile_id === user.provider_profile_id)
+    || (isCompanyDriver(user) && shipment.provider_organization_id === user.organization_id)
+    || (isSelfManagedDriver(user) && shipment.provider_profile_id === user.provider_profile_id)
     || user.role === USER_ROLES.ADMIN;
   if (!assignedProvider || !['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(shipment.operational_status)) throw new Error('FORBIDDEN');
   const note = String(input.note || '').trim();
@@ -461,6 +527,48 @@ function listProviderVehicles(db, ownerColumn, ownerId) {
   return vehicles.map(vehicle => ({...vehicle,verification_badges:verificationBadges(db,'VEHICLE',vehicle.vehicle_id)}));
 }
 
+function routeOwner(page) {
+  return page.page_kind === 'provider'
+    ? { column:'provider_profile_id', id:page.id, organizationId:null, profileId:page.id }
+    : { column:'organization_id', id:page.id, organizationId:page.id, profileId:null };
+}
+
+function hasTrackedExecution(db, shipmentId) {
+  return Boolean(db.prepare(`SELECT 1 FROM shipment_events
+    WHERE shipment_id=? AND status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED') LIMIT 1`).get(shipmentId));
+}
+
+function listProfileRoutesWithEvidence(db, page) {
+  const owner = routeOwner(page);
+  const routes = db.prepare(`SELECT * FROM profile_routes WHERE ${owner.column}=? ORDER BY created_at,id`).all(owner.id);
+  const activity = page.is_business
+    ? db.prepare(`SELECT id,origin,destination FROM shipments WHERE shipper_organization_id=?`).all(owner.id)
+    : owner.organizationId
+      ? {
+          capacity:db.prepare(`SELECT id,origin,destination FROM capacities WHERE provider_organization_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+          shipments:db.prepare(`SELECT id,origin,destination FROM shipments WHERE provider_organization_id=?`).all(owner.id)
+        }
+      : {
+          capacity:db.prepare(`SELECT id,origin,destination FROM capacities WHERE provider_profile_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+          shipments:db.prepare(`SELECT id,origin,destination FROM shipments WHERE provider_profile_id=?`).all(owner.id)
+        };
+  return routes.map(route => {
+    if (page.is_business) {
+      const posted = activity.filter(item => routeMatch(route.origin,route.destination,item.origin,item.destination).score === 2);
+      const tracked = posted.filter(item => hasTrackedExecution(db,item.id));
+      return {...route,reported_count:posted.length,tracked_count:tracked.length,evidence_label:tracked.length?'Tracked activity':posted.length?'Reported activity':'Declared only'};
+    }
+    const reported = activity.capacity.filter(item => routeMatch(route.origin,route.destination,item.origin,item.destination).score === 2);
+    const tracked = activity.shipments.filter(item => routeMatch(route.origin,route.destination,item.origin,item.destination).score === 2 && hasTrackedExecution(db,item.id));
+    return {...route,reported_count:reported.length,tracked_count:tracked.length,evidence_label:tracked.length?'Tracked activity':reported.length?'Reported activity':'Declared only'};
+  });
+}
+
+function attachProfileRoutes(db, page) {
+  page.routes = listProfileRoutesWithEvidence(db,page);
+  return page;
+}
+
 export function getPublicCompany(handle) {
   const db = getDb();
   const org = db.prepare(`SELECT o.id,o.name,o.handle,o.type,o.industry,o.description,o.city,o.public_visibility,
@@ -476,7 +584,7 @@ export function getPublicCompany(handle) {
     org.vehicles = org.is_business ? [] : listProviderVehicles(db,'organization_id',org.id);
     org.fleet_size = org.vehicles.length;
     org.capacities = org.is_business ? [] : listPublicCapacity().filter(c => c.provider_organization_id === org.id);
-    return org;
+    return attachProfileRoutes(db,org);
   }
   const provider = db.prepare(`SELECT p.id,p.business_name,p.business_name AS name,p.handle,p.city,p.about,p.public_visibility,
     cp.headline,cp.services,cp.corridors,cp.operating_regions,cp.contact_phone,cp.contact_email
@@ -490,36 +598,91 @@ export function getPublicCompany(handle) {
     provider.vehicles = listProviderVehicles(db,'provider_profile_id',provider.id);
     provider.fleet_size = provider.vehicles.length;
     provider.capacities = listPublicCapacity().filter(c => c.provider_profile_id === provider.id);
-    return provider;
+    return attachProfileRoutes(db,provider);
   }
   return null;
 }
 
 export function updateCompanyPage(user, input) {
   const db = getDb();
-  const isProvider = user.role === USER_ROLES.DRIVER;
+  const isProvider = isSelfManagedDriver(user);
+  if (isCompanyDriver(user) || ![USER_ROLES.SHIPPER,USER_ROLES.RECEIVER,USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
   const condition = isProvider ? 'provider_profile_id=?' : 'organization_id=?';
   const id = isProvider ? user.provider_profile_id : user.organization_id;
   if (!id) throw new Error('FORBIDDEN');
   const published = input.published ? 1 : 0;
   const showContactPhoneOnLoads = [USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) && input.showContactPhoneOnLoads ? 1 : 0;
-  db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,corridors=?,operating_regions=?,contact_phone=?,show_contact_phone_on_loads=?,contact_email=?,published=?,updated_at=? WHERE ${condition}`)
-    .run(input.headline || '',input.about || '',input.services || '',input.corridors || '',input.operatingRegions || '',input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,nowIso(),id);
-  audit(db,user,'COMPANY_PAGE_UPDATED','company_page',id,{});
+  const routes = (input.routes || []).map(route => ({origin:String(route.origin || '').trim(),destination:String(route.destination || '').trim()}))
+    .filter(route => route.origin || route.destination);
+  for (const route of routes) {
+    if (!route.origin || !route.destination) throw new Error('MISSING_REQUIRED_FIELDS');
+    if (normalizePlace(route.origin) === normalizePlace(route.destination)) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+  }
+  const uniqueRoutes = [...new Map(routes.map(route => [`${normalizePlace(route.origin)}|${normalizePlace(route.destination)}`.split('|').sort().join('|'),route])).values()];
+  const corridors = uniqueRoutes.map(route => `${route.origin} ↔ ${route.destination}`).join('; ');
+  const timestamp = nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,corridors=?,operating_regions=?,contact_phone=?,show_contact_phone_on_loads=?,contact_email=?,published=?,updated_at=? WHERE ${condition}`)
+      .run(input.headline || '',input.about || '',input.services || '',corridors,input.operatingRegions || '',input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,timestamp,id);
+    db.prepare(`DELETE FROM profile_routes WHERE ${condition}`).run(id);
+    const insert = db.prepare(`INSERT INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,?,?)`);
+    for (const route of uniqueRoutes) insert.run(randomId('route-'),isProvider ? null : id,isProvider ? id : null,route.origin,route.destination,user.id,timestamp);
+    audit(db,user,'COMPANY_PAGE_UPDATED','company_page',id,{routeCount:uniqueRoutes.length});
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 export function getOwnCompanyPage(user) {
   const db = getDb();
-  if (user.role === USER_ROLES.DRIVER) return db.prepare('SELECT * FROM company_pages WHERE provider_profile_id=?').get(user.provider_profile_id);
-  return db.prepare('SELECT * FROM company_pages WHERE organization_id=?').get(user.organization_id);
+  if (isCompanyDriver(user)) throw new Error('FORBIDDEN');
+  const page = isSelfManagedDriver(user)
+    ? db.prepare(`SELECT cp.*,p.id,p.business_name AS name,'provider' AS page_kind,0 AS is_business FROM company_pages cp JOIN provider_profiles p ON p.id=cp.provider_profile_id WHERE cp.provider_profile_id=?`).get(user.provider_profile_id)
+    : db.prepare(`SELECT cp.*,o.id,o.name,'organization' AS page_kind,
+      CASE WHEN o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER') THEN 1 ELSE 0 END AS is_business
+      FROM company_pages cp JOIN organizations o ON o.id=cp.organization_id WHERE cp.organization_id=?`).get(user.organization_id);
+  return page ? attachProfileRoutes(db,page) : null;
+}
+
+export function getProfileRouteComparison(user, company) {
+  const db = getDb();
+  const viewerPage = isSelfManagedDriver(user)
+    ? {id:user.provider_profile_id,page_kind:'provider',is_business:false}
+    : user.organization_id
+      ? {id:user.organization_id,page_kind:'organization',is_business:[USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role)}
+      : null;
+  if (!viewerPage || (viewerPage.page_kind === company.page_kind && viewerPage.id === company.id)) return null;
+  const viewerRoutes = listProfileRoutesWithEvidence(db,viewerPage);
+  const targetRoutes = company.routes || listProfileRoutesWithEvidence(db,company);
+  const matches = targetRoutes.map(target => {
+    const ranked = viewerRoutes.map(viewer => ({viewer,target,...routeMatch(viewer.origin,viewer.destination,target.origin,target.destination)}))
+      .sort((a,b) => b.score-a.score);
+    return ranked[0] || {viewer:null,target,score:0,label:'No recorded route match'};
+  });
+  const exact = matches.filter(match => match.score === 2);
+  const partial = matches.filter(match => match.score === 1);
+  return {
+    viewer_routes:viewerRoutes,
+    target_routes:targetRoutes,
+    matches,
+    exact_count:exact.length,
+    partial_count:partial.length,
+    strongest_label:exact.length ? `${exact.length} full corridor ${exact.length === 1 ? 'match' : 'matches'}` : partial.length ? `${partial.length} shared-endpoint ${partial.length === 1 ? 'match' : 'matches'}` : 'No recorded route overlap',
+    evidence_label:targetRoutes.some(route => route.tracked_count) ? 'Includes tracked activity' : targetRoutes.some(route => route.reported_count) ? 'Reported activity only' : 'Declarations only'
+  };
 }
 
 export function getFleetNetworkCoverage(user) {
   if (user.role !== USER_ROLES.TRANSPORTER || !user.organization_id) return null;
   const db = getDb();
-  const page = db.prepare('SELECT corridors FROM company_pages WHERE organization_id=?').get(user.organization_id);
-  const corridorLabels = String(page?.corridors || '').split(/[;\n]/).map(value => value.trim()).filter(Boolean);
-  const corridorPlaces = new Set(corridorLabels.flatMap(splitPlaces));
+  const page = db.prepare(`SELECT o.id,o.name,o.type,o.handle,'organization' AS page_kind,0 AS is_business,cp.corridors
+    FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id WHERE o.id=?`).get(user.organization_id);
+  const routes = page ? listProfileRoutesWithEvidence(db,page) : [];
+  const corridorLabels = routes.map(route => `${route.origin} ↔ ${route.destination}`);
+  const corridorPlaces = new Set(routes.flatMap(route => [normalizePlace(route.origin),normalizePlace(route.destination)]));
   const businesses = db.prepare(`SELECT o.id,o.name,o.handle,o.city,cp.operating_regions
     FROM partner_relationships rel
     JOIN organizations o ON o.id=rel.owner_organization_id
@@ -530,7 +693,7 @@ export function getFleetNetworkCoverage(user) {
       const matched = places.filter(place => corridorPlaces.has(place));
       return {...business,places,matched_places:matched,coverage_label:matched.length ? `${matched.length} location${matched.length === 1 ? '' : 's'} on recorded corridors` : 'No recorded corridor match'};
     });
-  return { corridors:corridorLabels,businesses };
+  return { corridors:corridorLabels,routes,businesses };
 }
 
 const VERIFICATION_TYPES = Object.freeze({
@@ -542,10 +705,15 @@ const VERIFICATION_TYPES = Object.freeze({
 
 function ownsVerificationSubject(db,user,subjectType,subjectId) {
   if (user.role === USER_ROLES.ADMIN) return true;
-  if (subjectType === 'ORGANIZATION') return Boolean(user.organization_id && user.organization_id === subjectId);
+  if (subjectType === 'ORGANIZATION') return Boolean(user.role !== USER_ROLES.DRIVER && user.organization_id && user.organization_id === subjectId);
   if (subjectType === 'PROVIDER_PROFILE') return Boolean(user.provider_profile_id && user.provider_profile_id === subjectId);
-  if (subjectType === 'DRIVER') return Boolean(user.organization_id && db.prepare('SELECT 1 FROM drivers WHERE id=? AND organization_id=?').get(subjectId,user.organization_id));
+  if (subjectType === 'DRIVER') return Boolean(
+    isCompanyDriver(user)
+      ? db.prepare('SELECT 1 FROM drivers WHERE id=? AND user_id=? AND active=1').get(subjectId,user.id)
+      : user.organization_id && db.prepare('SELECT 1 FROM drivers WHERE id=? AND organization_id=?').get(subjectId,user.organization_id)
+  );
   if (subjectType === 'VEHICLE') {
+    if (isCompanyDriver(user)) return false;
     return Boolean(db.prepare(`SELECT 1 FROM vehicles WHERE id=? AND
       ((organization_id IS NOT NULL AND organization_id=?) OR (provider_profile_id IS NOT NULL AND provider_profile_id=?))`)
       .get(subjectId,user.organization_id || '',user.provider_profile_id || ''));
@@ -556,7 +724,10 @@ function ownsVerificationSubject(db,user,subjectType,subjectId) {
 export function getVerificationCenter(user) {
   const db = getDb();
   const subjects = [];
-  if (user.organization_id) {
+  if (isCompanyDriver(user)) {
+    const driver=db.prepare('SELECT id,name FROM drivers WHERE user_id=? AND organization_id=? AND active=1').get(user.id,user.organization_id);
+    if(driver)subjects.push({subject_type:'DRIVER',subject_id:driver.id,name:driver.name,type:'Driver'});
+  } else if (user.organization_id) {
     subjects.push({subject_type:'ORGANIZATION',subject_id:user.organization_id,name:user.organization_name,type:'Workspace'});
     subjects.push(...db.prepare(`SELECT 'VEHICLE' AS subject_type,id AS subject_id,make || ' ' || model AS name,'Truck' AS type
       FROM vehicles WHERE organization_id=? AND active=1 ORDER BY label`).all(user.organization_id));
@@ -679,7 +850,7 @@ export function listOwnLoadRouteOptions(user) {
 }
 
 export function listLoads(user, mode = 'ALL', filters = {}) {
-  if (!roleCanBrowseLoads(user.role) && user.role !== USER_ROLES.ADMIN) return [];
+  if (!canBrowseLoads(user) && user.role !== USER_ROLES.ADMIN) return [];
   const db = getDb();
   let where = `s.service_mode='FREIGHT' AND s.operational_status IN ('POSTED','SENT','CONTACTED')`;
   const args = [];
@@ -717,25 +888,26 @@ export function listLoads(user, mode = 'ALL', filters = {}) {
       return {...load,route_match_score:match?.score ?? null,route_match_label:match?.label ?? null};
     });
   if (selectedRoute) rows.sort((a,b) => b.route_match_score-a.route_match_score || new Date(b.created_at)-new Date(a.created_at));
+  if (!canContactBusinesses(user)) rows = rows.map(row => ({...row,load_contact_phone:null}));
   return rows;
 }
 
 export function expressInterest(user, shipmentId, note = '') {
-  if (!roleCanBrowseLoads(user.role)) throw new Error('FORBIDDEN');
+  if (!canNegotiateLoads(user)) throw new Error('FORBIDDEN');
   const db = getDb();
   const shipment = getShipmentForUser(user, shipmentId);
   if (!shipment || shipment.service_mode !== SERVICE_MODES.FREIGHT) throw new Error('NOT_FOUND');
   if (![DISTRIBUTION_MODES.OPEN_MARKET,DISTRIBUTION_MODES.SAVED_PARTNERS].includes(shipment.distribution_mode)) throw new Error('NOT_FOUND');
   db.prepare(`INSERT OR IGNORE INTO shipment_interests
-    (id,shipment_id,provider_organization_id,provider_profile_id,status,note,created_at) VALUES (?,?,?,?,?,?,?)`)
-    .run(randomId('int-'),shipment.id,user.role === USER_ROLES.TRANSPORTER ? user.organization_id : null,user.role === USER_ROLES.DRIVER ? user.provider_profile_id : null,'INTERESTED',note || null,nowIso());
+    (id,shipment_id,provider_organization_id,provider_profile_id,status,note,created_by,created_at) VALUES (?,?,?,?,?,?,?,?)`)
+    .run(randomId('int-'),shipment.id,providerScope(user)?.organizationId,providerScope(user)?.profileId,'INTERESTED',note || null,user.id,nowIso());
   const owner = db.prepare(`SELECT id FROM users WHERE organization_id=? AND active=1 ORDER BY created_at LIMIT 1`).get(shipment.shipper_organization_id);
   if (owner) notify(db,owner.id,'Provider expressed interest',`${user.organization_name || user.provider_business_name || user.name} is interested in ${shipment.code}.`);
   audit(db,user,'SHIPMENT_INTEREST_CREATED','shipment',shipment.id,{});
 }
 
 export function requestLoadProof(user, shipmentId) {
-  if (!roleCanBrowseLoads(user.role)) throw new Error('FORBIDDEN');
+  if (!canNegotiateLoads(user)) throw new Error('FORBIDDEN');
   const db = getDb();
   const shipment = getShipmentForUser(user,shipmentId);
   if (!shipment || shipment.service_mode !== SERVICE_MODES.FREIGHT) throw new Error('NOT_FOUND');
@@ -801,12 +973,13 @@ export function getLoadProofFile(user, proofId) {
 }
 
 export function acceptDirectedShipment(user, shipmentId) {
-  if (!roleCanBrowseLoads(user.role)) throw new Error('FORBIDDEN');
+  if (!canNegotiateLoads(user)) throw new Error('FORBIDDEN');
   const db = getDb();
   const shipment = getShipmentForUser(user, shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
   if (shipment.distribution_mode !== DISTRIBUTION_MODES.DIRECT_TO_PROVIDER) throw new Error('NOT_DIRECT_REQUEST');
-  const matches = (user.role === USER_ROLES.TRANSPORTER && shipment.provider_organization_id === user.organization_id) || (user.role === USER_ROLES.DRIVER && shipment.provider_profile_id === user.provider_profile_id);
+  const scope = providerScope(user);
+  const matches = Boolean(scope && ((scope.organizationId && shipment.provider_organization_id === scope.organizationId) || (scope.profileId && shipment.provider_profile_id === scope.profileId)));
   if (!matches) throw new Error('FORBIDDEN');
   if (shipment.operational_status !== 'SENT' || shipment.commercial_status !== 'SENT') throw new Error('DIRECT_REQUEST_NOT_PENDING');
   db.exec('BEGIN IMMEDIATE');
@@ -875,8 +1048,9 @@ export function listMarketCapacity(user, filters = {}) {
   const visible = rows.filter(row => {
     if (seen.has(row.id)) return false;
     seen.add(row.id);
-    if (user.role === USER_ROLES.TRANSPORTER && row.provider_organization_id === user.organization_id) return false;
-    if (user.role === USER_ROLES.DRIVER && row.provider_profile_id === user.provider_profile_id) return false;
+    const scope = providerScope(user);
+    if (scope?.organizationId && row.provider_organization_id === scope.organizationId) return false;
+    if (scope?.profileId && row.provider_profile_id === scope.profileId) return false;
     return true;
   });
   const filtered = visible
@@ -898,13 +1072,17 @@ export function listOwnCapacity(user) {
   if (!roleCanPublishCapacity(user.role) || user.role === USER_ROLES.ADMIN) return [];
   const db = getDb();
   const freshHours = Number(process.env.CAPACITY_FRESH_HOURS || 12);
-  const ownCondition = user.role === USER_ROLES.DRIVER ? 'c.provider_profile_id=?' : 'c.provider_organization_id=?';
-  const ownId = user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id;
+  const scope = providerScope(user);
+  if (!scope) return [];
+  const assignmentCondition = isCompanyDriver(user)
+    ? ' AND EXISTS (SELECT 1 FROM driver_vehicle_assignments a WHERE a.driver_user_id=? AND a.vehicle_id=v.id AND a.active=1)'
+    : '';
+  const args = isCompanyDriver(user) ? [scope.id,user.id] : [scope.id];
   return db.prepare(`SELECT c.*,v.label AS vehicle_label,v.category AS vehicle_category,v.make AS vehicle_make,v.model AS vehicle_model,v.cargo_configuration,o.name AS organization_name,o.handle AS organization_handle,
     p.business_name AS provider_name,p.handle AS provider_handle,u.name AS updated_by_name
     FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id LEFT JOIN organizations o ON o.id=c.provider_organization_id
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id JOIN users u ON u.id=c.updated_by
-    WHERE ${ownCondition} ORDER BY c.updated_at DESC`).all(ownId)
+    WHERE c.${scope.column}=?${assignmentCondition} ORDER BY c.updated_at DESC`).all(...args)
     .map(row => ({ ...row, proof_available: Boolean(row.photo_path), freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours), isOwn: true }));
 }
 
@@ -927,7 +1105,9 @@ export function getCapacityForUser(user, capacityId) {
 
 export function listOwnVehicles(user) {
   const db = getDb();
-  if (user.role === USER_ROLES.DRIVER) return db.prepare('SELECT * FROM vehicles WHERE provider_profile_id=? AND active=1').all(user.provider_profile_id);
+  if (isSelfManagedDriver(user)) return db.prepare('SELECT * FROM vehicles WHERE provider_profile_id=? AND active=1').all(user.provider_profile_id);
+  if (isCompanyDriver(user)) return db.prepare(`SELECT v.* FROM vehicles v JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id
+    WHERE a.driver_user_id=? AND a.active=1 AND v.organization_id=? AND v.active=1 ORDER BY v.label`).all(user.id,user.organization_id);
   if (user.role === USER_ROLES.TRANSPORTER) return db.prepare('SELECT * FROM vehicles WHERE organization_id=? AND active=1').all(user.organization_id);
   return [];
 }
@@ -935,8 +1115,15 @@ export function listOwnVehicles(user) {
 export function publishCapacity(user, input, photo = null) {
   if (!roleCanPublishCapacity(user.role)) throw new Error('FORBIDDEN');
   const db = getDb();
-  const vehicle = db.prepare(`SELECT * FROM vehicles WHERE id=? AND ${user.role === USER_ROLES.DRIVER ? 'provider_profile_id=?' : 'organization_id=?'} AND active=1`)
-    .get(input.vehicleId,user.role === USER_ROLES.DRIVER ? user.provider_profile_id : user.organization_id);
+  const scope = providerScope(user);
+  if (!scope) throw new Error('FORBIDDEN');
+  if (isCompanyDriver(user) && !getDriverAccess(user)?.can_manage_capacity) throw new Error('FORBIDDEN');
+  const assignmentJoin = isCompanyDriver(user)
+    ? ` AND EXISTS (SELECT 1 FROM driver_vehicle_assignments a WHERE a.driver_user_id=? AND a.vehicle_id=vehicles.id AND a.active=1)`
+    : '';
+  const vehicleArgs = isCompanyDriver(user) ? [input.vehicleId,scope.id,user.id] : [input.vehicleId,scope.id];
+  const vehicle = db.prepare(`SELECT * FROM vehicles WHERE id=? AND ${scope.column === 'provider_profile_id' ? 'provider_profile_id' : 'organization_id'}=? AND active=1${assignmentJoin}`)
+    .get(...vehicleArgs);
   if (!vehicle) throw new Error('INVALID_VEHICLE');
   const percent = validateCapacity(input.status,input.availablePercent);
   const acceptedLoads = validateAcceptedLoads(input.status,input.acceptedLoads);
@@ -960,7 +1147,7 @@ export function publishCapacity(user, input, photo = null) {
     db.prepare(`INSERT INTO capacities
       (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,user.role === USER_ROLES.TRANSPORTER ? user.organization_id : null,user.role === USER_ROLES.DRIVER ? user.provider_profile_id : null,vehicle.id,input.status,percent,input.origin || null,input.destination || null,input.corridor || `${input.origin || ''} → ${input.destination || ''}`,input.travelDate || null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,input.status === 'OFF_DUTY' ? null : input.locationArea.trim(),input.status === 'OFF_DUTY' ? null : timestamp,locationLat,locationLng,locationPrecisionKm,hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,input.acceptsMultiStop ? 1 : 0,photo?.path ? timestamp : null);
+      .run(id,scope.organizationId,scope.profileId,vehicle.id,input.status,percent,input.origin || null,input.destination || null,input.corridor || `${input.origin || ''} → ${input.destination || ''}`,input.travelDate || null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,input.status === 'OFF_DUTY' ? null : input.locationArea.trim(),input.status === 'OFF_DUTY' ? null : timestamp,locationLat,locationLng,locationPrecisionKm,hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,input.acceptsMultiStop ? 1 : 0,photo?.path ? timestamp : null);
     audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, locationArea: input.status === 'OFF_DUTY' ? null : input.locationArea.trim(), locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiStop: Boolean(input.acceptsMultiStop), proofRecorded: Boolean(photo?.path) });
     db.exec('COMMIT');
   } catch (error) {
@@ -968,6 +1155,86 @@ export function publishCapacity(user, input, photo = null) {
     throw error;
   }
   return id;
+}
+
+export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
+  if (![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
+  const db = getDb();
+  const scope = providerScope(user);
+  if (!scope) throw new Error('FORBIDDEN');
+  const assignment = isCompanyDriver(user)
+    ? db.prepare(`SELECT v.* FROM vehicles v JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id
+      WHERE v.id=? AND v.organization_id=? AND v.active=1 AND a.driver_user_id=? AND a.active=1`).get(vehicleId,scope.id,user.id)
+    : db.prepare(`SELECT * FROM vehicles WHERE id=? AND ${scope.column === 'provider_profile_id' ? 'provider_profile_id' : 'organization_id'}=? AND active=1`).get(vehicleId,scope.id);
+  if (!assignment) throw new Error('INVALID_VEHICLE');
+  const source = onDuty
+    ? db.prepare(`SELECT c.* FROM capacities c JOIN users u ON u.id=c.updated_by
+      WHERE c.vehicle_id=? AND c.status IN ('EMPTY','PARTIAL') AND (?=0 OR u.role='TRANSPORTER')
+      ORDER BY c.updated_at DESC LIMIT 1`).get(vehicleId,isCompanyDriver(user) ? 1 : 0)
+    : db.prepare('SELECT * FROM capacities WHERE vehicle_id=? ORDER BY updated_at DESC LIMIT 1').get(vehicleId);
+  if (onDuty && !source) throw new Error('CAPACITY_CONFIGURATION_REQUIRED');
+  const timestamp = nowIso();
+  const expiresAt = hoursFromNow(Number(process.env.CAPACITY_EXPIRES_HOURS || 24));
+  const id = randomId('cap-');
+  const status = onDuty ? source.status : 'OFF_DUTY';
+  const percent = onDuty ? source.available_percent : 0;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`UPDATE capacities SET expires_at=? WHERE vehicle_id=? AND expires_at>?`).run(timestamp,vehicleId,timestamp);
+    db.prepare(`INSERT INTO capacities
+      (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id,scope.organizationId,scope.profileId,vehicleId,status,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null);
+    audit(db,user,onDuty ? 'VEHICLE_SET_ON_DUTY' : 'VEHICLE_SET_OFF_DUTY','vehicle',vehicleId,{restoredCapacityId:onDuty ? source.id : null});
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  return id;
+}
+
+export function listFleetDrivers(user) {
+  if (user.role !== USER_ROLES.TRANSPORTER || !user.organization_id) throw new Error('FORBIDDEN');
+  const db = getDb();
+  return db.prepare(`SELECT u.id,u.name,u.email,d.phone,d.license_verified,
+    COALESCE(p.can_browse_load_board,1) AS can_browse_load_board,
+    COALESCE(p.can_contact_businesses,1) AS can_contact_businesses,
+    COALESCE(p.can_negotiate_loads,1) AS can_negotiate_loads,
+    COALESCE(p.can_manage_capacity,1) AS can_manage_capacity,
+    GROUP_CONCAT(v.make || ' ' || v.model || ' · ' || COALESCE(v.plate,''),'; ') AS assigned_vehicles
+    FROM users u JOIN drivers d ON d.user_id=u.id AND d.active=1
+    LEFT JOIN driver_permissions p ON p.user_id=u.id
+    LEFT JOIN driver_vehicle_assignments a ON a.driver_user_id=u.id AND a.active=1
+    LEFT JOIN vehicles v ON v.id=a.vehicle_id AND v.active=1
+    WHERE u.role='DRIVER' AND u.organization_id=? AND u.active=1
+    GROUP BY u.id ORDER BY u.name`).all(user.organization_id);
+}
+
+export function updateFleetDriverPermissions(user, driverUserId, input) {
+  if (user.role !== USER_ROLES.TRANSPORTER || !user.organization_id) throw new Error('FORBIDDEN');
+  const db = getDb();
+  const driver = db.prepare(`SELECT u.id FROM users u JOIN drivers d ON d.user_id=u.id
+    WHERE u.id=? AND u.role='DRIVER' AND u.organization_id=? AND u.active=1 AND d.active=1`).get(driverUserId,user.organization_id);
+  if (!driver) throw new Error('NOT_FOUND');
+  const values = {
+    browse:Boolean(input.canBrowseLoadBoard),
+    contact:Boolean(input.canContactBusinesses),
+    negotiate:Boolean(input.canNegotiateLoads),
+    capacity:Boolean(input.canManageCapacity)
+  };
+  db.prepare(`INSERT INTO driver_permissions
+    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at)
+    VALUES (?,?,?,?,?,?,?)
+    ON CONFLICT(user_id) DO UPDATE SET
+      can_browse_load_board=excluded.can_browse_load_board,
+      can_contact_businesses=excluded.can_contact_businesses,
+      can_negotiate_loads=excluded.can_negotiate_loads,
+      can_manage_capacity=excluded.can_manage_capacity,
+      updated_by=excluded.updated_by,
+      updated_at=excluded.updated_at`)
+    .run(driver.id,values.browse ? 1 : 0,values.contact ? 1 : 0,values.negotiate ? 1 : 0,values.capacity ? 1 : 0,user.id,nowIso());
+  audit(db,user,'DRIVER_PERMISSIONS_UPDATED','user',driver.id,values);
 }
 
 export function listApplications(user) {

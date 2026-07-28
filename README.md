@@ -38,6 +38,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 ## Run locally
 
 ```bash
+nvm use
 cp .env.example .env.local
 npm install
 npm run db:reset
@@ -47,6 +48,7 @@ npm run dev
 Open `http://127.0.0.1:3000`.
 
 The database is created at `data/loadgistic.db` and seeded automatically.
+After the first setup, the only command needed to start the app is `npm run dev`.
 
 ## Local fixture accounts
 
@@ -76,6 +78,7 @@ The runnable local adapter uses built-in SQLite so the project can operate witho
 
 ```text
 supabase/migrations/001_loadgistic_schema.sql
+supabase/migrations/002_fleet_driver_routes.sql
 ```
 
 The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Production migration replaces repository calls with RLS-protected Supabase queries or RPCs while preserving the domain commands and UI routes.

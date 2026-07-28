@@ -62,8 +62,16 @@ Store verification as immutable-subject requests reviewed by administrators rath
 
 ## ADR-015 — Declared-region coverage and explainable route matching
 
-Store Business operating regions as member-entered city or regional names on the authenticated Public Profile. Compare those names with a Fleet Transporter's declared corridor endpoints to produce a schematic network coverage projection. Do not infer coordinates, exact facilities, drive distance, or serviceability from profile text.
+Store Business operating regions as member-entered city or regional names and store Public Profile coverage as explicit origin/destination route pairs. Render approximate routes only when both places exist in the reviewed Ethiopia place reference catalog; retain unknown member-entered places in lists and comparisons without inventing coordinates. Map lines and city markers indicate regional route relationships, not exact facilities, drive paths, live movement, distance, or serviceability.
+
+For Businesses, route evidence counts canonical loads posted on a matching endpoint pair and the subset that reached tracked execution. For fleet transporters and self-managed drivers, it counts matching capacity reports and the subset of assigned shipments that reached tracked execution. Evidence is labeled Tracked activity, Reported activity, or Declared only; it is not a trust score or guarantee.
 
 Load Board and Capacity Board matching uses normalized recorded endpoint names. Results receive only three explainable strengths: both route cities align, one city aligns, or no recorded match. Matching affects filtering and order but never visibility, assignment, pricing, or authorization.
 
 The public homepage centers Ethiopian makers, growers, processors, producers, and the small transport providers that connect them to markets. This reflects documented manufacturing and logistics priorities without claiming public-sector sponsorship.
+
+## ADR-016 — Fleet-driver capability policy
+
+A `DRIVER` may be either self-managed through a provider profile or employed through one transporter organization. Self-managed drivers retain full provider authority. Company drivers receive owner-controlled Load Board, Business contact, negotiation, and rich capacity permissions, with every command enforced in repository services and attributed to the acting driver.
+
+Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty or Partial signal. If no prior active configuration exists, an owner must configure the truck first. Fleet owners retain organization-wide visibility and authority.

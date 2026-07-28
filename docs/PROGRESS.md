@@ -14,6 +14,9 @@
 - Self-managed Driver capacity Home with duty state, Empty/Partial slider, FTL/PTL/Both, direct/multi-stop, general-area freshness, route intent, contract lanes, Public/Partners visibility, expiry, and timestamped photo support
 - Fleet Transporter management Home with company summaries, recent Tracking, and network corridor coverage
 - My Fleet roster with rich per-truck capacity controls and read-only provider Capacity Board
+- Owner-controlled company Driver permissions for Load Board browsing, Business contact, load agreements, and rich assigned-truck capacity
+- Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
+- Paired profile coverage routes with approximate OpenStreetMap lines, record-derived evidence counts, and member-to-member route comparison
 - Real truck identity fields: make, model, cargo configuration, and plate; generic tonnage labels removed
 - Ten-image standardized cargo-configuration catalog used by freight creation, driver Home, Fleet, and Capacity
 - Freight FTL/PTL requirement and recipient-specific temporary load-size proof sharing
@@ -53,13 +56,14 @@
 - Dedicated Playwright database and server isolation from local development data
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
-- Reusable all-role visual audit with 124 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
-- Local Node evidence: 39 tests passed
-- Local Playwright E2E evidence: 27 passed and one expected desktop skip for a mobile-only assertion
+- Reusable all-role visual audit with 146 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
+- Local Node evidence: 43 tests passed
+- Local Playwright E2E evidence: 30 passed and two expected viewport skips
+- Production and development npm dependency audit: zero vulnerabilities
 
 ## Requires an internet-enabled environment
 
-- Apply Supabase migration through Supabase CLI
+- Apply Supabase migrations `001` and `002` through Supabase CLI
 
 ## Repository administration still required
 

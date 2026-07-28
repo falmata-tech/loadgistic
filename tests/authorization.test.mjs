@@ -15,6 +15,7 @@ const users = {
   shipper: repo.getUserById('user-shipper'),
   receiver: repo.getUserById('user-receiver'),
   transporter: repo.getUserById('user-transporter'),
+  companyDriver: repo.getUserById('user-company-driver'),
   driver: repo.getUserById('user-driver')
 };
 
@@ -164,6 +165,68 @@ test('Business load phone is exposed only after explicit opt in', () => {
   assert.equal(repo.listLoads(users.driver).find(row=>row.id==='shp-freight-fixed').load_contact_phone,'+251 911 111 111');
 });
 
+test('fleet owner controls company driver load and capacity authority without reducing self-managed drivers', () => {
+  const shipment=createFreight();
+  assert.ok(repo.listLoads(users.companyDriver).some(row=>row.id===shipment.id));
+  repo.expressInterest(users.companyDriver,shipment.id,'Company driver response');
+  const ownerView=repo.getShipmentForUser(users.shipper,shipment.id);
+  assert.ok(ownerView.interests.some(interest=>interest.provider_organization_id===users.transporter.organization_id&&interest.created_by===users.companyDriver.id&&interest.created_by_name==='Yonas Alemu'));
+  assert.ok(repo.getShipmentForUser(users.transporter,shipment.id));
+  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Dire Dawa',visibility:'OPEN'});
+  assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
+  assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
+
+  repo.updateFleetDriverPermissions(users.transporter,users.companyDriver.id,{
+    canBrowseLoadBoard:false,
+    canContactBusinesses:false,
+    canNegotiateLoads:false,
+    canManageCapacity:false
+  });
+  const restricted=repo.getUserById(users.companyDriver.id);
+  assert.equal(repo.listLoads(restricted).length,0);
+  assert.equal(repo.getShipmentForUser(restricted,'shp-freight-fixed'),null);
+  const db=dbModule.getDb();
+  const before=db.prepare('SELECT COUNT(*) AS n FROM shipment_interests').get().n;
+  assert.throws(()=>repo.expressInterest(restricted,createFreight().id,'Denied'),/FORBIDDEN/);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM shipment_interests').get().n,before);
+  assert.throws(()=>repo.publishCapacity(restricted,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/FORBIDDEN/);
+  assert.throws(()=>repo.publishCapacity(restricted,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/FORBIDDEN|INVALID_VEHICLE/);
+
+  const offDutyId=repo.setAssignedVehicleDuty(restricted,'veh-trans-1',false);
+  assert.equal(db.prepare('SELECT status FROM capacities WHERE id=?').get(offDutyId).status,'OFF_DUTY');
+  const onDutyId=repo.setAssignedVehicleDuty(restricted,'veh-trans-1',true);
+  assert.equal(db.prepare('SELECT status FROM capacities WHERE id=?').get(onDutyId).status,'EMPTY');
+  assert.throws(()=>repo.setAssignedVehicleDuty(restricted,'veh-trans-2',false),/INVALID_VEHICLE/);
+  assert.ok(repo.listLoads(users.driver).length>0);
+
+  repo.updateFleetDriverPermissions(users.transporter,users.companyDriver.id,{
+    canBrowseLoadBoard:true,
+    canContactBusinesses:true,
+    canNegotiateLoads:true,
+    canManageCapacity:true
+  });
+});
+
+test('contact permission hides the designated Business phone and blocks negotiation while retaining load facts', () => {
+  repo.updateFleetDriverPermissions(users.transporter,users.companyDriver.id,{
+    canBrowseLoadBoard:true,
+    canContactBusinesses:false,
+    canNegotiateLoads:true,
+    canManageCapacity:true
+  });
+  const restricted=repo.getUserById(users.companyDriver.id);
+  const load=repo.listLoads(restricted).find(row=>row.id==='shp-freight-fixed');
+  assert.ok(load);
+  assert.equal(load.load_contact_phone,null);
+  assert.throws(()=>repo.expressInterest(restricted,load.id,'Cannot contact'),/FORBIDDEN/);
+  repo.updateFleetDriverPermissions(users.transporter,users.companyDriver.id,{
+    canBrowseLoadBoard:true,
+    canContactBusinesses:true,
+    canNegotiateLoads:true,
+    canManageCapacity:true
+  });
+});
+
 test('application review is admin-only and terminal outcomes are immutable', () => {
   const applicationId = repo.createBusinessApplication({
     name: 'Authorization Applicant',
@@ -182,6 +245,8 @@ test('application review is admin-only and terminal outcomes are immutable', () 
 test('verification submission enforces ownership and admin-only review', () => {
   const upload={path:'/tmp/verification-test.pdf',originalName:'license.pdf',mimeType:'application/pdf'};
   assert.throws(()=>repo.submitVerification(users.driver,{subjectType:'VEHICLE',subjectId:'veh-trans-2',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Owner authority'},upload),/FORBIDDEN/);
+  assert.throws(()=>repo.submitVerification(users.companyDriver,{subjectType:'ORGANIZATION',subjectId:users.transporter.organization_id,verificationType:'BUSINESS_LICENSE',documentName:'Fleet license'},upload),/FORBIDDEN/);
+  assert.throws(()=>repo.submitVerification(users.companyDriver,{subjectType:'VEHICLE',subjectId:'veh-trans-1',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Vehicle authority'},upload),/FORBIDDEN/);
   const requestId=repo.submitVerification(users.transporter,{subjectType:'VEHICLE',subjectId:'veh-trans-2',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Owner authority'},upload);
   assert.equal(repo.getVerificationFile(users.driver,requestId),null);
   assert.equal(repo.getVerificationFile(users.transporter,requestId).id,requestId);

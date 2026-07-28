@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getDashboard, getFleetNetworkCoverage, listOwnCapacity, listOwnVehicles } from '@/lib/repository.js';
+import { getDashboard, getDriverAccess, getFleetNetworkCoverage, listOwnCapacity, listOwnVehicles } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
@@ -9,7 +9,7 @@ import { NetworkCoverage } from '@/components/network-coverage';
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(); const query=await searchParams;
-  if(user.role==='DRIVER') return <DriverCapacityHome vehicles={listOwnVehicles(user)} capacities={listOwnCapacity(user)} query={query}/>;
+  if(user.role==='DRIVER') return <DriverCapacityHome vehicles={listOwnVehicles(user)} capacities={listOwnCapacity(user)} access={getDriverAccess(user)} query={query}/>;
   const data:any=getDashboard(user);
   const coverage=user.role==='TRANSPORTER'?getFleetNetworkCoverage(user):null;
   const greeting=user.organization_name||user.provider_business_name||user.name;

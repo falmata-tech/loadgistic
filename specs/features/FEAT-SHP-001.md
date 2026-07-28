@@ -1,10 +1,10 @@
 ---
 id: FEAT-SHP-001
 title: B2B shipment creation and execution
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
 behavior: Authorized Business actors create road-freight loads, transporters discover or accept permitted work through the Load Board, only shipment parties see records in Tracking, and explicit domain transitions govern execution.
-contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
+contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
@@ -81,6 +81,21 @@ Given a fleet transporter or self-managed driver\
 When they browse the Load Board\
 Then only open, directed, or saved-partner records permitted by visibility policy appear\
 And internal notes and competing interest remain hidden.
+
+### Scenario: authorized fleet driver represents its company
+
+Given a company driver has Load Board, contact, and negotiation permission\
+When the driver browses a permitted load or starts a provider action\
+Then the load is read and the action is owned by the driver's transporter organization\
+And the driver remains the recorded actor\
+And the fleet owner can review the complete company process.
+
+### Scenario: restricted fleet driver cannot negotiate
+
+Given a company driver may browse loads but the owner disabled Business contact or negotiation\
+When the driver views a load or submits an interest, proof request, or direct acceptance\
+Then the designated Business phone and contact controls are hidden when contact is disabled\
+And denied commands create no commercial record, notification, event, or success audit.
 
 ### Scenario: Load Board supports truck-aware discovery
 

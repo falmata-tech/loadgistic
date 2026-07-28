@@ -100,7 +100,10 @@ const mobileLabels: Record<string, string> = {
 
 export function AppShell({ user, children }: { user: any; children: React.ReactNode }) {
   const pathname = usePathname();
-  const items = navigation[user.role] || navigation.SHIPPER;
+  let items = navigation[user.role] || navigation.SHIPPER;
+  if (user.driver_kind === 'COMPANY') {
+    items = items.filter(item => item.href !== '/app/company-page' && (item.href !== '/app/loads' || Boolean(user.can_browse_load_board)));
+  }
   const activeHref = items.filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`)).sort((a,b) => b.href.length-a.href.length)[0]?.href;
   const mobileItems = (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
@@ -120,7 +123,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         <div className="sidebar-foot">
           <div className="user-mini">
             <strong>{workspaceName}</strong>
-            <div className="meta">{roleLabels[user.role] || user.role.replaceAll('_',' ')}</div>
+            <div className="meta">{user.driver_kind==='COMPANY'?'Company driver':roleLabels[user.role] || user.role.replaceAll('_',' ')}</div>
           </div>
           <form action="/api/auth/logout" method="post"><button className="button secondary" style={{ width: '100%' }}>Log out</button></form>
         </div>

@@ -18,6 +18,7 @@ const messages: Record<string,string> = {
   INVALID_STATUS_TRANSITION: 'That status change is not allowed from the current status.',
   NOTE_REQUIRED: 'Enter a note before saving.',
   INVALID_VEHICLE: 'Choose one of your active vehicles.',
+  CAPACITY_CONFIGURATION_REQUIRED: 'A fleet owner must configure this truck before it can return On Duty.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
   CAPACITY_PERCENT_REQUIRED: 'Enter a whole percentage from 1 to 99 for partial capacity.',
   ACCEPTED_LOADS_REQUIRED: 'Choose FTL, PTL, or Both.',

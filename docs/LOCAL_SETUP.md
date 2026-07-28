@@ -8,6 +8,7 @@
 ## Steps
 
 ```bash
+nvm use
 cp .env.example .env.local
 npm install
 npm run db:reset
@@ -29,6 +30,7 @@ All accounts use the local password `Loadgistic123!`.
 | Business looking for capacity | `shipper@loadgistic.local` |
 | Business receiving shipments | `receiver@loadgistic.local` |
 | Fleet Transporter | `transporter@loadgistic.local` |
+| Fleet company Driver | `company-driver@loadgistic.local` |
 | Self-managed Driver / Owner-Operator | `driver@loadgistic.local` |
 | Platform Administrator | `admin@loadgistic.local` |
 

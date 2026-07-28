@@ -8,21 +8,23 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Read Tracking workspace | Shipper, receiver, directly addressed or assigned provider; Admin oversight | Discoverable unrelated Load Board records are excluded |
 | View shipment party data | Admin or shipment shipper, receiver, assigned provider organization, or assigned provider profile | Return no record |
 | Set receiver contact | Business that owns an Agreed shipment, or Admin; first name and phone are required | `NOT_FOUND`, `RECEIVER_CONTACT_NOT_READY`, or `RECEIVER_CONTACT_REQUIRED`; no contact update |
-| Browse open freight | Authenticated Transporter or Driver; Freight, Posted, Open Market only | Return no record |
-| Browse saved-partner freight | Transporter or Driver with an active saved relationship to the shipment owner | Return no record |
-| Express load interest | Transporter or Driver allowed to browse an Open Market or Saved Partners freight load | `NOT_FOUND`; no interest or notification |
-| Accept direct freight | The specifically addressed Transporter or Driver while the request is `SENT` | `FORBIDDEN`, `NOT_FOUND`, or `DIRECT_REQUEST_NOT_PENDING`; no state change |
+| Browse open freight | Authenticated Transporter or self-managed Driver; company Driver only with Load Board permission; Freight, Posted, Open Market only | Return no record |
+| Browse saved-partner freight | Transporter or self-managed Driver with an active saved relationship; company Driver additionally requires Load Board permission for that transporter organization | Return no record |
+| View designated load phone | Transporter or self-managed Driver allowed to view the load; company Driver additionally requires Business contact permission; owning Business must opt in | Return a null phone |
+| Express load interest or request load proof | Transporter or self-managed Driver allowed to browse; company Driver additionally requires negotiation and Business contact permission | `NOT_FOUND` or `FORBIDDEN`; no interest, request, notification, or audit |
+| Accept direct freight | The specifically addressed Transporter or self-managed Driver while the request is `SENT`; company Driver additionally requires negotiation and Business contact permission for the addressed organization | `FORBIDDEN`, `NOT_FOUND`, or `DIRECT_REQUEST_NOT_PENDING`; no state change |
 | Transition shipment | Admin or the assigned Transporter/Driver; Approximate location + status requires a general area | `FORBIDDEN`, `NOT_FOUND`, or `TRACKING_LOCATION_REQUIRED`; no status event |
 | Add tracking update | Admin or assigned Transporter/Driver after assignment; note required for Status timeline, area required for Approximate location + status | `FORBIDDEN`, `TRACKING_NOTE_REQUIRED`, or `TRACKING_LOCATION_REQUIRED`; no event |
 | Reduce tracking mode | Shipper Business, receiver Business, or Admin; only Approximate location + status to Status timeline | `NOT_FOUND` or invalid mode; no mode change |
-| View designated load phone | Authenticated Transporter or Driver allowed to view the load, only when the owning Business explicitly opted in | Return a null phone |
 | Add shipment note | Admin or an actual shipment party | `NOT_FOUND`; no note |
 | Upload/download proof | Admin or an actual shipment party; file read reauthorizes each request | Upload throws `NOT_FOUND`; download returns no record or bytes |
 | Request load-size proof | Transporter or Driver with its own recorded interest in that visible Freight load | `NOT_FOUND`; no request or notification |
 | Share temporary load-size proof | Business that owns the load, to one selected recorded interest | `NOT_FOUND` or `INVALID_INTEREST`; no file grant |
 | Download temporary load-size proof | Owning Business, Admin, or the exact selected interested provider while the grant is active and compatible with assignment | Return no record or bytes |
 | View marketplace capacity | Authenticated Business, Transporter, Driver, or Admin; Open Empty/Partial capacity, plus saved-relationship Empty/Partial capacity for the related Business | Return no record |
-| Publish capacity | Transporter for its organization vehicle; Driver for its provider-profile vehicle; Empty/Partial may be visible, Off Duty is hidden | `FORBIDDEN` or `INVALID_VEHICLE`; no visible capacity |
+| Publish capacity | Transporter for its organization vehicle; self-managed Driver for its provider-profile vehicle; company Driver with rich capacity permission for an assigned organization vehicle; Empty/Partial may be visible, Off Duty is hidden | `FORBIDDEN` or `INVALID_VEHICLE`; no visible capacity |
+| Change company-truck duty | Transporter owner or assigned company Driver; On Duty restores the last owner-configured active signal and Off Duty hides the truck | `FORBIDDEN`, `INVALID_VEHICLE`, or `CAPACITY_CONFIGURATION_REQUIRED`; no capacity record |
+| Manage fleet-driver permissions | Transporter owner for an active Driver in its own organization | `FORBIDDEN` or `NOT_FOUND`; no permission change |
 | Browse member directory/profile | Any authenticated user; profile must be published | Redirect to login or return no record |
 | Update profile | User with its own organization or provider profile; public contacts remain separate from account contacts | `FORBIDDEN`; no cross-tenant update |
 | Submit Business participant review | Shipper or receiver organization after Completed; one per direction and load | `REVIEW_NOT_ALLOWED` or `REVIEW_ALREADY_SUBMITTED`; no review |

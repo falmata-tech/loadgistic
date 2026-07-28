@@ -1,6 +1,6 @@
 # Supabase Migration
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is already modeled in `supabase/migrations/001_loadgistic_schema.sql`.
+The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in `supabase/migrations/001_loadgistic_schema.sql` and the additive fleet-driver and profile-route migration in `supabase/migrations/002_fleet_driver_routes.sql`.
 
 ## Replacement boundary
 

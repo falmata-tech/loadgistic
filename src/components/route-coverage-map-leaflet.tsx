@@ -1,0 +1,28 @@
+"use client";
+
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip } from 'react-leaflet';
+import { getPlaceCoordinate } from '@/lib/ethiopia-places.js';
+
+export function LeafletRouteMap({ routes, comparisonRoutes = [] }: { routes:any[]; comparisonRoutes?:any[] }) {
+  const projected = routes.map((route:any) => ({...route,from:getPlaceCoordinate(route.origin),to:getPlaceCoordinate(route.destination),group:'profile'}));
+  const comparisons = comparisonRoutes.map((route:any) => ({...route,from:getPlaceCoordinate(route.origin),to:getPlaceCoordinate(route.destination),group:'viewer'}));
+  const visible = [...projected,...comparisons].filter(route => route.from && route.to);
+  const unknown = [...new Set([...projected,...comparisons].flatMap(route => [route.from ? null : route.origin,route.to ? null : route.destination]).filter(Boolean))];
+  const markers = new Map();
+  for (const route of visible) {
+    markers.set(route.from.name,route.from);
+    markers.set(route.to.name,route.to);
+  }
+  return <div className="route-map-block">
+    <div className="route-map" aria-label="Approximate coverage route map">
+      <MapContainer center={[9.1,39.7]} zoom={6} minZoom={5} maxZoom={10} scrollWheelZoom={false}>
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+        {visible.map((route:any,index:number)=><Polyline key={`${route.group}-${route.id||index}`} positions={[[route.from.lat,route.from.lng],[route.to.lat,route.to.lng]]} pathOptions={{color:route.group==='viewer'?'#b86d0a':'#1769e0',weight:5,opacity:.82,dashArray:route.group==='viewer'?'8 7':undefined}}/>)}
+        {[...markers.entries()].map(([name,marker]:any)=><CircleMarker key={name} center={[marker.lat,marker.lng]} radius={6} pathOptions={{color:'#0b3f91',fillColor:'#ffffff',fillOpacity:1,weight:3}}><Tooltip permanent direction="top" offset={[0,-5]}>{name}</Tooltip></CircleMarker>)}
+      </MapContainer>
+      <div className="route-map-legend"><span><i className="profile"/>Profile routes</span>{comparisonRoutes.length?<span><i className="viewer"/>Your routes</span>:null}</div>
+    </div>
+    <p className="meta">Approximate city-to-city lines over OpenStreetMap. They are not exact facilities, live movement, or a guaranteed road path.</p>
+    {unknown.length?<p className="map-unavailable">Map placement is unavailable for: {unknown.join(', ')}. These member-entered places remain included in route comparison.</p>:null}
+  </div>;
+}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Building2, MapPin, Route } from 'lucide-react';
+import { RouteCoverageMap } from './route-coverage-map';
 
 function titleCase(value: string) {
   return value.replace(/\b\w/g, letter => letter.toUpperCase());
@@ -15,6 +16,7 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
     <div className="coverage-corridors" aria-label="Preferred corridor network">
       {coverage.corridors.length ? coverage.corridors.map((corridor:string) => <div className="coverage-lane" key={corridor}><Route aria-hidden="true"/><span>{corridor}</span></div>) : <div className="empty-state compact">Add preferred corridors to compare coverage.</div>}
     </div>
+    {coverage.routes?.length?<RouteCoverageMap routes={coverage.routes}/>:null}
     <div className="coverage-businesses">
       {coverage.businesses.map((business:any) => <Link href={`/companies/${business.handle}`} className="coverage-business" key={business.id}>
         <Building2 aria-hidden="true"/>
@@ -24,6 +26,6 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
       </Link>)}
       {!coverage.businesses.length ? <div className="empty-state compact">Businesses that save this fleet as a partner will appear here.</div> : null}
     </div>
-    <p className="meta">This is a corridor comparison, not a geographic map or service guarantee. It uses only member-entered city and regional names.</p>
+    <p className="meta">This comparison uses member-entered city names and record-derived activity. It does not guarantee availability or service.</p>
   </section>;
 }

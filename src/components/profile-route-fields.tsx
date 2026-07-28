@@ -1,0 +1,22 @@
+"use client";
+
+import React from 'react';
+import { Plus, Route, Trash2 } from 'lucide-react';
+
+type RouteRow = { id?:string; origin:string; destination:string };
+
+export function ProfileRouteFields({ initialRoutes = [] }: { initialRoutes?:RouteRow[] }) {
+  const [routes,setRoutes]:[RouteRow[],(value:RouteRow[]|((current:RouteRow[])=>RouteRow[]))=>void] = React.useState(initialRoutes.length ? initialRoutes : [{origin:'',destination:''}]);
+  return <section className="profile-route-editor">
+    <div className="section-heading-icon"><Route aria-hidden="true"/><div><h2>Coverage routes</h2><p className="meta">Add the city pairs where you regularly ship or transport goods.</p></div></div>
+    <div className="profile-route-rows">
+      {routes.map((route,index)=><div className="profile-route-row" key={route.id||index}>
+        <div className="form-group"><label htmlFor={`route-origin-${index}`}>City 1</label><input id={`route-origin-${index}`} name="routeOrigin" defaultValue={route.origin} placeholder="Addis Ababa"/></div>
+        <span className="route-pair-arrow" aria-hidden="true">↔</span>
+        <div className="form-group"><label htmlFor={`route-destination-${index}`}>City 2</label><input id={`route-destination-${index}`} name="routeDestination" defaultValue={route.destination} placeholder="Hawassa"/></div>
+        <button type="button" className="icon-action danger-outline" aria-label={`Remove route ${index+1}`} title="Remove route" onClick={()=>setRoutes(current=>current.filter((_,rowIndex)=>rowIndex!==index))}><Trash2 aria-hidden="true"/></button>
+      </div>)}
+    </div>
+    <button type="button" className="button secondary small icon-button-label" onClick={()=>setRoutes(current=>[...current,{origin:'',destination:''}])}><Plus aria-hidden="true"/>Add route</button>
+  </section>;
+}

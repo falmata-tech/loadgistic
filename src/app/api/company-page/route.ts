@@ -7,6 +7,7 @@ import { redirectWith, text, checked } from '@/lib/redirects';
 export async function POST(request:NextRequest){
  const user=await getCurrentUser(); if(!user) return NextResponse.redirect(new URL('/login',request.url),303);
  const form=await request.formData();
- try{updateCompanyPage(user,{headline:text(form,'headline'),about:text(form,'about'),services:text(form,'services'),corridors:text(form,'corridors'),operatingRegions:text(form,'operatingRegions'),contactPhone:text(form,'contactPhone'),showContactPhoneOnLoads:checked(form,'showContactPhoneOnLoads'),contactEmail:text(form,'contactEmail'),published:checked(form,'published')});return redirectWith(request,'/app/company-page','success','Profile updated.');}
+ const origins=form.getAll('routeOrigin').map(String); const destinations=form.getAll('routeDestination').map(String);
+ try{updateCompanyPage(user,{headline:text(form,'headline'),about:text(form,'about'),services:text(form,'services'),routes:origins.map((origin,index)=>({origin,destination:destinations[index]||''})),operatingRegions:text(form,'operatingRegions'),contactPhone:text(form,'contactPhone'),showContactPhoneOnLoads:checked(form,'showContactPhoneOnLoads'),contactEmail:text(form,'contactEmail'),published:checked(form,'published')});return redirectWith(request,'/app/company-page','success','Profile updated.');}
  catch(error){return redirectWith(request,'/app/company-page','error',errorMessage(error));}
 }
