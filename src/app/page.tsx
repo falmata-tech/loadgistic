@@ -34,11 +34,11 @@ export default function HomePage() {
           <h1>Road freight for the businesses that make Ethiopia.</h1>
           <p>Move what you make, grow, process, or distribute without owning a private fleet. Work directly with fleet transporters and self-managed drivers looking for reviewed Business demand.</p>
           <div className="hero-actions">
-            <Link href="/apply?type=ENTERPRISE_SHIPPER" className="button hero-primary"><Boxes aria-hidden="true"/>Find transport capacity</Link>
-            <Link href="/apply?type=TRANSPORT_COMPANY" className="button hero-secondary"><Truck aria-hidden="true"/>Bring my fleet to demand</Link>
-            <Link href="/apply?type=INDEPENDENT_PROVIDER" className="button hero-secondary"><Users aria-hidden="true"/>Join as owner-operator</Link>
+            <Link href="/apply?type=ENTERPRISE_SHIPPER" className="button hero-primary"><Boxes aria-hidden="true"/>Sign up as a Business</Link>
+            <Link href="/apply?type=TRANSPORT_COMPANY" className="button hero-secondary"><Truck aria-hidden="true"/>Sign up as Fleet Transporter</Link>
+            <Link href="/apply?type=INDEPENDENT_PROVIDER" className="button hero-secondary"><Users aria-hidden="true"/>Sign up as Self-managed Driver</Link>
           </div>
-          <div className="hero-trust-line"><span>Business accounts join free</span><span>Member information visible after login</span><span>FTL and PTL road freight</span></div>
+          <div className="hero-trust-line"><span>Business accounts sign up free</span><span>Member information visible after login</span><span>FTL and PTL road freight</span></div>
         </div>
       </section>
 
@@ -97,11 +97,11 @@ export default function HomePage() {
 
       <section id="plans" className="section join-section">
         <div className="container">
-          <div className="section-title"><h2>Join the side of the market you work on</h2><p className="lede">One network for Businesses looking for capacity and transport providers looking for reviewed demand.</p></div>
+          <div className="section-title"><h2>Choose your Loadgistic account</h2><p className="lede">One network for Businesses looking for capacity and transport providers looking for reviewed demand.</p></div>
           <div className="join-grid">
-            <article><Factory aria-hidden="true"/><h3>Business</h3><p>For makers, growers, processors, producers, distributors, and enterprises moving road freight.</p><Link href="/apply?type=ENTERPRISE_SHIPPER" className="button">Find capacity<ArrowRight aria-hidden="true"/></Link></article>
-            <article><Truck aria-hidden="true"/><h3>Fleet Transporter</h3><p>For transport companies coordinating multiple registered vehicles and coworkers.</p><Link href="/apply?type=TRANSPORT_COMPANY" className="button secondary">Find Business demand<ArrowRight aria-hidden="true"/></Link></article>
-            <article><Users aria-hidden="true"/><h3>Self-managed Driver</h3><p>For drivers and owner-operators managing their own truck and market signal.</p><Link href="/apply?type=INDEPENDENT_PROVIDER" className="button secondary">Keep my truck in demand<ArrowRight aria-hidden="true"/></Link></article>
+            <article><Factory aria-hidden="true"/><h3>Business</h3><p>For makers, growers, processors, producers, distributors, and enterprises moving road freight.</p><Link href="/apply?type=ENTERPRISE_SHIPPER" className="button">Sign up as a Business<ArrowRight aria-hidden="true"/></Link></article>
+            <article><Truck aria-hidden="true"/><h3>Fleet Transporter</h3><p>For transport companies coordinating multiple registered vehicles and coworkers.</p><Link href="/apply?type=TRANSPORT_COMPANY" className="button secondary">Sign up as Fleet Transporter<ArrowRight aria-hidden="true"/></Link></article>
+            <article><Users aria-hidden="true"/><h3>Self-managed Driver</h3><p>For drivers and owner-operators managing their own truck and market signal.</p><Link href="/apply?type=INDEPENDENT_PROVIDER" className="button secondary">Sign up as Self-managed Driver<ArrowRight aria-hidden="true"/></Link></article>
           </div>
         </div>
       </section>

@@ -129,6 +129,7 @@ test('mobile workspace menu exposes secondary business pages', async ({ page }: 
 
 test('application presents one business category and two transporter categories', async ({ page }: { page: any }) => {
   await page.goto('/apply');
+  await expect(page.getByRole('heading', { name: 'Sign up for Loadgistic' })).toBeVisible();
   const accountType = page.getByLabel('Account type');
   await expect(accountType.locator('option')).toHaveText([
     'Business',
@@ -145,9 +146,15 @@ test('homepage centers Ethiopian producers and gives each market side a direct p
   await expect(page.getByText('Manufacturers', { exact: true })).toBeVisible();
   await expect(page.getByText('Artisans', { exact: true })).toBeVisible();
   await expect(page.getByText('Growers', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Find transport capacity/ }).first()).toHaveAttribute('href','/apply?type=ENTERPRISE_SHIPPER');
-  await expect(page.getByRole('link', { name: /Bring my fleet to demand/ })).toHaveAttribute('href','/apply?type=TRANSPORT_COMPANY');
-  await expect(page.getByRole('link', { name: /Join as owner-operator/ })).toHaveAttribute('href','/apply?type=INDEPENDENT_PROVIDER');
+  await expect(page.getByRole('link', { name: 'Sign up as a Business' }).first()).toHaveAttribute('href','/apply?type=ENTERPRISE_SHIPPER');
+  await expect(page.getByRole('link', { name: 'Sign up as Fleet Transporter' }).first()).toHaveAttribute('href','/apply?type=TRANSPORT_COMPANY');
+  await expect(page.getByRole('link', { name: 'Sign up as Self-managed Driver' }).first()).toHaveAttribute('href','/apply?type=INDEPENDENT_PROVIDER');
+  const signUp = page.getByRole('link', { name: 'Sign up', exact: true });
+  const logIn = page.getByRole('link', { name: 'Log in', exact: true });
+  await expect(signUp).toBeVisible();
+  await expect(logIn).toBeVisible();
+  await expect(signUp).toHaveClass(/button/);
+  await expect(logIn).toHaveClass(/button/);
 });
 
 test('fleet transporter lands on a management dashboard and updates capacity in My Fleet', async ({ page }: { page: any }) => {
