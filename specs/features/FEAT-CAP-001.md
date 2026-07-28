@@ -4,7 +4,7 @@ title: Truck-first Capacity Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
 behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, planned movement, contract-lane openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
-contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
+contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredCorridorRoute, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, expires_at]
 rollout: Preserve minimal capacity semantics and validate public expiry filtering before release.
 ---
@@ -66,8 +66,17 @@ And the driver is not asked to repeat both cities inside a free-text corridor fi
 Given a company or self-managed driver marks a truck Empty\
 When the driver publishes the update\
 Then the driver explicitly chooses FTL, PTL, or Both\
-And the driver chooses Direct only or Open to multi-stop\
+And Direct is always accepted\
+And the driver independently chooses whether to accept Multi Pick and Multi Drop\
 And both acceptance policies are displayed independently from cargo-space status.
+
+### Scenario: capacity route meanings remain distinct
+
+Given a truck has Partial cargo space\
+When its driver publishes capacity\
+Then it may declare the current route on which that partial space exists\
+And any on-duty truck may separately declare one future planned travel route and date\
+And regular preferred corridor routes remain a multiple-value Public Profile setting controlled by the fleet company admin or self-managed owner.
 
 ### Scenario: self-managed driver Home prioritizes live capacity controls
 

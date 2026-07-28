@@ -6,6 +6,7 @@ type NetworkState = {
   is_favorite:boolean;
   incoming:boolean;
   outgoing:boolean;
+  connect_eligible?:boolean;
 };
 
 function NetworkForm({targetKind,targetId,returnTo,action,label,kind='secondary',Icon}:{targetKind:string;targetId:string;returnTo:string;action:string;label:string;kind?:string;Icon:any}) {
@@ -27,6 +28,6 @@ export function NetworkActions({state,targetKind,targetId,returnTo}:{state:Netwo
   </div>;
   return <div className="network-action-row">
     <NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action={state.is_favorite?'UNFAVORITE':'FAVORITE'} label={state.is_favorite?'Unfavorite':'Favorite'} Icon={state.is_favorite?HeartOff:Heart}/>
-    {state.outgoing?<span className="status"><Link2 aria-hidden="true"/>Request sent</span>:<NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action="REQUEST" label="Connect" kind="" Icon={Link2}/>}
+    {state.connect_eligible===false?null:state.outgoing?<span className="status"><Link2 aria-hidden="true"/>Request sent</span>:<NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action="REQUEST" label="Connect" kind="" Icon={Link2}/>}
   </div>;
 }

@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, direct or multi-stop acceptance, general current area and its freshness, preferred movement, contract-lane interest, Public/Partners visibility, and expiry. A full or unavailable truck is treated as Off Duty and is not shown in discovery. Optional timestamped photos support the signal without claiming physical verification. The marketplace never requires or exposes a precise live coordinate.
+Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, current partial route, future planned travel, contract-lane interest, Public/Partners visibility, and expiry. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -46,7 +46,7 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. The Capacity Board is read only for providers. Freight loads use the same FTL/PTL language as capacity. Load-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
-Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. Shipper or receiver Businesses may reduce it to Status timeline. Exact browser geolocation is snapped to a half-degree grid before submission and only a 40 km privacy area is retained.
+Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. A Business party may reduce it to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
 
 ## ADR-012 — Visual trucks and staged contact disclosure
 
@@ -54,7 +54,7 @@ Use one image-backed cargo-configuration catalog across freight creation, driver
 
 ## ADR-013 — Discovery, Tracking, and authenticated directory
 
-Keep one canonical load record while separating its UI by permission and stage. The Load Board is read-only discovery plus interest; Tracking lists only shipper, receiver, assigned or directly addressed provider parties, with administrators retaining operational oversight. A discoverable posted load never appears in an unrelated provider's Tracking workspace.
+Keep one canonical load record while separating its UI by permission and stage. The Load Board is provider discovery plus interest; My Loads contains demand owned by a Business; Tracking contains only execution-stage party records from Agreed onward.
 
 Use one authenticated directory for Businesses, fleet transporters, and self-managed drivers. Business profiles support participant confirmation and completed-load reputation. Private account email and phone are never public-profile fallbacks; only explicitly maintained profile contacts are displayed.
 
@@ -78,11 +78,11 @@ A `DRIVER` may be either self-managed through a provider profile or employed thr
 
 Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty or Partial signal. If no prior active configuration exists, an owner must configure the truck first. Fleet owners retain organization-wide visibility and authority.
 
-## ADR-017 — Mutual network and Business-only tracking unlock
+## ADR-017 — Mutual network and code-gated customer tracking
 
 Model Business-provider relationships as three distinct meanings: a private Favorite owned by either side, a directional Pending request, and a mutual Connected relationship. Only Connected relationships authorize Partners-only loads and capacity. Existing saved relationships migrate compatibly to Connected. Company drivers do not mutate the company network.
 
-Customer tracking is an additional Business-party view, not a bearer link. Its human-entered code is derived with the server secret, stored only as a keyed digest, omitted from URLs, and accepted only for an authenticated shipper or receiver Business on that load. Unlock creates a five-minute HTTP-only grant bound to the user and shipment. Browser activity may refresh the grant; five minutes without activity clears it. Assigned providers continue to see the same real tracking events in their internal shipment workspace and cannot unlock the customer view.
+Customer tracking is an additional customer-safe view, not a bearer link. Its human-entered code is derived with the server secret, stored only as a keyed digest, and omitted from URLs. An account or non-account shipper or receiver who receives the code from the load owner may unlock a five-minute HTTP-only grant bound to the browser and load. Browser activity may refresh the grant; five minutes without activity clears it. Assigned providers continue to see the same real tracking events in their internal Tracking workspace and cannot unlock the customer view.
 
 Fleet owners edit capacity on one truck-specific Fleet page. They may declare a general area but cannot submit device-assisted location, because the owner's phone does not establish the truck's position. Only an authorized assigned company driver or self-managed driver may submit an already obscured device area. Ethiopian place suggestions and nearest-city labels use the reviewed local place catalog, keeping exact coordinates and third-party API keys out of the request path.
 
@@ -91,3 +91,11 @@ Fleet owners edit capacity on one truck-specific Fleet page. They may declare a 
 `/app/providers` and `/app/providers/[handle]` are the canonical authenticated Directory routes. Legacy `/companies` URLs authenticate and redirect into those routes.
 
 Public Profiles are member-only operational screens. Keeping them under the role-aware app shell preserves the user's sidebar or mobile navigation when moving between Directory, Network, Capacity, Tracking, and a profile. The compatibility routes preserve old bookmarks without maintaining a second profile UI.
+
+## ADR-019 — Local settlement catalog, load ownership, and virtual pooling
+
+Store a repeatably imported Ethiopia settlement catalog in the local SQLite adapter. The preferred lightweight setup downloads only `place=city|town|village|hamlet` objects through Overpass; an ignored Geofabrik PBF plus Osmium is an alternate input. Normal application search is local, starts after two characters, returns a bounded result set, and retains a built-in fallback. This avoids operating Nominatim or sending normal route searches to a third party.
+
+Separate `load_owner_organization_id` and `load_owner_party_role` from shipper and receiver roles. The posting Business remains owner regardless of whether it ships or receives. External shipper or receiver identity is load-scoped and receives no account authorization; possession of the owner-distributed secret code grants only the customer-safe tracking view.
+
+PSTL is a deterministic, read-only projection over viewer-authorized Posted PTL loads. Compatible origin and destination settlement coordinates create a virtual group. A group has no status, price, assignment, acceptance, or mutation API, and disabling it leaves every source load unchanged.

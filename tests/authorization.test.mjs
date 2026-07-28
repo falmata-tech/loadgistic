@@ -50,12 +50,14 @@ test('browse visibility cannot change an unassigned shipment status', () => {
   assert.equal(repo.getShipmentForUser(users.shipper, shipment.id).operational_status, 'POSTED');
 });
 
-test('Load Board discovery does not add an unrelated load to provider Tracking', () => {
+test('posted and sent loads stay out of Tracking until agreement', () => {
   const shipment=createFreight();
   assert.ok(repo.listLoads(users.driver).some(row=>row.id===shipment.id));
   assert.equal(repo.listVisibleShipments(users.driver).some(row=>row.id===shipment.id),false);
-  assert.ok(repo.listVisibleShipments(users.shipper).some(row=>row.id===shipment.id));
+  assert.equal(repo.listVisibleShipments(users.shipper).some(row=>row.id===shipment.id),false);
   const direct=createFreight('DIRECT_TO_PROVIDER','profile:provider-driver');
+  assert.equal(repo.listVisibleShipments(users.driver).some(row=>row.id===direct.id),false);
+  repo.acceptDirectedShipment(users.driver,direct.id);
   assert.ok(repo.listVisibleShipments(users.driver).some(row=>row.id===direct.id));
 });
 
@@ -137,31 +139,33 @@ test('assigned location tracking is enforced until a Business party reduces it',
   repo.acceptDirectedShipment(users.driver,shipment.id);
   repo.setReceiverContact(users.shipper,shipment.id,'Hana','+251 911 600 700');
   assert.throws(()=>repo.transitionShipment(users.driver,shipment.id,'ASSIGNED'),/TRACKING_LOCATION_REQUIRED/);
-  repo.transitionShipment(users.driver,shipment.id,'ASSIGNED','Driver assigned',{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40'});
+  repo.transitionShipment(users.driver,shipment.id,'ASSIGNED','Driver assigned',{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'});
   assert.throws(()=>repo.setTrackingMode(users.driver,shipment.id,'STATUS_ONLY'),/NOT_FOUND/);
   repo.setTrackingMode(users.receiver,shipment.id,'STATUS_ONLY');
   repo.addTrackingUpdate(users.driver,shipment.id,{note:'Loading completed'});
   const tracked=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.equal(tracked.tracking_mode,'STATUS_ONLY');
   assert.ok(tracked.events.some(event=>event.event_type==='TRACKING_MODE'));
-  assert.ok(tracked.events.some(event=>event.location_source==='DEVICE_OBSCURED'&&event.location_precision_km===40));
+  assert.ok(tracked.events.some(event=>event.location_source==='DEVICE_OBSCURED'&&event.location_precision_km===20));
 });
 
-test('customer tracking code unlock is limited to shipper and receiver Businesses', () => {
+test('customer tracking code grants account and non-account parties but denies providers', () => {
   const code=repo.getBusinessTrackingAccessCode(users.shipper,'shp-freight-active');
   assert.match(code,/^LG-[A-F0-9]{4}-[A-F0-9]{4}$/);
   assert.equal(repo.unlockBusinessTracking(users.shipper,code).id,'shp-freight-active');
   assert.equal(repo.unlockBusinessTracking(users.receiver,code).id,'shp-freight-active');
+  assert.equal(repo.unlockBusinessTracking(null,code).id,'shp-freight-active');
   assert.throws(()=>repo.unlockBusinessTracking(users.transporter,code),/TRACKING_ACCESS_DENIED/);
   assert.throws(()=>repo.unlockBusinessTracking(users.driver,code),/TRACKING_ACCESS_DENIED/);
   assert.equal(repo.getBusinessTracking(users.transporter,'shp-freight-active'),null);
+  assert.ok(repo.getBusinessTracking(null,'shp-freight-active').events.length);
   assert.ok(repo.getBusinessTracking(users.shipper,'shp-freight-active').events.length);
   const stored=dbModule.getDb().prepare('SELECT tracking_code_hash FROM shipments WHERE id=?').get('shp-freight-active');
   assert.notEqual(stored.tracking_code_hash,code);
 
   const shipperOnly=createFreight();
   const shipperOnlyCode=repo.getBusinessTrackingAccessCode(users.shipper,shipperOnly.id);
-  assert.throws(()=>repo.unlockBusinessTracking(users.receiver,shipperOnlyCode),/TRACKING_ACCESS_DENIED/);
+  assert.equal(repo.unlockBusinessTracking(null,shipperOnlyCode).id,shipperOnly.id);
 });
 
 test('favorites and pending requests do not unlock Partners visibility until accepted', () => {

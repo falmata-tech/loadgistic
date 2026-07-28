@@ -40,8 +40,8 @@ export async function clearSession() {
   store.set(SESSION_COOKIE, '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
 }
 
-export async function hasTrackingGrant(userId: string, shipmentId: string) {
+export async function hasTrackingGrant(shipmentId: string) {
   const store = await cookies();
   const payload = verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  return payload?.sub === `tracking:${userId}:${shipmentId}`;
+  return payload?.sub === `tracking:${shipmentId}`;
 }

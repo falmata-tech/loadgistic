@@ -12,7 +12,8 @@ export function ShipmentTrackingControls({
   nextStatuses,
   needsReceiverContact,
   operationalStatus,
-  allowDeviceLocation
+  allowDeviceLocation,
+  loadType
 }: {
   shipmentId: string;
   trackingMode: string;
@@ -20,6 +21,7 @@ export function ShipmentTrackingControls({
   needsReceiverContact: boolean;
   operationalStatus: string;
   allowDeviceLocation:boolean;
+  loadType:string;
 }) {
   const requiresLocation = trackingMode === 'LOCATION_AND_STATUS';
   const canAddUpdate = ['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(operationalStatus);
@@ -27,6 +29,7 @@ export function ShipmentTrackingControls({
   const [locationState,setLocationState] = React.useState('idle' as LocationState);
   const [approximateLocation,setApproximateLocation] = React.useState(null as {lat:number;lng:number} | null);
   const [selectedStatus,setSelectedStatus] = React.useState(nextStatuses[0] || '');
+  const privacyRadius=loadType==='FTL'?20:40;
 
   function useDeviceLocation() {
     if (!navigator.geolocation) {
@@ -35,9 +38,10 @@ export function ShipmentTrackingControls({
     }
     setLocationState('requesting');
     navigator.geolocation.getCurrentPosition(position => {
+      const gridFactor=privacyRadius===20?4:2;
       setApproximateLocation({
-        lat: Math.round(position.coords.latitude * 2) / 2,
-        lng: Math.round(position.coords.longitude * 2) / 2
+        lat: Math.round(position.coords.latitude * gridFactor) / gridFactor,
+        lng: Math.round(position.coords.longitude * gridFactor) / gridFactor
       });
       const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
       if(nearest)setLocationArea(`Around ${nearest.name}`);
@@ -51,7 +55,7 @@ export function ShipmentTrackingControls({
   const locationFields = <>
     <input type="hidden" name="approximateLat" value={allowDeviceLocation ? approximateLocation?.lat ?? '' : ''}/>
     <input type="hidden" name="approximateLng" value={allowDeviceLocation ? approximateLocation?.lng ?? '' : ''}/>
-    <input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&approximateLocation ? '40' : ''}/>
+    <input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&approximateLocation ? String(privacyRadius) : ''}/>
     <input type="hidden" name="locationSource" value={allowDeviceLocation&&approximateLocation ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA'}/>
   </>;
 
@@ -63,7 +67,7 @@ export function ShipmentTrackingControls({
     {requiresLocation ? <div className="stack">
       <div className="form-group"><label htmlFor="tracking-location-area">Current general area</label><EthiopiaPlaceInput id="tracking-location-area" value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Adama" required/></div>
       {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
-        <div><strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use phone location'}</strong><span>{locationState === 'captured' ? 'Only an obscured area with a 40 km privacy zone will be recorded.' : locationState === 'denied' ? 'Permission declined. Entering a general area is enough.' : locationState === 'error' ? 'Location unavailable. Entering a general area is enough.' : 'The exact point stays on this device.'}</span></div>
+        <div><strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use phone location'}</strong><span>{locationState === 'captured' ? `Only an obscured area with a ${privacyRadius} km privacy zone will be recorded.` : locationState === 'denied' ? 'Permission declined. Entering a general area is enough.' : locationState === 'error' ? 'Location unavailable. Entering a general area is enough.' : 'The exact point stays on this device.'}</span></div>
         <button type="button" className="button secondary compact" onClick={useDeviceLocation} disabled={locationState === 'requesting'}>{locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh area' : 'Use device location'}</button>
       </div>:<p className="meta panel-note">Enter a general area manually. Device location is available only to the driver with the truck.</p>}
     </div> : null}

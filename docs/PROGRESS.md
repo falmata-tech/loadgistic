@@ -10,10 +10,13 @@
 - Authenticated Business and Transporter Directory with Public Profiles
 - Workspace-contained Directory and Public Profile navigation with authenticated legacy redirects
 - My Network with private Favorites, directional requests, mutual Connected relationships, and profile/directory actions
-- B2B shipment creation
+- B2B shipment creation with independent load owner and shipper/receiver roles
+- Account or external shipment counterpart
+- My Loads separated from execution-only Tracking
+- Virtual PSTL discovery over compatible Posted PTL demand
 - Road-freight workflows
 - Load discovery and provider interest
-- Self-managed Driver capacity Home with duty state, Empty/Partial slider, FTL/PTL/Both, direct/multi-stop, general-area freshness, route intent, contract lanes, Public/Partners visibility, expiry, and timestamped photo support
+- Self-managed Driver capacity Home with duty state, Empty/Partial slider, FTL/PTL/Both, Direct/Multi Pick/Multi Drop, general-area freshness, current partial route, future travel, contract lanes, Public/Partners visibility, expiry, and timestamped photo support
 - Fleet Transporter management Home with company summaries, recent Tracking, and network corridor coverage
 - My Fleet roster with truck-specific detail/capacity pages and read-only provider Capacity Board
 - Owner-controlled company Driver permissions for Load Board browsing, Business contact, load agreements, and rich assigned-truck capacity
@@ -30,15 +33,16 @@
 - Ethiopian producer- and transporter-focused public homepage with reviewed generated hero imagery
 - Public member-marketplace examples that reveal no live marketplace records
 - Enforceable Status timeline or Approximate location + status tracking, with real in-between events
-- Secret-code customer tracking restricted to involved Businesses with a five-minute idle lock
+- Secret-code customer tracking for account or non-account shipper/receiver parties with a five-minute idle lock
 - Party-only Tracking separated from Load Board discovery
 - Rich icon-led Post Load composer with operational deadline labels
 - Completed-load shipper/receiver Business reviews and profile rating summaries
 - Entity and truck verification submissions, private documents, admin review, and evidence-derived badges
 - Separate private account and explicit Public Profile phone/email fields
-- Browser-obscured device areas with a 40 km privacy zone for capacity and assigned-load tracking
+- Browser-obscured device areas with 40 km capacity/PTL and 20 km FTL privacy zones
 - Driver-only device location with fleet-owner manual-area enforcement
-- Ethiopia-first local city suggestions and nearest-city device labels without an external API key
+- Local OpenStreetMap Ethiopia settlement catalog with 3,405 imported records
+- Bounded async place and member search without large HTML option lists
 - Tracking and proof kept as separate contracts
 - Manual billing proof and review
 - PWA and responsive UI
@@ -59,12 +63,12 @@
 - Negative authorization contract suite and browse-only E2E coverage
 - Session-aware public navigation and authenticated provider-request continuity
 - Public login credential-fixture removal and pending-applicant seed correction
-- Dedicated Playwright database, server, and `.next-e2e` artifact isolation from the live `.next` application
+- Separate `.next-dev`, `.next`, and `.next-e2e` artifacts for the live dev server, production build, and isolated Playwright runtime
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
-- Reusable all-role visual audit with 164 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
-- Local Node evidence: 46 tests passed
-- Local Playwright E2E evidence: 32 passed and four expected viewport skips
+- Reusable all-role visual audit with 174 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
+- Local Node evidence: 50 tests passed
+- Local Playwright E2E evidence: 36 passed and four expected viewport skips
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities
 

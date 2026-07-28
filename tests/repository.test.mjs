@@ -155,6 +155,66 @@ test('road freight creation rejects a missing FTL or PTL requirement',()=>{
  assert.throws(()=>repo.createShipment(user,{title:'Missing load type',serviceMode:'FREIGHT',distributionMode:'OPEN_MARKET',priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Jimma',cargoDescription:'Test goods',pickupDate:new Date(Date.now()+86400000).toISOString().slice(0,10)}),/FREIGHT_LOAD_TYPE_REQUIRED/);
 });
 
+test('receiver-owned load keeps owner separate from an external shipper',()=>{
+ const receiver=repo.getUserById('user-receiver');
+ const result=repo.createShipment(receiver,{
+  title:'Inbound workshop materials',
+  serviceMode:'FREIGHT',
+  distributionMode:'OPEN_MARKET',
+  priceMode:'QUOTE_REQUESTED',
+  ownerPartyRole:'RECEIVER',
+  counterpartyType:'EXTERNAL',
+  externalCounterpartyName:'Dilla Craft Cooperative',
+  externalCounterpartyPhone:'+251 900 111 222',
+  origin:'Dilla',
+  destination:'Hawassa',
+  cargoDescription:'Packed workshop materials',
+  loadType:'PTL',
+  pickupDate:new Date(Date.now()+86400000).toISOString().slice(0,10),
+  trackingMode:'STATUS_ONLY'
+ });
+ const stored=dbModule.getDb().prepare('SELECT * FROM shipments WHERE id=?').get(result.id);
+ assert.equal(stored.load_owner_organization_id,receiver.organization_id);
+ assert.equal(stored.load_owner_party_role,'RECEIVER');
+ assert.equal(stored.external_shipper_name,'Dilla Craft Cooperative');
+ const visible=repo.getShipmentForUser(receiver,result.id);
+ assert.equal(visible.shipper_name,'Dilla Craft Cooperative');
+ assert.equal(visible.load_owner_name,receiver.organization_name);
+});
+
+test('Business favorites rank first in bounded member search',()=>{
+ const receiver=repo.getUserById('user-receiver');
+ const shipper=repo.getUserById('user-shipper');
+ repo.setBusinessFavorite(receiver,shipper.organization_id,true);
+ const results=repo.searchDirectory(receiver,'Blue','BUSINESS',20);
+ assert.equal(results[0].id,shipper.organization_id);
+ assert.equal(results[0].is_favorite,1);
+ assert.equal(repo.getNetworkState(receiver,'org',shipper.organization_id).connect_eligible,false);
+});
+
+test('place search falls back locally and compatible PTL loads form a virtual pool',()=>{
+ const driver=repo.getUserById('user-driver');
+ const shipper=repo.getUserById('user-shipper');
+ assert.ok(repo.searchPlaces('Add',20).some(place=>place.name==='Addis Ababa'));
+ const pickupDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
+ const ids=['one','two'].map((suffix,index)=>repo.createShipment(shipper,{
+  title:`Pool fixture ${suffix}`,
+  serviceMode:'FREIGHT',
+  distributionMode:'OPEN_MARKET',
+  priceMode:'QUOTE_REQUESTED',
+  origin:'Addis Ababa',
+  destination:'Adama',
+  cargoDescription:'Shareable packed goods',
+  loadType:'PTL',
+  pickupDate,
+  trackingMode:'STATUS_ONLY'
+ }).id);
+ const group=repo.listPooledLoads(driver).find(pool=>ids.every(id=>pool.members.some(load=>load.id===id)));
+ assert.ok(group);
+ assert.equal(repo.getPooledLoad(driver,group.id).id,group.id);
+ assert.ok(ids.every(id=>dbModule.getDb().prepare('SELECT operational_status FROM shipments WHERE id=?').get(id).operational_status==='POSTED'));
+});
+
 test('capacity update enforces partial percentage and expires old vehicle record',()=>{
  const user=repo.getUserById('user-driver');
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'}),/CAPACITY_PERCENT_REQUIRED/);
@@ -164,7 +224,7 @@ test('capacity update enforces partial percentage and expires old vehicle record
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'5'}),/INVALID_APPROXIMATE_LOCATION/);
  const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
  const rows=repo.listCapacity(user);
- assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.open_to_contract_lanes===1&&r.accepts_multi_stop===1));
+ assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
  const audit=dbModule.getDb().prepare(`SELECT details FROM audit_logs WHERE entity_id=?`).get(id);
  assert.equal(audit.details.includes('38.5'),false);
  const offDutyId=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'OFF_DUTY',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'});

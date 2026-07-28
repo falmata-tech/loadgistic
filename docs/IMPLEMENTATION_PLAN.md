@@ -25,7 +25,7 @@ The current implementation is a local Next.js and SQLite MVP. Accepted behavior 
 
 ## Location Boundary
 
-Exact browser geolocation is never sent to the server. The browser snaps it to a half-degree grid and submits only the obscured coordinate, 40 km privacy radius, source, and human general-area label. Board and tracking views never render coordinates or exact map pins.
+Exact browser geolocation is never sent to the server. Capacity and PTL tracking use an approximately half-degree, 40 km privacy area; FTL tracking uses a finer 20 km privacy area. Only the obscured coordinate, permitted radius, source, and human general-area label are submitted. Board and tracking views never render exact coordinates or exact map pins.
 
 ## Delivery Gates
 

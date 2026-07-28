@@ -22,6 +22,7 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 ## Boards
 
 - The **Load Board** contains FTL and PTL Business demand.
+- The **Pooled shared truckload** tab is a read-only projection of compatible Posted PTL loads whose origin and destination areas fall within configured radii. It never combines agreements, assignments, prices, or source records.
 - The **Capacity Board** contains fresh Empty or Partial capacity.
 - Every Capacity Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
@@ -60,25 +61,27 @@ The rich truck capacity control panel controls:
 - Empty or Partial cargo space
 - available percentage for Partial capacity
 - accepted load policy: FTL, PTL, or Both
-- stop policy: Direct only or Open to multi-stop
+- stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
 - current general area and freshness
 - optional privacy-obscured device location
-- separate corridor city inputs and planned travel date
+- a current partial-capacity route when Partial
+- a separate future planned travel route and date
+- Direct acceptance plus independent Multi Pick and Multi Drop choices
 - contract-lane interest
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
-The browser may briefly access an exact device coordinate, but it snaps that point to a half-degree grid before submission. Only the obscured point, a 40 km privacy radius, source, and human general-area label reach the server. Exact coordinates must never be submitted, stored, logged, or displayed.
+The browser may briefly access an exact device coordinate, but it obscures that point before submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
 
 ## Loads And Relationships
 
 Businesses post FTL or PTL freight with fixed price, target price, or quote requested. Demand visibility is Open, Partners, or Direct to one transporter.
 
-My Network separates a private Favorite from a mutual operating relationship. Either a Business or transport provider may Favorite the other or request a connection. Pending and declined requests do not unlock private marketplace data. Only a mutually accepted Connected relationship allows a Business and transporter to exchange Partners-only demand or capacity. Provider browse visibility alone never grants contact, mutation, receiver-contact, note, or proof permissions.
+My Network separates a private Favorite from a mutual operating relationship. Either market side may Favorite the other or request a cross-market connection. Businesses may also Favorite other Businesses so frequent shipment parties rank first in selection; this same-side Favorite never creates a transport partnership.
 
-After agreement and before assignment, receiver first name and phone are required. Those fields are visible only to shipment parties.
+The posting Business declares whether it is shipper or receiver while remaining the load owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required.
 
-The Load Board is provider discovery. Tracking is the post or direct-request workspace and lists only loads where the signed-in Business, transporter organization, self-managed driver, or administrator is a party. Browse permission never adds a load to Tracking.
+The Load Board is provider discovery. My Loads is the Business owner's demand workspace. Tracking contains only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, and Completed records involving the viewer. Posted, Sent, Contacted, saved, and merely interested records never mix into Tracking.
 
 Load dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
 
@@ -89,11 +92,11 @@ After a completed load, the shipper and receiver Businesses may rate each other 
 Every load has one tracking obligation:
 
 - **Status timeline** requires real timestamped status or note updates.
-- **Approximate location + status** requires a general area on each assigned-provider operational update. Device areas use the same 40 km privacy protection as capacity.
+- **Approximate location + status** requires a general area on each assigned-provider operational update. Device areas use 20 km privacy for FTL and 40 km for PTL.
 
 The assigned provider cannot reduce the tracking requirement. Only the shipper Business, receiver Business, or administrator may change Approximate location + status to Status timeline. The change is recorded as a tracking event.
 
-Assigned providers may record in-between tracking updates without inventing a status transition. Customer tracking requires an authenticated shipper or receiver Business party to enter the load's secret code. The code is never placed in a URL or stored in clear text, and the tracking grant expires after five idle minutes. Assigned transport providers use their internal shipment timeline and cannot unlock the customer tracking view. Location events display only the human area and privacy radius, never coordinates.
+Assigned providers may record in-between tracking updates without inventing a status transition. Customer tracking requires the secret code supplied by the load owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their internal timeline instead.
 
 Operational proof and temporary load-size proof are separate from tracking mode.
 
@@ -101,7 +104,7 @@ Operational proof and temporary load-size proof are separate from tracking mode.
 
 Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Transporter profiles additionally show fleet roster, corridors, service regions, service summary, and current public capacity.
 
-Route, load, capacity, board-filter, and general-area inputs suggest reviewed Ethiopian cities first while retaining free text for places outside the catalog. Driver device location is reduced in the browser to a nearest-city label and a 40 km-obscured point. Fleet owners cannot use their own device location for a truck and instead enter a general area manually.
+Route, load, capacity, board-filter, and general-area inputs query a bounded local catalog of Ethiopian OpenStreetMap cities, towns, villages, and hamlets after two typed characters while retaining free text. The catalog stores coordinates and available place metadata. No full catalog is rendered into a page or sent to a third party during normal use.
 
 Fleet Transporter Home compares preferred-corridor place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view is schematic and text-based. It uses no exact map pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
 

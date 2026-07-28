@@ -3,8 +3,8 @@ id: FEAT-SHP-001
 title: B2B shipment creation and execution
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
-behavior: Authorized Business actors create road-freight loads, transporters discover or accept permitted work through the Load Board, only shipment parties see records in Tracking, and explicit domain transitions govern execution.
-contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
+behavior: Authorized Business actors create road-freight loads as either shipper or receiver owners, transporters discover or accept permitted work through the Load Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
+contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
@@ -54,6 +54,37 @@ Given an authenticated Business creates a Road Freight load\
 When they choose an optional cargo configuration\
 Then the form shows the standardized truck image and name together\
 And the saved load uses that same name in marketplace and shipment views.
+
+### Scenario: posting Business declares its shipment role
+
+Given an authenticated Business starts a load\
+When it declares itself to be the shipper or receiver\
+Then that Business remains the load owner and provider-facing decision maker\
+And the selected or external counterpart is assigned the opposite shipment role\
+And authorization uses the load owner independently from the shipper role.
+
+### Scenario: shipment counterpart may be outside Loadgistic
+
+Given a Business posts a load for a shipper or receiver without an account\
+When it records the external party name and optional contact detail\
+Then the load is created without an organization record for that party\
+And the external party receives no directory, marketplace, or internal shipment access\
+And it may open the customer-safe tracking view only by entering the secret load code.
+
+### Scenario: counterpart search remains bounded
+
+Given the Business directory may contain many records\
+When a load owner searches for a shipper or receiver\
+Then no unbounded directory list is embedded in the page\
+And server-side results begin only after a meaningful search term\
+And favorited Businesses rank before other matching Businesses.
+
+### Scenario: load detail avoids unverifiable weight
+
+Given a Business creates or reviews a freight load\
+When cargo details are displayed\
+Then the descriptive field is labeled Load detail\
+And the workflow does not request or display estimated kilograms.
 
 ### Scenario: Business may expose a designated load phone
 
@@ -117,7 +148,7 @@ When Load Board results are displayed\
 Then loads with both route endpoints aligned are ranked before one-endpoint and unmatched loads\
 And each result explains its route-match strength without claiming that the truck is assigned.
 
-### Scenario: Tracking contains only involved loads
+### Scenario: Tracking contains only execution-stage involved loads
 
 Given a fleet transporter or self-managed driver can discover an unassigned posted load\
 When they open Tracking\
@@ -126,7 +157,8 @@ And it remains available on the Load Board according to discovery visibility.
 
 Given the transporter organization, self-managed driver, shipper Business, or receiver Business is a party to a load\
 When that actor opens Tracking\
-Then the load is listed regardless of whether it is awaiting agreement, active, or completed.
+Then only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, or Completed loads are listed\
+And Posted, Sent, Contacted, and merely saved or interested loads remain in their Load Board or negotiation context.
 
 ### Scenario: invalid transition
 

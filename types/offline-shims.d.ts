@@ -6,7 +6,13 @@ declare module 'react' { export type ReactNode = any; const React: any; export d
 declare module 'react/jsx-runtime' { export const jsx: any; export const jsxs: any; export const Fragment: any; }
 declare module 'next' { export type Metadata = any; }
 declare module 'next/link' { const Link: any; export default Link; }
-declare module 'next/navigation' { export function redirect(path: string): never; export function notFound(): never; export function usePathname(): string; export function useRouter(): { replace(path:string):void }; }
+declare module 'next/navigation' {
+  export function redirect(path: string): never;
+  export function notFound(): never;
+  export function usePathname(): string;
+  export function useSearchParams(): Readonly<URLSearchParams>;
+  export function useRouter(): { replace(path:string):void };
+}
 declare module 'next/headers' { export function cookies(): Promise<any>; }
 declare module 'next/server' {
   export class NextRequest { url: string; method: string; headers: { get(name: string): string | null }; formData(): Promise<FormData>; }

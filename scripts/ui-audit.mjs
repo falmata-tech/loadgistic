@@ -10,22 +10,22 @@ const personas = [
   {
     name: 'business-shipper',
     email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'business-receiver',
     email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'self-managed-driver',
     email: 'driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'company-driver',
@@ -114,7 +114,8 @@ async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
       await page.waitForTimeout(500);
     }
   }
-  await page.screenshot({ path: screenshotPath, fullPage: true });
+  // Avoid Playwright's temporary inline caret styles racing React hydration.
+  await page.screenshot({ path: screenshotPath, fullPage: true, caret: 'initial' });
   return {
     route,
     finalUrl: page.url(),
@@ -229,6 +230,19 @@ try {
             path.join(outputDir, `${viewport.name}-${persona.name}-assigned-tracking-controls.png`)
           );
           report.results.push({ viewport: viewport.name, persona: persona.name, ...activeResult });
+        }
+
+        if (['fleet-transporter','self-managed-driver'].includes(persona.name)) {
+          await gotoReady(page,'/app/loads?board=POOLED');
+          const poolHref=await page.locator('a[href^="/app/loads/pstl/"]').first().getAttribute('href').catch(()=>null);
+          if(poolHref){
+            const poolResult=await inspectPage(
+              page,
+              poolHref,
+              path.join(outputDir,`${viewport.name}-${persona.name}-pooled-load-detail.png`)
+            );
+            report.results.push({viewport:viewport.name,persona:persona.name,...poolResult});
+          }
         }
       } catch (error) {
         report.errors.push({ viewport: viewport.name, persona: persona.name, error: error.message });

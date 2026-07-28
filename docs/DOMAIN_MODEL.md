@@ -21,7 +21,7 @@
 - Provider Interest
 - Status Events
 - Secret Tracking Access Code stored as a keyed digest
-- Five-minute user/load-bound Business Tracking Grant
+- Five-minute browser/load-bound customer Tracking Grant
 - Tracking obligation: Status timeline or Approximate location + status
 - Customer-safe tracking event with optional privacy-obscured general area
 - Proof Files
@@ -36,7 +36,7 @@
 - Status: Empty, Partial, Off Duty
 - Available percentage
 - Accepted load policy: FTL, PTL, or Both
-- Stop policy: Direct only or Open to multi-stop
+- Stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
 - General current area and location update time
 - Optional half-degree device area with a 40 km privacy radius
 - Corridor entered as two separate cities

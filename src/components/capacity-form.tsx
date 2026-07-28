@@ -24,6 +24,10 @@ type CapacitySnapshot = {
   visibility?: string;
   open_to_contract_lanes?: number;
   accepts_multi_stop?: number;
+  accepts_multi_pick?:number;
+  accepts_multi_drop?:number;
+  current_route_origin?:string;
+  current_route_destination?:string;
 };
 
 type VehicleOption = {
@@ -140,7 +144,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
               {['FTL','PTL','BOTH'].map(value => <label key={value}><input name="acceptedLoads" value={value} type="radio" defaultChecked={value === acceptedLoadValue(current)}/><span>{value === 'BOTH' ? 'Both' : value}</span></label>)}
             </div>
             <div className="meta terms-line"><span><strong>FTL</strong> Full truckload</span><span><strong>PTL</strong> Partial truckload</span></div>
-            <div className="stop-policy"><label>Stop preference</label><div className="segmented-control"><label><input name="acceptsMultiStop" value="" type="radio" defaultChecked={!current?.accepts_multi_stop}/><span>Direct only</span></label><label><input name="acceptsMultiStop" value="on" type="radio" defaultChecked={Boolean(current?.accepts_multi_stop)}/><span>Open to multi-stop</span></label></div></div>
+            <div className="stop-policy"><label>Route flexibility</label><p className="meta">Direct loads are always accepted. Add either option when the truck can combine stops.</p><div className="multi-stop-toggles"><label className="rich-toggle"><input name="acceptsMultiPick" type="checkbox" defaultChecked={Boolean(current?.accepts_multi_pick)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Multi Pick</strong><small>Collect loads from more than one origin</small></span></label><label className="rich-toggle"><input name="acceptsMultiDrop" type="checkbox" defaultChecked={Boolean(current?.accepts_multi_drop)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Multi Drop</strong><small>Deliver loads to more than one destination</small></span></label></div></div>
           </section>
 
           <section className="control-panel">
@@ -168,10 +172,13 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
           </section>
 
           <section className="control-panel">
-            <div className="control-panel-title"><div><h2>Planned movement</h2><p>Help businesses find the right truck for the right corridor.</p></div></div>
-            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Corridor city 1</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa"/></div><div className="route-arrow bidirectional" aria-hidden="true">↔</div><div className="form-group"><label htmlFor="capacity-destination">Corridor city 2</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa"/></div></div>
+            <div className="control-panel-title"><div><h2>Truck routes</h2><p>Keep current partial movement separate from a future planned trip.</p></div></div>
+            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama"/></div></div></>:null}
+            <h3 className="compact-section-title">Future planned travel</h3>
+            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Planned origin</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="capacity-destination">Planned destination</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa"/></div></div>
             <div className="form-grid"><div className="form-group"><label htmlFor="capacity-travel-date">Planned travel date</label><input id="capacity-travel-date" name="travelDate" type="date" defaultValue={current?.travel_date || ''}/></div><div className="form-group"><label htmlFor="capacity-next">Next available</label><input id="capacity-next" name="nextAvailable" defaultValue={current?.next_available || ''} placeholder="Tomorrow morning"/></div></div>
             <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract lanes</strong><small>Interested in recurring work on preferred corridors</small></span></label>
+            <p className="meta panel-note">Regular preferred corridors are managed separately in Public Profile Info.</p>
           </section>
         </> : <section className="control-panel off-duty-panel"><strong>This truck will not appear in capacity search.</strong><p>Turn On Duty back on whenever you are ready to carry a load.</p></section>}
       </div>

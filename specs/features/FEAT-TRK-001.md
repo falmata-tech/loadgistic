@@ -3,8 +3,8 @@ id: FEAT-TRK-001
 title: Tracking, proof, and shipment notes
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001]
 problem: Shipment parties need enforceable, understandable tracking and controlled operational evidence without exposing precise movement or private files.
-behavior: A Business chooses Status timeline or Approximate location + status for a load; after assignment the provider must satisfy that mode on operational updates, while only the shipper or receiver Business may reduce it to status-only. Customer tracking is unlocked only by an involved shipper or receiver Business using a secret load code and expires after inactivity; assigned providers use their internal shipment timeline instead. Proof remains a separate evidence feature with reauthorized file access.
-contracts: [TrackingMode, TrackingObligation, TrackingAccessCode, BusinessTrackingGrant, TrackingIdleTimeout, AuthenticatedTrackingView, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant, ShipmentNote]
+behavior: A Business chooses Status timeline or Approximate location + status for a load; after assignment the provider must satisfy that mode on operational updates, while only a Business party may reduce it to status-only. Shipper and receiver parties, including an external party, may unlock customer-safe tracking with the secret code and inactivity expiry; assigned providers use their internal shipment timeline instead.
+contracts: [TrackingMode, TrackingObligation, TrackingAccessCode, BrowserTrackingGrant, TrackingIdleTimeout, CustomerSafeTrackingView, LoadTypeTrackingPrecision, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant, ShipmentNote]
 observability: [tracking_mode_audit, tracking_update, tracking_location_source, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, proof_audit, load_proof_request, load_proof_share, load_proof_expiry, file_access_denial]
 rollout: Require private storage, MIME and size validation, malware scanning, and access-denial monitoring before production.
 ---
@@ -63,7 +63,8 @@ And tracking proof is not implied by either mode.
 Given an assigned load requires Approximate location + status\
 When the provider records assignment, movement, hold, issue, or delivery\
 Then a fresh general-area location is required with the event\
-And a device coordinate is obscured to the same 40 km privacy zone before submission\
+And an FTL device coordinate is obscured to a 20 km privacy zone before submission\
+And a PTL device coordinate is obscured to a 40 km privacy zone before submission\
 And the precise coordinate is never submitted, stored, logged, or displayed.
 
 ### Scenario: assigned provider sends an in-between tracking update
@@ -82,28 +83,28 @@ Then future provider events no longer require location\
 And the mode change is recorded as a public tracking event\
 And the provider cannot make that change.
 
-### Scenario: Business party unlocks customer tracking
+### Scenario: shipment party unlocks customer tracking
 
-Given an authenticated user belongs to the shipper or receiver Business for a load\
-When the user submits that load's secret tracking code\
-Then a short-lived tracking grant is bound to that user and load\
+Given a shipper or receiver is involved in a load, whether or not it has a Loadgistic account\
+When that party submits the load's secret tracking code\
+Then a short-lived tracking grant is bound to that browser and load\
 And the tracking page returns only shipment summary and explicitly customer-safe timestamped events\
 And location events show only the declared general area and privacy radius\
 And the secret code is never placed in a URL or stored in clear text.
 
-### Scenario: non-party and provider tracking unlock is denied
+### Scenario: provider does not use customer tracking
 
-Given an authenticated user is not a shipper or receiver Business party, including an assigned transporter or driver\
-When that user submits a valid or invalid tracking code\
-Then no tracking record or party identity is disclosed\
-And the provider continues to use the internal shipment timeline for loads it transports.
+Given a signed-in assigned transporter or driver\
+When it follows a load\
+Then the app directs it to the internal Tracking workspace\
+And customer tracking does not grant provider-only notes, proof, or actions.
 
 ### Scenario: tracking view expires after inactivity
 
 Given a Business party has unlocked a customer tracking view\
 When the page receives no user activity for five minutes\
 Then the browser clears the tracking grant and returns to the code entry screen\
-And grant renewal is accepted only while the existing user-and-load grant remains valid\
+And grant renewal is accepted only while the existing browser-and-load grant remains valid\
 And a later tracking read requires the secret code again.
 
 ## Contract ownership

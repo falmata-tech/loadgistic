@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-dev/
 .next-e2e/
 out/
 coverage/
@@ -18,6 +19,7 @@ data/*.db-shm
 data/*.db-wal
 data/uploads/*
 !data/uploads/.gitkeep
+data/osm/
 
 .DS_Store
 npm-debug.log*

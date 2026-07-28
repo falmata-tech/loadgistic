@@ -7,12 +7,11 @@ import { redirectUrl, redirectWith, text } from '@/lib/redirects';
 
 export async function POST(request:NextRequest) {
   const user=await getCurrentUser();
-  if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const form=await request.formData();
   try {
     const shipment=unlockBusinessTracking(user,text(form,'trackingCode'));
     const response=NextResponse.redirect(redirectUrl(request,`/track/${shipment.id}`),303);
-    response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`tracking:${user.id}:${shipment.id}`,TRACKING_IDLE_SECONDS),{
+    response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`tracking:${shipment.id}`,TRACKING_IDLE_SECONDS),{
       httpOnly:true,
       sameSite:'lax',
       secure:process.env.NODE_ENV==='production',

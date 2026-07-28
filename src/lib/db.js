@@ -107,6 +107,18 @@ function migrate(db) {
       CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
     );
 
+    CREATE TABLE IF NOT EXISTS member_favorites (
+      id TEXT PRIMARY KEY,
+      owner_organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      target_organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      created_by TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      UNIQUE(owner_organization_id,target_organization_id),
+      CHECK(owner_organization_id<>target_organization_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_member_favorites_owner ON member_favorites(owner_organization_id,created_at);
+
     CREATE TABLE IF NOT EXISTS company_pages (
       id TEXT PRIMARY KEY,
       organization_id TEXT UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
@@ -178,6 +190,25 @@ function migrate(db) {
 
     CREATE INDEX IF NOT EXISTS idx_profile_routes_organization ON profile_routes(organization_id);
     CREATE INDEX IF NOT EXISTS idx_profile_routes_provider ON profile_routes(provider_profile_id);
+
+    CREATE TABLE IF NOT EXISTS place_catalog (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      normalized_name TEXT NOT NULL,
+      alternate_names TEXT,
+      place_type TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      population INTEGER,
+      wikidata_id TEXT,
+      osm_type TEXT,
+      osm_id TEXT,
+      source TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_place_catalog_name ON place_catalog(normalized_name);
+    CREATE INDEX IF NOT EXISTS idx_place_catalog_type_name ON place_catalog(place_type, normalized_name);
 
     CREATE TABLE IF NOT EXISTS capacities (
       id TEXT PRIMARY KEY,
@@ -441,11 +472,18 @@ function migrate(db) {
     ['accepts_partial_load', 'INTEGER NOT NULL DEFAULT 0'],
     ['open_to_contract_lanes', 'INTEGER NOT NULL DEFAULT 0'],
     ['accepts_multi_stop', 'INTEGER NOT NULL DEFAULT 0'],
-    ['proof_recorded_at', 'TEXT']
+    ['proof_recorded_at', 'TEXT'],
+    ['current_route_origin','TEXT'],
+    ['current_route_destination','TEXT'],
+    ['accepts_multi_pick','INTEGER NOT NULL DEFAULT 0'],
+    ['accepts_multi_drop','INTEGER NOT NULL DEFAULT 0']
   ];
   for (const [name, definition] of additiveCapacityColumns) {
     if (!capacityColumns.has(name)) db.exec(`ALTER TABLE capacities ADD COLUMN ${name} ${definition}`);
   }
+  db.exec(`UPDATE capacities SET
+    accepts_multi_pick=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_pick END,
+    accepts_multi_drop=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_drop END`);
   const vehicleColumns = new Set(db.prepare('PRAGMA table_info(vehicles)').all().map(column => column.name));
   for (const [name, definition] of [['make','TEXT'],['model','TEXT'],['cargo_configuration','TEXT']]) {
     if (!vehicleColumns.has(name)) db.exec(`ALTER TABLE vehicles ADD COLUMN ${name} ${definition}`);
@@ -458,9 +496,22 @@ function migrate(db) {
     db.exec('ALTER TABLE company_pages ADD COLUMN show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0');
   }
   const shipmentColumns = new Set(db.prepare('PRAGMA table_info(shipments)').all().map(column => column.name));
-  for (const [name, definition] of [['receiver_first_name','TEXT'],['receiver_phone','TEXT'],['tracking_code_hash','TEXT']]) {
+  for (const [name, definition] of [
+    ['receiver_first_name','TEXT'],
+    ['receiver_phone','TEXT'],
+    ['tracking_code_hash','TEXT'],
+    ['load_owner_organization_id','TEXT REFERENCES organizations(id)'],
+    ['load_owner_party_role',"TEXT CHECK(load_owner_party_role IN ('SHIPPER','RECEIVER'))"],
+    ['external_shipper_name','TEXT'],
+    ['external_shipper_phone','TEXT'],
+    ['external_receiver_name','TEXT'],
+    ['external_receiver_phone','TEXT']
+  ]) {
     if (!shipmentColumns.has(name)) db.exec(`ALTER TABLE shipments ADD COLUMN ${name} ${definition}`);
   }
+  db.exec(`UPDATE shipments SET
+    load_owner_organization_id=COALESCE(load_owner_organization_id,shipper_organization_id),
+    load_owner_party_role=COALESCE(load_owner_party_role,'SHIPPER')`);
   for (const shipment of db.prepare(`SELECT id FROM shipments WHERE tracking_code_hash IS NULL OR trim(tracking_code_hash)=''`).all()) {
     db.prepare('UPDATE shipments SET tracking_code_hash=? WHERE id=?')
       .run(hashTrackingAccessCode(trackingAccessCode(shipment.id)),shipment.id);
@@ -609,12 +660,17 @@ function seed(db) {
     ['shp-freight-fixed','LGX-F2001','Beverage load to Dire Dawa','FREIGHT','OPEN_MARKET','FIXED_PRICE',4850000,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Dire Dawa','Palletized beverages',120,18000,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-quote','LGX-F2002','Construction materials to Mekelle','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Mekelle','Bagged building materials',400,20000,'Heavy Rigid Stake Body Truck','FTL',null,null,dayAfter,null,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-target','LGX-F2003','Packaged food to Hawassa','FREIGHT','SAVED_PARTNERS','TARGET_PRICE',null,3500000,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packaged food cartons',250,9000,'Medium Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
-    ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS','user-shipper']
+    ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS','user-shipper'],
+    ['shp-pstl-baskets','LGX-F2005','Woven baskets for Hawassa shops','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packed woven baskets from a local artisan workshop',1,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-pstl-coffee','LGX-F2006','Roasted coffee cartons to Shashamane','FREIGHT','OPEN_MARKET','TARGET_PRICE',null,1800000,orgs.shipper.id,null,null,null,'Addis Ababa','Shashamane','Sealed coffee cartons from a small local roaster',1,null,'Light Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper']
   ];
   for (const s of seededShipments) {
     const createdBy = s.at(-1);
     shipmentInsert.run(...s.slice(0,-1),hashTrackingAccessCode(trackingAccessCode(s[0])),createdBy,iso,iso);
   }
+  db.exec(`UPDATE shipments SET
+    load_owner_organization_id=COALESCE(load_owner_organization_id,shipper_organization_id),
+    load_owner_party_role=COALESCE(load_owner_party_role,'SHIPPER')`);
 
   const eventInsert = db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`);
   for (const s of seededShipments) {

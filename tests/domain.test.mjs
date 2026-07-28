@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
 import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
 import { normalizePlace, routeMatch, splitPlaces } from '../src/lib/route-matching.js';
+import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
@@ -19,6 +20,20 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
  assert.deepEqual(validateAcceptedLoads('EMPTY','BOTH'),{acceptsFullLoad:true,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('OFF_DUTY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
  assert.throws(()=>validateAcceptedLoads('PARTIAL',''),/ACCEPTED_LOADS_REQUIRED/);
+});
+
+test('PSTL pooling is deterministic and distance bounded',()=>{
+ const base={load_type:'PTL',operational_status:'POSTED',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
+ const loads=[
+  {...base,id:'a',origin:'Addis Ababa',destination:'Adama',origin_coordinate:{lat:9.03,lng:38.74},destination_coordinate:{lat:8.54,lng:39.27}},
+  {...base,id:'b',origin:'Akaki',destination:'Mojo',origin_coordinate:{lat:8.88,lng:38.78},destination_coordinate:{lat:8.59,lng:39.12}},
+  {...base,id:'c',origin:'Bahir Dar',destination:'Gondar',origin_coordinate:{lat:11.59,lng:37.39},destination_coordinate:{lat:12.6,lng:37.47}}
+ ];
+ assert.ok(distanceKm(loads[0].origin_coordinate,loads[1].origin_coordinate)<40);
+ const pools=poolCompatibleLoads(loads);
+ assert.equal(pools.length,1);
+ assert.deepEqual(pools[0].members.map(load=>load.id),['a','b']);
+ assert.equal(poolCompatibleLoads(loads.reverse())[0].id,pools[0].id);
 });
 
 test('road freight requires the same FTL or PTL language',()=>{

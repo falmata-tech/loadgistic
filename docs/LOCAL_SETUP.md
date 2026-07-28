@@ -12,12 +12,15 @@ nvm use
 cp .env.example .env.local
 npm install
 npm run db:reset
+npm run places:setup
 npm run dev
 ```
 
 Open `http://127.0.0.1:3000`.
 
-The app creates `data/loadgistic.db` and local upload files under `data/uploads/`.
+The app creates `data/loadgistic.db` and local upload files under `data/uploads/`. `npm run places:setup` downloads and imports the local Ethiopia OpenStreetMap settlement catalog; the app retains a built-in fallback when that optional network step is unavailable.
+
+Development writes generated Next.js files to `.next-dev`, while `npm run build` writes to `.next`. This keeps an always-on local dev server healthy while a production build runs.
 
 ## Local fixture accounts
 
@@ -45,4 +48,5 @@ npm run db:reset
 - `node:sqlite` missing: update Node.js to 22.5 or newer.
 - Session errors: set a long random `SESSION_SECRET` in `.env.local`.
 - No company data: run `npm run db:reset`.
+- Few place suggestions: run `npm run places:setup`.
 - Browserbase missing: leave `BROWSERBASE_ENABLED=false` for normal local development.
