@@ -9,6 +9,7 @@ import { relativeTime } from '@/lib/ui';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
 import { Route, Search, SlidersHorizontal, X } from 'lucide-react';
+import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';
 
 function acceptedLoads(capacity:any) {
   if (capacity.accepts_full_load && capacity.accepts_partial_load) return 'FTL + PTL';
@@ -19,14 +20,14 @@ function acceptedLoads(capacity:any) {
 export default async function CapacityPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
  const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',origin:query.origin||'',destination:query.destination||'',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||''}; const rows:any[]=listMarketCapacity(user,filters); const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const loadRoutes:any[]=listOwnLoadRouteOptions(user); const hasFilters=Object.values(filters).some(Boolean);
  return <div className="page"><PageHeader title="Capacity Board" subtitle={isProvider?'A read-only view of current supply signals from other trucks.':'Every card is one fresh Empty or Partial truck available for freight work.'}/>
- {isProvider?<div className="alert">The Capacity Board is read only for transporters and drivers. Use it to understand supply; contact and interest actions are not available here.</div>:<div className="alert">Each truck stands on its own. Public means all logged-in businesses; Partners means only saved business relationships.</div>}
+ {isProvider?<div className="alert">The Capacity Board is read only for transporters and drivers. Use it to understand supply; contact and interest actions are not available here.</div>:<div className="alert">Each truck stands on its own. Public means all logged-in businesses; Partners means only Connected network Businesses.</div>}
  <form className="board-filter-panel" method="get">
    <div className="board-filter-heading"><SlidersHorizontal aria-hidden="true"/><div><h2>Find the closest capacity</h2><p>Search directly or rank trucks against one of your load routes.</p></div></div>
    <div className="board-filter-grid">
      <div className="form-group filter-search"><label htmlFor="capacity-search"><Search aria-hidden="true"/>Search</label><input id="capacity-search" name="q" defaultValue={filters.q} placeholder="Truck, transporter, city, or area"/></div>
      {loadRoutes.length?<div className="form-group filter-match"><label htmlFor="capacity-match"><Route aria-hidden="true"/>Match a posted load</label><select id="capacity-match" name="matchLoadId" defaultValue={filters.matchLoadId}><option value="">Do not rank by a load</option>{loadRoutes.map(load=><option key={load.id} value={load.id}>{load.code} · {load.origin} → {load.destination}</option>)}</select></div>:null}
-     <div className="form-group"><label htmlFor="capacity-origin">Corridor city 1</label><input id="capacity-origin" name="origin" defaultValue={filters.origin} placeholder="Addis Ababa"/></div>
-     <div className="form-group"><label htmlFor="capacity-destination">Corridor city 2</label><input id="capacity-destination" name="destination" defaultValue={filters.destination} placeholder="Hawassa"/></div>
+     <div className="form-group"><label htmlFor="capacity-origin">Corridor city 1</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={filters.origin} placeholder="Addis Ababa"/></div>
+     <div className="form-group"><label htmlFor="capacity-destination">Corridor city 2</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={filters.destination} placeholder="Hawassa"/></div>
      <div className="form-group"><label htmlFor="capacity-status">Cargo space</label><select id="capacity-status" name="status" defaultValue={filters.status}><option value="">Empty or Partial</option><option value="EMPTY">Empty</option><option value="PARTIAL">Partial</option></select></div>
      <div className="form-group"><label htmlFor="capacity-load-type">Accepts</label><select id="capacity-load-type" name="loadType" defaultValue={filters.loadType}><option value="">FTL or PTL</option><option value="FTL">FTL</option><option value="PTL">PTL</option></select></div>
      <div className="form-group"><label htmlFor="capacity-truck-type">Cargo configuration</label><select id="capacity-truck-type" name="vehicleCategory" defaultValue={filters.vehicleCategory}><option value="">All truck types</option>{VEHICLE_CONFIGURATIONS.map(type=><option value={type.name} key={type.name}>{type.name}</option>)}</select></div>

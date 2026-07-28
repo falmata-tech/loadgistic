@@ -1,7 +1,7 @@
 ---
 id: FEAT-CAP-001
 title: Truck-first Capacity Board and publication
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
 behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, planned movement, contract-lane openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
 contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
@@ -82,7 +82,7 @@ Given a fleet transporter manages multiple active vehicles\
 When they sign in or open Home\
 Then they see company-wide load, capacity, fleet, and workflow summaries\
 And truck capacity controls remain inside Fleet\
-And selecting a truck in Fleet opens the update controls for that truck.
+And selecting a truck in Fleet opens a truck-specific detail and update page without another truck selector.
 
 ### Scenario: company driver capacity follows owner controls
 
@@ -127,6 +127,14 @@ When the driver continues the update\
 Then the general-area field remains available\
 And the capacity update can be published without a coordinate.
 
+### Scenario: only the assigned driver may use device location
+
+Given a fleet owner edits capacity for one company truck\
+When the owner opens the truck-specific capacity page or submits a device-assisted coordinate\
+Then the interface offers only a manually declared general area\
+And the service rejects device-assisted location because the owner's device does not establish the truck's location\
+And an authorized assigned company driver may still use its own device location for that truck.
+
 ### Scenario: marketplace location remains intentionally approximate
 
 Given capacity includes an obscured device area\
@@ -155,9 +163,9 @@ Then that truck is absent from public and relationship-scoped capacity discovery
 
 ### Scenario: relationship capacity is scoped
 
-Given a transporter publishes capacity to saved business relationships\
+Given a transporter publishes capacity to Connected business relationships\
 When businesses browse capacity\
-Then only businesses with an active saved relationship to that transporter can see it.
+Then only businesses with a mutual Connected relationship to that transporter can see it.
 
 ### Scenario: providers browse the Capacity Board read only
 

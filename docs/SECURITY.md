@@ -9,14 +9,15 @@
 - File size and MIME validation
 - Private proof download route with shipment authorization
 - No sensitive file placed under `public/`
-- Opaque tracking tokens
+- Keyed-digest tracking codes that never appear in URLs
+- Five-minute HTTP-only tracking grants bound to one Business user and load
 - Security headers and Content Security Policy
 - Capacity expiry and visibility filtering
 - Anonymous visitors cannot access company pages, transporter directory, loads, capacity, internal notes, proof, other-provider interest, or receiver details
 - Audit records for sensitive mutations
 - Explicit authorization contracts in `docs/AUTHORIZATION_MATRIX.md`
 - Browse-only load visibility cannot grant status, internal-note, or private-proof access
-- Saved-partner loads require a recorded provider relationship
+- Partners loads and capacity require a mutual Connected relationship
 - Terminal application and payment-proof decisions cannot be overwritten
 
 ## Required before public launch

@@ -10,22 +10,22 @@ const personas = [
   {
     name: 'business-shipper',
     email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/app/providers', '/app/providers?type=BUSINESS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'business-receiver',
     email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/app/providers', '/app/providers?type=BUSINESS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/loads', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'self-managed-driver',
     email: 'driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/loads', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
   },
   {
     name: 'company-driver',
@@ -55,13 +55,22 @@ async function gotoReady(page, route) {
 }
 
 async function login(page, email) {
-  await gotoReady(page, '/login');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await Promise.all([
-    page.waitForURL('**/app/home'),
-    page.getByRole('button', { name: 'Log in' }).click()
-  ]);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await gotoReady(page, '/login');
+    if (new URL(page.url()).pathname === '/app/home') return;
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill(password);
+    await page.getByRole('button', { name: 'Log in' }).click();
+    try {
+      await page.waitForURL('**/app/home', { timeout: 12_000 });
+      return;
+    } catch (error) {
+      if (attempt === 2) {
+        const visibleError = await page.locator('.flash.error').textContent().catch(() => '');
+        throw new Error(`Login failed for ${email}${visibleError ? `: ${visibleError.trim()}` : ''}`, { cause: error });
+      }
+    }
+  }
 }
 
 async function inspectPage(page, route, screenshotPath) {
@@ -70,16 +79,34 @@ async function inspectPage(page, route, screenshotPath) {
 }
 
 async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
-  const metrics = await page.evaluate(() => ({
-    title: document.title,
-    heading: document.querySelector('h1')?.textContent?.trim() || '',
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth,
-    emptyButtons: [...document.querySelectorAll('button, a.button')]
-      .filter((element) => !element.textContent?.trim() && !element.getAttribute('aria-label')).length,
-    unlabeledInputs: [...document.querySelectorAll('input:not([type="hidden"]), select, textarea')]
-      .filter((element) => !element.getAttribute('aria-label') && !element.id && !element.closest('label')).length
-  }));
+  if (await page.getByText('Loading route map...').count()) {
+    await page.locator('.leaflet-container').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+  }
+  let metrics;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      metrics = await page.evaluate(() => {
+        const root = document.documentElement;
+        if (!root) return null;
+        return {
+          title: document.title,
+          heading: document.querySelector('h1')?.textContent?.trim() || '',
+          scrollWidth: root.scrollWidth,
+          clientWidth: root.clientWidth,
+          emptyButtons: [...document.querySelectorAll('button, a.button')]
+            .filter((element) => !element.textContent?.trim() && !element.getAttribute('aria-label')).length,
+          unlabeledInputs: [...document.querySelectorAll('input:not([type="hidden"]), select, textarea')]
+            .filter((element) => !element.getAttribute('aria-label') && !element.id && !element.closest('label')).length
+        };
+      });
+      if (metrics) break;
+      await page.waitForTimeout(500);
+    } catch (error) {
+      if (!String(error).includes('Execution context was destroyed') || attempt === 2) throw error;
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(500);
+    }
+  }
   await page.screenshot({ path: screenshotPath, fullPage: true });
   return {
     route,
@@ -161,8 +188,10 @@ try {
         }
 
         await gotoReady(page, '/app/shipments');
-        const trackingRows = page.locator('a[href^="/app/shipments/"]');
-        const shipmentHref = await trackingRows.count() ? await trackingRows.first().getAttribute('href') : null;
+        const trackingRows = page.locator('a[href^="/app/shipments/"]:not([href="/app/shipments/new"])');
+        const shipmentHref = ['business-shipper', 'business-receiver'].includes(persona.name)
+          ? '/app/shipments/shp-freight-active'
+          : await trackingRows.count() ? await trackingRows.first().getAttribute('href') : null;
         if (shipmentHref) {
           const result = await inspectPage(
             page,
@@ -170,11 +199,15 @@ try {
             path.join(outputDir, `${viewport.name}-${persona.name}-shipment-detail.png`)
           );
           report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-          const trackingHref = await page.getByRole('link', { name: 'Open tracking view' }).getAttribute('href').catch(() => null);
-          if (trackingHref) {
-            const trackingResult = await inspectPage(
+          const trackingCode = await page.locator('.tracking-secret strong').textContent().catch(() => null);
+          if (trackingCode) {
+            await gotoReady(page,'/track');
+            await page.getByLabel('Secret load code').fill(trackingCode.trim());
+            await page.getByRole('button',{name:'Open tracking'}).click();
+            await page.waitForLoadState('domcontentloaded');
+            const trackingResult = await inspectCurrentPage(
               page,
-              trackingHref,
+              '/track/[unlocked]',
               path.join(outputDir, `${viewport.name}-${persona.name}-tracking-view.png`)
             );
             report.results.push({ viewport: viewport.name, persona: persona.name, ...trackingResult });
@@ -189,15 +222,6 @@ try {
             path.join(outputDir, `${viewport.name}-${persona.name}-assigned-tracking-controls.png`)
           );
           report.results.push({ viewport: viewport.name, persona: persona.name, ...activeResult });
-          const activeTrackingHref = await page.getByRole('link', { name: 'Open tracking view' }).getAttribute('href');
-          if (activeTrackingHref) {
-            const activeTrackingResult = await inspectPage(
-              page,
-              activeTrackingHref,
-              path.join(outputDir, `${viewport.name}-${persona.name}-assigned-tracking-view.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...activeTrackingResult });
-          }
         }
       } catch (error) {
         report.errors.push({ viewport: viewport.name, persona: persona.name, error: error.message });

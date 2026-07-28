@@ -17,7 +17,7 @@ Loadgistic is a Next.js App Router application running on the Node.js runtime. P
 
 The dependency direction is UI/HTTP adapters → application services and authorization → pure domain rules → outbound ports and adapters. The current `repository.js` combines application services with the local repository facade; it is an intentional MVP seam, not a target for further coupling. Extract a port when a second adapter is introduced or a contract needs isolated testing.
 
-DDD vocabulary is used where it clarifies invariants: Shipment, Capacity Update, Business Application, and Payment Proof are aggregates; ETB Amount, Capacity Percentage, Shipment Code, Tracking Token, and Expiry are value objects. Implementations may remain pure functions and modules. Classes are not an architectural requirement.
+DDD vocabulary is used where it clarifies invariants: Shipment, Capacity Update, Network Relationship, Business Application, and Payment Proof are aggregates; ETB Amount, Capacity Percentage, Shipment Code, Tracking Access Code, and Expiry are value objects. Implementations may remain pure functions and modules. Classes are not an architectural requirement.
 
 Behavioral and adapter contracts are governed by the linked specifications under `specs/`. See `docs/SPEC_DRIVEN_DEVELOPMENT.md`.
 
@@ -37,7 +37,7 @@ This is an adapter choice, not a second product model. The Supabase migration mi
 - Shipment and immutable events
 - Provider interest
 - Capacity update
-- Tracking token and proof
+- Business tracking grant and proof
 - Application
 - Plan, subscription, and payment proof
 - Notification and audit log
@@ -45,7 +45,7 @@ This is an adapter choice, not a second product model. The Supabase migration mi
 ## Deployment path
 
 1. Create a Supabase project.
-2. Apply `supabase/migrations/001_loadgistic_schema.sql`.
+2. Apply the ordered files under `supabase/migrations/`.
 3. Configure Supabase Auth and private buckets.
 4. Replace the local repository adapter with Supabase queries/RPCs.
 5. Move local files to private Storage paths.

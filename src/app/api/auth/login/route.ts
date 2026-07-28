@@ -8,12 +8,14 @@ import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const clientRate = checkRateLimit(requestKey(request,'login-client'), 60, 60_000);
+  const clientLimit=Number(process.env.LOGIN_CLIENT_RATE_LIMIT||60);
+  const accountLimit=Number(process.env.LOGIN_ACCOUNT_RATE_LIMIT||12);
+  const clientRate = checkRateLimit(requestKey(request,'login-client'),clientLimit,60_000);
   if (!clientRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${clientRate.retryAfterSeconds} seconds.`);
   const form = await request.formData();
   const email = text(form, 'email');
   const password = text(form, 'password');
-  const accountRate = checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`, 12, 60_000);
+  const accountRate = checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`,accountLimit,60_000);
   if (!accountRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${accountRate.retryAfterSeconds} seconds.`);
   const user = findUserByEmail(email);
   if (!user || !user.active || !verifyPassword(password, user.password_hash)) {

@@ -27,6 +27,15 @@ function sign(value) {
   return crypto.createHmac('sha256', secret()).update(value).digest('base64url');
 }
 
+export function trackingAccessCode(shipmentId) {
+  const digest = crypto.createHmac('sha256', secret()).update(`tracking:${shipmentId}`).digest('hex').toUpperCase();
+  return `LG-${digest.slice(0,4)}-${digest.slice(4,8)}`;
+}
+
+export function hashTrackingAccessCode(value) {
+  return sign(`tracking-code:${String(value || '').trim().toUpperCase()}`);
+}
+
 export function createSessionToken(userId, maxAgeSeconds = 60 * 60 * 12) {
   const payload = Buffer.from(JSON.stringify({ sub: userId, exp: Math.floor(Date.now() / 1000) + maxAgeSeconds })).toString('base64url');
   return `${payload}.${sign(payload)}`;
@@ -56,8 +65,4 @@ export function randomId(prefix = '') {
 export function randomCode(prefix = 'LGX') {
   const part = crypto.randomBytes(4).toString('hex').toUpperCase();
   return `${prefix}-${part}`;
-}
-
-export function opaqueToken() {
-  return crypto.randomBytes(32).toString('base64url');
 }

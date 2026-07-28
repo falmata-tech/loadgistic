@@ -15,7 +15,8 @@ import {
   PackageSearch,
   Search,
   Truck,
-  Users
+  Users,
+  Network
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -25,6 +26,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/shipments/new', label: 'Post Load', icon: CirclePlus },
     { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
     { href: '/app/providers', label: 'Directory', icon: Search },
+    { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
     { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
     { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
@@ -35,6 +37,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/shipments/new', label: 'Post Load', icon: CirclePlus },
     { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
     { href: '/app/providers', label: 'Directory', icon: Search },
+    { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
     { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
     { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
@@ -47,6 +50,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/capacity', label: 'Capacity Board', icon: PackageSearch },
     { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
+    { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
     { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
@@ -57,6 +61,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/capacity', label: 'Capacity Board', icon: PackageSearch },
     { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
+    { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
     { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }

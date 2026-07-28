@@ -132,6 +132,15 @@ test('Load and Capacity Boards filter and rank by an owned route',()=>{
  assert.ok(repo.listMarketCapacity(shipper,{status:'PARTIAL'}).every(truck=>truck.status==='PARTIAL'));
 });
 
+test('Load Board can isolate the provider interests without adding them to Tracking',()=>{
+ const driver=repo.getUserById('user-driver');
+ repo.expressInterest(driver,'shp-freight-fixed','Interested view fixture');
+ const interested=repo.listLoads(driver,'INTERESTED');
+ assert.ok(interested.some(load=>load.id==='shp-freight-fixed'));
+ assert.ok(interested.every(load=>load.interested));
+ assert.equal(repo.listVisibleShipments(driver).some(load=>load.id==='shp-freight-fixed'),false);
+});
+
 test('shipper creates quote-requested open freight load',()=>{
  const user=repo.getUserById('user-shipper');
  const result=repo.createShipment(user,{title:'Test quote load',serviceMode:'FREIGHT',distributionMode:'OPEN_MARKET',priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Jimma',cargoDescription:'Test goods',packageCount:'5',loadType:'PTL',pickupDate:new Date(Date.now()+86400000).toISOString().slice(0,10),trackingMode:'STATUS_ONLY'});

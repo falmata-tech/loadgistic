@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { hashPassword, randomId, opaqueToken } from './security.js';
+import { trackingAccessCode, hashPassword, hashTrackingAccessCode, randomId } from './security.js';
 
 let database;
 
@@ -97,8 +97,13 @@ function migrate(db) {
       owner_organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
       provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
       provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
-      status TEXT NOT NULL DEFAULT 'SAVED',
+      status TEXT NOT NULL DEFAULT 'FAVORITE',
+      requested_by_side TEXT,
+      business_favorite INTEGER NOT NULL DEFAULT 0,
+      provider_favorite INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      responded_at TEXT,
       CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
     );
 
@@ -229,6 +234,7 @@ function migrate(db) {
       operational_status TEXT NOT NULL,
       tracking_mode TEXT NOT NULL CHECK(tracking_mode IN ('STATUS_ONLY','LOCATION_AND_STATUS')),
       tracking_token TEXT UNIQUE,
+      tracking_code_hash TEXT UNIQUE,
       created_by TEXT NOT NULL REFERENCES users(id),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -407,6 +413,21 @@ function migrate(db) {
   if (!userColumns.has('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
   const driverColumns = new Set(db.prepare('PRAGMA table_info(drivers)').all().map(column => column.name));
   if (!driverColumns.has('user_id')) db.exec('ALTER TABLE drivers ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL');
+  const relationshipColumns = new Set(db.prepare('PRAGMA table_info(partner_relationships)').all().map(column => column.name));
+  for (const [name, definition] of [
+    ['requested_by_side','TEXT'],
+    ['business_favorite','INTEGER NOT NULL DEFAULT 0'],
+    ['provider_favorite','INTEGER NOT NULL DEFAULT 0'],
+    ['updated_at','TEXT'],
+    ['responded_at','TEXT']
+  ]) {
+    if (!relationshipColumns.has(name)) db.exec(`ALTER TABLE partner_relationships ADD COLUMN ${name} ${definition}`);
+  }
+  db.exec(`UPDATE partner_relationships
+    SET status=CASE WHEN status='SAVED' THEN 'CONNECTED' ELSE status END,
+        business_favorite=CASE WHEN status IN ('SAVED','CONNECTED') THEN 1 ELSE business_favorite END,
+        provider_favorite=CASE WHEN status IN ('SAVED','CONNECTED') THEN 1 ELSE provider_favorite END,
+        updated_at=COALESCE(updated_at,created_at)`);
 
   const capacityColumns = new Set(db.prepare('PRAGMA table_info(capacities)').all().map(column => column.name));
   const additiveCapacityColumns = [
@@ -437,9 +458,14 @@ function migrate(db) {
     db.exec('ALTER TABLE company_pages ADD COLUMN show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0');
   }
   const shipmentColumns = new Set(db.prepare('PRAGMA table_info(shipments)').all().map(column => column.name));
-  for (const [name, definition] of [['receiver_first_name','TEXT'],['receiver_phone','TEXT']]) {
+  for (const [name, definition] of [['receiver_first_name','TEXT'],['receiver_phone','TEXT'],['tracking_code_hash','TEXT']]) {
     if (!shipmentColumns.has(name)) db.exec(`ALTER TABLE shipments ADD COLUMN ${name} ${definition}`);
   }
+  for (const shipment of db.prepare(`SELECT id FROM shipments WHERE tracking_code_hash IS NULL OR trim(tracking_code_hash)=''`).all()) {
+    db.prepare('UPDATE shipments SET tracking_code_hash=? WHERE id=?')
+      .run(hashTrackingAccessCode(trackingAccessCode(shipment.id)),shipment.id);
+  }
+  db.prepare('UPDATE shipments SET tracking_token=NULL WHERE tracking_token IS NOT NULL').run();
   const interestColumns = new Set(db.prepare('PRAGMA table_info(shipment_interests)').all().map(column => column.name));
   if (!interestColumns.has('created_by')) db.exec('ALTER TABLE shipment_interests ADD COLUMN created_by TEXT REFERENCES users(id)');
   const shipmentEventColumns = new Set(db.prepare('PRAGMA table_info(shipment_events)').all().map(column => column.name));
@@ -528,8 +554,10 @@ function seed(db) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run('provider-driver','user-driver','Abebe Owner-Operator','abebe-owner-operator',1,1,1,'Light Stake Body Truck','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','+251 911 234 567','Addis Ababa','Independent owner-operator serving business shippers on major Ethiopian corridors.','PUBLIC',iso);
 
-  db.prepare(`INSERT INTO partner_relationships (id,owner_organization_id,provider_organization_id,provider_profile_id,status,created_at) VALUES (?,?,?,?,?,?)`)
-    .run('partner-1',orgs.shipper.id,orgs.transporter.id,null,'SAVED',iso);
+  db.prepare(`INSERT INTO partner_relationships
+    (id,owner_organization_id,provider_organization_id,provider_profile_id,status,requested_by_side,business_favorite,provider_favorite,created_at,updated_at,responded_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+    .run('partner-1',orgs.shipper.id,orgs.transporter.id,null,'CONNECTED','BUSINESS',1,1,iso,iso,iso);
 
   const insertPage = db.prepare(`INSERT INTO company_pages
     (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at)
@@ -574,20 +602,23 @@ function seed(db) {
   capacityInsert.run('cap-partner-partial',orgs.transporter.id,null,'veh-trans-2','PARTIAL',25,'Mekelle','Addis Ababa','Mekelle ↔ Addis Ababa',dayAfter,'After current delivery','SAVED_PARTNERS',null,'user-transporter',iso,expiresFresh,'Around Mekelle',iso,13.5,39.5,40,'DEVICE_OBSCURED');
 
   const shipmentInsert = db.prepare(`INSERT INTO shipments
-    (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,receiver_first_name,receiver_phone,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_token,created_by,created_at,updated_at)
+    (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,receiver_first_name,receiver_phone,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_code_hash,created_by,created_at,updated_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
 
   const seededShipments = [
-    ['shp-freight-fixed','LGX-F2001','Beverage load to Dire Dawa','FREIGHT','OPEN_MARKET','FIXED_PRICE',4850000,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Dire Dawa','Palletized beverages',120,18000,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY',opaqueToken(),'user-shipper'],
-    ['shp-freight-quote','LGX-F2002','Construction materials to Mekelle','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Mekelle','Bagged building materials',400,20000,'Heavy Rigid Stake Body Truck','FTL',null,null,dayAfter,null,'POSTED','POSTED','STATUS_ONLY',opaqueToken(),'user-shipper'],
-    ['shp-freight-target','LGX-F2003','Packaged food to Hawassa','FREIGHT','SAVED_PARTNERS','TARGET_PRICE',null,3500000,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packaged food cartons',250,9000,'Medium Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY',opaqueToken(),'user-shipper'],
-    ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS',opaqueToken(),'user-shipper']
+    ['shp-freight-fixed','LGX-F2001','Beverage load to Dire Dawa','FREIGHT','OPEN_MARKET','FIXED_PRICE',4850000,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Dire Dawa','Palletized beverages',120,18000,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-freight-quote','LGX-F2002','Construction materials to Mekelle','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Mekelle','Bagged building materials',400,20000,'Heavy Rigid Stake Body Truck','FTL',null,null,dayAfter,null,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-freight-target','LGX-F2003','Packaged food to Hawassa','FREIGHT','SAVED_PARTNERS','TARGET_PRICE',null,3500000,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packaged food cartons',250,9000,'Medium Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS','user-shipper']
   ];
-  for (const s of seededShipments) shipmentInsert.run(...s, iso, iso);
+  for (const s of seededShipments) {
+    const createdBy = s.at(-1);
+    shipmentInsert.run(...s.slice(0,-1),hashTrackingAccessCode(trackingAccessCode(s[0])),createdBy,iso,iso);
+  }
 
   const eventInsert = db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`);
   for (const s of seededShipments) {
-    if (s[0] !== 'shp-freight-active') eventInsert.run(randomId('evt-'),s[0],s[24],'CREATED','Shipment created in Loadgistic',s[27],1,iso);
+    if (s[0] !== 'shp-freight-active') eventInsert.run(randomId('evt-'),s[0],s[24],'CREATED','Shipment created in Loadgistic',s[26],1,iso);
   }
   eventInsert.run(randomId('evt-'),'shp-freight-active','SENT','CREATED','Direct request sent by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-6*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-active','AGREED','STATUS','Business and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-5*60*60*1000).toISOString());

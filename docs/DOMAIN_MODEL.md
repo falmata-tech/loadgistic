@@ -3,9 +3,9 @@
 ## Demand
 
 - Business looking for capacity
-- Business receiving shipments
+- Business acting as a shipper or receiver for a specific load
 - Shipment demand
-- Direct request, saved partners, or open market
+- Direct request, Connected Partners, or open market
 
 ## Supply
 
@@ -20,7 +20,8 @@
 - Shipment Parties
 - Provider Interest
 - Status Events
-- Tracking Token
+- Secret Tracking Access Code stored as a keyed digest
+- Five-minute user/load-bound Business Tracking Grant
 - Tracking obligation: Status timeline or Approximate location + status
 - Customer-safe tracking event with optional privacy-obscured general area
 - Proof Files
@@ -49,7 +50,7 @@
 
 - Business operating regions or cities declared on its authenticated Public Profile
 - Transporter preferred corridors declared as endpoint names
-- Saved Business-to-provider relationship
+- Private Favorite, directional Pending request, and mutual Connected Business-provider relationship
 - Fleet network coverage projection: matching declared Business places against recorded corridor endpoints
 - No inferred facility coordinate, live Business location, distance, or service guarantee
 

@@ -8,10 +8,12 @@ export const runtime='nodejs';
 export async function POST(request:NextRequest){
  const user=await getCurrentUser(); if(!user) return NextResponse.redirect(new URL('/login',request.url),303);
  const form=await request.formData();
+ const vehicleId=text(form,'vehicleId');
+ const returnTo=user.role==='TRANSPORTER'&&vehicleId?`/app/fleet/${vehicleId}`:'/app/home';
  try{
    const file=form.get('photo'); const upload=file && typeof file!=='string' && file.size ? await saveUpload(file,'capacity') : null;
    const origin=text(form,'origin'); const destination=text(form,'destination');
-   publishCapacity(user,{vehicleId:text(form,'vehicleId'),status:text(form,'status'),availablePercent:text(form,'availablePercent'),acceptedLoads:text(form,'acceptedLoads'),locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource'),origin,destination,corridor:origin&&destination?`${origin} ↔ ${destination}`:'',travelDate:text(form,'travelDate'),nextAvailable:text(form,'nextAvailable'),visibility:text(form,'visibility'),openToContractLanes:checked(form,'openToContractLanes'),acceptsMultiStop:checked(form,'acceptsMultiStop')},upload);
-   return redirectWith(request,'/app/home','success','Capacity and location updated.');
- }catch(error){return redirectWith(request,'/app/home','error',errorMessage(error));}
+   publishCapacity(user,{vehicleId,status:text(form,'status'),availablePercent:text(form,'availablePercent'),acceptedLoads:text(form,'acceptedLoads'),locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource'),origin,destination,corridor:origin&&destination?`${origin} ↔ ${destination}`:'',travelDate:text(form,'travelDate'),nextAvailable:text(form,'nextAvailable'),visibility:text(form,'visibility'),openToContractLanes:checked(form,'openToContractLanes'),acceptsMultiStop:checked(form,'acceptsMultiStop')},upload);
+   return redirectWith(request,returnTo,'success','Capacity and location updated.');
+ }catch(error){return redirectWith(request,returnTo,'error',errorMessage(error));}
 }

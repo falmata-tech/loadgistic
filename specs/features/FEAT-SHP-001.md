@@ -1,7 +1,7 @@
 ---
 id: FEAT-SHP-001
 title: B2B shipment creation and execution
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
 behavior: Authorized Business actors create road-freight loads, transporters discover or accept permitted work through the Load Board, only shipment parties see records in Tracking, and explicit domain transitions govern execution.
 contracts: [ShipmentAggregate, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
@@ -79,8 +79,16 @@ Then access is denied and no shipment can be created.
 
 Given a fleet transporter or self-managed driver\
 When they browse the Load Board\
-Then only open, directed, or saved-partner records permitted by visibility policy appear\
+Then only Open, Direct, or Partners records permitted by visibility policy appear\
 And internal notes and competing interest remain hidden.
+
+### Scenario: provider can return to its expressed interests
+
+Given an authorized provider expressed interest in one or more visible loads\
+When it selects My interests on the Load Board\
+Then only currently discoverable loads with that provider's recorded interest are shown\
+And every matching card is labeled Interest sent\
+And the loads do not enter Tracking until the provider becomes a shipment party.
 
 ### Scenario: authorized fleet driver represents its company
 
@@ -134,11 +142,11 @@ When the provider attempts to change status or add an internal note\
 Then the command is denied as not found or forbidden\
 And no shipment, note, event, or success audit changes.
 
-### Scenario: saved-partner visibility is relationship-scoped
+### Scenario: Partners visibility is relationship-scoped
 
-Given a freight load is visible to Saved Partners\
+Given a freight load is visible to Partners\
 When transporters browse available loads\
-Then only transporters with an active saved relationship to the Business owner can see it.
+Then only transporters with a mutual Connected relationship to the Business owner can see it.
 
 ### Scenario: direct acceptance is single-use
 

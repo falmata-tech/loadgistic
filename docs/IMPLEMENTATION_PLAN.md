@@ -17,7 +17,7 @@ The current implementation is a local Next.js and SQLite MVP. Accepted behavior 
 4. Receiver-contact privacy after agreement.
 5. Fleet roster with real vehicle make, model, plate, and cargo configuration.
 6. Self-managed Driver capacity Home with duty, space, load, stop, corridor, visibility, location, and proof controls; Fleet Transporter controls remain in My Fleet.
-7. Public and saved-partner relationships.
+7. Public, Partners, and mutual Connected relationships.
 8. Enforceable Status timeline or Approximate location + status tracking.
 9. Private operational proof and temporary per-interest load-size proof.
 10. Workspace-specific plans and manual ETB payment review.

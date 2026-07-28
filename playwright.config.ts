@@ -5,6 +5,7 @@ const localBrowserBaseUrl = 'http://127.0.0.1:3100';
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30_000,
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || localBrowserBaseUrl,

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PublicHeader } from '@/components/public-header';
-import { getProfileRouteComparison, getPublicCompany } from '@/lib/repository.js';
+import { getNetworkState, getProfileRouteComparison, getPublicCompany } from '@/lib/repository.js';
 import { StatusPill } from '@/components/status-pill';
 import { capacityLabel } from '@/lib/domain.js';
 import { requireUser } from '@/lib/auth';
@@ -10,6 +10,8 @@ import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { VerificationBadges } from '@/components/verification-badges';
 import { RouteCoverageMap } from '@/components/route-coverage-map';
 import { Building2, GitCompareArrows, Mail, MapPin, Phone, Route, Star, Truck } from 'lucide-react';
+import { NetworkActions } from '@/components/network-actions';
+import { Flash } from '@/components/flash';
 
 export default async function CompanyPage({ params,searchParams }: { params: Promise<{ handle: string }>; searchParams:Promise<Record<string,string|undefined>> }) {
   const { handle } = await params;
@@ -26,11 +28,12 @@ export default async function CompanyPage({ params,searchParams }: { params: Pro
   const initials = String(company.name || company.business_name).split(' ').slice(0,2).map((v:string)=>v[0]).join('');
   const hasContact=Boolean(company.contact_phone||company.contact_email);
 
-  return <><PublicHeader/><main className="section"><div className="container">
-    <div className="company-hero"><div className="company-logo">{initials}</div><div><div className="profile-title-line"><h1 className="page-title">{company.name}</h1>{company.verified?<StatusPill status="Approved"/>:null}</div><p className="page-subtitle">{company.headline}</p><div className="meta icon-meta"><MapPin aria-hidden="true"/>{company.city||'Location not added'} · {isBusiness?'Business':String(company.type).replaceAll('_',' ')}</div><VerificationBadges badges={company.verification_badges}/></div><div className="hero-actions">{canSendProviderRequest?<Link className="button" href={`/app/shipments/new?provider=${providerRef}`}>Send request</Link>:null}{canSelectReceiver?<Link className="button" href={`/app/shipments/new?receiver=${company.id}`}>Create load together</Link>:null}{!isOwnProfile&&company.routes.length?<Link className="button secondary icon-button-label" href={`/companies/${handle}?compare=routes#route-coverage`}><GitCompareArrows aria-hidden="true"/>Compare routes</Link>:null}</div></div>
+  const networkState=getNetworkState(user,company.page_kind==='provider'?'profile':'org',company.id);
+  return <><PublicHeader/><main className="section"><div className="container"><Flash error={query.error} success={query.success}/>
+    <div className="company-hero"><div className="company-logo">{initials}</div><div><div className="profile-title-line"><h1 className="page-title">{company.name}</h1>{company.verified?<StatusPill status="Approved"/>:null}</div><p className="page-subtitle">{company.headline}</p><div className="meta icon-meta"><MapPin aria-hidden="true"/>{company.city||'Location not added'} · {isBusiness?'Business':String(company.type).replaceAll('_',' ')}</div><VerificationBadges badges={company.verification_badges}/></div><div className="hero-actions">{canSendProviderRequest?<Link className="button" href={`/app/shipments/new?provider=${providerRef}`}>Send request</Link>:null}{canSelectReceiver?<Link className="button" href={`/app/shipments/new?receiver=${company.id}`}>Create load together</Link>:null}{!isOwnProfile&&company.routes.length?<Link className="button secondary icon-button-label" href={`/companies/${handle}?compare=routes#route-coverage`}><GitCompareArrows aria-hidden="true"/>Compare routes</Link>:null}<NetworkActions state={networkState} targetKind={company.page_kind==='provider'?'profile':'org'} targetId={company.id} returnTo={`/companies/${handle}`}/></div></div>
 
     <div className="two-col" style={{marginTop:20}}><div className="stack">
-      <section className="card"><h2>{isBusiness?'About this Business':'Overview'}</h2><p className="lede profile-about">{company.about || company.description || 'Profile information is being completed.'}</p>{company.services?<><h3>{isBusiness?'What this Business makes or distributes':'Services'}</h3><p>{company.services}</p></>:null}{company.operating_regions?<><h3><MapPin aria-hidden="true"/>{isBusiness?'Operating regions and cities':'Service regions and cities'}</h3><p>{company.operating_regions}</p></>:null}{!isBusiness?<><h3>Preferred corridors</h3><p>{company.corridors || 'Contact the transporter for current corridors.'}</p></>:null}</section>
+	      <section className="card profile-overview"><h2>{isBusiness?'About this Business':'Overview'}</h2><p className="lede profile-about">{company.about || company.description || 'Profile information is being completed.'}</p>{company.services?<><h3>{isBusiness?'What this Business makes or distributes':'Services'}</h3><p>{company.services}</p></>:null}{company.operating_regions?<><h3><MapPin aria-hidden="true"/>{isBusiness?'Operating regions and cities':'Service regions and cities'}</h3><p>{company.operating_regions}</p></>:null}{!isBusiness?<><h3>Preferred corridors</h3><p>{company.corridors || 'Contact the transporter for current corridors.'}</p></>:null}</section>
 
       <section className="card profile-route-coverage" id="route-coverage"><div className="page-header compact-header"><div><h2><Route aria-hidden="true"/>Coverage routes</h2><p className="page-subtitle">Declared routes are shown separately from activity recorded in Loadgistic.</p></div>{comparison?<Link className="button secondary small" href={`/companies/${handle}#route-coverage`}>Hide comparison</Link>:null}</div>
         {comparison?<div className="route-comparison-summary"><div><span>Route fit</span><strong>{comparison.strongest_label}</strong></div><div><span>Evidence</span><strong>{comparison.evidence_label}</strong></div><div><span>Shared view</span><strong>{comparison.exact_count} full · {comparison.partial_count} partial</strong></div></div>:null}

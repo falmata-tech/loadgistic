@@ -147,6 +147,54 @@ test('assigned location tracking is enforced until a Business party reduces it',
   assert.ok(tracked.events.some(event=>event.location_source==='DEVICE_OBSCURED'&&event.location_precision_km===40));
 });
 
+test('customer tracking code unlock is limited to shipper and receiver Businesses', () => {
+  const code=repo.getBusinessTrackingAccessCode(users.shipper,'shp-freight-active');
+  assert.match(code,/^LG-[A-F0-9]{4}-[A-F0-9]{4}$/);
+  assert.equal(repo.unlockBusinessTracking(users.shipper,code).id,'shp-freight-active');
+  assert.equal(repo.unlockBusinessTracking(users.receiver,code).id,'shp-freight-active');
+  assert.throws(()=>repo.unlockBusinessTracking(users.transporter,code),/TRACKING_ACCESS_DENIED/);
+  assert.throws(()=>repo.unlockBusinessTracking(users.driver,code),/TRACKING_ACCESS_DENIED/);
+  assert.equal(repo.getBusinessTracking(users.transporter,'shp-freight-active'),null);
+  assert.ok(repo.getBusinessTracking(users.shipper,'shp-freight-active').events.length);
+  const stored=dbModule.getDb().prepare('SELECT tracking_code_hash FROM shipments WHERE id=?').get('shp-freight-active');
+  assert.notEqual(stored.tracking_code_hash,code);
+
+  const shipperOnly=createFreight();
+  const shipperOnlyCode=repo.getBusinessTrackingAccessCode(users.shipper,shipperOnly.id);
+  assert.throws(()=>repo.unlockBusinessTracking(users.receiver,shipperOnlyCode),/TRACKING_ACCESS_DENIED/);
+});
+
+test('favorites and pending requests do not unlock Partners visibility until accepted', () => {
+  const db=dbModule.getDb();
+  const partnerCapacityId=repo.publishCapacity(users.driver,{
+    vehicleId:'veh-driver-1',
+    status:'EMPTY',
+    acceptedLoads:'BOTH',
+    locationArea:'Around Addis Ababa',
+    origin:'Addis Ababa',
+    destination:'Hawassa',
+    visibility:'SAVED_PARTNERS'
+  });
+  assert.equal(repo.listMarketCapacity(users.receiver).some(row=>row.id===partnerCapacityId),false);
+
+  repo.changeNetworkRelationship(users.driver,{targetKind:'org',targetId:users.receiver.organization_id,action:'FAVORITE'});
+  assert.equal(repo.getNetworkState(users.driver,'org',users.receiver.organization_id).is_favorite,true);
+  assert.equal(repo.listMarketCapacity(users.receiver).some(row=>row.id===partnerCapacityId),false);
+
+  repo.changeNetworkRelationship(users.driver,{targetKind:'org',targetId:users.receiver.organization_id,action:'REQUEST'});
+  assert.equal(repo.getNetworkState(users.receiver,'profile',users.driver.provider_profile_id).incoming,true);
+  assert.equal(repo.listMarketCapacity(users.receiver).some(row=>row.id===partnerCapacityId),false);
+
+  repo.changeNetworkRelationship(users.receiver,{targetKind:'profile',targetId:users.driver.provider_profile_id,action:'ACCEPT'});
+  assert.equal(repo.getNetworkState(users.driver,'org',users.receiver.organization_id).status,'CONNECTED');
+  assert.ok(repo.listMarketCapacity(users.receiver).some(row=>row.id===partnerCapacityId));
+  assert.ok(repo.listNetwork(users.receiver).connected.some(row=>row.target_id===users.driver.provider_profile_id));
+
+  assert.throws(()=>repo.changeNetworkRelationship(users.companyDriver,{targetKind:'org',targetId:users.receiver.organization_id,action:'REQUEST'}),/FORBIDDEN/);
+  assert.throws(()=>repo.changeNetworkRelationship(users.shipper,{targetKind:'org',targetId:users.receiver.organization_id,action:'REQUEST'}),/INVALID_NETWORK_TARGET/);
+  assert.ok(db.prepare(`SELECT 1 FROM audit_logs WHERE action='NETWORK_CONNECTION_DECIDED'`).get());
+});
+
 test('marketplace-only views never receive receiver contact', () => {
   const shipment = createFreight();
   const db = dbModule.getDb();
@@ -175,6 +223,7 @@ test('fleet owner controls company driver load and capacity authority without re
   const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Dire Dawa',visibility:'OPEN'});
   assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
   assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
+  assert.throws(()=>repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',visibility:'OPEN'}),/DEVICE_LOCATION_DRIVER_ONLY/);
 
   repo.updateFleetDriverPermissions(users.transporter,users.companyDriver.id,{
     canBrowseLoadBoard:false,

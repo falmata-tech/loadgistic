@@ -3,6 +3,8 @@
 import React from 'react';
 import Image from 'next/image';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
+import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
+import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 type CapacitySnapshot = {
   status?: string;
@@ -40,7 +42,7 @@ function acceptedLoadValue(current?: CapacitySnapshot | null) {
   return 'FTL';
 }
 
-export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: VehicleOption[]; initialVehicleId?: string }) {
+export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=true,lockVehicleSelection=false }: { vehicles: VehicleOption[]; initialVehicleId?: string;allowDeviceLocation?:boolean;lockVehicleSelection?:boolean }) {
   const validInitialVehicleId = vehicles.some(vehicle => vehicle.id === initialVehicleId) ? initialVehicleId : vehicles[0]?.id;
   const [vehicleId, setVehicleId] = React.useState(validInitialVehicleId || '');
   const selectedVehicle = vehicles.find(vehicle => vehicle.id === vehicleId);
@@ -56,6 +58,7 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
       ? { lat: current.location_lat, lng: current.location_lng }
       : null
   );
+  const [locationArea,setLocationArea]=React.useState(current?.location_area||'');
 
   function chooseVehicle(nextId: string) {
     const next = vehicles.find(vehicle => vehicle.id === nextId)?.current;
@@ -67,6 +70,7 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
     setApproximateLocation(next?.location_source === 'DEVICE_OBSCURED' && next.location_lat != null && next.location_lng != null
       ? { lat: next.location_lat, lng: next.location_lng }
       : null);
+    setLocationArea(next?.location_area||'');
   }
 
   function setDuty(onDuty: boolean) {
@@ -89,6 +93,8 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
       const lat = Math.round(position.coords.latitude * 2) / 2;
       const lng = Math.round(position.coords.longitude * 2) / 2;
       setApproximateLocation({ lat, lng });
+      const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
+      if(nearest)setLocationArea(`Around ${nearest.name}`);
       setLocationState('captured');
     }, error => {
       setApproximateLocation(null);
@@ -115,7 +121,7 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
       <div className="capacity-console-main stack">
         <section className="control-panel">
           <div className="control-panel-title"><div><h2>Your truck</h2><p>Every update belongs to one real truck.</p></div></div>
-          <div className="vehicle-select-summary"><Image src={vehicleConfigurationImage(selectedVehicle?.cargoConfiguration)} alt="" width={180} height={180}/><div className="form-group"><label htmlFor="capacity-vehicle">Truck</label><select id="capacity-vehicle" name="vehicleId" value={vehicleId} onChange={event => chooseVehicle(event.target.value)} required>{vehicles.map(vehicle => <option value={vehicle.id} key={vehicle.id}>{vehicle.make} · {vehicle.model} · {vehicle.cargoConfiguration} · {vehicle.plate}</option>)}</select><div className="meta">{selectedVehicle?.make} · {selectedVehicle?.model}<br/>{selectedVehicle?.cargoConfiguration} · {selectedVehicle?.plate}</div></div></div>
+          <div className="vehicle-select-summary"><Image src={vehicleConfigurationImage(selectedVehicle?.cargoConfiguration)} alt="" width={180} height={180}/><div className="form-group"><label htmlFor="capacity-vehicle">Truck</label>{lockVehicleSelection?<input type="hidden" name="vehicleId" value={vehicleId}/>:<select id="capacity-vehicle" name="vehicleId" value={vehicleId} onChange={event => chooseVehicle(event.target.value)} required>{vehicles.map(vehicle => <option value={vehicle.id} key={vehicle.id}>{vehicle.make} · {vehicle.model} · {vehicle.cargoConfiguration} · {vehicle.plate}</option>)}</select>}<div className="meta">{selectedVehicle?.make} · {selectedVehicle?.model}<br/>{selectedVehicle?.cargoConfiguration} · {selectedVehicle?.plate}</div></div></div>
         </section>
 
         {onDuty ? <>
@@ -139,8 +145,8 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
 
           <section className="control-panel">
             <div className="control-panel-title"><div><h2>Where you are now</h2><p>Share a general area, never an exact live position.</p></div><span className="status fresh">Updates now</span></div>
-            <div className="location-input-wrap"><span aria-hidden="true">◎</span><input id="capacity-area" name="locationArea" required defaultValue={current?.location_area || ''} placeholder="Around Addis Ababa" aria-label="Current general area"/></div>
-            <div className={`device-location-control ${locationState}`}>
+            <div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" name="locationArea" required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Addis Ababa" aria-label="Current general area"/></div>
+            {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
               <div>
                 <strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use your phone location'}</strong>
                 <span>{locationState === 'captured'
@@ -154,16 +160,16 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
               <button className="button secondary compact" type="button" onClick={useDeviceLocation} disabled={locationState === 'requesting'}>
                 {locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh area' : 'Use device location'}
               </button>
-            </div>
-            <input type="hidden" name="approximateLat" value={approximateLocation?.lat ?? ''}/>
-            <input type="hidden" name="approximateLng" value={approximateLocation?.lng ?? ''}/>
-            <input type="hidden" name="locationPrecisionKm" value={approximateLocation ? '40' : ''}/>
-            <input type="hidden" name="locationSource" value={approximateLocation ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA'}/>
+            </div>:<p className="meta panel-note">Use a general Ethiopian city or area. The assigned driver updates device-assisted location from the truck.</p>}
+            <input type="hidden" name="approximateLat" value={allowDeviceLocation ? approximateLocation?.lat ?? '' : ''}/>
+            <input type="hidden" name="approximateLng" value={allowDeviceLocation ? approximateLocation?.lng ?? '' : ''}/>
+            <input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&approximateLocation ? '40' : ''}/>
+            <input type="hidden" name="locationSource" value={allowDeviceLocation&&approximateLocation ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA'}/>
           </section>
 
           <section className="control-panel">
             <div className="control-panel-title"><div><h2>Planned movement</h2><p>Help businesses find the right truck for the right corridor.</p></div></div>
-            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Corridor city 1</label><input id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa"/></div><div className="route-arrow bidirectional" aria-hidden="true">↔</div><div className="form-group"><label htmlFor="capacity-destination">Corridor city 2</label><input id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa"/></div></div>
+            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Corridor city 1</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa"/></div><div className="route-arrow bidirectional" aria-hidden="true">↔</div><div className="form-group"><label htmlFor="capacity-destination">Corridor city 2</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa"/></div></div>
             <div className="form-grid"><div className="form-group"><label htmlFor="capacity-travel-date">Planned travel date</label><input id="capacity-travel-date" name="travelDate" type="date" defaultValue={current?.travel_date || ''}/></div><div className="form-group"><label htmlFor="capacity-next">Next available</label><input id="capacity-next" name="nextAvailable" defaultValue={current?.next_available || ''} placeholder="Tomorrow morning"/></div></div>
             <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract lanes</strong><small>Interested in recurring work on preferred corridors</small></span></label>
           </section>
@@ -172,7 +178,7 @@ export function CapacityForm({ vehicles, initialVehicleId }: { vehicles: Vehicle
 
       <aside className="capacity-console-side stack">
         {onDuty ? <>
-          <section className="control-panel"><div className="control-panel-title"><div><h2>Visibility</h2><p>Who should see this capacity?</p></div></div><div className="segmented-control"><label><input name="visibility" value="OPEN" type="radio" defaultChecked={current?.visibility !== 'SAVED_PARTNERS'}/><span>Public</span></label><label><input name="visibility" value="SAVED_PARTNERS" type="radio" defaultChecked={current?.visibility === 'SAVED_PARTNERS'}/><span>Partners</span></label></div><p className="meta panel-note">Public means all logged-in businesses. Partners means only your saved business relationships.</p></section>
+          <section className="control-panel"><div className="control-panel-title"><div><h2>Visibility</h2><p>Who should see this capacity?</p></div></div><div className="segmented-control"><label><input name="visibility" value="OPEN" type="radio" defaultChecked={current?.visibility !== 'SAVED_PARTNERS'}/><span>Public</span></label><label><input name="visibility" value="SAVED_PARTNERS" type="radio" defaultChecked={current?.visibility === 'SAVED_PARTNERS'}/><span>Partners</span></label></div><p className="meta panel-note">Public means all logged-in businesses. Partners means only Connected Businesses in My Network.</p></section>
           <section className="control-panel proof-panel"><div className="control-panel-title"><div><h2>Capacity proof</h2><p>A current photo makes this signal easier to trust.</p></div></div><label className="photo-drop" htmlFor="capacity-photo"><span className="photo-mark" aria-hidden="true">＋</span><strong>Add current cargo-space photo</strong><small>JPG, PNG, or WebP</small><input id="capacity-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"/></label><div className="proof-context"><span>Recorded with this update</span><span>Area: current general area</span><span>Time: submission time</span></div></section>
         </> : <input type="hidden" name="visibility" value="OPEN"/>}
         <button className={`button capacity-submit ${onDuty ? 'success' : 'danger'}`}>{onDuty ? 'Publish capacity update' : 'Set truck Off Duty'}</button>

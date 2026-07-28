@@ -37,7 +37,7 @@ export default async function CapacityDetailPage({ params }: { params: Promise<{
       <aside className="stack">
         <section className="card"><h3>Transporter</h3><p><strong>{ownerName}</strong></p><div className="meta">{capacity.organization_name ? 'Fleet transporter' : 'Self-managed driver'}</div>{ownerHandle?<Link className="button secondary" href={`/companies/${ownerHandle}`}>View Profile</Link>:null}</section>
         <section className="card"><h3>Signal freshness</h3><StatusPill status={capacity.freshness}/><p className="meta">Capacity updated {relativeTime(capacity.updated_at)}<br/>Location updated {capacity.location_updated_at ? relativeTime(capacity.location_updated_at) : 'not recorded'}<br/>Expires {new Date(capacity.expires_at).toLocaleString()}</p></section>
-        <section className="card"><h3>Visibility</h3><StatusPill status={capacity.relationshipVisible ? 'Partners' : capacity.visibility === 'SAVED_PARTNERS' ? 'Partners' : 'Public'}/><p className="meta">Public capacity is visible to logged-in businesses. Partners capacity is limited to saved relationships.</p></section>
+        <section className="card"><h3>Visibility</h3><StatusPill status={capacity.relationshipVisible ? 'Partners' : capacity.visibility === 'SAVED_PARTNERS' ? 'Partners' : 'Public'}/><p className="meta">Public capacity is visible to logged-in businesses. Partners capacity is limited to Connected network Businesses.</p></section>
       </aside>
     </div>
   </div>;

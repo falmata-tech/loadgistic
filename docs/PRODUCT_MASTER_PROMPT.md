@@ -74,7 +74,7 @@ The browser may briefly access an exact device coordinate, but it snaps that poi
 
 Businesses post FTL or PTL freight with fixed price, target price, or quote requested. Demand visibility is Open, Partners, or Direct to one transporter.
 
-Saved relationships allow a Business and transporter to exchange private demand or capacity. Provider browse visibility alone never grants contact, mutation, receiver-contact, note, or proof permissions.
+My Network separates a private Favorite from a mutual operating relationship. Either a Business or transport provider may Favorite the other or request a connection. Pending and declined requests do not unlock private marketplace data. Only a mutually accepted Connected relationship allows a Business and transporter to exchange Partners-only demand or capacity. Provider browse visibility alone never grants contact, mutation, receiver-contact, note, or proof permissions.
 
 After agreement and before assignment, receiver first name and phone are required. Those fields are visible only to shipment parties.
 
@@ -93,7 +93,7 @@ Every load has one tracking obligation:
 
 The assigned provider cannot reduce the tracking requirement. Only the shipper Business, receiver Business, or administrator may change Approximate location + status to Status timeline. The change is recorded as a tracking event.
 
-Assigned providers may record in-between tracking updates without inventing a status transition. Tracking links use opaque tokens, require login, and expose only customer-safe events. Location events display only the human area and privacy radius, never coordinates.
+Assigned providers may record in-between tracking updates without inventing a status transition. Customer tracking requires an authenticated shipper or receiver Business party to enter the load's secret code. The code is never placed in a URL or stored in clear text, and the tracking grant expires after five idle minutes. Assigned transport providers use their internal shipment timeline and cannot unlock the customer tracking view. Location events display only the human area and privacy radius, never coordinates.
 
 Operational proof and temporary load-size proof are separate from tracking mode.
 
@@ -101,7 +101,9 @@ Operational proof and temporary load-size proof are separate from tracking mode.
 
 Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Transporter profiles additionally show fleet roster, corridors, service regions, service summary, and current public capacity.
 
-Fleet Transporter Home compares preferred-corridor place names with operating regions declared by Businesses in that transporter's saved network. The coverage view is schematic and text-based. It uses no exact map pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
+Route, load, capacity, board-filter, and general-area inputs suggest reviewed Ethiopian cities first while retaining free text for places outside the catalog. Driver device location is reduced in the browser to a nearest-city label and a 40 km-obscured point. Fleet owners cannot use their own device location for a truck and instead enter a general area manually.
+
+Fleet Transporter Home compares preferred-corridor place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view is schematic and text-based. It uses no exact map pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
 
 A Business may explicitly opt to display its separate public phone beside loads visible to transporters. The receiver first name and phone recorded after agreement remain private load-party data.
 

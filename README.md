@@ -15,13 +15,15 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Role-aware desktop and mobile navigation
 - Authenticated transporter directory and company pages
 - B2B road-freight load creation
-- Direct, saved-partner, and open freight visibility
+- Direct, Connected-Partners, and open freight visibility
+- My Network with private Favorites, connection requests, and mutual Connected relationships
 - Fixed ETB, target ETB, and Quote Requested pricing
 - Simple freight status workflow
 - Empty and Partial truck capacity, with full or unavailable trucks kept off duty
 - Partial capacity percentage, update attribution, freshness, expiry, and optional photo
 - Provider interest and direct-request acceptance
 - Enforced Status timeline or Approximate location + status tracking
+- Business-party secret-code tracking with a five-minute idle lock
 - Privacy-obscured device location for driver capacity and assigned loads
 - Loading, delivery, and issue proof uploads
 - Manual subscription payment-proof submission and admin review
@@ -79,6 +81,7 @@ The runnable local adapter uses built-in SQLite so the project can operate witho
 ```text
 supabase/migrations/001_loadgistic_schema.sql
 supabase/migrations/002_fleet_driver_routes.sql
+supabase/migrations/003_network_tracking_truck_details.sql
 ```
 
 The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Production migration replaces repository calls with RLS-protected Supabase queries or RPCs while preserving the domain commands and UI routes.

@@ -7,7 +7,8 @@
 - `/login` — direct login
 - `/companies` — authenticated Business and Transporter Directory
 - `/companies/[handle]` — authenticated Business or Transporter Public Profile
-- `/track/[token]` — authenticated opaque-token tracking
+- `/track` — Business-party secret tracking-code unlock
+- `/track/[id]` — user/load-bound customer tracking after unlock
 
 ## Workspace
 
@@ -16,9 +17,11 @@
 - `/app/shipments/new` — rich Post Load workflow
 - `/app/shipments/[id]`
 - `/app/providers` — Business and Transporter Directory
+- `/app/network` — Connected relationships, requests, and private Favorites
 - `/app/loads` — searchable Load Board with optional owned-truck route ranking
 - `/app/capacity` — searchable Capacity Board with optional owned-load route ranking
-- `/app/fleet` — fleet roster and per-truck capacity controls for Fleet Transporters
+- `/app/fleet` — fleet roster for Fleet Transporters
+- `/app/fleet/[id]` — one truck's detail and capacity controls
 - `/app/company-page` — Public Profile editor
 - `/app/verification` — owned entity and truck verification
 - `/app/more`

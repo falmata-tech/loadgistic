@@ -3,9 +3,9 @@ id: FEAT-TRK-001
 title: Tracking, proof, and shipment notes
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001]
 problem: Shipment parties need enforceable, understandable tracking and controlled operational evidence without exposing precise movement or private files.
-behavior: A Business chooses Status timeline or Approximate location + status for a load; after assignment the provider must satisfy that mode on operational updates, while only the shipper or receiver Business may reduce it to status-only. Tracking uses authenticated opaque-token views and real timestamped events. Proof remains a separate evidence feature with reauthorized file access.
-contracts: [TrackingMode, TrackingObligation, TrackingToken, AuthenticatedTrackingView, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant, ShipmentNote]
-observability: [tracking_mode_audit, tracking_update, tracking_location_source, proof_audit, load_proof_request, load_proof_share, load_proof_expiry, file_access_denial]
+behavior: A Business chooses Status timeline or Approximate location + status for a load; after assignment the provider must satisfy that mode on operational updates, while only the shipper or receiver Business may reduce it to status-only. Customer tracking is unlocked only by an involved shipper or receiver Business using a secret load code and expires after inactivity; assigned providers use their internal shipment timeline instead. Proof remains a separate evidence feature with reauthorized file access.
+contracts: [TrackingMode, TrackingObligation, TrackingAccessCode, BusinessTrackingGrant, TrackingIdleTimeout, AuthenticatedTrackingView, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant, ShipmentNote]
+observability: [tracking_mode_audit, tracking_update, tracking_location_source, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, proof_audit, load_proof_request, load_proof_share, load_proof_expiry, file_access_denial]
 rollout: Require private storage, MIME and size validation, malware scanning, and access-denial monitoring before production.
 ---
 
@@ -25,7 +25,7 @@ Then no file metadata or bytes are disclosed.
 
 ### Scenario: browse visibility does not grant proof permission
 
-Given a provider can browse an open or saved-partner load but is not assigned to it\
+Given a provider can browse an Open or Partners load but is not assigned to it\
 When the provider attempts to upload or download shipment proof\
 Then the service returns no protected record\
 And no proof row, bytes, or success audit is created.
@@ -82,16 +82,32 @@ Then future provider events no longer require location\
 And the mode change is recorded as a public tracking event\
 And the provider cannot make that change.
 
-### Scenario: authenticated token tracking
+### Scenario: Business party unlocks customer tracking
 
-Given tracking is enabled with an opaque token\
-When an authenticated user opens the token page\
-Then only shipment summary and explicitly public timestamped events are returned\
+Given an authenticated user belongs to the shipper or receiver Business for a load\
+When the user submits that load's secret tracking code\
+Then a short-lived tracking grant is bound to that user and load\
+And the tracking page returns only shipment summary and explicitly customer-safe timestamped events\
 And location events show only the declared general area and privacy radius\
-And anonymous requests are redirected to login.
+And the secret code is never placed in a URL or stored in clear text.
+
+### Scenario: non-party and provider tracking unlock is denied
+
+Given an authenticated user is not a shipper or receiver Business party, including an assigned transporter or driver\
+When that user submits a valid or invalid tracking code\
+Then no tracking record or party identity is disclosed\
+And the provider continues to use the internal shipment timeline for loads it transports.
+
+### Scenario: tracking view expires after inactivity
+
+Given a Business party has unlocked a customer tracking view\
+When the page receives no user activity for five minutes\
+Then the browser clears the tracking grant and returns to the code entry screen\
+And grant renewal is accepted only while the existing user-and-load grant remains valid\
+And a later tracking read requires the secret code again.
 
 ## Contract ownership
 
 - Inbound adapters: tracking page and shipment proof/note/file handlers
-- Application services: `setTrackingMode`, `addTrackingUpdate`, `transitionShipment`, `addProof`, `getProofFile`, `getTrackingByToken`
+- Application services: `setTrackingMode`, `addTrackingUpdate`, `transitionShipment`, `unlockBusinessTracking`, `getBusinessTracking`, `addProof`, `getProofFile`
 - Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`

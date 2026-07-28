@@ -16,7 +16,13 @@ import {
   roleCanPublishCapacity,
   roleCanBrowseLoads
 } from './domain.js';
-import { randomCode, randomId, opaqueToken, hashPassword } from './security.js';
+import {
+  hashPassword,
+  hashTrackingAccessCode,
+  randomCode,
+  randomId,
+  trackingAccessCode
+} from './security.js';
 import { normalizePlace, routeMatch, splitPlaces, textIncludes } from './route-matching.js';
 
 function nowIso() {
@@ -140,7 +146,7 @@ export function getDashboard(user) {
     data.counts = {
       'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND operational_status NOT IN ('COMPLETED','CANCELLED','RETURNED')`).get(user.organization_id,user.organization_id).n,
       'Open Requests': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND commercial_status IN ('POSTED','SENT','CONTACTED')`).get(user.organization_id,user.organization_id).n,
-      'Saved Providers': db.prepare(`SELECT COUNT(*) AS n FROM partner_relationships WHERE owner_organization_id = ?`).get(user.organization_id).n,
+      'Network Partners': db.prepare(`SELECT COUNT(*) AS n FROM partner_relationships WHERE owner_organization_id=? AND status='CONNECTED'`).get(user.organization_id).n,
       'Recent Updates': db.prepare(`SELECT COUNT(*) AS n FROM shipment_events e JOIN shipments s ON s.id=e.shipment_id WHERE (s.shipper_organization_id=? OR s.receiver_organization_id=?) AND e.created_at >= datetime('now','-7 days')`).get(user.organization_id,user.organization_id).n
     };
     data.actions = [
@@ -162,7 +168,7 @@ export function getDashboard(user) {
   };
   data.actions = [
     { href: '/app/loads', label: 'Open Load Board', description: 'View direct, partner, and open B2B freight.' },
-    { href: user.role === USER_ROLES.TRANSPORTER ? '/app/fleet#capacity-update' : '/app/home', label: 'Update capacity', description: 'Publish Empty or Partial truck availability.' },
+    { href: user.role === USER_ROLES.TRANSPORTER ? '/app/fleet' : '/app/home', label: 'Update capacity', description: 'Publish Empty or Partial truck availability.' },
     { href: '/app/company-page', label: 'Update Public Profile', description: 'Keep corridors and contact details current.' }
   ];
   data.recent = listVisibleShipments(user).slice(0, 6);
@@ -259,7 +265,7 @@ function isShipmentParty(user, shipment) {
 function isSavedPartnerForShipment(user, shipment) {
   if (!canBrowseLoads(user) || shipment.distribution_mode !== DISTRIBUTION_MODES.SAVED_PARTNERS) return false;
   const relationship = getDb().prepare(`SELECT 1 FROM partner_relationships
-    WHERE owner_organization_id=? AND status='SAVED'
+    WHERE owner_organization_id=? AND status='CONNECTED'
       AND (provider_organization_id=? OR provider_profile_id=?) LIMIT 1`)
     .get(shipment.shipper_organization_id,user.organization_id || '',user.provider_profile_id || '');
   return Boolean(relationship);
@@ -301,7 +307,7 @@ export function createShipment(user, input) {
   const code = randomCode('LGX-F');
   const trackingMode = input.trackingMode || 'STATUS_ONLY';
   if (!['STATUS_ONLY','LOCATION_AND_STATUS'].includes(trackingMode)) throw new Error('INVALID_TRACKING_MODE');
-  const trackingToken = opaqueToken();
+  const trackingCodeHash = hashTrackingAccessCode(trackingAccessCode(id));
   const operationalStatus = distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER ? 'SENT' : 'POSTED';
   const commercialStatus = distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER ? 'SENT' : 'POSTED';
   const timestamp = nowIso();
@@ -309,9 +315,9 @@ export function createShipment(user, input) {
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`INSERT INTO shipments
-      (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_token,created_by,created_at,updated_at)
+      (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_code_hash,created_by,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,code,input.title,serviceMode,distributionMode,input.priceMode,priceMinor,targetMinor,user.organization_id,input.receiverOrganizationId || null,providerOrganizationId,providerProfileId,input.origin,input.destination,input.cargoDescription,Number(input.packageCount || 1),input.estimatedWeight ? Number(input.estimatedWeight) : null,input.vehicleCategory || null,loadType,input.pickupDate,input.deliveryDate || null,commercialStatus,operationalStatus,trackingMode,trackingToken,user.id,timestamp,timestamp);
+      .run(id,code,input.title,serviceMode,distributionMode,input.priceMode,priceMinor,targetMinor,user.organization_id,input.receiverOrganizationId || null,providerOrganizationId,providerProfileId,input.origin,input.destination,input.cargoDescription,Number(input.packageCount || 1),input.estimatedWeight ? Number(input.estimatedWeight) : null,input.vehicleCategory || null,loadType,input.pickupDate,input.deliveryDate || null,commercialStatus,operationalStatus,trackingMode,trackingCodeHash,user.id,timestamp,timestamp);
     db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`)
       .run(randomId('evt-'),id,operationalStatus,'CREATED','Shipment created in Loadgistic',user.id,1,timestamp);
     if (providerOrganizationId) {
@@ -327,9 +333,10 @@ export function createShipment(user, input) {
   return { id, code };
 }
 
-function trackingLocation(input = {}, required = false) {
+function trackingLocation(input = {}, required = false,allowDeviceLocation = true) {
   const area = String(input.locationArea || '').trim();
   const device = input.locationSource === 'DEVICE_OBSCURED';
+  if (device && !allowDeviceLocation) throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
   const lat = device ? Number(input.approximateLat) : null;
   const lng = device ? Number(input.approximateLng) : null;
   const precisionKm = device ? Number(input.locationPrecisionKm) : null;
@@ -362,7 +369,7 @@ export function transitionShipment(user, shipmentId, nextStatus, note = '', loca
   if (nextStatus === 'ASSIGNED' && (!shipment.receiver_first_name?.trim() || !shipment.receiver_phone?.trim())) {
     throw new Error('RECEIVER_CONTACT_REQUIRED');
   }
-  const location = trackingLocation(locationInput,shipment.tracking_mode === 'LOCATION_AND_STATUS');
+  const location = trackingLocation(locationInput,shipment.tracking_mode === 'LOCATION_AND_STATUS',user.role === USER_ROLES.DRIVER);
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -387,7 +394,7 @@ export function addTrackingUpdate(user, shipmentId, input) {
   if (!assignedProvider || !['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(shipment.operational_status)) throw new Error('FORBIDDEN');
   const note = String(input.note || '').trim();
   const needsLocation = shipment.tracking_mode === 'LOCATION_AND_STATUS';
-  const location = trackingLocation(input,needsLocation);
+  const location = trackingLocation(input,needsLocation,user.role === USER_ROLES.DRIVER);
   if (!needsLocation && !note) throw new Error('TRACKING_NOTE_REQUIRED');
   const timestamp = nowIso();
   insertTrackingEvent(db,shipment,user,needsLocation ? 'LOCATION' : 'UPDATE',note,location,timestamp);
@@ -450,6 +457,180 @@ export function listOrganizationsByType(types = []) {
 
 export function listProviders(kind = 'ALL') {
   return listDirectoryProfiles(kind).filter(profile => !profile.is_business);
+}
+
+function networkActor(user) {
+  if ([USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) && user.organization_id) {
+    return { side:'BUSINESS',businessOrganizationId:user.organization_id,providerOrganizationId:null,providerProfileId:null };
+  }
+  if (user.role === USER_ROLES.TRANSPORTER && user.organization_id) {
+    return { side:'PROVIDER',businessOrganizationId:null,providerOrganizationId:user.organization_id,providerProfileId:null };
+  }
+  if (isSelfManagedDriver(user)) {
+    return { side:'PROVIDER',businessOrganizationId:null,providerOrganizationId:null,providerProfileId:user.provider_profile_id };
+  }
+  return null;
+}
+
+function networkPair(db,user,targetKind,targetId) {
+  const actor = networkActor(user);
+  if (!actor) throw new Error('FORBIDDEN');
+  if (actor.side === 'BUSINESS') {
+    if (targetKind === 'org') {
+      const provider = db.prepare(`SELECT id,name,handle FROM organizations WHERE id=? AND type='TRANSPORT_COMPANY'`).get(targetId);
+      if (!provider) throw new Error('INVALID_NETWORK_TARGET');
+      return {...actor,providerOrganizationId:provider.id,target:provider};
+    }
+    if (targetKind === 'profile') {
+      const provider = db.prepare('SELECT id,business_name AS name,handle FROM provider_profiles WHERE id=?').get(targetId);
+      if (!provider) throw new Error('INVALID_NETWORK_TARGET');
+      return {...actor,providerProfileId:provider.id,target:provider};
+    }
+    throw new Error('INVALID_NETWORK_TARGET');
+  }
+  if (targetKind !== 'org') throw new Error('INVALID_NETWORK_TARGET');
+  const business = db.prepare(`SELECT id,name,handle FROM organizations WHERE id=? AND type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')`).get(targetId);
+  if (!business) throw new Error('INVALID_NETWORK_TARGET');
+  return {...actor,businessOrganizationId:business.id,target:business};
+}
+
+function findNetworkRelationship(db,pair) {
+  return db.prepare(`SELECT * FROM partner_relationships
+    WHERE owner_organization_id=?
+      AND COALESCE(provider_organization_id,'')=?
+      AND COALESCE(provider_profile_id,'')=? LIMIT 1`)
+    .get(pair.businessOrganizationId,pair.providerOrganizationId || '',pair.providerProfileId || '');
+}
+
+function networkRecipientUserId(db,pair) {
+  if (pair.side === 'BUSINESS') {
+    return pair.providerOrganizationId
+      ? db.prepare(`SELECT id FROM users WHERE organization_id=? AND role='TRANSPORTER' AND active=1 ORDER BY created_at LIMIT 1`).get(pair.providerOrganizationId)?.id
+      : db.prepare(`SELECT id FROM users WHERE provider_profile_id=? AND active=1 ORDER BY created_at LIMIT 1`).get(pair.providerProfileId)?.id;
+  }
+  return db.prepare(`SELECT id FROM users WHERE organization_id=? AND role IN ('SHIPPER','RECEIVER') AND active=1 ORDER BY created_at LIMIT 1`).get(pair.businessOrganizationId)?.id;
+}
+
+export function getNetworkState(user,targetKind,targetId) {
+  const db = getDb();
+  let pair;
+  try {
+    pair = networkPair(db,user,targetKind,targetId);
+  } catch {
+    return { eligible:false,status:null,is_favorite:false,incoming:false,outgoing:false };
+  }
+  const relationship = findNetworkRelationship(db,pair);
+  const favoriteColumn = pair.side === 'BUSINESS' ? 'business_favorite' : 'provider_favorite';
+  return {
+    eligible:true,
+    status:relationship?.status || null,
+    is_favorite:Boolean(relationship?.[favoriteColumn]),
+    incoming:relationship?.status === 'PENDING' && relationship.requested_by_side !== pair.side,
+    outgoing:relationship?.status === 'PENDING' && relationship.requested_by_side === pair.side
+  };
+}
+
+export function changeNetworkRelationship(user,input) {
+  const db = getDb();
+  const pair = networkPair(db,user,input.targetKind,input.targetId);
+  const action = String(input.action || '').toUpperCase();
+  const timestamp = nowIso();
+  let relationship = findNetworkRelationship(db,pair);
+  const favoriteColumn = pair.side === 'BUSINESS' ? 'business_favorite' : 'provider_favorite';
+
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (!relationship) {
+      if (!['FAVORITE','REQUEST'].includes(action)) throw new Error('NETWORK_RELATIONSHIP_NOT_FOUND');
+      const id = randomId('network-');
+      db.prepare(`INSERT INTO partner_relationships
+        (id,owner_organization_id,provider_organization_id,provider_profile_id,status,requested_by_side,business_favorite,provider_favorite,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .run(id,pair.businessOrganizationId,pair.providerOrganizationId,pair.providerProfileId,action === 'REQUEST' ? 'PENDING' : 'FAVORITE',action === 'REQUEST' ? pair.side : null,pair.side === 'BUSINESS' ? 1 : 0,pair.side === 'PROVIDER' ? 1 : 0,timestamp,timestamp);
+      relationship = db.prepare('SELECT * FROM partner_relationships WHERE id=?').get(id);
+    } else if (action === 'FAVORITE') {
+      db.prepare(`UPDATE partner_relationships SET ${favoriteColumn}=1,updated_at=? WHERE id=?`).run(timestamp,relationship.id);
+    } else if (action === 'UNFAVORITE') {
+      db.prepare(`UPDATE partner_relationships SET ${favoriteColumn}=0,updated_at=? WHERE id=?`).run(timestamp,relationship.id);
+    } else if (action === 'REQUEST') {
+      if (relationship.status !== 'CONNECTED') {
+        db.prepare(`UPDATE partner_relationships SET status='PENDING',requested_by_side=?,${favoriteColumn}=1,responded_at=NULL,updated_at=? WHERE id=?`)
+          .run(pair.side,timestamp,relationship.id);
+      }
+    } else if (action === 'ACCEPT') {
+      if (relationship.status !== 'PENDING' || relationship.requested_by_side === pair.side) throw new Error('NETWORK_REQUEST_NOT_ACTIONABLE');
+      db.prepare(`UPDATE partner_relationships SET status='CONNECTED',business_favorite=1,provider_favorite=1,responded_at=?,updated_at=? WHERE id=?`)
+        .run(timestamp,timestamp,relationship.id);
+    } else if (action === 'DECLINE') {
+      if (relationship.status !== 'PENDING' || relationship.requested_by_side === pair.side) throw new Error('NETWORK_REQUEST_NOT_ACTIONABLE');
+      db.prepare(`UPDATE partner_relationships SET status='DECLINED',responded_at=?,updated_at=? WHERE id=?`)
+        .run(timestamp,timestamp,relationship.id);
+    } else {
+      throw new Error('INVALID_NETWORK_ACTION');
+    }
+
+    const auditAction = action === 'REQUEST'
+      ? 'NETWORK_CONNECTION_REQUESTED'
+      : ['ACCEPT','DECLINE'].includes(action)
+        ? 'NETWORK_CONNECTION_DECIDED'
+        : 'NETWORK_FAVORITE_CHANGED';
+    audit(db,user,auditAction,'partner_relationship',relationship.id,{action,side:pair.side});
+    if (['REQUEST','ACCEPT','DECLINE'].includes(action)) {
+      const recipientId = networkRecipientUserId(db,pair);
+      if (recipientId) {
+        const title = action === 'REQUEST' ? 'New network request' : `Network request ${action === 'ACCEPT' ? 'accepted' : 'declined'}`;
+        notify(db,recipientId,title,`${user.organization_name || user.provider_business_name || user.name} updated your network relationship.`);
+      }
+    }
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  return relationship.id;
+}
+
+export function listNetwork(user) {
+  const actor = networkActor(user);
+  if (!actor) throw new Error('FORBIDDEN');
+  const db = getDb();
+  const where = actor.side === 'BUSINESS'
+    ? 'rel.owner_organization_id=?'
+    : actor.providerOrganizationId
+      ? 'rel.provider_organization_id=?'
+      : 'rel.provider_profile_id=?';
+  const actorId = actor.businessOrganizationId || actor.providerOrganizationId || actor.providerProfileId;
+  const rows = db.prepare(`SELECT rel.*,
+    business.name AS business_name,business.handle AS business_handle,business.city AS business_city,
+    COALESCE(provider_org.name,provider_profile.business_name) AS provider_name,
+    COALESCE(provider_org.handle,provider_profile.handle) AS provider_handle,
+    COALESCE(provider_org.city,provider_profile.city) AS provider_city,
+    CASE WHEN provider_profile.id IS NOT NULL THEN 'profile' ELSE 'org' END AS provider_kind
+    FROM partner_relationships rel
+    JOIN organizations business ON business.id=rel.owner_organization_id
+    LEFT JOIN organizations provider_org ON provider_org.id=rel.provider_organization_id
+    LEFT JOIN provider_profiles provider_profile ON provider_profile.id=rel.provider_profile_id
+    WHERE ${where} ORDER BY rel.updated_at DESC,rel.created_at DESC`).all(actorId);
+  const favoriteColumn = actor.side === 'BUSINESS' ? 'business_favorite' : 'provider_favorite';
+  const visible = rows.filter(row => row.status === 'CONNECTED'
+    || row.status === 'PENDING'
+    || Boolean(row[favoriteColumn]));
+  const mapped = visible.map(row => ({
+    ...row,
+    name:actor.side === 'BUSINESS' ? row.provider_name : row.business_name,
+    handle:actor.side === 'BUSINESS' ? row.provider_handle : row.business_handle,
+    city:actor.side === 'BUSINESS' ? row.provider_city : row.business_city,
+    target_kind:actor.side === 'BUSINESS' ? row.provider_kind : 'org',
+    target_id:actor.side === 'BUSINESS' ? (row.provider_organization_id || row.provider_profile_id) : row.owner_organization_id,
+    is_favorite:Boolean(row[favoriteColumn]),
+    incoming:row.status === 'PENDING' && row.requested_by_side !== actor.side,
+    outgoing:row.status === 'PENDING' && row.requested_by_side === actor.side
+  }));
+  return {
+    connected:mapped.filter(row => row.status === 'CONNECTED'),
+    requests:mapped.filter(row => row.status === 'PENDING'),
+    favorites:mapped.filter(row => row.is_favorite && row.status !== 'CONNECTED')
+  };
 }
 
 function verificationBadges(db, subjectType, subjectId) {
@@ -687,7 +868,7 @@ export function getFleetNetworkCoverage(user) {
     FROM partner_relationships rel
     JOIN organizations o ON o.id=rel.owner_organization_id
     LEFT JOIN company_pages cp ON cp.organization_id=o.id
-    WHERE rel.provider_organization_id=? AND rel.status='SAVED'
+    WHERE rel.provider_organization_id=? AND rel.status='CONNECTED'
     ORDER BY o.name`).all(user.organization_id).map(business => {
       const places = [...new Set([normalizePlace(business.city),...splitPlaces(business.operating_regions)].filter(Boolean))];
       const matched = places.filter(place => corridorPlaces.has(place));
@@ -867,6 +1048,10 @@ export function listLoads(user, mode = 'ALL', filters = {}) {
   if (mode === 'DIRECT') where += ` AND s.distribution_mode='DIRECT_TO_PROVIDER'`;
   if (mode === 'PARTNERS') where += ` AND s.distribution_mode='SAVED_PARTNERS'`;
   if (mode === 'OPEN') where += ` AND s.distribution_mode='OPEN_MARKET'`;
+  if (mode === 'INTERESTED') {
+    where += ` AND EXISTS(SELECT 1 FROM shipment_interests mine WHERE mine.shipment_id=s.id AND (mine.provider_organization_id=? OR mine.provider_profile_id=?))`;
+    args.push(user.organization_id || '',user.provider_profile_id || '');
+  }
   let rows = db.prepare(`SELECT s.*,o.name AS shipper_name,r.name AS receiver_name,
     CASE WHEN cp.show_contact_phone_on_loads=1 THEN cp.contact_phone ELSE NULL END AS load_contact_phone,
     EXISTS(SELECT 1 FROM shipment_interests i WHERE i.shipment_id=s.id AND (i.provider_organization_id=? OR i.provider_profile_id=?)) AS interested
@@ -1029,7 +1214,7 @@ function listRelationshipCapacity(user) {
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
     JOIN users u ON u.id=c.updated_by
     JOIN partner_relationships rel ON rel.owner_organization_id=?
-      AND rel.status='SAVED'
+      AND rel.status='CONNECTED'
       AND (rel.provider_organization_id=c.provider_organization_id OR rel.provider_profile_id=c.provider_profile_id)
     WHERE c.visibility='SAVED_PARTNERS' AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at > ?
     ORDER BY c.updated_at DESC`).all(user.organization_id,nowIso())
@@ -1131,6 +1316,7 @@ export function publishCapacity(user, input, photo = null) {
   if (!['OPEN','SAVED_PARTNERS'].includes(visibility)) throw new Error('INVALID_CAPACITY_VISIBILITY');
   if (input.status !== 'OFF_DUTY' && !input.locationArea?.trim()) throw new Error('CAPACITY_AREA_REQUIRED');
   const hasDeviceArea = input.status !== 'OFF_DUTY' && input.locationSource === 'DEVICE_OBSCURED';
+  if (user.role === USER_ROLES.TRANSPORTER && hasDeviceArea) throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
   const locationLat = hasDeviceArea ? Number(input.approximateLat) : null;
   const locationLng = hasDeviceArea ? Number(input.approximateLng) : null;
   const locationPrecisionKm = hasDeviceArea ? Number(input.locationPrecisionKm) : null;
@@ -1326,16 +1512,43 @@ export function getProofFile(user, proofId) {
   return proof;
 }
 
-export function getTrackingByToken(token) {
+export function getBusinessTrackingAccessCode(user,shipmentId) {
+  if (![USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) || !user.organization_id) throw new Error('NOT_FOUND');
   const db = getDb();
-  const shipment = db.prepare(`SELECT s.code,s.title,s.service_mode,s.origin,s.destination,s.operational_status,s.tracking_mode,s.updated_at,
+  const shipment = db.prepare(`SELECT id FROM shipments
+    WHERE (id=? OR code=?) AND (shipper_organization_id=? OR receiver_organization_id=?)`)
+    .get(shipmentId,shipmentId,user.organization_id,user.organization_id);
+  if (!shipment) throw new Error('NOT_FOUND');
+  return trackingAccessCode(shipment.id);
+}
+
+export function unlockBusinessTracking(user,code) {
+  if (![USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) || !user.organization_id) throw new Error('TRACKING_ACCESS_DENIED');
+  const db = getDb();
+  const codeHash = hashTrackingAccessCode(code);
+  const shipment = db.prepare(`SELECT id,code FROM shipments
+    WHERE tracking_code_hash=? AND (shipper_organization_id=? OR receiver_organization_id=?)`)
+    .get(codeHash,user.organization_id,user.organization_id);
+  if (!shipment) {
+    audit(db,user,'TRACKING_UNLOCK_DENIED','shipment',null,{});
+    throw new Error('TRACKING_ACCESS_DENIED');
+  }
+  audit(db,user,'TRACKING_UNLOCKED','shipment',shipment.id,{});
+  return shipment;
+}
+
+export function getBusinessTracking(user,shipmentId) {
+  if (![USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) || !user.organization_id) return null;
+  const db = getDb();
+  const shipment = db.prepare(`SELECT s.id,s.code,s.title,s.service_mode,s.origin,s.destination,s.operational_status,s.tracking_mode,s.updated_at,
     so.name AS shipper_name,ro.name AS receiver_name,po.name AS provider_name,pp.business_name AS provider_profile_name
     FROM shipments s LEFT JOIN organizations so ON so.id=s.shipper_organization_id LEFT JOIN organizations ro ON ro.id=s.receiver_organization_id
     LEFT JOIN organizations po ON po.id=s.provider_organization_id LEFT JOIN provider_profiles pp ON pp.id=s.provider_profile_id
-    WHERE s.tracking_token=?`).get(token);
+    WHERE s.id=? AND (s.shipper_organization_id=? OR s.receiver_organization_id=?)`)
+    .get(shipmentId,user.organization_id,user.organization_id);
   if (!shipment) return null;
   shipment.events = db.prepare(`SELECT status,event_type,note,location_area,location_precision_km,location_source,created_at
-    FROM shipment_events WHERE shipment_id=(SELECT id FROM shipments WHERE tracking_token=?) AND public=1 ORDER BY created_at ASC`).all(token);
+    FROM shipment_events WHERE shipment_id=? AND public=1 ORDER BY created_at ASC`).all(shipment.id);
   return shipment;
 }
 

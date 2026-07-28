@@ -1,10 +1,10 @@
 ---
 id: FEAT-PRV-001
 title: Authenticated Business and Transporter Directory
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-TRK-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-TRK-001, FEAT-NET-001]
 problem: Signed-in members need one trustworthy directory for confirming Businesses, fleet transporters, and self-managed drivers without exposing account credentials or marketplace data anonymously.
 behavior: Authenticated Public Profiles expose permitted organization identity, explicit public contact information, declared operating regions and corridor pairs, verification state, and participant ratings; route maps distinguish member declarations from shipment, tracking, and capacity evidence, and any member may compare its own recorded routes with another profile through an explainable endpoint-match projection.
-contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, OperatingRegion, ProfileRoute, RouteEvidenceProjection, RouteMapProjection, ProfileRouteComparison, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, NetworkCoverageProjection, ProfileRatingSummary]
+contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, OperatingRegion, EthiopiaPlaceSuggestion, ProfileRoute, RouteEvidenceProjection, RouteMapProjection, ProfileRouteComparison, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, NetworkCoverageProjection, ProfileRatingSummary]
 observability: [company_update_audit, route_update_audit, profile_route_comparison, request_outcome]
 rollout: Review every newly public field for authorization, accuracy, and privacy before release.
 ---
@@ -17,6 +17,13 @@ Given a Business, fleet transporter, or self-managed driver has a published prof
 When any logged-in user browses the directory or opens its profile\
 Then the account can be found by its correct account-type filter\
 And only allowed profile and verified operational facts are returned.
+
+### Scenario: directory supports cross-market network actions
+
+Given a Business views a transport provider or an authorized transport provider views a Business\
+When the authenticated directory card or Public Profile is rendered\
+Then the member may Favorite or request a network connection from that context\
+And the action reflects the current Favorite, Pending, or Connected state.
 
 ### Scenario: anonymous directory access is denied
 
@@ -54,6 +61,14 @@ Then origin and destination are separate required city inputs\
 And the route belongs only to that organization or provider profile\
 And removing or replacing a declared route does not delete shipment, tracking, or capacity history.
 
+### Scenario: Ethiopia-first place suggestions
+
+Given a member enters a route, load endpoint, capacity corridor, current general area, or board filter\
+When the member types a place\
+Then the interface suggests reviewed Ethiopian cities first\
+And free text remains possible for places outside the reviewed catalog\
+And no external geocoding key is exposed to the browser.
+
 ### Scenario: Public Profile separates declaration from evidence
 
 Given a member has one or more declared coverage routes\
@@ -90,7 +105,7 @@ And no coordinate is invented.
 
 ### Scenario: fleet dashboard compares network coverage
 
-Given a fleet transporter has saved Business relationships and declared preferred corridors\
+Given a fleet transporter has Connected Business relationships and declared preferred corridors\
 When the transporter opens Home\
 Then a visual coverage panel lists the related Businesses and their declared operating regions\
 And it identifies exact endpoint, corridor-area, or no recorded match from normalized member-entered place names\

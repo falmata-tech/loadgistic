@@ -34,11 +34,13 @@ GitHub Actions performs locked dependency installation, specification and source
 
 ## ADR-009 — Browse permission is not shipment-party permission
 
-Treat open and saved-partner load visibility as authenticated read-only discovery. Internal notes, proof files, and execution transitions require an actual shipment party: Business owner, assigned provider organization/profile, or administrator. Saved-partner visibility requires an explicit active relationship to the shipment owner. Application and payment-proof approvals/rejections are terminal in the MVP.
+Treat Open and Partners load visibility as authenticated read-only discovery. Internal notes, proof files, and execution transitions require an actual shipment party: Business owner, assigned provider organization/profile, or administrator. Partners visibility requires a mutual Connected relationship to the shipment owner. Application and payment-proof approvals/rejections are terminal in the MVP.
 
 ## ADR-010 — Browser fixtures are isolated from development data
 
 Run Playwright against a reset, dedicated SQLite database, port, and `.next-e2e` artifact directory rather than reusing the local development server's standard `.next` output. The parent E2E runner restores Next's generated TypeScript metadata after Playwright exits. Local fixture credentials remain in setup documentation and test code, while public authentication pages render empty credential fields. This keeps test convenience from changing public UI, developer business records, tracked type metadata, or live generated modules.
+
+The browser suite uses one worker because both viewport projects intentionally exercise one deterministic SQLite fixture and several owner-authorized workflows mutate shared state. Serial execution keeps role transitions and authorization assertions ordered and prevents concurrent Next development compilation from aborting navigation.
 
 ## ADR-011 — Driver home and temporary load proof
 
@@ -75,3 +77,11 @@ The public homepage centers Ethiopian makers, growers, processors, producers, an
 A `DRIVER` may be either self-managed through a provider profile or employed through one transporter organization. Self-managed drivers retain full provider authority. Company drivers receive owner-controlled Load Board, Business contact, negotiation, and rich capacity permissions, with every command enforced in repository services and attributed to the acting driver.
 
 Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty or Partial signal. If no prior active configuration exists, an owner must configure the truck first. Fleet owners retain organization-wide visibility and authority.
+
+## ADR-017 — Mutual network and Business-only tracking unlock
+
+Model Business-provider relationships as three distinct meanings: a private Favorite owned by either side, a directional Pending request, and a mutual Connected relationship. Only Connected relationships authorize Partners-only loads and capacity. Existing saved relationships migrate compatibly to Connected. Company drivers do not mutate the company network.
+
+Customer tracking is an additional Business-party view, not a bearer link. Its human-entered code is derived with the server secret, stored only as a keyed digest, omitted from URLs, and accepted only for an authenticated shipper or receiver Business on that load. Unlock creates a five-minute HTTP-only grant bound to the user and shipment. Browser activity may refresh the grant; five minutes without activity clears it. Assigned providers continue to see the same real tracking events in their internal shipment workspace and cannot unlock the customer view.
+
+Fleet owners edit capacity on one truck-specific Fleet page. They may declare a general area but cannot submit device-assisted location, because the owner's phone does not establish the truck's position. Only an authorized assigned company driver or self-managed driver may submit an already obscured device area. Ethiopian place suggestions and nearest-city labels use the reviewed local place catalog, keeping exact coordinates and third-party API keys out of the request path.

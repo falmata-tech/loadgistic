@@ -8,6 +8,8 @@ const messages: Record<string,string> = {
   TRACKING_LOCATION_REQUIRED: 'Add a current general area or use the device location before updating this load.',
   TRACKING_NOTE_REQUIRED: 'Add a useful tracking note before publishing this update.',
   INVALID_APPROXIMATE_LOCATION: 'Refresh the approximate device location and try again.',
+  DEVICE_LOCATION_DRIVER_ONLY: 'Only the driver with the truck may use device location. Enter a general area manually.',
+  TRACKING_ACCESS_DENIED: 'That tracking code is invalid or does not belong to this Business.',
   INVALID_DISTRIBUTION_MODE: 'Choose how this shipment should be shared.',
   INVALID_PRICE_MODE: 'Choose a valid pricing option.',
   FIXED_PRICE_REQUIRED: 'Enter the fixed amount in Ethiopian birr.',
@@ -49,7 +51,11 @@ const messages: Record<string,string> = {
   PASSWORD_TOO_SHORT: 'Use a password with at least 10 characters.',
   EMAIL_ALREADY_EXISTS: 'An account already exists for that email.',
   INVALID_APPLICATION_TYPE: 'Choose a valid business or provider type.',
-  SUBSCRIPTION_NOT_FOUND: 'No subscription is assigned to this workspace yet.'
+  SUBSCRIPTION_NOT_FOUND: 'No subscription is assigned to this workspace yet.',
+  INVALID_NETWORK_TARGET: 'Choose an eligible Business or transport provider.',
+  INVALID_NETWORK_ACTION: 'Choose a valid network action.',
+  NETWORK_RELATIONSHIP_NOT_FOUND: 'That network relationship was not found.',
+  NETWORK_REQUEST_NOT_ACTIONABLE: 'That network request is no longer available.'
 };
 
 export function errorMessage(error: unknown) {
