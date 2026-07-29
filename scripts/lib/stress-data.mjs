@@ -560,20 +560,55 @@ export function populateStressData(db, { scale = 1 } = {}) {
       (id,owner_organization_id,provider_organization_id,provider_profile_id,status,requested_by_side,business_favorite,provider_favorite,created_at,updated_at,responded_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
     const relationshipCount = Math.max(240 * profile.scale,businesses.length * 2);
-    for (let index = 1; index <= relationshipCount; index += 1) {
-      const business = businesses[(index - 1) % businesses.length];
-      const useFleet = index % 3 !== 0;
-      const provider = useFleet ? fleets[(index * 3) % fleets.length] : selfManaged[(index * 5) % selfManaged.length];
-      const statuses = ['FAVORITE','PENDING','CONNECTED','DECLINED'];
-      const status = statuses[(index - 1) % statuses.length];
+    const relationshipPairs = new Set();
+    const addRelationship = ({id,business,provider,providerKind,status,requestedBy,businessFavorite,providerFavorite,ageDays}) => {
+      const pairKey = `${business.id}:${providerKind}:${provider.id}`;
+      if (relationshipPairs.has(pairKey)) return false;
+      relationshipPairs.add(pairKey);
       relationshipInsert.run(
-        `stress-relationship-${pad(index,4)}`,business.id,useFleet ? provider.id : null,useFleet ? null : provider.id,
-        status,index % 2 ? 'BUSINESS' : 'PROVIDER',
-        status === 'CONNECTED' || index % 3 === 0 ? 1 : 0,
-        status === 'CONNECTED' || index % 5 === 0 ? 1 : 0,
-        days(now,-(index % 90)).toISOString(),days(now,-(index % 30)).toISOString(),
-        ['CONNECTED','DECLINED'].includes(status) ? days(now,-(index % 29)).toISOString() : null
+        id,business.id,providerKind === 'FLEET' ? provider.id : null,providerKind === 'DRIVER' ? provider.id : null,
+        status,requestedBy,businessFavorite ? 1 : 0,providerFavorite ? 1 : 0,
+        days(now,-ageDays).toISOString(),days(now,-Math.max(0,ageDays - 1)).toISOString(),
+        ['CONNECTED','DECLINED'].includes(status) ? days(now,-Math.max(0,ageDays - 2)).toISOString() : null
       );
+      return true;
+    };
+    const networkCohort = [
+      {id:'stress-network-business-001-fleet-001',business:businesses[0],provider:fleets[0],providerKind:'FLEET',status:'CONNECTED',requestedBy:'BUSINESS',businessFavorite:true,providerFavorite:true,ageDays:1},
+      {id:'stress-network-business-001-driver-001',business:businesses[0],provider:selfManaged[0],providerKind:'DRIVER',status:'CONNECTED',requestedBy:'PROVIDER',businessFavorite:true,providerFavorite:true,ageDays:2},
+      {id:'stress-network-business-001-fleet-002',business:businesses[0],provider:fleets[1],providerKind:'FLEET',status:'PENDING',requestedBy:'BUSINESS',businessFavorite:true,providerFavorite:false,ageDays:1},
+      {id:'stress-network-business-001-driver-002',business:businesses[0],provider:selfManaged[1],providerKind:'DRIVER',status:'FAVORITE',requestedBy:'BUSINESS',businessFavorite:true,providerFavorite:false,ageDays:1},
+      {id:'stress-network-business-002-fleet-001',business:businesses[1],provider:fleets[0],providerKind:'FLEET',status:'CONNECTED',requestedBy:'PROVIDER',businessFavorite:true,providerFavorite:true,ageDays:2},
+      {id:'stress-network-business-003-fleet-001',business:businesses[2],provider:fleets[0],providerKind:'FLEET',status:'PENDING',requestedBy:'BUSINESS',businessFavorite:true,providerFavorite:false,ageDays:1},
+      {id:'stress-network-business-006-fleet-001',business:businesses[5],provider:fleets[0],providerKind:'FLEET',status:'PENDING',requestedBy:'PROVIDER',businessFavorite:false,providerFavorite:true,ageDays:1},
+      {id:'stress-network-business-007-fleet-001',business:businesses[6],provider:fleets[0],providerKind:'FLEET',status:'DECLINED',requestedBy:'BUSINESS',businessFavorite:true,providerFavorite:false,ageDays:2}
+    ];
+    let insertedRelationships = 0;
+    for (const relationship of networkCohort) {
+      if (addRelationship(relationship)) insertedRelationships += 1;
+    }
+    let relationshipCursor = 1;
+    while (insertedRelationships < relationshipCount) {
+      const business = businesses[(relationshipCursor - 1) % businesses.length];
+      const useFleet = relationshipCursor % 3 !== 0;
+      const round = Math.floor((relationshipCursor - 1) / businesses.length);
+      const provider = useFleet
+        ? fleets[(relationshipCursor * 7 + round) % fleets.length]
+        : selfManaged[(relationshipCursor * 11 + round) % selfManaged.length];
+      const statuses = ['FAVORITE','PENDING','CONNECTED','DECLINED'];
+      const status = statuses[(relationshipCursor - 1) % statuses.length];
+      if (addRelationship({
+        id:`stress-relationship-${pad(relationshipCursor,4)}`,
+        business,
+        provider,
+        providerKind:useFleet ? 'FLEET' : 'DRIVER',
+        status,
+        requestedBy:relationshipCursor % 2 ? 'BUSINESS' : 'PROVIDER',
+        businessFavorite:status === 'CONNECTED' || relationshipCursor % 3 === 0,
+        providerFavorite:status === 'CONNECTED' || relationshipCursor % 5 === 0,
+        ageDays:1 + relationshipCursor % 90
+      })) insertedRelationships += 1;
+      relationshipCursor += 1;
     }
 
     const favoriteInsert = db.prepare(`INSERT INTO member_favorites
@@ -736,6 +771,89 @@ export function populateStressData(db, { scale = 1 } = {}) {
         );
       }
       generatedShipments.push({id:shipmentId,code,state,owner,receiver,provider,hasProvider});
+    }
+
+    const cohortLoads = [
+      {
+        id:'stress-network-load-partners',
+        code:'LGX-NET-PARTNERS',
+        title:'Partners-only coffee cartons to Hawassa',
+        distributionMode:'SAVED_PARTNERS',
+        priceMode:'QUOTE_REQUESTED',
+        priceMinor:null,
+        targetPriceMinor:null,
+        provider:null,
+        providerKind:null,
+        state:'POSTED',
+        loadType:'PTL',
+        cargo:'Sealed coffee cartons shared only with Connected transport partners',
+        vehicleCategory:'Light Box Truck'
+      },
+      {
+        id:'stress-network-load-direct-fleet',
+        code:'LGX-NET-DIRECT-FLEET',
+        title:'Direct flour request for Horizon Freight 001',
+        distributionMode:'DIRECT_TO_PROVIDER',
+        priceMode:'TARGET_PRICE',
+        priceMinor:null,
+        targetPriceMinor:3_200_000,
+        provider:fleets[0],
+        providerKind:'FLEET',
+        state:'SENT',
+        loadType:'FTL',
+        cargo:'Bagged flour assigned as a direct negotiation request',
+        vehicleCategory:'Medium Stake Body Truck'
+      },
+      {
+        id:'stress-network-load-direct-driver',
+        code:'LGX-NET-DIRECT-DRIVER',
+        title:'Direct furniture request for Owner Operator 001',
+        distributionMode:'DIRECT_TO_PROVIDER',
+        priceMode:'FIXED_PRICE',
+        priceMinor:2_450_000,
+        targetPriceMinor:null,
+        provider:selfManaged[0],
+        providerKind:'DRIVER',
+        state:'SENT',
+        loadType:'PTL',
+        cargo:'Crated furniture components addressed to one self-managed driver',
+        vehicleCategory:'Mini Box Truck'
+      }
+    ];
+    for (let index = 0; index < cohortLoads.length; index += 1) {
+      const fixture = cohortLoads[index];
+      const owner = businesses[0];
+      const receiver = businesses[1];
+      const createdAt = hours(now,-(index + 1)).toISOString();
+      shipmentInsert.run(
+        fixture.id,fixture.code,fixture.title,'FREIGHT',fixture.distributionMode,
+        fixture.priceMode,fixture.priceMinor,fixture.targetPriceMinor,
+        owner.id,receiver.id,
+        fixture.providerKind === 'FLEET' ? fixture.provider.id : null,
+        fixture.providerKind === 'DRIVER' ? fixture.provider.id : null,
+        'Addis Ababa, Ethiopia','Hawassa, Ethiopia',fixture.cargo,
+        12 + index * 6,null,fixture.vehicleCategory,fixture.loadType,
+        null,null,dateOnly(days(now,2 + index)),dateOnly(days(now,4 + index)),
+        fixture.state,fixture.state,'STATUS_ONLY',
+        hashTrackingAccessCode(trackingAccessCode(fixture.id)),
+        owner.id,'SHIPPER',null,null,null,null,owner.userId,createdAt,createdAt
+      );
+      eventInsert.run(
+        `stress-event-network-${index + 1}`,fixture.id,fixture.state,'CREATED',
+        fixture.distributionMode === 'SAVED_PARTNERS'
+          ? 'Load shared with Connected transport partners.'
+          : 'Direct request sent to one transport provider.',
+        null,null,null,null,null,owner.userId,1,createdAt
+      );
+      generatedShipments.push({
+        id:fixture.id,
+        code:fixture.code,
+        state:fixture.state,
+        owner,
+        receiver,
+        provider:fixture.provider,
+        hasProvider:Boolean(fixture.provider)
+      });
     }
 
     const verificationInsert = db.prepare(`INSERT INTO verification_requests

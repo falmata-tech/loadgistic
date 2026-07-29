@@ -75,11 +75,11 @@
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
 - Server-owned pagination for Boards, Directory, My Loads/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
-- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, subscription and workflow states, integrity checks, and a 54-screen dense UI audit
+- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, subscription and workflow states, integrity checks, and a named cross-market network cohort
 - Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 61 tests passed, including bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Node evidence: 62 tests passed, including named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 38 passed and four expected viewport skips
-- Dense-data visual evidence: 54 desktop/mobile screens passed with zero failures across first and second result pages, ownership-only route comparison, and expired billing mode
+- Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities
 

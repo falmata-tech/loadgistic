@@ -9,8 +9,8 @@ const password='Loadgistic123!';
 const personas=[
   {
     name:'business',
-    email:'shipper@loadgistic.local',
-    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers?page=2','/app/providers/blueline-transport?compare=routes','/app/network','/app/capacity','/app/capacity?page=2']
+    email:'business-001@stress.loadgistic.local',
+    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers?page=2','/app/providers/blueline-transport?compare=routes','/app/network','/app/network?view=REQUESTS','/app/network?view=FAVORITES','/app/capacity','/app/capacity?page=2','/app/capacity?visibility=SAVED_PARTNERS']
   },
   {
     name:'fleet',
@@ -20,12 +20,12 @@ const personas=[
   {
     name:'generated-fleet',
     email:'fleet-001@stress.loadgistic.local',
-    routes:['/app/home','/app/fleet','/app/loads','/app/loads?page=2']
+    routes:['/app/home','/app/fleet','/app/network','/app/network?view=REQUESTS','/app/loads','/app/loads?page=2','/app/loads?mode=PARTNERS','/app/loads?mode=DIRECT']
   },
   {
     name:'generated-driver',
     email:'driver-001@stress.loadgistic.local',
-    routes:['/app/home','/app/loads','/app/capacity']
+    routes:['/app/home','/app/network','/app/loads','/app/loads?mode=PARTNERS','/app/loads?mode=DIRECT','/app/capacity']
   },
   {
     name:'expired-workspace',
@@ -43,6 +43,20 @@ const viewports=[
   {name:'desktop',width:1440,height:1000},
   {name:'mobile',width:412,height:915,isMobile:true}
 ];
+
+const cohortExpectations=new Map([
+  ['business:/app/network',['Horizon Freight 001 PLC','Owner Operator 001']],
+  ['business:/app/network?view=REQUESTS',['Horizon Freight 002 PLC']],
+  ['business:/app/network?view=FAVORITES',['Owner Operator 002']],
+  ['business:/app/capacity?visibility=SAVED_PARTNERS',['LG-TRK-S00101']],
+  ['generated-fleet:/app/network',['Rift Valley Foods 001 PLC','Sheba Textiles 002 PLC']],
+  ['generated-fleet:/app/network?view=REQUESTS',['Highland Honey 003 PLC','Unity Leather 006 PLC']],
+  ['generated-fleet:/app/loads?mode=PARTNERS',['Partners-only coffee cartons to Hawassa']],
+  ['generated-fleet:/app/loads?mode=DIRECT',['Direct flour request for Horizon Freight 001']],
+  ['generated-driver:/app/network',['Rift Valley Foods 001 PLC']],
+  ['generated-driver:/app/loads?mode=PARTNERS',['Partners-only coffee cartons to Hawassa']],
+  ['generated-driver:/app/loads?mode=DIRECT',['Direct furniture request for Owner Operator 001']]
+]);
 
 function slug(value){
   return value.replace(/^\//,'').replace(/[^a-z0-9]+/gi,'-').replace(/-+$/,'')||'home';
@@ -97,6 +111,9 @@ try{
         }));
         const expectsSecondPage=/[?&](?:page|userPage|truckPage|loadPage|capacityPage|workspacePage)=2(?:&|$)/.test(route);
         const secondPageVisible=!expectsSecondPage||await page.getByText(/Page 2 of/).count()>0;
+        const expectedContent=cohortExpectations.get(`${persona.name}:${route}`)||[];
+        const bodyText=expectedContent.length?await page.locator('body').innerText():'';
+        const cohortContentVisible=expectedContent.every(value=>bodyText.includes(value));
         const file=`${viewport.name}-${persona.name}-${slug(route)}.png`;
         await page.screenshot({path:path.join(outputDir,file),fullPage:false});
         if(route.includes('compare=routes')){
@@ -114,6 +131,7 @@ try{
           ...metrics,
           horizontalOverflow:metrics.scrollWidth>metrics.clientWidth,
           secondPageVisible,
+          cohortContentVisible,
           browserErrors:actionableErrors
         });
         browserErrors.length=0;
@@ -129,6 +147,7 @@ const failures=results.filter(result=>
   (result.status!==null&&result.status!==200)||
   result.horizontalOverflow||
   !result.secondPageVisible||
+  !result.cohortContentVisible||
   result.browserErrors.length>0||
   result.elapsedMs>30_000
 );

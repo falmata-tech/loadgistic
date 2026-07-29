@@ -65,6 +65,35 @@ Representative emails include:
 | Generated Self-managed Driver | `driver-001@stress.loadgistic.local` |
 | Generated Administrator | `admin-01@stress.loadgistic.local` |
 
+### Network test cohort
+
+The following generated accounts are intentionally connected so visibility can
+be tested without first creating relationships by hand:
+
+| Actor | Relationship to Business 001 |
+|---|---|
+| Fleet 001 | Connected |
+| Driver 001 | Connected |
+| Fleet 002 | Pending request sent by Business 001 |
+| Driver 002 | Favorite only |
+
+Fleet 001 is also Connected to Business 002. Its Requests view includes an
+incoming request from Business 003 and an outgoing request to Business 006.
+Business 007 has a Declined relationship with Fleet 001.
+
+The cohort includes clearly titled records:
+
+- `LGX-NET-PARTNERS` is visible only to Connected transport partners.
+- `LGX-NET-DIRECT-FLEET` is addressed only to Fleet 001.
+- `LGX-NET-DIRECT-DRIVER` is addressed only to Driver 001.
+- `LG-TRK-S00101` publishes Partners capacity from Fleet 001.
+- `LG-TRK-S00102` has hidden capacity and must not appear on any member Board.
+- `LG-TRK-S00104` publishes Public capacity for comparison.
+
+The small `npm run db:reset` fixture also keeps Business
+`shipper@loadgistic.local` Connected to `transporter@loadgistic.local`, with one
+Partners load, one Partners truck, and direct execution examples.
+
 The command is destructive to the configured local database and refuses to run
 with `NODE_ENV=production`. Set `STRESS_SCALE` from 1 through 5 to increase the
 profile, for example `STRESS_SCALE=2 npm run db:stress`. Run `npm run db:reset`

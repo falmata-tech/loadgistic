@@ -71,9 +71,10 @@ database change.
 
 The dense UI audit signs in as Business, Fleet Transporter, generated fleet
 owner, generated Self-managed Driver, expired Business, and Administrator
-personas. It captures 54 desktop/mobile screens, including second-page Board,
-Directory, and Operations results, route comparison, and the limited billing
-experience, and checks response
+personas. It captures 74 desktop/mobile screens, including Connected, Requests,
+Favorites, Partners and Direct visibility, second-page Board, Directory, and
+Operations results, route comparison, and the limited billing experience. It
+checks expected cohort content, response
 status, browser errors, horizontal overflow, render time, DOM size, and card
 density. Local evidence is written to the ignored `artifacts/stress-ui/`
 directory.

@@ -132,6 +132,13 @@ uses compact per-section limits while an explicit search may return a larger
 bounded set. This keeps the ordinary fixture fast while making realistic UI
 density and relational integrity repeatable.
 
+The standard stress profile includes a named cross-market cohort with unique
+relationship pairs. Its documented accounts cover Connected, Pending,
+Favorite-only, and Declined relationships plus Public, Partners, Direct, and
+hidden marketplace records. Dense browser checks assert the expected named
+counterpart or record on each relevant screen so fixture volume cannot mask a
+relationship-authorization regression.
+
 ## ADR-023 — Workspace subscription access periods
 
 Authorize paid platform access at the workspace boundary rather than per user.
