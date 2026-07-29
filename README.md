@@ -57,6 +57,25 @@ Open `http://127.0.0.1:3000`.
 The database is created at `data/loadgistic.db` and seeded automatically. `npm run places:setup` downloads only Ethiopian OpenStreetMap settlement records through Overpass and imports them locally. The app retains a small built-in fallback when this optional network step is unavailable. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
 After the first setup, the only command needed to start the app is `npm run dev`.
 
+## Comprehensive local data
+
+To replace the local development database with a deterministic, high-volume
+dataset for UI and workflow testing:
+
+```bash
+npm run db:stress
+```
+
+The standard profile creates more than 8,000 related records across every
+application table while preserving the documented demo accounts. It includes
+Businesses, fleet transporters, company Drivers, self-managed Drivers, trucks,
+loads, capacity, tracking, network, billing, verification, moderation, and
+administrative states. This command resets the configured local database and is
+refused when `NODE_ENV=production`.
+
+Use `STRESS_SCALE=2 npm run db:stress` for a larger profile. Supported scales are
+1 through 5. Return to the small fixture with `npm run db:reset`.
+
 ## Local fixture accounts
 
 Development-only fixture credentials are documented in `docs/LOCAL_SETUP.md`. They are kept in repository-local setup and automated test code, not presented in the public login UI.
@@ -71,9 +90,14 @@ npm run typecheck
 npm run build
 npm run test:e2e
 npm run test:ui-audit
+npm run test:ui-stress
 ```
 
 `npm run test:ui-audit` audits logged-out, Business, Fleet Transporter, Self-managed Driver, and Administrator screens at desktop and mobile sizes. Screenshots and a machine-readable report are written to `artifacts/ui-audit/`.
+
+After `npm run db:stress`, `npm run test:ui-stress` audits dense all-role boards,
+fleet screens, Directory results, and administrator queues against the running
+app. Its screenshots and report are written to `artifacts/stress-ui/`.
 
 The linked specification system lives in `specs/`. Start with `specs/README.md`, use `specs/templates/feature-spec.md` for new behavior, and follow the major-action controls in `docs/GUARDRAILS.md`. Pull requests run the same checks and a production build through GitHub Actions.
 

@@ -19,6 +19,14 @@ Then the account can be found by its correct account-type filter\
 And only allowed profile and verified operational facts are returned\
 And the directory and profile remain inside the role-aware workspace shell.
 
+### Scenario: dense directory remains bounded
+
+Given the authenticated directory contains many Business and provider profiles\
+When a member searches, filters, or changes result pages\
+Then the server returns one bounded page of matching profiles\
+And the interface preserves the selected account type and search text\
+And the member can reach every matching profile without rendering the entire directory at once.
+
 ### Scenario: directory supports cross-market network actions
 
 Given a Business views a transport provider or an authorized transport provider views a Business\

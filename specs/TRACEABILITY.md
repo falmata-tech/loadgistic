@@ -17,6 +17,7 @@
 | `FEAT-BIL-001` | Workspace/admin billing | Proof review and tenant scope | Private storage and audit | repository |
 | `FEAT-ADM-001` | Searchable admin Operations inventory and reversible account/truck controls | Bounded safe projections, admin-only activation policy, and audit | Operational access review and additive navigation | repository, authorization, E2E |
 | `FEAT-REV-001` | Completed-load review feedback and admin Rating Reviews queue | Immediate positive publication, private low-rating moderation, terminal decisions, notifications, and published-only profile summaries | Additive review migration and moderation audit | repository, authorization, E2E |
+| `FEAT-DAT-001` | Dense all-role development and UI-test fixtures | Deterministic relational generator, state coverage, foreign-key integrity, and production denial | Explicit local reset, configurable scale, no production execution | stress-data, repository, UI audit |
 
 All features depend on `BASE-BE-001`; user-facing features depend on `BASE-FE-001`; runtime and release constraints derive from `BASE-DEP-001`.
 
@@ -25,3 +26,5 @@ Cross-feature authorization contracts are mapped in `docs/AUTHORIZATION_MATRIX.m
 Playwright runs through `BrowserTestRuntime` on port `3100` with `data/test-e2e.db`; it never reuses the development server or `data/loadgistic.db`.
 
 The local visual audit (`npm run test:ui-audit`) covers 178 logged-out and role-scoped screens at desktop and mobile sizes, including the producer homepage, Fleet Transporter dashboard, company Driver capacity Home, truck-specific fleet capacity controls, My Network states, searchable Boards, pooled-load detail, route evidence maps and comparison, Post Load, execution-only Tracking, verification workflows, admin Operations and Rating Reviews, assigned-load controls, and secret-code customer tracking. Its report checks response status, horizontal overflow, unlabeled controls, empty commands, and browser errors; screenshots and `report.json` are written to the ignored `artifacts/ui-audit/` directory. The July 2026 run found one mobile Operations overflow, which was corrected and passed a focused 412 px re-audit with `scrollWidth === clientWidth`.
+
+The comprehensive dataset test validates all 29 application tables, more than 8,000 standard-profile rows, foreign keys, entity ownership, fleet assignments, generated authentication, published-rating projection, and production denial. After `npm run db:stress`, `npm run test:ui-stress` captures 40 dense desktop/mobile screens across five personas and checks status, browser errors, overflow, render time, DOM size, and card density. Its ignored evidence is written to `artifacts/stress-ui/`.

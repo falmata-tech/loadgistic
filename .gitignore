@@ -7,6 +7,7 @@ coverage/
 playwright-report/
 test-results/
 artifacts/ui-audit/
+artifacts/stress-ui/
 reference-files/
 *.tsbuildinfo
 

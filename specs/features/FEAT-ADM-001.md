@@ -19,6 +19,22 @@ Then bounded result sets show users, workspaces, trucks, loads, and latest capac
 And relationships are identified with workspace, provider, truck platform number, shipment code, and current status\
 And private proof paths, passwords, session values, tracking secrets, and exact coordinates are absent.
 
+### Scenario: dense administrative queues remain operable
+
+Given applications, verification requests, or payment proofs contain many records\
+When an administrator searches, filters by status, or changes result pages\
+Then the server returns one bounded page of matching records\
+And terminal records do not render active review commands\
+And the administrator can reach every matching record without rendering the entire queue at once.
+
+### Scenario: Operations starts with a compact overview
+
+Given the platform contains many operational records\
+When an administrator opens Operations without a search\
+Then each inventory section returns a small recent or representative subset\
+And platform-wide counts remain visible\
+And entering a search queries a larger bounded result set.
+
 ### Scenario: administrator suspends or restores an account
 
 Given an authenticated administrator selects an account other than their own\

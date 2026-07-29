@@ -33,6 +33,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
       <a href="#loads"><PackageSearch aria-hidden="true"/>Loads</a>
       <a href="#capacity"><Gauge aria-hidden="true"/>Capacity</a>
     </nav>
+    {data.is_compact?<p className="results-notice">Showing a recent sample from each record group. Search to inspect matching records across the full database.</p>:null}
 
     <section className="admin-record-section" id="users"><div className="section-heading-icon"><Users aria-hidden="true"/><div><h2>Users</h2><p className="meta">Login access and workspace membership. Private password and session data are never shown.</p></div></div><div className="admin-record-list">{data.users.map((record:any)=><article key={record.id}><div><strong>{record.name}</strong><span>{record.email} · {record.phone||'Phone not added'}</span><small>{record.workspace_name} · {record.role.replaceAll('_',' ')}</small></div><StatusPill status={record.active?'ACTIVE':'SUSPENDED'}/><form action={`/api/admin/records/user/${record.id}`} method="post">{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button small icon-button-label ${record.active?'danger':'success'}`} disabled={record.id===user.id}>{record.active?'Suspend':'Restore'}</button></form></article>)}</div>{!data.users.length?<div className="empty-state">No users match this search.</div>:null}</section>
 

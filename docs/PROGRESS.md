@@ -74,9 +74,12 @@
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
+- Paginated Directory, application, verification, and billing views plus a compact admin Operations overview under dense data
+- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, workflow states, integrity checks, and a 40-screen dense UI audit
 - Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 54 tests passed
+- Local Node evidence: 56 tests passed, including comprehensive-data integrity and Production-denial coverage
 - Local Playwright E2E evidence: 36 passed and four expected viewport skips
+- Dense-data visual evidence: 40 desktop/mobile screens passed with zero browser errors or horizontal overflow; slowest screen completed in 1.83 seconds
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities
 

@@ -104,7 +104,7 @@ Operational proof and temporary load-size proof are separate from tracking mode.
 
 ## Directory, Profiles, And Contact
 
-Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Businesses call their declared route pairs Freight Routes. Fleet Transporters and Self-managed Drivers call theirs Preferred Routes. Transporter profiles additionally show the fleet roster, Preferred Routes, fresh expiring truck routes, service regions, service summary, and current Public capacity.
+Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Directory search and account-type filtering return bounded pages so a large member catalog is not rendered into one response. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Businesses call their declared route pairs Freight Routes. Fleet Transporters and Self-managed Drivers call theirs Preferred Routes. Transporter profiles additionally show the fleet roster, Preferred Routes, fresh expiring truck routes, service regions, service summary, and current Public capacity.
 
 Route, load, capacity, board-filter, and general-area inputs query a bounded local catalog of Ethiopian OpenStreetMap cities, towns, villages, and hamlets after two typed characters while retaining free text. The catalog stores coordinates and available place metadata. No full catalog is rendered into a page or sent to a third party during normal use.
 
@@ -142,7 +142,7 @@ Loadgistic is installable in standalone mode. Driver workflows are mobile-first 
 
 Manual ETB payment-proof review remains a local MVP workflow. No bank password, PIN, or OTP is collected.
 
-Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. They may reversibly suspend users or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
+Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. Its initial overview is compact and searches return larger bounded results. Application, verification, and billing queues provide server-bounded search, status filters, and pagination. Administrators may reversibly suspend users or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
 
 ## Source Of Truth
 

@@ -371,6 +371,12 @@ legend { font-weight:800; padding:0 7px; }
 .rating-investigation-note svg { width:20px; height:20px; color:#9a3412; }
 .rating-investigation-note p { margin:0; }
 .rating-decision { padding-top:14px; border-top:1px solid var(--line); }
+.pagination { display:flex; align-items:center; justify-content:center; gap:12px; margin:18px 0; color:var(--muted); font-weight:700; }
+.pagination .icon-only { width:42px; min-width:42px; min-height:42px; padding:0; }
+.pagination .disabled { opacity:.4; pointer-events:none; }
+.pagination-summary { margin:18px 0; text-align:center; color:var(--muted); }
+.queue-filter-bar { grid-template-columns:minmax(220px,1fr) minmax(170px,220px) auto auto; }
+.results-notice { margin:12px 0 18px; padding:10px 12px; border-left:4px solid var(--blue); background:var(--blue-soft); color:var(--muted); }
 
 /* Self-managed driver capacity workspace */
 .capacity-home-page { max-width:1180px; }
@@ -652,6 +658,7 @@ legend { font-weight:800; padding:0 7px; }
   .tracking-row > :nth-child(3),.tracking-row > :nth-child(4) { grid-column:2; }
   .verification-review-actions { grid-template-columns:1fr 1fr; }
   .verification-review-actions .form-group { grid-column:1/-1; }
+  .queue-filter-bar { grid-template-columns:1fr 1fr; }
   .producer-type-grid { grid-template-columns:repeat(2,1fr); }
   .producer-type:nth-child(3) { border-left:1px solid var(--line); }
   .production-journey { grid-template-columns:1fr 1fr; }
@@ -716,6 +723,9 @@ legend { font-weight:800; padding:0 7px; }
   .verification-subject-list > div { grid-template-columns:1fr; }
   .verification-review-actions { grid-template-columns:1fr; }
   .verification-review-actions .button { width:100%; }
+  .queue-filter-bar { grid-template-columns:1fr; }
+  .pagination { justify-content:space-between; gap:6px; }
+  .pagination > span:not(.button) { font-size:.82rem; text-align:center; }
   .producer-hero { min-height:560px; background-position:62% center; }
   .producer-hero-shade { background:rgba(10,20,28,.76); }
   .producer-hero-content { padding-top:34px; padding-bottom:34px; }

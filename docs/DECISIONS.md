@@ -115,3 +115,19 @@ Deep workspace detail routes expose a Back link with a route-specific fallback t
 Treat a completed-load Business rating as either public reputation or a private investigation report. Four- and five-star ratings publish immediately. One- through three-star ratings require a note, enter Pending, remain readable only by the submitting Business and administrators, and do not affect the subject's public count or average.
 
 An administrator reviews safe load and participant context, records a required investigation note, and makes one terminal Publish or Dismiss decision. The original rating and note remain preserved for accountability. Moderation notifies the submitter and writes an audit record, but it does not automatically suspend an account or truck; those remain separate reversible Operations commands so a reputation decision cannot silently become platform enforcement.
+
+## ADR-022 — Separate minimal and comprehensive development fixtures
+
+Keep the default database reset and isolated automated-browser fixture small and
+deterministic. Provide a separate explicit development-only stress command that
+resets the configured SQLite database and creates deterministic records across
+every application table and material workflow state. Refuse that command before
+database access in Production, bound its scale, print only non-sensitive counts,
+and validate foreign keys and domain ownership after generation.
+
+Dense discovery and operational screens must request bounded result pages.
+Directory, application, verification, and billing views use server-side search,
+status filters where applicable, and pagination. The Operations landing view
+uses compact per-section limits while an explicit search may return a larger
+bounded set. This keeps the ordinary fixture fast while making realistic UI
+density and relational integrity repeatable.

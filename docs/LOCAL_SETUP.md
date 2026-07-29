@@ -43,6 +43,31 @@ All accounts use the local password `Loadgistic123!`.
 npm run db:reset
 ```
 
+## Comprehensive UI and workflow data
+
+`npm run db:stress` replaces the configured local database with a deterministic
+dataset containing more than 8,000 related rows. It covers all application
+tables and material states, including 80 Businesses, 20 six-truck fleets, their
+company Drivers, 40 self-managed Drivers, applicant accounts, loads, tracking
+events, capacity history, relationships, verification requests, billing
+evidence, ratings, notifications, and audit records.
+
+Generated accounts use the same development-only password documented above.
+Representative emails include:
+
+| Workspace | Email |
+|---|---|
+| Generated Business | `business-001@stress.loadgistic.local` |
+| Generated Fleet Transporter | `fleet-001@stress.loadgistic.local` |
+| Generated company Driver | `fleet-001-driver-1@stress.loadgistic.local` |
+| Generated Self-managed Driver | `driver-001@stress.loadgistic.local` |
+| Generated Administrator | `admin-01@stress.loadgistic.local` |
+
+The command is destructive to the configured local database and refuses to run
+with `NODE_ENV=production`. Set `STRESS_SCALE` from 1 through 5 to increase the
+profile, for example `STRESS_SCALE=2 npm run db:stress`. Run `npm run db:reset`
+to restore the small fixture.
+
 ## Troubleshooting
 
 - `node:sqlite` missing: update Node.js to 22.5 or newer.

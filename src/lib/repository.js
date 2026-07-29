@@ -865,7 +865,21 @@ function ratingSummary(db, organizationId) {
     FROM business_reviews WHERE subject_organization_id=? AND status='PUBLISHED'`).get(organizationId);
 }
 
-export function listDirectoryProfiles(kind = 'ALL') {
+function paginateRows(rows, options = {}) {
+  const pageSize = Math.max(1,Math.min(100,Number(options.pageSize)||20));
+  const total = rows.length;
+  const pageCount = Math.max(1,Math.ceil(total/pageSize));
+  const page = Math.max(1,Math.min(pageCount,Number(options.page)||1));
+  return {
+    items:rows.slice((page-1)*pageSize,page*pageSize),
+    total,
+    page,
+    pageSize,
+    pageCount
+  };
+}
+
+export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */ (null)) {
   const db = getDb();
   const profiles = [];
   if (kind === 'ALL' || kind === 'BUSINESS') {
@@ -907,7 +921,15 @@ export function listDirectoryProfiles(kind = 'ALL') {
       profiles.push(driver);
     }
   }
-  return profiles;
+  if (!options) return profiles;
+  const search = String(options.q||'').trim().toLowerCase();
+  const filtered = search
+    ? profiles.filter(profile=>[
+        profile.name,profile.city,profile.operating_regions,profile.about,
+        profile.headline,profile.services,profile.preferred_routes_text
+      ].some(value=>textIncludes(value,search)))
+    : profiles;
+  return paginateRows(filtered,options);
 }
 
 function listProviderVehicles(db, ownerColumn, ownerId) {
@@ -1248,12 +1270,22 @@ export function submitVerification(user,input,upload) {
   return id;
 }
 
-export function listVerificationRequests(user) {
+export function listVerificationRequests(user, options = /** @type {any} */ (null)) {
   if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
-  return getDb().prepare(`SELECT vr.*,submitter.name AS submitter_name,reviewer.name AS reviewer_name
+  const rows = getDb().prepare(`SELECT vr.*,submitter.name AS submitter_name,reviewer.name AS reviewer_name
     FROM verification_requests vr JOIN users submitter ON submitter.id=vr.submitted_by
     LEFT JOIN users reviewer ON reviewer.id=vr.reviewed_by
     ORDER BY CASE vr.status WHEN 'PENDING' THEN 0 WHEN 'MORE_INFO' THEN 1 ELSE 2 END,vr.submitted_at DESC`).all();
+  if (!options) return rows;
+  const status = String(options.status||'ALL').toUpperCase();
+  const search = String(options.q||'').trim().toLowerCase();
+  const filtered = rows
+    .filter(row=>status==='ALL'||row.status===status)
+    .filter(row=>!search||[
+      row.submitter_name,row.document_name,row.original_name,row.subject_type,
+      row.verification_type,row.status
+    ].some(value=>textIncludes(value,search)));
+  return paginateRows(filtered,options);
 }
 
 export function reviewVerification(user,requestId,status,note='') {
@@ -1879,9 +1911,16 @@ export function updateFleetDriverPermissions(user, driverUserId, input) {
   audit(db,user,'DRIVER_PERMISSIONS_UPDATED','user',driver.id,values);
 }
 
-export function listApplications(user) {
+export function listApplications(user, options = /** @type {any} */ (null)) {
   if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
-  return getDb().prepare(`SELECT a.*,u.email,u.name FROM applications a JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC`).all();
+  const rows = getDb().prepare(`SELECT a.*,u.email,u.name FROM applications a JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC`).all();
+  if (!options) return rows;
+  const status = String(options.status||'ALL').toUpperCase();
+  const search = String(options.q||'').trim().toLowerCase();
+  const filtered = rows
+    .filter(row=>status==='ALL'||row.status===status)
+    .filter(row=>!search||[row.business_name,row.email,row.name,row.application_type,row.status].some(value=>textIncludes(value,search)));
+  return paginateRows(filtered,options);
 }
 
 export function getAdminOperations(user, query = '') {
@@ -1889,6 +1928,9 @@ export function getAdminOperations(user, query = '') {
   const db=getDb();
   const term=String(query||'').trim().toLowerCase().slice(0,80);
   const pattern=`%${term}%`;
+  const limits=term
+    ? {users:75,organizations:50,providers:50,vehicles:100,loads:100,capacities:100}
+    : {users:15,organizations:10,providers:10,vehicles:20,loads:20,capacities:20};
   const matches=(expression)=>`(?='' OR lower(${expression}) LIKE ?)`;
   const searchArgs=[term,pattern];
   const users=db.prepare(`SELECT u.id,u.name,u.email,u.phone,u.role,u.active,u.created_at,
@@ -1897,21 +1939,21 @@ export function getAdminOperations(user, query = '') {
     LEFT JOIN organizations o ON o.id=u.organization_id
     LEFT JOIN provider_profiles p ON p.id=u.provider_profile_id
     WHERE ${matches("u.name || ' ' || u.email || ' ' || u.role || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'')")}
-    ORDER BY u.active DESC,u.created_at DESC LIMIT 75`).all(...searchArgs);
+    ORDER BY u.active DESC,u.created_at DESC LIMIT ${limits.users}`).all(...searchArgs);
   const organizations=db.prepare(`SELECT o.id,'ORGANIZATION' AS record_kind,o.name,o.type,o.city,o.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.organization_id=o.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS truck_count,
       (SELECT COUNT(*) FROM shipments s WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=o.id OR s.provider_organization_id=o.id) AS load_count
     FROM organizations o
     WHERE ${matches("o.name || ' ' || o.type || ' ' || COALESCE(o.city,'')")}
-    ORDER BY o.name LIMIT 50`).all(...searchArgs);
+    ORDER BY o.name LIMIT ${limits.organizations}`).all(...searchArgs);
   const providers=db.prepare(`SELECT p.id,'PROVIDER_PROFILE' AS record_kind,p.business_name AS name,'SELF_MANAGED_DRIVER' AS type,p.city,p.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.provider_profile_id=p.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS truck_count,
       (SELECT COUNT(*) FROM shipments s WHERE s.provider_profile_id=p.id) AS load_count
     FROM provider_profiles p
     WHERE ${matches("p.business_name || ' ' || COALESCE(p.city,'')")}
-    ORDER BY p.business_name LIMIT 50`).all(...searchArgs);
+    ORDER BY p.business_name LIMIT ${limits.providers}`).all(...searchArgs);
   const vehicles=db.prepare(`SELECT v.id,v.platform_number,v.make,v.model,v.cargo_configuration,v.plate,v.active,
       COALESCE(o.name,p.business_name) AS owner_name,
       c.id AS capacity_id,c.status AS capacity_status,c.location_area,c.updated_at AS capacity_updated_at,c.expires_at
@@ -1920,7 +1962,7 @@ export function getAdminOperations(user, query = '') {
     LEFT JOIN provider_profiles p ON p.id=v.provider_profile_id
     LEFT JOIN capacities c ON c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC LIMIT 1)
     WHERE ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(v.cargo_configuration,'') || ' ' || COALESCE(v.plate,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'')")}
-    ORDER BY v.active DESC,v.platform_number LIMIT 100`).all(...searchArgs);
+    ORDER BY v.active DESC,v.platform_number LIMIT ${limits.vehicles}`).all(...searchArgs);
   const loads=db.prepare(`SELECT s.id,s.code,s.title,s.origin,s.destination,s.load_type,s.operational_status,s.updated_at,
       owner.name AS owner_name,COALESCE(provider.name,profile.business_name) AS provider_name
     FROM shipments s
@@ -1928,7 +1970,7 @@ export function getAdminOperations(user, query = '') {
     LEFT JOIN organizations provider ON provider.id=s.provider_organization_id
     LEFT JOIN provider_profiles profile ON profile.id=s.provider_profile_id
     WHERE ${matches("s.code || ' ' || s.title || ' ' || s.origin || ' ' || s.destination || ' ' || owner.name || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'')")}
-    ORDER BY s.updated_at DESC LIMIT 100`).all(...searchArgs);
+    ORDER BY s.updated_at DESC LIMIT ${limits.loads}`).all(...searchArgs);
   const capacities=db.prepare(`SELECT c.id,c.status,c.available_percent,c.visibility,c.location_area,c.updated_at,c.expires_at,
       v.platform_number,v.make,v.model,COALESCE(o.name,p.business_name) AS owner_name
     FROM capacities c
@@ -1937,7 +1979,7 @@ export function getAdminOperations(user, query = '') {
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
     WHERE c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC LIMIT 1)
       AND ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'') || ' ' || COALESCE(c.location_area,'')")}
-    ORDER BY c.updated_at DESC LIMIT 100`).all(...searchArgs);
+    ORDER BY c.updated_at DESC LIMIT ${limits.capacities}`).all(...searchArgs);
   const counts={
     users:db.prepare('SELECT COUNT(*) AS n FROM users').get().n,
     workspaces:db.prepare('SELECT (SELECT COUNT(*) FROM organizations)+(SELECT COUNT(*) FROM provider_profiles) AS n').get().n,
@@ -1946,7 +1988,7 @@ export function getAdminOperations(user, query = '') {
     fresh_capacity:db.prepare(`SELECT COUNT(DISTINCT c.vehicle_id) AS n FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id WHERE v.active=1 AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?`).get(nowIso()).n
   };
   audit(db,user,'ADMIN_OPERATIONS_VIEWED','platform',null,{queryUsed:Boolean(term)});
-  return {counts,users,workspaces:[...organizations,...providers],vehicles,loads,capacities,query:term};
+  return {counts,users,workspaces:[...organizations,...providers],vehicles,loads,capacities,query:term,is_compact:!term};
 }
 
 export function setAdminRecordActive(user, recordType, recordId, active) {
@@ -2157,12 +2199,21 @@ export function submitPaymentProof(user, amountEtb, reference, upload = null) {
   return id;
 }
 
-export function listPaymentProofs(user) {
+export function listPaymentProofs(user, options = /** @type {any} */ (null)) {
   if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
-  return getDb().prepare(`SELECT pp.*,p.name AS plan_name,o.name AS organization_name,pr.business_name AS provider_name
+  const rows = getDb().prepare(`SELECT pp.*,p.name AS plan_name,o.name AS organization_name,pr.business_name AS provider_name
     FROM payment_proofs pp JOIN subscriptions s ON s.id=pp.subscription_id JOIN plans p ON p.id=s.plan_id
     LEFT JOIN organizations o ON o.id=s.organization_id LEFT JOIN provider_profiles pr ON pr.id=s.provider_profile_id
     ORDER BY pp.submitted_at DESC`).all();
+  if (!options) return rows;
+  const status = String(options.status||'ALL').toUpperCase();
+  const search = String(options.q||'').trim().toLowerCase();
+  const filtered = rows
+    .filter(row=>status==='ALL'||row.status===status)
+    .filter(row=>!search||[
+      row.organization_name,row.provider_name,row.plan_name,row.reference,row.status
+    ].some(value=>textIncludes(value,search)));
+  return paginateRows(filtered,options);
 }
 
 export function reviewPaymentProof(user, proofId, status) {

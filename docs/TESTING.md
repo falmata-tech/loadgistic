@@ -52,3 +52,23 @@ Covered workflows:
 - Public login does not expose local fixture credentials
 
 Add tests for every permission or state-transition change.
+
+## Comprehensive data and dense UI audit
+
+```bash
+npm run db:stress
+npm run dev
+npm run test:ui-stress
+```
+
+The stress generator validates all 29 application tables, foreign keys, entity
+ownership, fleet assignments, rating eligibility, and material workflow-state
+coverage. `tests/stress-data.test.mjs` runs the same generator against an
+isolated database and proves that Production execution is rejected before any
+database change.
+
+The dense UI audit signs in as Business, Fleet Transporter, generated fleet
+owner, generated Self-managed Driver, and Administrator personas. It captures
+40 desktop/mobile screens and checks response status, browser errors, horizontal
+overflow, render time, DOM size, and card density. Local evidence is written to
+the ignored `artifacts/stress-ui/` directory.
