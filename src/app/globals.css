@@ -364,6 +364,13 @@ legend { font-weight:800; padding:0 7px; }
 .segmented-control input:checked + span { background:var(--blue); border-color:var(--blue); color:white; }
 .segmented-control input:focus-visible + span { outline:3px solid rgba(37,99,235,.28); outline-offset:2px; }
 .segmented-control input:disabled + span { cursor:wait; opacity:.7; }
+.segmented-control > a { display:flex; justify-content:center; align-items:center; min-height:46px; padding:8px 12px; border:1px solid #ccd6e4; border-radius:7px; color:var(--ink); font-weight:700; text-decoration:none; }
+.segmented-control > a.active { background:var(--blue); border-color:var(--blue); color:white; }
+.rating-status-tabs { grid-template-columns:repeat(3,1fr); margin-bottom:16px; }
+.rating-investigation-note { display:grid; grid-template-columns:22px 1fr; align-items:start; gap:10px; padding:12px; border-left:4px solid #c45116; background:#fff7ed; }
+.rating-investigation-note svg { width:20px; height:20px; color:#9a3412; }
+.rating-investigation-note p { margin:0; }
+.rating-decision { padding-top:14px; border-top:1px solid var(--line); }
 
 /* Self-managed driver capacity workspace */
 .capacity-home-page { max-width:1180px; }

@@ -320,13 +320,38 @@ test('only completed shipper and receiver Businesses can review each other once'
   });
   assert.throws(()=>repo.submitBusinessReview(users.shipper,shipment.id,'5','Too early'),/REVIEW_NOT_ALLOWED/);
   dbModule.getDb().prepare(`UPDATE shipments SET operational_status='COMPLETED' WHERE id=?`).run(shipment.id);
-  const reviewId=repo.submitBusinessReview(users.shipper,shipment.id,'5','Reliable receiving team');
-  assert.ok(reviewId);
+  const review=repo.submitBusinessReview(users.shipper,shipment.id,'5','Reliable receiving team');
+  assert.equal(review.status,'PUBLISHED');
   assert.throws(()=>repo.submitBusinessReview(users.shipper,shipment.id,'4','Duplicate'),/REVIEW_ALREADY_SUBMITTED/);
   assert.throws(()=>repo.submitBusinessReview(users.transporter,shipment.id,'5','Not a Business party'),/REVIEW_NOT_ALLOWED/);
-  repo.submitBusinessReview(users.receiver,shipment.id,'4','Clear load information');
+  assert.equal(repo.submitBusinessReview(users.receiver,shipment.id,'4','Clear load information').status,'PUBLISHED');
   const shipperProfile=repo.getPublicCompany('blue-nile-trading');
   assert.ok(shipperProfile.review_count>=1);
+});
+
+test('low Business ratings stay private until an administrator publishes them', () => {
+  const shipment=repo.createShipment(users.shipper,{
+    title:'Low rating moderation fixture',serviceMode:'FREIGHT',distributionMode:'DIRECT_TO_PROVIDER',providerRef:'org:org-transporter',
+    priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Adama',cargoDescription:'Moderation fixture',loadType:'PTL',
+    pickupDate:new Date(Date.now()+86_400_000).toISOString().slice(0,10),receiverOrganizationId:users.receiver.organization_id,trackingMode:'STATUS_ONLY'
+  });
+  dbModule.getDb().prepare(`UPDATE shipments SET operational_status='COMPLETED' WHERE id=?`).run(shipment.id);
+  assert.throws(()=>repo.submitBusinessReview(users.shipper,shipment.id,'2',''),/LOW_RATING_NOTE_REQUIRED/);
+  const before=repo.getPublicCompany('fresh-foods-distribution').review_count;
+  const pending=repo.submitBusinessReview(users.shipper,shipment.id,'2','Damaged cartons need investigation');
+  assert.equal(pending.status,'PENDING');
+  assert.equal(repo.getPublicCompany('fresh-foods-distribution').review_count,before);
+  assert.equal(repo.getShipmentForUser(users.receiver,shipment.id).business_reviews.some(review=>review.id===pending.id),false);
+  assert.equal(repo.getShipmentForUser(users.shipper,shipment.id).business_reviews.find(review=>review.id===pending.id).status,'PENDING');
+  assert.throws(()=>repo.listRatingModerationQueue(users.shipper),/FORBIDDEN/);
+  assert.throws(()=>repo.reviewBusinessRating(users.shipper,pending.id,'PUBLISHED','Unauthorized'),/FORBIDDEN/);
+  const queued=repo.listRatingModerationQueue(users.admin).find(review=>review.id===pending.id);
+  assert.equal(queued.note,'Damaged cartons need investigation');
+  assert.equal(Object.hasOwn(queued,'receiver_phone'),false);
+  assert.throws(()=>repo.reviewBusinessRating(users.admin,pending.id,'PUBLISHED',''),/RATING_REVIEW_NOTE_REQUIRED/);
+  assert.equal(repo.reviewBusinessRating(users.admin,pending.id,'PUBLISHED','Load records and both parties were reviewed.').status,'PUBLISHED');
+  assert.equal(repo.getPublicCompany('fresh-foods-distribution').review_count,before+1);
+  assert.throws(()=>repo.reviewBusinessRating(users.admin,pending.id,'DISMISSED','Second decision'),/RATING_ALREADY_REVIEWED/);
 });
 
 test('payment review is admin-only and terminal outcomes are immutable', () => {

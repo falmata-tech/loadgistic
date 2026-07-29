@@ -30,7 +30,8 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Favorite or request network connection | Business owner targeting a transport provider, or Fleet Transporter/Self-managed Driver targeting a Business | `FORBIDDEN` or `INVALID_NETWORK_TARGET`; no relationship or notification |
 | Accept or decline network request | Recipient owner for the exact Pending cross-market relationship | `NETWORK_REQUEST_NOT_ACTIONABLE`; no relationship change |
 | Update profile | User with its own organization or provider profile; public contacts remain separate from account contacts | `FORBIDDEN`; no cross-tenant update |
-| Submit Business participant review | Shipper or receiver organization after Completed; one per direction and load | `REVIEW_NOT_ALLOWED` or `REVIEW_ALREADY_SUBMITTED`; no review |
+| Submit Business participant review | Shipper or receiver organization after Completed; one per direction and load; 4–5 stars publish immediately, while 1–3 require a note and remain private Pending | `REVIEW_NOT_ALLOWED`, `LOW_RATING_NOTE_REQUIRED`, or `REVIEW_ALREADY_SUBMITTED`; no review |
+| Read or decide low-rating moderation | Admin reads safe Pending/Published/Dismissed projections; only a Pending rating may receive one Publish or Dismiss decision with a required investigation note | `FORBIDDEN`, `RATING_REVIEW_NOTE_REQUIRED`, or `RATING_ALREADY_REVIEWED`; no rating change |
 | Submit verification | Authenticated owner of the organization, provider profile, driver, or truck; type must apply | `FORBIDDEN` or `INVALID_VERIFICATION_TYPE`; no request |
 | Read verification document | Submitting user or Admin | Return no record or bytes |
 | Review verification | Admin only; terminal decisions are immutable | `FORBIDDEN` or `VERIFICATION_ALREADY_REVIEWED`; no badge change |
@@ -53,4 +54,5 @@ This matrix defines the application-service boundary. Route handlers authenticat
 - Transport providers cannot unlock the customer tracking view; their involved loads and real events remain in the internal Tracking workspace.
 - Favorites and Pending or declined network requests never authorize Partners-only marketplace records.
 - Terminal approval/rejection is immutable in this MVP.
+- Pending low ratings are visible only to their submitting Business and administrators; the reviewed Business and public summary receive no pending or dismissed rating data.
 - Denied operations do not write success audits. HTTP adapters return generic safe messages and do not expose protected record details.

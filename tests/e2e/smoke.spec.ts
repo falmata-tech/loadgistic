@@ -317,6 +317,12 @@ test('member verification center and admin review queue are available', async ({
   await expect(page.getByRole('heading',{name:'Trucks'})).toBeVisible();
   await expect(page.getByText(/LG-TRK-/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Latest truck capacity'})).toBeVisible();
+  await page.goto('/admin/ratings');
+  await expect(page.getByRole('heading',{name:'Rating Reviews'})).toBeVisible();
+  await expect(page.getByText('LGX-F2007 · Handwoven goods to Adama')).toBeVisible();
+  await expect(page.getByText('2 of 5')).toBeVisible();
+  await expect(page.getByLabel('Investigation note')).toBeVisible();
+  await expect(page.getByRole('link',{name:'Investigate account'})).toBeVisible();
 });
 
 test('assigned load shows enforced approximate tracking and a real authenticated timeline', async ({ page }: { page: any }) => {

@@ -22,6 +22,7 @@ The current implementation is a local Next.js and SQLite MVP. Accepted behavior 
 9. Private operational proof and temporary per-interest load-size proof.
 10. Workspace-specific plans and manual ETB payment review.
 11. Installable PWA shell with network-first authenticated pages.
+12. Published-only Business reputation with private, terminal administrator moderation for one- through three-star ratings.
 
 ## Location Boundary
 

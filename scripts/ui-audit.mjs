@@ -35,7 +35,7 @@ const personas = [
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/applications', '/admin/verifications', '/admin/billing', '/app/shipments', '/app/providers', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/applications', '/admin/verifications', '/admin/ratings', '/admin/billing', '/app/shipments', '/app/providers', '/app/more']
   }
 ];
 

@@ -87,7 +87,7 @@ The Load Board is provider discovery. Businesses receive one My Loads navigation
 
 Load dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
 
-After a completed load, the shipper and receiver Businesses may rate each other once for that load. These are shipment-domain roles; both accounts remain the same Business account type. The Business that created the load remains its owner and provider-facing decision maker.
+After a completed load, the shipper and receiver Businesses may rate each other once for that load. Four- and five-star ratings publish immediately. One- through three-star ratings require an explanatory note and remain private to the submitting Business and administrators until an administrator records an investigation note and either Publishes or Dismisses the rating. Pending and Dismissed ratings never affect the public count or average. These are shipment-domain roles; both accounts remain the same Business account type. The Business that created the load remains its owner and provider-facing decision maker.
 
 ## Tracking
 
@@ -120,7 +120,7 @@ The account email and account phone used for access or account administration ar
 
 ## Verification
 
-Verification is evidence-based and separate from workspace approval. Every supported entity displays gray Not verified or blue Verified badges derived from administrator-reviewed requests.
+Verification is evidence-based and separate from workspace approval. Every supported entity displays gray Not verified or blue Verified badges derived from administrator-reviewed requests. Administrators also receive a separate Rating Reviews queue for private low-rating investigation; publishing or dismissing a rating does not automatically suspend an account, and account or truck enforcement remains an explicit audited Operations action.
 
 - Businesses: Identity and Business license
 - Fleet transporters: Identity and Business license

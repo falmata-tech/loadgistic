@@ -41,7 +41,7 @@
 - Secret-code customer tracking for account or non-account shipper/receiver parties with a five-minute idle lock
 - Party-only Tracking separated from Load Board discovery
 - Rich icon-led Post Load composer with operational deadline labels
-- Completed-load shipper/receiver Business reviews and profile rating summaries
+- Completed-load shipper/receiver Business reviews with immediate four- and five-star publication, private low-rating moderation, and published-only profile summaries
 - Entity and truck verification submissions, private documents, admin review, and evidence-derived badges
 - Separate private account and explicit Public Profile phone/email fields
 - Browser-obscured device areas with 40 km capacity/PTL and 20 km FTL privacy zones
@@ -53,7 +53,7 @@
 - Manual billing proof and review
 - PWA and responsive UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migration and RLS target
+- Supabase migrations `001` through `004` and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -74,15 +74,15 @@
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
-- Reusable all-role visual audit with 176 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 52 tests passed
+- Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
+- Local Node evidence: 54 tests passed
 - Local Playwright E2E evidence: 36 passed and four expected viewport skips
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities
 
 ## Requires an internet-enabled environment
 
-- Apply Supabase migrations `001`, `002`, and `003` through Supabase CLI
+- Apply Supabase migrations `001`, `002`, `003`, and `004` through Supabase CLI
 
 ## Repository administration still required
 

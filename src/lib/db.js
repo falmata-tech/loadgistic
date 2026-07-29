@@ -356,11 +356,17 @@ function migrate(db) {
       subject_organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
       rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
       note TEXT,
+      status TEXT NOT NULL DEFAULT 'PUBLISHED' CHECK(status IN ('PENDING','PUBLISHED','DISMISSED')),
       created_by TEXT NOT NULL REFERENCES users(id),
       created_at TEXT NOT NULL,
+      reviewed_by TEXT REFERENCES users(id),
+      review_note TEXT,
+      reviewed_at TEXT,
       UNIQUE(shipment_id, reviewer_organization_id, subject_organization_id),
       CHECK(reviewer_organization_id <> subject_organization_id)
     );
+
+    CREATE INDEX IF NOT EXISTS idx_business_reviews_status ON business_reviews(status, created_at);
 
     CREATE TABLE IF NOT EXISTS verification_requests (
       id TEXT PRIMARY KEY,
@@ -548,6 +554,19 @@ function migrate(db) {
   for (const [name, definition] of [['location_area','TEXT'],['location_lat','REAL'],['location_lng','REAL'],['location_precision_km','INTEGER'],['location_source','TEXT']]) {
     if (!shipmentEventColumns.has(name)) db.exec(`ALTER TABLE shipment_events ADD COLUMN ${name} ${definition}`);
   }
+  const businessReviewColumns = new Set(db.prepare('PRAGMA table_info(business_reviews)').all().map(column => column.name));
+  for (const [name, definition] of [
+    ['status',"TEXT NOT NULL DEFAULT 'PUBLISHED'"],
+    ['reviewed_by','TEXT REFERENCES users(id)'],
+    ['review_note','TEXT'],
+    ['reviewed_at','TEXT']
+  ]) {
+    if (!businessReviewColumns.has(name)) db.exec(`ALTER TABLE business_reviews ADD COLUMN ${name} ${definition}`);
+  }
+  db.exec(`
+    UPDATE business_reviews SET status='PUBLISHED' WHERE status IS NULL OR trim(status)='';
+    CREATE INDEX IF NOT EXISTS idx_business_reviews_status ON business_reviews(status, created_at);
+  `);
   db.exec(`
     UPDATE vehicles SET make='Isuzu',model='FSR',cargo_configuration='Medium Box Truck',category='Medium Box Truck' WHERE id='veh-trans-1';
     UPDATE vehicles SET make='Sinotruk',model='HOWO TX',cargo_configuration='Heavy Rigid Stake Body Truck',category='Heavy Rigid Stake Body Truck' WHERE id='veh-trans-2';
@@ -749,7 +768,8 @@ function seed(db) {
     ['shp-freight-target','LGX-F2003','Packaged food to Hawassa','FREIGHT','SAVED_PARTNERS','TARGET_PRICE',null,3500000,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packaged food cartons',250,9000,'Medium Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS','user-shipper'],
     ['shp-pstl-baskets','LGX-F2005','Woven baskets for Hawassa shops','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packed woven baskets from a local artisan workshop',1,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
-    ['shp-pstl-coffee','LGX-F2006','Roasted coffee cartons to Shashamane','FREIGHT','OPEN_MARKET','TARGET_PRICE',null,1800000,orgs.shipper.id,null,null,null,'Addis Ababa','Shashamane','Sealed coffee cartons from a small local roaster',1,null,'Light Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper']
+    ['shp-pstl-coffee','LGX-F2006','Roasted coffee cartons to Shashamane','FREIGHT','OPEN_MARKET','TARGET_PRICE',null,1800000,orgs.shipper.id,null,null,null,'Addis Ababa','Shashamane','Sealed coffee cartons from a small local roaster',1,null,'Light Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-freight-completed','LGX-F2007','Handwoven goods to Adama','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',2100000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Adama','Packed handwoven home goods',24,null,'Mini Box Truck','PTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','COMPLETED','STATUS_ONLY','user-shipper']
   ];
   for (const s of seededShipments) {
     const createdBy = s.at(-1);
@@ -761,7 +781,7 @@ function seed(db) {
 
   const eventInsert = db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`);
   for (const s of seededShipments) {
-    if (s[0] !== 'shp-freight-active') eventInsert.run(randomId('evt-'),s[0],s[24],'CREATED','Shipment created in Loadgistic',s[26],1,iso);
+    if (!['shp-freight-active','shp-freight-completed'].includes(s[0])) eventInsert.run(randomId('evt-'),s[0],s[24],'CREATED','Shipment created in Loadgistic',s[26],1,iso);
   }
   eventInsert.run(randomId('evt-'),'shp-freight-active','SENT','CREATED','Direct request sent by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-6*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-active','AGREED','STATUS','Business and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-5*60*60*1000).toISOString());
@@ -771,6 +791,14 @@ function seed(db) {
   db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,public,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(randomId('evt-'),'shp-freight-active','IN_TRANSIT','STATUS','Truck departed Addis Ababa','Around Addis Ababa',9,38.5,40,'DEVICE_OBSCURED','user-transporter',1,new Date(now.getTime()-90*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-completed','SENT','CREATED','Load posted by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-72*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-completed','AGREED','STATUS','Businesses and transporter agreed to the load','user-transporter',1,new Date(now.getTime()-48*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-completed','COMPLETED','STATUS','Delivery completed and received','user-transporter',1,new Date(now.getTime()-24*60*60*1000).toISOString());
+
+  db.prepare(`INSERT INTO business_reviews
+    (id,shipment_id,reviewer_organization_id,subject_organization_id,rating,note,status,created_by,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?)`)
+    .run('review-pending-demo','shp-freight-completed',orgs.shipper.id,orgs.receiver.id,2,'Two cartons arrived damaged. Please investigate the receiving record.','PENDING','user-shipper',new Date(now.getTime()-20*60*60*1000).toISOString());
 
   const verificationInsert = db.prepare(`INSERT INTO verification_requests
     (id,subject_type,subject_id,verification_type,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
@@ -805,4 +833,5 @@ function seed(db) {
 
   const notify = db.prepare(`INSERT INTO notifications (id,user_id,title,body,read_at,created_at) VALUES (?,?,?,?,?,?)`);
   notify.run(randomId('ntf-'),'user-transporter','New open freight load','A fixed-price load is available from Addis Ababa to Dire Dawa.',null,iso);
+  notify.run(randomId('ntf-'),'user-admin','Low Business rating needs review','A 2-star rating for Fresh Foods Distribution on LGX-F2007 is waiting in Rating Reviews.',null,iso);
 }

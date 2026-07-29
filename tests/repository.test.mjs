@@ -61,6 +61,23 @@ test('member directory includes Businesses and transporters with authoritative f
  assert.ok(company.live_routes.some(route=>route.route_kind==='PLANNED'&&route.platform_number));
 });
 
+test('seeded low rating is private, excluded from reputation, and safely projected to administrators',()=>{
+ const shipper=repo.getUserById('user-shipper');
+ const receiver=repo.getUserById('user-receiver');
+ const admin=repo.getUserById('user-admin');
+ const subject=repo.getPublicCompany('fresh-foods-distribution');
+ assert.equal(subject.review_count,0);
+ assert.equal(repo.getShipmentForUser(receiver,'shp-freight-completed').business_reviews.length,0);
+ const own=repo.getShipmentForUser(shipper,'shp-freight-completed').business_reviews;
+ assert.equal(own.find(review=>review.id==='review-pending-demo').status,'PENDING');
+ const queued=repo.listRatingModerationQueue(admin).find(review=>review.id==='review-pending-demo');
+ assert.equal(queued.rating,2);
+ assert.equal(queued.shipment_code,'LGX-F2007');
+ for(const secret of ['receiver_phone','tracking_code_hash','tracking_token','file_path','location_lat','location_lng']){
+  assert.equal(Object.hasOwn(queued,secret),false);
+ }
+});
+
 test('fleet dashboard compares saved Business regions with Preferred and fresh truck routes',()=>{
  const transporter=repo.getUserById('user-transporter');
  const coverage=repo.getFleetNetworkCoverage(transporter);

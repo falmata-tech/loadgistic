@@ -30,7 +30,9 @@
 ## Administration
 
 - `/admin/applications`
+- `/admin/operations`
 - `/admin/verifications`
+- `/admin/ratings`
 - `/admin/billing`
 
 ## System

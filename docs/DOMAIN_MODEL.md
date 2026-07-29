@@ -28,6 +28,8 @@
 - Temporary Load Proof Request and recipient grant
 - Party-only receiver first name and phone, recorded after agreement and before assignment
 - Business Review tied to one Completed load, one reviewing Business, and the other Business participant
+- Business Review publication state: Pending, Published, or Dismissed
+- Terminal Rating Moderation Decision with administrator, investigation note, and review time
 - Tracking workspace projection that contains only records involving the signed-in workspace
 
 ## Capacity
@@ -64,4 +66,5 @@
 - Separate private account and explicit public contact fields
 - Business-designated load phone with explicit marketplace opt in
 - Audit Log
+- Private administrator Rating Reviews queue with published-only reputation projection
 - Subscription and Payment Proof

@@ -1,6 +1,6 @@
 # Supabase Migration
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in `supabase/migrations/001_loadgistic_schema.sql` and the additive fleet-driver and profile-route migration in `supabase/migrations/002_fleet_driver_routes.sql`.
+The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `004`: base schema, fleet-driver routes, network/tracking/truck detail, and private low-rating moderation.
 
 ## Replacement boundary
 
@@ -14,6 +14,9 @@ Keep UI and domain commands stable:
 - `addProof`
 - `reviewApplication`
 - `reviewPaymentProof`
+- `submitBusinessReview`
+- `listRatingModerationQueue`
+- `reviewBusinessRating`
 
 Replace their data operations with Supabase RPCs or RLS-protected queries.
 

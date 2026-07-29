@@ -234,12 +234,14 @@ export function getDashboard(user) {
   if (user.role === USER_ROLES.ADMIN) {
     data.counts = {
       Applications: db.prepare(`SELECT COUNT(*) AS n FROM applications WHERE status='PENDING'`).get().n,
+      'Rating Reviews': db.prepare(`SELECT COUNT(*) AS n FROM business_reviews WHERE status='PENDING'`).get().n,
       Organizations: db.prepare('SELECT COUNT(*) AS n FROM organizations').get().n,
       Loads: db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
       'Fresh Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE expires_at > ?`).get(nowIso()).n
     };
     data.actions = [
       { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect accounts, workspaces, trucks, loads, and current capacity.' },
+      { href: '/admin/ratings', label: 'Review low ratings', description: 'Investigate private one- to three-star Business ratings.' },
       { href: '/admin/applications', label: 'Review applications', description: 'Approve or request more information.' },
       { href: '/app/providers', label: 'View transporter directory', description: 'Inspect authenticated transporter pages.' }
     ];
@@ -360,10 +362,18 @@ export function getShipmentForUser(user, idOrCode) {
       LEFT JOIN load_proof_requests r ON r.interest_id=i.id WHERE i.shipment_id=? ORDER BY i.created_at DESC`).all(shipment.id);
     shipment.proofs = db.prepare(`SELECT p.*, u.name AS uploaded_by_name FROM proof_files p JOIN users u ON u.id=p.uploaded_by WHERE p.shipment_id=? ORDER BY p.created_at DESC`).all(shipment.id);
     shipment.notes = db.prepare(`SELECT n.*,u.name AS author_name FROM shipment_notes n JOIN users u ON u.id=n.author_user_id WHERE n.shipment_id=? ORDER BY n.created_at DESC`).all(shipment.id);
+    const reviewVisibility = user.role === USER_ROLES.ADMIN
+      ? 'r.shipment_id=?'
+      : user.organization_id
+        ? `r.shipment_id=? AND (r.status='PUBLISHED' OR r.reviewer_organization_id=?)`
+        : `r.shipment_id=? AND r.status='PUBLISHED'`;
+    const reviewArgs = user.role === USER_ROLES.ADMIN || !user.organization_id
+      ? [shipment.id]
+      : [shipment.id,user.organization_id];
     shipment.business_reviews = db.prepare(`SELECT r.*,reviewer.name AS reviewer_name,subject.name AS subject_name
       FROM business_reviews r JOIN organizations reviewer ON reviewer.id=r.reviewer_organization_id
       JOIN organizations subject ON subject.id=r.subject_organization_id
-      WHERE r.shipment_id=? ORDER BY r.created_at DESC`).all(shipment.id);
+      WHERE ${reviewVisibility} ORDER BY r.created_at DESC`).all(...reviewArgs);
   } else {
     shipment.receiver_name = null;
     shipment.receiver_first_name = null;
@@ -852,7 +862,7 @@ function verificationBadges(db, subjectType, subjectId) {
 
 function ratingSummary(db, organizationId) {
   return db.prepare(`SELECT COUNT(*) AS review_count,ROUND(AVG(rating),1) AS average_rating
-    FROM business_reviews WHERE subject_organization_id=?`).get(organizationId);
+    FROM business_reviews WHERE subject_organization_id=? AND status='PUBLISHED'`).get(organizationId);
 }
 
 export function listDirectoryProfiles(kind = 'ALL') {
@@ -1277,17 +1287,98 @@ export function submitBusinessReview(user,shipmentId,rating,note='') {
   const subjectOrganizationId = parties.find(id => id !== user.organization_id);
   const value = Number(rating);
   if (!Number.isInteger(value) || value < 1 || value > 5) throw new Error('INVALID_RATING');
+  const cleanNote = String(note || '').trim();
+  if (value < 4 && !cleanNote) throw new Error('LOW_RATING_NOTE_REQUIRED');
+  const status = value >= 4 ? 'PUBLISHED' : 'PENDING';
   try {
     const id = randomId('review-');
-    db.prepare(`INSERT INTO business_reviews
-      (id,shipment_id,reviewer_organization_id,subject_organization_id,rating,note,created_by,created_at)
-      VALUES (?,?,?,?,?,?,?,?)`).run(id,shipment.id,user.organization_id,subjectOrganizationId,value,String(note || '').trim() || null,user.id,nowIso());
-    audit(db,user,'BUSINESS_REVIEW_SUBMITTED','business_review',id,{shipmentId:shipment.id,subjectOrganizationId,rating:value});
-    return id;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.prepare(`INSERT INTO business_reviews
+        (id,shipment_id,reviewer_organization_id,subject_organization_id,rating,note,status,created_by,created_at)
+        VALUES (?,?,?,?,?,?,?,?,?)`).run(id,shipment.id,user.organization_id,subjectOrganizationId,value,cleanNote || null,status,user.id,nowIso());
+      if (status === 'PENDING') {
+        const subject = db.prepare('SELECT name FROM organizations WHERE id=?').get(subjectOrganizationId);
+        for (const admin of db.prepare(`SELECT id FROM users WHERE role='ADMIN' AND active=1`).all()) {
+          notify(db,admin.id,'Low Business rating needs review',`${value}-star rating for ${subject?.name || 'a Business'} on ${shipment.code} is waiting in Rating Reviews.`);
+        }
+      }
+      audit(db,user,'BUSINESS_REVIEW_SUBMITTED','business_review',id,{shipmentId:shipment.id,subjectOrganizationId,rating:value,status});
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
+    return {id,status};
   } catch (error) {
     if (String(error?.message || '').includes('UNIQUE')) throw new Error('REVIEW_ALREADY_SUBMITTED');
     throw error;
   }
+}
+
+export function listRatingModerationQueue(user,status='PENDING') {
+  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  const normalizedStatus = String(status || 'PENDING').toUpperCase();
+  if (!['PENDING','PUBLISHED','DISMISSED'].includes(normalizedStatus)) throw new Error('INVALID_RATING_REVIEW_STATUS');
+  const db = getDb();
+  const rows = db.prepare(`SELECT
+      r.id,r.rating,r.note,r.status,r.created_at,r.review_note,r.reviewed_at,
+      s.id AS shipment_id,s.code AS shipment_code,s.title AS shipment_title,
+      s.origin,s.destination,s.operational_status,
+      reviewer.name AS reviewer_name,reviewer.handle AS reviewer_handle,
+      subject.name AS subject_name,subject.handle AS subject_handle,
+      submitter.name AS submitted_by_name,administrator.name AS reviewed_by_name
+    FROM business_reviews r
+    JOIN shipments s ON s.id=r.shipment_id
+    JOIN organizations reviewer ON reviewer.id=r.reviewer_organization_id
+    JOIN organizations subject ON subject.id=r.subject_organization_id
+    JOIN users submitter ON submitter.id=r.created_by
+    LEFT JOIN users administrator ON administrator.id=r.reviewed_by
+    WHERE r.status=?
+    ORDER BY r.created_at DESC
+    LIMIT 100`).all(normalizedStatus);
+  audit(db,user,'ADMIN_RATING_QUEUE_READ','business_review',null,{status:normalizedStatus,count:rows.length});
+  return rows;
+}
+
+export function reviewBusinessRating(user,reviewId,status,note='') {
+  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  const normalizedStatus = String(status || '').toUpperCase();
+  if (!['PUBLISHED','DISMISSED'].includes(normalizedStatus)) throw new Error('INVALID_RATING_REVIEW_STATUS');
+  const cleanNote = String(note || '').trim();
+  if (!cleanNote) throw new Error('RATING_REVIEW_NOTE_REQUIRED');
+  const db = getDb();
+  const review = db.prepare(`SELECT r.*,s.code AS shipment_code,subject.name AS subject_name
+    FROM business_reviews r
+    JOIN shipments s ON s.id=r.shipment_id
+    JOIN organizations subject ON subject.id=r.subject_organization_id
+    WHERE r.id=?`).get(reviewId);
+  if (!review) throw new Error('NOT_FOUND');
+  if (review.status !== 'PENDING') throw new Error('RATING_ALREADY_REVIEWED');
+  const reviewedAt = nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const result = db.prepare(`UPDATE business_reviews
+      SET status=?,reviewed_by=?,review_note=?,reviewed_at=?
+      WHERE id=? AND status='PENDING'`).run(normalizedStatus,user.id,cleanNote,reviewedAt,reviewId);
+    if (!result.changes) throw new Error('RATING_ALREADY_REVIEWED');
+    audit(db,user,'BUSINESS_RATING_REVIEWED','business_review',reviewId,{
+      shipmentId:review.shipment_id,
+      subjectOrganizationId:review.subject_organization_id,
+      status:normalizedStatus
+    });
+    notify(
+      db,
+      review.created_by,
+      normalizedStatus === 'PUBLISHED' ? 'Business rating published' : 'Business rating review completed',
+      `${review.rating}-star rating for ${review.subject_name} on ${review.shipment_code} was ${normalizedStatus === 'PUBLISHED' ? 'published' : 'dismissed'}.`
+    );
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  return {id:reviewId,status:normalizedStatus,reviewedAt};
 }
 
 export function listOwnTruckRouteOptions(user) {

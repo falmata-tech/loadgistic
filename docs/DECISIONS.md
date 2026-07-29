@@ -109,3 +109,9 @@ Current partial-capacity and planned truck routes remain dated, expiring capacit
 Every truck receives one unique, immutable `LG-TRK-*` platform number. Member discovery and Public Profiles use that number; license plates remain private operational data for the truck owner and administrators.
 
 Deep workspace detail routes expose a Back link with a route-specific fallback that works before client hydration. Administrators receive a bounded, searchable Operations projection across users, workspaces, trucks, loads, and latest capacity. It excludes credentials, sessions, tracking secrets, exact coordinates, and proof paths. User suspension and truck deactivation are reversible, admin-only, audited commands, and an administrator cannot suspend their own account.
+
+## ADR-021 — Private low-rating moderation
+
+Treat a completed-load Business rating as either public reputation or a private investigation report. Four- and five-star ratings publish immediately. One- through three-star ratings require a note, enter Pending, remain readable only by the submitting Business and administrators, and do not affect the subject's public count or average.
+
+An administrator reviews safe load and participant context, records a required investigation note, and makes one terminal Publish or Dismiss decision. The original rating and note remain preserved for accountability. Moderation notifies the submitter and writes an audit record, but it does not automatically suspend an account or truck; those remain separate reversible Operations commands so a reputation decision cannot silently become platform enforcement.

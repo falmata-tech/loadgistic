@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   PackageSearch,
   Search,
+  Star,
   Truck,
   Users,
   Network
@@ -71,6 +72,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/operations', label: 'Operations', icon: Database },
     { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
     { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
+    { href: '/admin/ratings', label: 'Rating Reviews', icon: Star },
     { href: '/admin/billing', label: 'Billing Review', icon: ClipboardCheck },
     { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
     { href: '/app/providers', label: 'Directory', icon: Users },
@@ -100,6 +102,7 @@ const mobileLabels: Record<string, string> = {
   '/app/capacity': 'Capacity',
   '/admin/applications': 'Applications',
   '/admin/operations': 'Operations',
+  '/admin/ratings': 'Rating Reviews',
   '/admin/billing': 'Billing'
 };
 
