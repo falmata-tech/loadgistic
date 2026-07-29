@@ -10,7 +10,7 @@ const personas=[
   {
     name:'business',
     email:'shipper@loadgistic.local',
-    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/network','/app/capacity']
+    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers/blueline-transport?compare=routes','/app/network','/app/capacity']
   },
   {
     name:'fleet',
@@ -78,6 +78,9 @@ try{
         const started=Date.now();
         const response=await page.goto(`${baseURL}${route}`,{waitUntil:'domcontentloaded',timeout:30_000});
         await page.waitForTimeout(500);
+        if(await page.locator('.loading-map').count()){
+          await page.locator('.leaflet-container').first().waitFor({state:'visible',timeout:10_000});
+        }
         const metrics=await page.evaluate(()=>({
           clientWidth:document.documentElement.clientWidth,
           scrollWidth:document.documentElement.scrollWidth,
@@ -89,6 +92,11 @@ try{
         }));
         const file=`${viewport.name}-${persona.name}-${slug(route)}.png`;
         await page.screenshot({path:path.join(outputDir,file),fullPage:false});
+        if(route.includes('compare=routes')){
+          await page.locator('.profile-route-coverage').screenshot({
+            path:path.join(outputDir,`${viewport.name}-${persona.name}-route-comparison-detail.png`)
+          });
+        }
         const actionableErrors=actionableBrowserErrors(browserErrors);
         results.push({
           viewport:viewport.name,

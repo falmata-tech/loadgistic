@@ -16,7 +16,7 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
     <div className="coverage-routes" aria-label="Preferred Route network">
       {coverage.preferred_routes.length ? coverage.preferred_routes.map((route:string) => <div className="coverage-lane" key={route}><Route aria-hidden="true"/><span>{route}</span></div>) : <div className="empty-state compact">Add Preferred Routes to compare coverage.</div>}
     </div>
-    {coverage.routes?.length?<RouteCoverageMap routes={coverage.routes}/>:null}
+    {coverage.routes?.length?<RouteCoverageMap routes={[]} comparisonRoutes={coverage.routes}/>:null}
     <div className="coverage-businesses">
       {coverage.businesses.map((business:any) => <Link href={`/app/providers/${business.handle}`} className="coverage-business" key={business.id}>
         <Building2 aria-hidden="true"/>

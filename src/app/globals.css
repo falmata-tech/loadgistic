@@ -207,8 +207,6 @@ h3 { margin: 0 0 8px; font-size: 1.06rem; }
 .route-map-legend { position:absolute; z-index:500; left:10px; bottom:10px; display:flex; flex-wrap:wrap; gap:10px; padding:7px 9px; border:1px solid rgba(197,210,228,.9); border-radius:6px; background:rgba(255,255,255,.94); font-size:.72rem; font-weight:750; }
 .route-map-legend span { display:flex; align-items:center; gap:5px; }
 .route-map-legend i { width:20px; height:4px; border-radius:4px; background:var(--blue); }
-.route-map-legend i.current { background:#16794d; }
-.route-map-legend i.planned { background:#b86708; }
 .route-map-legend i.viewer { background:repeating-linear-gradient(90deg,#c45116 0 8px,transparent 8px 12px); }
 .loading-map { display:grid; place-items:center; color:var(--muted); font-size:.86rem; }
 .map-unavailable { margin:9px 0 0; padding:9px 11px; border-left:3px solid var(--orange); background:var(--orange-soft); color:#704409; font-size:.8rem; }
@@ -726,6 +724,7 @@ legend { font-weight:800; padding:0 7px; }
   .queue-filter-bar { grid-template-columns:1fr; }
   .pagination { justify-content:space-between; gap:6px; }
   .pagination > span:not(.button) { font-size:.82rem; text-align:center; }
+  .route-map-legend { bottom:28px; }
   .producer-hero { min-height:560px; background-position:62% center; }
   .producer-hero-shade { background:rgba(10,20,28,.76); }
   .producer-hero-content { padding-top:34px; padding-bottom:34px; }

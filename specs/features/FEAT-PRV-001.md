@@ -110,10 +110,13 @@ And it does not claim availability, serviceability, trustworthiness, price, or d
 ### Scenario: comparison routes remain visually distinguishable
 
 Given a member compares its routes with another profile\
-When a viewer route overlaps a blue profile route on the map\
-Then the viewer route is drawn above it with a high-contrast warm dashed line\
-And the legend uses the same dashed treatment\
-And the route remains distinguishable from blue profile, green current-partial, and orange planned-route lines.
+When Preferred or Freight Routes and fresh current-partial or planned truck routes are projected\
+Then every route owned by the viewer is grouped as Your routes\
+And every route owned by the viewed profile is grouped as Profile routes\
+And Profile routes use one solid blue treatment regardless of source\
+And Your routes use one high-contrast warm-brown dashed treatment regardless of source\
+And Your routes are drawn above overlapping Profile routes\
+And the comparison legend contains only Profile routes and Your routes.
 
 ### Scenario: unmapped member-entered place remains honest
 

@@ -279,6 +279,10 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await page.getByRole('link',{name:'Compare routes'}).click();
   await expect(page.getByText('How this comparison works')).toBeVisible();
   await expect(page.locator('.route-map-legend .viewer')).toBeVisible();
+  await expect(page.locator('.route-map-legend')).toContainText('Profile routes');
+  await expect(page.locator('.route-map-legend')).toContainText('Your routes');
+  await expect(page.locator('.route-map-legend .current')).toHaveCount(0);
+  await expect(page.locator('.route-map-legend .planned')).toHaveCount(0);
   await expect(page.locator('.leaflet-overlay-pane path[stroke="#c45116"]').first()).toHaveAttribute('stroke-dasharray',/12 8/);
   await expect(page.getByText(/full route match/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Fresh truck routes'})).toBeVisible();

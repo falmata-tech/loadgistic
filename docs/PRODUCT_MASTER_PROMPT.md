@@ -110,7 +110,7 @@ Route, load, capacity, board-filter, and general-area inputs query a bounded loc
 
 Fleet Transporter Home compares Preferred Route and fresh truck-route place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view uses approximate city route lines and text evidence. It uses no exact facility pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
 
-Route comparisons draw the viewer's own routes as a warm dashed line above blue profile routes so overlapping matches remain visible.
+Route comparisons group routes by ownership rather than source. Every viewed-profile Freight or Preferred Route and fresh current-partial or planned truck route is solid blue. Every equivalent route belonging to the viewer is grouped as Your routes and drawn as a warm-brown dashed line above the blue lines so overlapping matches remain visible. Current-partial and planned source details remain available outside the map but do not create additional legend colors.
 
 Deep workspace detail routes provide a Back control. A direct deep link has a safe parent-board fallback, while in-workspace navigation returns to the recorded previous workspace page.
 

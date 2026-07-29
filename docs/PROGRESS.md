@@ -25,7 +25,7 @@
 - Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
 - One authoritative paired profile-route model, labeled Freight Routes for Businesses and Preferred Routes for transport providers
 - Approximate OpenStreetMap route lines, record-derived evidence counts, fresh all-truck route projections, and member-to-member comparison
-- High-contrast warm dashed viewer routes that stay visible over matching blue profile routes
+- Ownership-only route maps that consolidate all viewer Preferred/Freight, current-partial, and planned routes into one high-contrast warm-brown dashed layer above solid blue viewed-profile routes
 - Real truck identity fields: make, model, cargo configuration, and plate; generic tonnage labels removed
 - Ten-image standardized cargo-configuration catalog used by freight creation, driver Home, Fleet, and Capacity
 - Freight FTL/PTL requirement and recipient-specific temporary load-size proof sharing
@@ -75,11 +75,11 @@
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
 - Paginated Directory, application, verification, and billing views plus a compact admin Operations overview under dense data
-- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, workflow states, integrity checks, and a 40-screen dense UI audit
+- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, workflow states, integrity checks, and a 42-screen dense UI audit
 - Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
 - Local Node evidence: 56 tests passed, including comprehensive-data integrity and Production-denial coverage
 - Local Playwright E2E evidence: 36 passed and four expected viewport skips
-- Dense-data visual evidence: 40 desktop/mobile screens passed with zero browser errors or horizontal overflow; slowest screen completed in 1.83 seconds
+- Dense-data visual evidence: 42 desktop/mobile screens passed with zero browser errors or horizontal overflow, including ownership-only route comparison
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities
 

@@ -105,6 +105,11 @@ test('profile routes separate declarations, reported records, and tracked eviden
  const comparison=repo.getProfileRouteComparison(shipper,fleet);
  assert.ok(comparison.exact_count>=1);
  assert.match(comparison.evidence_label,/tracked/i);
+ const providerComparison=repo.getProfileRouteComparison(transporter,business);
+ assert.ok(providerComparison.viewer_routes.some(route=>route.route_kind==='PROFILE'));
+ assert.ok(providerComparison.viewer_routes.some(route=>route.route_kind==='PLANNED'));
+ const ownProviderRoutes=repo.getOwnCompanyPage(transporter).map_routes;
+ assert.ok(ownProviderRoutes.every(route=>providerComparison.viewer_routes.some(viewerRoute=>viewerRoute.id===route.id)));
 
  const own=repo.getOwnCompanyPage(shipper);
  repo.updateCompanyPage(shipper,{
