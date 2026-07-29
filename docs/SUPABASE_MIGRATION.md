@@ -1,6 +1,6 @@
 # Supabase Migration
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `006`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, and mixed local/intercity geography.
+The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `007`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, and coordinate-authoritative route matching.
 
 ## Replacement boundary
 
@@ -43,3 +43,11 @@ service areas, movement-scope fields, Board query indexes, and private local-loa
 points. Exact pickup and drop-off coordinates live in a separate table with
 participant-only RLS; marketplace and administrative summary queries do not
 join that table.
+
+Migration `007` enables PostGIS, adds catalog references and coordinate-backed
+geography points to profile bases, declared routes, shipments, and current or
+planned capacity routes, and creates GiST indexes for `ST_DWithin` proximity
+queries. It also normalizes Local-only truck capacity to Empty/100 percent and
+adds a database constraint that rejects Local Partial rows. Labels remain
+presentation data; production route and Directory matching must use the
+geography columns.

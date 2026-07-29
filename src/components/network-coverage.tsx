@@ -26,6 +26,6 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
       </Link>)}
       {!coverage.businesses.length ? <div className="empty-state compact">Businesses that save this fleet as a partner will appear here.</div> : null}
     </div>
-    <p className="meta">This comparison uses member-entered city names and record-derived activity. It does not guarantee availability or service.</p>
+    <p className="meta">This comparison uses confirmed place coordinates, declared service radii, and record-derived activity. It does not guarantee availability or service.</p>
   </section>;
 }

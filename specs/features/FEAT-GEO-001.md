@@ -1,7 +1,7 @@
 ---
 id: FEAT-GEO-001
 title: Local service areas and mixed freight geography
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001, FEAT-MAT-001]
 problem: City-radius freight is forced into intercity route fields even when a Business or truck serves only one locality, producing misleading map lines and weak discovery.
 behavior: Loads, truck capacity, and authenticated profiles distinguish Local service areas from Between cities routes; local discovery uses structured Ethiopian places and bounded radii while exact load pins remain private to authorized shipment parties.
 contracts: [MovementScope, ServiceArea, LocalLoadLocation, LocalCapacityArea, CoverageProjection, CoverageComparison, GeographicMatch, PrivateLoadPoint]
@@ -60,7 +60,9 @@ Given an authorized driver or fleet owner publishes capacity for one truck\
 When Local or Both service scope is chosen\
 Then a reviewed current city or town and a radius from 5 through 100 kilometers are required\
 And the fresh capacity may be published without current or planned intercity routes\
-And normal duty, cargo-space, accepted-load, stop, visibility, proof, and expiry rules still apply.
+And Local-only capacity must be Empty with 100 percent available\
+And Both may use Partial only with the required current intercity route and date\
+And normal duty, accepted-load, stop, visibility, proof, and expiry rules still apply.
 
 ### Scenario: local capacity does not claim device location
 

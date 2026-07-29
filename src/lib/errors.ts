@@ -32,6 +32,7 @@ const messages: Record<string,string> = {
   CAPACITY_CONFIGURATION_REQUIRED: 'A fleet owner must configure this truck before it can return On Duty.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
   CAPACITY_PERCENT_REQUIRED: 'Enter a whole percentage from 1 to 99 for partial capacity.',
+  LOCAL_CAPACITY_MUST_BE_EMPTY: 'Local-only capacity must be Empty with 100% of the truck available. Use Between cities or Both for Partial capacity.',
   ACCEPTED_LOADS_REQUIRED: 'Choose FTL, PTL, or Both.',
   CAPACITY_AREA_REQUIRED: 'Enter the general area where the truck is now.',
   INVALID_CAPACITY_VISIBILITY: 'Choose Public or Partners.',

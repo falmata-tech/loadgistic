@@ -274,10 +274,15 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
   await login(page, 'driver@loadgistic.local');
   await expect(page.getByRole('heading', { name: 'My capacity' })).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
+  await expect(page.getByTestId('capacity-form')).toHaveAttribute('data-hydrated','true');
   await expect(page.getByLabel('Current general area')).toBeVisible();
   await expect(page.getByRole('button', { name: /Use device location|Refresh area/ })).toBeVisible();
   await expect(page.getByText('Current partial-capacity route',{exact:true})).toBeVisible();
   await expect(page.getByLabel('Route date')).toBeVisible();
+  await page.locator('input[name="movementScope"][value="LOCAL"]').check();
+  await expect(page.locator('input[name="spaceChoice"]').nth(1)).toBeDisabled();
+  await expect(page.locator('input[name="status"]')).toHaveValue('EMPTY');
+  await expect(page.getByText(/Local-only availability is published as Empty/)).toBeVisible();
 });
 
 test('Business sees truck-first capacity detail and the full fleet roster', async ({ page }: { page: any }) => {
@@ -286,7 +291,7 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await expect(page.getByLabel('Match a posted load')).toBeVisible();
   await page.getByLabel('Match a posted load').selectOption('shp-freight-fixed');
   await page.getByRole('button', { name: 'Show matching trucks' }).click();
-  await expect(page.getByText('Full route match').first()).toBeVisible();
+  await expect(page.getByText(/Route match ·/).first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'View truck details' })).toHaveCount(3);
   await page.getByRole('link', { name: 'View truck details' }).first().click();
   await expect(page.getByRole('link',{name:'Back to previous workspace page'})).toBeVisible();

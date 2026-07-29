@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
 import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
-import { normalizePlace, routeMatch, splitPlaces } from '../src/lib/route-matching.js';
+import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
@@ -117,19 +117,39 @@ test('workspace access periods distinguish trial, paid, sponsored, and expired s
  assert.equal(subscriptionAccess({status:'PAYMENT_UNDER_REVIEW',ends_at:'2026-07-28T09:00:00.000Z'},now).granted,false);
 });
 
-test('route matching is simple, order independent, and explainable',()=>{
- assert.deepEqual(routeMatch('Addis Ababa','Hawassa','Hawassa','Addis Ababa'),{score:2,label:'Full route match'});
- assert.deepEqual(routeMatch('Adaba','Hawassa','Adaba, Ethiopia','Hawassa, Ethiopia'),{score:2,label:'Full route match'});
- assert.deepEqual(routeMatch('Adaba, Kenya','Hawassa, Ethiopia','Adaba, Ethiopia','Hawassa, Ethiopia'),{score:1,label:'One city aligns'});
- assert.deepEqual(routeMatch('Addis Ababa','Hawassa','Addis Ababa','Dire Dawa'),{score:1,label:'One city aligns'});
- assert.deepEqual(routeMatch('Jimma','Nekemte','Addis Ababa','Dire Dawa'),{score:0,label:'No route match'});
+test('place labels normalize display text without driving route matching',()=>{
  assert.equal(normalizePlace('  Addis-Ababa '),'addis ababa');
  assert.equal(placeLabel('Adaba'),'Adaba, Ethiopia');
  assert.equal(placeLabel('Adaba, Kenya'),'Adaba, Kenya');
  assert.equal(placeIdentity('Adaba'),placeIdentity('Adaba, Ethiopia'));
- assert.deepEqual(splitPlaces('Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia; Dire Dawa, Ethiopia'),['addis ababa ethiopia','hawassa ethiopia','dire dawa ethiopia']);
  assert.equal(qualifyPlaceList('Oromia; Somali, Ethiopia'),'Oromia, Ethiopia; Somali, Ethiopia');
  assert.equal(qualifyCorridorList('Addis Ababa ↔ Hawassa'),'Addis Ababa, Ethiopia ↔ Hawassa, Ethiopia');
+});
+
+test('coordinate route matching supports radii, direction, and best truck route',()=>{
+ const query={origin_lat:9.03,origin_lng:38.74,destination_lat:7.06,destination_lng:38.48};
+ const nearby={id:'nearby',origin_lat:8.88,origin_lng:38.78,destination_lat:7.20,destination_lng:38.60};
+ const reverse={id:'reverse',origin_lat:7.20,origin_lng:38.60,destination_lat:8.88,destination_lng:38.78};
+ const distant={id:'distant',origin_lat:11.59,origin_lng:37.39,destination_lat:12.60,destination_lng:37.47};
+ const direct=geographicRouteMatch(query,nearby,{originRadiusKm:30,destinationRadiusKm:30});
+ assert.equal(direct.matched,true);
+ assert.equal(direct.direction,'DIRECT');
+ assert.equal(geographicRouteMatch(query,reverse,{originRadiusKm:30,destinationRadiusKm:30}).matched,false);
+ assert.equal(geographicRouteMatch(query,reverse,{originRadiusKm:30,destinationRadiusKm:30,directionMode:'EITHER'}).direction,'REVERSE');
+ const best=bestGeographicRouteMatch(query,[distant,nearby],{originRadiusKm:50,destinationRadiusKm:50});
+ assert.equal(best.id,'nearby');
+ assert.match(best.label,/Route match/);
+});
+
+test('obscured current areas compare by circle overlap',()=>{
+ assert.equal(uncertaintyAreasOverlap(
+  {center_lat:9.03,center_lng:38.74,radius_km:20},
+  {center_lat:8.75,center_lng:38.99,radius_km:40}
+ ).matched,true);
+ assert.equal(uncertaintyAreasOverlap(
+  {center_lat:9.03,center_lng:38.74,radius_km:20},
+  {center_lat:7.06,center_lng:38.48,radius_km:40}
+ ).matched,false);
 });
 
 test('mutation origin guard accepts browser-confirmed same-origin proxy requests',()=>{

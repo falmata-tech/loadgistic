@@ -16,7 +16,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
     <PageHeader title="Platform Operations" subtitle="Inspect connected Loadgistic records and control account or truck availability."/>
     <Flash error={query.error} success={query.success}/>
     <form className="board-filter-bar" method="get">
-      <div className="form-group"><label htmlFor="operations-search"><Search aria-hidden="true"/>Search platform records</label><input id="operations-search" name="q" defaultValue={query.q||''} placeholder="Name, email, truck number, load code, city, or status"/></div>
+      <div className="form-group"><label htmlFor="operations-search"><Search aria-hidden="true"/>Search platform records</label><input id="operations-search" name="q" defaultValue={query.q||''} placeholder="Name, email, truck number, load code, or status"/></div>
       <button className="button icon-button-label"><Search aria-hidden="true"/>Search</button>
       {data.query?<Link href="/admin/operations" className="button secondary">Clear</Link>:null}
     </form>

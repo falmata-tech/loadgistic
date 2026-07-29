@@ -109,7 +109,7 @@ And exact device coordinates, receiver contacts, private files, and unrelated sh
 
 Given an authenticated member has declared routes or Local Service Areas and opens another member's Public Profile\
 When the member chooses Compare coverage\
-Then the system compares routes using exact two-endpoint, one-endpoint, and no-endpoint matches\
+Then the system compares structured routes using coordinate distance and explicit endpoint radii\
 And it compares Local Service Areas using point-in-radius and circle-overlap rules\
 And a provider's side also includes every fresh owned-truck current-partial and eligible planned route\
 And a visual analysis identifies shared endpoints, area overlap, and strongest matching pairs\

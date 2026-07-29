@@ -19,7 +19,7 @@ export default async function ShipmentsPage({searchParams}:{searchParams:Promise
   const filtered=shipments
     .filter(shipment=>status==='ALL'||shipment.operational_status===status)
     .filter(shipment=>!search||[
-      shipment.code,shipment.title,shipment.origin,shipment.destination,
+      shipment.code,shipment.title,
       shipment.shipper_name,shipment.receiver_name,shipment.cargo_description
     ].some(value=>String(value||'').toLowerCase().includes(search)));
   const result:any=paginateResults(filtered,{page:query.page,pageSize:12});
@@ -32,7 +32,7 @@ export default async function ShipmentsPage({searchParams}:{searchParams:Promise
     {isBusiness?<nav className="board-view-tabs" aria-label="My Loads views"><Link className={`button icon-button-label ${view==='MY_LOADS'?'':'secondary'}`} href="/app/shipments"><ClipboardList aria-hidden="true"/>All my loads</Link><Link className={`button icon-button-label ${view==='TRACKING'?'':'secondary'}`} href="/app/shipments?view=TRACKING"><PackageSearch aria-hidden="true"/>Active Tracking</Link></nav>:null}
     <form className="board-filter-bar compact-list-filter" method="get">
       {isBusiness?<input type="hidden" name="view" value={view}/>:null}
-      <div className="form-group"><label htmlFor="shipment-search"><Search aria-hidden="true"/>Search loads</label><input id="shipment-search" name="q" defaultValue={query.q||''} placeholder="Code, title, Business, cargo, or city"/></div>
+      <div className="form-group"><label htmlFor="shipment-search"><Search aria-hidden="true"/>Search loads</label><input id="shipment-search" name="q" defaultValue={query.q||''} placeholder="Code, title, Business, or cargo"/></div>
       <div className="form-group"><label htmlFor="shipment-status">Status</label><select id="shipment-status" name="status" defaultValue={status}><option value="ALL">All statuses</option>{visibleStatuses.map(value=><option key={value} value={value}>{value.replaceAll('_',' ')}</option>)}</select></div>
       <button className="button icon-button-label"><Search aria-hidden="true"/>Filter</button>
       {search||status!=='ALL'?<Link className="button secondary icon-button-label" href={`/app/shipments${view==='TRACKING'&&isBusiness?'?view=TRACKING':''}`}><X aria-hidden="true"/>Clear</Link>:null}

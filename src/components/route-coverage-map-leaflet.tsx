@@ -3,7 +3,6 @@
 import React from 'react';
 import { Circle, CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
-import { getPlaceCoordinate } from '@/lib/ethiopia-places.js';
 
 function FitCoverage({points}:{points:{lat:number;lng:number;radiusKm?:number}[]}) {
   const map=useMap();
@@ -21,8 +20,16 @@ function FitCoverage({points}:{points:{lat:number;lng:number;radiusKm?:number}[]
 }
 
 export function LeafletRouteMap({ routes, comparisonRoutes = [],areas=[],comparisonAreas=[] }: { routes:any[]; comparisonRoutes?:any[];areas?:any[];comparisonAreas?:any[] }) {
-  const projected = routes.map((route:any) => ({...route,from:getPlaceCoordinate(route.origin),to:getPlaceCoordinate(route.destination),group:'profile'}));
-  const comparisons = comparisonRoutes.map((route:any) => ({...route,from:getPlaceCoordinate(route.origin),to:getPlaceCoordinate(route.destination),group:'viewer'}));
+  const routePoints=(route:any)=>({
+    from:Number.isFinite(Number(route.origin_lat))&&Number.isFinite(Number(route.origin_lng))
+      ? {name:route.origin,lat:Number(route.origin_lat),lng:Number(route.origin_lng)}
+      : null,
+    to:Number.isFinite(Number(route.destination_lat))&&Number.isFinite(Number(route.destination_lng))
+      ? {name:route.destination,lat:Number(route.destination_lat),lng:Number(route.destination_lng)}
+      : null
+  });
+  const projected = routes.map((route:any) => ({...route,...routePoints(route),group:'profile'}));
+  const comparisons = comparisonRoutes.map((route:any) => ({...route,...routePoints(route),group:'viewer'}));
   const visible = [...projected,...comparisons].filter(route => route.from && route.to);
   const projectedAreas=areas.filter(area=>Number.isFinite(Number(area.center_lat))&&Number.isFinite(Number(area.center_lng))).map(area=>({...area,group:'profile'}));
   const viewerAreas=comparisonAreas.filter(area=>Number.isFinite(Number(area.center_lat))&&Number.isFinite(Number(area.center_lng))).map(area=>({...area,group:'viewer'}));
@@ -53,6 +60,6 @@ export function LeafletRouteMap({ routes, comparisonRoutes = [],areas=[],compari
       <div className="route-map-legend">{routes.length||areas.length?<span><i className="profile"/>Profile coverage</span>:null}{comparisonRoutes.length||comparisonAreas.length?<span><i className="viewer"/>Your coverage</span>:null}</div>
     </div>
     <p className="meta">Approximate city-radius areas and city-to-city lines over OpenStreetMap. They are not exact facilities, live movement, or guaranteed road paths.</p>
-    {unknown.length?<p className="map-unavailable">Map placement is unavailable for: {unknown.join(', ')}. These member-entered places remain included in route comparison.</p>:null}
+    {unknown.length?<p className="map-unavailable">Map placement is unavailable for legacy locations that have not been confirmed from the place catalog: {unknown.join(', ')}.</p>:null}
   </div>;
 }

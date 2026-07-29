@@ -31,9 +31,10 @@
 - Freight FTL/PTL requirement and recipient-specific temporary load-size proof sharing
 - Business-designated load-phone opt in and party-only receiver contact required before Freight assignment
 - Separate city-pair route controls across freight and capacity forms
-- Searchable Load and Capacity Boards with transparent both-city, one-city, or no-match route ranking
+- Coordinate-authoritative Load and Capacity Boards with adjustable endpoint radii, direct/either direction, all-truck-route ranking, and rounded distance evidence
+- Privacy-aware Capacity Board current-area Prefer/Require filtering without coordinate disclosure
 - Collapsible Board filters for price/deadline/recency and capacity space/date/visibility/freshness/flexibility/proof
-- Business operating regions on authenticated Public Profiles and directory cards
+- Structured profile base locations, proximity-ranked Directory filtering, and Business operating regions on authenticated Public Profiles and directory cards
 - Connected-network route coverage using structured intercity routes and local service-area circles without exposing exact load pins
 - Ethiopian producer- and transporter-focused public homepage with reviewed generated hero imagery
 - Public member-marketplace examples that reveal no live marketplace records
@@ -50,13 +51,14 @@
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
 - Local, Between cities, and Both movement scopes across load posting, capacity publishing, Boards, profiles, and route comparison
+- Local-only truck availability constrained to Empty/100 percent, with Partial reserved for dated Between cities or Both routes
 - Repeatable profile service areas with 5–100 km coverage radii and mixed circle/route comparison evidence
 - Optional local pickup/drop-off map points excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
 - Tracking and proof kept as separate contracts
 - Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
 - PWA and responsive UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `006` and RLS target
+- Supabase migrations `001` through `007`, including PostGIS geography/GiST matching, and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -80,7 +82,7 @@
 - Server-owned pagination for Boards, Directory, My Loads/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
 - Opt-in comprehensive local dataset covering all 30 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, integrity checks, and a named cross-market network cohort
 - Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 66 tests passed, including geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Node evidence: 70 tests passed, including coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 38 passed and four expected viewport skips
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
@@ -89,7 +91,7 @@
 
 ## Requires an internet-enabled environment
 
-- Apply Supabase migrations `001` through `006` through Supabase CLI
+- Apply Supabase migrations `001` through `007` through Supabase CLI
 
 ## Repository administration still required
 

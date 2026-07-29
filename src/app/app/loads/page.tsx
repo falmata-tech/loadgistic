@@ -23,8 +23,14 @@ export default async function LoadsPage({searchParams}:{searchParams:Promise<Rec
     movementScope:query.movementScope||'',
     localPlaceRef:query.localPlaceRef||'',
     locality:query.locality||'',
+    localRadiusKm:query.localRadiusKm||'50',
+    originPlaceRef:query.originPlaceRef||'',
     origin:query.origin||'',
+    originRadiusKm:query.originRadiusKm||'50',
+    destinationPlaceRef:query.destinationPlaceRef||'',
     destination:query.destination||'',
+    destinationRadiusKm:query.destinationRadiusKm||'50',
+    directionMode:query.directionMode||'DIRECT',
     loadType:query.loadType||'',
     vehicleCategory:query.vehicleCategory||'',
     matchCapacityId:query.matchCapacityId||'',
@@ -40,7 +46,11 @@ export default async function LoadsPage({searchParams}:{searchParams:Promise<Rec
   const loads:any[]=loadResult.items;
   const pools:any[]=poolResult.items;
   const truckRoutes:any[]=listOwnTruckRouteOptions(user);
-  const hasFilters=mode!=='ALL'||Object.values(filters).some(Boolean);
+  const hasFilters=mode!=='ALL'||[
+    filters.q,filters.movementScope,filters.localPlaceRef,filters.originPlaceRef,filters.destinationPlaceRef,
+    filters.loadType,filters.vehicleCategory,filters.matchCapacityId,filters.priceMode,filters.minPriceEtb,
+    filters.maxPriceEtb,filters.pickupBy,filters.deliveryBy,filters.postedWithin
+  ].some(Boolean);
   const hasAdvancedFilters=['priceMode','minPriceEtb','maxPriceEtb','pickupBy','deliveryBy','postedWithin'].some(key=>Boolean(filters[key as keyof typeof filters]));
   const result=board==='LOADS'?loadResult:poolResult;
   const resultCount=result.total;
@@ -57,9 +67,9 @@ export default async function LoadsPage({searchParams}:{searchParams:Promise<Rec
         <input type="hidden" name="board" value={board}/>
         <div className="board-filter-heading"><SlidersHorizontal aria-hidden="true"/><div><h2>{board==='POOLED'?'Find compatible PTL groups':'Find demand for a truck'}</h2><p>{board==='POOLED'?'Groups are a read-only view; every member remains a separate load.':"Search the board or rank loads against one truck's recorded route."}</p></div></div>
         <div className="board-filter-grid">
-          <div className="form-group filter-search"><label htmlFor="load-search"><Search aria-hidden="true"/>Search</label><input id="load-search" name="q" defaultValue={filters.q} placeholder="Load, Business, cargo, or city"/></div>
+          <div className="form-group filter-search"><label htmlFor="load-search"><Search aria-hidden="true"/>Search</label><input id="load-search" name="q" defaultValue={filters.q} placeholder="Load, Business, cargo, or truck type"/></div>
           {board==='LOADS'&&truckRoutes.length?<div className="form-group filter-match"><label htmlFor="load-match"><Route aria-hidden="true"/>Match truck routes</label><select id="load-match" name="matchCapacityId" defaultValue={filters.matchCapacityId}><option value="">Do not rank by a truck</option>{truckRoutes.map(truck=><option value={truck.id} key={truck.id}>{truck.option_label}{truck.origin&&truck.destination?` · ${truck.origin} → ${truck.destination}`:''}</option>)}</select></div>:null}
-          {board==='LOADS'?<BoardGeographyFilters idPrefix="load" movementScope={filters.movementScope} localPlaceRef={filters.localPlaceRef} locality={filters.locality} origin={filters.origin} destination={filters.destination}/>:null}
+          {board==='LOADS'?<BoardGeographyFilters idPrefix="load" movementScope={filters.movementScope} localPlaceRef={filters.localPlaceRef} locality={filters.locality} localRadiusKm={filters.localRadiusKm} originPlaceRef={filters.originPlaceRef} origin={filters.origin} originRadiusKm={filters.originRadiusKm} destinationPlaceRef={filters.destinationPlaceRef} destination={filters.destination} destinationRadiusKm={filters.destinationRadiusKm} directionMode={filters.directionMode}/>:null}
           {board==='LOADS'?<><div className="form-group"><label htmlFor="load-type">Load size</label><select id="load-type" name="loadType" defaultValue={filters.loadType}><option value="">FTL or PTL</option><option value="FTL">FTL</option><option value="PTL">PTL</option></select></div>
           <div className="form-group"><label htmlFor="load-truck-type">Cargo configuration</label><select id="load-truck-type" name="vehicleCategory" defaultValue={filters.vehicleCategory}><option value="">All truck types</option>{VEHICLE_CONFIGURATIONS.map(type=><option value={type.name} key={type.name}>{type.name}</option>)}</select></div>
           <div className="form-group"><label htmlFor="load-visibility">Board view</label><select id="load-visibility" name="mode" defaultValue={mode}><option value="ALL">All permitted loads</option><option value="INTERESTED">My interests</option><option value="DIRECT">Direct</option><option value="PARTNERS">My Partners</option><option value="OPEN">Open Loads</option></select></div></>:null}

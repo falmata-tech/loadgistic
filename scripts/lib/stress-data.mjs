@@ -578,9 +578,18 @@ export function populateStressData(db, { scale = 1 } = {}) {
         vehicle.index % 4 === 0 ? 1 : 0,vehicle.index % 5 === 0 ? 1 : 0
       );
       if(latestStatus!=='OFF_DUTY'&&vehicle.index%3!==2){
+        const movementScope=vehicle.index%3===0?'LOCAL':'BOTH';
+        const capacityId=`stress-capacity-latest-${pad(vehicle.index,4)}`;
+        if(movementScope==='LOCAL'){
+          db.prepare(`UPDATE capacities SET status='EMPTY',available_percent=100,
+            origin=NULL,destination=NULL,corridor=NULL,travel_date=NULL,planned_space_status=NULL,
+            current_route_origin=NULL,current_route_destination=NULL,current_route_date=NULL,
+            location_lat=NULL,location_lng=NULL,location_precision_km=NULL,location_source='MANUAL_GENERAL_AREA'
+            WHERE id=?`).run(capacityId);
+        }
         db.prepare(`UPDATE capacities SET movement_scope=?,local_place_ref=?,local_place_label=?,
           local_center_lat=?,local_center_lng=?,local_radius_km=? WHERE id=?`)
-          .run(vehicle.index%3===0?'LOCAL':'BOTH',`stress-place-${pad((vehicle.index-1)%LOCATIONS.length+1)}`,origin,latitude,longitude,[10,25,40,60][vehicle.index%4],`stress-capacity-latest-${pad(vehicle.index,4)}`);
+          .run(movementScope,`stress-place-${pad((vehicle.index-1)%LOCATIONS.length+1)}`,origin,latitude,longitude,[10,25,40,60][vehicle.index%4],capacityId);
       }
     }
 
@@ -971,6 +980,44 @@ export function populateStressData(db, { scale = 1 } = {}) {
       );
     }
 
+    const updateOrganizationPlace=db.prepare(`UPDATE organizations
+      SET city_place_ref=?,city_lat=?,city_lng=? WHERE id LIKE 'stress-%' AND city=?`);
+    const updateProviderPlace=db.prepare(`UPDATE provider_profiles
+      SET city_place_ref=?,city_lat=?,city_lng=? WHERE id LIKE 'stress-%' AND city=?`);
+    const updateRouteOrigin=db.prepare(`UPDATE profile_routes
+      SET origin_place_ref=?,origin_lat=?,origin_lng=? WHERE id LIKE 'stress-%' AND origin=?`);
+    const updateRouteDestination=db.prepare(`UPDATE profile_routes
+      SET destination_place_ref=?,destination_lat=?,destination_lng=? WHERE id LIKE 'stress-%' AND destination=?`);
+    const updateShipmentOrigin=db.prepare(`UPDATE shipments
+      SET origin_place_ref=?,origin_lat=?,origin_lng=? WHERE id LIKE 'stress-%' AND origin=? AND movement_scope='INTERCITY'`);
+    const updateShipmentDestination=db.prepare(`UPDATE shipments
+      SET destination_place_ref=?,destination_lat=?,destination_lng=? WHERE id LIKE 'stress-%' AND destination=? AND movement_scope='INTERCITY'`);
+    const updateCapacityOrigin=db.prepare(`UPDATE capacities SET
+      origin_place_ref=?,origin_lat=?,origin_lng=?,
+      location_place_ref=COALESCE(location_place_ref,?),
+      location_lat=COALESCE(location_lat,?),location_lng=COALESCE(location_lng,?),
+      location_precision_km=COALESCE(location_precision_km,40)
+      WHERE id LIKE 'stress-%' AND origin=?`);
+    const updateCapacityDestination=db.prepare(`UPDATE capacities
+      SET destination_place_ref=?,destination_lat=?,destination_lng=? WHERE id LIKE 'stress-%' AND destination=?`);
+    const updateCurrentOrigin=db.prepare(`UPDATE capacities
+      SET current_origin_place_ref=?,current_origin_lat=?,current_origin_lng=? WHERE id LIKE 'stress-%' AND current_route_origin=?`);
+    const updateCurrentDestination=db.prepare(`UPDATE capacities
+      SET current_destination_place_ref=?,current_destination_lat=?,current_destination_lng=? WHERE id LIKE 'stress-%' AND current_route_destination=?`);
+    for(const [index,[label,lat,lng]] of LOCATIONS.entries()){
+      const placeRef=`stress-place-${pad(index+1)}`;
+      updateOrganizationPlace.run(placeRef,lat,lng,label);
+      updateProviderPlace.run(placeRef,lat,lng,label);
+      updateRouteOrigin.run(placeRef,lat,lng,label);
+      updateRouteDestination.run(placeRef,lat,lng,label);
+      updateShipmentOrigin.run(placeRef,lat,lng,label);
+      updateShipmentDestination.run(placeRef,lat,lng,label);
+      updateCapacityOrigin.run(placeRef,lat,lng,placeRef,lat,lng,label);
+      updateCapacityDestination.run(placeRef,lat,lng,label);
+      updateCurrentOrigin.run(placeRef,lat,lng,label);
+      updateCurrentDestination.run(placeRef,lat,lng,label);
+    }
+
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -1029,10 +1076,24 @@ export function assertStressDataIntegrity(db, report = getStressDataReport(db)) 
       OR c.provider_profile_id IS NOT v.provider_profile_id`).get().n;
   if (invalidCapacityScopes) throw new Error(`STRESS_INVALID_CAPACITY_SCOPES:${invalidCapacityScopes}`);
 
+  const invalidLocalCapacity = db.prepare(`SELECT COUNT(*) AS n FROM capacities
+    WHERE movement_scope='LOCAL' AND status='PARTIAL'`).get().n;
+  if (invalidLocalCapacity) throw new Error(`STRESS_INVALID_LOCAL_CAPACITY:${invalidLocalCapacity}`);
+
   const crossFleetAssignments = db.prepare(`SELECT COUNT(*) AS n FROM driver_vehicle_assignments a
     JOIN users u ON u.id=a.driver_user_id JOIN vehicles v ON v.id=a.vehicle_id
     WHERE u.organization_id IS NULL OR u.organization_id IS NOT v.organization_id`).get().n;
   if (crossFleetAssignments) throw new Error(`STRESS_CROSS_FLEET_ASSIGNMENTS:${crossFleetAssignments}`);
+
+  const unstructuredRoutes=db.prepare(`SELECT
+    (SELECT COUNT(*) FROM profile_routes WHERE id LIKE 'stress-%' AND
+      (origin_place_ref IS NULL OR origin_lat IS NULL OR origin_lng IS NULL OR destination_place_ref IS NULL OR destination_lat IS NULL OR destination_lng IS NULL))
+    +(SELECT COUNT(*) FROM shipments WHERE id LIKE 'stress-%' AND movement_scope='INTERCITY' AND
+      (origin_place_ref IS NULL OR origin_lat IS NULL OR origin_lng IS NULL OR destination_place_ref IS NULL OR destination_lat IS NULL OR destination_lng IS NULL))
+    +(SELECT COUNT(*) FROM capacities WHERE id LIKE 'stress-%' AND status IN ('EMPTY','PARTIAL') AND movement_scope IN ('INTERCITY','BOTH') AND
+      (origin_place_ref IS NULL OR origin_lat IS NULL OR origin_lng IS NULL OR destination_place_ref IS NULL OR destination_lat IS NULL OR destination_lng IS NULL))
+    AS n`).get().n;
+  if(unstructuredRoutes)throw new Error(`STRESS_UNSTRUCTURED_ROUTES:${unstructuredRoutes}`);
 
   const invalidReviews = db.prepare(`SELECT COUNT(*) AS n FROM business_reviews r
     JOIN shipments s ON s.id=r.shipment_id

@@ -1,7 +1,7 @@
 ---
 id: FEAT-SHP-001
 title: B2B shipment creation and execution
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
 behavior: Authorized Business actors create road-freight loads as either shipper or receiver owners, manage posting and execution from one My Loads workspace, transporters discover or accept permitted work through the Load Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
 contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]

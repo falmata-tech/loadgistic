@@ -31,6 +31,11 @@ type CapacitySnapshot = {
   current_route_date?:string;
   planned_space_status?:string;
   movement_scope?:string;
+  origin_place_ref?:string;
+  destination_place_ref?:string;
+  current_origin_place_ref?:string;
+  current_destination_place_ref?:string;
+  location_place_ref?:string;
   local_place_ref?:string;
   local_place_label?:string;
   local_radius_km?:number;
@@ -71,6 +76,15 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
   );
   const [locationArea,setLocationArea]=React.useState(current?.location_area||'');
   const [movementScope,setMovementScope]=React.useState(current?.movement_scope||'INTERCITY');
+  const [hydrated,setHydrated]=React.useState(false);
+
+  React.useEffect(()=>setHydrated(true),[]);
+  React.useEffect(()=>{
+    if(movementScope==='LOCAL'&&status==='PARTIAL'){
+      setStatus('EMPTY');
+      setLastOnDutyStatus('EMPTY');
+    }
+  },[movementScope,status]);
 
   function chooseVehicle(nextId: string) {
     const next = vehicles.find(vehicle => vehicle.id === nextId)?.current;
@@ -115,7 +129,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
   const onDuty = status !== 'OFF_DUTY';
   if (!vehicles.length) return <div className="empty-state">No active truck is assigned to this account.</div>;
 
-  return <form action="/api/capacity" method="post" encType="multipart/form-data" className="capacity-console" data-testid="capacity-form">
+  return <form action="/api/capacity" method="post" encType="multipart/form-data" className="capacity-console" data-testid="capacity-form" data-hydrated={hydrated}>
     <section className="capacity-control-band">
       <div className="capacity-control-heading"><span className={`live-dot ${onDuty ? '' : 'off'}`} aria-hidden="true"/><div><strong>{onDuty ? 'On Duty' : 'Off Duty'}</strong><span>{onDuty ? 'Visible when this update is fresh' : 'Hidden from the capacity market'}</span></div></div>
       <div className="segmented-control duty-control" aria-label="Duty state">
@@ -139,8 +153,9 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
             <div className="control-panel-title"><div><h2>Cargo space</h2><p>What does the truck have available right now?</p></div><strong className="capacity-number">{status === 'EMPTY' ? '100%' : `${percent}%`}</strong></div>
             <div className="segmented-control space-control">
               <label><input name="spaceChoice" type="radio" checked={status === 'EMPTY'} onChange={() => setSpace('EMPTY')}/><span><strong>Empty</strong><small>Entire cargo space</small></span></label>
-              <label><input name="spaceChoice" type="radio" checked={status === 'PARTIAL'} onChange={() => setSpace('PARTIAL')}/><span><strong>Partial</strong><small>Some space remains</small></span></label>
+              <label><input name="spaceChoice" type="radio" checked={status === 'PARTIAL'} disabled={movementScope==='LOCAL'} onChange={() => setSpace('PARTIAL')}/><span><strong>Partial</strong><small>{movementScope==='LOCAL'?'Needs a current route':'Some space remains'}</small></span></label>
             </div>
+            {movementScope==='LOCAL'?<p className="meta panel-note">Local-only availability is published as Empty with 100% of the truck available. Use Between cities or Both to publish Partial on a current route.</p>:null}
             {status === 'PARTIAL' ? <div className="range-control"><div><label htmlFor="capacity-percent">Available cargo space</label><strong>{percent}%</strong></div><input id="capacity-percent" type="range" min="5" max="95" step="5" value={percent} onChange={event => setPercent(Number(event.target.value))}/><div className="range-labels"><span>5%</span><span>95%</span></div></div> : null}
           </section>
 
@@ -165,7 +180,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
 
           <section className="control-panel">
             <div className="control-panel-title"><div><h2>Where you are now</h2><p>Share a general area, never an exact live position.</p></div><span className="status fresh">Updates now</span></div>
-            {movementScope==='LOCAL'?<p className="meta panel-note">Your selected Local city and radius are the current marketplace area. No phone location is needed.</p>:<div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Addis Ababa, Ethiopia" aria-label="Current general area"/></div>}
+            {movementScope==='LOCAL'?<p className="meta panel-note">Your selected Local city and radius are the current marketplace area. No phone location is needed.</p>:<div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" placeRefName="locationPlaceRef" defaultPlaceRef={current?.location_place_ref||''} required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Addis Ababa, Ethiopia" aria-label="Current general area"/></div>}
             {movementScope!=='LOCAL'&&allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
               <div>
                 <strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use your phone location'}</strong>
@@ -190,9 +205,9 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
 
           {movementScope!=='LOCAL'?<section className="control-panel">
             <div className="control-panel-title"><div><h2>Truck routes</h2><p>Keep current partial movement separate from a future planned trip.</p></div></div>
-            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama, Ethiopia"/></div></div><div className="form-group"><label htmlFor="current-route-date">Route date</label><input id="current-route-date" name="currentRouteDate" type="date" defaultValue={current?.current_route_date||''}/></div></>:null}
+            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" placeRefName="currentOriginPlaceRef" defaultPlaceRef={current?.current_origin_place_ref||''} defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" placeRefName="currentDestinationPlaceRef" defaultPlaceRef={current?.current_destination_place_ref||''} defaultValue={current?.current_route_destination||''} placeholder="Adama, Ethiopia"/></div></div><div className="form-group"><label htmlFor="current-route-date">Route date</label><input id="current-route-date" name="currentRouteDate" type="date" defaultValue={current?.current_route_date||''}/></div></>:null}
             <h3 className="compact-section-title">Planned route</h3>
-            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Planned origin</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="capacity-destination">Planned destination</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa, Ethiopia"/></div></div>
+            <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Planned origin</label><EthiopiaPlaceInput id="capacity-origin" name="origin" placeRefName="originPlaceRef" defaultPlaceRef={current?.origin_place_ref||''} defaultValue={current?.origin || ''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="capacity-destination">Planned destination</label><EthiopiaPlaceInput id="capacity-destination" name="destination" placeRefName="destinationPlaceRef" defaultPlaceRef={current?.destination_place_ref||''} defaultValue={current?.destination || ''} placeholder="Dire Dawa, Ethiopia"/></div></div>
             <div className="form-grid"><div className="form-group"><label htmlFor="capacity-travel-date">Planned travel date</label><input id="capacity-travel-date" name="travelDate" type="date" defaultValue={current?.travel_date || ''}/></div><div className="form-group"><label htmlFor="capacity-next">Next available</label><input id="capacity-next" name="nextAvailable" defaultValue={current?.next_available || ''} placeholder="Tomorrow morning"/></div></div>
             <div className="form-group"><label>Planned cargo space</label><div className="segmented-control"><label><input name="plannedSpaceStatus" value="FULL" type="radio" defaultChecked={(current?.planned_space_status||'FULL')==='FULL'}/><span>Full</span></label><label><input name="plannedSpaceStatus" value="PARTIAL" type="radio" defaultChecked={current?.planned_space_status==='PARTIAL'}/><span>Partial</span></label></div></div>
             <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract routes</strong><small>Interested in recurring work on Preferred Routes</small></span></label>

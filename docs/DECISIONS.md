@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, dated current partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, dated current partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. Local-only work can publish only Empty/100-percent availability because Partial requires a dated route; Both and Between cities retain Partial. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -178,8 +178,35 @@ because row-level security cannot hide selected columns safely.
 
 Discovery and operations screens own pagination at the query boundary. Queries
 use deterministic ordering, explicit result limits, supporting indexes, and
-batched verification summaries. Route ranking and virtual PSTL grouping use
-bounded candidate windows before in-memory comparison. Direct capacity detail
-uses an authorized identifier lookup rather than scanning a Board projection.
-Repeatable data normalization is recorded in schema metadata and does not run
-on every process startup.
+batched verification summaries. Manual geographic filters execute before
+pagination. Virtual PSTL grouping uses a bounded candidate window; owned-route
+ranking evaluates the full authorized local result set so recency cannot hide a
+valid match. Direct capacity detail uses an authorized identifier lookup rather
+than scanning a Board projection. Repeatable data normalization is recorded in
+schema metadata and does not run on every process startup.
+
+## ADR-025 — Coordinate-authoritative route and proximity matching
+
+Treat a catalog place reference and its persisted latitude/longitude as the
+authority for every geographic filter, route comparison, map line, and profile
+base. Country-qualified names remain presentation data. Ordinary text search
+may inspect identity and descriptive content, but never city, route, region, or
+current-area labels. A typed location without a selected catalog identity
+cannot create or update geographic authority.
+
+An intercity query is two independently adjustable endpoint circles. Direct
+mode preserves origin and destination; Either mode also evaluates the reversed
+orientation. Every fresh current-partial and eligible planned route belonging
+to a truck is evaluated, then the lowest normalized worst-endpoint distance,
+total endpoint distance, and freshness determine the explainable result.
+Current truck location is an uncertainty circle: Prefer mode orders overlapping
+areas first, Require mode excludes non-overlap, and neither mode exposes stored
+coordinates.
+
+SQLite registers one deterministic great-circle distance function and stores
+additive references and coordinate columns for the local adapter. Legacy labels
+are backfilled only when the place catalog or built-in Ethiopia fixture resolves
+them unambiguously; unresolved records remain visible but cannot match. The
+Supabase target uses PostGIS geography points, GiST indexes, and `ST_DWithin`.
+This preserves one domain contract while allowing the production adapter to
+execute indexed geographic predicates before pagination.

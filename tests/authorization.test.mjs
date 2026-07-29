@@ -20,6 +20,15 @@ const users = {
   expired: repo.getUserById('user-expired')
 };
 const futureRouteDate=new Date(Date.now()+2*86_400_000).toISOString().slice(0,10);
+const routeRefs=(origin='Addis Ababa',destination='Hawassa')=>({
+  originPlaceRef:`builtin:${origin.toLowerCase()}`,
+  destinationPlaceRef:`builtin:${destination.toLowerCase()}`
+});
+const currentRouteRefs=(origin='Addis Ababa',destination='Adama')=>({
+  currentOriginPlaceRef:`builtin:${origin.toLowerCase()}`,
+  currentDestinationPlaceRef:`builtin:${destination.toLowerCase()}`
+});
+const locationRef=(place='Addis Ababa')=>({locationPlaceRef:`builtin:${place.toLowerCase()}`});
 
 function createFreight(distributionMode = 'OPEN_MARKET', providerRef = undefined) {
   return repo.createShipment(users.shipper, {
@@ -30,6 +39,7 @@ function createFreight(distributionMode = 'OPEN_MARKET', providerRef = undefined
     priceMode: 'QUOTE_REQUESTED',
     origin: 'Addis Ababa',
     destination: 'Hawassa',
+    ...routeRefs(),
     cargoDescription: 'Permission contract fixture',
     loadType: 'FTL',
     packageCount: '2',
@@ -131,6 +141,7 @@ test('assigned location tracking is enforced until a Business party reduces it',
     priceMode:'QUOTE_REQUESTED',
     origin:'Addis Ababa',
     destination:'Hawassa',
+    ...routeRefs(),
     cargoDescription:'Tracked fixture',
     loadType:'FTL',
     packageCount:'2',
@@ -176,9 +187,11 @@ test('favorites and pending requests do not unlock Partners visibility until acc
     vehicleId:'veh-driver-1',
     status:'EMPTY',
     acceptedLoads:'BOTH',
-    locationArea:'Around Addis Ababa',
+    locationArea:'Addis Ababa',
     origin:'Addis Ababa',
     destination:'Hawassa',
+    ...routeRefs(),
+    ...locationRef(),
     travelDate:futureRouteDate,
     plannedSpaceStatus:'FULL',
     visibility:'SAVED_PARTNERS'
@@ -228,7 +241,7 @@ test('fleet owner controls company driver load and capacity authority without re
   const ownerView=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.ok(ownerView.interests.some(interest=>interest.provider_organization_id===users.transporter.organization_id&&interest.created_by===users.companyDriver.id&&interest.created_by_name==='Yonas Alemu'));
   assert.ok(repo.getShipmentForUser(users.transporter,shipment.id));
-  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Dire Dawa',travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
+  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Addis Ababa',...locationRef(),origin:'Addis Ababa',destination:'Dire Dawa',...routeRefs('Addis Ababa','Dire Dawa'),travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
   assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
   assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
   assert.throws(()=>repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',visibility:'OPEN'}),/DEVICE_LOCATION_DRIVER_ONLY/);
@@ -317,6 +330,7 @@ test('only completed shipper and receiver Businesses can review each other once'
   const shipment=repo.createShipment(users.shipper,{
     title:'Completed review fixture',serviceMode:'FREIGHT',distributionMode:'DIRECT_TO_PROVIDER',providerRef:'org:org-transporter',
     priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Hawassa',cargoDescription:'Review fixture',loadType:'PTL',
+    ...routeRefs(),
     packageCount:'1',pickupDate:new Date(Date.now()+86_400_000).toISOString().slice(0,10),receiverOrganizationId:users.receiver.organization_id,trackingMode:'STATUS_ONLY'
   });
   assert.throws(()=>repo.submitBusinessReview(users.shipper,shipment.id,'5','Too early'),/REVIEW_NOT_ALLOWED/);
@@ -334,6 +348,7 @@ test('low Business ratings stay private until an administrator publishes them', 
   const shipment=repo.createShipment(users.shipper,{
     title:'Low rating moderation fixture',serviceMode:'FREIGHT',distributionMode:'DIRECT_TO_PROVIDER',providerRef:'org:org-transporter',
     priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Adama',cargoDescription:'Moderation fixture',loadType:'PTL',
+    ...routeRefs('Addis Ababa','Adama'),
     pickupDate:new Date(Date.now()+86_400_000).toISOString().slice(0,10),receiverOrganizationId:users.receiver.organization_id,trackingMode:'STATUS_ONLY'
   });
   dbModule.getDb().prepare(`UPDATE shipments SET operational_status='COMPLETED' WHERE id=?`).run(shipment.id);

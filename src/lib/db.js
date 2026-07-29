@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { trackingAccessCode, hashPassword, hashTrackingAccessCode, randomId } from './security.js';
-import { placeLabel, qualifyAreaLabel, qualifyCorridorList, qualifyPlaceList } from './place-labels.js';
+import { distanceBetweenKm } from './domain.js';
+import { getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
+import { placeLabel, placeLocalName, qualifyAreaLabel, qualifyCorridorList, qualifyPlaceList } from './place-labels.js';
 
 let database;
 
@@ -16,10 +18,15 @@ export function getDb() {
   const file = dbPath();
   fs.mkdirSync(path.dirname(file), { recursive: true });
   database = new DatabaseSync(file);
+  database.function('geo_distance_km',{deterministic:true},(lat1,lng1,lat2,lng2) =>
+    distanceBetweenKm({lat:lat1,lng:lng1},{lat:lat2,lng:lng2})
+  );
   database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   migrate(database);
   seed(database);
   runDataMigrationOnce(database,'ethiopia-place-qualification-v2',qualifyExistingEthiopiaData);
+  runDataMigrationOnce(database,'structured-route-geography-v1',backfillStructuredGeography);
+  runDataMigrationOnce(database,'local-capacity-empty-v1',normalizeLocalCapacity);
   return database;
 }
 
@@ -266,6 +273,7 @@ function migrate(db) {
       local_center_lat REAL,
       local_center_lng REAL,
       local_radius_km INTEGER CHECK(local_radius_km IS NULL OR local_radius_km BETWEEN 5 AND 100),
+      CHECK(movement_scope <> 'LOCAL' OR status IN ('EMPTY','OFF_DUTY')),
       CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
     );
 
@@ -496,6 +504,19 @@ function migrate(db) {
   `);
   const userColumns = new Set(db.prepare('PRAGMA table_info(users)').all().map(column => column.name));
   if (!userColumns.has('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
+  const organizationColumns = new Set(db.prepare('PRAGMA table_info(organizations)').all().map(column => column.name));
+  for (const [name,definition] of [
+    ['city_place_ref','TEXT'],['city_lat','REAL'],['city_lng','REAL']
+  ]) if(!organizationColumns.has(name))db.exec(`ALTER TABLE organizations ADD COLUMN ${name} ${definition}`);
+  const providerProfileColumns = new Set(db.prepare('PRAGMA table_info(provider_profiles)').all().map(column => column.name));
+  for (const [name,definition] of [
+    ['city_place_ref','TEXT'],['city_lat','REAL'],['city_lng','REAL']
+  ]) if(!providerProfileColumns.has(name))db.exec(`ALTER TABLE provider_profiles ADD COLUMN ${name} ${definition}`);
+  const profileRouteColumns = new Set(db.prepare('PRAGMA table_info(profile_routes)').all().map(column => column.name));
+  for (const [name,definition] of [
+    ['origin_place_ref','TEXT'],['origin_lat','REAL'],['origin_lng','REAL'],
+    ['destination_place_ref','TEXT'],['destination_lat','REAL'],['destination_lng','REAL']
+  ]) if(!profileRouteColumns.has(name))db.exec(`ALTER TABLE profile_routes ADD COLUMN ${name} ${definition}`);
   const placeColumns = new Set(db.prepare('PRAGMA table_info(place_catalog)').all().map(column => column.name));
   if (!placeColumns.has('country_name')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_name TEXT NOT NULL DEFAULT 'Ethiopia'");
   if (!placeColumns.has('country_code')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_code TEXT NOT NULL DEFAULT 'ET'");
@@ -543,7 +564,12 @@ function migrate(db) {
     ['local_place_label','TEXT'],
     ['local_center_lat','REAL'],
     ['local_center_lng','REAL'],
-    ['local_radius_km','INTEGER']
+    ['local_radius_km','INTEGER'],
+    ['origin_place_ref','TEXT'],['origin_lat','REAL'],['origin_lng','REAL'],
+    ['destination_place_ref','TEXT'],['destination_lat','REAL'],['destination_lng','REAL'],
+    ['current_origin_place_ref','TEXT'],['current_origin_lat','REAL'],['current_origin_lng','REAL'],
+    ['current_destination_place_ref','TEXT'],['current_destination_lat','REAL'],['current_destination_lng','REAL'],
+    ['location_place_ref','TEXT']
   ];
   for (const [name, definition] of additiveCapacityColumns) {
     if (!capacityColumns.has(name)) db.exec(`ALTER TABLE capacities ADD COLUMN ${name} ${definition}`);
@@ -551,6 +577,20 @@ function migrate(db) {
   db.exec(`UPDATE capacities SET
     accepts_multi_pick=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_pick END,
     accepts_multi_drop=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_drop END`);
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS enforce_local_capacity_status_insert
+    BEFORE INSERT ON capacities
+    WHEN NEW.movement_scope='LOCAL' AND NEW.status='PARTIAL'
+    BEGIN
+      SELECT RAISE(ABORT,'LOCAL_CAPACITY_MUST_BE_EMPTY');
+    END;
+    CREATE TRIGGER IF NOT EXISTS enforce_local_capacity_status_update
+    BEFORE UPDATE OF movement_scope,status ON capacities
+    WHEN NEW.movement_scope='LOCAL' AND NEW.status='PARTIAL'
+    BEGIN
+      SELECT RAISE(ABORT,'LOCAL_CAPACITY_MUST_BE_EMPTY');
+    END;
+  `);
   const vehicleColumns = new Set(db.prepare('PRAGMA table_info(vehicles)').all().map(column => column.name));
   for (const [name, definition] of [['make','TEXT'],['model','TEXT'],['cargo_configuration','TEXT'],['platform_number','TEXT']]) {
     if (!vehicleColumns.has(name)) db.exec(`ALTER TABLE vehicles ADD COLUMN ${name} ${definition}`);
@@ -614,7 +654,9 @@ function migrate(db) {
     ['pickup_lat','REAL'],
     ['pickup_lng','REAL'],
     ['dropoff_lat','REAL'],
-    ['dropoff_lng','REAL']
+    ['dropoff_lng','REAL'],
+    ['origin_place_ref','TEXT'],['origin_lat','REAL'],['origin_lng','REAL'],
+    ['destination_place_ref','TEXT'],['destination_lat','REAL'],['destination_lng','REAL']
   ]) {
     if (!shipmentColumns.has(name)) db.exec(`ALTER TABLE shipments ADD COLUMN ${name} ${definition}`);
   }
@@ -653,8 +695,14 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_capacity_organization ON capacities(provider_organization_id,expires_at);
     CREATE INDEX IF NOT EXISTS idx_capacity_provider ON capacities(provider_profile_id,expires_at);
     CREATE INDEX IF NOT EXISTS idx_capacity_local_place ON capacities(local_place_ref,movement_scope,expires_at);
+    CREATE INDEX IF NOT EXISTS idx_capacity_planned_origin_geo ON capacities(origin_lat,origin_lng,expires_at);
+    CREATE INDEX IF NOT EXISTS idx_capacity_current_origin_geo ON capacities(current_origin_lat,current_origin_lng,expires_at);
     CREATE INDEX IF NOT EXISTS idx_shipment_board ON shipments(operational_status,movement_scope,created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_shipment_local_place ON shipments(local_place_ref,movement_scope,operational_status);
+    CREATE INDEX IF NOT EXISTS idx_shipment_origin_geo ON shipments(origin_lat,origin_lng,operational_status);
+    CREATE INDEX IF NOT EXISTS idx_profile_route_origin_geo ON profile_routes(origin_lat,origin_lng);
+    CREATE INDEX IF NOT EXISTS idx_organization_city_geo ON organizations(city_lat,city_lng);
+    CREATE INDEX IF NOT EXISTS idx_provider_city_geo ON provider_profiles(city_lat,city_lng);
     CREATE INDEX IF NOT EXISTS idx_shipment_owner ON shipments(load_owner_organization_id,updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_shipment_events_load ON shipment_events(shipment_id,created_at);
     CREATE INDEX IF NOT EXISTS idx_shipment_interests_load_provider ON shipment_interests(shipment_id,provider_organization_id,provider_profile_id);
@@ -695,6 +743,89 @@ function runDataMigrationOnce(db,key,migration) {
   db.prepare(`INSERT INTO schema_meta (key,value,updated_at) VALUES (?,?,?)
     ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`)
     .run(key,'complete',new Date().toISOString());
+}
+
+function normalizedPlaceName(value) {
+  return String(placeLocalName(value)||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function resolveStoredPlace(db,label) {
+  const normalized=normalizedPlaceName(label);
+  if(!normalized)return null;
+  const matches=db.prepare(`SELECT id,latitude,longitude FROM place_catalog
+    WHERE normalized_name=? ORDER BY COALESCE(population,0) DESC,id LIMIT 2`).all(normalized);
+  if(matches.length===1)return {place_ref:matches[0].id,lat:matches[0].latitude,lng:matches[0].longitude};
+  const builtIn=getBuiltInPlaceCoordinate(label);
+  return builtIn?{place_ref:`builtin:${normalized}`,lat:builtIn.lat,lng:builtIn.lng}:null;
+}
+
+function backfillStructuredGeography(db) {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    for(const table of ['organizations','provider_profiles']){
+      const rows=db.prepare(`SELECT id,city FROM ${table}
+        WHERE city IS NOT NULL AND trim(city)<>'' AND (city_lat IS NULL OR city_lng IS NULL)`).all();
+      const update=db.prepare(`UPDATE ${table} SET city_place_ref=?,city_lat=?,city_lng=? WHERE id=?`);
+      for(const row of rows){
+        const place=resolveStoredPlace(db,row.city);
+        if(place)update.run(place.place_ref,place.lat,place.lng,row.id);
+      }
+    }
+    const routeTables=[
+      {table:'profile_routes',where:'1=1',pairs:[['origin','origin'],['destination','destination']]},
+      {table:'shipments',where:"movement_scope='INTERCITY'",pairs:[['origin','origin'],['destination','destination']]},
+      {table:'capacities',where:"movement_scope IN ('INTERCITY','BOTH')",pairs:[
+        ['origin','origin'],['destination','destination'],
+        ['current_route_origin','current_origin'],['current_route_destination','current_destination']
+      ]}
+    ];
+    for(const definition of routeTables){
+      const columns=definition.pairs.flatMap(([label,prefix])=>[
+        label,`${prefix}_place_ref`,`${prefix}_lat`,`${prefix}_lng`
+      ]).join(',');
+      const rows=db.prepare(`SELECT id,${columns} FROM ${definition.table} WHERE ${definition.where}`).all();
+      for(const row of rows){
+        const assignments=[];
+        const values=[];
+        for(const [label,prefix] of definition.pairs){
+          if(!row[label]||(row[`${prefix}_lat`]!=null&&row[`${prefix}_lng`]!=null))continue;
+          const place=resolveStoredPlace(db,row[label]);
+          if(!place)continue;
+          assignments.push(`${prefix}_place_ref=?`,`${prefix}_lat=?`,`${prefix}_lng=?`);
+          values.push(place.place_ref,place.lat,place.lng);
+        }
+        if(assignments.length)db.prepare(`UPDATE ${definition.table} SET ${assignments.join(',')} WHERE id=?`).run(...values,row.id);
+      }
+    }
+    const manualAreas=db.prepare(`SELECT id,location_area FROM capacities
+      WHERE location_source='MANUAL_GENERAL_AREA' AND location_area IS NOT NULL
+        AND (location_lat IS NULL OR location_lng IS NULL)`).all();
+    const updateArea=db.prepare(`UPDATE capacities SET location_place_ref=?,location_lat=?,location_lng=?,
+      location_precision_km=COALESCE(location_precision_km,40) WHERE id=?`);
+    for(const row of manualAreas){
+      const place=resolveStoredPlace(db,String(row.location_area).replace(/^around\s+/i,''));
+      if(place)updateArea.run(place.place_ref,place.lat,place.lng,row.id);
+    }
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+function normalizeLocalCapacity(db) {
+  db.prepare(`UPDATE capacities SET
+    status=CASE WHEN status='PARTIAL' THEN 'EMPTY' ELSE status END,
+    available_percent=CASE WHEN status='PARTIAL' THEN 100 ELSE available_percent END,
+    origin=NULL,destination=NULL,corridor=NULL,travel_date=NULL,planned_space_status=NULL,
+    origin_place_ref=NULL,origin_lat=NULL,origin_lng=NULL,
+    destination_place_ref=NULL,destination_lat=NULL,destination_lng=NULL,
+    current_route_origin=NULL,current_route_destination=NULL,current_route_date=NULL,
+    current_origin_place_ref=NULL,current_origin_lat=NULL,current_origin_lng=NULL,
+    current_destination_place_ref=NULL,current_destination_lat=NULL,current_destination_lng=NULL,
+    location_place_ref=NULL,location_lat=NULL,location_lng=NULL,location_precision_km=NULL,
+    location_source=CASE WHEN status='OFF_DUTY' THEN NULL ELSE 'MANUAL_GENERAL_AREA' END
+    WHERE movement_scope='LOCAL'`).run();
 }
 
 function qualifyExistingEthiopiaData(db) {

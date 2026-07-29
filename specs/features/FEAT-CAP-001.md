@@ -1,7 +1,7 @@
 ---
 id: FEAT-CAP-001
 title: Truck-first Capacity Board and publication
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
 behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, dated current-partial movement, dated and capacity-labeled planned movement, contract-route openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
 contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
@@ -63,6 +63,14 @@ And Off Duty trucks remain absent from the Capacity Board.
 Given an authorized transporter, driver, or administrator owns the vehicle\
 When Empty capacity is submitted\
 Then the update records its planned route when supplied, actor, time, and 100 percent availability.
+
+### Scenario: Local-only capacity is fully available
+
+Given an authorized driver or fleet owner chooses Local-only work for one truck\
+When capacity is published\
+Then the cargo-space state must be Empty with 100 percent available\
+And Partial is rejected because it has no current intercity route on which to locate the remaining space\
+And Both may still use Partial when its required current intercity route and date are recorded.
 
 ### Scenario: route cities are entered separately
 
@@ -127,8 +135,9 @@ And route fields remain optional for Local-only capacity.
 
 Given a Business chooses one of its own open load routes\
 When Capacity Board results are displayed\
-Then trucks with both route endpoints aligned are ranked before one-endpoint and unmatched trucks\
-And each result explains its route-match strength without claiming dispatch suitability or availability beyond the recorded capacity.
+Then every fresh current and planned route is compared by endpoint distance\
+And trucks satisfying both adjustable endpoint radii rank by their strongest route\
+And each result explains endpoint distances, direction, and route source without claiming dispatch suitability or availability beyond the recorded capacity.
 
 Given a provider compares routes or ranks the Load Board\
 When fresh truck route records exist\

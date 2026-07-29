@@ -28,10 +28,10 @@ import {
   randomId,
   trackingAccessCode
 } from './security.js';
-import { normalizePlace, routeMatch, splitPlaces, textIncludes } from './route-matching.js';
+import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace } from './route-matching.js';
 import { ETHIOPIA_PLACES, getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
 import { poolCompatibleLoads } from './pstl.js';
-import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel, qualifyPlaceList } from './place-labels.js';
+import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel } from './place-labels.js';
 import { accessPeriodEnd, PAID_ACCESS_DAYS, subscriptionAccess, TRIAL_DAYS } from './subscription-access.js';
 
 function nowIso() {
@@ -181,9 +181,9 @@ export function searchPlaces(query,limit=20) {
 function resolvePlaceReference(placeRef, label) {
   const reference=String(placeRef||'').trim();
   const fallbackLabel=placeLabel(label);
-  if (!reference || !fallbackLabel) throw new Error('LOCALITY_REQUIRED');
+  if (!reference) throw new Error('LOCALITY_REQUIRED');
   if (reference.startsWith('builtin:')) {
-    const coordinate=getBuiltInPlaceCoordinate(fallbackLabel);
+    const coordinate=getBuiltInPlaceCoordinate(fallbackLabel||reference.slice('builtin:'.length));
     if (!coordinate) throw new Error('INVALID_LOCALITY');
     return {place_ref:reference,place_label:placeLabel(coordinate.name),center_lat:coordinate.lat,center_lng:coordinate.lng};
   }
@@ -229,20 +229,20 @@ export function searchDirectory(user,query,kind='ALL',limit=20) {
       EXISTS(SELECT 1 FROM member_favorites f WHERE f.owner_organization_id=? AND f.target_organization_id=o.id) AS is_favorite
       FROM organizations o
       WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER') AND o.id<>?
-        AND (lower(o.name) LIKE ? OR lower(COALESCE(o.city,'')) LIKE ? OR lower(COALESCE(o.industry,'')) LIKE ?)
+        AND (lower(o.name) LIKE ? OR lower(COALESCE(o.industry,'')) LIKE ?)
       ORDER BY is_favorite DESC,CASE WHEN lower(o.name)=? THEN 0 WHEN lower(o.name) LIKE ? THEN 1 ELSE 2 END,o.name
-      LIMIT ?`).all(user.organization_id||'',user.organization_id||'',pattern,pattern,pattern,value,`${value}%`,boundedLimit));
+      LIMIT ?`).all(user.organization_id||'',user.organization_id||'',pattern,pattern,value,`${value}%`,boundedLimit));
   }
   if(kind==='ALL'||kind==='TRANSPORT'){
     results.push(...db.prepare(`SELECT * FROM (
       SELECT o.id,'org' AS ref_kind,o.name,o.type,o.city,0 AS is_favorite
       FROM organizations o WHERE o.type='TRANSPORT_COMPANY'
-        AND (lower(o.name) LIKE ? OR lower(COALESCE(o.city,'')) LIKE ?)
+        AND lower(o.name) LIKE ?
       UNION ALL
       SELECT p.id,'profile' AS ref_kind,p.business_name AS name,'INDEPENDENT_PROVIDER' AS type,p.city,0 AS is_favorite
-      FROM provider_profiles p WHERE lower(p.business_name) LIKE ? OR lower(COALESCE(p.city,'')) LIKE ?
+      FROM provider_profiles p WHERE lower(p.business_name) LIKE ?
     ) ORDER BY CASE WHEN lower(name)=? THEN 0 WHEN lower(name) LIKE ? THEN 1 ELSE 2 END,name LIMIT ?`)
-      .all(pattern,pattern,pattern,pattern,value,`${value}%`,boundedLimit));
+      .all(pattern,pattern,value,`${value}%`,boundedLimit));
   }
   return results.slice(0,boundedLimit);
 }
@@ -529,6 +529,8 @@ export function createShipment(user, input) {
   const movementScope=validateMovementScope(input.movementScope||MOVEMENT_SCOPES.INTERCITY);
   if (!input.title || !input.cargoDescription || !input.pickupDate) throw new Error('MISSING_REQUIRED_FIELDS');
   let localPlace=null;
+  let originPlace=null;
+  let destinationPlace=null;
   let origin=null;
   let destination=null;
   if (movementScope===MOVEMENT_SCOPES.LOCAL) {
@@ -537,9 +539,11 @@ export function createShipment(user, input) {
     destination=localPlace.place_label;
   } else {
     if (!input.origin || !input.destination) throw new Error('MISSING_REQUIRED_FIELDS');
-    origin=placeLabel(input.origin);
-    destination=placeLabel(input.destination);
-    if (placeIdentity(origin)===placeIdentity(destination)) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+    originPlace=resolvePlaceReference(input.originPlaceRef,input.origin);
+    destinationPlace=resolvePlaceReference(input.destinationPlaceRef,input.destination);
+    origin=originPlace.place_label;
+    destination=destinationPlace.place_label;
+    if (originPlace.place_ref===destinationPlace.place_ref) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   }
   const pickupPoint=optionalCoordinatePair(input.pickupLat,input.pickupLng);
   const dropoffPoint=optionalCoordinatePair(input.dropoffLat,input.dropoffLng);
@@ -595,14 +599,16 @@ export function createShipment(user, input) {
        provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,
        vehicle_category,load_type,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,
        tracking_code_hash,created_by,created_at,updated_at,movement_scope,local_place_ref,local_place_label,
-       local_center_lat,local_center_lng,pickup_area_label,dropoff_area_label,pickup_lat,pickup_lng,dropoff_lat,dropoff_lng)
+       local_center_lat,local_center_lng,pickup_area_label,dropoff_area_label,pickup_lat,pickup_lng,dropoff_lat,dropoff_lng,
+       origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng)
       VALUES (@id,@code,@title,@serviceMode,@distributionMode,@priceMode,@priceMinor,@targetMinor,
        @shipperOrganizationId,@receiverOrganizationId,@loadOwnerOrganizationId,@loadOwnerPartyRole,
        @externalShipperName,@externalShipperPhone,@externalReceiverName,@externalReceiverPhone,
        @providerOrganizationId,@providerProfileId,@origin,@destination,@cargoDescription,@packageCount,NULL,
        @vehicleCategory,@loadType,@pickupDate,@deliveryDate,@commercialStatus,@operationalStatus,@trackingMode,
        @trackingCodeHash,@createdBy,@createdAt,@updatedAt,@movementScope,@localPlaceRef,@localPlaceLabel,
-       @localCenterLat,@localCenterLng,@pickupAreaLabel,@dropoffAreaLabel,@pickupLat,@pickupLng,@dropoffLat,@dropoffLng)`)
+       @localCenterLat,@localCenterLng,@pickupAreaLabel,@dropoffAreaLabel,@pickupLat,@pickupLng,@dropoffLat,@dropoffLng,
+       @originPlaceRef,@originLat,@originLng,@destinationPlaceRef,@destinationLat,@destinationLng)`)
       .run({
         id,code,title:input.title,serviceMode,distributionMode,priceMode:input.priceMode,priceMinor,targetMinor,
         shipperOrganizationId,receiverOrganizationId,loadOwnerOrganizationId:user.organization_id,loadOwnerPartyRole:ownerPartyRole,
@@ -614,7 +620,9 @@ export function createShipment(user, input) {
         movementScope,localPlaceRef:localPlace?.place_ref||null,localPlaceLabel:localPlace?.place_label||null,
         localCenterLat:localPlace?.center_lat??null,localCenterLng:localPlace?.center_lng??null,
         pickupAreaLabel:String(input.pickupAreaLabel||'').trim()||null,dropoffAreaLabel:String(input.dropoffAreaLabel||'').trim()||null,
-        pickupLat:pickupPoint.lat,pickupLng:pickupPoint.lng,dropoffLat:dropoffPoint.lat,dropoffLng:dropoffPoint.lng
+        pickupLat:pickupPoint.lat,pickupLng:pickupPoint.lng,dropoffLat:dropoffPoint.lat,dropoffLng:dropoffPoint.lng,
+        originPlaceRef:originPlace?.place_ref||null,originLat:originPlace?.center_lat??null,originLng:originPlace?.center_lng??null,
+        destinationPlaceRef:destinationPlace?.place_ref||null,destinationLat:destinationPlace?.center_lat??null,destinationLng:destinationPlace?.center_lng??null
       });
     db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`)
       .run(randomId('evt-'),id,operationalStatus,'CREATED','Shipment created in Loadgistic',user.id,1,timestamp);
@@ -1032,7 +1040,8 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
   const selects = [];
   const selectArgs = [];
   if (kind === 'ALL' || kind === 'BUSINESS') {
-    selects.push(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,cp.headline,cp.about,cp.services,cp.operating_regions,
+    selects.push(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,o.city_place_ref,o.city_lat,o.city_lng,
+      cp.headline,cp.about,cp.services,cp.operating_regions,
       cp.contact_phone,cp.contact_email,1 AS is_business,NULL AS preferred_routes_text,0 AS fleet_size,0 AS active_capacity_count,
       (SELECT COUNT(*) FROM business_reviews r WHERE r.subject_organization_id=o.id AND r.status='PUBLISHED') AS review_count,
       (SELECT ROUND(AVG(r.rating),1) FROM business_reviews r WHERE r.subject_organization_id=o.id AND r.status='PUBLISHED') AS average_rating
@@ -1040,7 +1049,8 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
       WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')`);
   }
   if (kind === 'ALL' || kind === 'TRANSPORT') {
-    selects.push(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,cp.headline,cp.about,cp.services,cp.operating_regions,
+    selects.push(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,o.city_place_ref,o.city_lat,o.city_lng,
+      cp.headline,cp.about,cp.services,cp.operating_regions,
       cp.contact_phone,cp.contact_email,0 AS is_business,
       (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.organization_id=o.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS fleet_size,
@@ -1052,7 +1062,8 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
   }
   if (kind === 'ALL' || kind === 'DRIVER') {
     selects.push(`SELECT p.id,'profile' AS ref_kind,p.business_name AS name,p.handle,'INDEPENDENT_PROVIDER' AS type,
-      p.city,cp.headline,p.about,cp.services,cp.operating_regions,cp.contact_phone,cp.contact_email,0 AS is_business,
+      p.city,p.city_place_ref,p.city_lat,p.city_lng,cp.headline,p.about,cp.services,cp.operating_regions,
+      cp.contact_phone,cp.contact_email,0 AS is_business,
       (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.provider_profile_id=p.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
@@ -1064,21 +1075,29 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
   if(!selects.length)return options?paginateResults([],options):[];
   const search = String(options?.q||'').trim().toLowerCase();
   const source=`FROM (${selects.join(' UNION ALL ')}) profiles`;
-  const searchColumns=['name','city','operating_regions','about','headline','services','preferred_routes_text'];
-  const where=search?`WHERE (${searchColumns.map(column=>`lower(COALESCE(${column},'')) LIKE ?`).join(' OR ')})`:'';
+  const searchColumns=['name','about','headline','services'];
+  const conditions=search?[`(${searchColumns.map(column=>`lower(COALESCE(${column},'')) LIKE ?`).join(' OR ')})`]:[];
   const searchArgs=search?Array(searchColumns.length).fill(`%${search}%`):[];
+  const nearPlace=selectedBoardPlace(options?.nearPlaceRef,options?.nearPlace);
+  const nearRadius=boardFilterRadius(options?.nearRadiusKm);
+  if(nearPlace)conditions.push('geo_distance_km(?,?,city_lat,city_lng)<=?');
+  const nearArgs=nearPlace?[nearPlace.center_lat,nearPlace.center_lng,nearRadius]:[];
+  const where=conditions.length?`WHERE ${conditions.join(' AND ')}`:'';
   let page=null;
   let items;
   if(options){
     const pageSize=Math.max(1,Math.min(100,Number(options.pageSize)||20));
-    const total=db.prepare(`SELECT COUNT(*) AS n ${source} ${where}`).get(...selectArgs,...searchArgs).n;
+    const total=db.prepare(`SELECT COUNT(*) AS n ${source} ${where}`).get(...selectArgs,...searchArgs,...nearArgs).n;
     const pageCount=Math.max(1,Math.ceil(total/pageSize));
     const currentPage=Math.max(1,Math.min(pageCount,Number(options.page)||1));
-    items=db.prepare(`SELECT * ${source} ${where} ORDER BY name COLLATE NOCASE,id LIMIT ? OFFSET ?`)
-      .all(...selectArgs,...searchArgs,pageSize,(currentPage-1)*pageSize);
+    const projection=nearPlace?'profiles.*,geo_distance_km(?,?,city_lat,city_lng) AS location_distance_km':'profiles.*';
+    const projectionArgs=nearPlace?[nearPlace.center_lat,nearPlace.center_lng]:[];
+    const order=nearPlace?'location_distance_km,name COLLATE NOCASE,id':'name COLLATE NOCASE,id';
+    items=db.prepare(`SELECT ${projection} ${source} ${where} ORDER BY ${order} LIMIT ? OFFSET ?`)
+      .all(...projectionArgs,...selectArgs,...searchArgs,...nearArgs,pageSize,(currentPage-1)*pageSize);
     page={total,page:currentPage,pageSize,pageCount};
   }else{
-    items=db.prepare(`SELECT * ${source} ${where} ORDER BY name COLLATE NOCASE,id`).all(...selectArgs,...searchArgs);
+    items=db.prepare(`SELECT * ${source} ${where} ORDER BY name COLLATE NOCASE,id`).all(...selectArgs,...searchArgs,...nearArgs);
   }
   const subjects=items.map(profile=>({
     type:profile.ref_kind==='profile'?'PROVIDER_PROFILE':'ORGANIZATION',
@@ -1140,6 +1159,12 @@ function capacityRouteCandidates(capacity, { requireCurrentDate = false } = {}) 
       vehicle_model:capacity.vehicle_model,
       origin:capacity.current_route_origin,
       destination:capacity.current_route_destination,
+      origin_place_ref:capacity.current_origin_place_ref,
+      origin_lat:capacity.current_origin_lat,
+      origin_lng:capacity.current_origin_lng,
+      destination_place_ref:capacity.current_destination_place_ref,
+      destination_lat:capacity.current_destination_lat,
+      destination_lng:capacity.current_destination_lng,
       route_kind:'CURRENT_PARTIAL',
       source_label:'Current partial route',
       route_date:capacity.current_route_date,
@@ -1161,6 +1186,12 @@ function capacityRouteCandidates(capacity, { requireCurrentDate = false } = {}) 
       vehicle_model:capacity.vehicle_model,
       origin:capacity.origin,
       destination:capacity.destination,
+      origin_place_ref:capacity.origin_place_ref,
+      origin_lat:capacity.origin_lat,
+      origin_lng:capacity.origin_lng,
+      destination_place_ref:capacity.destination_place_ref,
+      destination_lat:capacity.destination_lat,
+      destination_lng:capacity.destination_lng,
       route_kind:'PLANNED',
       source_label:'Planned route',
       route_date:capacity.travel_date,
@@ -1188,30 +1219,39 @@ function listProfileRoutesWithEvidence(db, page) {
   const owner = routeOwner(page);
   const routes = db.prepare(`SELECT * FROM profile_routes WHERE ${owner.column}=? ORDER BY created_at,id`).all(owner.id);
   const activity = page.is_business
-    ? db.prepare(`SELECT id,origin,destination,
+    ? db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
+        destination_place_ref,destination_lat,destination_lng,
         EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
         FROM shipments WHERE movement_scope='INTERCITY' AND COALESCE(load_owner_organization_id,shipper_organization_id)=?`).all(owner.id)
     : owner.organizationId
       ? {
-          capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,travel_date,current_route_origin,current_route_destination,current_route_date FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_organization_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
-          shipments:db.prepare(`SELECT id,origin,destination,
+          capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,origin_place_ref,origin_lat,origin_lng,
+            destination_place_ref,destination_lat,destination_lng,travel_date,current_route_origin,current_route_destination,
+            current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,current_route_date
+            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_organization_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+          shipments:db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
+            destination_place_ref,destination_lat,destination_lng,
             EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
             FROM shipments WHERE movement_scope='INTERCITY' AND provider_organization_id=?`).all(owner.id)
         }
       : {
-          capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,travel_date,current_route_origin,current_route_destination,current_route_date FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_profile_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
-          shipments:db.prepare(`SELECT id,origin,destination,
+          capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,origin_place_ref,origin_lat,origin_lng,
+            destination_place_ref,destination_lat,destination_lng,travel_date,current_route_origin,current_route_destination,
+            current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,current_route_date
+            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_profile_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+          shipments:db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
+            destination_place_ref,destination_lat,destination_lng,
             EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
             FROM shipments WHERE movement_scope='INTERCITY' AND provider_profile_id=?`).all(owner.id)
         };
   return routes.map(route => {
     if (page.is_business) {
-      const posted = activity.filter(item => routeMatch(route.origin,route.destination,item.origin,item.destination).score === 2);
+      const posted = activity.filter(item => geographicRouteMatch(route,item,{directionMode:'EITHER'}).matched);
       const tracked = posted.filter(item => item.has_tracked);
       return {...route,reported_count:posted.length,tracked_count:tracked.length,evidence_label:tracked.length?'Tracked activity':posted.length?'Reported activity':'Declared only'};
     }
-    const reported = activity.capacity.filter(item => capacityRouteCandidates(item).some(candidate => routeMatch(route.origin,route.destination,candidate.origin,candidate.destination).score === 2));
-    const tracked = activity.shipments.filter(item => routeMatch(route.origin,route.destination,item.origin,item.destination).score === 2 && item.has_tracked);
+    const reported = activity.capacity.filter(item => capacityRouteCandidates(item).some(candidate => geographicRouteMatch(route,candidate,{directionMode:'EITHER'}).matched));
+    const tracked = activity.shipments.filter(item => geographicRouteMatch(route,item,{directionMode:'EITHER'}).matched && item.has_tracked);
     return {...route,reported_count:reported.length,tracked_count:tracked.length,evidence_label:tracked.length?'Tracked activity':reported.length?'Reported activity':'Declared only'};
   });
 }
@@ -1285,7 +1325,8 @@ function attachProfileCoverage(db, page) {
 
 export function getPublicCompany(handle) {
   const db = getDb();
-  const org = db.prepare(`SELECT o.id,o.name,o.handle,o.type,o.industry,o.description,o.city,o.public_visibility,
+  const org = db.prepare(`SELECT o.id,o.name,o.handle,o.type,o.industry,o.description,o.city,
+    o.city_place_ref,o.city_lat,o.city_lng,o.public_visibility,
     cp.headline,cp.about,cp.services,cp.operating_regions,cp.contact_phone,cp.contact_email
     FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1
     WHERE o.handle=?`).get(handle);
@@ -1300,7 +1341,8 @@ export function getPublicCompany(handle) {
     org.capacities = org.is_business ? [] : listPublicCapacity('provider_organization_id',org.id);
     return attachProfileCoverage(db,org);
   }
-  const provider = db.prepare(`SELECT p.id,p.business_name,p.business_name AS name,p.handle,p.city,p.about,p.public_visibility,
+  const provider = db.prepare(`SELECT p.id,p.business_name,p.business_name AS name,p.handle,p.city,
+    p.city_place_ref,p.city_lat,p.city_lng,p.about,p.public_visibility,
     cp.headline,cp.services,cp.operating_regions,cp.contact_phone,cp.contact_email
     FROM provider_profiles p JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.handle=?`).get(handle);
   if (provider) {
@@ -1327,32 +1369,60 @@ export function updateCompanyPage(user, input) {
   if (!id) throw new Error('FORBIDDEN');
   const published = input.published ? 1 : 0;
   const showContactPhoneOnLoads = [USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role) && input.showContactPhoneOnLoads ? 1 : 0;
-  const routes = (input.routes || []).map(route => ({origin:placeLabel(route.origin),destination:placeLabel(route.destination)}))
-    .filter(route => route.origin || route.destination);
-  for (const route of routes) {
+  const routes = (input.routes || []).filter(route => route.origin || route.destination).map(route => {
     if (!route.origin || !route.destination) throw new Error('MISSING_REQUIRED_FIELDS');
-    if (placeIdentity(route.origin) === placeIdentity(route.destination)) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+    const origin=resolvePlaceReference(route.originPlaceRef||route.origin_place_ref,route.origin);
+    const destination=resolvePlaceReference(route.destinationPlaceRef||route.destination_place_ref,route.destination);
+    return {
+      origin:origin.place_label,origin_place_ref:origin.place_ref,origin_lat:origin.center_lat,origin_lng:origin.center_lng,
+      destination:destination.place_label,destination_place_ref:destination.place_ref,
+      destination_lat:destination.center_lat,destination_lng:destination.center_lng
+    };
+  });
+  for (const route of routes) {
+    if (route.origin_place_ref === route.destination_place_ref) throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   }
-  const uniqueRoutes = [...new Map(routes.map(route => [`${placeIdentity(route.origin)}|${placeIdentity(route.destination)}`.split('|').sort().join('|'),route])).values()];
+  const uniqueRoutes = [...new Map(routes.map(route => [[route.origin_place_ref,route.destination_place_ref].sort().join('|'),route])).values()];
   const serviceAreas=(input.serviceAreas||[]).filter(area=>area.placeRef||area.placeLabel).map(area=>({
     ...resolvePlaceReference(area.placeRef,area.placeLabel),
     radius_km:validateServiceRadius(area.radiusKm)
   }));
   const uniqueServiceAreas=[...new Map(serviceAreas.map(area=>[area.place_ref,area])).values()];
+  const basePlace=input.basePlaceRef||input.basePlaceLabel
+    ? resolvePlaceReference(input.basePlaceRef,input.basePlaceLabel)
+    : null;
+  if(published&&!basePlace){
+    const existingBase=db.prepare(`SELECT city_place_ref FROM ${isProvider?'provider_profiles':'organizations'} WHERE id=?`).get(id);
+    if(!existingBase?.city_place_ref)throw new Error('BASE_LOCATION_REQUIRED');
+  }
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,operating_regions=?,contact_phone=?,show_contact_phone_on_loads=?,contact_email=?,published=?,updated_at=? WHERE ${condition}`)
-      .run(input.headline || '',input.about || '',input.services || '',qualifyPlaceList(input.operatingRegions),input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,timestamp,id);
+      .run(input.headline || '',input.about || '',input.services || '',uniqueServiceAreas.map(area=>area.place_label).join(', '),input.contactPhone || '',showContactPhoneOnLoads,input.contactEmail || '',published,timestamp,id);
+    if(basePlace){
+      db.prepare(`UPDATE ${isProvider?'provider_profiles':'organizations'}
+        SET city=?,city_place_ref=?,city_lat=?,city_lng=? WHERE id=?`)
+        .run(basePlace.place_label,basePlace.place_ref,basePlace.center_lat,basePlace.center_lng,id);
+    }
     db.prepare(`DELETE FROM profile_routes WHERE ${condition}`).run(id);
-    const insert = db.prepare(`INSERT INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,?,?)`);
-    for (const route of uniqueRoutes) insert.run(randomId('route-'),isProvider ? null : id,isProvider ? id : null,route.origin,route.destination,user.id,timestamp);
+    const insert = db.prepare(`INSERT INTO profile_routes
+      (id,organization_id,provider_profile_id,origin,destination,origin_place_ref,origin_lat,origin_lng,
+       destination_place_ref,destination_lat,destination_lng,created_by,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const route of uniqueRoutes) insert.run(
+      randomId('route-'),isProvider ? null : id,isProvider ? id : null,route.origin,route.destination,
+      route.origin_place_ref,route.origin_lat,route.origin_lng,
+      route.destination_place_ref,route.destination_lat,route.destination_lng,user.id,timestamp
+    );
     db.prepare(`DELETE FROM service_areas WHERE ${condition}`).run(id);
     const insertArea=db.prepare(`INSERT INTO service_areas
       (id,organization_id,provider_profile_id,place_ref,place_label,center_lat,center_lng,radius_km,created_by,created_at)
       VALUES (?,?,?,?,?,?,?,?,?,?)`);
     for(const area of uniqueServiceAreas)insertArea.run(randomId('area-'),isProvider?null:id,isProvider?id:null,area.place_ref,area.place_label,area.center_lat,area.center_lng,area.radius_km,user.id,timestamp);
-    audit(db,user,'COMPANY_PAGE_UPDATED','company_page',id,{routeCount:uniqueRoutes.length,serviceAreaCount:uniqueServiceAreas.length});
+    audit(db,user,'COMPANY_PAGE_UPDATED','company_page',id,{
+      routeCount:uniqueRoutes.length,serviceAreaCount:uniqueServiceAreas.length,basePlaceRef:basePlace?.place_ref||null
+    });
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -1365,8 +1435,9 @@ export function getOwnCompanyPage(user) {
   const db = getDb();
   if (isCompanyDriver(user)) throw new Error('FORBIDDEN');
   const page = isSelfManagedDriver(user)
-    ? db.prepare(`SELECT cp.*,p.id,p.business_name AS name,'provider' AS page_kind,0 AS is_business FROM company_pages cp JOIN provider_profiles p ON p.id=cp.provider_profile_id WHERE cp.provider_profile_id=?`).get(user.provider_profile_id)
-    : db.prepare(`SELECT cp.*,o.id,o.name,'organization' AS page_kind,
+    ? db.prepare(`SELECT cp.*,p.id,p.business_name AS name,p.city,p.city_place_ref,p.city_lat,p.city_lng,
+      'provider' AS page_kind,0 AS is_business FROM company_pages cp JOIN provider_profiles p ON p.id=cp.provider_profile_id WHERE cp.provider_profile_id=?`).get(user.provider_profile_id)
+    : db.prepare(`SELECT cp.*,o.id,o.name,o.city,o.city_place_ref,o.city_lat,o.city_lng,'organization' AS page_kind,
       CASE WHEN o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER') THEN 1 ELSE 0 END AS is_business
       FROM company_pages cp JOIN organizations o ON o.id=cp.organization_id WHERE cp.organization_id=?`).get(user.organization_id);
   return page ? attachProfileCoverage(db,page) : null;
@@ -1397,8 +1468,8 @@ export function getProfileRouteComparison(user, company) {
     ...listLiveTruckAreasForPage(db,company)
   ];
   const matches = targetRoutes.map(target => {
-    const ranked = viewerRoutes.map(viewer => ({viewer,target,...routeMatch(viewer.origin,viewer.destination,target.origin,target.destination)}))
-      .sort((a,b) => b.score-a.score);
+    const ranked = viewerRoutes.map(viewer => ({viewer,target,...geographicRouteMatch(viewer,target,{directionMode:'EITHER'})}))
+      .sort((a,b) => b.score-a.score || Number(a.worst_ratio??Infinity)-Number(b.worst_ratio??Infinity));
     return ranked[0] || {viewer:null,target,score:0,label:'No recorded route match'};
   });
   const exact = matches.filter(match => match.score === 2);
@@ -1409,13 +1480,19 @@ export function getProfileRouteComparison(user, company) {
   const routeAreaMatches=[];
   for(const route of viewerRoutes){
     for(const area of targetAreas){
-      const endpoints=[getPlaceCoordinate(route.origin),getPlaceCoordinate(route.destination)].filter(Boolean);
+      const endpoints=[
+        Number.isFinite(Number(route.origin_lat))?{lat:route.origin_lat,lng:route.origin_lng}:null,
+        Number.isFinite(Number(route.destination_lat))?{lat:route.destination_lat,lng:route.destination_lng}:null
+      ].filter(Boolean);
       if(endpoints.some(point=>pointInServiceArea(point,area)))routeAreaMatches.push({viewer:route,target:area,label:'Your route endpoint aligns with this service area'});
     }
   }
   for(const area of viewerAreas){
     for(const route of targetRoutes){
-      const endpoints=[getPlaceCoordinate(route.origin),getPlaceCoordinate(route.destination)].filter(Boolean);
+      const endpoints=[
+        Number.isFinite(Number(route.origin_lat))?{lat:route.origin_lat,lng:route.origin_lng}:null,
+        Number.isFinite(Number(route.destination_lat))?{lat:route.destination_lat,lng:route.destination_lng}:null
+      ].filter(Boolean);
       if(endpoints.some(point=>pointInServiceArea(point,area)))routeAreaMatches.push({viewer:area,target:route,label:'Profile route endpoint aligns with your service area'});
     }
   }
@@ -1458,16 +1535,29 @@ export function getFleetNetworkCoverage(user) {
   const liveRoutes = page ? listLiveTruckRoutesForPage(db,page,true) : [];
   const mapRoutes = [...preferredRoutes,...liveRoutes];
   const routeLabels = preferredRoutes.map(route => `${route.origin} ↔ ${route.destination}`);
-  const routePlaces = new Set(mapRoutes.flatMap(route => [placeIdentity(route.origin),placeIdentity(route.destination)]));
-  const businesses = db.prepare(`SELECT o.id,o.name,o.handle,o.city,cp.operating_regions
+  const businesses = db.prepare(`SELECT o.id,o.name,o.handle,o.city,o.city_lat,o.city_lng,cp.operating_regions
     FROM partner_relationships rel
     JOIN organizations o ON o.id=rel.owner_organization_id
     LEFT JOIN company_pages cp ON cp.organization_id=o.id
     WHERE rel.provider_organization_id=? AND rel.status='CONNECTED'
     ORDER BY o.name`).all(user.organization_id).map(business => {
-      const places = [...new Set([placeIdentity(business.city),...splitPlaces(business.operating_regions)].filter(Boolean))];
-      const matched = places.filter(place => routePlaces.has(place));
-      return {...business,places,matched_places:matched,coverage_label:matched.length ? `${matched.length} location${matched.length === 1 ? '' : 's'} on recorded routes` : 'No recorded route match'};
+      const declaredAreas=db.prepare(`SELECT place_label,center_lat,center_lng,radius_km FROM service_areas WHERE organization_id=?`).all(business.id);
+      if(Number.isFinite(Number(business.city_lat))&&Number.isFinite(Number(business.city_lng))){
+        declaredAreas.unshift({place_label:business.city,center_lat:business.city_lat,center_lng:business.city_lng,radius_km:50});
+      }
+      const matched=[...new Set(declaredAreas.filter(area=>mapRoutes.some(route=>{
+        const endpoints=[
+          Number.isFinite(Number(route.origin_lat))?{lat:route.origin_lat,lng:route.origin_lng}:null,
+          Number.isFinite(Number(route.destination_lat))?{lat:route.destination_lat,lng:route.destination_lng}:null
+        ].filter(Boolean);
+        return endpoints.some(point=>pointInServiceArea(point,area));
+      })).map(area=>placeIdentity(area.place_label)))];
+      return {
+        ...business,
+        places:declaredAreas.map(area=>area.place_label),
+        matched_places:matched,
+        coverage_label:matched.length ? `${matched.length} location${matched.length === 1 ? '' : 's'} near recorded routes` : 'No coordinate-based route match'
+      };
     });
   return { preferred_routes:routeLabels,routes:mapRoutes,live_routes:liveRoutes,businesses };
 }
@@ -1727,10 +1817,21 @@ export function listOwnTruckRouteOptions(user) {
 export function listOwnLoadRouteOptions(user) {
   assertWorkspaceAccess(user);
   if (![USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role)) return [];
-  return getDb().prepare(`SELECT id,code,title,origin,destination,load_type,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng FROM shipments
+  return getDb().prepare(`SELECT id,code,title,origin,destination,origin_place_ref,origin_lat,origin_lng,
+    destination_place_ref,destination_lat,destination_lng,load_type,movement_scope,
+    local_place_ref,local_place_label,local_center_lat,local_center_lng FROM shipments
     WHERE COALESCE(load_owner_organization_id,shipper_organization_id)=?
       AND operational_status IN ('POSTED','SENT','CONTACTED') ORDER BY updated_at DESC`).all(user.organization_id)
     .map(load => ({...load}));
+}
+
+function boardFilterRadius(value, fallback=50) {
+  const radius=Number(value);
+  return Number.isFinite(radius)&&radius>=5&&radius<=300?radius:fallback;
+}
+
+function selectedBoardPlace(placeRef,label) {
+  return placeRef?resolvePlaceReference(placeRef,label):null;
 }
 
 function loadBoardQuery(user,mode,filters={}) {
@@ -1759,29 +1860,49 @@ function loadBoardQuery(user,mode,filters={}) {
     where+=` AND s.movement_scope=?`;
     args.push(filters.movementScope);
   }
-  if(filters.localPlaceRef){
-    where+=` AND s.local_place_ref=?`;
-    args.push(filters.localPlaceRef);
-  }else if(filters.locality){
-    where+=` AND lower(COALESCE(s.local_place_label,'')) LIKE ?`;
-    args.push(`%${normalizePlace(filters.locality)}%`);
+  const localPlace=selectedBoardPlace(filters.localPlaceRef,filters.locality);
+  if(localPlace){
+    where+=` AND s.movement_scope='LOCAL'
+      AND geo_distance_km(?,?,s.local_center_lat,s.local_center_lng)<=?`;
+    args.push(localPlace.center_lat,localPlace.center_lng,boardFilterRadius(filters.localRadiusKm));
   }
   if(filters.q){
     const pattern=`%${String(filters.q).trim().toLowerCase()}%`;
     where+=` AND (lower(s.code) LIKE ? OR lower(s.title) LIKE ? OR lower(s.cargo_description) LIKE ?
       OR lower(COALESCE(shipper.name,s.external_shipper_name,'')) LIKE ?
       OR lower(COALESCE(receiver.name,s.external_receiver_name,'')) LIKE ?
-      OR lower(owner.name) LIKE ? OR lower(s.origin) LIKE ? OR lower(s.destination) LIKE ?
-      OR lower(COALESCE(s.local_place_label,'')) LIKE ? OR lower(COALESCE(s.vehicle_category,'')) LIKE ?)`;
-    args.push(...Array(10).fill(pattern));
+      OR lower(owner.name) LIKE ? OR lower(COALESCE(s.vehicle_category,'')) LIKE ?)`;
+    args.push(...Array(7).fill(pattern));
   }
-  if(filters.origin){
-    where+=` AND s.movement_scope='INTERCITY' AND lower(s.origin) LIKE ?`;
-    args.push(`%${normalizePlace(filters.origin)}%`);
-  }
-  if(filters.destination){
-    where+=` AND s.movement_scope='INTERCITY' AND lower(s.destination) LIKE ?`;
-    args.push(`%${normalizePlace(filters.destination)}%`);
+  const originPlace=selectedBoardPlace(filters.originPlaceRef,filters.origin);
+  const destinationPlace=selectedBoardPlace(filters.destinationPlaceRef,filters.destination);
+  const originRadius=boardFilterRadius(filters.originRadiusKm);
+  const destinationRadius=boardFilterRadius(filters.destinationRadiusKm);
+  const eitherDirection=filters.directionMode==='EITHER';
+  if(originPlace||destinationPlace){
+    where+=` AND s.movement_scope='INTERCITY'`;
+    const direct=[];
+    const reverse=[];
+    const directArgs=[];
+    const reverseArgs=[];
+    if(originPlace){
+      direct.push('geo_distance_km(?,?,s.origin_lat,s.origin_lng)<=?');
+      directArgs.push(originPlace.center_lat,originPlace.center_lng,originRadius);
+      if(eitherDirection){
+        reverse.push('geo_distance_km(?,?,s.destination_lat,s.destination_lng)<=?');
+        reverseArgs.push(originPlace.center_lat,originPlace.center_lng,originRadius);
+      }
+    }
+    if(destinationPlace){
+      direct.push('geo_distance_km(?,?,s.destination_lat,s.destination_lng)<=?');
+      directArgs.push(destinationPlace.center_lat,destinationPlace.center_lng,destinationRadius);
+      if(eitherDirection){
+        reverse.push('geo_distance_km(?,?,s.origin_lat,s.origin_lng)<=?');
+        reverseArgs.push(destinationPlace.center_lat,destinationPlace.center_lng,destinationRadius);
+      }
+    }
+    where+=eitherDirection?` AND ((${direct.join(' AND ')}) OR (${reverse.join(' AND ')}))`:` AND (${direct.join(' AND ')})`;
+    args.push(...directArgs,...reverseArgs);
   }
   for(const [filter,column] of [['loadType','s.load_type'],['vehicleCategory','s.vehicle_category'],['priceMode','s.price_mode']]){
     if(filters[filter]){where+=` AND ${column}=?`;args.push(filters[filter]);}
@@ -1805,7 +1926,8 @@ function loadBoardQuery(user,mode,filters={}) {
 
 const LOAD_BOARD_COLUMNS=`s.id,s.code,s.title,s.service_mode,s.distribution_mode,s.price_mode,s.price_minor,s.target_price_minor,
   s.shipper_organization_id,s.receiver_organization_id,s.provider_organization_id,s.provider_profile_id,
-  s.origin,s.destination,s.cargo_description,s.package_count,s.vehicle_category,s.load_type,s.pickup_date,s.delivery_date,
+  s.origin,s.destination,s.origin_place_ref,s.origin_lat,s.origin_lng,s.destination_place_ref,s.destination_lat,s.destination_lng,
+  s.cargo_description,s.package_count,s.vehicle_category,s.load_type,s.pickup_date,s.delivery_date,
   s.commercial_status,s.operational_status,s.tracking_mode,s.created_at,s.updated_at,s.movement_scope,
   s.local_place_ref,s.local_place_label,s.pickup_area_label,s.dropoff_area_label,
   COALESCE(s.external_shipper_name,shipper.name) AS shipper_name,
@@ -1817,7 +1939,11 @@ function rankLoadRows(rows,selectedRoute){
   return rows.map(load=>{
     if(load.movement_scope==='LOCAL')return {...load,route_match_score:0,route_match_label:'Local load',route_match_source:null,route_match_platform_number:null};
     const candidates=selectedRoute.routes||[selectedRoute];
-    const match=candidates.map(route=>({...route,...routeMatch(load.origin,load.destination,route.origin,route.destination)})).sort((a,b)=>b.score-a.score)[0]||null;
+    const match=bestGeographicRouteMatch(load,candidates,{
+      originRadiusKm:selectedRoute.originRadiusKm||50,
+      destinationRadiusKm:selectedRoute.destinationRadiusKm||50,
+      directionMode:selectedRoute.directionMode||'DIRECT'
+    });
     return {...load,route_match_score:match?.score??null,route_match_label:match?.label??null,route_match_source:match?.source_label||null,route_match_platform_number:match?.platform_number||null};
   }).sort((a,b)=>(b.route_match_score??0)-(a.route_match_score??0)||new Date(b.created_at).getTime()-new Date(a.created_at).getTime());
 }
@@ -1841,8 +1967,7 @@ export function listLoadsPage(user,mode='ALL',filters={},options={}) {
     ? listOwnTruckRouteOptions(user).find(option => option.id === filters.matchCapacityId)
     : null;
   if(selectedRoute){
-    const candidateLimit=Math.max(100,Math.min(2000,Number(process.env.ROUTE_RANK_CANDIDATE_LIMIT)||500));
-    return paginateResults(rankLoadRows(loadBoardRows(user,mode,filters,candidateLimit),selectedRoute),{page:options.page,pageSize});
+    return paginateResults(rankLoadRows(loadBoardRows(user,mode,filters),selectedRoute),{page:options.page,pageSize});
   }
   const query=loadBoardQuery(user,mode,filters);
   const total=getDb().prepare(`SELECT COUNT(*) AS n ${query.from} WHERE ${query.where}`).get(...query.args).n;
@@ -1856,7 +1981,7 @@ export function listLoads(user,mode='ALL',filters={}) {
   assertWorkspaceAccess(user);
   if(!canBrowseLoads(user)&&user.role!==USER_ROLES.ADMIN)return [];
   const selectedRoute=filters.matchCapacityId?listOwnTruckRouteOptions(user).find(option=>option.id===filters.matchCapacityId):null;
-  return rankLoadRows(loadBoardRows(user,mode,filters,2000),selectedRoute);
+  return rankLoadRows(loadBoardRows(user,mode,filters),selectedRoute);
 }
 
 export function listPooledLoads(user,filters={}) {
@@ -1867,8 +1992,8 @@ export function listPooledLoads(user,filters={}) {
     .filter(load=>load.operational_status==='POSTED'&&load.movement_scope==='INTERCITY')
     .map(load=>({
       ...load,
-      origin_coordinate:getPlaceCoordinate(load.origin),
-      destination_coordinate:getPlaceCoordinate(load.destination)
+      origin_coordinate:Number.isFinite(Number(load.origin_lat))?{lat:load.origin_lat,lng:load.origin_lng}:null,
+      destination_coordinate:Number.isFinite(Number(load.destination_lat))?{lat:load.destination_lat,lng:load.destination_lng}:null
     }));
   return poolCompatibleLoads(loads,{
     originRadiusKm:Number(process.env.PSTL_ORIGIN_RADIUS_KM||40),
@@ -1990,9 +2115,12 @@ export function acceptDirectedShipment(user, shipmentId) {
 }
 
 const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile_id,c.vehicle_id,c.status,c.available_percent,
-  c.origin,c.destination,c.corridor,c.travel_date,c.next_available,c.visibility,c.updated_by,c.updated_at,c.expires_at,
+  c.origin,c.destination,c.origin_place_ref,c.origin_lat,c.origin_lng,c.destination_place_ref,c.destination_lat,c.destination_lng,
+  c.corridor,c.travel_date,c.next_available,c.visibility,c.updated_by,c.updated_at,c.expires_at,
   c.location_area,c.location_updated_at,c.location_precision_km,c.location_source,c.accepts_full_load,c.accepts_partial_load,
   c.open_to_contract_lanes,c.accepts_multi_stop,c.proof_recorded_at,c.current_route_origin,c.current_route_destination,
+  c.current_origin_place_ref,c.current_origin_lat,c.current_origin_lng,
+  c.current_destination_place_ref,c.current_destination_lat,c.current_destination_lng,
   c.current_route_date,c.planned_space_status,c.accepts_multi_pick,c.accepts_multi_drop,c.movement_scope,
   c.local_place_ref,c.local_place_label,c.local_center_lat,c.local_center_lng,c.local_radius_km,
   v.label AS vehicle_label,v.category AS vehicle_category,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,
@@ -2028,17 +2156,48 @@ function capacityBoardQuery(user,filters={}) {
     const pattern=`%${String(filters.q).trim().toLowerCase()}%`;
     where+=` AND (lower(v.platform_number) LIKE ? OR lower(COALESCE(v.make,'')) LIKE ? OR lower(COALESCE(v.model,'')) LIKE ?
       OR lower(COALESCE(v.cargo_configuration,v.category,'')) LIKE ? OR lower(COALESCE(o.name,p.business_name,'')) LIKE ?
-      OR lower(COALESCE(c.origin,'')) LIKE ? OR lower(COALESCE(c.destination,'')) LIKE ?
-      OR lower(COALESCE(c.local_place_label,'')) LIKE ? OR lower(COALESCE(c.location_area,'')) LIKE ?)`;
-    args.push(...Array(9).fill(pattern));
+      )`;
+    args.push(...Array(5).fill(pattern));
   }
   if(filters.capacityId){where+=` AND c.id=?`;args.push(filters.capacityId);}
   if(filters.movementScope==='LOCAL')where+=` AND c.movement_scope IN ('LOCAL','BOTH')`;
   if(filters.movementScope==='INTERCITY')where+=` AND c.movement_scope IN ('INTERCITY','BOTH')`;
-  if(filters.localPlaceRef){where+=` AND c.local_place_ref=?`;args.push(filters.localPlaceRef);}
-  else if(filters.locality){where+=` AND lower(COALESCE(c.local_place_label,'')) LIKE ?`;args.push(`%${normalizePlace(filters.locality)}%`);}
-  if(filters.origin){where+=` AND c.movement_scope IN ('INTERCITY','BOTH') AND (lower(COALESCE(c.origin,'')) LIKE ? OR lower(COALESCE(c.current_route_origin,'')) LIKE ?)`;args.push(...Array(2).fill(`%${normalizePlace(filters.origin)}%`));}
-  if(filters.destination){where+=` AND c.movement_scope IN ('INTERCITY','BOTH') AND (lower(COALESCE(c.destination,'')) LIKE ? OR lower(COALESCE(c.current_route_destination,'')) LIKE ?)`;args.push(...Array(2).fill(`%${normalizePlace(filters.destination)}%`));}
+  const localPlace=selectedBoardPlace(filters.localPlaceRef,filters.locality);
+  if(localPlace){
+    where+=` AND c.movement_scope IN ('LOCAL','BOTH')
+      AND geo_distance_km(?,?,c.local_center_lat,c.local_center_lng)<=?+COALESCE(c.local_radius_km,0)`;
+    args.push(localPlace.center_lat,localPlace.center_lng,boardFilterRadius(filters.localRadiusKm));
+  }
+  const originPlace=selectedBoardPlace(filters.originPlaceRef,filters.origin);
+  const destinationPlace=selectedBoardPlace(filters.destinationPlaceRef,filters.destination);
+  if(originPlace||destinationPlace){
+    const originRadius=boardFilterRadius(filters.originRadiusKm);
+    const destinationRadius=boardFilterRadius(filters.destinationRadiusKm);
+    const eitherDirection=filters.directionMode==='EITHER';
+    const routeVariants=[
+      {origin:'c.origin',originLat:'c.origin_lat',originLng:'c.origin_lng',destination:'c.destination',destinationLat:'c.destination_lat',destinationLng:'c.destination_lng'},
+      {origin:'c.current_route_origin',originLat:'c.current_origin_lat',originLng:'c.current_origin_lng',destination:'c.current_route_destination',destinationLat:'c.current_destination_lat',destinationLng:'c.current_destination_lng'}
+    ];
+    const clauses=[];
+    const routeArgs=[];
+    for(const route of routeVariants){
+      const orientations=[false,...(eitherDirection?[true]:[])];
+      for(const reversed of orientations){
+        const parts=[`${route.origin} IS NOT NULL`,`${route.destination} IS NOT NULL`];
+        if(originPlace){
+          parts.push(`geo_distance_km(?,?,${reversed?route.destinationLat:route.originLat},${reversed?route.destinationLng:route.originLng})<=?`);
+          routeArgs.push(originPlace.center_lat,originPlace.center_lng,originRadius);
+        }
+        if(destinationPlace){
+          parts.push(`geo_distance_km(?,?,${reversed?route.originLat:route.destinationLat},${reversed?route.originLng:route.destinationLng})<=?`);
+          routeArgs.push(destinationPlace.center_lat,destinationPlace.center_lng,destinationRadius);
+        }
+        clauses.push(`(${parts.join(' AND ')})`);
+      }
+    }
+    where+=` AND c.movement_scope IN ('INTERCITY','BOTH') AND (${clauses.join(' OR ')})`;
+    args.push(...routeArgs);
+  }
   if(filters.status){where+=` AND c.status=?`;args.push(filters.status);}
   if(filters.loadType==='FTL')where+=` AND c.accepts_full_load=1`;
   if(filters.loadType==='PTL')where+=` AND c.accepts_partial_load=1`;
@@ -2053,17 +2212,25 @@ function capacityBoardQuery(user,filters={}) {
   if(filters.stopOption==='MULTI_DROP')where+=` AND c.accepts_multi_drop=1`;
   if(filters.contractRoutes==='YES')where+=` AND c.open_to_contract_lanes=1`;
   if(filters.proof==='RECORDED')where+=` AND c.photo_path IS NOT NULL AND trim(c.photo_path)<>''`;
+  const currentAreaPlace=selectedBoardPlace(filters.currentAreaPlaceRef,filters.currentArea);
+  const currentAreaRadius=boardFilterRadius(filters.currentAreaRadiusKm);
+  const currentAreaMatchExpression=currentAreaPlace
+    ? `geo_distance_km(${Number(currentAreaPlace.center_lat)},${Number(currentAreaPlace.center_lng)},c.location_lat,c.location_lng)<=${currentAreaRadius}+COALESCE(c.location_precision_km,40)`
+    : null;
+  if(currentAreaMatchExpression&&filters.currentAreaMode==='REQUIRE')where+=` AND ${currentAreaMatchExpression}`;
   const from=`FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
     LEFT JOIN organizations o ON o.id=c.provider_organization_id
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
     JOIN users u ON u.id=c.updated_by`;
-  return {where,args,from};
+  return {where,args,from,currentAreaMatchExpression};
 }
 
 function capacityBoardRows(user,filters={},limit=null,offset=0) {
   const query=capacityBoardQuery(user,filters);
-  const rows=getDb().prepare(`SELECT ${CAPACITY_BOARD_COLUMNS} ${query.from} WHERE ${query.where}
-    ORDER BY c.updated_at DESC${limit==null?'':' LIMIT ? OFFSET ?'}`)
+  const areaProjection=query.currentAreaMatchExpression?`,${query.currentAreaMatchExpression} AS current_area_match`:'';
+  const areaOrder=query.currentAreaMatchExpression&&filters.currentAreaMode==='PREFER'?'current_area_match DESC,':'';
+  const rows=getDb().prepare(`SELECT ${CAPACITY_BOARD_COLUMNS}${areaProjection} ${query.from} WHERE ${query.where}
+    ORDER BY ${areaOrder}c.updated_at DESC${limit==null?'':' LIMIT ? OFFSET ?'}`)
     .all(...query.args,...(limit==null?[]:[limit,offset]));
   return rows.map(row=>marketCapacityRow(row,Number(process.env.CAPACITY_FRESH_HOURS||12),{relationshipVisible:row.visibility==='SAVED_PARTNERS'}));
 }
@@ -2077,9 +2244,9 @@ function capacityMatch(row,selectedLoad){
     });
     return {score:match?2:0,label:match?'Local area covers load city':'Local areas do not align',source_label:'Local service area'};
   }
-  return capacityRouteCandidates(row,{requireCurrentDate:true})
-    .map(route=>({...route,...routeMatch(route.origin,route.destination,selectedLoad.origin,selectedLoad.destination)}))
-    .sort((a,b)=>b.score-a.score)[0]||null;
+  return bestGeographicRouteMatch(selectedLoad,capacityRouteCandidates(row,{requireCurrentDate:true}),{
+    originRadiusKm:50,destinationRadiusKm:50,directionMode:'DIRECT'
+  });
 }
 
 function rankCapacityRows(rows,selectedLoad){
@@ -2098,8 +2265,7 @@ export function listMarketCapacityPage(user,filters={},options={}) {
     ? listOwnLoadRouteOptions(user).find(option => option.id === filters.matchLoadId)
     : null;
   if(selectedLoad){
-    const candidateLimit=Math.max(100,Math.min(2000,Number(process.env.ROUTE_RANK_CANDIDATE_LIMIT)||500));
-    return paginateResults(rankCapacityRows(capacityBoardRows(user,filters,candidateLimit),selectedLoad),{page:options.page,pageSize});
+    return paginateResults(rankCapacityRows(capacityBoardRows(user,filters),selectedLoad),{page:options.page,pageSize});
   }
   const query=capacityBoardQuery(user,filters);
   const total=getDb().prepare(`SELECT COUNT(*) AS n ${query.from} WHERE ${query.where}`).get(...query.args).n;
@@ -2112,7 +2278,7 @@ export function listMarketCapacityPage(user,filters={},options={}) {
 export function listMarketCapacity(user,filters={}) {
   assertWorkspaceAccess(user);
   const selectedLoad=filters.matchLoadId?listOwnLoadRouteOptions(user).find(option=>option.id===filters.matchLoadId):null;
-  return rankCapacityRows(capacityBoardRows(user,filters,2000),selectedLoad);
+  return rankCapacityRows(capacityBoardRows(user,filters),selectedLoad);
 }
 
 export function listPublicCapacity(ownerColumn=null,ownerId=null) {
@@ -2208,6 +2374,7 @@ export function publishCapacity(user, input, photo = null) {
   const percent = validateCapacity(input.status,input.availablePercent);
   const acceptedLoads = validateAcceptedLoads(input.status,input.acceptedLoads);
   const movementScope=validateMovementScope(input.movementScope||MOVEMENT_SCOPES.INTERCITY,{allowBoth:true});
+  if(movementScope===MOVEMENT_SCOPES.LOCAL&&input.status==='PARTIAL')throw new Error('LOCAL_CAPACITY_MUST_BE_EMPTY');
   const localPlace=input.status!=='OFF_DUTY'&&[MOVEMENT_SCOPES.LOCAL,MOVEMENT_SCOPES.BOTH].includes(movementScope)
     ? {...resolvePlaceReference(input.localPlaceRef,input.localPlaceLabel),radius_km:validateServiceRadius(input.localRadiusKm)}
     : null;
@@ -2218,6 +2385,12 @@ export function publishCapacity(user, input, photo = null) {
   if(acceptsIntercity&&Boolean(input.origin)!==Boolean(input.destination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
   const hasCurrentRoute=acceptsIntercity&&input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin&&input.currentRouteDestination);
   const hasPlannedRoute=acceptsIntercity&&input.status!=='OFF_DUTY'&&Boolean(input.origin&&input.destination);
+  const currentOriginPlace=hasCurrentRoute?resolvePlaceReference(input.currentOriginPlaceRef,input.currentRouteOrigin):null;
+  const currentDestinationPlace=hasCurrentRoute?resolvePlaceReference(input.currentDestinationPlaceRef,input.currentRouteDestination):null;
+  const plannedOriginPlace=hasPlannedRoute?resolvePlaceReference(input.originPlaceRef,input.origin):null;
+  const plannedDestinationPlace=hasPlannedRoute?resolvePlaceReference(input.destinationPlaceRef,input.destination):null;
+  if(hasCurrentRoute&&currentOriginPlace.place_ref===currentDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+  if(hasPlannedRoute&&plannedOriginPlace.place_ref===plannedDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   if(hasCurrentRoute&&!input.currentRouteDate)throw new Error('CURRENT_ROUTE_DATE_REQUIRED');
   if(hasPlannedRoute&&!input.travelDate)throw new Error('PLANNED_ROUTE_DATE_REQUIRED');
   if((hasCurrentRoute&&input.currentRouteDate<todayInEthiopia())||(hasPlannedRoute&&input.travelDate<todayInEthiopia()))throw new Error('INVALID_ROUTE_DATE');
@@ -2233,22 +2406,38 @@ export function publishCapacity(user, input, photo = null) {
   if (hasDeviceArea && (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90 || !Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180 || locationPrecisionKm !== 40)) {
     throw new Error('INVALID_APPROXIMATE_LOCATION');
   }
+  const manualLocationPlace=input.status!=='OFF_DUTY'&&acceptsIntercity&&!hasDeviceArea
+    ? resolvePlaceReference(input.locationPlaceRef,input.locationArea)
+    : null;
   const expiresHours = Number(process.env.CAPACITY_EXPIRES_HOURS || 24);
   const timestamp = nowIso();
   const expiresAt = hoursFromNow(expiresHours);
   const id = randomId('cap-');
-  const origin=hasPlannedRoute?placeLabel(input.origin):null;
-  const destination=hasPlannedRoute?placeLabel(input.destination):null;
-  const currentRouteOrigin=hasCurrentRoute?placeLabel(input.currentRouteOrigin):null;
-  const currentRouteDestination=hasCurrentRoute?placeLabel(input.currentRouteDestination):null;
-  const locationArea=input.status==='OFF_DUTY'?null:qualifyAreaLabel(input.locationArea||`Around ${localPlace?.place_label||''}`);
+  const origin=plannedOriginPlace?.place_label||null;
+  const destination=plannedDestinationPlace?.place_label||null;
+  const currentRouteOrigin=currentOriginPlace?.place_label||null;
+  const currentRouteDestination=currentDestinationPlace?.place_label||null;
+  const locationArea=input.status==='OFF_DUTY'?null:localPlace
+    ? `Around ${localPlace.place_label}`
+    : manualLocationPlace
+      ? `Around ${manualLocationPlace.place_label}`
+      : qualifyAreaLabel(input.locationArea);
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE capacities SET expires_at=? WHERE vehicle_id=? AND expires_at>?`).run(timestamp,vehicle.id,timestamp);
     db.prepare(`INSERT INTO capacities
-      (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng,local_radius_km)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicle.id,input.status,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,locationLat,locationLng,locationPrecisionKm,hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,hasCurrentRoute?input.currentRouteDate:null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null);
+      (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng,local_radius_km,
+       origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng,
+       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id,scope.organizationId,scope.profileId,vehicle.id,input.status,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,
+        hasDeviceArea?locationLat:manualLocationPlace?.center_lat??null,hasDeviceArea?locationLng:manualLocationPlace?.center_lng??null,hasDeviceArea?locationPrecisionKm:manualLocationPlace?40:null,
+        hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,hasCurrentRoute?input.currentRouteDate:null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
+        plannedOriginPlace?.place_ref||null,plannedOriginPlace?.center_lat??null,plannedOriginPlace?.center_lng??null,
+        plannedDestinationPlace?.place_ref||null,plannedDestinationPlace?.center_lat??null,plannedDestinationPlace?.center_lng??null,
+        currentOriginPlace?.place_ref||null,currentOriginPlace?.center_lat??null,currentOriginPlace?.center_lng??null,
+        currentDestinationPlace?.place_ref||null,currentDestinationPlace?.center_lat??null,currentDestinationPlace?.center_lng??null,
+        manualLocationPlace?.place_ref||null);
     audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, movementScope, localPlaceRef:localPlace?.place_ref||null, localRadiusKm:localPlace?.radius_km||null, locationArea, locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, currentRouteDate:hasCurrentRoute?input.currentRouteDate:null,plannedRouteDate:hasPlannedRoute?input.travelDate:null,plannedSpaceStatus:hasPlannedRoute?input.plannedSpaceStatus:null, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
     db.exec('COMMIT');
   } catch (error) {
@@ -2284,9 +2473,16 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
   try {
     db.prepare(`UPDATE capacities SET expires_at=? WHERE vehicle_id=? AND expires_at>?`).run(timestamp,vehicleId,timestamp);
     db.prepare(`INSERT INTO capacities
-      (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng,local_radius_km)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicleId,status,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,onDuty?source.current_route_date:null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null);
+      (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng,local_radius_km,
+       origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng,
+       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id,scope.organizationId,scope.profileId,vehicleId,status,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,onDuty?source.current_route_date:null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null,
+        onDuty?source.origin_place_ref:null,onDuty?source.origin_lat:null,onDuty?source.origin_lng:null,
+        onDuty?source.destination_place_ref:null,onDuty?source.destination_lat:null,onDuty?source.destination_lng:null,
+        onDuty?source.current_origin_place_ref:null,onDuty?source.current_origin_lat:null,onDuty?source.current_origin_lng:null,
+        onDuty?source.current_destination_place_ref:null,onDuty?source.current_destination_lat:null,onDuty?source.current_destination_lng:null,
+        onDuty?source.location_place_ref:null);
     audit(db,user,onDuty ? 'VEHICLE_SET_ON_DUTY' : 'VEHICLE_SET_OFF_DUTY','vehicle',vehicleId,{restoredCapacityId:onDuty ? source.id : null});
     db.exec('COMMIT');
   } catch (error) {
@@ -2372,13 +2568,13 @@ export function getAdminOperations(user, query = '', options = {}) {
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS truck_count,
       (SELECT COUNT(*) FROM shipments s WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=o.id OR s.provider_organization_id=o.id) AS load_count
     FROM organizations o
-    WHERE ${matches("o.name || ' ' || o.type || ' ' || COALESCE(o.city,'')")}`;
+    WHERE ${matches("o.name || ' ' || o.type")}`;
   const providerBase=`SELECT p.id,'PROVIDER_PROFILE' AS record_kind,p.business_name AS name,'SELF_MANAGED_DRIVER' AS type,p.city,p.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.provider_profile_id=p.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS truck_count,
       (SELECT COUNT(*) FROM shipments s WHERE s.provider_profile_id=p.id) AS load_count
     FROM provider_profiles p
-    WHERE ${matches("p.business_name || ' ' || COALESCE(p.city,'')")}`;
+    WHERE ${matches("p.business_name")}`;
   const vehicleBase=`SELECT v.id,v.platform_number,v.make,v.model,v.cargo_configuration,v.plate,v.active,
       COALESCE(o.name,p.business_name) AS owner_name,
       c.id AS capacity_id,c.status AS capacity_status,c.location_area,c.updated_at AS capacity_updated_at,c.expires_at
@@ -2393,7 +2589,7 @@ export function getAdminOperations(user, query = '', options = {}) {
     JOIN organizations owner ON owner.id=COALESCE(s.load_owner_organization_id,s.shipper_organization_id)
     LEFT JOIN organizations provider ON provider.id=s.provider_organization_id
     LEFT JOIN provider_profiles profile ON profile.id=s.provider_profile_id
-    WHERE ${matches("s.code || ' ' || s.title || ' ' || s.origin || ' ' || s.destination || ' ' || owner.name || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'')")}`;
+    WHERE ${matches("s.code || ' ' || s.title || ' ' || owner.name || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'')")}`;
   const capacityBase=`SELECT c.id,c.status,c.available_percent,c.visibility,c.location_area,c.updated_at,c.expires_at,
       v.platform_number,v.make,v.model,COALESCE(o.name,p.business_name) AS owner_name
     FROM capacities c
@@ -2401,7 +2597,7 @@ export function getAdminOperations(user, query = '', options = {}) {
     LEFT JOIN organizations o ON o.id=c.provider_organization_id
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
     WHERE c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC LIMIT 1)
-      AND ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'') || ' ' || COALESCE(c.location_area,'')")}`;
+      AND ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'')")}`;
   const counts={
     users:db.prepare('SELECT COUNT(*) AS n FROM users').get().n,
     workspaces:db.prepare('SELECT (SELECT COUNT(*) FROM organizations)+(SELECT COUNT(*) FROM provider_profiles) AS n').get().n,

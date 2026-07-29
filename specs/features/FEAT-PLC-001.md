@@ -1,9 +1,9 @@
 ---
 id: FEAT-PLC-001
 title: Local Ethiopia place catalog
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-GEO-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: A small hard-coded city list excludes Ethiopian towns and cannot support distance-aware route discovery.
-behavior: An offline import builds a local searchable settlement catalog from an OpenStreetMap Ethiopia settlement extract or Geofabrik PBF while operational place inputs use bounded server-side search, preserve parent-locality metadata, display and store country-qualified labels, and retain a small built-in fallback.
+behavior: An offline import builds a local searchable settlement catalog from an OpenStreetMap Ethiopia settlement extract or Geofabrik PBF while operational place inputs use bounded server-side search, preserve parent-locality metadata, and persist catalog identity and coordinates whenever location affects filtering or comparison.
 contracts: [PlaceCatalogImport, PlaceSearch, PlaceRecord, PlaceHierarchy, CountryQualifiedPlaceLabel, PlaceCoordinateLookup, AsyncPlaceCombobox]
 observability: [place_import_count, place_import_timestamp, place_search_latency, place_search_result_count]
 rollout: The importer is repeatable and additive; local startup idempotently qualifies legacy Ethiopian place fields, the built-in fallback remains available when an extract or Osmium is unavailable, and the large source PBF is never committed.
@@ -41,14 +41,15 @@ And no unbounded list of Ethiopian places is sent to the browser.
 Given the local imported catalog is empty\
 When a user searches a place\
 Then matching reviewed built-in Ethiopian cities are still suggested\
-And free text remains accepted so operations are not blocked.
+And display-only operational notes may retain free text\
+But route endpoints, base locations, service areas, and geographic filters require a selected catalog result.
 
 ### Scenario: places include country context
 
 Given a city, town, village, hamlet, or region is entered or displayed\
 When it is selected from the Ethiopian catalog or an older unqualified Ethiopian record is loaded\
 Then its label includes `, Ethiopia`\
-And `Adaba` remains route-compatible with `Adaba, Ethiopia` for legacy records\
+And an unambiguous legacy `Adaba` record may be backfilled to the catalog identity for `Adaba, Ethiopia`\
 And `Adaba, Kenya` remains a distinct place identity.
 
 ### Scenario: resolve route coordinates
