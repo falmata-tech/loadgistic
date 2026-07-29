@@ -10,7 +10,7 @@ const personas=[
   {
     name:'business',
     email:'business-001@stress.loadgistic.local',
-    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers?page=2','/app/providers/blueline-transport?compare=routes','/app/network','/app/network?view=REQUESTS','/app/network?view=FAVORITES','/app/capacity','/app/capacity?page=2','/app/capacity?visibility=SAVED_PARTNERS']
+    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers?page=2','/app/providers/blueline-transport?compare=coverage','/app/network','/app/network?view=REQUESTS','/app/network?view=FAVORITES','/app/capacity','/app/capacity?page=2','/app/capacity?visibility=SAVED_PARTNERS']
   },
   {
     name:'fleet',
@@ -116,7 +116,7 @@ try{
         const cohortContentVisible=expectedContent.every(value=>bodyText.includes(value));
         const file=`${viewport.name}-${persona.name}-${slug(route)}.png`;
         await page.screenshot({path:path.join(outputDir,file),fullPage:false});
-        if(route.includes('compare=routes')){
+        if(route.includes('compare=coverage')){
           await page.locator('.profile-route-coverage').screenshot({
             path:path.join(outputDir,`${viewport.name}-${persona.name}-route-comparison-detail.png`)
           });

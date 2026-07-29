@@ -5,7 +5,8 @@ const outputPath=path.resolve(process.argv[2]||'data/osm/ethiopia-settlements.js
 const endpoint=process.env.OVERPASS_API_URL||'https://overpass-api.de/api/interpreter';
 const query=`[out:json][timeout:180];
 area["ISO3166-1"="ET"][admin_level=2]->.ethiopia;
-nwr["place"~"^(city|town|village|hamlet)$"](area.ethiopia);
+(nwr["place"~"^(city|town|village|hamlet)$"](area.ethiopia);
+ nwr["place"~"^(suburb|neighbourhood|quarter)$"](around:35000,9.03,38.74););
 out tags center;`;
 
 fs.mkdirSync(path.dirname(outputPath),{recursive:true});

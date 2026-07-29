@@ -9,18 +9,19 @@ const defaultJson=path.resolve('data/osm/ethiopia-settlements.json');
 const sourcePath=path.resolve(process.argv[2]||(
   fs.existsSync(defaultJson)?defaultJson:'data/osm/ethiopia-latest.osm.pbf'
 ));
-const accepted=new Set(['city','town','village','hamlet']);
+const accepted=new Set(['city','town','village','hamlet','suburb','neighbourhood','quarter']);
 const timestamp=new Date().toISOString();
 const db=getDb();
 const upsert=db.prepare(`INSERT INTO place_catalog
-  (id,name,normalized_name,alternate_names,place_type,latitude,longitude,population,wikidata_id,osm_type,osm_id,source,updated_at,country_name,country_code)
-  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  (id,name,normalized_name,alternate_names,place_type,latitude,longitude,population,wikidata_id,osm_type,osm_id,source,updated_at,country_name,country_code,parent_place_id,parent_name)
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   ON CONFLICT(id) DO UPDATE SET
     name=excluded.name,normalized_name=excluded.normalized_name,alternate_names=excluded.alternate_names,
     place_type=excluded.place_type,latitude=excluded.latitude,longitude=excluded.longitude,
     population=excluded.population,wikidata_id=excluded.wikidata_id,osm_type=excluded.osm_type,
     osm_id=excluded.osm_id,source=excluded.source,updated_at=excluded.updated_at,
-    country_name=excluded.country_name,country_code=excluded.country_code`);
+    country_name=excluded.country_name,country_code=excluded.country_code,
+    parent_place_id=excluded.parent_place_id,parent_name=excluded.parent_name`);
 let imported=0;
 let skipped=0;
 
@@ -53,6 +54,9 @@ function storePlace({id,type='node',lat,lng,tags={},source}){
     return;
   }
   const population=Number.parseInt(String(tags.population||''),10);
+  const parentName=tags['addr:city']||tags['is_in:city']||(
+    ['suburb','neighbourhood','quarter'].includes(placeType)?'Addis Ababa':null
+  );
   upsert.run(
     `osm:${type}/${id}`,
     name,
@@ -68,7 +72,9 @@ function storePlace({id,type='node',lat,lng,tags={},source}){
     source,
     timestamp,
     'Ethiopia',
-    'ET'
+    'ET',
+    null,
+    parentName
   );
   imported+=1;
 }
@@ -97,7 +103,7 @@ try{
     }
   }else{
     const filteredPath=path.join(path.dirname(sourcePath),'ethiopia-settlements.osm.pbf');
-    await runOsmium(['tags-filter',sourcePath,'nwr/place=city,town,village,hamlet','--output',filteredPath,'--overwrite']);
+    await runOsmium(['tags-filter',sourcePath,'nwr/place=city,town,village,hamlet,suburb,neighbourhood,quarter','--output',filteredPath,'--overwrite']);
     const osmium=spawn('osmium',[
       'export',filteredPath,'--add-unique-id=type_id','--output-format=geojsonseq','--output=-'
     ],{stdio:['ignore','pipe','inherit']});

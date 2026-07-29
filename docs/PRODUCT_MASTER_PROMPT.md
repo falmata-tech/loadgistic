@@ -27,8 +27,8 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 - Every Capacity Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
 - Off Duty trucks never appear on the Capacity Board.
-- The Load Board supports text, route, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
-- The Capacity Board supports text, route, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
+- The Load Board supports text, Local or Between cities geography, locality or route, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
+- The Capacity Board supports text, Local or Between cities geography, locality or route, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
 - Secondary Board controls remain collapsed under More filters until used.
 - A provider may rank permitted loads against one of its own recorded truck routes.
 - A Business may rank permitted trucks against one of its own open load routes.
@@ -70,6 +70,7 @@ The rich truck capacity control panel controls:
 - a separate future planned travel route with date and Full or Partial planned cargo space
 - Direct acceptance plus independent Multi Pick and Multi Drop choices
 - contract-route interest
+- Local, Between cities, or Both operating scope, with a reviewed locality and 5–100 km radius for Local service
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
@@ -104,13 +105,15 @@ Operational proof and temporary load-size proof are separate from tracking mode.
 
 ## Directory, Profiles, And Contact
 
-Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Directory search and account-type filtering return bounded pages so a large member catalog is not rendered into one response. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Businesses call their declared route pairs Freight Routes. Fleet Transporters and Self-managed Drivers call theirs Preferred Routes. Transporter profiles additionally show the fleet roster, Preferred Routes, fresh expiring truck routes, service regions, service summary, and current Public capacity.
+Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Directory search and account-type filtering return bounded pages so a large member catalog is not rendered into one response. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Businesses call their declared route pairs Freight Routes. Fleet Transporters and Self-managed Drivers call theirs Preferred Routes. Every profile may also declare repeatable Local Service Areas as a reviewed city or town plus a 5–100 km radius. Transporter profiles additionally show the fleet roster, Preferred Routes, fresh expiring truck geography, service regions, service summary, and current Public capacity.
 
-Route, load, capacity, board-filter, and general-area inputs query a bounded local catalog of Ethiopian OpenStreetMap cities, towns, villages, and hamlets after two typed characters while retaining free text. The catalog stores coordinates and available place metadata. No full catalog is rendered into a page or sent to a third party during normal use.
+Route, load, capacity, board-filter, and general-area inputs query a bounded local catalog of Ethiopian OpenStreetMap cities, towns, villages, and hamlets, plus Addis Ababa suburbs, neighbourhoods, and quarters, after two typed characters while retaining free text where the contract permits it. The catalog stores coordinates, parent locality, and available place metadata. No full catalog is rendered into a page or sent to a third party during normal use.
 
-Fleet Transporter Home compares Preferred Route and fresh truck-route place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view uses approximate city route lines and text evidence. It uses no exact facility pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
+Fleet Transporter Home compares Preferred Routes, fresh truck geography, and Local Service Areas with coverage declared by Businesses in that transporter's Connected network. The coverage view uses approximate city route lines, translucent service-area circles, and text evidence. It uses no exact facility pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
 
-Route comparisons group routes by ownership rather than source. Every viewed-profile Freight or Preferred Route and fresh current-partial or planned truck route is solid blue. Every equivalent route belonging to the viewer is grouped as Your routes and drawn as a warm-brown dashed line above the blue lines so overlapping matches remain visible. Current-partial and planned source details remain available outside the map but do not create additional legend colors.
+Coverage comparisons group routes and service areas by ownership rather than source. Every viewed-profile line or circle is solid blue Profile coverage. Every equivalent line or circle belonging to the viewer is grouped as Your coverage and drawn with a warm-brown dashed treatment above the blue geometry so overlap remains visible. Current-partial and planned source details remain available outside the map but do not create additional legend colors. Matches may use route endpoints, point-in-radius, or circle overlap only when structured coordinates exist.
+
+A Local load requires one reviewed locality. The owner may optionally record safe landmark labels and map-selected pickup or drop-off points for execution. Exact points never appear on Boards, pooled-load views, Directory, Public Profiles, or administrative summaries. The owner can review what it entered; another authorized shipper, receiver, or assigned provider receives exact points only after agreement.
 
 Deep workspace detail routes provide a Back control. A direct deep link has a safe parent-board fallback, while in-workspace navigation returns to the recorded previous workspace page.
 

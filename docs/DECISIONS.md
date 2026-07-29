@@ -94,7 +94,7 @@ Public Profiles are member-only operational screens. Keeping them under the role
 
 ## ADR-019 — Local settlement catalog, load ownership, and virtual pooling
 
-Store a repeatably imported Ethiopia settlement catalog in the local SQLite adapter. The preferred lightweight setup downloads only `place=city|town|village|hamlet` objects through Overpass; an ignored Geofabrik PBF plus Osmium is an alternate input. Normal application search is local, starts after two characters, returns a bounded result set, and retains a built-in fallback. This avoids operating Nominatim or sending normal route searches to a third party.
+Store a repeatably imported Ethiopia settlement catalog in the local SQLite adapter. The preferred lightweight setup downloads `place=city|town|village|hamlet` objects nationally and `suburb|neighbourhood|quarter` objects in Addis Ababa through Overpass; an ignored Geofabrik PBF plus Osmium is an alternate input. Normal application search is local, starts after two characters, uses an indexed prefix query before a bounded contains fallback, and retains a built-in fallback. This avoids operating Nominatim or sending normal route searches to a third party.
 
 Separate `load_owner_organization_id` and `load_owner_party_role` from shipper and receiver roles. The posting Business remains owner regardless of whether it ships or receives. External shipper or receiver identity is load-scoped and receives no account authorization; possession of the owner-distributed secret code grants only the customer-safe tracking view.
 
@@ -158,3 +158,28 @@ Expired, unpaid, and late-payment-review states preserve authentication, a
 billing-focused Home, Account and payment submission, and logout. Server page
 authorization and application-service commands both deny operating access, so
 removing links is never the enforcement boundary.
+
+## ADR-024 — Mixed local geography and bounded discovery queries
+
+Model freight movement as Local, Between cities, or Both where the actor
+contract permits it. Local coverage is one reviewed place plus a 5–100 km
+service radius and renders as a translucent circle; intercity coverage remains
+an origin/destination pair and renders as a line. Comparison uses point-in-area,
+area-overlap, or endpoint alignment only when structured coordinates exist.
+Free-text landmarks remain useful operational labels but never become verified
+geographic evidence.
+
+Load pickup and drop-off points are execution data. The local SQLite adapter
+keeps them on the shipment record but removes them from every Board, pooling,
+directory, profile, and administrative projection. The load owner can review
+points it entered; another shipment party receives them only after agreement.
+The Supabase target stores those coordinates in a separate RLS-protected table
+because row-level security cannot hide selected columns safely.
+
+Discovery and operations screens own pagination at the query boundary. Queries
+use deterministic ordering, explicit result limits, supporting indexes, and
+batched verification summaries. Route ranking and virtual PSTL grouping use
+bounded candidate windows before in-memory comparison. Direct capacity detail
+uses an authorized identifier lookup rather than scanning a Board projection.
+Repeatable data normalization is recorded in schema metadata and does not run
+on every process startup.

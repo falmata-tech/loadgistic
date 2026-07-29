@@ -19,7 +19,7 @@ export function getDb() {
   database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   migrate(database);
   seed(database);
-  qualifyExistingEthiopiaData(database);
+  runDataMigrationOnce(database,'ethiopia-place-qualification-v2',qualifyExistingEthiopiaData);
   return database;
 }
 
@@ -41,6 +41,12 @@ export function resetDb() {
 
 function migrate(db) {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
@@ -194,6 +200,24 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_profile_routes_organization ON profile_routes(organization_id);
     CREATE INDEX IF NOT EXISTS idx_profile_routes_provider ON profile_routes(provider_profile_id);
 
+    CREATE TABLE IF NOT EXISTS service_areas (
+      id TEXT PRIMARY KEY,
+      organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      place_ref TEXT NOT NULL,
+      place_label TEXT NOT NULL,
+      center_lat REAL NOT NULL,
+      center_lng REAL NOT NULL,
+      radius_km INTEGER NOT NULL CHECK(radius_km BETWEEN 5 AND 100),
+      created_by TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CHECK ((organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_service_areas_organization ON service_areas(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_service_areas_provider ON service_areas(provider_profile_id);
+    CREATE INDEX IF NOT EXISTS idx_service_areas_place ON service_areas(place_ref);
+
     CREATE TABLE IF NOT EXISTS place_catalog (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -207,7 +231,9 @@ function migrate(db) {
       osm_type TEXT,
       osm_id TEXT,
       source TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      parent_place_id TEXT,
+      parent_name TEXT
     );
 
     CREATE INDEX IF NOT EXISTS idx_place_catalog_name ON place_catalog(normalized_name);
@@ -234,6 +260,12 @@ function migrate(db) {
       updated_by TEXT NOT NULL REFERENCES users(id),
       updated_at TEXT NOT NULL,
       expires_at TEXT NOT NULL,
+      movement_scope TEXT NOT NULL DEFAULT 'INTERCITY' CHECK(movement_scope IN ('LOCAL','INTERCITY','BOTH')),
+      local_place_ref TEXT,
+      local_place_label TEXT,
+      local_center_lat REAL,
+      local_center_lng REAL,
+      local_radius_km INTEGER CHECK(local_radius_km IS NULL OR local_radius_km BETWEEN 5 AND 100),
       CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
     );
 
@@ -272,6 +304,17 @@ function migrate(db) {
       created_by TEXT NOT NULL REFERENCES users(id),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
+      ,movement_scope TEXT NOT NULL DEFAULT 'INTERCITY' CHECK(movement_scope IN ('LOCAL','INTERCITY'))
+      ,local_place_ref TEXT
+      ,local_place_label TEXT
+      ,local_center_lat REAL
+      ,local_center_lng REAL
+      ,pickup_area_label TEXT
+      ,dropoff_area_label TEXT
+      ,pickup_lat REAL
+      ,pickup_lng REAL
+      ,dropoff_lat REAL
+      ,dropoff_lng REAL
     );
 
     CREATE INDEX IF NOT EXISTS idx_shipments_mode_status ON shipments(service_mode, commercial_status, operational_status);
@@ -456,6 +499,8 @@ function migrate(db) {
   const placeColumns = new Set(db.prepare('PRAGMA table_info(place_catalog)').all().map(column => column.name));
   if (!placeColumns.has('country_name')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_name TEXT NOT NULL DEFAULT 'Ethiopia'");
   if (!placeColumns.has('country_code')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_code TEXT NOT NULL DEFAULT 'ET'");
+  if (!placeColumns.has('parent_place_id')) db.exec('ALTER TABLE place_catalog ADD COLUMN parent_place_id TEXT');
+  if (!placeColumns.has('parent_name')) db.exec('ALTER TABLE place_catalog ADD COLUMN parent_name TEXT');
   const driverColumns = new Set(db.prepare('PRAGMA table_info(drivers)').all().map(column => column.name));
   if (!driverColumns.has('user_id')) db.exec('ALTER TABLE drivers ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL');
   const relationshipColumns = new Set(db.prepare('PRAGMA table_info(partner_relationships)').all().map(column => column.name));
@@ -492,7 +537,13 @@ function migrate(db) {
     ['current_route_date','TEXT'],
     ['planned_space_status','TEXT'],
     ['accepts_multi_pick','INTEGER NOT NULL DEFAULT 0'],
-    ['accepts_multi_drop','INTEGER NOT NULL DEFAULT 0']
+    ['accepts_multi_drop','INTEGER NOT NULL DEFAULT 0'],
+    ['movement_scope',"TEXT NOT NULL DEFAULT 'INTERCITY'"],
+    ['local_place_ref','TEXT'],
+    ['local_place_label','TEXT'],
+    ['local_center_lat','REAL'],
+    ['local_center_lng','REAL'],
+    ['local_radius_km','INTEGER']
   ];
   for (const [name, definition] of additiveCapacityColumns) {
     if (!capacityColumns.has(name)) db.exec(`ALTER TABLE capacities ADD COLUMN ${name} ${definition}`);
@@ -552,13 +603,25 @@ function migrate(db) {
     ['external_shipper_name','TEXT'],
     ['external_shipper_phone','TEXT'],
     ['external_receiver_name','TEXT'],
-    ['external_receiver_phone','TEXT']
+    ['external_receiver_phone','TEXT'],
+    ['movement_scope',"TEXT NOT NULL DEFAULT 'INTERCITY'"],
+    ['local_place_ref','TEXT'],
+    ['local_place_label','TEXT'],
+    ['local_center_lat','REAL'],
+    ['local_center_lng','REAL'],
+    ['pickup_area_label','TEXT'],
+    ['dropoff_area_label','TEXT'],
+    ['pickup_lat','REAL'],
+    ['pickup_lng','REAL'],
+    ['dropoff_lat','REAL'],
+    ['dropoff_lng','REAL']
   ]) {
     if (!shipmentColumns.has(name)) db.exec(`ALTER TABLE shipments ADD COLUMN ${name} ${definition}`);
   }
   db.exec(`UPDATE shipments SET
     load_owner_organization_id=COALESCE(load_owner_organization_id,shipper_organization_id),
-    load_owner_party_role=COALESCE(load_owner_party_role,'SHIPPER')`);
+    load_owner_party_role=COALESCE(load_owner_party_role,'SHIPPER'),
+    movement_scope=COALESCE(movement_scope,'INTERCITY')`);
   for (const shipment of db.prepare(`SELECT id FROM shipments WHERE tracking_code_hash IS NULL OR trim(tracking_code_hash)=''`).all()) {
     db.prepare('UPDATE shipments SET tracking_code_hash=? WHERE id=?')
       .run(hashTrackingAccessCode(trackingAccessCode(shipment.id)),shipment.id);
@@ -582,6 +645,20 @@ function migrate(db) {
   db.exec(`
     UPDATE business_reviews SET status='PUBLISHED' WHERE status IS NULL OR trim(status)='';
     CREATE INDEX IF NOT EXISTS idx_business_reviews_status ON business_reviews(status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_relationship_business_status ON partner_relationships(owner_organization_id,status,provider_organization_id,provider_profile_id);
+    CREATE INDEX IF NOT EXISTS idx_vehicle_organization_active ON vehicles(organization_id,active);
+    CREATE INDEX IF NOT EXISTS idx_vehicle_provider_active ON vehicles(provider_profile_id,active);
+    CREATE INDEX IF NOT EXISTS idx_capacity_vehicle_latest ON capacities(vehicle_id,updated_at DESC,id DESC);
+    CREATE INDEX IF NOT EXISTS idx_capacity_market ON capacities(visibility,status,expires_at,movement_scope);
+    CREATE INDEX IF NOT EXISTS idx_capacity_organization ON capacities(provider_organization_id,expires_at);
+    CREATE INDEX IF NOT EXISTS idx_capacity_provider ON capacities(provider_profile_id,expires_at);
+    CREATE INDEX IF NOT EXISTS idx_capacity_local_place ON capacities(local_place_ref,movement_scope,expires_at);
+    CREATE INDEX IF NOT EXISTS idx_shipment_board ON shipments(operational_status,movement_scope,created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_shipment_local_place ON shipments(local_place_ref,movement_scope,operational_status);
+    CREATE INDEX IF NOT EXISTS idx_shipment_owner ON shipments(load_owner_organization_id,updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_shipment_events_load ON shipment_events(shipment_id,created_at);
+    CREATE INDEX IF NOT EXISTS idx_shipment_interests_load_provider ON shipment_interests(shipment_id,provider_organization_id,provider_profile_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id,created_at DESC);
   `);
   db.exec(`
     UPDATE vehicles SET make='Isuzu',model='FSR',cargo_configuration='Medium Box Truck',category='Medium Box Truck' WHERE id='veh-trans-1';
@@ -610,6 +687,14 @@ function migrate(db) {
       }
     }
   }
+}
+
+function runDataMigrationOnce(db,key,migration) {
+  if(db.prepare('SELECT 1 FROM schema_meta WHERE key=?').get(key))return;
+  migration(db);
+  db.prepare(`INSERT INTO schema_meta (key,value,updated_at) VALUES (?,?,?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`)
+    .run(key,'complete',new Date().toISOString());
 }
 
 function qualifyExistingEthiopiaData(db) {
@@ -769,6 +854,13 @@ function seed(db) {
     ['route-driver-hawassa',null,'provider-driver','Addis Ababa','Hawassa','user-driver']
   ];
   for (const route of seededRoutes) profileRouteInsert.run(...route,iso);
+  const serviceAreaInsert=db.prepare(`INSERT INTO service_areas
+    (id,organization_id,provider_profile_id,place_ref,place_label,center_lat,center_lng,radius_km,created_by,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)`);
+  serviceAreaInsert.run('area-shipper-addis',orgs.shipper.id,null,'builtin:addis ababa','Addis Ababa, Ethiopia',9.03,38.74,40,'user-shipper',iso);
+  serviceAreaInsert.run('area-receiver-hawassa',orgs.receiver.id,null,'builtin:hawassa','Hawassa, Ethiopia',7.06,38.48,35,'user-receiver',iso);
+  serviceAreaInsert.run('area-transporter-addis',orgs.transporter.id,null,'builtin:addis ababa','Addis Ababa, Ethiopia',9.03,38.74,60,'user-transporter',iso);
+  serviceAreaInsert.run('area-driver-addis',null,'provider-driver','builtin:addis ababa','Addis Ababa, Ethiopia',9.03,38.74,30,'user-driver',iso);
 
   const capacityInsert = db.prepare(`INSERT INTO capacities
     (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source)
@@ -776,6 +868,9 @@ function seed(db) {
   capacityInsert.run('cap-empty',orgs.transporter.id,null,'veh-trans-1','EMPTY',100,'Addis Ababa','Dire Dawa','Addis Ababa ↔ Dire Dawa',tomorrow,'Today 16:00','OPEN',null,'user-transporter',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
   capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',dayAfter,'Tomorrow 08:00','OPEN',null,'user-driver',new Date(now.getTime()-13*60*60*1000).toISOString(),expiresStale,'Around Addis Ababa',new Date(now.getTime()-13*60*60*1000).toISOString(),9,38.5,40,'DEVICE_OBSCURED');
   capacityInsert.run('cap-partner-partial',orgs.transporter.id,null,'veh-trans-2','PARTIAL',25,'Mekelle','Addis Ababa','Mekelle ↔ Addis Ababa',dayAfter,'After current delivery','SAVED_PARTNERS',null,'user-transporter',iso,expiresFresh,'Around Mekelle',iso,13.5,39.5,40,'DEVICE_OBSCURED');
+  db.prepare(`UPDATE capacities SET movement_scope='BOTH',local_place_ref='builtin:addis ababa',
+    local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,local_radius_km=40
+    WHERE id='cap-partial'`).run();
 
   const shipmentInsert = db.prepare(`INSERT INTO shipments
     (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,receiver_first_name,receiver_phone,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_code_hash,created_by,created_at,updated_at)
@@ -788,7 +883,8 @@ function seed(db) {
     ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS','user-shipper'],
     ['shp-pstl-baskets','LGX-F2005','Woven baskets for Hawassa shops','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packed woven baskets from a local artisan workshop',1,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-pstl-coffee','LGX-F2006','Roasted coffee cartons to Shashamane','FREIGHT','OPEN_MARKET','TARGET_PRICE',null,1800000,orgs.shipper.id,null,null,null,'Addis Ababa','Shashamane','Sealed coffee cartons from a small local roaster',1,null,'Light Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
-    ['shp-freight-completed','LGX-F2007','Handwoven goods to Adama','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',2100000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Adama','Packed handwoven home goods',24,null,'Mini Box Truck','PTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','COMPLETED','STATUS_ONLY','user-shipper']
+    ['shp-freight-completed','LGX-F2007','Handwoven goods to Adama','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',2100000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Adama','Packed handwoven home goods',24,null,'Mini Box Truck','PTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','COMPLETED','STATUS_ONLY','user-shipper'],
+    ['shp-local-addis','LGX-F2008','Workshop supplies across Addis','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Addis Ababa','Packed workshop supplies for a local maker',12,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper']
   ];
   for (const s of seededShipments) {
     const createdBy = s.at(-1);
@@ -797,6 +893,10 @@ function seed(db) {
   db.exec(`UPDATE shipments SET
     load_owner_organization_id=COALESCE(load_owner_organization_id,shipper_organization_id),
     load_owner_party_role=COALESCE(load_owner_party_role,'SHIPPER')`);
+  db.prepare(`UPDATE shipments SET movement_scope='LOCAL',local_place_ref='builtin:addis ababa',
+    local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,
+    pickup_area_label='Bole',dropoff_area_label='Saris'
+    WHERE id='shp-local-addis'`).run();
 
   const eventInsert = db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`);
   for (const s of seededShipments) {

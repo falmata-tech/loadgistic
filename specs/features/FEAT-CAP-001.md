@@ -1,7 +1,7 @@
 ---
 id: FEAT-CAP-001
 title: Truck-first Capacity Board and publication
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
 behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, dated current-partial movement, dated and capacity-labeled planned movement, contract-route openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
 contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
@@ -118,6 +118,12 @@ Given an authenticated member opens the Capacity Board\
 When they filter by text, route cities, cargo configuration, capacity status, accepted load type, minimum available space, route date, visibility, freshness, stop flexibility, contract-route openness, or proof availability\
 Then only trucks satisfying every supplied filter are displayed\
 And clearing the filters restores all capacity permitted by visibility policy.
+
+Given Local, Between cities, and Both truck signals coexist\
+When a member filters movement scope or Local locality\
+Then each truck remains one independently authorized result\
+And Local matching uses its structured locality and radius\
+And route fields remain optional for Local-only capacity.
 
 Given a Business chooses one of its own open load routes\
 When Capacity Board results are displayed\

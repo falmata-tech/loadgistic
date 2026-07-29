@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
+import { obscureCoordinate } from '@/lib/location-privacy.js';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 type CapacitySnapshot = {
@@ -29,6 +30,10 @@ type CapacitySnapshot = {
   current_route_destination?:string;
   current_route_date?:string;
   planned_space_status?:string;
+  movement_scope?:string;
+  local_place_ref?:string;
+  local_place_label?:string;
+  local_radius_km?:number;
 };
 
 type VehicleOption = {
@@ -65,6 +70,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
       : null
   );
   const [locationArea,setLocationArea]=React.useState(current?.location_area||'');
+  const [movementScope,setMovementScope]=React.useState(current?.movement_scope||'INTERCITY');
 
   function chooseVehicle(nextId: string) {
     const next = vehicles.find(vehicle => vehicle.id === nextId)?.current;
@@ -77,6 +83,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
       ? { lat: next.location_lat, lng: next.location_lng }
       : null);
     setLocationArea(next?.location_area||'');
+    setMovementScope(next?.movement_scope||'INTERCITY');
   }
 
   function setDuty(onDuty: boolean) {
@@ -95,10 +102,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
     }
     setLocationState('requesting');
     navigator.geolocation.getCurrentPosition(position => {
-      // A half-degree grid keeps the submitted point within roughly 40 km in Ethiopia.
-      const lat = Math.round(position.coords.latitude * 2) / 2;
-      const lng = Math.round(position.coords.longitude * 2) / 2;
-      setApproximateLocation({ lat, lng });
+      setApproximateLocation(obscureCoordinate(position.coords.latitude,position.coords.longitude,35));
       const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
       if(nearest)setLocationArea(`Around ${nearest.name}, Ethiopia`);
       setLocationState('captured');
@@ -150,9 +154,19 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
           </section>
 
           <section className="control-panel">
+            <div className="control-panel-title"><div><h2>Work area</h2><p>Choose local work, between-city work, or stay open to both.</p></div></div>
+            <div className="segmented-control movement-scope-control">
+              <label><input name="movementScope" value="LOCAL" type="radio" checked={movementScope==='LOCAL'} onChange={()=>setMovementScope('LOCAL')}/><span>Local</span></label>
+              <label><input name="movementScope" value="INTERCITY" type="radio" checked={movementScope==='INTERCITY'} onChange={()=>setMovementScope('INTERCITY')}/><span>Between cities</span></label>
+              <label><input name="movementScope" value="BOTH" type="radio" checked={movementScope==='BOTH'} onChange={()=>setMovementScope('BOTH')}/><span>Both</span></label>
+            </div>
+            {movementScope!=='INTERCITY'?<div className="form-grid local-capacity-area"><div className="form-group"><label htmlFor="capacity-local-place">Local city or town</label><EthiopiaPlaceInput id="capacity-local-place" name="localPlaceLabel" placeRefName="localPlaceRef" defaultPlaceRef={current?.local_place_ref||''} defaultValue={current?.local_place_label||''} required placeholder="Addis Ababa, Ethiopia" onPlaceSelect={place=>{if(!locationArea)setLocationArea(`Around ${place.display_name}`);}}/></div><div className="form-group"><label htmlFor="capacity-local-radius">Operating radius</label><select id="capacity-local-radius" name="localRadiusKm" defaultValue={String(current?.local_radius_km||25)}>{[10,25,40,60,100].map(radius=><option value={radius} key={radius}>{radius} km</option>)}</select></div></div>:null}
+          </section>
+
+          <section className="control-panel">
             <div className="control-panel-title"><div><h2>Where you are now</h2><p>Share a general area, never an exact live position.</p></div><span className="status fresh">Updates now</span></div>
-            <div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" name="locationArea" required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Addis Ababa, Ethiopia" aria-label="Current general area"/></div>
-            {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
+            {movementScope==='LOCAL'?<p className="meta panel-note">Your selected Local city and radius are the current marketplace area. No phone location is needed.</p>:<div className="location-input-wrap"><span aria-hidden="true">◎</span><EthiopiaPlaceInput id="capacity-area" required value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Addis Ababa, Ethiopia" aria-label="Current general area"/></div>}
+            {movementScope!=='LOCAL'&&allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
               <div>
                 <strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use your phone location'}</strong>
                 <span>{locationState === 'captured'
@@ -167,13 +181,14 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
                 {locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh area' : 'Use device location'}
               </button>
             </div>:<p className="meta panel-note">Use a general Ethiopian city or area. The assigned driver updates device-assisted location from the truck.</p>}
-            <input type="hidden" name="approximateLat" value={allowDeviceLocation ? approximateLocation?.lat ?? '' : ''}/>
-            <input type="hidden" name="approximateLng" value={allowDeviceLocation ? approximateLocation?.lng ?? '' : ''}/>
-            <input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&approximateLocation ? '40' : ''}/>
-            <input type="hidden" name="locationSource" value={allowDeviceLocation&&approximateLocation ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA'}/>
+            <input type="hidden" name="locationArea" value={movementScope==='LOCAL'?'':locationArea}/>
+            <input type="hidden" name="approximateLat" value={movementScope!=='LOCAL'&&allowDeviceLocation ? approximateLocation?.lat ?? '' : ''}/>
+            <input type="hidden" name="approximateLng" value={movementScope!=='LOCAL'&&allowDeviceLocation ? approximateLocation?.lng ?? '' : ''}/>
+            <input type="hidden" name="locationPrecisionKm" value={movementScope!=='LOCAL'&&allowDeviceLocation&&approximateLocation ? '40' : ''}/>
+            <input type="hidden" name="locationSource" value={movementScope!=='LOCAL'&&allowDeviceLocation&&approximateLocation ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA'}/>
           </section>
 
-          <section className="control-panel">
+          {movementScope!=='LOCAL'?<section className="control-panel">
             <div className="control-panel-title"><div><h2>Truck routes</h2><p>Keep current partial movement separate from a future planned trip.</p></div></div>
             {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama, Ethiopia"/></div></div><div className="form-group"><label htmlFor="current-route-date">Route date</label><input id="current-route-date" name="currentRouteDate" type="date" defaultValue={current?.current_route_date||''}/></div></>:null}
             <h3 className="compact-section-title">Planned route</h3>
@@ -182,7 +197,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
             <div className="form-group"><label>Planned cargo space</label><div className="segmented-control"><label><input name="plannedSpaceStatus" value="FULL" type="radio" defaultChecked={(current?.planned_space_status||'FULL')==='FULL'}/><span>Full</span></label><label><input name="plannedSpaceStatus" value="PARTIAL" type="radio" defaultChecked={current?.planned_space_status==='PARTIAL'}/><span>Partial</span></label></div></div>
             <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract routes</strong><small>Interested in recurring work on Preferred Routes</small></span></label>
             <p className="meta panel-note">Regular Preferred Routes are managed separately in Public Profile.</p>
-          </section>
+          </section>:null}
         </> : <section className="control-panel off-duty-panel"><strong>This truck will not appear in capacity search.</strong><p>Turn On Duty back on whenever you are ready to carry a load.</p></section>}
       </div>
 

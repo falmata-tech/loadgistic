@@ -28,6 +28,12 @@ export const CAPACITY_STATUSES = Object.freeze({
   OFF_DUTY: 'OFF_DUTY'
 });
 
+export const MOVEMENT_SCOPES = Object.freeze({
+  LOCAL: 'LOCAL',
+  INTERCITY: 'INTERCITY',
+  BOTH: 'BOTH'
+});
+
 export const FREIGHT_TRANSITIONS = Object.freeze({
   POSTED: ['CONTACTED', 'WITHDRAWN', 'CANCELLED'],
   SENT: ['CONTACTED', 'DECLINED', 'CANCELLED'],
@@ -93,6 +99,50 @@ export function validateFreightLoadType(serviceMode, loadType) {
   if (serviceMode !== SERVICE_MODES.FREIGHT) throw new Error('INVALID_SERVICE_MODE');
   if (!['FTL','PTL'].includes(loadType)) throw new Error('FREIGHT_LOAD_TYPE_REQUIRED');
   return loadType;
+}
+
+export function validateMovementScope(value, { allowBoth = false } = {}) {
+  const allowed = allowBoth
+    ? [MOVEMENT_SCOPES.LOCAL, MOVEMENT_SCOPES.INTERCITY, MOVEMENT_SCOPES.BOTH]
+    : [MOVEMENT_SCOPES.LOCAL, MOVEMENT_SCOPES.INTERCITY];
+  if (!allowed.includes(value)) throw new Error('INVALID_MOVEMENT_SCOPE');
+  return value;
+}
+
+export function validateServiceRadius(value) {
+  const radius = Number(value);
+  if (!Number.isInteger(radius) || radius < 5 || radius > 100) {
+    throw new Error('INVALID_SERVICE_RADIUS');
+  }
+  return radius;
+}
+
+export function distanceBetweenKm(first, second) {
+  const lat1 = Number(first?.lat);
+  const lng1 = Number(first?.lng);
+  const lat2 = Number(second?.lat);
+  const lng2 = Number(second?.lng);
+  if (![lat1,lng1,lat2,lng2].every(Number.isFinite)) return null;
+  const toRadians = value => value * Math.PI / 180;
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(lat2-lat1);
+  const deltaLng = toRadians(lng2-lng1);
+  const a = Math.sin(deltaLat/2) ** 2
+    + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(deltaLng/2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+export function pointInServiceArea(point, area) {
+  const distance = distanceBetweenKm(point,{lat:area?.center_lat,lng:area?.center_lng});
+  return distance !== null && distance <= Number(area?.radius_km);
+}
+
+export function serviceAreasOverlap(first, second) {
+  const distance = distanceBetweenKm(
+    {lat:first?.center_lat,lng:first?.center_lng},
+    {lat:second?.center_lat,lng:second?.center_lng}
+  );
+  return distance !== null && distance <= Number(first?.radius_km) + Number(second?.radius_km);
 }
 
 export function canTransition(serviceMode, currentStatus, nextStatus) {

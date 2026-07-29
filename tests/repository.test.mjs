@@ -70,6 +70,10 @@ test('member directory includes Businesses and transporters with authoritative f
  assert.ok(company.vehicles.every(vehicle=>/^LG-TRK-[A-Z0-9]+$/.test(vehicle.platform_number)));
  assert.equal(new Set(company.vehicles.map(vehicle=>vehicle.platform_number)).size,company.vehicles.length);
  assert.ok(company.live_routes.some(route=>route.route_kind==='PLANNED'&&route.platform_number));
+ const firstPage=repo.listDirectoryProfiles('ALL',{page:1,pageSize:2});
+ const secondPage=repo.listDirectoryProfiles('ALL',{page:2,pageSize:2});
+ assert.equal(firstPage.items.length,2);
+ assert.equal(firstPage.items.some(first=>secondPage.items.some(second=>second.id===first.id)),false);
 });
 
 test('seeded low rating is private, excluded from reputation, and safely projected to administrators',()=>{
@@ -115,6 +119,9 @@ test('profile routes separate declarations, reported records, and tracked eviden
  assert.ok(fleetRoute.tracked_count>=1);
  const comparison=repo.getProfileRouteComparison(shipper,fleet);
  assert.ok(comparison.exact_count>=1);
+ assert.ok(comparison.area_overlap_count>=1);
+ assert.ok(comparison.viewer_areas.some(area=>area.place_label==='Addis Ababa, Ethiopia'));
+ assert.ok(comparison.target_areas.some(area=>area.place_label==='Addis Ababa, Ethiopia'));
  assert.match(comparison.evidence_label,/tracked/i);
  const providerComparison=repo.getProfileRouteComparison(transporter,business);
  assert.ok(providerComparison.viewer_routes.some(route=>route.route_kind==='PROFILE'));
@@ -196,6 +203,43 @@ test('shipper creates quote-requested open freight load',()=>{
  assert.equal(shipment.price_mode,'QUOTE_REQUESTED');
  assert.equal(shipment.operational_status,'POSTED');
  assert.equal(shipment.load_type,'PTL');
+});
+
+test('local loads use a structured locality and keep exact points out of the marketplace',()=>{
+ const shipper=repo.getUserById('user-shipper');
+ const driver=repo.getUserById('user-driver');
+ const pickupDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
+ const result=repo.createShipment(shipper,{
+  title:'Local maker delivery',
+  serviceMode:'FREIGHT',
+  distributionMode:'OPEN_MARKET',
+  priceMode:'QUOTE_REQUESTED',
+  movementScope:'LOCAL',
+  localPlaceRef:'builtin:addis ababa',
+  localPlaceLabel:'Addis Ababa, Ethiopia',
+  pickupAreaLabel:'Bole',
+  dropoffAreaLabel:'Saris',
+  pickupLat:'9.014',
+  pickupLng:'38.781',
+  dropoffLat:'8.958',
+  dropoffLng:'38.742',
+  cargoDescription:'Packed artisan goods',
+  loadType:'PTL',
+  pickupDate,
+  trackingMode:'STATUS_ONLY'
+ });
+ const stored=dbModule.getDb().prepare('SELECT * FROM shipments WHERE id=?').get(result.id);
+ assert.equal(stored.movement_scope,'LOCAL');
+ assert.equal(stored.origin,'Addis Ababa, Ethiopia');
+ assert.equal(stored.pickup_lat,9.014);
+ const ownerView=repo.getShipmentForUser(shipper,result.id);
+ assert.equal(ownerView.pickup_lat,9.014);
+ const marketDetail=repo.getShipmentForUser(driver,result.id);
+ assert.equal(Object.hasOwn(marketDetail,'pickup_lat'),false);
+ assert.equal(Object.hasOwn(marketDetail,'dropoff_lng'),false);
+ const board=repo.listLoadsPage(driver,'ALL',{movementScope:'LOCAL',localPlaceRef:'builtin:addis ababa'},{page:1,pageSize:5});
+ assert.ok(board.items.some(load=>load.id===result.id));
+ assert.ok(board.items.every(load=>!Object.hasOwn(load,'pickup_lat')&&!Object.hasOwn(load,'dropoff_lng')));
 });
 
 test('road freight creation rejects a missing FTL or PTL requirement',()=>{
@@ -283,6 +327,28 @@ test('capacity update enforces partial percentage and expires old vehicle record
  const offDutyId=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'OFF_DUTY',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'});
  const publicRows=repo.listPublicCapacity();
  assert.equal(publicRows.some(r=>r.id===offDutyId),false);
+});
+
+test('local capacity can publish without an intercity route and is filterable by locality',()=>{
+ const driver=repo.getUserById('user-driver');
+ const shipper=repo.getUserById('user-shipper');
+ const id=repo.publishCapacity(driver,{
+  vehicleId:'veh-driver-1',
+  status:'EMPTY',
+  acceptedLoads:'BOTH',
+  movementScope:'LOCAL',
+  localPlaceRef:'builtin:addis ababa',
+  localPlaceLabel:'Addis Ababa, Ethiopia',
+  localRadiusKm:'25',
+  visibility:'OPEN'
+ });
+ const own=repo.getCapacityForUser(driver,id);
+ assert.equal(own.movement_scope,'LOCAL');
+ assert.equal(own.local_radius_km,25);
+ assert.equal(own.origin,null);
+ const localPage=repo.listMarketCapacityPage(shipper,{movementScope:'LOCAL',localPlaceRef:'builtin:addis ababa'},{page:1,pageSize:10});
+ assert.ok(localPage.items.some(capacity=>capacity.id===id));
+ assert.ok(localPage.items.every(capacity=>['LOCAL','BOTH'].includes(capacity.movement_scope)));
 });
 
 test('admin operations inventory is bounded and omits sensitive fields',()=>{

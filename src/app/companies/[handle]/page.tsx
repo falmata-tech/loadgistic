@@ -11,6 +11,6 @@ export default async function LegacyCompanyProfile({
   await requireUser();
   const { handle } = await params;
   const query = await searchParams;
-  const suffix = query.compare === 'routes' ? '?compare=routes' : '';
+  const suffix = query.compare === 'coverage' ? '?compare=coverage' : '';
   redirect(`/app/providers/${handle}${suffix}`);
 }

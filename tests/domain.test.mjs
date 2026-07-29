@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
 import { normalizePlace, routeMatch, splitPlaces } from '../src/lib/route-matching.js';
 import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
+import { obscureCoordinate } from '../src/lib/location-privacy.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
@@ -43,6 +44,36 @@ test('road freight requires the same FTL or PTL language',()=>{
  assert.equal(validateFreightLoadType('FREIGHT','PTL'),'PTL');
  assert.throws(()=>validateFreightLoadType('UNSUPPORTED',''),/INVALID_SERVICE_MODE/);
  assert.throws(()=>validateFreightLoadType('FREIGHT','FULL_LOAD'),/FREIGHT_LOAD_TYPE_REQUIRED/);
+});
+
+test('local geography validates scope, radius, distance, and overlap',()=>{
+ assert.equal(validateMovementScope('LOCAL'),'LOCAL');
+ assert.equal(validateMovementScope('BOTH',{allowBoth:true}),'BOTH');
+ assert.throws(()=>validateMovementScope('BOTH'),/INVALID_MOVEMENT_SCOPE/);
+ assert.equal(validateServiceRadius('40'),40);
+ assert.throws(()=>validateServiceRadius('4'),/INVALID_SERVICE_RADIUS/);
+ assert.throws(()=>validateServiceRadius('101'),/INVALID_SERVICE_RADIUS/);
+ const addis={lat:9.03,lng:38.74};
+ const adama={lat:8.54,lng:39.27};
+ assert.ok(distanceBetweenKm(addis,adama)>70);
+ assert.equal(pointInServiceArea({lat:9.1,lng:38.8},{center_lat:9.03,center_lng:38.74,radius_km:20}),true);
+ assert.equal(serviceAreasOverlap(
+  {center_lat:9.03,center_lng:38.74,radius_km:40},
+  {center_lat:8.75,center_lng:38.99,radius_km:20}
+ ),true);
+ assert.equal(serviceAreasOverlap(
+  {center_lat:9.03,center_lng:38.74,radius_km:20},
+  {center_lat:8.54,center_lng:39.27,radius_km:20}
+ ),false);
+});
+
+test('device capacity location is displaced into the promised privacy area',()=>{
+ const exact={lat:9.03,lng:38.74};
+ const obscured=obscureCoordinate(exact.lat,exact.lng,35);
+ const distance=distanceBetweenKm(exact,obscured);
+ assert.ok(distance>=34.9&&distance<=35.1);
+ assert.notDeepEqual(obscured,exact);
+ assert.deepEqual(obscureCoordinate(exact.lat,exact.lng,35),obscured);
 });
 
 test('ETB price modes support fixed, target, and quote',()=>{

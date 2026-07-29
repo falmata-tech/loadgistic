@@ -14,14 +14,20 @@ type PlaceResult={
   lng:number;
 };
 
-type Props=React.InputHTMLAttributes<HTMLInputElement>&{id:string};
+type Props=React.InputHTMLAttributes<HTMLInputElement>&{
+  id:string;
+  placeRefName?:string;
+  defaultPlaceRef?:string;
+  onPlaceSelect?:(place:PlaceResult)=>void;
+};
 
-export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,...props}:Props) {
+export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,placeRefName,defaultPlaceRef='',onPlaceSelect,...props}:Props) {
   const [text,setText]=React.useState(String(value ?? defaultValue ?? ''));
   const [results,setResults]=React.useState([] as PlaceResult[]);
   const [open,setOpen]=React.useState(false);
   const [loading,setLoading]=React.useState(false);
   const [dirty,setDirty]=React.useState(false);
+  const [placeRef,setPlaceRef]=React.useState(defaultPlaceRef);
 
   React.useEffect(()=>{
     if(value!==undefined)setText(String(value));
@@ -49,6 +55,7 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,...pro
 
   function update(event:React.ChangeEvent<HTMLInputElement>){
     setText(event.target.value);
+    setPlaceRef('');
     setDirty(true);
     setOpen(true);
     onChange?.(event);
@@ -56,13 +63,16 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,...pro
 
   function choose(place:PlaceResult){
     setText(place.display_name);
+    setPlaceRef(place.id);
     setOpen(false);
     setDirty(false);
     setResults([]);
     onChange?.({target:{value:place.display_name}} as React.ChangeEvent<HTMLInputElement>);
+    onPlaceSelect?.(place);
   }
 
   return <div className="place-combobox">
+    {placeRefName?<input type="hidden" name={placeRefName} value={placeRef}/>:null}
     <input {...props} id={id} value={text} onChange={update} onFocus={()=>setOpen(true)} onBlur={event=>{
       window.setTimeout(()=>setOpen(false),120);
       onBlur?.(event);

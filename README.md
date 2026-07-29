@@ -29,6 +29,8 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Account or external-party secret-code tracking with a five-minute idle lock
 - Privacy-obscured device location: 40 km capacity/PTL and 20 km FTL tracking
 - Searchable local OpenStreetMap catalog of Ethiopian settlements
+- Local service-area circles, intercity route lines, and mixed geography matching
+- Private local-load map points disclosed to non-owner parties only after agreement
 - Loading, delivery, and issue proof uploads
 - Manual subscription payment-proof submission and admin review
 - Audit records and deterministic demo data
@@ -113,6 +115,7 @@ supabase/migrations/002_fleet_driver_routes.sql
 supabase/migrations/003_network_tracking_truck_details.sql
 supabase/migrations/004_rating_moderation.sql
 supabase/migrations/005_subscription_access.sql
+supabase/migrations/006_local_geography_and_board_indexes.sql
 ```
 
 The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Production migration replaces repository calls with RLS-protected Supabase queries or RPCs while preserving the domain commands and UI routes.

@@ -175,7 +175,7 @@ try {
               path.join(outputDir, `${viewport.name}-${persona.name}-company-detail.png`)
             );
             report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-            const comparisonHref = persona.name === 'business-shipper' ? '/app/providers/blueline-transport?compare=routes' : '/app/providers/blue-nile-trading?compare=routes';
+            const comparisonHref = persona.name === 'business-shipper' ? '/app/providers/blueline-transport?compare=coverage' : '/app/providers/blue-nile-trading?compare=coverage';
             const comparisonResult = await inspectPage(
               page,
               comparisonHref,

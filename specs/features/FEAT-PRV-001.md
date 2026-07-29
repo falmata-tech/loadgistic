@@ -1,10 +1,10 @@
 ---
 id: FEAT-PRV-001
 title: Authenticated Business and Transporter Directory
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-TRK-001, FEAT-NET-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-TRK-001, FEAT-NET-001, FEAT-GEO-001]
 problem: Signed-in members need one trustworthy directory for confirming Businesses, fleet transporters, and self-managed drivers without exposing account credentials or marketplace data anonymously.
-behavior: Authenticated Public Profiles expose permitted organization identity, explicit public contact information, declared operating regions and route pairs, verification state, and participant ratings; Businesses call the durable declarations Freight Routes while providers call them Preferred Routes. Provider maps and comparisons add fresh dated truck current-partial and planned routes without converting those temporary signals into permanent profile routes.
-contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, OperatingRegion, EthiopiaPlaceSuggestion, ProfileRoute, LiveTruckRoute, RouteEvidenceProjection, RouteMapProjection, ProfileRouteComparison, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, NetworkCoverageProjection, ProfileRatingSummary]
+behavior: Authenticated Public Profiles expose permitted organization identity, explicit public contact information, declared Local Service Areas and route pairs, verification state, and participant ratings; Businesses call durable route declarations Freight Routes while providers call them Preferred Routes. Coverage maps and comparisons combine city-radius areas with stable and fresh route geography without converting temporary truck signals into permanent profile coverage.
+contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, OperatingRegion, LocalServiceArea, EthiopiaPlaceSuggestion, ProfileRoute, LiveTruckRoute, RouteEvidenceProjection, CoverageMapProjection, ProfileCoverageComparison, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, NetworkCoverageProjection, ProfileRatingSummary]
 observability: [company_update_audit, route_update_audit, profile_route_comparison, request_outcome]
 rollout: Review every newly public field for authorization, accuracy, and privacy before release.
 ---
@@ -105,26 +105,27 @@ Then endpoint matching is normalized and order independent\
 And counts come only from persisted records belonging to that profile\
 And exact device coordinates, receiver contacts, private files, and unrelated shipment facts are not returned.
 
-### Scenario: members compare profile route fit
+### Scenario: members compare profile coverage fit
 
-Given an authenticated member has declared routes and opens another member's Public Profile\
-When the member chooses Compare routes\
-Then the system compares both sets using exact two-endpoint, one-endpoint, and no-endpoint matches\
+Given an authenticated member has declared routes or Local Service Areas and opens another member's Public Profile\
+When the member chooses Compare coverage\
+Then the system compares routes using exact two-endpoint, one-endpoint, and no-endpoint matches\
+And it compares Local Service Areas using point-in-radius and circle-overlap rules\
 And a provider's side also includes every fresh owned-truck current-partial and eligible planned route\
-And a visual analysis identifies shared endpoints and strongest matching route pairs\
+And a visual analysis identifies shared endpoints, area overlap, and strongest matching pairs\
 And the result states whether it uses tracked evidence, reported activity only, or declarations only\
 And it does not claim availability, serviceability, trustworthiness, price, or dispatch suitability.
 
-### Scenario: comparison routes remain visually distinguishable
+### Scenario: comparison coverage remains visually distinguishable
 
-Given a member compares its routes with another profile\
-When Preferred or Freight Routes and fresh current-partial or planned truck routes are projected\
-Then every route owned by the viewer is grouped as Your routes\
-And every route owned by the viewed profile is grouped as Profile routes\
-And Profile routes use one solid blue treatment regardless of source\
-And Your routes use one high-contrast warm-brown dashed treatment regardless of source\
-And Your routes are drawn above overlapping Profile routes\
-And the comparison legend contains only Profile routes and Your routes.
+Given a member compares its coverage with another profile\
+When service areas, Preferred or Freight Routes, and fresh truck geography are projected\
+Then every line and circle owned by the viewer is grouped as Your coverage\
+And every line and circle owned by the viewed profile is grouped as Profile coverage\
+And Profile coverage uses one solid blue treatment regardless of source\
+And Your coverage uses one high-contrast warm-brown dashed treatment regardless of source\
+And Your coverage is drawn above overlapping Profile coverage\
+And the comparison legend contains only Profile coverage and Your coverage.
 
 ### Scenario: unmapped member-entered place remains honest
 

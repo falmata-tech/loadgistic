@@ -63,11 +63,12 @@ npm run dev
 npm run test:ui-stress
 ```
 
-The stress generator validates all 29 application tables, foreign keys, entity
-ownership, fleet assignments, rating eligibility, and material workflow-state
-coverage. `tests/stress-data.test.mjs` runs the same generator against an
-isolated database and proves that Production execution is rejected before any
-database change.
+The stress generator validates all 30 application tables, foreign keys, entity
+ownership, fleet assignments, rating eligibility, Local/Between cities/Both
+movement coverage, and material workflow-state coverage.
+`tests/stress-data.test.mjs` runs the same generator against an isolated
+database and proves that Production execution is rejected before any database
+change.
 
 The dense UI audit signs in as Business, Fleet Transporter, generated fleet
 owner, generated Self-managed Driver, expired Business, and Administrator

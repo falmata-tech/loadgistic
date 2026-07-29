@@ -1,7 +1,7 @@
 ---
 id: FEAT-LST-001
 title: Bounded server list navigation
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-NET-001, FEAT-FLT-001, FEAT-VER-001, FEAT-REV-001, FEAT-ADM-001, FEAT-BIL-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-NET-001, FEAT-FLT-001, FEAT-VER-001, FEAT-REV-001, FEAT-ADM-001, FEAT-BIL-001, FEAT-GEO-001]
 problem: Marketplace, workspace, fleet, and administration lists become slow and difficult to scan when every matching record is rendered at once.
 behavior: Discovery pages show a useful first server-owned page without requiring a search, filters narrow results on the server and reset paging, and every growing operational list exposes bounded next and previous navigation that preserves its active view and filters.
 contracts: [ServerListQuery, BoundedResultPage, PageSizePolicy, FilterPersistence, EmptyResultState]
@@ -24,6 +24,8 @@ And the browser does not receive every matching record.
 Given a growing list has search, view, or filter inputs\
 When the user applies those inputs or changes page\
 Then matching and paging are evaluated in the server application boundary\
+And ordinary text, state, scope, locality, date, and visibility filters are applied by the database before `LIMIT` and `OFFSET`\
+And explainable route or radius ranking operates on a bounded authorized candidate window when it cannot be expressed safely in the database\
 And submitting a new filter starts at page one\
 And Previous or Next preserves the active filters and view.
 
@@ -50,6 +52,22 @@ When a bounded page is rendered\
 Then desktop presents a restrained multi-column card grid in left-to-right, top-to-bottom reading order\
 And mobile presents one card per row\
 And filtering is optional rather than required.
+
+### Scenario: database access supports growing Boards
+
+Given marketplace loads or truck capacity grows beyond the development fixture\
+When a normal unranked Board page is requested\
+Then the application does not materialize every authorized record before slicing one page\
+And indexed status, expiry, movement-scope, locality, ownership, and relationship predicates reduce the query\
+And the result includes an accurate bounded total for navigation.
+
+### Scenario: detail projections avoid marketplace-wide scans
+
+Given one profile, load, truck, or capacity detail is requested\
+When related records are assembled\
+Then queries are scoped by the requested owner or record before loading rows\
+And repeated per-row verification or evidence lookups are replaced with bounded aggregate projections where practical\
+And private columns are selected only for an authorized detail workflow.
 
 ## Contract ownership
 

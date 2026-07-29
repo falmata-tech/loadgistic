@@ -47,12 +47,13 @@ npm run db:reset
 ## Comprehensive UI and workflow data
 
 `npm run db:stress` replaces the configured local database with a deterministic
-dataset containing more than 8,000 related rows. It covers all application
+dataset containing more than 8,000 related rows. It covers all 30 application
 tables and material states, including 80 Businesses, 20 six-truck fleets, their
 company Drivers, 40 self-managed Drivers, applicant accounts, loads, tracking
 events, capacity history, relationships, verification requests, billing
 evidence, sponsored/trial/paid/under-review/expired subscription states,
-ratings, notifications, and audit records.
+ratings, notifications, audit records, local service areas, and Local/Between
+cities/Both freight records.
 
 Generated accounts use the same development-only password documented above.
 Representative emails include:

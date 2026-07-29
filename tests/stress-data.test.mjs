@@ -24,13 +24,14 @@ test('standard stress dataset covers every table, workflow state, and provider s
   const integrity=stress.assertStressDataIntegrity(db,report);
 
   assert.equal(integrity.ok,true);
-  assert.equal(integrity.tables,29);
+  assert.equal(integrity.tables,30);
   assert.ok(integrity.totalRows>8_000);
   assert.equal(report.foreignKeyViolations.length,0);
   assert.ok(Object.values(report.counts).every(count=>count>0));
   assert.ok(report.counts.users>=240);
   assert.ok(report.counts.vehicles>=160);
   assert.ok(report.counts.shipments>=520);
+  assert.ok(report.counts.service_areas>=100);
   assert.ok(report.counts.shipment_events>=1_800);
   assert.ok(report.counts.verification_requests>=500);
 
@@ -75,6 +76,9 @@ test('standard stress dataset covers every table, workflow state, and provider s
   assert.equal(repo.listApplications(admin,{page:1,pageSize:20}).items.length,20);
   assert.equal(repo.listVerificationRequests(admin,{status:'PENDING',page:1,pageSize:20}).items.length,20);
   assert.equal(repo.listPaymentProofs(admin,{status:'APPROVED',page:1,pageSize:20}).items.length,20);
+  const stressFleetProfile=repo.getPublicCompany('stress-fleet-001');
+  assert.ok(stressFleetProfile.map_areas.length>0);
+  assert.ok(stressFleetProfile.map_areas.every(area=>Object.getPrototypeOf(area)===Object.prototype));
 
   const subject=db.prepare(`SELECT o.handle,o.id FROM organizations o
     JOIN business_reviews r ON r.subject_organization_id=o.id

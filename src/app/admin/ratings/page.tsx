@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { listRatingModerationQueue, paginateResults } from '@/lib/repository.js';
+import { listRatingModerationQueue } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
@@ -15,7 +15,7 @@ export default async function AdminRatingsPage({searchParams}:{searchParams:Prom
   const selected=statuses.includes(String(query.status||'PENDING').toUpperCase() as typeof statuses[number])
     ? String(query.status||'PENDING').toUpperCase()
     : 'PENDING';
-  const result:any=paginateResults(listRatingModerationQueue(user,selected),{page:query.page,pageSize:12});
+  const result:any=listRatingModerationQueue(user,selected,{page:query.page,pageSize:12});
   const reviews:any[]=result.items;
   return <div className="page">
     <PageHeader title="Rating Reviews" subtitle="Investigate private one- to three-star Business ratings before they affect public reputation."/>

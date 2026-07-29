@@ -14,6 +14,7 @@ export const STRESS_TABLES = Object.freeze([
   'driver_permissions',
   'driver_vehicle_assignments',
   'profile_routes',
+  'service_areas',
   'place_catalog',
   'capacities',
   'shipments',
@@ -507,6 +508,28 @@ export function populateStressData(db, { scale = 1 } = {}) {
         );
     }
 
+    const serviceAreaInsert=db.prepare(`INSERT INTO service_areas
+      (id,organization_id,provider_profile_id,place_ref,place_label,center_lat,center_lng,radius_km,created_by,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?)`);
+    for(const [businessOffset,business] of businesses.entries()){
+      const businessIndex=businessOffset+1;
+      const placeIndex=(businessIndex-1)%LOCATIONS.length;
+      const [placeLabel,lat,lng]=LOCATIONS[placeIndex];
+      serviceAreaInsert.run(`stress-area-business-${pad(businessIndex)}`,business.id,null,`stress-place-${pad(placeIndex+1)}`,placeLabel,lat,lng,[10,25,40,60][businessIndex%4],business.userId,timestamp);
+    }
+    for(const [fleetOffset,fleet] of fleets.entries()){
+      const fleetIndex=fleetOffset+1;
+      const placeIndex=(fleetIndex*3)%LOCATIONS.length;
+      const [placeLabel,lat,lng]=LOCATIONS[placeIndex];
+      serviceAreaInsert.run(`stress-area-fleet-${pad(fleetIndex)}`,fleet.id,null,`stress-place-${pad(placeIndex+1)}`,placeLabel,lat,lng,[25,40,60,100][fleetIndex%4],fleet.userId,timestamp);
+    }
+    for(const [providerOffset,provider] of selfManaged.entries()){
+      const providerIndex=providerOffset+1;
+      const placeIndex=(providerIndex*5)%LOCATIONS.length;
+      const [placeLabel,lat,lng]=LOCATIONS[placeIndex];
+      serviceAreaInsert.run(`stress-area-driver-${pad(providerIndex)}`,null,provider.id,`stress-place-${pad(placeIndex+1)}`,placeLabel,lat,lng,[10,25,40][providerIndex%3],provider.userId,timestamp);
+    }
+
     const capacityInsert = db.prepare(`INSERT INTO capacities
       (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
@@ -554,6 +577,11 @@ export function populateStressData(db, { scale = 1 } = {}) {
         latestStatus === 'OFF_DUTY' ? null : vehicle.index % 2 ? 'PARTIAL' : 'FULL',
         vehicle.index % 4 === 0 ? 1 : 0,vehicle.index % 5 === 0 ? 1 : 0
       );
+      if(latestStatus!=='OFF_DUTY'&&vehicle.index%3!==2){
+        db.prepare(`UPDATE capacities SET movement_scope=?,local_place_ref=?,local_place_label=?,
+          local_center_lat=?,local_center_lng=?,local_radius_km=? WHERE id=?`)
+          .run(vehicle.index%3===0?'LOCAL':'BOTH',`stress-place-${pad((vehicle.index-1)%LOCATIONS.length+1)}`,origin,latitude,longitude,[10,25,40,60][vehicle.index%4],`stress-capacity-latest-${pad(vehicle.index,4)}`);
+      }
     }
 
     const relationshipInsert = db.prepare(`INSERT INTO partner_relationships
@@ -643,6 +671,9 @@ export function populateStressData(db, { scale = 1 } = {}) {
       (id,shipment_id,reviewer_organization_id,subject_organization_id,rating,note,status,created_by,created_at,reviewed_by,review_note,reviewed_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
     const generatedShipments = [];
+    const localShipmentUpdate=db.prepare(`UPDATE shipments SET movement_scope='LOCAL',local_place_ref=?,local_place_label=?,
+      local_center_lat=?,local_center_lng=?,pickup_area_label=?,dropoff_area_label=?,pickup_lat=?,pickup_lng=?,dropoff_lat=?,dropoff_lng=?
+      WHERE id=?`);
 
     for (let index = 1; index <= profile.loads; index += 1) {
       const suffix = pad(index,5);
@@ -686,6 +717,17 @@ export function populateStressData(db, { scale = 1 } = {}) {
         usesExternalReceiver ? `+251 922 ${pad(index % 900,3)} ${pad((index + 222) % 900,3)}` : null,
         owner.userId,createdAt,updatedAt
       );
+      if(index%5===0){
+        const placeIndex=(index-1)%LOCATIONS.length;
+        const [localLabel,localLat,localLng]=LOCATIONS[placeIndex];
+        localShipmentUpdate.run(
+          `stress-place-${pad(placeIndex+1)}`,localLabel,localLat,localLng,
+          `Local pickup area ${index%12+1}`,`Local drop-off area ${(index+4)%12+1}`,
+          index%10===0?localLat+.015:null,index%10===0?localLng+.015:null,
+          index%10===0?localLat-.012:null,index%10===0?localLng-.012:null,
+          shipmentId
+        );
+      }
 
       const history = STATE_HISTORY[state];
       for (let eventIndex = 0; eventIndex < history.length; eventIndex += 1) {
@@ -958,8 +1000,10 @@ export function getStressDataReport(db, { profile = null } = {}) {
       priceModes:distinctValues(db,'shipments','price_mode'),
       distributionModes:distinctValues(db,'shipments','distribution_mode'),
       loadTypes:distinctValues(db,'shipments','load_type','WHERE load_type IS NOT NULL'),
+      shipmentMovementScopes:distinctValues(db,'shipments','movement_scope'),
       capacityStates:distinctValues(db,'capacities','status'),
       capacityVisibility:distinctValues(db,'capacities','visibility'),
+      capacityMovementScopes:distinctValues(db,'capacities','movement_scope'),
       relationshipStates:distinctValues(db,'partner_relationships','status'),
       verificationStates:distinctValues(db,'verification_requests','status'),
       applicationStates:distinctValues(db,'applications','status'),
@@ -1004,8 +1048,10 @@ export function assertStressDataIntegrity(db, report = getStressDataReport(db)) 
     priceModes:['FIXED_PRICE','QUOTE_REQUESTED','TARGET_PRICE'],
     distributionModes:['DIRECT_TO_PROVIDER','OPEN_MARKET','SAVED_PARTNERS'],
     loadTypes:['FTL','PTL'],
+    shipmentMovementScopes:['INTERCITY','LOCAL'],
     capacityStates:['EMPTY','OFF_DUTY','PARTIAL'],
     capacityVisibility:['DIRECT_TO_SELECTED_BUSINESS','OPEN','PRIVATE','SAVED_PARTNERS'],
+    capacityMovementScopes:['BOTH','INTERCITY','LOCAL'],
     relationshipStates:['CONNECTED','DECLINED','FAVORITE','PENDING'],
     verificationStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
     applicationStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],

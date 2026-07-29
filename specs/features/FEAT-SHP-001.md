@@ -1,7 +1,7 @@
 ---
 id: FEAT-SHP-001
 title: B2B shipment creation and execution
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
 behavior: Authorized Business actors create road-freight loads as either shipper or receiver owners, manage posting and execution from one My Loads workspace, transporters discover or accept permitted work through the Load Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
 contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
@@ -160,6 +160,12 @@ When they filter by text, route cities, cargo configuration, load type, visibili
 Then only loads satisfying every supplied filter are displayed\
 And a price range excludes Quote Requested loads because they have no comparable saved amount\
 And clearing the filters restores all loads permitted by visibility policy.
+
+Given Local and Between cities loads coexist\
+When the provider filters movement scope or Local locality\
+Then structured movement and place identities are used\
+And origin and destination route filters apply only to Between cities records\
+And exact Local pickup or drop-off coordinates are not returned to the Board.
 
 Given a provider chooses one of its own trucks with a current planned route\
 When Load Board results are displayed\

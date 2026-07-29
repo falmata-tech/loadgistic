@@ -34,7 +34,7 @@
 - Searchable Load and Capacity Boards with transparent both-city, one-city, or no-match route ranking
 - Collapsible Board filters for price/deadline/recency and capacity space/date/visibility/freshness/flexibility/proof
 - Business operating regions on authenticated Public Profiles and directory cards
-- Connected-network route coverage using declared regional names without exact map pins
+- Connected-network route coverage using structured intercity routes and local service-area circles without exposing exact load pins
 - Ethiopian producer- and transporter-focused public homepage with reviewed generated hero imagery
 - Public member-marketplace examples that reveal no live marketplace records
 - Enforceable Status timeline or Approximate location + status tracking, with real in-between events
@@ -46,14 +46,17 @@
 - Separate private account and explicit Public Profile phone/email fields
 - Browser-obscured device areas with 40 km capacity/PTL and 20 km FTL privacy zones
 - Driver-only device location with fleet-owner manual-area enforcement
-- Local OpenStreetMap Ethiopia settlement catalog with 3,405 imported records
+- Local OpenStreetMap Ethiopia settlement catalog with 3,575 imported records, including Addis Ababa sub-city localities
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
+- Local, Between cities, and Both movement scopes across load posting, capacity publishing, Boards, profiles, and route comparison
+- Repeatable profile service areas with 5–100 km coverage radii and mixed circle/route comparison evidence
+- Optional local pickup/drop-off map points excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
 - Tracking and proof kept as separate contracts
 - Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
 - PWA and responsive UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `005` and RLS target
+- Supabase migrations `001` through `006` and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -75,17 +78,18 @@
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
 - Server-owned pagination for Boards, Directory, My Loads/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
-- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, subscription and workflow states, integrity checks, and a named cross-market network cohort
+- Opt-in comprehensive local dataset covering all 30 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, integrity checks, and a named cross-market network cohort
 - Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 62 tests passed, including named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Node evidence: 66 tests passed, including geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 38 passed and four expected viewport skips
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
+- Stress-dataset warm-query evidence: Directory 5.19 ms median, Load Board 1.33 ms, Capacity Board 1.42 ms, direct capacity detail 0.63 ms, and PSTL grouping 3.58 ms
 - Production and development npm dependency audit: zero vulnerabilities
 
 ## Requires an internet-enabled environment
 
-- Apply Supabase migrations `001` through `005` through Supabase CLI
+- Apply Supabase migrations `001` through `006` through Supabase CLI
 
 ## Repository administration still required
 

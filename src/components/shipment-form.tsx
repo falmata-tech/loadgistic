@@ -12,6 +12,7 @@ import {
   Check,
   Clock3,
   MapPin,
+  Navigation,
   PackageOpen,
   Route,
   Search,
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 import { AsyncMemberSelect } from './async-member-select';
+import { LocalLoadMapPicker } from './local-load-map-picker';
 
 export function ShipmentForm({
   workspaceName,
@@ -44,6 +46,8 @@ export function ShipmentForm({
   const [ownerPartyRole,setOwnerPartyRole]=React.useState('SHIPPER');
   const [counterpartyType,setCounterpartyType]=React.useState(selectedReceiver?'ACCOUNT':'ACCOUNT');
   const [loadType,setLoadType]=React.useState('');
+  const [movementScope,setMovementScope]=React.useState('INTERCITY' as 'LOCAL'|'INTERCITY');
+  const [localCenter,setLocalCenter]=React.useState(null as {lat:number;lng:number}|null);
 
   return <form action="/api/shipments" method="post" className="load-composer stack" data-testid="new-shipment-form">
     <input type="hidden" name="serviceMode" value="FREIGHT"/>
@@ -56,7 +60,12 @@ export function ShipmentForm({
         <fieldset className="form-group"><legend><UserRound aria-hidden="true"/>Your role on this load</legend><div className="segmented-control"><label onClick={()=>setOwnerPartyRole('SHIPPER')}><input type="radio" name="ownerPartyRole" value="SHIPPER" checked={ownerPartyRole==='SHIPPER'} onChange={()=>setOwnerPartyRole('SHIPPER')}/><span>Shipper</span></label><label onClick={()=>setOwnerPartyRole('RECEIVER')}><input type="radio" name="ownerPartyRole" value="RECEIVER" checked={ownerPartyRole==='RECEIVER'} onChange={()=>setOwnerPartyRole('RECEIVER')}/><span>Receiver</span></label></div></fieldset>
         <fieldset className="form-group full"><legend><Building2 aria-hidden="true"/>{ownerPartyRole==='SHIPPER'?'Who receives it?':'Who ships it?'}</legend><div className="segmented-control"><label onClick={()=>setCounterpartyType('ACCOUNT')}><input type="radio" name="counterpartyType" value="ACCOUNT" checked={counterpartyType==='ACCOUNT'} onChange={()=>setCounterpartyType('ACCOUNT')}/><span>Loadgistic Business</span></label><label onClick={()=>setCounterpartyType('EXTERNAL')}><input type="radio" name="counterpartyType" value="EXTERNAL" checked={counterpartyType==='EXTERNAL'} onChange={()=>setCounterpartyType('EXTERNAL')}/><span>External Business</span></label></div></fieldset>
         {counterpartyType==='ACCOUNT'?<AsyncMemberSelect id="counterparty-search" name="counterpartyRef" kind="BUSINESS" label={ownerPartyRole==='SHIPPER'?'Receiver Business':'Shipper Business'} placeholder="Start typing a Business name" initialRef={selectedReceiver?`org:${selectedReceiver}`:''} initialLabel={selectedReceiverLabel} required/>:<><div className="form-group"><label htmlFor="external-counterparty"><Building2 aria-hidden="true"/>{ownerPartyRole==='SHIPPER'?'Receiver':'Shipper'} name</label><input id="external-counterparty" name="externalCounterpartyName" required placeholder="Business or person name"/></div><div className="form-group"><label htmlFor="external-counterparty-phone">Phone (optional)</label><input id="external-counterparty-phone" name="externalCounterpartyPhone" type="tel" placeholder="+251 …"/></div></>}
-        <div className="route-inputs full"><div className="form-group"><label htmlFor="shipment-origin"><MapPin aria-hidden="true"/>From city</label><EthiopiaPlaceInput id="shipment-origin" name="origin" required placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true"><ArrowRightLeft/></div><div className="form-group"><label htmlFor="shipment-destination"><MapPin aria-hidden="true"/>To city</label><EthiopiaPlaceInput id="shipment-destination" name="destination" required placeholder="Hawassa, Ethiopia"/></div></div>
+        <fieldset className="form-group full"><legend><Route aria-hidden="true"/>Movement</legend><div className="rich-choice-grid two"><label className="rich-choice"><input type="radio" name="movementScope" value="LOCAL" checked={movementScope==='LOCAL'} onChange={()=>setMovementScope('LOCAL')}/><MapPin aria-hidden="true"/><span><strong>Local</strong><small>Within one city or town area</small></span><Check className="choice-check" aria-hidden="true"/></label><label className="rich-choice"><input type="radio" name="movementScope" value="INTERCITY" checked={movementScope==='INTERCITY'} onChange={()=>setMovementScope('INTERCITY')}/><Route aria-hidden="true"/><span><strong>Between cities</strong><small>Origin city to destination city</small></span><Check className="choice-check" aria-hidden="true"/></label></div></fieldset>
+        {movementScope==='INTERCITY'?<div className="route-inputs full"><div className="form-group"><label htmlFor="shipment-origin"><MapPin aria-hidden="true"/>From city</label><EthiopiaPlaceInput id="shipment-origin" name="origin" required placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true"><ArrowRightLeft/></div><div className="form-group"><label htmlFor="shipment-destination"><MapPin aria-hidden="true"/>To city</label><EthiopiaPlaceInput id="shipment-destination" name="destination" required placeholder="Hawassa, Ethiopia"/></div></div>:<div className="local-load-location full">
+          <div className="form-group"><label htmlFor="shipment-locality"><MapPin aria-hidden="true"/>Local city or town</label><EthiopiaPlaceInput id="shipment-locality" name="localPlaceLabel" placeRefName="localPlaceRef" required placeholder="Addis Ababa, Ethiopia" onPlaceSelect={place=>setLocalCenter({lat:place.lat,lng:place.lng})}/></div>
+          <div className="form-grid"><div className="form-group"><label htmlFor="pickup-area"><Navigation aria-hidden="true"/>Pickup area (optional)</label><input id="pickup-area" name="pickupAreaLabel" placeholder="Bole, near Megenagna"/></div><div className="form-group"><label htmlFor="dropoff-area"><MapPin aria-hidden="true"/>Drop-off area (optional)</label><input id="dropoff-area" name="dropoffAreaLabel" placeholder="Saris, near the main road"/></div></div>
+          <LocalLoadMapPicker center={localCenter}/>
+        </div>}
         <div className="form-group"><label htmlFor="pickup-date"><CalendarClock aria-hidden="true"/>Pick up before</label><input id="pickup-date" name="pickupDate" type="date" min={minDate} required/></div>
         <div className="form-group"><label htmlFor="delivery-date"><Clock3 aria-hidden="true"/>Drop off before (optional)</label><input id="delivery-date" name="deliveryDate" type="date" min={minDate}/></div>
         <div className="form-group full"><label htmlFor="cargo-description"><PackageOpen aria-hidden="true"/>Load detail</label><textarea id="cargo-description" name="cargoDescription" required placeholder="Example: 18 packed cartons of woven baskets. Keep sensitive details out."/></div>
