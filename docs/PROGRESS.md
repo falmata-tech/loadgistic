@@ -13,6 +13,7 @@
 - B2B shipment creation with independent load owner and shipper/receiver roles
 - Account or external shipment counterpart
 - My Loads separated from execution-only Tracking
+- One Business My Loads navigation destination containing Post load, All my loads, and Active Tracking
 - Virtual PSTL discovery over compatible Posted PTL demand
 - Road-freight workflows
 - Load discovery and provider interest
@@ -24,12 +25,14 @@
 - Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
 - One authoritative paired profile-route model, labeled Freight Routes for Businesses and Preferred Routes for transport providers
 - Approximate OpenStreetMap route lines, record-derived evidence counts, fresh all-truck route projections, and member-to-member comparison
+- High-contrast warm dashed viewer routes that stay visible over matching blue profile routes
 - Real truck identity fields: make, model, cargo configuration, and plate; generic tonnage labels removed
 - Ten-image standardized cargo-configuration catalog used by freight creation, driver Home, Fleet, and Capacity
 - Freight FTL/PTL requirement and recipient-specific temporary load-size proof sharing
 - Business-designated load-phone opt in and party-only receiver contact required before Freight assignment
 - Separate city-pair route controls across freight and capacity forms
 - Searchable Load and Capacity Boards with transparent both-city, one-city, or no-match route ranking
+- Collapsible Board filters for price/deadline/recency and capacity space/date/visibility/freshness/flexibility/proof
 - Business operating regions on authenticated Public Profiles and directory cards
 - Connected-network route coverage using declared regional names without exact map pins
 - Ethiopian producer- and transporter-focused public homepage with reviewed generated hero imagery

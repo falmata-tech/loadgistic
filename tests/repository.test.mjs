@@ -128,6 +128,10 @@ test('Load and Capacity Boards filter and rank by an owned route',()=>{
  assert.equal(loads[0].destination,'Dire Dawa, Ethiopia');
  assert.ok(loads.every((load,index)=>index===0||loads[index-1].route_match_score>=load.route_match_score));
  assert.ok(repo.listLoads(transporter,'ALL',{q:'beverage'}).every(load=>load.title.includes('Beverage')));
+ assert.ok(repo.listLoads(transporter,'ALL',{priceMode:'QUOTE_REQUESTED'}).every(load=>load.price_mode==='QUOTE_REQUESTED'));
+ const priced=repo.listLoads(transporter,'ALL',{minPriceEtb:'48000',maxPriceEtb:'49000'});
+ assert.ok(priced.length>=1);
+ assert.ok(priced.every(load=>(load.price_minor||load.target_price_minor)>=4_800_000&&(load.price_minor||load.target_price_minor)<=4_900_000));
  const routeOptions=repo.listOwnTruckRouteOptions(transporter);
  assert.equal(routeOptions[0].id,'ALL_ACTIVE');
  assert.ok(routeOptions.some(route=>route.id==='cap-empty'&&route.source_label==='Planned route'&&route.route_date));
@@ -138,6 +142,9 @@ test('Load and Capacity Boards filter and rank by an owned route',()=>{
  assert.equal(capacity[0].route_match_score,2);
  assert.equal(capacity[0].destination,'Dire Dawa, Ethiopia');
  assert.ok(repo.listMarketCapacity(shipper,{status:'PARTIAL'}).every(truck=>truck.status==='PARTIAL'));
+ assert.ok(repo.listMarketCapacity(shipper,{minAvailable:'100'}).every(truck=>truck.available_percent===100));
+ assert.ok(repo.listMarketCapacity(shipper,{stopOption:'DIRECT_ONLY'}).every(truck=>!truck.accepts_multi_pick&&!truck.accepts_multi_drop));
+ assert.ok(repo.listMarketCapacity(shipper,{visibility:'SAVED_PARTNERS'}).every(truck=>truck.visibility==='SAVED_PARTNERS'));
 });
 
 test('Load Board can isolate the provider interests without adding them to Tracking',()=>{

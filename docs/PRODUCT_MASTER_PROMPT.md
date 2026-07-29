@@ -27,7 +27,9 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 - Every Capacity Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
 - Off Duty trucks never appear on the Capacity Board.
-- Both boards support plain search and filters for route cities, FTL/PTL, and cargo configuration.
+- The Load Board supports text, route, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
+- The Capacity Board supports text, route, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
+- Secondary Board controls remain collapsed under More filters until used.
 - A provider may rank permitted loads against one of its own recorded truck routes.
 - A Business may rank permitted trucks against one of its own open load routes.
 - Matching is deliberately simple: both cities align, one city aligns, or no recorded match. It is not dispatch, assignment, distance calculation, or a guarantee.
@@ -81,7 +83,7 @@ My Network separates a private Favorite from a mutual operating relationship. Ei
 
 The posting Business declares whether it is shipper or receiver while remaining the load owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required.
 
-The Load Board is provider discovery. My Loads is the Business owner's demand workspace. Tracking contains only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, and Completed records involving the viewer. Posted, Sent, Contacted, saved, and merely interested records never mix into Tracking.
+The Load Board is provider discovery. Businesses receive one My Loads navigation entry: its page contains the Post load action, an All my loads view of owned demand, and an Active Tracking view. Transport providers retain a Tracking navigation entry because they do not own Business demand. Tracking contains only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, and Completed records involving the viewer. Posted, Sent, Contacted, saved, and merely interested records never mix into Tracking.
 
 Load dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
 
@@ -107,6 +109,8 @@ Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Publ
 Route, load, capacity, board-filter, and general-area inputs query a bounded local catalog of Ethiopian OpenStreetMap cities, towns, villages, and hamlets after two typed characters while retaining free text. The catalog stores coordinates and available place metadata. No full catalog is rendered into a page or sent to a third party during normal use.
 
 Fleet Transporter Home compares Preferred Route and fresh truck-route place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view uses approximate city route lines and text evidence. It uses no exact facility pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
+
+Route comparisons draw the viewer's own routes as a warm dashed line above blue profile routes so overlapping matches remain visible.
 
 Deep workspace detail routes provide a Back control. A direct deep link has a safe parent-board fallback, while in-workspace navigation returns to the recorded previous workspace page.
 

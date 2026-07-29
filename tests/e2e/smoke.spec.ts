@@ -104,12 +104,16 @@ test('shipper can open rich load posting workflow', async ({ page }: { page: any
   await expect(page.getByLabel('Shipper name')).toBeVisible();
 });
 
-test('Business keeps posted demand in My loads and execution work in Tracking',async({page}:{page:any})=>{
+test('Business manages posting and active Tracking from one My Loads workspace',async({page}:{page:any})=>{
   await login(page,'shipper@loadgistic.local');
-  await page.goto('/app/shipments?view=MY_LOADS');
-  await expect(page.getByRole('heading',{name:'My loads'})).toBeVisible();
+  await page.goto('/app/shipments');
+  await expect(page.getByRole('heading',{name:'My Loads'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'My Loads',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('link',{name:'Post Load',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'Tracking',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'Post load'})).toBeVisible();
   await expect(page.getByText('Beverage load to Dire Dawa')).toBeVisible();
-  await page.getByRole('link',{name:'Tracking',exact:true}).last().click();
+  await page.getByRole('link',{name:'Active Tracking'}).click();
   await expect(page.getByText('Beverage load to Dire Dawa')).toHaveCount(0);
   await expect(page.getByText('Industrial supplies to Dire Dawa')).toBeVisible();
 });
@@ -127,9 +131,12 @@ test('mobile workspace menu exposes secondary business pages', async ({ page }: 
   test.skip((page.viewportSize()?.width || 1000) >= 980, 'Mobile navigation audit');
   await login(page, 'shipper@loadgistic.local');
   await page.getByText('Menu', { exact: true }).click();
-  await expect(page.getByRole('navigation', { name: 'All workspace navigation' }).getByRole('link', { name: 'Public Profile' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'All workspace navigation' }).getByRole('link', { name: 'Tracking', exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'All workspace navigation' }).getByRole('link', { name: 'Verification' })).toBeVisible();
+  const menu=page.getByRole('navigation', { name: 'All workspace navigation' });
+  await expect(menu.getByRole('link', { name: 'Public Profile' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'My Loads', exact: true })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Tracking', exact: true })).toHaveCount(0);
+  await expect(menu.getByRole('link', { name: 'Post Load', exact: true })).toHaveCount(0);
+  await expect(menu.getByRole('link', { name: 'Verification' })).toBeVisible();
 });
 
 test('application presents one business category and two transporter categories', async ({ page }: { page: any }) => {
@@ -189,6 +196,10 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByRole('heading', { name: 'Load Board' })).toBeVisible();
   await expect(page.getByLabel('Match truck routes')).toBeVisible();
   await expect(page.getByLabel('Match truck routes').locator('option').filter({hasText:'All active truck routes'})).toHaveCount(1);
+  await page.getByText('More filters',{exact:true}).click();
+  await expect(page.getByLabel('Price type')).toBeVisible();
+  await expect(page.getByLabel('Minimum ETB')).toBeVisible();
+  await expect(page.getByLabel('Posted within')).toBeVisible();
   await expect(page.getByText('Beverage load to Dire Dawa')).toBeVisible();
   await page.goto('/app/shipments');
   await expect(page.getByRole('heading', { name: 'Tracking' })).toBeVisible();
@@ -196,6 +207,10 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByText('Industrial supplies to Dire Dawa')).toBeVisible();
   await page.goto('/app/capacity');
   await expect(page.getByRole('heading', { name: 'Capacity Board' })).toBeVisible();
+  await page.getByText('More filters',{exact:true}).click();
+  await expect(page.getByLabel('At least this much space')).toBeVisible();
+  await expect(page.getByLabel('Route flexibility')).toBeVisible();
+  await expect(page.getByLabel('Cargo-space proof')).toBeVisible();
   await expect(page.getByText(/read only for transporters and drivers/i)).toBeVisible();
   await expect(page.getByRole('link', { name: /view transporter/i })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /interest|contact/i })).toHaveCount(0);
@@ -263,6 +278,8 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await expect(page.getByText('Tracked activity').first()).toBeVisible();
   await page.getByRole('link',{name:'Compare routes'}).click();
   await expect(page.getByText('How this comparison works')).toBeVisible();
+  await expect(page.locator('.route-map-legend .viewer')).toBeVisible();
+  await expect(page.locator('.leaflet-overlay-pane path[stroke="#c45116"]').first()).toHaveAttribute('stroke-dasharray',/12 8/);
   await expect(page.getByText(/full route match/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Fresh truck routes'})).toBeVisible();
   await expect(page.getByText(/2 active trucks registered/)).toBeVisible();

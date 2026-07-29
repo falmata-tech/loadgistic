@@ -8,7 +8,7 @@ import { capacityLabel } from '@/lib/domain.js';
 import { relativeTime } from '@/lib/ui';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
-import { Route, Search, SlidersHorizontal, X } from 'lucide-react';
+import { CalendarClock, Camera, Eye, Gauge, Route, Search, SlidersHorizontal, X } from 'lucide-react';
 import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';
 
 function acceptedLoads(capacity:any) {
@@ -25,7 +25,7 @@ function stopPolicy(capacity:any){
 }
 
 export default async function CapacityPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
- const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',origin:query.origin||'',destination:query.destination||'',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||''}; const rows:any[]=listMarketCapacity(user,filters); const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const loadRoutes:any[]=listOwnLoadRouteOptions(user); const hasFilters=Object.values(filters).some(Boolean);
+ const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',origin:query.origin||'',destination:query.destination||'',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',routeBy:query.routeBy||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',contractRoutes:query.contractRoutes||'',proof:query.proof||''}; const rows:any[]=listMarketCapacity(user,filters); const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const loadRoutes:any[]=listOwnLoadRouteOptions(user); const hasFilters=Object.values(filters).some(Boolean); const hasAdvancedFilters=[filters.minAvailable,filters.routeBy,filters.visibility,filters.freshness,filters.stopOption,filters.contractRoutes,filters.proof].some(Boolean);
  return <div className="page"><PageHeader title="Capacity Board" subtitle={isProvider?'A read-only view of current supply signals from other trucks.':'Every card is one fresh Empty or Partial truck available for freight work.'}/>
  {isProvider?<div className="alert">The Capacity Board is read only for transporters and drivers. Use it to understand supply; contact and interest actions are not available here.</div>:<div className="alert">Each truck stands on its own. Public means all logged-in businesses; Partners means only Connected network Businesses.</div>}
  <form className="board-filter-panel" method="get">
@@ -39,6 +39,18 @@ export default async function CapacityPage({searchParams}:{searchParams:Promise<
      <div className="form-group"><label htmlFor="capacity-load-type">Accepts</label><select id="capacity-load-type" name="loadType" defaultValue={filters.loadType}><option value="">FTL or PTL</option><option value="FTL">FTL</option><option value="PTL">PTL</option></select></div>
      <div className="form-group"><label htmlFor="capacity-truck-type">Cargo configuration</label><select id="capacity-truck-type" name="vehicleCategory" defaultValue={filters.vehicleCategory}><option value="">All truck types</option>{VEHICLE_CONFIGURATIONS.map(type=><option value={type.name} key={type.name}>{type.name}</option>)}</select></div>
    </div>
+   <details className="board-more-filters" open={hasAdvancedFilters}>
+     <summary><SlidersHorizontal aria-hidden="true"/>More filters</summary>
+     <div className="board-filter-grid">
+       <div className="form-group"><label htmlFor="capacity-min-space"><Gauge aria-hidden="true"/>At least this much space</label><select id="capacity-min-space" name="minAvailable" defaultValue={filters.minAvailable}><option value="">Any available space</option><option value="25">25% or more</option><option value="50">50% or more</option><option value="75">75% or more</option><option value="100">100% empty</option></select></div>
+       <div className="form-group"><label htmlFor="capacity-route-by"><CalendarClock aria-hidden="true"/>Route date before or on</label><input id="capacity-route-by" name="routeBy" type="date" defaultValue={filters.routeBy}/></div>
+       <div className="form-group"><label htmlFor="capacity-visibility"><Eye aria-hidden="true"/>Visibility</label><select id="capacity-visibility" name="visibility" defaultValue={filters.visibility}><option value="">Public or Partners</option><option value="OPEN">Public</option><option value="SAVED_PARTNERS">Partners</option></select></div>
+       <div className="form-group"><label htmlFor="capacity-freshness"><Gauge aria-hidden="true"/>Freshness</label><select id="capacity-freshness" name="freshness" defaultValue={filters.freshness}><option value="">Any fresh Board signal</option><option value="CURRENT">Current</option><option value="UPDATE_NEEDED">Update needed</option></select></div>
+       <div className="form-group"><label htmlFor="capacity-stops"><Route aria-hidden="true"/>Route flexibility</label><select id="capacity-stops" name="stopOption" defaultValue={filters.stopOption}><option value="">Any route flexibility</option><option value="DIRECT_ONLY">Direct only</option><option value="MULTI_PICK">Accepts Multi Pick</option><option value="MULTI_DROP">Accepts Multi Drop</option></select></div>
+       <div className="form-group"><label htmlFor="capacity-contract-routes"><Route aria-hidden="true"/>Contract routes</label><select id="capacity-contract-routes" name="contractRoutes" defaultValue={filters.contractRoutes}><option value="">Any contract preference</option><option value="YES">Open to contract routes</option></select></div>
+       <div className="form-group"><label htmlFor="capacity-proof"><Camera aria-hidden="true"/>Cargo-space proof</label><select id="capacity-proof" name="proof" defaultValue={filters.proof}><option value="">With or without proof</option><option value="RECORDED">Photo recorded</option></select></div>
+     </div>
+   </details>
    <div className="board-filter-actions"><button className="button icon-button-label"><Search aria-hidden="true"/>Show matching trucks</button>{hasFilters?<Link href="/app/capacity" className="button secondary icon-button-label"><X aria-hidden="true"/>Clear</Link>:null}<span className="meta">{rows.length} {rows.length===1?'truck':'trucks'} shown</span></div>
  </form>
  <section className="capacity-market-grid">{rows.map((cap:any)=><article className="card capacity-market-card" key={cap.id}>

@@ -3,8 +3,8 @@ id: FEAT-SHP-001
 title: B2B shipment creation and execution
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
-behavior: Authorized Business actors create road-freight loads as either shipper or receiver owners, transporters discover or accept permitted work through the Load Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
-contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
+behavior: Authorized Business actors create road-freight loads as either shipper or receiver owners, manage posting and execution from one My Loads workspace, transporters discover or accept permitted work through the Load Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
+contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
@@ -106,6 +106,15 @@ Given an authenticated platform administrator without a Business workspace\
 When they request shipment creation\
 Then access is denied and no shipment can be created.
 
+### Scenario: Business load work has one navigation entry
+
+Given an authenticated Business uses the workspace navigation\
+When load work is displayed\
+Then one My Loads navigation entry replaces separate Post Load and Tracking entries\
+And the My Loads page provides an All my loads view, an Active Tracking view, and a Post load action\
+And Posted, negotiating, execution, and completed records remain projections of one canonical load\
+And transport providers retain their own Tracking navigation because they do not own Business demand.
+
 ### Scenario: provider discovers permitted freight
 
 Given a fleet transporter or self-managed driver\
@@ -139,8 +148,9 @@ And denied commands create no commercial record, notification, event, or success
 ### Scenario: Load Board supports truck-aware discovery
 
 Given a fleet transporter or self-managed driver opens the Load Board\
-When they search by text, route cities, cargo configuration, load type, or visibility mode\
+When they filter by text, route cities, cargo configuration, load type, visibility mode, price mode or range, pickup or drop-off deadline, or posted recency\
 Then only loads satisfying every supplied filter are displayed\
+And a price range excludes Quote Requested loads because they have no comparable saved amount\
 And clearing the filters restores all loads permitted by visibility policy.
 
 Given a provider chooses one of its own trucks with a current planned route\

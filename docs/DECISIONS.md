@@ -54,7 +54,7 @@ Use one image-backed cargo-configuration catalog across freight creation, driver
 
 ## ADR-013 — Discovery, Tracking, and authenticated directory
 
-Keep one canonical load record while separating its UI by permission and stage. The Load Board is provider discovery plus interest; My Loads contains demand owned by a Business; Tracking contains only execution-stage party records from Agreed onward.
+Keep one canonical load record while separating its UI by permission and stage. The Load Board is provider discovery plus interest. Businesses use one My Loads navigation destination containing posting, all owned demand, and an Active Tracking projection. Providers retain a separate Tracking destination because they do not own Business demand. Tracking contains only execution-stage party records from Agreed onward.
 
 Use one authenticated directory for Businesses, fleet transporters, and self-managed drivers. Business profiles support participant confirmation and completed-load reputation. Private account email and phone are never public-profile fallbacks; only explicitly maintained profile contacts are displayed.
 

@@ -99,6 +99,14 @@ And a visual analysis identifies shared endpoints and strongest matching route p
 And the result states whether it uses tracked evidence, reported activity only, or declarations only\
 And it does not claim availability, serviceability, trustworthiness, price, or dispatch suitability.
 
+### Scenario: comparison routes remain visually distinguishable
+
+Given a member compares its routes with another profile\
+When a viewer route overlaps a blue profile route on the map\
+Then the viewer route is drawn above it with a high-contrast warm dashed line\
+And the legend uses the same dashed treatment\
+And the route remains distinguishable from blue profile, green current-partial, and orange planned-route lines.
+
 ### Scenario: unmapped member-entered place remains honest
 
 Given a route contains a place outside the map reference catalog\

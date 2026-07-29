@@ -17,7 +17,7 @@ export function LeafletRouteMap({ routes, comparisonRoutes = [] }: { routes:any[
   const hasCurrent=projected.some((route:any)=>route.route_kind==='CURRENT_PARTIAL');
   const hasPlanned=projected.some((route:any)=>route.route_kind==='PLANNED');
   function routeStyle(route:any) {
-    if(route.group==='viewer')return {color:'#667085',weight:4,opacity:.78,dashArray:'5 7'};
+    if(route.group==='viewer')return {color:'#c45116',weight:6,opacity:.96,dashArray:'12 8'};
     if(route.route_kind==='CURRENT_PARTIAL')return {color:'#16794d',weight:6,opacity:.88};
     if(route.route_kind==='PLANNED')return {color:'#b86708',weight:5,opacity:.84,dashArray:'10 7'};
     return {color:'#1769e0',weight:5,opacity:.82};

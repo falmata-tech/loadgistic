@@ -1353,12 +1353,25 @@ export function listLoads(user, mode = 'ALL', filters = {}) {
   const selectedRoute = filters.matchCapacityId
     ? listOwnTruckRouteOptions(user).find(option => option.id === filters.matchCapacityId)
     : null;
+  const minPriceMinor = Number(filters.minPriceEtb) > 0 ? Math.round(Number(filters.minPriceEtb) * 100) : null;
+  const maxPriceMinor = Number(filters.maxPriceEtb) > 0 ? Math.round(Number(filters.maxPriceEtb) * 100) : null;
+  const postedHours = { '24H':24, '3D':72, '7D':168 }[filters.postedWithin] || null;
+  const postedCutoff = postedHours ? Date.now() - postedHours * 60 * 60 * 1000 : null;
   rows = rows
-    .filter(load => !filters.q || [load.title,load.cargo_description,load.shipper_name,load.origin,load.destination,load.vehicle_category].some(value => textIncludes(value,filters.q)))
+    .filter(load => !filters.q || [load.code,load.title,load.cargo_description,load.shipper_name,load.receiver_name,load.load_owner_name,load.origin,load.destination,load.vehicle_category,load.price_mode].some(value => textIncludes(value,filters.q)))
     .filter(load => !filters.origin || textIncludes(load.origin,filters.origin))
     .filter(load => !filters.destination || textIncludes(load.destination,filters.destination))
     .filter(load => !filters.loadType || load.load_type === filters.loadType)
     .filter(load => !filters.vehicleCategory || load.vehicle_category === filters.vehicleCategory)
+    .filter(load => !filters.priceMode || load.price_mode === filters.priceMode)
+    .filter(load => {
+      if (!minPriceMinor && !maxPriceMinor) return true;
+      const amount = load.price_mode === 'FIXED_PRICE' ? load.price_minor : load.price_mode === 'TARGET_PRICE' ? load.target_price_minor : null;
+      return amount !== null && (!minPriceMinor || amount >= minPriceMinor) && (!maxPriceMinor || amount <= maxPriceMinor);
+    })
+    .filter(load => !filters.pickupBy || (load.pickup_date && load.pickup_date <= filters.pickupBy))
+    .filter(load => !filters.deliveryBy || (load.delivery_date && load.delivery_date <= filters.deliveryBy))
+    .filter(load => !postedCutoff || new Date(load.created_at).getTime() >= postedCutoff)
     .map(load => {
       const candidates=selectedRoute?.routes||[selectedRoute].filter(Boolean);
       const match = candidates.map(route => ({...route,...routeMatch(load.origin,load.destination,route.origin,route.destination)})).sort((a,b)=>b.score-a.score)[0]||null;
@@ -1549,12 +1562,22 @@ export function listMarketCapacity(user, filters = {}) {
     return true;
   });
   const filtered = visible
-    .filter(row => !filters.q || [row.vehicle_make,row.vehicle_model,row.cargo_configuration,row.organization_name,row.provider_name,row.origin,row.destination,row.location_area].some(value => textIncludes(value,filters.q)))
-    .filter(row => !filters.origin || textIncludes(row.origin,filters.origin))
-    .filter(row => !filters.destination || textIncludes(row.destination,filters.destination))
+    .filter(row => !filters.q || [row.platform_number,row.vehicle_make,row.vehicle_model,row.cargo_configuration,row.organization_name,row.provider_name,row.origin,row.destination,row.current_route_origin,row.current_route_destination,row.location_area].some(value => textIncludes(value,filters.q)))
+    .filter(row => !filters.origin || capacityRouteCandidates(row,{requireCurrentDate:true}).some(route => textIncludes(route.origin,filters.origin)))
+    .filter(row => !filters.destination || capacityRouteCandidates(row,{requireCurrentDate:true}).some(route => textIncludes(route.destination,filters.destination)))
     .filter(row => !filters.status || row.status === filters.status)
     .filter(row => !filters.loadType || (filters.loadType === 'FTL' ? row.accepts_full_load : row.accepts_partial_load))
     .filter(row => !filters.vehicleCategory || row.cargo_configuration === filters.vehicleCategory || row.vehicle_category === filters.vehicleCategory)
+    .filter(row => !filters.minAvailable || row.available_percent >= Number(filters.minAvailable))
+    .filter(row => !filters.routeBy || capacityRouteCandidates(row,{requireCurrentDate:true}).some(route => route.route_date <= filters.routeBy))
+    .filter(row => !filters.visibility || row.visibility === filters.visibility)
+    .filter(row => !filters.freshness || String(row.freshness).toUpperCase().replaceAll(' ','_') === filters.freshness)
+    .filter(row => !filters.stopOption
+      || (filters.stopOption === 'DIRECT_ONLY' && !row.accepts_multi_pick && !row.accepts_multi_drop)
+      || (filters.stopOption === 'MULTI_PICK' && row.accepts_multi_pick)
+      || (filters.stopOption === 'MULTI_DROP' && row.accepts_multi_drop))
+    .filter(row => filters.contractRoutes !== 'YES' || row.open_to_contract_lanes)
+    .filter(row => filters.proof !== 'RECORDED' || row.proof_available)
     .map(row => {
       const match = selectedLoad
         ? capacityRouteCandidates(row,{requireCurrentDate:true})

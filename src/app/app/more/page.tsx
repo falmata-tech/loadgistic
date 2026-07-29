@@ -17,7 +17,7 @@ function planDescription(user:any){
 const roleLabels:Record<string,string>={SHIPPER:'Business',RECEIVER:'Business',TRANSPORTER:'Fleet transporter',DRIVER:'Self-managed driver',ADMIN:'Platform administrator'};
 
 function workspaceLinks(role:string){
- if(role==='SHIPPER'||role==='RECEIVER')return [['/app/shipments/new','Post load'],['/app/shipments?view=MY_LOADS','My loads'],['/app/shipments','Tracking'],['/app/providers','Directory'],['/app/capacity','Capacity Board'],['/app/company-page','Public Profile'],['/app/verification','Verification']];
+ if(role==='SHIPPER'||role==='RECEIVER')return [['/app/shipments','My Loads'],['/app/providers','Directory'],['/app/capacity','Capacity Board'],['/app/company-page','Public Profile'],['/app/verification','Verification']];
  if(role==='TRANSPORTER'||role==='DRIVER')return [['/app/loads','Load Board'],['/app/capacity','Capacity Board'],['/app/shipments','Tracking'],['/app/providers','Directory'],['/app/company-page','Public Profile'],['/app/verification','Verification']];
  return [['/admin/applications','Applications'],['/admin/verifications','Verification requests'],['/admin/billing','Billing review'],['/app/shipments','Tracking'],['/app/providers','Directory']];
 }

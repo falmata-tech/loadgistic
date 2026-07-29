@@ -6,7 +6,6 @@ import { Logo } from './logo';
 import {
   BadgeCheck,
   Building2,
-  CirclePlus,
   ClipboardCheck,
   Database,
   Home,
@@ -26,9 +25,7 @@ import { WorkspaceBackButton } from './workspace-back-button';
 const navigation: Record<string, Array<{ href: string; label: string; icon: LucideIcon }>> = {
   SHIPPER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/shipments/new', label: 'Post Load', icon: CirclePlus },
-    { href: '/app/shipments?view=MY_LOADS', label: 'My Loads', icon: ClipboardCheck },
-    { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
+    { href: '/app/shipments', label: 'My Loads', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Search },
     { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
@@ -38,9 +35,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   ],
   RECEIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/shipments/new', label: 'Post Load', icon: CirclePlus },
-    { href: '/app/shipments?view=MY_LOADS', label: 'My Loads', icon: ClipboardCheck },
-    { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
+    { href: '/app/shipments', label: 'My Loads', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Search },
     { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
@@ -84,8 +79,8 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
 };
 
 const mobileNavigation: Record<string, string[]> = {
-  SHIPPER: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/providers', '/app/more'],
-  RECEIVER: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/providers', '/app/more'],
+  SHIPPER: ['/app/home', '/app/shipments', '/app/providers', '/app/capacity', '/app/more'],
+  RECEIVER: ['/app/home', '/app/shipments', '/app/providers', '/app/capacity', '/app/more'],
   TRANSPORTER: ['/app/home', '/app/fleet', '/app/loads', '/app/shipments', '/app/more'],
   DRIVER: ['/app/home', '/app/loads', '/app/shipments', '/app/providers', '/app/more'],
   ADMIN: ['/app/home', '/admin/operations', '/admin/applications', '/app/shipments', '/app/more']
@@ -100,8 +95,6 @@ const roleLabels: Record<string, string> = {
 };
 
 const mobileLabels: Record<string, string> = {
-  '/app/shipments/new': 'New',
-  '/app/shipments': 'Tracking',
   '/app/company-page': 'Profile',
   '/app/loads': 'Loads',
   '/app/capacity': 'Capacity',
@@ -124,7 +117,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
       const expected=new URLSearchParams(itemQuery);
       return [...expected.entries()].every(([key,value])=>searchParams.get(key)===value);
     }
-    return !(pathname==='/app/shipments'&&searchParams.get('view')==='MY_LOADS'&&item.href==='/app/shipments');
+    return true;
   }).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
   const mobileItems = (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;

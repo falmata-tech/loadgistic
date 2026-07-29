@@ -107,7 +107,7 @@ And duty On or Off remains available when rich controls are disabled.
 ### Scenario: Capacity Board supports route-aware discovery
 
 Given an authenticated member opens the Capacity Board\
-When they search by text, route cities, cargo configuration, capacity status, or accepted load type\
+When they filter by text, route cities, cargo configuration, capacity status, accepted load type, minimum available space, route date, visibility, freshness, stop flexibility, contract-route openness, or proof availability\
 Then only trucks satisfying every supplied filter are displayed\
 And clearing the filters restores all capacity permitted by visibility policy.
 
