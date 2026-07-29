@@ -10,11 +10,11 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
   if (!coverage) return null;
   return <section className="card network-coverage">
     <div className="page-header compact-header">
-      <div><h2>Network corridor coverage</h2><p className="page-subtitle">Compare your recorded corridors with the declared locations of Businesses in your network.</p></div>
-      <Link className="button secondary small" href="/app/company-page">Edit corridors</Link>
+      <div><h2>Network route coverage</h2><p className="page-subtitle">Compare Preferred Routes and fresh truck routes with the declared locations of Businesses in your network.</p></div>
+      <Link className="button secondary small" href="/app/company-page">Edit Preferred Routes</Link>
     </div>
-    <div className="coverage-corridors" aria-label="Preferred corridor network">
-      {coverage.corridors.length ? coverage.corridors.map((corridor:string) => <div className="coverage-lane" key={corridor}><Route aria-hidden="true"/><span>{corridor}</span></div>) : <div className="empty-state compact">Add preferred corridors to compare coverage.</div>}
+    <div className="coverage-routes" aria-label="Preferred Route network">
+      {coverage.preferred_routes.length ? coverage.preferred_routes.map((route:string) => <div className="coverage-lane" key={route}><Route aria-hidden="true"/><span>{route}</span></div>) : <div className="empty-state compact">Add Preferred Routes to compare coverage.</div>}
     </div>
     {coverage.routes?.length?<RouteCoverageMap routes={coverage.routes}/>:null}
     <div className="coverage-businesses">

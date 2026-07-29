@@ -26,6 +26,10 @@ const messages: Record<string,string> = {
   ACCEPTED_LOADS_REQUIRED: 'Choose FTL, PTL, or Both.',
   CAPACITY_AREA_REQUIRED: 'Enter the general area where the truck is now.',
   INVALID_CAPACITY_VISIBILITY: 'Choose Public or Partners.',
+  CURRENT_ROUTE_DATE_REQUIRED: 'Choose the date for the current partial-capacity route.',
+  PLANNED_ROUTE_DATE_REQUIRED: 'Choose the planned travel date.',
+  INVALID_ROUTE_DATE: 'Route dates cannot be in the past.',
+  PLANNED_SPACE_STATUS_REQUIRED: 'Choose Full or Partial cargo space for the planned route.',
   FREIGHT_LOAD_TYPE_REQUIRED: 'Choose FTL or PTL for this freight load.',
   RECEIVER_CONTACT_REQUIRED: 'Add the receiver first name and phone before assigning this shipment.',
   RECEIVER_CONTACT_NOT_READY: 'Receiver contact can be added after the shipment is agreed.',
@@ -55,7 +59,9 @@ const messages: Record<string,string> = {
   INVALID_NETWORK_TARGET: 'Choose an eligible Business or transport provider.',
   INVALID_NETWORK_ACTION: 'Choose a valid network action.',
   NETWORK_RELATIONSHIP_NOT_FOUND: 'That network relationship was not found.',
-  NETWORK_REQUEST_NOT_ACTIONABLE: 'That network request is no longer available.'
+  NETWORK_REQUEST_NOT_ACTIONABLE: 'That network request is no longer available.',
+  ADMIN_SELF_SUSPENSION_DENIED: 'An administrator cannot suspend their own account.',
+  INVALID_ADMIN_RECORD_TYPE: 'Choose a supported account or truck record.'
 };
 
 export function errorMessage(error: unknown) {

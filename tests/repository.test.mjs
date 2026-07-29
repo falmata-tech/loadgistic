@@ -56,17 +56,21 @@ test('member directory includes Businesses and transporters with authoritative f
  const company=repo.getPublicCompany('blueline-transport');
  assert.equal(company.fleet_size,2);
  assert.equal(company.vehicles.length,2);
+ assert.ok(company.vehicles.every(vehicle=>/^LG-TRK-[A-Z0-9]+$/.test(vehicle.platform_number)));
+ assert.equal(new Set(company.vehicles.map(vehicle=>vehicle.platform_number)).size,company.vehicles.length);
+ assert.ok(company.live_routes.some(route=>route.route_kind==='PLANNED'&&route.platform_number));
 });
 
-test('fleet dashboard compares saved Business regions with recorded corridors',()=>{
+test('fleet dashboard compares saved Business regions with Preferred and fresh truck routes',()=>{
  const transporter=repo.getUserById('user-transporter');
  const coverage=repo.getFleetNetworkCoverage(transporter);
- assert.ok(coverage.corridors.includes('Addis Ababa, Ethiopia ↔ Dire Dawa, Ethiopia'));
+ assert.ok(coverage.preferred_routes.includes('Addis Ababa, Ethiopia ↔ Dire Dawa, Ethiopia'));
  assert.equal(coverage.businesses.length,1);
  assert.equal(coverage.businesses[0].name,'Blue Nile Trading PLC');
  assert.ok(coverage.businesses[0].matched_places.includes('addis ababa ethiopia'));
- assert.match(coverage.businesses[0].coverage_label,/recorded corridors/);
+ assert.match(coverage.businesses[0].coverage_label,/recorded routes/);
  assert.ok(coverage.routes.some(route=>route.origin==='Addis Ababa, Ethiopia'&&route.destination==='Dire Dawa, Ethiopia'));
+ assert.ok(coverage.routes.some(route=>route.route_kind==='PLANNED'));
 });
 
 test('profile routes separate declarations, reported records, and tracked evidence',()=>{
@@ -124,6 +128,10 @@ test('Load and Capacity Boards filter and rank by an owned route',()=>{
  assert.equal(loads[0].destination,'Dire Dawa, Ethiopia');
  assert.ok(loads.every((load,index)=>index===0||loads[index-1].route_match_score>=load.route_match_score));
  assert.ok(repo.listLoads(transporter,'ALL',{q:'beverage'}).every(load=>load.title.includes('Beverage')));
+ const routeOptions=repo.listOwnTruckRouteOptions(transporter);
+ assert.equal(routeOptions[0].id,'ALL_ACTIVE');
+ assert.ok(routeOptions.some(route=>route.id==='cap-empty'&&route.source_label==='Planned route'&&route.route_date));
+ assert.equal(repo.listLoads(transporter,'ALL',{matchCapacityId:'ALL_ACTIVE'})[0].route_match_score,2);
 
  const shipper=repo.getUserById('user-shipper');
  const capacity=repo.listMarketCapacity(shipper,{matchLoadId:'shp-freight-fixed'});
@@ -219,19 +227,31 @@ test('place search falls back locally and compatible PTL loads form a virtual po
 
 test('capacity update enforces partial percentage and expires old vehicle record',()=>{
  const user=repo.getUserById('user-driver');
+ const routeDate=new Date(Date.now()+2*86_400_000).toISOString().slice(0,10);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'}),/CAPACITY_PERCENT_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'FULL',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'}),/INVALID_CAPACITY_STATUS/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/ACCEPTED_LOADS_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'',visibility:'OPEN'}),/CAPACITY_AREA_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'5'}),/INVALID_APPROXIMATE_LOCATION/);
- const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
+ assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',visibility:'OPEN'}),/CURRENT_ROUTE_DATE_REQUIRED/);
+ assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'}),/PLANNED_ROUTE_DATE_REQUIRED/);
+ const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',currentRouteDate:routeDate,origin:'Addis Ababa',destination:'Hawassa',travelDate:routeDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
  const rows=repo.listCapacity(user);
- assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
+ assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.current_route_date===routeDate&&r.planned_space_status==='PARTIAL'&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
  const audit=dbModule.getDb().prepare(`SELECT details FROM audit_logs WHERE entity_id=?`).get(id);
  assert.equal(audit.details.includes('38.5'),false);
  const offDutyId=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'OFF_DUTY',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'});
  const publicRows=repo.listPublicCapacity();
  assert.equal(publicRows.some(r=>r.id===offDutyId),false);
+});
+
+test('admin operations inventory is bounded and omits sensitive fields',()=>{
+ const admin=repo.getUserById('user-admin');
+ const operations=repo.getAdminOperations(admin,'LG-TRK');
+ assert.ok(operations.vehicles.length>=3);
+ assert.ok(operations.vehicles.every(vehicle=>vehicle.platform_number));
+ assert.ok(operations.capacities.every(capacity=>!Object.hasOwn(capacity,'location_lat')&&!Object.hasOwn(capacity,'photo_path')));
+ assert.ok(operations.users.every(user=>!Object.hasOwn(user,'password_hash')));
 });
 
 test('provider Capacity Board excludes own trucks and does not expose photo paths',()=>{

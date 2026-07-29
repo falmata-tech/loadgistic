@@ -15,8 +15,8 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
   const vehicle:any=listOwnVehicles(user).find((item:any)=>item.id===id);
   if(!vehicle)notFound();
   const current:any=listOwnCapacity(user).find((item:any)=>item.vehicle_id===vehicle.id);
-  const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),current:current||null};
-  return <div className="page"><PageHeader title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.cargo_configuration||vehicle.category} · ${vehicle.plate||'Plate not recorded'}`} action={<Link className="button secondary icon-button-label" href="/app/fleet"><ArrowLeft aria-hidden="true"/>My Fleet</Link>}/><Flash error={query.error} success={query.success}/>
+  const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),current:current||null};
+  return <div className="page"><PageHeader title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`} action={<Link className="button secondary icon-button-label" href="/app/fleet"><ArrowLeft aria-hidden="true"/>My Fleet</Link>}/><Flash error={query.error} success={query.success}/>
     <div className="permission-note"><MapPin aria-hidden="true"/><div><strong>Enter the truck's general area manually</strong><span>Only the driver with the truck can use phone GPS. Your device location may be the fleet office, not this truck.</span></div></div>
     <CapacityForm vehicles={[option]} initialVehicleId={vehicle.id} allowDeviceLocation={false} lockVehicleSelection/>
   </div>;

@@ -142,6 +142,7 @@ function migrate(db) {
       id TEXT PRIMARY KEY,
       organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
       provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      platform_number TEXT UNIQUE,
       label TEXT NOT NULL,
       category TEXT NOT NULL,
       plate TEXT,
@@ -480,6 +481,8 @@ function migrate(db) {
     ['proof_recorded_at', 'TEXT'],
     ['current_route_origin','TEXT'],
     ['current_route_destination','TEXT'],
+    ['current_route_date','TEXT'],
+    ['planned_space_status','TEXT'],
     ['accepts_multi_pick','INTEGER NOT NULL DEFAULT 0'],
     ['accepts_multi_drop','INTEGER NOT NULL DEFAULT 0']
   ];
@@ -490,9 +493,26 @@ function migrate(db) {
     accepts_multi_pick=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_pick END,
     accepts_multi_drop=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_drop END`);
   const vehicleColumns = new Set(db.prepare('PRAGMA table_info(vehicles)').all().map(column => column.name));
-  for (const [name, definition] of [['make','TEXT'],['model','TEXT'],['cargo_configuration','TEXT']]) {
+  for (const [name, definition] of [['make','TEXT'],['model','TEXT'],['cargo_configuration','TEXT'],['platform_number','TEXT']]) {
     if (!vehicleColumns.has(name)) db.exec(`ALTER TABLE vehicles ADD COLUMN ${name} ${definition}`);
   }
+  const vehiclesWithoutPlatformNumber = db.prepare(`SELECT rowid,id FROM vehicles
+    WHERE platform_number IS NULL OR trim(platform_number)='' ORDER BY rowid`).all();
+  const assignPlatformNumber = db.prepare('UPDATE vehicles SET platform_number=? WHERE id=?');
+  for (const vehicle of vehiclesWithoutPlatformNumber) {
+    assignPlatformNumber.run(`LG-TRK-${String(vehicle.rowid).padStart(6,'0')}`,vehicle.id);
+  }
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_vehicle_platform_number ON vehicles(platform_number);
+    CREATE TRIGGER IF NOT EXISTS assign_vehicle_platform_number
+    AFTER INSERT ON vehicles
+    WHEN NEW.platform_number IS NULL OR trim(NEW.platform_number)=''
+    BEGIN
+      UPDATE vehicles
+      SET platform_number='LG-TRK-' || upper(substr(hex(randomblob(5)),1,10))
+      WHERE id=NEW.id;
+    END;
+  `);
   const companyPageColumns = new Set(db.prepare('PRAGMA table_info(company_pages)').all().map(column => column.name));
   if (!companyPageColumns.has('operating_regions')) {
     db.exec('ALTER TABLE company_pages ADD COLUMN operating_regions TEXT');
@@ -607,6 +627,10 @@ function qualifyExistingEthiopiaData(db) {
       const corridor=capacity.origin&&capacity.destination?`${capacity.origin} ↔ ${capacity.destination}`:null;
       if(corridor!==capacity.corridor)updateCapacity.run(corridor,capacity.id);
     }
+    db.prepare(`UPDATE capacities
+      SET planned_space_status=CASE WHEN status='PARTIAL' THEN 'PARTIAL' ELSE 'FULL' END
+      WHERE status IN ('EMPTY','PARTIAL') AND origin IS NOT NULL AND destination IS NOT NULL
+        AND (planned_space_status IS NULL OR trim(planned_space_status)='')`).run();
     db.prepare("UPDATE place_catalog SET country_name='Ethiopia',country_code='ET' WHERE country_name IS NULL OR trim(country_name)='' OR country_code IS NULL OR trim(country_code)=''").run();
     db.exec('COMMIT');
   } catch (error) {

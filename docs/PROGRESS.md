@@ -16,12 +16,14 @@
 - Virtual PSTL discovery over compatible Posted PTL demand
 - Road-freight workflows
 - Load discovery and provider interest
-- Self-managed Driver capacity Home with duty state, Empty/Partial slider, FTL/PTL/Both, Direct/Multi Pick/Multi Drop, general-area freshness, current partial route, future travel, contract lanes, Public/Partners visibility, expiry, and timestamped photo support
-- Fleet Transporter management Home with company summaries, recent Tracking, and network corridor coverage
+- Self-managed Driver capacity Home with duty state, Empty/Partial slider, FTL/PTL/Both, Direct/Multi Pick/Multi Drop, general-area freshness, dated current partial route, dated Full/Partial future travel, contract routes, Public/Partners visibility, expiry, and timestamped photo support
+- Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
 - My Fleet roster with truck-specific detail/capacity pages and read-only provider Capacity Board
+- Permanent Loadgistic truck numbers used in member discovery, with private operational plates retained for owners and administrators
 - Owner-controlled company Driver permissions for Load Board browsing, Business contact, load agreements, and rich assigned-truck capacity
 - Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
-- Paired profile coverage routes with approximate OpenStreetMap lines, record-derived evidence counts, and member-to-member route comparison
+- One authoritative paired profile-route model, labeled Freight Routes for Businesses and Preferred Routes for transport providers
+- Approximate OpenStreetMap route lines, record-derived evidence counts, fresh all-truck route projections, and member-to-member comparison
 - Real truck identity fields: make, model, cargo configuration, and plate; generic tonnage labels removed
 - Ten-image standardized cargo-configuration catalog used by freight creation, driver Home, Fleet, and Capacity
 - Freight FTL/PTL requirement and recipient-specific temporary load-size proof sharing
@@ -29,7 +31,7 @@
 - Separate city-pair route controls across freight and capacity forms
 - Searchable Load and Capacity Boards with transparent both-city, one-city, or no-match route ranking
 - Business operating regions on authenticated Public Profiles and directory cards
-- Connected-network corridor coverage using declared regional names without exact map pins
+- Connected-network route coverage using declared regional names without exact map pins
 - Ethiopian producer- and transporter-focused public homepage with reviewed generated hero imagery
 - Public member-marketplace examples that reveal no live marketplace records
 - Enforceable Status timeline or Approximate location + status tracking, with real in-between events
@@ -67,8 +69,10 @@
 - Separate `.next-dev`, `.next`, and `.next-e2e` artifacts for the live dev server, production build, and isolated Playwright runtime
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
-- Reusable all-role visual audit with 174 desktop/mobile screenshots, zero automated UI flags, and zero browser-flow errors
-- Local Node evidence: 50 tests passed
+- Reversible deep-detail Back controls with safe direct-link fallbacks
+- Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
+- Reusable all-role visual audit with 176 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
+- Local Node evidence: 52 tests passed
 - Local Playwright E2E evidence: 36 passed and four expected viewport skips
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities

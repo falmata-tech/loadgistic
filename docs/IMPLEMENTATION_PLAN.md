@@ -15,8 +15,8 @@ The current implementation is a local Next.js and SQLite MVP. Accepted behavior 
 2. Authenticated Load Board and truck-first Capacity Board.
 3. FTL/PTL freight creation, interest, direct requests, agreement, assignment, and execution.
 4. Receiver-contact privacy after agreement.
-5. Fleet roster with real vehicle make, model, plate, and cargo configuration.
-6. Self-managed Driver capacity Home with duty, space, load, stop, corridor, visibility, location, and proof controls; Fleet Transporter controls remain in My Fleet.
+5. Fleet roster with permanent platform number, make, model, private plate, and cargo configuration.
+6. Self-managed Driver capacity Home with duty, space, load, stop, dated route, visibility, location, and proof controls; Fleet Transporter controls remain in My Fleet.
 7. Public, Partners, and mutual Connected relationships.
 8. Enforceable Status timeline or Approximate location + status tracking.
 9. Private operational proof and temporary per-interest load-size proof.

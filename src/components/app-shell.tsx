@@ -8,6 +8,7 @@ import {
   Building2,
   CirclePlus,
   ClipboardCheck,
+  Database,
   Home,
   LayoutList,
   Menu,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { LogoutButton } from './logout-button';
+import { WorkspaceBackButton } from './workspace-back-button';
 
 const navigation: Record<string, Array<{ href: string; label: string; icon: LucideIcon }>> = {
   SHIPPER: [
@@ -71,6 +73,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   ],
   ADMIN: [
     { href: '/app/home', label: 'Home', icon: Home },
+    { href: '/admin/operations', label: 'Operations', icon: Database },
     { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
     { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
     { href: '/admin/billing', label: 'Billing Review', icon: ClipboardCheck },
@@ -85,7 +88,7 @@ const mobileNavigation: Record<string, string[]> = {
   RECEIVER: ['/app/home', '/app/shipments/new', '/app/shipments', '/app/providers', '/app/more'],
   TRANSPORTER: ['/app/home', '/app/fleet', '/app/loads', '/app/shipments', '/app/more'],
   DRIVER: ['/app/home', '/app/loads', '/app/shipments', '/app/providers', '/app/more'],
-  ADMIN: ['/app/home', '/admin/applications', '/admin/verifications', '/app/shipments', '/app/more']
+  ADMIN: ['/app/home', '/admin/operations', '/admin/applications', '/app/shipments', '/app/more']
 };
 
 const roleLabels: Record<string, string> = {
@@ -103,6 +106,7 @@ const mobileLabels: Record<string, string> = {
   '/app/loads': 'Loads',
   '/app/capacity': 'Capacity',
   '/admin/applications': 'Applications',
+  '/admin/operations': 'Operations',
   '/admin/billing': 'Billing'
 };
 
@@ -147,7 +151,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
       </aside>
       <main className="app-main">
         <header className="app-topbar">
-          <div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">B2B logistics workspace</div></div>
+          <div className="topbar-leading"><WorkspaceBackButton/><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">B2B logistics workspace</div></div></div>
           <Link className="button secondary small desktop-account" href="/app/more">Account</Link>
           <details className="mobile-account-menu">
             <summary><Menu aria-hidden="true"/>Menu</summary>

@@ -1,0 +1,45 @@
+"use client";
+
+import React from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+
+function fallbackFor(pathname:string) {
+  if(pathname.startsWith('/app/loads/pstl/'))return '/app/loads?board=POOLED';
+  if(pathname==='/app/shipments/new')return '/app/shipments?view=MY_LOADS';
+  if(pathname.startsWith('/app/shipments/'))return '/app/shipments';
+  if(pathname.startsWith('/app/capacity/'))return '/app/capacity';
+  if(pathname.startsWith('/app/fleet/'))return '/app/fleet';
+  if(pathname.startsWith('/app/providers/'))return '/app/providers';
+  return null;
+}
+
+function isWorkspacePath(value:string|null) {
+  return Boolean(value&&(value.startsWith('/app/')||value.startsWith('/admin/')));
+}
+
+export function WorkspaceBackButton() {
+  const pathname=usePathname();
+  const searchParams=useSearchParams();
+  const fallback=fallbackFor(pathname);
+  const [previous,setPrevious]=React.useState(null as string|null);
+  const query=searchParams.toString();
+  const current=query?`${pathname}?${query}`:pathname;
+
+  React.useEffect(()=>{
+    const stored=sessionStorage.getItem('loadgistic:workspace-current');
+    if(stored!==current){
+      if(isWorkspacePath(stored))setPrevious(stored);
+      sessionStorage.setItem('loadgistic:workspace-current',current);
+    }
+  },[current]);
+
+  if(!fallback)return null;
+  const target=previous&&previous!==current?previous:fallback;
+  return <a
+    href={target}
+    className="workspace-back"
+    title="Back"
+    aria-label="Back to previous workspace page"
+  ><ArrowLeft aria-hidden="true"/><span>Back</span></a>;
+}

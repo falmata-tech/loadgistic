@@ -18,7 +18,6 @@ type CapacitySnapshot = {
   location_source?: string;
   origin?: string;
   destination?: string;
-  corridor?: string;
   travel_date?: string;
   next_available?: string;
   visibility?: string;
@@ -28,6 +27,8 @@ type CapacitySnapshot = {
   accepts_multi_drop?:number;
   current_route_origin?:string;
   current_route_destination?:string;
+  current_route_date?:string;
+  planned_space_status?:string;
 };
 
 type VehicleOption = {
@@ -37,6 +38,7 @@ type VehicleOption = {
   model: string;
   cargoConfiguration: string;
   plate: string;
+  platformNumber?:string;
   current?: CapacitySnapshot | null;
 };
 
@@ -125,7 +127,7 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
       <div className="capacity-console-main stack">
         <section className="control-panel">
           <div className="control-panel-title"><div><h2>Your truck</h2><p>Every update belongs to one real truck.</p></div></div>
-          <div className="vehicle-select-summary"><Image src={vehicleConfigurationImage(selectedVehicle?.cargoConfiguration)} alt="" width={180} height={180}/><div className="form-group"><label htmlFor="capacity-vehicle">Truck</label>{lockVehicleSelection?<input type="hidden" name="vehicleId" value={vehicleId}/>:<select id="capacity-vehicle" name="vehicleId" value={vehicleId} onChange={event => chooseVehicle(event.target.value)} required>{vehicles.map(vehicle => <option value={vehicle.id} key={vehicle.id}>{vehicle.make} · {vehicle.model} · {vehicle.cargoConfiguration} · {vehicle.plate}</option>)}</select>}<div className="meta">{selectedVehicle?.make} · {selectedVehicle?.model}<br/>{selectedVehicle?.cargoConfiguration} · {selectedVehicle?.plate}</div></div></div>
+          <div className="vehicle-select-summary"><Image src={vehicleConfigurationImage(selectedVehicle?.cargoConfiguration)} alt="" width={180} height={180}/><div className="form-group"><label htmlFor="capacity-vehicle">Truck</label>{lockVehicleSelection?<input type="hidden" name="vehicleId" value={vehicleId}/>:<select id="capacity-vehicle" name="vehicleId" value={vehicleId} onChange={event => chooseVehicle(event.target.value)} required>{vehicles.map(vehicle => <option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} · {vehicle.model} · {vehicle.cargoConfiguration}</option>)}</select>}<div className="meta"><strong>{selectedVehicle?.platformNumber}</strong><br/>{selectedVehicle?.make} · {selectedVehicle?.model}<br/>{selectedVehicle?.cargoConfiguration}{selectedVehicle?.plate?<><br/>Plate: {selectedVehicle.plate}</>:null}</div></div></div>
         </section>
 
         {onDuty ? <>
@@ -173,12 +175,13 @@ export function CapacityForm({ vehicles, initialVehicleId,allowDeviceLocation=tr
 
           <section className="control-panel">
             <div className="control-panel-title"><div><h2>Truck routes</h2><p>Keep current partial movement separate from a future planned trip.</p></div></div>
-            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama, Ethiopia"/></div></div></>:null}
-            <h3 className="compact-section-title">Future planned travel</h3>
+            {status==='PARTIAL'?<><h3 className="compact-section-title">Current partial-capacity route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin">Current route origin</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" defaultValue={current?.current_route_origin||''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination">Current route destination</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" defaultValue={current?.current_route_destination||''} placeholder="Adama, Ethiopia"/></div></div><div className="form-group"><label htmlFor="current-route-date">Route date</label><input id="current-route-date" name="currentRouteDate" type="date" defaultValue={current?.current_route_date||''}/></div></>:null}
+            <h3 className="compact-section-title">Planned route</h3>
             <div className="route-inputs"><div className="form-group"><label htmlFor="capacity-origin">Planned origin</label><EthiopiaPlaceInput id="capacity-origin" name="origin" defaultValue={current?.origin || ''} placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="capacity-destination">Planned destination</label><EthiopiaPlaceInput id="capacity-destination" name="destination" defaultValue={current?.destination || ''} placeholder="Dire Dawa, Ethiopia"/></div></div>
             <div className="form-grid"><div className="form-group"><label htmlFor="capacity-travel-date">Planned travel date</label><input id="capacity-travel-date" name="travelDate" type="date" defaultValue={current?.travel_date || ''}/></div><div className="form-group"><label htmlFor="capacity-next">Next available</label><input id="capacity-next" name="nextAvailable" defaultValue={current?.next_available || ''} placeholder="Tomorrow morning"/></div></div>
-            <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract lanes</strong><small>Interested in recurring work on preferred corridors</small></span></label>
-            <p className="meta panel-note">Regular preferred corridors are managed separately in Public Profile Info.</p>
+            <div className="form-group"><label>Planned cargo space</label><div className="segmented-control"><label><input name="plannedSpaceStatus" value="FULL" type="radio" defaultChecked={(current?.planned_space_status||'FULL')==='FULL'}/><span>Full</span></label><label><input name="plannedSpaceStatus" value="PARTIAL" type="radio" defaultChecked={current?.planned_space_status==='PARTIAL'}/><span>Partial</span></label></div></div>
+            <label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Open to contract routes</strong><small>Interested in recurring work on Preferred Routes</small></span></label>
+            <p className="meta panel-note">Regular Preferred Routes are managed separately in Public Profile.</p>
           </section>
         </> : <section className="control-panel off-duty-panel"><strong>This truck will not appear in capacity search.</strong><p>Turn On Duty back on whenever you are ready to carry a load.</p></section>}
       </div>

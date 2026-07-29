@@ -3,8 +3,8 @@ id: FEAT-CAP-001
 title: Truck-first Capacity Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, planned movement, contract-lane openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
-contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredCorridorRoute, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, dated current-partial movement, dated and capacity-labeled planned movement, contract-route openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
+contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, expires_at]
 rollout: Preserve minimal capacity semantics and validate public expiry filtering before release.
 ---
@@ -23,6 +23,8 @@ And the fresh public record displays the declared percentage.
 Given a fleet or self-managed driver selects a truck\
 When capacity or fleet information is displayed\
 Then the truck is identified by make, model, cargo configuration, and plate\
+And Loadgistic assigns one permanent unique platform number when the truck is first created\
+And member-facing Capacity and Public Profile views use the platform number instead of exposing the plate\
 And the cargo configuration uses the standardized visual truck catalog\
 And generic tonnage labels are not used as the truck identity.
 
@@ -37,7 +39,7 @@ And no provider-level summary collapses those trucks into one signal.
 
 Given a user may view a truck's Public or Partners capacity\
 When they open its capacity detail\
-Then the detail shows the truck, cargo configuration, availability, area, corridor, accepted load policy, freshness, and owning transporter or self-managed driver\
+Then the detail shows the truck, cargo configuration, availability, area, active routes, accepted load policy, freshness, and owning transporter or self-managed driver\
 And the same visibility authorization is reapplied to the detail read.
 
 ### Scenario: fleet roster count is authoritative
@@ -52,14 +54,14 @@ And Off Duty trucks remain absent from the Capacity Board.
 
 Given an authorized transporter, driver, or administrator owns the vehicle\
 When Empty capacity is submitted\
-Then the update records the preferred corridor, planned route, actor, time, and 100 percent availability.
+Then the update records its planned route when supplied, actor, time, and 100 percent availability.
 
-### Scenario: corridor cities are entered separately
+### Scenario: route cities are entered separately
 
 Given a driver updates planned movement\
 When they enter the route\
 Then the origin and destination are separate city inputs joined by a clear route cue\
-And the driver is not asked to repeat both cities inside a free-text corridor field.
+And the driver is not asked to repeat both cities inside one free-text route field.
 
 ### Scenario: an empty driver declares accepted load sizes
 
@@ -74,9 +76,10 @@ And both acceptance policies are displayed independently from cargo-space status
 
 Given a truck has Partial cargo space\
 When its driver publishes capacity\
-Then it may declare the current route on which that partial space exists\
-And any on-duty truck may separately declare one future planned travel route and date\
-And regular preferred corridor routes remain a multiple-value Public Profile setting controlled by the fleet company admin or self-managed owner.
+Then it may declare the current route and date on which that partial space exists\
+And any on-duty truck may separately declare one future planned travel route, date, and Full or Partial planned cargo-space label\
+And regular Preferred Routes remain a multiple-value Public Profile setting controlled by the fleet company admin or self-managed owner\
+And expired capacity, past current-route dates, and past planned-route dates are excluded from live matching.
 
 ### Scenario: self-managed driver Home prioritizes live capacity controls
 
@@ -112,6 +115,12 @@ Given a Business chooses one of its own open load routes\
 When Capacity Board results are displayed\
 Then trucks with both route endpoints aligned are ranked before one-endpoint and unmatched trucks\
 And each result explains its route-match strength without claiming dispatch suitability or availability beyond the recorded capacity.
+
+Given a provider compares routes or ranks the Load Board\
+When fresh truck route records exist\
+Then every owned truck contributes its unexpired current-partial route and eligible planned route independently\
+And the best match across selected or all active truck routes is used\
+And each option identifies the truck platform number, route source, date, and planned Full or Partial cargo-space label.
 
 ### Scenario: a general location update protects precise movement
 
@@ -158,10 +167,10 @@ When the capacity signal is published\
 Then the private upload record is associated with the declared general area and update timestamp\
 And marketplace users see that proof was recently recorded without receiving a direct file path.
 
-### Scenario: contract-lane interest is independent of capacity
+### Scenario: contract-route interest is independent of capacity
 
-Given a driver is open to recurring work on preferred corridors\
-When the driver enables contract-lane interest\
+Given a driver is open to recurring work on Preferred Routes\
+When the driver enables contract-route interest\
 Then the Capacity Board displays that signal without changing Empty, Partial, or Off Duty status.
 
 ### Scenario: off-duty capacity is private

@@ -23,7 +23,7 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Share temporary load-size proof | Business that owns the load, to one selected recorded interest | `NOT_FOUND` or `INVALID_INTEREST`; no file grant |
 | Download temporary load-size proof | Owning Business, Admin, or the exact selected interested provider while the grant is active and compatible with assignment | Return no record or bytes |
 | View marketplace capacity | Authenticated Business, Transporter, Driver, or Admin; Open Empty/Partial capacity, plus Partners capacity for a Connected Business-provider pair | Return no record |
-| Publish capacity | Transporter for its organization vehicle; self-managed Driver for its provider-profile vehicle; company Driver with rich capacity permission for an assigned organization vehicle; only Drivers may submit device-assisted location; Empty/Partial may be visible, Off Duty is hidden | `FORBIDDEN`, `INVALID_VEHICLE`, or `DEVICE_LOCATION_DRIVER_ONLY`; no visible capacity |
+| Publish capacity | Transporter for its organization vehicle; self-managed Driver for its provider-profile vehicle; company Driver with rich capacity permission for an assigned organization vehicle; only Drivers may submit device-assisted location; current and planned routes require non-past dates, and planned routes require Full or Partial cargo-space intent; Empty/Partial may be visible, Off Duty is hidden | `FORBIDDEN`, `INVALID_VEHICLE`, `INVALID_ROUTE_DATE`, or `DEVICE_LOCATION_DRIVER_ONLY`; no visible capacity |
 | Change company-truck duty | Transporter owner or assigned company Driver; On Duty restores the last owner-configured active signal and Off Duty hides the truck | `FORBIDDEN`, `INVALID_VEHICLE`, or `CAPACITY_CONFIGURATION_REQUIRED`; no capacity record |
 | Manage fleet-driver permissions | Transporter owner for an active Driver in its own organization | `FORBIDDEN` or `NOT_FOUND`; no permission change |
 | Browse member directory/profile | Any authenticated user; profile must be published | Redirect to login or return no record |
@@ -37,6 +37,9 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Review application | Admin; only non-terminal Pending/More Info application | `FORBIDDEN` or `APPLICATION_ALREADY_REVIEWED`; no provisioning |
 | Submit payment proof | User with a subscription belonging to its organization or provider profile | `SUBSCRIPTION_NOT_FOUND`; no proof |
 | Review payment proof | Admin; only non-terminal Pending/More Info proof | `FORBIDDEN` or `PAYMENT_PROOF_ALREADY_REVIEWED`; no subscription change |
+| Read platform Operations | Admin only; bounded user, workspace, truck, load, and latest-capacity projections exclude credentials, sessions, tracking secrets, exact coordinates, and proof paths | `FORBIDDEN`; no records or read audit |
+| Suspend/restore user | Admin only; reversible; administrator cannot suspend their own account | `FORBIDDEN`, `NOT_FOUND`, or `ADMIN_SELF_SUSPENSION`; no status change |
+| Deactivate/reactivate truck | Admin only; reversible; inactive trucks are excluded from marketplace capacity and active fleet counts | `FORBIDDEN` or `NOT_FOUND`; no status change |
 
 ## Default-deny rules
 
@@ -46,6 +49,7 @@ This matrix defines the application-service boundary. Route handlers authenticat
 - Receiver first name and phone are never returned to marketplace-only viewers and are required before a Freight shipment moves from Agreed to Assigned.
 - A provider becomes an execution party only when its organization/profile is assigned on the shipment.
 - Providers cannot reduce a load's tracking obligation. Device coordinates are obscured in the browser and never written to audits.
+- Public and member-facing truck views use the permanent Loadgistic platform number. License plates remain limited to owning fleet/self-managed workspaces and administrators.
 - Transport providers cannot unlock the customer tracking view; their involved loads and real events remain in the internal Tracking workspace.
 - Favorites and Pending or declined network requests never authorize Partners-only marketplace records.
 - Terminal approval/rejection is immutable in this MVP.

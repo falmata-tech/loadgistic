@@ -34,7 +34,7 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 
 ## Fleet Truth
 
-Fleet size is derived from active vehicle rows. Every active truck has make, model, plate, and one standardized visual cargo configuration. A fleet claiming ten trucks must have ten active truck records. Public Profile and Fleet views show every truck as Empty, Partial, Off Duty, or Not updated.
+Fleet size is derived from active vehicle rows. Every active truck has a permanent Loadgistic platform number, make, model, private operational plate, and one standardized visual cargo configuration. A fleet claiming ten trucks must have ten active truck records. Public Profile and Fleet views show every truck as Empty, Partial, Off Duty, or Not updated; member-facing discovery uses the platform number instead of the plate.
 
 Supported cargo configurations:
 
@@ -53,7 +53,7 @@ Generic tonnage labels are not truck identities.
 
 ## Role Homes
 
-Home for a self-managed driver is the rich capacity control panel. A Fleet Transporter's Home is a company management dashboard with demand, assigned work, fleet-capacity summaries, recent Tracking, and network corridor coverage. Fleet Transporters update individual truck capacity inside My Fleet.
+Home for a self-managed driver is the rich capacity control panel. A Fleet Transporter's Home is a company management dashboard with demand, assigned work, fleet-capacity summaries, recent Tracking, and network route coverage. Fleet Transporters update individual truck capacity inside My Fleet.
 
 The rich truck capacity control panel controls:
 
@@ -64,10 +64,10 @@ The rich truck capacity control panel controls:
 - stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
 - current general area and freshness
 - optional privacy-obscured device location
-- a current partial-capacity route when Partial
-- a separate future planned travel route and date
+- a dated current partial-capacity route when Partial
+- a separate future planned travel route with date and Full or Partial planned cargo space
 - Direct acceptance plus independent Multi Pick and Multi Drop choices
-- contract-lane interest
+- contract-route interest
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
@@ -102,11 +102,13 @@ Operational proof and temporary load-size proof are separate from tracking mode.
 
 ## Directory, Profiles, And Contact
 
-Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Transporter profiles additionally show fleet roster, corridors, service regions, service summary, and current public capacity.
+Businesses, Fleet Transporters, and Self-managed Drivers have authenticated Public Profiles in one directory. Business profiles help members confirm a selected shipper or receiver and show member-declared operating regions or cities. Businesses call their declared route pairs Freight Routes. Fleet Transporters and Self-managed Drivers call theirs Preferred Routes. Transporter profiles additionally show the fleet roster, Preferred Routes, fresh expiring truck routes, service regions, service summary, and current Public capacity.
 
 Route, load, capacity, board-filter, and general-area inputs query a bounded local catalog of Ethiopian OpenStreetMap cities, towns, villages, and hamlets after two typed characters while retaining free text. The catalog stores coordinates and available place metadata. No full catalog is rendered into a page or sent to a third party during normal use.
 
-Fleet Transporter Home compares preferred-corridor place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view is schematic and text-based. It uses no exact map pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
+Fleet Transporter Home compares Preferred Route and fresh truck-route place names with operating regions declared by Businesses in that transporter's Connected network. The coverage view uses approximate city route lines and text evidence. It uses no exact facility pins, inferred facility locations, or live Business locations, and it never claims that an unmatched Business cannot be served.
+
+Deep workspace detail routes provide a Back control. A direct deep link has a safe parent-board fallback, while in-workspace navigation returns to the recorded previous workspace page.
 
 A Business may explicitly opt to display its separate public phone beside loads visible to transporters. The receiver first name and phone recorded after agreement remain private load-party data.
 
@@ -135,6 +137,8 @@ Loadgistic is installable in standalone mode. Driver workflows are mobile-first 
 - Self-managed Driver Demand
 
 Manual ETB payment-proof review remains a local MVP workflow. No bank password, PIN, or OTP is collected.
+
+Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. They may reversibly suspend users or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
 
 ## Source Of Truth
 

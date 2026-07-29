@@ -18,6 +18,7 @@ const users = {
   companyDriver: repo.getUserById('user-company-driver'),
   driver: repo.getUserById('user-driver')
 };
+const futureRouteDate=new Date(Date.now()+2*86_400_000).toISOString().slice(0,10);
 
 function createFreight(distributionMode = 'OPEN_MARKET', providerRef = undefined) {
   return repo.createShipment(users.shipper, {
@@ -177,6 +178,8 @@ test('favorites and pending requests do not unlock Partners visibility until acc
     locationArea:'Around Addis Ababa',
     origin:'Addis Ababa',
     destination:'Hawassa',
+    travelDate:futureRouteDate,
+    plannedSpaceStatus:'FULL',
     visibility:'SAVED_PARTNERS'
   });
   assert.equal(repo.listMarketCapacity(users.receiver).some(row=>row.id===partnerCapacityId),false);
@@ -224,7 +227,7 @@ test('fleet owner controls company driver load and capacity authority without re
   const ownerView=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.ok(ownerView.interests.some(interest=>interest.provider_organization_id===users.transporter.organization_id&&interest.created_by===users.companyDriver.id&&interest.created_by_name==='Yonas Alemu'));
   assert.ok(repo.getShipmentForUser(users.transporter,shipment.id));
-  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Dire Dawa',visibility:'OPEN'});
+  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Dire Dawa',travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
   assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
   assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
   assert.throws(()=>repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',visibility:'OPEN'}),/DEVICE_LOCATION_DRIVER_ONLY/);
@@ -343,6 +346,23 @@ test('role and tenant checks guard remaining mutation boundaries', () => {
   assert.throws(() => repo.listApplications(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.listPaymentProofs(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.listVerificationRequests(users.shipper), /FORBIDDEN/);
+  assert.throws(() => repo.getAdminOperations(users.shipper), /FORBIDDEN/);
+  assert.throws(() => repo.setAdminRecordActive(users.shipper,'USER',users.receiver.id,false), /FORBIDDEN/);
+});
+
+test('admin activation controls are reversible, audited, and cannot suspend self',()=>{
+  const db=dbModule.getDb();
+  assert.throws(()=>repo.setAdminRecordActive(users.admin,'USER',users.admin.id,false),/ADMIN_SELF_SUSPENSION_DENIED/);
+  repo.setAdminRecordActive(users.admin,'USER',users.receiver.id,false);
+  assert.equal(repo.getUserById(users.receiver.id).active,0);
+  repo.setAdminRecordActive(users.admin,'USER',users.receiver.id,true);
+  assert.equal(repo.getUserById(users.receiver.id).active,1);
+  repo.setAdminRecordActive(users.admin,'VEHICLE','veh-trans-2',false);
+  assert.equal(db.prepare('SELECT active FROM vehicles WHERE id=?').get('veh-trans-2').active,0);
+  assert.equal(repo.listOwnVehicles(users.transporter).some(vehicle=>vehicle.id==='veh-trans-2'),false);
+  repo.setAdminRecordActive(users.admin,'VEHICLE','veh-trans-2',true);
+  assert.equal(db.prepare('SELECT active FROM vehicles WHERE id=?').get('veh-trans-2').active,1);
+  assert.ok(db.prepare(`SELECT 1 FROM audit_logs WHERE action='ADMIN_VEHICLE_STATUS_CHANGED' AND entity_id='veh-trans-2'`).get());
 });
 
 test.after(() => {

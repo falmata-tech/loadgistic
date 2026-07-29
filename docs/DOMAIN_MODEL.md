@@ -11,7 +11,7 @@
 
 - Fleet Transporter
 - Self-managed Driver / Owner-Operator
-- Freight corridors and truck capacity
+- Preferred Routes and dated truck capacity routes
 - Explainable load-to-truck route match
 
 ## Shared execution
@@ -32,16 +32,17 @@
 
 ## Capacity
 
-- Vehicle with make, model, plate, and standardized visual cargo configuration
+- Vehicle with permanent Loadgistic platform number, make, model, private plate, and standardized visual cargo configuration
 - Status: Empty, Partial, Off Duty
 - Available percentage
 - Accepted load policy: FTL, PTL, or Both
 - Stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
 - General current area and location update time
 - Optional half-degree device area with a 40 km privacy radius
-- Corridor entered as two separate cities
+- Current partial-capacity route with separate city endpoints and date
+- Planned route with separate city endpoints, date, and Full or Partial cargo-space intent
 - Visibility: Public or Partners
-- Contract-lane interest
+- Contract-route interest
 - Update actor and time
 - Optional timestamped capacity photo
 - Expiry
@@ -49,9 +50,9 @@
 ## Member network
 
 - Business operating regions or cities declared on its authenticated Public Profile
-- Transporter preferred corridors declared as endpoint names
+- Business Freight Routes and provider Preferred Routes declared as endpoint names
 - Private Favorite, directional Pending request, and mutual Connected Business-provider relationship
-- Fleet network coverage projection: matching declared Business places against recorded corridor endpoints
+- Fleet network coverage projection: matching declared Business places against Preferred Routes and fresh truck-route endpoints
 - No inferred facility coordinate, live Business location, distance, or service guarantee
 
 ## Trust

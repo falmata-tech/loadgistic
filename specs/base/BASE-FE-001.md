@@ -34,6 +34,14 @@ Given a supported page is viewed at a mobile viewport\
 When navigation and primary actions render\
 Then the primary workflow remains visible and operable without horizontal scrolling.
 
+### Scenario: detail navigation remains reversible
+
+Given an authenticated member opens a truck, capacity, load, pooled-load, or profile detail\
+When the detail page renders\
+Then a Back control returns to the most recent in-workspace page when one is known\
+And a direct deep link uses the relevant Board, Fleet, Tracking, or Directory as its fallback\
+And the control remains available on desktop and mobile without replacing primary navigation.
+
 ## Contract details
 
 `PageViewModel` contains only authorized, display-safe fields. `MutationForm` maps one user intent to one server command. `FlashResult` exposes a non-sensitive success or error message. `AuthenticatedNavigation` derives links from the current role.

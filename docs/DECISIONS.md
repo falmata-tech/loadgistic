@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, current partial route, future planned travel, contract-lane interest, Public/Partners visibility, and expiry. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, dated current partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -99,3 +99,13 @@ Store a repeatably imported Ethiopia settlement catalog in the local SQLite adap
 Separate `load_owner_organization_id` and `load_owner_party_role` from shipper and receiver roles. The posting Business remains owner regardless of whether it ships or receives. External shipper or receiver identity is load-scoped and receives no account authorization; possession of the owner-distributed secret code grants only the customer-safe tracking view.
 
 PSTL is a deterministic, read-only projection over viewer-authorized Posted PTL loads. Compatible origin and destination settlement coordinates create a virtual group. A group has no status, price, assignment, acceptance, or mutation API, and disabling it leaves every source load unchanged.
+
+## ADR-020 — Authoritative routes, truck identity, and platform operations
+
+Use `profile_routes` as the single durable source for member-declared route pairs. Business-facing UI calls these Freight Routes; fleet transporters and self-managed drivers see Preferred Routes. The legacy company-page corridor field is retained only for additive database compatibility and is not written or rendered as a second route model.
+
+Current partial-capacity and planned truck routes remain dated, expiring capacity facts rather than profile declarations. Matching and maps combine every fresh active route for the viewer's eligible trucks with the stable profile routes, preserve each source label, and exclude past or expired records. Public truck capacity may show the owner's Preferred Routes for context without implying that every preferred route is the current truck movement.
+
+Every truck receives one unique, immutable `LG-TRK-*` platform number. Member discovery and Public Profiles use that number; license plates remain private operational data for the truck owner and administrators.
+
+Deep workspace detail routes expose a Back link with a route-specific fallback that works before client hydration. Administrators receive a bounded, searchable Operations projection across users, workspaces, trucks, loads, and latest capacity. It excludes credentials, sessions, tracking secrets, exact coordinates, and proof paths. User suspension and truck deactivation are reversible, admin-only, audited commands, and an administrator cannot suspend their own account.
