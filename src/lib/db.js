@@ -393,6 +393,7 @@ function migrate(db) {
       business_name TEXT NOT NULL,
       application_type TEXT NOT NULL,
       status TEXT NOT NULL CHECK(status IN ('PENDING','APPROVED','MORE_INFO','REJECTED')),
+      sponsored_free INTEGER NOT NULL DEFAULT 0,
       notes TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -415,6 +416,7 @@ function migrate(db) {
       billing_model TEXT NOT NULL,
       starts_at TEXT NOT NULL,
       ends_at TEXT,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CHECK ((organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (organization_id IS NULL AND provider_profile_id IS NOT NULL))
     );
 
@@ -526,6 +528,20 @@ function migrate(db) {
   if (!companyPageColumns.has('show_contact_phone_on_loads')) {
     db.exec('ALTER TABLE company_pages ADD COLUMN show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0');
   }
+  const applicationColumns = new Set(db.prepare('PRAGMA table_info(applications)').all().map(column => column.name));
+  if (!applicationColumns.has('sponsored_free')) {
+    db.exec('ALTER TABLE applications ADD COLUMN sponsored_free INTEGER NOT NULL DEFAULT 0');
+  }
+  const subscriptionColumns = new Set(db.prepare('PRAGMA table_info(subscriptions)').all().map(column => column.name));
+  if (!subscriptionColumns.has('updated_at')) {
+    db.exec('ALTER TABLE subscriptions ADD COLUMN updated_at TEXT');
+  }
+  db.exec(`
+    UPDATE subscriptions
+    SET ends_at=strftime('%Y-%m-%dT%H:%M:%fZ',starts_at,'+30 days')
+    WHERE status='ACTIVE' AND ends_at IS NULL;
+    UPDATE subscriptions SET updated_at=COALESCE(updated_at,starts_at);
+  `);
   const shipmentColumns = new Set(db.prepare('PRAGMA table_info(shipments)').all().map(column => column.name));
   for (const [name, definition] of [
     ['receiver_first_name','TEXT'],
@@ -673,7 +689,8 @@ function seed(db) {
   const orgs = {
     shipper: { id: 'org-shipper', name: 'Blue Nile Trading PLC', handle: 'blue-nile-trading', type: 'ENTERPRISE_SHIPPER', city: 'Addis Ababa' },
     receiver: { id: 'org-receiver', name: 'Fresh Foods Distribution PLC', handle: 'fresh-foods-distribution', type: 'ENTERPRISE_RECEIVER', city: 'Hawassa' },
-    transporter: { id: 'org-transporter', name: 'BlueLine Transport PLC', handle: 'blueline-transport', type: 'TRANSPORT_COMPANY', city: 'Addis Ababa' }
+    transporter: { id: 'org-transporter', name: 'BlueLine Transport PLC', handle: 'blueline-transport', type: 'TRANSPORT_COMPANY', city: 'Addis Ababa' },
+    expired: { id: 'org-expired', name: 'Expired Trial Workshop', handle: 'expired-trial-workshop', type: 'ENTERPRISE_SHIPPER', city: 'Adama' }
   };
 
   const insertOrg = db.prepare(`INSERT INTO organizations
@@ -693,7 +710,8 @@ function seed(db) {
     ['user-transporter','transporter@loadgistic.local','Samuel Tesfaye','TRANSPORTER',orgs.transporter.id,null],
     ['user-company-driver','company-driver@loadgistic.local','Yonas Alemu','DRIVER',orgs.transporter.id,null],
     ['user-driver','driver@loadgistic.local','Abebe Kebede','DRIVER',null,'provider-driver',1],
-    ['user-applicant','pending-applicant@fixtures.loadgistic.test','Liya Bekele','RECEIVER',null,null,0]
+    ['user-applicant','pending-applicant@fixtures.loadgistic.test','Liya Bekele','RECEIVER',null,null,0],
+    ['user-expired','expired@loadgistic.local','Meron Desta','SHIPPER',orgs.expired.id,null]
   ];
   const insertUser = db.prepare(`INSERT INTO users
     (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at)
@@ -705,6 +723,7 @@ function seed(db) {
   insertMembership.run(randomId('mem-'),'user-receiver',orgs.receiver.id,'OWNER');
   insertMembership.run(randomId('mem-'),'user-transporter',orgs.transporter.id,'OWNER');
   insertMembership.run(randomId('mem-'),'user-company-driver',orgs.transporter.id,'DRIVER');
+  insertMembership.run(randomId('mem-'),'user-expired',orgs.expired.id,'OWNER');
 
   db.prepare(`INSERT INTO provider_profiles
     (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at)
@@ -823,10 +842,15 @@ function seed(db) {
   planInsert.run('plan-business','BUSINESS_CAPACITY','Business Capacity','BUSINESS');
   planInsert.run('plan-transport','FLEET_DEMAND','Fleet Transporter Demand','TRANSPORTER');
   planInsert.run('plan-solo','SELF_MANAGED_DRIVER','Self-managed Driver Demand','DRIVER');
-  const subInsert = db.prepare(`INSERT INTO subscriptions (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at) VALUES (?,?,?,?,?,?,?,?)`);
-  subInsert.run('sub-shipper',orgs.shipper.id,null,'plan-business','ACTIVE','FLAT_MONTHLY',iso,null);
-  subInsert.run('sub-transporter',orgs.transporter.id,null,'plan-transport','ACTIVE','FLAT_MONTHLY',iso,null);
-  subInsert.run('sub-driver',null,'provider-driver','plan-solo','ACTIVE','FLAT_MONTHLY',iso,null);
+  const paidEndsAt = new Date(now.getTime() + 30 * 86_400_000).toISOString();
+  const expiredAt = new Date(now.getTime() - 86_400_000).toISOString();
+  const expiredStartedAt = new Date(now.getTime() - 8 * 86_400_000).toISOString();
+  const subInsert = db.prepare(`INSERT INTO subscriptions (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)`);
+  subInsert.run('sub-shipper',orgs.shipper.id,null,'plan-business','ACTIVE','FLAT_MONTHLY',iso,paidEndsAt,iso);
+  subInsert.run('sub-receiver',orgs.receiver.id,null,'plan-business','ACTIVE','FLAT_MONTHLY',iso,paidEndsAt,iso);
+  subInsert.run('sub-transporter',orgs.transporter.id,null,'plan-transport','ACTIVE','FLAT_MONTHLY',iso,paidEndsAt,iso);
+  subInsert.run('sub-driver',null,'provider-driver','plan-solo','ACTIVE','FLAT_MONTHLY',iso,paidEndsAt,iso);
+  subInsert.run('sub-expired',orgs.expired.id,null,'plan-business','TRIAL','FLAT_MONTHLY',expiredStartedAt,expiredAt,expiredAt);
 
   db.prepare(`INSERT INTO applications (id,user_id,business_name,application_type,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`)
     .run('app-pending','user-applicant','Hawassa Retail Distribution PLC','ENTERPRISE_RECEIVER','PENDING','Confirm business registration document',iso,iso);

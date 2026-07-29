@@ -31,7 +31,8 @@ And no additional provider category is available.
 Given a pending application and an authenticated administrator\
 When the administrator approves it\
 Then the correct organization or independent provider profile is provisioned\
-And the user becomes active.
+And the user becomes active\
+And the workspace receives either its seven-day trial or an eligible reviewed Business sponsorship.
 
 ### Scenario: non-admin review is denied
 

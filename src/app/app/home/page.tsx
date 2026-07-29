@@ -1,14 +1,40 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getDashboard, getDriverAccess, getFleetNetworkCoverage, listOwnCapacity, listOwnVehicles } from '@/lib/repository.js';
+import { getBillingSummary, getDashboard, getDriverAccess, getFleetNetworkCoverage, getWorkspaceAccess, listOwnCapacity, listOwnVehicles } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
 import { DriverCapacityHome } from '@/components/driver-capacity-home';
 import { NetworkCoverage } from '@/components/network-coverage';
+import { CreditCard, LockKeyhole } from 'lucide-react';
+
+function limitedAccessTitle(status:string){
+  if(status==='PAYMENT_UNDER_REVIEW')return 'Payment is under review';
+  if(status==='NO_SUBSCRIPTION')return 'A plan must be assigned';
+  return 'Your plan has expired';
+}
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
-  const user=await requireUser(); const query=await searchParams;
+  const user=await requireUser(undefined,{allowLimited:true}); const query=await searchParams;
+  const access=getWorkspaceAccess(user);
+  if(!access.granted){
+    const billing:any=getBillingSummary(user);
+    const greeting=user.organization_name||user.provider_business_name||user.name;
+    return <div className="page billing-limited-home">
+      <PageHeader title={`Welcome, ${greeting}`} subtitle="Your account is available, but operating access needs payment."/>
+      <Flash error={query.error} success={query.success}/>
+      <section className="billing-access-panel">
+        <div className="billing-access-icon"><LockKeyhole aria-hidden="true"/></div>
+        <div><span className="status expired">ACCESS LIMITED</span><h2>{limitedAccessTitle(access.status)}</h2><p>{access.status==='PAYMENT_UNDER_REVIEW'?'Loadgistic is reviewing your payment. Operating screens will reopen after approval.':'Submit your payment information to restore Loadgistic operating access.'}</p></div>
+        <Link href="/app/more" className="button icon-button-label"><CreditCard aria-hidden="true"/>Open plan & billing</Link>
+      </section>
+      <div className="billing-limited-facts">
+        <section><span>Plan</span><strong>{billing.subscription?.plan_name||'Not assigned'}</strong></section>
+        <section><span>Access ended</span><strong>{access.ends_at?new Date(access.ends_at).toLocaleDateString():'Payment required'}</strong></section>
+        <section><span>Still available</span><strong>Home · Plan & billing · Log out</strong></section>
+      </div>
+    </div>;
+  }
   if(user.role==='DRIVER') return <DriverCapacityHome vehicles={listOwnVehicles(user)} capacities={listOwnCapacity(user)} access={getDriverAccess(user)} query={query}/>;
   const data:any=getDashboard(user);
   const coverage=user.role==='TRANSPORTER'?getFleetNetworkCoverage(user):null;

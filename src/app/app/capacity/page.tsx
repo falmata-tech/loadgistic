@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { requireUser } from '@/lib/auth';
-import { listMarketCapacity, listOwnLoadRouteOptions } from '@/lib/repository.js';
+import { listMarketCapacity, listOwnLoadRouteOptions, paginateResults } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { capacityLabel } from '@/lib/domain.js';
@@ -10,6 +10,7 @@ import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
 import { CalendarClock, Camera, Eye, Gauge, Route, Search, SlidersHorizontal, X } from 'lucide-react';
 import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';
+import { Pagination } from '@/components/pagination';
 
 function acceptedLoads(capacity:any) {
   if (capacity.accepts_full_load && capacity.accepts_partial_load) return 'FTL + PTL';
@@ -25,7 +26,7 @@ function stopPolicy(capacity:any){
 }
 
 export default async function CapacityPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
- const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',origin:query.origin||'',destination:query.destination||'',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',routeBy:query.routeBy||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',contractRoutes:query.contractRoutes||'',proof:query.proof||''}; const rows:any[]=listMarketCapacity(user,filters); const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const loadRoutes:any[]=listOwnLoadRouteOptions(user); const hasFilters=Object.values(filters).some(Boolean); const hasAdvancedFilters=[filters.minAvailable,filters.routeBy,filters.visibility,filters.freshness,filters.stopOption,filters.contractRoutes,filters.proof].some(Boolean);
+ const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',origin:query.origin||'',destination:query.destination||'',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',routeBy:query.routeBy||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',contractRoutes:query.contractRoutes||'',proof:query.proof||''}; const result:any=paginateResults(listMarketCapacity(user,filters),{page:query.page,pageSize:12}); const rows:any[]=result.items; const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const loadRoutes:any[]=listOwnLoadRouteOptions(user); const hasFilters=Object.values(filters).some(Boolean); const hasAdvancedFilters=[filters.minAvailable,filters.routeBy,filters.visibility,filters.freshness,filters.stopOption,filters.contractRoutes,filters.proof].some(Boolean);
  return <div className="page"><PageHeader title="Capacity Board" subtitle={isProvider?'A read-only view of current supply signals from other trucks.':'Every card is one fresh Empty or Partial truck available for freight work.'}/>
  {isProvider?<div className="alert">The Capacity Board is read only for transporters and drivers. Use it to understand supply; contact and interest actions are not available here.</div>:<div className="alert">Each truck stands on its own. Public means all logged-in businesses; Partners means only Connected network Businesses.</div>}
  <form className="board-filter-panel" method="get">
@@ -51,12 +52,12 @@ export default async function CapacityPage({searchParams}:{searchParams:Promise<
        <div className="form-group"><label htmlFor="capacity-proof"><Camera aria-hidden="true"/>Cargo-space proof</label><select id="capacity-proof" name="proof" defaultValue={filters.proof}><option value="">With or without proof</option><option value="RECORDED">Photo recorded</option></select></div>
      </div>
    </details>
-   <div className="board-filter-actions"><button className="button icon-button-label"><Search aria-hidden="true"/>Show matching trucks</button>{hasFilters?<Link href="/app/capacity" className="button secondary icon-button-label"><X aria-hidden="true"/>Clear</Link>:null}<span className="meta">{rows.length} {rows.length===1?'truck':'trucks'} shown</span></div>
+   <div className="board-filter-actions"><button className="button icon-button-label"><Search aria-hidden="true"/>Show matching trucks</button>{hasFilters?<Link href="/app/capacity" className="button secondary icon-button-label"><X aria-hidden="true"/>Clear</Link>:null}<span className="meta">{result.total} {result.total===1?'truck':'trucks'} found</span></div>
  </form>
  <section className="capacity-market-grid">{rows.map((cap:any)=><article className="card capacity-market-card" key={cap.id}>
    <div className="market-card-top"><div className="market-truck-heading"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(cap.cargo_configuration||cap.vehicle_category)} alt="" width={120} height={120}/><div><div className="status-row"><StatusPill status={cap.status}/><StatusPill status={cap.freshness}/>{cap.relationshipVisible?<span className="status green">Partners</span>:<span className="status">Public</span>}</div><h2>{cap.vehicle_make} · {cap.vehicle_model}</h2><div className="meta">{cap.platform_number} · {cap.cargo_configuration||cap.vehicle_category}<br/>{cap.organization_name||cap.provider_name}</div></div></div><strong className="market-capacity-value">{capacityLabel(cap.status,cap.available_percent)}</strong></div>
    <div className="progress"><span style={{width:`${cap.available_percent}%`}}/></div>
    <div className="market-signal-grid"><div><small>Current area</small><strong>{cap.location_area||cap.origin||'Area not updated'}</strong><span>{cap.location_source === 'DEVICE_OBSCURED' ? `Approximate device area · ${cap.location_precision_km} km privacy zone` : cap.location_updated_at?`Updated ${relativeTime(cap.location_updated_at)}`:'Location time unavailable'}</span></div><div><small>{cap.status==='PARTIAL'?'Current partial route':'Planned route'}</small><strong>{cap.status==='PARTIAL'?(cap.current_route_origin||'Not recorded'):(cap.origin||'Not recorded')} → {cap.status==='PARTIAL'?(cap.current_route_destination||'Not recorded'):(cap.destination||'Not recorded')}</strong><span>{cap.status==='PARTIAL'?(cap.current_route_date||'No current-route date'):(cap.travel_date?`${cap.travel_date} · ${cap.planned_space_status==='PARTIAL'?'Partial':'Full'} cargo space`:'No planned date')}</span></div><div><small>Accepting</small><strong>{acceptedLoads(cap)}</strong><span>{stopPolicy(cap)} · {cap.open_to_contract_lanes?'Contract routes':'Single-trip work'}</span></div><div><small>Proof signal</small><strong>{cap.proof_available?'Photo recorded':'No photo'}</strong><span>{cap.proof_recorded_at?relativeTime(cap.proof_recorded_at):'Not recorded'}</span></div></div>
    <div className="market-card-actions">{cap.route_match_label?<span className={`route-match match-${cap.route_match_score}`}><Route aria-hidden="true"/>{cap.route_match_label}{cap.route_match_source?` · ${cap.route_match_source}`:''}</span>:null}<Link className="button secondary small" href={`/app/capacity/${cap.id}`}>View truck details</Link></div>
- </article>)}</section>{!rows.length?<div className="empty-state">No fresh capacity is visible right now.</div>:null}</div>;
+ </article>)}</section>{!rows.length?<div className="empty-state">No fresh capacity is visible right now.</div>:null}<Pagination path="/app/capacity" query={filters} page={result.page} pageCount={result.pageCount} total={result.total}/></div>;
 }

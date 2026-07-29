@@ -6,21 +6,23 @@ export function Pagination({
   query,
   page,
   pageCount,
-  total
+  total,
+  pageParam='page'
 }:{
   path:string;
   query:Record<string,string|undefined>;
   page:number;
   pageCount:number;
   total:number;
+  pageParam?:string;
 }){
   if(pageCount<=1)return <p className="pagination-summary">{total} results</p>;
   const href=(target:number)=>{
     const params=new URLSearchParams();
     for(const [key,value] of Object.entries(query)){
-      if(value&&key!=='page')params.set(key,value);
+      if(value&&key!==pageParam)params.set(key,value);
     }
-    params.set('page',String(target));
+    params.set(pageParam,String(target));
     return `${path}?${params.toString()}`;
   };
   return <nav className="pagination" aria-label="Results pages">

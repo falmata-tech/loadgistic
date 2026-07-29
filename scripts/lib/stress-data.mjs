@@ -167,6 +167,23 @@ function days(date, amount) {
   return hours(date,amount * 24);
 }
 
+function subscriptionFixture(index, audience, now) {
+  const variant = (index - 1) % 6;
+  if (audience === 'BUSINESS' && variant === 5) {
+    return {status:'SPONSORED',billingModel:'SPONSORED_FREE',startsAt:days(now,-90).toISOString(),endsAt:null};
+  }
+  if (variant === 1) {
+    return {status:'TRIAL',billingModel:'FLAT_MONTHLY',startsAt:days(now,-2).toISOString(),endsAt:days(now,5).toISOString()};
+  }
+  if (variant === 3) {
+    return {status:'PAYMENT_UNDER_REVIEW',billingModel:'FLAT_MONTHLY',startsAt:days(now,-38).toISOString(),endsAt:days(now,-8).toISOString()};
+  }
+  if (variant === 4) {
+    return {status:'PAYMENT_REQUIRED',billingModel:'FLAT_MONTHLY',startsAt:days(now,-31).toISOString(),endsAt:days(now,-1).toISOString()};
+  }
+  return {status:'ACTIVE',billingModel:'FLAT_MONTHLY',startsAt:days(now,-10).toISOString(),endsAt:days(now,20).toISOString()};
+}
+
 function dateOnly(date) {
   return date.toISOString().slice(0,10);
 }
@@ -243,8 +260,8 @@ export function populateStressData(db, { scale = 1 } = {}) {
       (id,organization_id,provider_profile_id,origin,destination,created_by,created_at)
       VALUES (?,?,?,?,?,?,?)`);
     const subscriptionInsert = db.prepare(`INSERT INTO subscriptions
-      (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at)
-      VALUES (?,?,?,?,?,?,?,?)`);
+      (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)`);
 
     for (let index = 1; index <= profile.businesses; index += 1) {
       const suffix = pad(index);
@@ -288,7 +305,8 @@ export function populateStressData(db, { scale = 1 } = {}) {
         routeInsert.run(`stress-route-business-${suffix}-${routeIndex + 1}`,organizationId,null,city,destination,userId,timestamp);
       }
       const subscriptionId = `stress-sub-business-${suffix}`;
-      subscriptionInsert.run(subscriptionId,organizationId,null,'plan-business',index % 11 === 0 ? 'PAYMENT_UNDER_REVIEW' : 'ACTIVE','FLAT_MONTHLY',timestamp,null);
+      const access=subscriptionFixture(index,'BUSINESS',now);
+      subscriptionInsert.run(subscriptionId,organizationId,null,'plan-business',access.status,access.billingModel,access.startsAt,access.endsAt,timestamp);
       subscriptions.push({id:subscriptionId,ownerId:organizationId,ownerType:'ORGANIZATION',plan:'Business Capacity'});
       businesses.push({id:organizationId,userId,name,handle,role,city});
       ownersByOrganization.set(organizationId,userId);
@@ -340,7 +358,8 @@ export function populateStressData(db, { scale = 1 } = {}) {
         fleetIndex % 2,`operations-${suffix}@stress.loadgistic.local`,1,timestamp
       );
       const subscriptionId = `stress-sub-fleet-${suffix}`;
-      subscriptionInsert.run(subscriptionId,organizationId,null,'plan-transport',fleetIndex % 9 === 0 ? 'PAYMENT_UNDER_REVIEW' : 'ACTIVE','FLAT_MONTHLY',timestamp,null);
+      const access=subscriptionFixture(fleetIndex,'TRANSPORTER',now);
+      subscriptionInsert.run(subscriptionId,organizationId,null,'plan-transport',access.status,access.billingModel,access.startsAt,access.endsAt,timestamp);
       subscriptions.push({id:subscriptionId,ownerId:organizationId,ownerType:'ORGANIZATION',plan:'Fleet Transporter Demand'});
 
       const driverUserIds = [];
@@ -429,7 +448,8 @@ export function populateStressData(db, { scale = 1 } = {}) {
         `ET-D-${pad(driverIndex,4)}`,driverIndex % 17 === 0 ? 0 : 1,make,model,cargo
       );
       const subscriptionId = `stress-sub-driver-${suffix}`;
-      subscriptionInsert.run(subscriptionId,null,providerId,'plan-solo',driverIndex % 8 === 0 ? 'PAYMENT_UNDER_REVIEW' : 'ACTIVE','FLAT_MONTHLY',timestamp,null);
+      const access=subscriptionFixture(driverIndex,'DRIVER',now);
+      subscriptionInsert.run(subscriptionId,null,providerId,'plan-solo',access.status,access.billingModel,access.startsAt,access.endsAt,timestamp);
       subscriptions.push({id:subscriptionId,ownerId:providerId,ownerType:'PROVIDER_PROFILE',plan:'Self-managed Driver Demand'});
       const vehicle = {id:vehicleId,organizationId:null,providerProfileId:providerId,ownerUserId:userId,driverUserId:userId,active:driverIndex % 17 === 0 ? 0 : 1,index:vehicles.length + 1};
       vehicles.push(vehicle);
@@ -445,8 +465,8 @@ export function populateStressData(db, { scale = 1 } = {}) {
     }
 
     const applicationInsert = db.prepare(`INSERT INTO applications
-      (id,user_id,business_name,application_type,status,notes,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?)`);
+      (id,user_id,business_name,application_type,status,sponsored_free,notes,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)`);
     for (let applicantIndex = 1; applicantIndex <= profile.applicants; applicantIndex += 1) {
       const suffix = pad(applicantIndex);
       const applicationTypes = ['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER','TRANSPORT_COMPANY','INDEPENDENT_PROVIDER'];
@@ -460,7 +480,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         `Applicant ${suffix}`,role,null,null,0,days(now,-applicantIndex).toISOString()
       );
       applicationInsert.run(
-        `stress-application-${suffix}`,userId,`Growing Enterprise ${suffix}`,applicationType,status,
+        `stress-application-${suffix}`,userId,`Growing Enterprise ${suffix}`,applicationType,status,0,
         status === 'PENDING' ? 'Awaiting initial document review.' : status === 'MORE_INFO' ? 'Please provide a clearer business document.' : 'Application details could not be verified.',
         days(now,-applicantIndex).toISOString(),days(now,-Math.max(0,applicantIndex - 1)).toISOString()
       );
@@ -469,7 +489,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
       const business = businesses[approvedIndex];
       applicationInsert.run(
         `stress-application-approved-${pad(approvedIndex + 1)}`,business.userId,business.name,
-        business.role === 'SHIPPER' ? 'ENTERPRISE_SHIPPER' : 'ENTERPRISE_RECEIVER','APPROVED',
+        business.role === 'SHIPPER' ? 'ENTERPRISE_SHIPPER' : 'ENTERPRISE_RECEIVER','APPROVED',approvedIndex === 5 ? 1 : 0,
         'Workspace provisioned after successful review.',days(now,-180 - approvedIndex).toISOString(),days(now,-175 - approvedIndex).toISOString()
       );
     }
@@ -825,6 +845,7 @@ export function getStressDataReport(db, { profile = null } = {}) {
       relationshipStates:distinctValues(db,'partner_relationships','status'),
       verificationStates:distinctValues(db,'verification_requests','status'),
       applicationStates:distinctValues(db,'applications','status'),
+      subscriptionStates:distinctValues(db,'subscriptions','status'),
       paymentStates:distinctValues(db,'payment_proofs','status'),
       ratingStates:distinctValues(db,'business_reviews','status')
     }
@@ -870,6 +891,7 @@ export function assertStressDataIntegrity(db, report = getStressDataReport(db)) 
     relationshipStates:['CONNECTED','DECLINED','FAVORITE','PENDING'],
     verificationStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
     applicationStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
+    subscriptionStates:['ACTIVE','PAYMENT_REQUIRED','PAYMENT_UNDER_REVIEW','SPONSORED','TRIAL'],
     paymentStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
     ratingStates:['DISMISSED','PENDING','PUBLISHED']
   };

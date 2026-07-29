@@ -1,7 +1,8 @@
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   let refreshing = false;
+  const wasControlled = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
+    if (!wasControlled || refreshing) return;
     refreshing = true;
     location.reload();
   });

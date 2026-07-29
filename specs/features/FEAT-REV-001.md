@@ -11,6 +11,13 @@ rollout: Existing reviews migrate as Published; low-rating moderation is additiv
 
 # Business rating moderation
 
+### Scenario: rating review history remains bounded
+
+Given a rating-review status contains more than one page\
+When an administrator changes page\
+Then the server renders one bounded page and preserves the selected status\
+And terminal records remain reachable without active review commands.
+
 ### Scenario: positive completed-load review publishes immediately
 
 Given a shipper or receiver Business may review the other Business after a Completed load\

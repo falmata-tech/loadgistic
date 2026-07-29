@@ -8,7 +8,7 @@ npm test
 
 These tests use Node's test runner and an isolated SQLite file.
 
-`tests/authorization.test.mjs` is the negative contract suite for role, tenant, record-party, Connected-partner, tracking-code, proof-file, and terminal-review boundaries. Add denial coverage there whenever a protected service changes.
+`tests/authorization.test.mjs` is the negative contract suite for role, tenant, record-party, Connected-partner, tracking-code, proof-file, terminal-review, and expired-subscription boundaries. Add denial coverage there whenever a protected service changes.
 
 ## Type and source checks
 
@@ -49,6 +49,8 @@ Covered workflows:
 - Assigned-provider tracking enforces the load's selected mode
 - Transporter opens loads and capacity
 - Authenticated public-company navigation retains its session and preselects the requested provider
+- Expired workspaces retain Home and Plan & billing while operating navigation and deep links are denied
+- Application approval creates a seven-day trial or Business-only sponsorship, and payment approval creates a 30-day period
 - Public login does not expose local fixture credentials
 
 Add tests for every permission or state-transition change.
@@ -68,8 +70,10 @@ isolated database and proves that Production execution is rejected before any
 database change.
 
 The dense UI audit signs in as Business, Fleet Transporter, generated fleet
-owner, generated Self-managed Driver, and Administrator personas. It captures
-42 desktop/mobile screens, including route comparison, and checks response
+owner, generated Self-managed Driver, expired Business, and Administrator
+personas. It captures 54 desktop/mobile screens, including second-page Board,
+Directory, and Operations results, route comparison, and the limited billing
+experience, and checks response
 status, browser errors, horizontal overflow, render time, DOM size, and card
 density. Local evidence is written to the ignored `artifacts/stress-ui/`
 directory.

@@ -11,6 +11,14 @@ rollout: Add relationship states compatibly, treat existing saved relationships 
 
 # Member network
 
+### Scenario: network views remain bounded
+
+Given Connected, Requests, or Favorites contains more than one page\
+When the owner changes the selected page\
+Then only one bounded page of that view is rendered\
+And the full per-view counts remain visible\
+And relationship actions return to the current view and page.
+
 ### Scenario: member keeps a private favorite
 
 Given a Business or authorized transport provider opens an eligible authenticated Public Profile\

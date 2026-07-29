@@ -35,6 +35,7 @@ All accounts use the local password `Loadgistic123!`.
 | Fleet Transporter | `transporter@loadgistic.local` |
 | Fleet company Driver | `company-driver@loadgistic.local` |
 | Self-managed Driver / Owner-Operator | `driver@loadgistic.local` |
+| Expired Business trial (billing-limit fixture) | `expired@loadgistic.local` |
 | Platform Administrator | `admin@loadgistic.local` |
 
 ## Reset
@@ -50,7 +51,8 @@ dataset containing more than 8,000 related rows. It covers all application
 tables and material states, including 80 Businesses, 20 six-truck fleets, their
 company Drivers, 40 self-managed Drivers, applicant accounts, loads, tracking
 events, capacity history, relationships, verification requests, billing
-evidence, ratings, notifications, and audit records.
+evidence, sponsored/trial/paid/under-review/expired subscription states,
+ratings, notifications, and audit records.
 
 Generated accounts use the same development-only password documented above.
 Representative emails include:

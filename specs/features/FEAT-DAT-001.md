@@ -56,9 +56,17 @@ When comprehensive seeding is requested\
 Then the command fails before deleting or writing a database\
 And no database record changes.
 
+### Scenario: dense navigation reaches later result pages
+
+Given the standard dataset contains more records than the configured page size\
+When the dense UI audit opens first and second pages of Boards, Directory, and administrator Operations\
+Then the requested page number is visibly confirmed\
+And the page renders without browser errors or horizontal overflow\
+And authorization remains unchanged.
+
 ## Contract ownership
 
 - Generator: `scripts/lib/stress-data.mjs`
 - Command adapter: `scripts/seed-stress-db.mjs`
 - Commands: `npm run db:stress`, optional `STRESS_SCALE=1..5`
-- Tests: `tests/stress-data.test.mjs`
+- Tests: `tests/stress-data.test.mjs`, `scripts/stress-ui-audit.mjs`

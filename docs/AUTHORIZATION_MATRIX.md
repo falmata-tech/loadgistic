@@ -37,7 +37,9 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Review verification | Admin only; terminal decisions are immutable | `FORBIDDEN` or `VERIFICATION_ALREADY_REVIEWED`; no badge change |
 | Review application | Admin; only non-terminal Pending/More Info application | `FORBIDDEN` or `APPLICATION_ALREADY_REVIEWED`; no provisioning |
 | Submit payment proof | User with a subscription belonging to its organization or provider profile | `SUBSCRIPTION_NOT_FOUND`; no proof |
-| Review payment proof | Admin; only non-terminal Pending/More Info proof | `FORBIDDEN` or `PAYMENT_PROOF_ALREADY_REVIEWED`; no subscription change |
+| Review payment proof | Admin; only non-terminal Pending/More Info proof; approval opens 30 days from review | `FORBIDDEN` or `PAYMENT_PROOF_ALREADY_REVIEWED`; no subscription change |
+| Use operating workspace | Admin, sponsored Business, or member of a workspace with an unexpired seven-day trial or 30-day paid period; company Drivers inherit fleet access | `SUBSCRIPTION_ACCESS_REQUIRED`; Home, Account, billing submission, and logout remain available |
+| Grant sponsored free access during application review | Admin approving a Business application only | `SPONSORED_ACCESS_BUSINESS_ONLY`; no workspace or subscription |
 | Read platform Operations | Admin only; bounded user, workspace, truck, load, and latest-capacity projections exclude credentials, sessions, tracking secrets, exact coordinates, and proof paths | `FORBIDDEN`; no records or read audit |
 | Suspend/restore user | Admin only; reversible; administrator cannot suspend their own account | `FORBIDDEN`, `NOT_FOUND`, or `ADMIN_SELF_SUSPENSION`; no status change |
 | Deactivate/reactivate truck | Admin only; reversible; inactive trucks are excluded from marketplace capacity and active fleet counts | `FORBIDDEN` or `NOT_FOUND`; no status change |
@@ -54,5 +56,6 @@ This matrix defines the application-service boundary. Route handlers authenticat
 - Transport providers cannot unlock the customer tracking view; their involved loads and real events remain in the internal Tracking workspace.
 - Favorites and Pending or declined network requests never authorize Partners-only marketplace records.
 - Terminal approval/rejection is immutable in this MVP.
+- Expired, unpaid, or payment-under-review workspaces cannot bypass subscription limits through direct route or command calls.
 - Pending low ratings are visible only to their submitting Business and administrators; the reviewed Business and public summary receive no pending or dismissed rating data.
 - Denied operations do not write success audits. HTTP adapters return generic safe messages and do not expose protected record details.

@@ -27,6 +27,17 @@
 - `/app/verification` — owned entity and truck verification
 - `/app/more`
 
+Growing collections use server-owned query parameters. A single-list route uses
+`page`; routes with independent lists use descriptive keys such as
+`truckPage`, `driverPage`, `eventPage`, or `paymentPage`. Search and filter
+submissions omit the page key and therefore restart at page one. Pagination
+links retain the active view and filters.
+
+An expired, unpaid, or lapsed payment-under-review workspace can open only
+`/app/home` and `/app/more`. Other workspace pages redirect to the
+billing-focused Home; their repository commands independently reject access.
+Administrators and sponsored workspaces are not time limited.
+
 ## Administration
 
 - `/admin/applications`
@@ -34,6 +45,10 @@
 - `/admin/verifications`
 - `/admin/ratings`
 - `/admin/billing`
+
+Administrative queues use `page`. `/admin/operations` uses independent
+`userPage`, `workspacePage`, `truckPage`, `loadPage`, and `capacityPage` keys so
+one record group can move without changing the others.
 
 ## System
 

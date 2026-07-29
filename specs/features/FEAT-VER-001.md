@@ -11,6 +11,13 @@ rollout: Document names remain extensible; keep files private, seed only explici
 
 # Verification
 
+### Scenario: verification history remains bounded
+
+Given a workspace or administrator has many verification requests\
+When request history or the review queue changes page\
+Then only one bounded server page is rendered\
+And every matching request remains reachable without exposing private documents to another workspace.
+
 ### Scenario: owner submits supported evidence
 
 Given an authenticated Business, fleet transporter, or self-managed driver\

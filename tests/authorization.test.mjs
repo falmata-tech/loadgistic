@@ -16,7 +16,8 @@ const users = {
   receiver: repo.getUserById('user-receiver'),
   transporter: repo.getUserById('user-transporter'),
   companyDriver: repo.getUserById('user-company-driver'),
-  driver: repo.getUserById('user-driver')
+  driver: repo.getUserById('user-driver'),
+  expired: repo.getUserById('user-expired')
 };
 const futureRouteDate=new Date(Date.now()+2*86_400_000).toISOString().slice(0,10);
 
@@ -361,6 +362,32 @@ test('payment review is admin-only and terminal outcomes are immutable', () => {
   assert.throws(() => repo.reviewPaymentProof(users.admin, proofId, 'REJECTED'), /PAYMENT_PROOF_ALREADY_REVIEWED/);
   const proof = repo.listPaymentProofs(users.admin).find(row => row.id === proofId);
   assert.equal(proof.status, 'APPROVED');
+});
+
+test('expired workspace keeps billing access but cannot read or mutate operations',()=>{
+  const db=dbModule.getDb();
+  assert.equal(repo.getWorkspaceAccess(users.expired).granted,false);
+  assert.equal(repo.getWorkspaceAccess(users.expired).status,'EXPIRED_UNPAID');
+  const loadCount=db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n;
+  assert.throws(()=>repo.getDashboard(users.expired),/SUBSCRIPTION_ACCESS_REQUIRED/);
+  assert.throws(()=>repo.listVisibleShipments(users.expired),/SUBSCRIPTION_ACCESS_REQUIRED/);
+  assert.throws(()=>repo.searchDirectory(users.expired,'Blue'),/SUBSCRIPTION_ACCESS_REQUIRED/);
+  assert.throws(()=>repo.createShipment(users.expired,{
+    title:'Expired access attempt',serviceMode:'FREIGHT',distributionMode:'OPEN_MARKET',
+    priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Adama',
+    cargoDescription:'Must not be created',loadType:'PTL',pickupDate:futureRouteDate,trackingMode:'STATUS_ONLY'
+  }),/SUBSCRIPTION_ACCESS_REQUIRED/);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,loadCount);
+  const proofId=repo.submitPaymentProof(users.expired,'900','EXPIRED-RENEWAL');
+  assert.equal(repo.getBillingSummary(users.expired).subscription.status,'PAYMENT_UNDER_REVIEW');
+  assert.equal(db.prepare('SELECT status FROM payment_proofs WHERE id=?').get(proofId).status,'PENDING');
+});
+
+test('company drivers inherit the fleet workspace subscription',()=>{
+  const ownerAccess=repo.getWorkspaceAccess(users.transporter);
+  const driverAccess=repo.getWorkspaceAccess(users.companyDriver);
+  assert.equal(driverAccess.granted,ownerAccess.granted);
+  assert.equal(driverAccess.subscription.id,ownerAccess.subscription.id);
 });
 
 test('role and tenant checks guard remaining mutation boundaries', () => {

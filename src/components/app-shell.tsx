@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   Building2,
   ClipboardCheck,
+  CreditCard,
   Database,
   Home,
   LayoutList,
@@ -113,6 +114,11 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
   if (user.driver_kind === 'COMPANY') {
     items = items.filter(item => item.href !== '/app/company-page' && (item.href !== '/app/loads' || Boolean(user.can_browse_load_board)));
   }
+  if (user.billing_limited) {
+    items = items
+      .filter(item => ['/app/home','/app/more'].includes(item.href))
+      .map(item => item.href === '/app/more' ? {...item,label:'Plan & billing',icon:CreditCard} : item);
+  }
   const activeHref = items.filter(item=>{
     const [itemPath,itemQuery]=item.href.split('?');
     if(pathname!==itemPath&&!pathname.startsWith(`${itemPath}/`))return false;
@@ -122,7 +128,9 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     }
     return true;
   }).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
-  const mobileItems = (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
+  const mobileItems = user.billing_limited
+    ? items.map(item=>({...item,label:item.href==='/app/more'?'Plan & billing':item.label}))
+    : (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
   return (
     <div className="app-frame">

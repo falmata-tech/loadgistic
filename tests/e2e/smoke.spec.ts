@@ -28,11 +28,13 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   expect(workerSource).toContain("loadgistic-static-v3");
   expect(workerSource).not.toContain("startsWith('/_next/static/')");
   await page.goto('/login');
+  await page.getByLabel('Email').fill('pwa-install-probe@example.test');
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
   expect(scope).toContain('/');
   await page.waitForTimeout(1_000);
   await expect(page.getByRole('heading', { name: 'Log in to Loadgistic' })).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+  await expect(page.getByLabel('Email')).toHaveValue('pwa-install-probe@example.test');
   const executableChunkResult = await page.evaluate(async () => {
     const cache = await caches.open('loadgistic-runtime-regression');
     await cache.put('/_next/static/runtime-probe.js', new Response('stale-runtime'));
@@ -125,6 +127,28 @@ test('logout clears the session and immediately returns to login',async({page}:{
   await expect(page).toHaveURL(/\/login\?success=/);
   await page.goto('/app/home');
   await expect(page).toHaveURL(/\/login\?error=Please\+log\+in/);
+});
+
+test('expired workspace keeps a billing-focused Home and denies operating screens',async({page}:{page:any})=>{
+  await login(page,'expired@loadgistic.local');
+  await expect(page.getByRole('heading',{name:'Your plan has expired'})).toBeVisible();
+  await expect(page.getByText('Home · Plan & billing · Log out')).toBeVisible();
+  const navigation=(page.viewportSize()?.width||1000)>=980
+    ? page.getByRole('navigation',{name:'Workspace navigation'})
+    : page.getByRole('navigation',{name:'Mobile navigation'});
+  await expect(navigation.getByRole('link')).toHaveCount(2);
+  await expect(navigation.getByRole('link',{name:'Home'})).toBeVisible();
+  await expect(navigation.getByRole('link',{name:'Plan & billing'})).toBeVisible();
+  await expect(navigation.getByRole('link',{name:/Load Board|Capacity Board|Directory/})).toHaveCount(0);
+
+  await page.goto('/app/providers');
+  await expect(page).toHaveURL(/\/app\/home\?billing=required/);
+  await expect(page.getByRole('heading',{name:'Your plan has expired'})).toBeVisible();
+  await page.goto('/app/more');
+  await expect(page.getByText('Expired · unpaid')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Submit payment'})).toBeVisible();
+  await expect(page.getByLabel('Amount paid in ETB')).toBeVisible();
+  await expect(page.getByText('Standard plan prices are not displayed yet.')).toBeVisible();
 });
 
 test('mobile workspace menu exposes secondary business pages', async ({ page }: { page: any }) => {

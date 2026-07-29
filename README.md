@@ -111,6 +111,8 @@ The runnable local adapter uses built-in SQLite so the project can operate witho
 supabase/migrations/001_loadgistic_schema.sql
 supabase/migrations/002_fleet_driver_routes.sql
 supabase/migrations/003_network_tracking_truck_details.sql
+supabase/migrations/004_rating_moderation.sql
+supabase/migrations/005_subscription_access.sql
 ```
 
 The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Production migration replaces repository calls with RLS-protected Supabase queries or RPCs while preserving the domain commands and UI routes.

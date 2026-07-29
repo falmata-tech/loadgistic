@@ -131,3 +131,23 @@ status filters where applicable, and pagination. The Operations landing view
 uses compact per-section limits while an explicit search may return a larger
 bounded set. This keeps the ordinary fixture fast while making realistic UI
 density and relational integrity repeatable.
+
+## ADR-023 — Workspace subscription access periods
+
+Authorize paid platform access at the workspace boundary rather than per user.
+Business owners and members share one Business subscription; fleet owners and
+company Drivers share one Fleet Transporter subscription; a self-managed Driver
+uses the subscription attached to its provider profile. Administrators remain
+outside subscription enforcement.
+
+Workspace approval starts a seven-day trial. During Business application review,
+an administrator may instead record continuing sponsored access for a
+qualifying starting Business; transporter categories cannot receive that
+decision. Standard plan prices remain undisclosed until the commercial schedule
+is accepted. A submitted proof records the amount actually paid, and
+administrator approval opens a new 30-day period from review.
+
+Expired, unpaid, and late-payment-review states preserve authentication, a
+billing-focused Home, Account and payment submission, and logout. Server page
+authorization and application-service commands both deny operating access, so
+removing links is never the enforcement boundary.

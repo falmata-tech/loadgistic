@@ -27,13 +27,14 @@ Then the server returns one bounded page of matching records\
 And terminal records do not render active review commands\
 And the administrator can reach every matching record without rendering the entire queue at once.
 
-### Scenario: Operations starts with a compact overview
+### Scenario: Operations starts with bounded record pages
 
 Given the platform contains many operational records\
 When an administrator opens Operations without a search\
-Then each inventory section returns a small recent or representative subset\
+Then each inventory section returns its first bounded page\
 And platform-wide counts remain visible\
-And entering a search queries a larger bounded result set.
+And each section has independent page navigation that can reach every matching record\
+And entering a search narrows every record group and resets their pages.
 
 ### Scenario: administrator suspends or restores an account
 

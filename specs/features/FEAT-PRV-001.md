@@ -27,6 +27,14 @@ Then the server returns one bounded page of matching profiles\
 And the interface preserves the selected account type and search text\
 And the member can reach every matching profile without rendering the entire directory at once.
 
+### Scenario: directory supports discovery without requiring search
+
+Given an authenticated member opens the directory without filters\
+When the first result page is rendered\
+Then a bounded default page appears immediately\
+And desktop cards follow left-to-right, top-to-bottom reading order\
+And mobile shows one card per row.
+
 ### Scenario: directory supports cross-market network actions
 
 Given a Business views a transport provider or an authorized transport provider views a Business\

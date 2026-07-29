@@ -115,6 +115,14 @@ And the My Loads page provides an All my loads view, an Active Tracking view, an
 And Posted, negotiating, execution, and completed records remain projections of one canonical load\
 And transport providers retain their own Tracking navigation because they do not own Business demand.
 
+### Scenario: load work and marketplace demand remain bounded
+
+Given My Loads, Tracking, or the Load Board contains more records than one page\
+When the user opens, searches, filters, or pages the list\
+Then the server renders one bounded page\
+And the active view and filters remain in page navigation\
+And a new search or filter submission starts from page one.
+
 ### Scenario: provider discovers permitted freight
 
 Given a fleet transporter or self-managed driver\

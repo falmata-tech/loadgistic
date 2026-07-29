@@ -73,6 +73,7 @@ Given a supported mobile browser opens Loadgistic over a secure origin\
 When the browser evaluates the web app manifest and service worker\
 Then the workspace can be installed in standalone display mode\
 And authenticated application pages remain network-first rather than being persisted in a shared offline page cache\
+And first installation does not reload a login or application form while the user is entering data\
 And the service worker does not cache Next.js executable chunks, preventing a framework upgrade from combining stale and current runtime modules.
 
 ## Contract ownership

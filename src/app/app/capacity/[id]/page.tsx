@@ -2,11 +2,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { getCapacityForUser } from '@/lib/repository.js';
+import { getCapacityForUser, paginateResults } from '@/lib/repository.js';
 import { capacityLabel } from '@/lib/domain.js';
 import { relativeTime } from '@/lib/ui';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
 import { StatusPill } from '@/components/status-pill';
 
 function acceptedLoads(capacity: any) {
@@ -22,11 +23,13 @@ function stopPolicy(capacity:any){
   return options.join(' + ');
 }
 
-export default async function CapacityDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CapacityDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string,string|undefined>> }) {
   const user = await requireUser();
   const { id } = await params;
+  const query = await searchParams;
   const capacity: any = getCapacityForUser(user,id);
   if (!capacity) notFound();
+  const routeResult: any = paginateResults(capacity.preferred_routes || [], { page: query.routePage, pageSize: 10 });
   const ownerName = capacity.organization_name || capacity.provider_name;
   const ownerHandle = capacity.organization_handle || capacity.provider_handle;
 
@@ -43,7 +46,7 @@ export default async function CapacityDetailPage({ params }: { params: Promise<{
       </div>
       <aside className="stack">
         <section className="card"><h3>Transporter</h3><p><strong>{ownerName}</strong></p><div className="meta">{capacity.organization_name ? 'Fleet transporter' : 'Self-managed driver'}</div>{ownerHandle?<Link className="button secondary" href={`/app/providers/${ownerHandle}`}>View Profile</Link>:null}</section>
-        <section className="card"><h3>Preferred Routes</h3>{capacity.preferred_routes?.length?<div className="stack">{capacity.preferred_routes.map((route:any)=><div key={route.id}><strong>{route.origin} ↔ {route.destination}</strong></div>)}</div>:<p className="muted">No Preferred Routes declared.</p>}<p className="meta">Preferred Routes are stable profile declarations. The dated routes above belong only to this truck's current capacity signal.</p></section>
+        <section className="card"><h3>Preferred Routes</h3>{routeResult.total?<><div className="stack">{routeResult.items.map((route:any)=><div key={route.id}><strong>{route.origin} ↔ {route.destination}</strong></div>)}</div><Pagination path={`/app/capacity/${id}`} query={{}} page={routeResult.page} pageCount={routeResult.pageCount} total={routeResult.total} pageParam="routePage"/></>:<p className="muted">No Preferred Routes declared.</p>}<p className="meta">Preferred Routes are stable profile declarations. The dated routes above belong only to this truck's current capacity signal.</p></section>
         <section className="card"><h3>Signal freshness</h3><StatusPill status={capacity.freshness}/><p className="meta">Capacity updated {relativeTime(capacity.updated_at)}<br/>Location updated {capacity.location_updated_at ? relativeTime(capacity.location_updated_at) : 'not recorded'}<br/>Expires {new Date(capacity.expires_at).toLocaleString()}</p></section>
         <section className="card"><h3>Visibility</h3><StatusPill status={capacity.relationshipVisible ? 'Partners' : capacity.visibility === 'SAVED_PARTNERS' ? 'Partners' : 'Public'}/><p className="meta">Public capacity is visible to logged-in businesses. Partners capacity is limited to Connected network Businesses.</p></section>
       </aside>

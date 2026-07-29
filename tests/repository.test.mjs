@@ -17,6 +17,17 @@ test('seeded users and role workspaces exist',()=>{
  assert.ok(repo.getDashboard(shipper).actions.length>=2);
 });
 
+test('bounded result pages clamp size and keep deterministic page slices',()=>{
+ const rows=Array.from({length:27},(_,index)=>({id:index+1}));
+ const first=repo.paginateResults(rows,{page:1,pageSize:10});
+ const third=repo.paginateResults(rows,{page:3,pageSize:10});
+ assert.deepEqual(first.items.map(row=>row.id),[1,2,3,4,5,6,7,8,9,10]);
+ assert.deepEqual(third.items.map(row=>row.id),[21,22,23,24,25,26,27]);
+ assert.equal(third.total,27);
+ assert.equal(third.pageCount,3);
+ assert.equal(repo.paginateResults(rows,{page:99,pageSize:500}).pageSize,100);
+});
+
 test('seeded pending application belongs only to an inactive tenantless applicant',()=>{
  const db=dbModule.getDb();
  const pending=db.prepare(`SELECT a.id,u.active,u.organization_id,u.provider_profile_id
@@ -312,7 +323,26 @@ test('business application approval provisions a workspace and keeps account pho
  const hydrated=repo.getUserById(user.id);
  assert.ok(hydrated.organization_id);
  const billing=repo.getBillingSummary(hydrated);
- assert.equal(billing.subscription.status,'PAYMENT_UNDER_REVIEW');
+ assert.equal(billing.subscription.status,'TRIAL');
+ assert.equal(billing.access.granted,true);
+ const trialLength=new Date(billing.subscription.ends_at).getTime()-new Date(billing.subscription.starts_at).getTime();
+ assert.equal(trialLength,7*86_400_000);
+});
+
+test('administrator can sponsor a qualifying Business but not a transport provider',()=>{
+ const admin=repo.getUserById('user-admin');
+ const businessId=repo.createBusinessApplication({name:'Sponsored Applicant',businessName:'Sponsored Workshop PLC',email:'sponsored-applicant@loadgistic.local',phone:'+251 911 700 101',password:'StrongPass123!',applicationType:'ENTERPRISE_SHIPPER',notes:'Qualifying starting Business'});
+ repo.reviewApplication(admin,businessId,'APPROVED','Approved for support',{sponsoredFree:true});
+ const business=repo.findUserByEmail('sponsored-applicant@loadgistic.local');
+ const billing=repo.getBillingSummary(repo.getUserById(business.id));
+ assert.equal(billing.subscription.status,'SPONSORED');
+ assert.equal(billing.subscription.ends_at,null);
+ assert.equal(billing.access.granted,true);
+ assert.throws(()=>repo.submitPaymentProof(repo.getUserById(business.id),'100','NOT-NEEDED'),/PAYMENT_NOT_REQUIRED/);
+
+ const providerId=repo.createBusinessApplication({name:'Provider Applicant',businessName:'Provider Fleet PLC',email:'provider-sponsor-test@loadgistic.local',phone:'+251 911 700 102',password:'StrongPass123!',applicationType:'TRANSPORT_COMPANY',notes:'Cannot be sponsored'});
+ assert.throws(()=>repo.reviewApplication(admin,providerId,'APPROVED','Invalid sponsorship',{sponsoredFree:true}),/SPONSORED_ACCESS_BUSINESS_ONLY/);
+ assert.equal(repo.getApplicationStatus('provider-sponsor-test@loadgistic.local').status,'PENDING');
 });
 
 test('manual payment proof can be submitted and approved',()=>{
@@ -322,6 +352,10 @@ test('manual payment proof can be submitted and approved',()=>{
  repo.reviewPaymentProof(admin,proofId,'APPROVED');
  const proofs=repo.listPaymentProofs(admin);
  assert.equal(proofs.find(p=>p.id===proofId).status,'APPROVED');
+ const billing=repo.getBillingSummary(user);
+ assert.equal(billing.subscription.status,'ACTIVE');
+ const paidLength=new Date(billing.subscription.ends_at).getTime()-new Date(billing.subscription.starts_at).getTime();
+ assert.equal(paidLength,30*86_400_000);
 });
 
 test.after(()=>{dbModule.closeDb();for(const suffix of ['', '-wal','-shm'])if(fs.existsSync(file+suffix))fs.rmSync(file+suffix);});

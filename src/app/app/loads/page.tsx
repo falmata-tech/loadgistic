@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getDriverAccess, listLoads, listOwnTruckRouteOptions, listPooledLoads } from '@/lib/repository.js';
+import { getDriverAccess, listLoads, listOwnTruckRouteOptions, listPooledLoads, paginateResults } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { priceDisplay } from '@/lib/ui';
@@ -8,6 +8,7 @@ import { StatusPill } from '@/components/status-pill';
 import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
 import { Banknote, Boxes, CalendarClock, Clock3, Eye, Layers3, MapPin, Phone, Route, Search, Send, SlidersHorizontal, X } from 'lucide-react';
 import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';
+import { Pagination } from '@/components/pagination';
 
 export default async function LoadsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['TRANSPORTER','DRIVER','ADMIN']);
@@ -31,12 +32,15 @@ export default async function LoadsPage({searchParams}:{searchParams:Promise<Rec
     deliveryBy:query.deliveryBy||'',
     postedWithin:query.postedWithin||''
   };
-  const loads:any[]=board==='LOADS'?listLoads(user,mode,filters):[];
-  const pools:any[]=board==='POOLED'?listPooledLoads(user,filters):[];
+  const loadResult:any=paginateResults(board==='LOADS'?listLoads(user,mode,filters):[],{page:query.page,pageSize:12});
+  const poolResult:any=paginateResults(board==='POOLED'?listPooledLoads(user,filters):[],{page:query.page,pageSize:12});
+  const loads:any[]=loadResult.items;
+  const pools:any[]=poolResult.items;
   const truckRoutes:any[]=listOwnTruckRouteOptions(user);
   const hasFilters=mode!=='ALL'||Object.values(filters).some(Boolean);
   const hasAdvancedFilters=['priceMode','minPriceEtb','maxPriceEtb','pickupBy','deliveryBy','postedWithin'].some(key=>Boolean(filters[key as keyof typeof filters]));
-  const resultCount=board==='LOADS'?loads.length:pools.length;
+  const result=board==='LOADS'?loadResult:poolResult;
+  const resultCount=result.total;
 
   return <div className="page">
     <PageHeader title="Load Board" subtitle="Find individual freight demand or compatible PTL loads that may share one truck."/>
@@ -70,12 +74,13 @@ export default async function LoadsPage({searchParams}:{searchParams:Promise<Rec
           </div>
           <p className="meta">Minimum or maximum ETB applies to Fixed and Target prices. Quote Requested loads have no comparable saved amount.</p>
         </details>:null}
-        <div className="board-filter-actions"><button className="button icon-button-label"><Search aria-hidden="true"/>{board==='POOLED'?'Show matching pools':'Show matching loads'}</button>{hasFilters?<Link href={`/app/loads${board==='POOLED'?'?board=POOLED':''}`} className="button secondary icon-button-label"><X aria-hidden="true"/>Clear</Link>:null}<span className="meta">{resultCount} {board==='POOLED'?(resultCount===1?'pool':'pools'):(resultCount===1?'load':'loads')} shown</span></div>
+        <div className="board-filter-actions"><button className="button icon-button-label"><Search aria-hidden="true"/>{board==='POOLED'?'Show matching pools':'Show matching loads'}</button>{hasFilters?<Link href={`/app/loads${board==='POOLED'?'?board=POOLED':''}`} className="button secondary icon-button-label"><X aria-hidden="true"/>Clear</Link>:null}<span className="meta">{resultCount} {board==='POOLED'?(resultCount===1?'pool':'pools'):(resultCount===1?'load':'loads')} found</span></div>
       </form>
 
       {board==='LOADS'?<div className="stack" data-testid="load-list">{loads.map((load:any)=><article className="card load-board-card" key={load.id}><div className="load-board-layout"><div><div className="status-row"><StatusPill status={load.distribution_mode}/><span className="status">{load.shipper_name}</span><span className="status green">{load.load_type||'Load type missing'}</span>{load.interested?<span className="status green">Interest sent</span>:null}{load.route_match_label?<span className={`route-match match-${load.route_match_score}`}><Route aria-hidden="true"/>{load.route_match_label}{load.route_match_source?` · ${load.route_match_platform_number} ${load.route_match_source}`:''}</span>:null}</div><h3>{load.title}</h3><div className="route">{load.origin}<span>→</span>{load.destination}</div><div className="meta">Pick up before {load.pickup_date} · {load.vehicle_category||'Vehicle discussed directly'}</div><p>{load.cargo_description}</p></div><div className="load-board-actions"><strong>{priceDisplay(load)}</strong><div className="meta">Posted {new Date(load.created_at).toLocaleString()}</div><div className="hero-actions"><Link className="button secondary icon-button-label" href={`/app/shipments/${load.id}`}><Eye aria-hidden="true"/>Details</Link>{load.load_contact_phone?<a className="button secondary icon-button-label" href={`tel:${load.load_contact_phone}`}><Phone aria-hidden="true"/>Call</a>:null}{canNegotiate&&!load.interested?<form action={`/api/shipments/${load.id}/interest`} method="post"><button className="button icon-button-label"><Send aria-hidden="true"/>Express interest</button></form>:null}</div></div></div></article>)}</div>
       :<div className="stack" data-testid="pooled-load-list">{pools.map(pool=><article className="card pooled-load-card" key={pool.id}><div><div className="status-row"><span className="status green">PSTL</span><span className="status">{pool.member_count} PTL loads</span></div><h3>Pooled shared truckload</h3><div className="route">{pool.origin}<span>→</span>{pool.destination}</div><p>Compatible origins and destinations. Multi Pick and Multi Drop may be required.</p><div className="meta">Earliest pick up before {pool.earliest_pickup||'Not set'}{pool.latest_delivery?` · Latest drop off before ${pool.latest_delivery}`:''}</div></div><Link className="button secondary icon-button-label" href={`/app/loads/pstl/${pool.id}`}><Eye aria-hidden="true"/>View {pool.member_count} loads</Link></article>)}</div>}
       {!resultCount?<div className="empty-state">{board==='POOLED'?'No compatible posted PTL groups match these filters. Individual loads remain on the Loads tab.':'No loads match these filters.'}</div>:null}
+      <Pagination path="/app/loads" query={{board,mode,...filters}} page={result.page} pageCount={result.pageCount} total={result.total}/>
     </>}
   </div>;
 }

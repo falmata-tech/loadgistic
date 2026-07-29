@@ -11,6 +11,14 @@ rollout: Add permissions and assignments additively with conservative defaults, 
 
 # Fleet driver access
 
+### Scenario: large fleet management remains bounded
+
+Given a Fleet Transporter has many trucks or company Drivers\
+When My Fleet is opened or either list changes page\
+Then Trucks and Driver access use independent bounded pages\
+And changing one page preserves the position of the other list\
+And every active truck and Driver remains reachable.
+
 ### Scenario: fleet owner controls driver authority
 
 Given an authenticated fleet owner and an active driver in the same transporter organization\

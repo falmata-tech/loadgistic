@@ -50,10 +50,10 @@
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
 - Tracking and proof kept as separate contracts
-- Manual billing proof and review
+- Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
 - PWA and responsive UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `004` and RLS target
+- Supabase migrations `001` through `005` and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -74,18 +74,18 @@
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
-- Paginated Directory, application, verification, and billing views plus a compact admin Operations overview under dense data
-- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, workflow states, integrity checks, and a 42-screen dense UI audit
+- Server-owned pagination for Boards, Directory, My Loads/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
+- Opt-in comprehensive local dataset covering all 29 application tables, all user types, fleets, subscription and workflow states, integrity checks, and a 54-screen dense UI audit
 - Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 56 tests passed, including comprehensive-data integrity and Production-denial coverage
-- Local Playwright E2E evidence: 36 passed and four expected viewport skips
-- Dense-data visual evidence: 42 desktop/mobile screens passed with zero browser errors or horizontal overflow, including ownership-only route comparison
+- Local Node evidence: 61 tests passed, including bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Playwright E2E evidence: 38 passed and four expected viewport skips
+- Dense-data visual evidence: 54 desktop/mobile screens passed with zero failures across first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
 - Production and development npm dependency audit: zero vulnerabilities
 
 ## Requires an internet-enabled environment
 
-- Apply Supabase migrations `001`, `002`, `003`, and `004` through Supabase CLI
+- Apply Supabase migrations `001` through `005` through Supabase CLI
 
 ## Repository administration still required
 

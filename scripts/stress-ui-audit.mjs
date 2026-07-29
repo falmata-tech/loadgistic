@@ -10,7 +10,7 @@ const personas=[
   {
     name:'business',
     email:'shipper@loadgistic.local',
-    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers/blueline-transport?compare=routes','/app/network','/app/capacity']
+    routes:['/app/shipments?view=MY_LOADS','/app/providers','/app/providers?page=2','/app/providers/blueline-transport?compare=routes','/app/network','/app/capacity','/app/capacity?page=2']
   },
   {
     name:'fleet',
@@ -20,7 +20,7 @@ const personas=[
   {
     name:'generated-fleet',
     email:'fleet-001@stress.loadgistic.local',
-    routes:['/app/home','/app/fleet','/app/loads']
+    routes:['/app/home','/app/fleet','/app/loads','/app/loads?page=2']
   },
   {
     name:'generated-driver',
@@ -28,9 +28,14 @@ const personas=[
     routes:['/app/home','/app/loads','/app/capacity']
   },
   {
+    name:'expired-workspace',
+    email:'expired@loadgistic.local',
+    routes:['/app/home','/app/more']
+  },
+  {
     name:'admin',
     email:'admin@loadgistic.local',
-    routes:['/admin/operations','/admin/applications','/admin/verifications','/admin/ratings','/admin/billing','/app/providers']
+    routes:['/admin/operations','/admin/operations?userPage=2&truckPage=2&loadPage=2&capacityPage=2&workspacePage=2','/admin/applications','/admin/verifications','/admin/ratings','/admin/billing','/app/providers']
   }
 ];
 
@@ -90,6 +95,8 @@ try{
           links:document.querySelectorAll('a').length,
           buttons:document.querySelectorAll('button').length
         }));
+        const expectsSecondPage=/[?&](?:page|userPage|truckPage|loadPage|capacityPage|workspacePage)=2(?:&|$)/.test(route);
+        const secondPageVisible=!expectsSecondPage||await page.getByText(/Page 2 of/).count()>0;
         const file=`${viewport.name}-${persona.name}-${slug(route)}.png`;
         await page.screenshot({path:path.join(outputDir,file),fullPage:false});
         if(route.includes('compare=routes')){
@@ -106,6 +113,7 @@ try{
           elapsedMs:Date.now()-started,
           ...metrics,
           horizontalOverflow:metrics.scrollWidth>metrics.clientWidth,
+          secondPageVisible,
           browserErrors:actionableErrors
         });
         browserErrors.length=0;
@@ -120,6 +128,7 @@ try{
 const failures=results.filter(result=>
   (result.status!==null&&result.status!==200)||
   result.horizontalOverflow||
+  !result.secondPageVisible||
   result.browserErrors.length>0||
   result.elapsedMs>30_000
 );

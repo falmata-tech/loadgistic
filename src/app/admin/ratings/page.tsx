@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { listRatingModerationQueue } from '@/lib/repository.js';
+import { listRatingModerationQueue, paginateResults } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
 import { Check, PackageSearch, Search, ShieldAlert, Star, X } from 'lucide-react';
+import { Pagination } from '@/components/pagination';
 
 const statuses=['PENDING','PUBLISHED','DISMISSED'] as const;
 
@@ -14,7 +15,8 @@ export default async function AdminRatingsPage({searchParams}:{searchParams:Prom
   const selected=statuses.includes(String(query.status||'PENDING').toUpperCase() as typeof statuses[number])
     ? String(query.status||'PENDING').toUpperCase()
     : 'PENDING';
-  const reviews:any[]=listRatingModerationQueue(user,selected);
+  const result:any=paginateResults(listRatingModerationQueue(user,selected),{page:query.page,pageSize:12});
+  const reviews:any[]=result.items;
   return <div className="page">
     <PageHeader title="Rating Reviews" subtitle="Investigate private one- to three-star Business ratings before they affect public reputation."/>
     <Flash error={query.error} success={query.success}/>
@@ -44,5 +46,6 @@ export default async function AdminRatingsPage({searchParams}:{searchParams:Prom
       </article>)}
       {!reviews.length?<div className="empty-state">No {selected.toLowerCase()} rating reviews.</div>:null}
     </div>
+    <Pagination path="/admin/ratings" query={{status:selected}} page={result.page} pageCount={result.pageCount} total={result.total}/>
   </div>;
 }

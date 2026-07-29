@@ -132,7 +132,16 @@ Transporters are responsible for documenting vehicle ownership or owner authoriz
 
 ## PWA
 
-Loadgistic is installable in standalone mode. Driver workflows are mobile-first with safe-area navigation and touch-sized controls. Authenticated pages remain network-first and are not stored as shared offline HTML. The service worker caches stable visual assets only; Next.js executable chunks are delivered through normal version-aware HTTP caching so upgrades cannot mix stale and current runtimes.
+Loadgistic is installable in standalone mode. Driver workflows are mobile-first with safe-area navigation and touch-sized controls. Authenticated pages remain network-first and are not stored as shared offline HTML. First service-worker installation takes control without reloading an in-progress login or application form. The service worker caches stable visual assets only; Next.js executable chunks are delivered through normal version-aware HTTP caching so upgrades cannot mix stale and current runtimes.
+
+## Growing lists
+
+Directory and marketplace discovery show a useful first page without requiring a
+search. Boards, My Loads, Tracking, Network, Fleet, histories, and
+administrative record groups use bounded server-owned pages with deterministic
+ordering. Search and filters reset to page one, and page navigation preserves
+the active view and filters. Participant-selection controls remain different:
+they wait for meaningful input and return only bounded matches.
 
 ## Plans
 
@@ -141,6 +150,15 @@ Loadgistic is installable in standalone mode. Driver workflows are mobile-first 
 - Self-managed Driver Demand
 
 Manual ETB payment-proof review remains a local MVP workflow. No bank password, PIN, or OTP is collected.
+
+Every newly approved workspace receives seven days of trial access. Company
+Drivers share the Fleet Transporter's subscription. An administrator may grant
+continuing sponsored access only while approving a qualifying starting
+Business. Standard prices are not displayed yet. Approving a payment proof
+opens a 30-day access period. After trial or paid access expires, or while a
+late payment remains under review, members may still sign in, see a
+billing-focused Home, open Account and billing, submit proof, and log out; all
+operating screens and commands remain unavailable until access is restored.
 
 Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. Its initial overview is compact and searches return larger bounded results. Application, verification, and billing queues provide server-bounded search, status filters, and pagination. Administrators may reversibly suspend users or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
 

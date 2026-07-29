@@ -11,6 +11,14 @@ rollout: Preserve minimal capacity semantics and validate public expiry filterin
 
 # Capacity publication
 
+### Scenario: Capacity Board remains bounded
+
+Given more fresh visible trucks match than one Capacity Board page\
+When a member opens, filters, route-ranks, or changes page\
+Then the server renders one bounded page of independently actionable truck cards\
+And page navigation preserves every active capacity filter\
+And no search is required to see the first fresh page.
+
 ### Scenario: partial capacity is published for one truck
 
 Given an authorized transporter, driver, or administrator owns the vehicle\

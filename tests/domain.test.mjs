@@ -5,6 +5,7 @@ import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, valid
 import { normalizePlace, routeMatch, splitPlaces } from '../src/lib/route-matching.js';
 import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
+import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
@@ -69,6 +70,20 @@ test('capacity freshness labels expired data honestly',()=>{
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now+3_600_000).toISOString(),12),'FRESH');
  assert.equal(capacityFreshness(new Date(now-13*3_600_000).toISOString(),new Date(now+3_600_000).toISOString(),12),'UPDATE_NEEDED');
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now-1).toISOString(),12),'EXPIRED');
+});
+
+test('workspace access periods distinguish trial, paid, sponsored, and expired states',()=>{
+ const now=new Date('2026-07-29T09:00:00.000Z');
+ assert.equal(accessPeriodEnd(now,7),'2026-08-05T09:00:00.000Z');
+ assert.equal(accessPeriodEnd(now,30),'2026-08-28T09:00:00.000Z');
+ assert.deepEqual(subscriptionAccess(null,now),{
+  granted:false,status:'NO_SUBSCRIPTION',ends_at:null,days_remaining:0
+ });
+ assert.equal(subscriptionAccess({status:'TRIAL',ends_at:'2026-08-05T09:00:00.000Z'},now).days_remaining,7);
+ assert.equal(subscriptionAccess({status:'ACTIVE',ends_at:'2026-08-28T09:00:00.000Z'},now).granted,true);
+ assert.equal(subscriptionAccess({status:'SPONSORED',ends_at:null},now).granted,true);
+ assert.equal(subscriptionAccess({status:'TRIAL',ends_at:'2026-07-29T09:00:00.000Z'},now).status,'EXPIRED_UNPAID');
+ assert.equal(subscriptionAccess({status:'PAYMENT_UNDER_REVIEW',ends_at:'2026-07-28T09:00:00.000Z'},now).granted,false);
 });
 
 test('route matching is simple, order independent, and explainable',()=>{

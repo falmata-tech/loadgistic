@@ -68,3 +68,23 @@
 - Audit Log
 - Private administrator Rating Reviews queue with published-only reputation projection
 - Subscription and Payment Proof
+
+## Subscription access
+
+- Workspace-owned subscription: Business and Fleet Transporter subscriptions belong to an organization; a Self-managed Driver subscription belongs to its provider profile
+- Company Drivers inherit their Fleet Transporter's subscription
+- Seven-day Trial created on application approval
+- Business-only Sponsored access selected by an administrator during application review
+- Positive amount actually paid and optional private Payment Proof
+- Thirty-day Active period created when an administrator marks payment paid
+- Expired or under-review operating restriction with retained Home, account, billing, and logout access
+- No public standard plan price
+
+## Bounded result pages
+
+- Server-owned filters and deterministic ordering
+- Result envelope: items, total, current page, page size, and page count
+- Useful first page for marketplace discovery without mandatory search
+- Search-before-results for potentially large entity selection controls
+- Independent page keys for screens containing more than one growing list
+- SQLite MVP may assemble authorized projections before slicing; the production database adapter must apply equivalent filtering and `LIMIT`/cursor bounds in the database
