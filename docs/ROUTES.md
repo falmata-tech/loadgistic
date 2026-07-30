@@ -25,6 +25,7 @@
 - `/app/fleet/[id]` — one truck's detail and capacity controls
 - `/app/company-page` — Public Profile editor
 - `/app/verification` — owned entity and truck verification
+- `/app/support` — the signed-in member's support conversation and history
 - `/app/more`
 
 Growing collections use server-owned query parameters. A single-list route uses
@@ -42,11 +43,21 @@ Administrators and sponsored workspaces are not time limited.
 
 - `/admin/operations`
 - `/admin/reviews`
+- `/admin/support` — support queue supervision and support-agent management
 
 Administrative queues use `page`. `/admin/operations` uses one selected `view`
 for Clients, Users, Trucks, Loads, or Capacity. `/admin/reviews` uses one
 selected `tab` for Applications, Documents, Ratings, or Payments. Legacy queue
 URLs redirect to the matching Review Center tab.
+
+## Support Team
+
+- `/support` — assigned and waiting conversation queue
+- `/support/[id]` — one assigned support conversation
+
+SUPPORT users are not workspace members or administrators. They are routed to
+`/support` after login and cannot open marketplace, Tracking, billing, review,
+verification, Operations, or client-mutation routes.
 
 ## System
 

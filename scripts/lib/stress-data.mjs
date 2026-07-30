@@ -31,7 +31,11 @@ export const STRESS_TABLES = Object.freeze([
   'subscriptions',
   'payment_proofs',
   'notifications',
-  'audit_logs'
+  'audit_logs',
+  'support_agent_profiles',
+  'support_conversations',
+  'support_messages',
+  'support_events'
 ]);
 
 const LOCATIONS = Object.freeze([
@@ -971,6 +975,46 @@ export function populateStressData(db, { scale = 1 } = {}) {
         'STRESS_FIXTURE_ACTIVITY','user',user.id,{fixture:true,sequence:index + 1},createdAt
       );
     }
+    const supportConversationInsert=db.prepare(`INSERT INTO support_conversations
+      (id,customer_user_id,assigned_agent_user_id,category,status,created_at,updated_at,last_message_at,
+       assigned_at,customer_last_read_at,agent_last_read_at,closed_at,closed_by)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    const supportMessageInsert=db.prepare(`INSERT INTO support_messages
+      (id,conversation_id,sender_user_id,body,created_at) VALUES (?,?,?,?,?)`);
+    const supportEventInsert=db.prepare(`INSERT INTO support_events
+      (id,conversation_id,actor_user_id,event_type,details,created_at) VALUES (?,?,?,?,?,?)`);
+    const supportCategories=['ACCOUNT','PAYMENT','VERIFICATION','LOAD_TRACKING','CAPACITY','OTHER'];
+    for(let index=1;index<=Math.min(profile.businesses,60);index+=1){
+      const suffix=pad(index);
+      const conversationId=`stress-support-${suffix}`;
+      const customerId=`stress-user-business-${suffix}`;
+      const status=index<=3?'OPEN':index<=15?'WAITING':'CLOSED';
+      const assigned=status==='WAITING'?null:'user-support';
+      const createdAt=hours(now,-index*3).toISOString();
+      const updatedAt=hours(now,-index).toISOString();
+      const closedAt=status==='CLOSED'?updatedAt:null;
+      supportConversationInsert.run(
+        conversationId,customerId,assigned,supportCategories[index%supportCategories.length],status,
+        createdAt,updatedAt,updatedAt,assigned?createdAt:null,createdAt,
+        assigned?updatedAt:null,closedAt,status==='CLOSED'?'user-support':null
+      );
+      supportMessageInsert.run(
+        `${conversationId}-message-1`,conversationId,customerId,
+        `Stress support request ${suffix}. This message exercises the customer queue safely.`,createdAt
+      );
+      if(assigned)supportMessageInsert.run(
+        `${conversationId}-message-2`,conversationId,'user-support',
+        status==='CLOSED'?'This request was resolved.':'I am reviewing this request now.',updatedAt
+      );
+      supportEventInsert.run(
+        `${conversationId}-event-1`,conversationId,customerId,'CREATED',
+        JSON.stringify({fixture:true}),createdAt
+      );
+      if(assigned)supportEventInsert.run(
+        `${conversationId}-event-2`,conversationId,'user-support',status==='CLOSED'?'CLOSED':'ASSIGNED',
+        JSON.stringify({fixture:true}),updatedAt
+      );
+    }
     for (let index = 0; index < generatedShipments.length; index += 1) {
       const shipment = generatedShipments[index];
       insertAudit(
@@ -1104,7 +1148,7 @@ export function assertStressDataIntegrity(db, report = getStressDataReport(db)) 
   if (invalidReviews) throw new Error(`STRESS_INVALID_REVIEWS:${invalidReviews}`);
 
   const requiredCoverage = {
-    userRoles:['ADMIN','SHIPPER','RECEIVER','TRANSPORTER','DRIVER'],
+    userRoles:['ADMIN','SHIPPER','RECEIVER','TRANSPORTER','DRIVER','SUPPORT'],
     shipmentStates:SHIPMENT_STATES,
     priceModes:['FIXED_PRICE','QUOTE_REQUESTED','TARGET_PRICE'],
     distributionModes:['DIRECT_TO_PROVIDER','OPEN_MARKET','SAVED_PARTNERS'],

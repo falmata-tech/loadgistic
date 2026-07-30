@@ -1,80 +1,82 @@
-# Customer support operations
+# Native customer support operations
 
-Status: planned and disabled. Controlling specification: `FEAT-SUP-001`.
+Status: first implementation. Controlling specification: `FEAT-SUP-001`.
 
-## Decision
+## First-release boundary
 
-Use Chatwoot behind a narrow `SupportProvider` adapter instead of implementing
-message delivery, presence, attachments, assignment, and real-time updates in
-the Loadgistic Next.js and SQLite application.
+Loadgistic owns the customer-support inbox. It uses the existing authenticated
+application, repository authorization, audit log, notifications, SQLite local
+adapter, and Supabase PostgreSQL target. There is no per-agent license and no
+second support deployment.
 
-Chatwoot provides the required live-chat inbox, assignment, closure, teams,
-availability, API, authenticated widget identity, and signed webhooks. Per-agent
-open-conversation capacity is a paid feature:
+Included:
 
-- Chatwoot Cloud Enterprise includes Agent Capacity and custom roles.
-- Self-hosted Premium Support includes Agent Capacity and roles at a lower
-  per-agent price, but Loadgistic must operate PostgreSQL, Redis, Rails web
-  processes, background workers, SMTP, object storage, backups, monitoring, and
-  upgrades.
-- Free and lower cloud tiers can validate the conversation workflow but do not
-  satisfy the required hard queue limit.
+- signed-in member support entry point
+- short category choices and one open conversation per member
+- text messages up to 2,000 characters
+- five-second refresh only while a conversation page is visible
+- least-loaded automatic assignment and oldest-waiting manual claim
+- configurable open-conversation limit per agent
+- available/unavailable agent state
+- close lifecycle, unread counts, queue/history pagination, and audit events
+- support-only team accounts managed by a platform administrator
 
-Official references:
+Excluded:
 
-- <https://www.chatwoot.com/pricing>
-- <https://www.chatwoot.com/pricing/self-hosted-plans>
-- <https://developers.chatwoot.com/self-hosted/deployment/requirements>
-- <https://developers.chatwoot.com/self-hosted/deployment/architecture>
-- <https://www.chatwoot.com/hc/user-guide/articles/1741998212-agent-capacity>
-- <https://www.chatwoot.com/hc/user-guide/articles/1677587479-how-to-enable-identity-validation-in-chatwoot>
-- <https://www.chatwoot.com/hc/user-guide/articles/1677693021-how-to-use-webhooks>
+- anonymous chat
+- attachments, document sharing, voice, video, presence, and typing indicators
+- AI replies
+- Telegram or WhatsApp message mirroring
+- support-agent access to applications, verification, payments, Operations,
+  shipment tracking, exact location, or private files
 
-## Recommended deployment
+## Queue policy
 
-Start with a separately hosted Chatwoot staging environment. Self-hosted Premium
-is the leading option when operating ownership and backups are available;
-Chatwoot Cloud is the faster option when United States data hosting is accepted.
-Do not select a provider based only on the widget demo.
+An open conversation is `WAITING` when no eligible agent has capacity and
+`OPEN` after assignment. Eligible agents are active SUPPORT users whose support
+profile is active and available and whose assigned `OPEN` count is below
+`max_open_conversations`.
 
-Before enabling the feature:
+Automatic assignment chooses:
 
-1. Approve deployment ownership, data residency, retention, deletion, and
-   backup policy.
-2. Configure inbox, team, agent availability, and per-agent capacity.
-3. Store website token, API token, HMAC secret, and webhook secret only in
-   server-side secret management.
-4. Implement a disabled-by-default adapter and server-generated identity hash.
-5. Verify webhook signatures and idempotency.
-6. Run staged assignment, closure, reconnect, attachment, and outage tests.
-7. Add monitoring for unassigned age, first response, resolution time, reopen
-   rate, queue depth, and conversations rejected at capacity.
+1. lowest open-conversation count
+2. oldest `last_assigned_at`, with never-assigned agents first
+3. stable user identifier
 
-## Staff permissions
+Creation and claim execute in a database transaction. Closing records actor and
+time, then makes one slot available. Disabling a support agent first returns
+their open conversations to `WAITING`, then attempts reassignment.
 
-Chat assignment is not platform administration. Loadgistic needs a separate
-staff capability record controlled by a full platform administrator:
+## Access policy
 
-| Capability | Customer service default |
-| --- | --- |
-| Open assigned support conversations | Yes |
-| View client operations summary | Optional |
-| Review applications | Optional |
-| Review verification documents | Optional |
-| Review payment status | Optional |
-| Edit client identity fields | Off |
-| Suspend a client | Off |
-| Manage staff permissions | Never |
-| View credentials, tracking codes, exact location, or private files outside an assigned review | Never |
+| Action | Member | Assigned SUPPORT | ADMIN |
+| --- | --- | --- | --- |
+| Start conversation | Own account | No | No |
+| Read conversation | Own conversation | Assigned conversation | Any |
+| Send message | Own open conversation | Assigned open conversation | Any open conversation |
+| Claim waiting work | No | Available and below limit | No |
+| Close conversation | No | Assigned conversation | Any |
+| Change own availability | No | Own support profile | No |
+| Manage agents | No | No | Yes |
 
-Every platform capability must be enforced in repository services and audited.
-Do not model a support agent as an unrestricted `ADMIN`. Client creation and
-identity edits require a separate specification because they affect tenant
-ownership and authentication.
+Support reads return safe participant identity only: name, role label, workspace
+name, conversation category, assignment, status, and messages. Account phone,
+password hash, tracking codes, exact location, payment data, and private files
+are excluded.
 
-## Failure behavior
+## Performance and failure behavior
 
-When provider configuration is absent or unhealthy, Loadgistic renders no chat
-launcher and sends no member data externally. Existing application navigation
-and support contact alternatives remain usable. Provider webhooks do not become
-authority for subscription, verification, account, load, or tracking state.
+- Queue and history use indexed server-side pagination.
+- Conversation reads return at most 50 recent messages in chronological order.
+- The browser pauses refresh while hidden and never keeps a server process open.
+- Message commands are rate limited and reject empty, oversized, unrelated, or
+  closed-conversation writes.
+- A refresh failure leaves the currently rendered conversation usable and tries
+  again at the next interval.
+- Realtime is an optional later delivery adapter, not persistence authority.
+
+## Future channels
+
+Telegram may later receive assignment notifications containing only a secure
+deep link. WhatsApp may remain a manual emergency contact. Neither channel may
+receive private Loadgistic records without a new reviewed specification.

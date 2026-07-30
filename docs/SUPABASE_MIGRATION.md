@@ -1,6 +1,6 @@
 # Supabase Migration
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `007`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, and coordinate-authoritative route matching.
+The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `008`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, coordinate-authoritative route matching, and native support with row-level participant isolation.
 
 ## Replacement boundary
 
@@ -17,6 +17,10 @@ Keep UI and domain commands stable:
 - `submitBusinessReview`
 - `listRatingModerationQueue`
 - `reviewBusinessRating`
+- `createSupportConversation`
+- `sendSupportMessage`
+- `claimSupportConversation`
+- `closeSupportConversation`
 
 Replace their data operations with Supabase RPCs or RLS-protected queries.
 
@@ -51,3 +55,9 @@ queries. It also normalizes Local-only truck capacity to Empty/100 percent and
 adds a database constraint that rejects Local Partial rows. Labels remain
 presentation data; production route and Directory matching must use the
 geography columns.
+
+Migration `008` adds the SUPPORT role, bounded agent profiles, one-open-thread
+member conversations, text messages, lifecycle events, queue/message indexes,
+and participant/admin RLS. Assignment, claiming, closure, availability, and
+rate limits remain transactional server operations; the browser never receives
+a service-role credential.

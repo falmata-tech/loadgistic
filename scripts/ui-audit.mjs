@@ -10,32 +10,37 @@ const personas = [
   {
     name: 'business-shipper',
     email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'business-receiver',
     email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'self-managed-driver',
     email: 'driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'company-driver',
     email: 'company-driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/capacity', '/app/shipments', '/app/providers', '/app/verification', '/app/more']
+    routes: ['/app/home', '/app/loads', '/app/capacity', '/app/shipments', '/app/providers', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=applications', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/app/shipments', '/app/providers', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=applications', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
+  },
+  {
+    name:'support-agent',
+    email:'support@loadgistic.local',
+    routes:['/support','/support?view=WAITING','/support?view=CLOSED','/support/support-demo-open']
   }
 ];
 
@@ -70,14 +75,15 @@ async function gotoReady(page, route) {
 }
 
 async function login(page, email) {
+  const expectedPath=email==='support@loadgistic.local'?'/support':'/app/home';
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await gotoReady(page, '/login');
-    if (new URL(page.url()).pathname === '/app/home') return;
+    if (new URL(page.url()).pathname === expectedPath) return;
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Log in' }).click();
     try {
-      await page.waitForURL('**/app/home', { timeout: 12_000 });
+      await page.waitForURL(`**${expectedPath}`, { timeout: 12_000 });
       return;
     } catch (error) {
       if (attempt === 2) {

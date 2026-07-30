@@ -60,7 +60,7 @@
 - Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
 - PWA and responsive UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `007`, including PostGIS geography/GiST matching, and RLS target
+- Supabase migrations `001` through `008`, including PostGIS geography/GiST matching, native Support isolation, and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -83,10 +83,11 @@
 - Searchable, tabbed admin Operations inventory with one bounded safe projection at a time and audited account/truck controls
 - Unified admin Review Center for applications, documents, low ratings, and payments, with server-side queue filtering and pagination
 - Server-owned pagination for Boards, Directory, My Loads/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
-- Opt-in comprehensive local dataset covering all 30 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 186 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
-- Local Node evidence: 76 tests passed, including Busy/stale capacity behavior, coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
-- Local Playwright E2E evidence: 38 passed and four expected viewport skips
+- Native authenticated member Support with one-open-thread enforcement, six visual topics, text-only bounded messages, least-loaded assignment, waiting queue, agent availability/capacity, dedicated SUPPORT role, admin supervision, and safe agent requeue
+- Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
+- Reusable all-role visual audit with 208 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
+- Local Node evidence: 78 tests passed, including Support isolation/routing, Busy/stale capacity behavior, coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Playwright E2E evidence: 39 passing scenarios and five expected viewport skips; the one complete-run Directory navigation race passed its focused rerun after adding an explicit navigation wait
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
 - Stress-dataset warm-query evidence: Directory 5.19 ms median, Load Board 1.33 ms, Capacity Board 1.42 ms, direct capacity detail 0.63 ms, and PSTL grouping 3.58 ms
@@ -94,11 +95,7 @@
 
 ## Requires an internet-enabled environment
 
-- Apply Supabase migrations `001` through `007` through Supabase CLI
-
-## Planned external integration
-
-- Implement the disabled `FEAT-SUP-001` support adapter after choosing and provisioning Chatwoot Cloud or self-hosted Premium, defining retention and residency, and supplying signed identity-validation and webhook credentials.
+- Apply Supabase migrations `001` through `008` through Supabase CLI
 
 ## Repository administration still required
 

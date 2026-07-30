@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 const root=path.resolve(process.cwd(),'src');
-const required=['app/page.tsx','app/login/page.tsx','app/app/home/page.tsx','app/app/shipments/page.tsx','app/app/capacity/page.tsx','app/api/health/route.ts','lib/db.js','lib/repository.js'];
+const required=['app/page.tsx','app/login/page.tsx','app/app/home/page.tsx','app/app/shipments/page.tsx','app/app/capacity/page.tsx','app/app/support/page.tsx','app/support/page.tsx','app/admin/support/page.tsx','app/api/health/route.ts','lib/db.js','lib/repository.js'];
 for(const item of required){if(!fs.existsSync(path.join(root,item)))throw new Error(`Missing ${item}`)}
 const names=[];
 function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())walk(full);else names.push(full)}}

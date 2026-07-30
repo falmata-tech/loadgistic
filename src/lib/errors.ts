@@ -82,7 +82,18 @@ const messages: Record<string,string> = {
   NETWORK_REQUEST_NOT_ACTIONABLE: 'That network request is no longer available.',
   ADMIN_SELF_SUSPENSION_DENIED: 'An administrator cannot suspend their own account.',
   INVALID_ADMIN_RECORD_TYPE: 'Choose a supported account or truck record.',
-  INVALID_ADMIN_OPERATIONS_VIEW: 'Choose a supported platform record view.'
+  INVALID_ADMIN_OPERATIONS_VIEW: 'Choose a supported platform record view.',
+  INVALID_SUPPORT_CATEGORY: 'Choose what you need help with.',
+  SUPPORT_MESSAGE_REQUIRED: 'Enter a message before sending.',
+  SUPPORT_MESSAGE_TOO_LONG: 'Keep the support message under 2,000 characters.',
+  SUPPORT_MESSAGE_RATE_LIMITED: 'Too many messages were sent. Wait a minute and try again.',
+  SUPPORT_CONVERSATION_ALREADY_OPEN: 'Your current support conversation is already open.',
+  SUPPORT_CONVERSATION_CLOSED: 'This support conversation is closed.',
+  SUPPORT_CONVERSATION_NOT_WAITING: 'That conversation has already been assigned.',
+  SUPPORT_AGENT_UNAVAILABLE: 'Set yourself available before taking another conversation.',
+  SUPPORT_AGENT_AT_CAPACITY: 'Close an assigned conversation before taking another.',
+  INVALID_SUPPORT_AGENT_LIMIT: 'Choose an agent limit from 1 to 20 open conversations.',
+  INVALID_SUPPORT_VIEW: 'Choose Assigned, Waiting, or Closed support conversations.'
 };
 
 export function errorMessage(error: unknown) {

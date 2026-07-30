@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   CreditCard,
   Database,
+  Headphones,
   Home,
   LayoutList,
   Menu,
@@ -62,9 +63,13 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/admin/operations', label: 'Operations', icon: Database },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
+    { href: '/admin/support', label: 'Support', icon: Headphones },
     { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
+  ],
+  SUPPORT: [
+    { href: '/support', label: 'Inbox', icon: Headphones }
   ]
 };
 
@@ -73,7 +78,8 @@ const mobileNavigation: Record<string, string[]> = {
   RECEIVER: ['/app/home', '/app/shipments', '/app/providers', '/app/capacity', '/app/more'],
   TRANSPORTER: ['/app/home', '/app/fleet', '/app/loads', '/app/shipments', '/app/more'],
   DRIVER: ['/app/home', '/app/loads', '/app/shipments', '/app/providers', '/app/more'],
-  ADMIN: ['/app/home', '/admin/operations', '/admin/reviews', '/app/shipments', '/app/more']
+  ADMIN: ['/app/home', '/admin/operations', '/admin/reviews', '/admin/support', '/app/more'],
+  SUPPORT: ['/support']
 };
 
 const roleLabels: Record<string, string> = {
@@ -81,7 +87,8 @@ const roleLabels: Record<string, string> = {
   RECEIVER: 'Business',
   TRANSPORTER: 'Fleet transporter',
   DRIVER: 'Self-managed driver',
-  ADMIN: 'Platform administrator'
+  ADMIN: 'Platform administrator',
+  SUPPORT: 'Customer support'
 };
 
 const mobileLabels: Record<string, string> = {
@@ -91,7 +98,8 @@ const mobileLabels: Record<string, string> = {
   '/admin/reviews': 'Reviews',
   '/admin/operations': 'Operations',
   '/admin/ratings': 'Rating Reviews',
-  '/admin/billing': 'Billing'
+  '/admin/billing': 'Billing',
+  '/admin/support': 'Support'
 };
 
 export function AppShell({ user, children }: { user: any; children: React.ReactNode }) {
@@ -119,10 +127,12 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     ? items.map(item=>({...item,label:item.href==='/app/more'?'Plan & billing':item.label}))
     : (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
+  const isSupport=user.role==='SUPPORT';
+  const homeHref=isSupport?'/support':'/app/home';
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <Logo href="/app/home" />
+        <Logo href={homeHref} />
         <nav className="sidebar-nav" aria-label="Workspace navigation">
           {items.map(item => {
             const Icon=item.icon;
@@ -142,12 +152,15 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
       </aside>
       <main className="app-main">
         <header className="app-topbar">
-          <div className="topbar-leading"><WorkspaceBackButton/><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">B2B logistics workspace</div></div></div>
-          <Link className="button secondary small desktop-account" href="/app/more"><UserRound aria-hidden="true"/>Account</Link>
+          <div className="topbar-leading"><WorkspaceBackButton/><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{isSupport?'Customer support workspace':'B2B logistics workspace'}</div></div></div>
+          <div className="topbar-actions">
+            {!isSupport&&!['ADMIN'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/>Help</Link>:null}
+            {!isSupport?<Link className="button secondary small desktop-account" href="/app/more"><UserRound aria-hidden="true"/>Account</Link>:null}
+          </div>
           <details className="mobile-account-menu">
             <summary><Menu aria-hidden="true"/>Menu</summary>
             <div className="mobile-menu-panel">
-              <nav aria-label="All workspace navigation">{items.map(item => <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href}>{item.label}</Link>)}</nav>
+              <nav aria-label="All workspace navigation">{items.map(item => <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href}>{item.label}</Link>)}{!isSupport&&!['ADMIN'].includes(user.role)?<Link href="/app/support">Help</Link>:null}</nav>
               <LogoutButton compact/>
             </div>
           </details>

@@ -41,6 +41,11 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Use operating workspace | Admin, sponsored Business, or member of a workspace with an unexpired seven-day trial or 30-day paid period; company Drivers inherit fleet access | `SUBSCRIPTION_ACCESS_REQUIRED`; Home, Account, billing submission, and logout remain available |
 | Grant sponsored free access during application review | Admin approving a Business application only | `SPONSORED_ACCESS_BUSINESS_ONLY`; no workspace or subscription |
 | Read platform Operations | Admin only; bounded user, workspace, truck, load, and latest-capacity projections exclude credentials, sessions, tracking secrets, exact coordinates, and proof paths | `FORBIDDEN`; no records or read audit |
+| Start support conversation | Active Shipper, Receiver, Transporter, or Driver for their own user account; one open conversation maximum | `FORBIDDEN` or `SUPPORT_CONVERSATION_ALREADY_OPEN`; no conversation or assignment |
+| Read/send support conversation | Owning member, assigned SUPPORT agent, or Admin; messages only while open and at most 50 returned per read | `NOT_FOUND`, `SUPPORT_CONVERSATION_CLOSED`, or rate/validation denial; no message |
+| Claim waiting support conversation | Available active SUPPORT agent below configured open limit; oldest waiting record only | `FORBIDDEN`, `SUPPORT_AGENT_UNAVAILABLE`, `SUPPORT_AGENT_AT_CAPACITY`, or `SUPPORT_CONVERSATION_NOT_WAITING`; no assignment |
+| Close support conversation | Assigned SUPPORT agent or Admin | `NOT_FOUND` or `SUPPORT_CONVERSATION_CLOSED`; no lifecycle change |
+| Manage support agents | Admin only; SUPPORT role, availability, capacity, and active state; disabling safely requeues assigned work | `FORBIDDEN` or validation denial; no account, profile, or queue change |
 | Suspend/restore user | Admin only; reversible; administrator cannot suspend their own account | `FORBIDDEN`, `NOT_FOUND`, or `ADMIN_SELF_SUSPENSION`; no status change |
 | Deactivate/reactivate truck | Admin only; reversible; inactive trucks are excluded from marketplace capacity and active fleet counts | `FORBIDDEN` or `NOT_FOUND`; no status change |
 
@@ -59,3 +64,5 @@ This matrix defines the application-service boundary. Route handlers authenticat
 - Expired, unpaid, or payment-under-review workspaces cannot bypass subscription limits through direct route or command calls.
 - Pending low ratings are visible only to their submitting Business and administrators; the reviewed Business and public summary receive no pending or dismissed rating data.
 - Denied operations do not write success audits. HTTP adapters return generic safe messages and do not expose protected record details.
+- SUPPORT authority never implies marketplace, shipment, tracking, verification,
+  billing-review, Operations, user-edit, or private-file access.

@@ -211,7 +211,7 @@ Supabase target uses PostGIS geography points, GiST indexes, and `ST_DWithin`.
 This preserves one domain contract while allowing the production adapter to
 execute indexed geographic predicates before pagination.
 
-## ADR-026 — Availability freshness and provider-backed customer support
+## ADR-026 — Availability freshness and native customer support
 
 Model truck duty, cargo-space availability, and signal freshness independently.
 Empty, Partial, and Busy are On Duty; Off Duty is the explicit hidden state.
@@ -225,17 +225,31 @@ current capacity route, and leaves discovery after that date unless refreshed.
 For Both movement, the Local place is also the current general-area place so a
 driver enters the city once.
 
-Do not implement real-time customer chat, presence, media, assignment, and
-delivery semantics inside the Next.js and SQLite application. Put them behind a
-`SupportProvider` port and use Chatwoot as the initial target adapter. Chatwoot
-supports authenticated web widgets, teams, assignment, webhooks, conversation
-closure, and an optional per-agent open-conversation limit. Exact capacity and
-role features require a qualifying paid plan; self-hosting additionally requires
-PostgreSQL, Redis, background workers, mail, storage, backups, monitoring, and
-upgrades.
+Implement a deliberately bounded native support inbox instead of buying a
+per-agent service or operating a second chat platform. Durable conversations,
+text messages, assignments, agent state, and lifecycle events live in the same
+authoritative persistence boundary as Loadgistic identities. The first release
+does not include attachments, typing indicators, presence, voice, bots, or
+external-channel message mirroring.
 
-Keep the integration disabled until the deployment model, data residency,
-retention, credentials, webhook verification, and operating ownership are
-approved. A Chatwoot agent is not automatically a Loadgistic administrator.
-Platform access uses separately granted, server-enforced staff capabilities for
-applications, verification, billing, client viewing, and client mutation.
+Use ordinary authenticated HTTP commands and refresh a visible conversation
+every five seconds. Pause refresh when the page is hidden, return only the 50
+latest messages, paginate queue/history lists, and index assignment and recency
+columns. This is intentionally compatible with serverless Next.js because no
+process-local connection is authoritative. Supabase Realtime may later notify
+clients about committed rows, but PostgreSQL remains the source of truth.
+
+One member may have one open conversation. Creation atomically assigns it to
+the least-loaded available SUPPORT user below their configured open-conversation
+limit, with deterministic oldest-assignment tie breaking. Otherwise it waits.
+An eligible agent may atomically claim the oldest waiting conversation.
+Closing frees capacity. Disabling an agent returns open work to the queue before
+reassignment.
+
+SUPPORT is a dedicated platform role, excluded from workspace subscriptions and
+from marketplace, tracking, verification, payment review, Operations, and
+client-mutation authority. A customer reads only their own conversation; a
+support agent reads only assigned work; an administrator may supervise all.
+Bodies are required, length bounded, rate limited, and unavailable after close.
+Every assignment, availability change, staff change, claim, and closure is
+audited without copying message text into audit records.

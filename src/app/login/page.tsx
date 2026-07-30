@@ -6,7 +6,8 @@ import { Flash } from '@/components/flash';
 import { getCurrentUser } from '@/lib/auth';
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string,string | undefined>> }) {
-  if (await getCurrentUser()) redirect('/app/home');
+  const user=await getCurrentUser();
+  if (user) redirect(user.role==='SUPPORT'?'/support':'/app/home');
   const query = await searchParams;
   return <><PublicHeader/><main className="section"><div className="container auth-shell">
     <section className="form-card">

@@ -33,6 +33,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Private local-load map points disclosed to non-owner parties only after agreement
 - Loading, delivery, and issue proof uploads
 - Manual subscription payment-proof submission and admin review
+- Native member support with bounded agent queues and admin supervision
 - Audit records and deterministic demo data
 - PWA manifest and responsive, app-like mobile layout
 - Supabase PostgreSQL/RLS migration target
@@ -116,6 +117,8 @@ supabase/migrations/003_network_tracking_truck_details.sql
 supabase/migrations/004_rating_moderation.sql
 supabase/migrations/005_subscription_access.sql
 supabase/migrations/006_local_geography_and_board_indexes.sql
+supabase/migrations/007_coordinate_route_matching.sql
+supabase/migrations/008_native_support.sql
 ```
 
 The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Production migration replaces repository calls with RLS-protected Supabase queries or RPCs while preserving the domain commands and UI routes.

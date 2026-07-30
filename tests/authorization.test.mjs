@@ -17,6 +17,7 @@ const users = {
   transporter: repo.getUserById('user-transporter'),
   companyDriver: repo.getUserById('user-company-driver'),
   driver: repo.getUserById('user-driver'),
+  support: repo.getUserById('user-support'),
   expired: repo.getUserById('user-expired')
 };
 const futureRouteDate=new Date(Date.now()+2*86_400_000).toISOString().slice(0,10);
@@ -415,6 +416,11 @@ test('role and tenant checks guard remaining mutation boundaries', () => {
   assert.throws(() => repo.listVerificationRequests(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.getAdminOperations(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.setAdminRecordActive(users.shipper,'USER',users.receiver.id,false), /FORBIDDEN/);
+  assert.throws(() => repo.getAdminOperations(users.support), /FORBIDDEN/);
+  assert.throws(() => repo.listApplications(users.support), /FORBIDDEN/);
+  assert.throws(() => repo.listVisibleShipments(users.support), /FORBIDDEN/);
+  assert.throws(() => repo.searchDirectory(users.support,'Blue'), /FORBIDDEN/);
+  assert.throws(() => repo.createSupportAgent(users.support,{name:'No',email:'no@example.com',password:'NoAccess123!',maxOpenConversations:2}), /FORBIDDEN/);
 });
 
 test('admin activation controls are reversible, audited, and cannot suspend self',()=>{

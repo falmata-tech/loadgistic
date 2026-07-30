@@ -1,10 +1,39 @@
 export const USER_ROLES = Object.freeze({
   ADMIN: 'ADMIN',
+  SUPPORT: 'SUPPORT',
   SHIPPER: 'SHIPPER',
   RECEIVER: 'RECEIVER',
   TRANSPORTER: 'TRANSPORTER',
   DRIVER: 'DRIVER'
 });
+
+export const SUPPORT_CATEGORIES = Object.freeze({
+  ACCOUNT: 'ACCOUNT',
+  PAYMENT: 'PAYMENT',
+  VERIFICATION: 'VERIFICATION',
+  LOAD_TRACKING: 'LOAD_TRACKING',
+  CAPACITY: 'CAPACITY',
+  OTHER: 'OTHER'
+});
+
+export function validateSupportCategory(category) {
+  const value=String(category||'').trim().toUpperCase();
+  if (!Object.values(SUPPORT_CATEGORIES).includes(value)) throw new Error('INVALID_SUPPORT_CATEGORY');
+  return value;
+}
+
+export function validateSupportMessage(body) {
+  const value=String(body||'').trim();
+  if (!value) throw new Error('SUPPORT_MESSAGE_REQUIRED');
+  if (value.length>2000) throw new Error('SUPPORT_MESSAGE_TOO_LONG');
+  return value;
+}
+
+export function validateSupportAgentLimit(value) {
+  const limit=Number(value);
+  if (!Number.isInteger(limit)||limit<1||limit>20) throw new Error('INVALID_SUPPORT_AGENT_LIMIT');
+  return limit;
+}
 
 export const SERVICE_MODES = Object.freeze({
   FREIGHT: 'FREIGHT'

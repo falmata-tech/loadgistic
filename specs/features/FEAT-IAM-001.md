@@ -3,8 +3,8 @@ id: FEAT-IAM-001
 title: Local identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Approved businesses and transporters need secure workspace access while inactive, anonymous, or unauthorized accounts remain blocked from marketplace information.
-behavior: Valid active users receive a signed HTTP-only session, are routed to role-scoped pages on the current browser origin, and must be authenticated before reading company, provider, capacity, or shipment-marketplace information.
-contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
+behavior: Valid active users receive a signed HTTP-only session, are routed to role-scoped pages on the current browser origin, and must be authenticated before reading company, provider, capacity, shipment-marketplace, or support information. Support staff use a support-only role that grants no marketplace or administration authority.
+contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Keep local auth demo-only; migrate to managed identity before public production launch.
 ---
@@ -31,6 +31,14 @@ Given an authenticated user without an allowed role\
 When a protected page or command is requested\
 Then access is denied or safely redirected\
 And the mutation does not occur.
+
+### Scenario: support staff remain isolated
+
+Given an active user has the SUPPORT role\
+When the user logs in\
+Then the user is routed to the support inbox\
+And workspace subscription enforcement does not apply\
+And marketplace, tracking, fleet, verification, billing-review, and administration pages remain denied.
 
 ### Scenario: trusted development proxy preserves same-origin login
 

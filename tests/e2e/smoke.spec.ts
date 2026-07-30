@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-async function login(page: any, email: string) {
+async function login(page: any, email: string, expectedPath = '/app/home') {
   await page.goto('/login', { waitUntil: 'networkidle' });
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('Loadgistic123!');
   await expect(page.getByLabel('Email')).toHaveValue(email);
   await expect(page.getByLabel('Password')).toHaveValue('Loadgistic123!');
   await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(page).toHaveURL(/\/app\/home/);
+  await expect(page).toHaveURL(new RegExp(expectedPath.replaceAll('/','\\/')));
 }
 
 test('login keeps local fixture credentials out of the public page', async ({ page }: { page: any }) => {
@@ -62,8 +62,11 @@ test('authenticated directory browsing preserves the session and selected partic
   test.setTimeout(60_000);
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/providers?type=TRANSPORT');
-  await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().click();
-  await expect(page).toHaveURL(/\/app\/providers\/blueline-transport/);
+  const fleetProfile=page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first();
+  await Promise.all([
+    page.waitForURL(/\/app\/providers\/blueline-transport/,{timeout:15_000}),
+    fleetProfile.click()
+  ]);
   await expect(page.getByText('B2B logistics workspace')).toBeVisible();
   await expect(page.getByTestId('public-session-action')).toHaveCount(0);
   await page.getByRole('link', { name: 'Request' }).click();
@@ -128,6 +131,45 @@ test('logout clears the session and immediately returns to login',async({page}:{
   await expect(page).toHaveURL(/\/login\?success=/);
   await page.goto('/app/home');
   await expect(page).toHaveURL(/\/login\?error=Please\+log\+in/);
+});
+
+test('native support carries one private conversation from customer to agent and admin',async({page}:{page:any})=>{
+  test.skip((page.viewportSize()?.width||0)<980,'Stateful support workflow runs once; mobile support screens are covered by UI audit.');
+  test.setTimeout(90_000);
+  await login(page,'shipper@loadgistic.local');
+  await page.goto('/app/support');
+  await expect(page.getByRole('heading',{name:'Support',exact:true})).toBeVisible();
+  await page.getByRole('radio',{name:'Payment'}).check();
+  await page.getByLabel('What do you need?').fill('Please confirm the status of my latest payment.');
+  await page.getByRole('button',{name:'Send to support'}).click();
+  await expect(page.getByText('Please confirm the status of my latest payment.')).toBeVisible();
+  await expect(page.getByText(/is helping|Waiting for the next available agent/)).toBeVisible();
+  await page.context().clearCookies();
+
+  await login(page,'support@loadgistic.local','/support');
+  await expect(page.getByRole('heading',{name:'Support Inbox'})).toBeVisible();
+  const customerRow=page.locator('.support-conversation-list article').filter({hasText:'Blue Nile Trading PLC'});
+  await expect(customerRow).toBeVisible();
+  await customerRow.getByRole('link',{name:'Open'}).click();
+  await expect(page.getByText('Please confirm the status of my latest payment.')).toBeVisible();
+  await page.getByLabel('Message').fill('Your payment is in the review queue.');
+  await page.getByRole('button',{name:'Send'}).click();
+  await expect(page.getByText('Your payment is in the review queue.')).toBeVisible();
+  await page.getByRole('button',{name:'Close conversation'}).click();
+  await expect(page).toHaveURL(/\/support/);
+  await page.context().clearCookies();
+
+  await login(page,'shipper@loadgistic.local');
+  await page.goto('/app/support');
+  await expect(page.getByText('Your payment is in the review queue.')).toHaveCount(0);
+  await expect(page.getByText('Previous conversations')).toBeVisible();
+  await page.context().clearCookies();
+
+  await login(page,'admin@loadgistic.local');
+  await page.goto('/admin/support');
+  await expect(page.getByRole('heading',{name:'Customer Support'})).toBeVisible();
+  await expect(page.getByText('Hana Support',{exact:true})).toBeVisible();
+  await expect(page.getByText('support@loadgistic.local')).toBeVisible();
 });
 
 test('expired workspace keeps a billing-focused Home and denies operating screens',async({page}:{page:any})=>{

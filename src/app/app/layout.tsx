@@ -1,9 +1,11 @@
 import { requireUser } from '@/lib/auth';
 import { AppShell } from '@/components/app-shell';
 import { getWorkspaceAccess } from '@/lib/repository.js';
+import { redirect } from 'next/navigation';
 
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser(undefined,{allowLimited:true});
+  if(user.role==='SUPPORT')redirect('/support');
   const access = getWorkspaceAccess(user);
   const safeUser = {
     id: user.id,

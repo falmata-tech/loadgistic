@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   // development proxy rewrites every request URL and host header.
   const response = new NextResponse(null, {
     status: 303,
-    headers: { Location: '/app/home' }
+    headers: { Location: user.role === 'SUPPORT' ? '/support' : '/app/home' }
   });
   response.cookies.set(SESSION_COOKIE, createSessionToken(user.id), {
     httpOnly: true,

@@ -563,4 +563,51 @@ test('manual payment proof can be submitted and approved',()=>{
  assert.equal(paidLength,30*86_400_000);
 });
 
+test('native support assigns safely, isolates customers, requeues, and stays available when billing is limited',()=>{
+ const admin=repo.getUserById('user-admin');
+ const support=repo.getUserById('user-support');
+ const shipper=repo.getUserById('user-shipper');
+ const receiver=repo.getUserById('user-receiver');
+ const expired=repo.getUserById('user-expired');
+ assert.equal(support.role,'SUPPORT');
+ assert.equal(repo.getWorkspaceAccess(support).granted,true);
+
+ const conversationId=repo.createSupportConversation(shipper,{category:'PAYMENT',body:'Please review my payment status.'});
+ assert.throws(()=>repo.createSupportConversation(shipper,{category:'ACCOUNT',body:'Duplicate open request.'}),/SUPPORT_CONVERSATION_ALREADY_OPEN/);
+ const assigned=repo.getSupportConversation(support,conversationId,{markRead:false});
+ assert.equal(assigned.status,'OPEN');
+ assert.equal(assigned.assigned_agent_user_id,support.id);
+ assert.equal(Object.hasOwn(assigned,'email'),false);
+ assert.equal(Object.hasOwn(assigned,'phone'),false);
+ assert.throws(()=>repo.getSupportConversation(receiver,conversationId),/NOT_FOUND/);
+ repo.sendSupportMessage(support,conversationId,'Your payment is being reviewed.');
+ assert.match(repo.getSupportConversation(shipper,conversationId,{markRead:false}).messages.at(-1).body,/being reviewed/);
+ assert.throws(()=>repo.closeSupportConversation(shipper,conversationId),/FORBIDDEN/);
+ repo.closeSupportConversation(support,conversationId);
+ assert.throws(()=>repo.sendSupportMessage(shipper,conversationId,'One more thing'),/SUPPORT_CONVERSATION_CLOSED/);
+
+ repo.updateSupportAgent(admin,support.id,{active:true,available:true,maxOpenConversations:1});
+ const waitingId=repo.createSupportConversation(shipper,{category:'CAPACITY',body:'I need help publishing capacity.'});
+ assert.equal(repo.getSupportConversation(shipper,waitingId,{markRead:false}).status,'WAITING');
+ repo.closeSupportConversation(support,'support-demo-open');
+ assert.equal(repo.getSupportConversation(support,waitingId,{markRead:false}).status,'OPEN');
+
+ const expiredId=repo.createSupportConversation(expired,{category:'ACCOUNT',body:'My plan expired and I need help.'});
+ assert.ok(repo.getSupportConversation(expired,expiredId,{markRead:false}));
+ assert.equal(repo.getWorkspaceAccess(expired).granted,false);
+ const receiverId=repo.createSupportConversation(receiver,{category:'OTHER',body:'A newer waiting request.'});
+ const createdId=repo.createSupportAgent(admin,{
+  name:'Support Test Agent',
+  email:'support-test@loadgistic.local',
+  password:'SupportPass123!',
+  maxOpenConversations:'2'
+ });
+ const secondSupport=repo.getUserById(createdId);
+ assert.throws(()=>repo.claimSupportConversation(secondSupport,receiverId),/SUPPORT_CONVERSATION_NOT_WAITING/);
+ const waiting=repo.listSupportInbox(secondSupport,'WAITING',{page:1,pageSize:10});
+ assert.deepEqual(waiting.items.slice(0,2).map(item=>item.id),[expiredId,receiverId]);
+ assert.ok(repo.listSupportAgents(admin,{page:1,pageSize:20}).items.some(agent=>agent.user_id===createdId));
+ assert.throws(()=>repo.listSupportAgents(shipper),/FORBIDDEN/);
+});
+
 test.after(()=>{dbModule.closeDb();for(const suffix of ['', '-wal','-shm'])if(fs.existsSync(file+suffix))fs.rmSync(file+suffix);});

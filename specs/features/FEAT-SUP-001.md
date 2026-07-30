@@ -1,23 +1,24 @@
 ---
 id: FEAT-SUP-001
-title: Authenticated customer support inbox
+title: Native authenticated customer support inbox
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001]
-problem: Members need in-app help while platform owners need bounded assignment, scoped support-agent access, and accountable resolution without making the product database a new real-time chat platform.
-behavior: A provider-backed support adapter identifies signed-in members without exposing provider secrets, routes conversations to customer-service agents with explicit capacity, and keeps platform administration permissions separate from chat assignment.
-contracts: [SupportProvider, SupportIdentityToken, SupportConversationReference, SupportAgentCapacity, SupportWebhook, StaffPermissionPolicy]
-observability: [support_widget_opened, conversation_created, conversation_assigned, conversation_closed, assignment_capacity_reached, provider_webhook_rejected]
-rollout: Planned behind a disabled feature flag until a reviewed Chatwoot deployment, secrets, data residency, retention, backup, and webhook endpoints are configured and verified.
+problem: Members need simple in-app help while platform owners need bounded assignment, scoped support-agent access, and accountable resolution without per-agent fees or a second operational platform.
+behavior: Loadgistic stores text-only support conversations and messages in its authoritative database, routes one open member conversation to the least-loaded available support agent within an explicit limit, and keeps support authority separate from platform administration.
+contracts: [SupportConversation, SupportMessage, SupportCategory, SupportAgentState, SupportQueueAssignment, SupportAccessPolicy, SupportAudit]
+observability: [support_conversation_created, support_message_sent, support_conversation_assigned, support_conversation_claimed, support_conversation_closed, support_agent_availability_changed, support_assignment_capacity_reached, denied_support_access]
+rollout: Additive schema and SUPPORT role. Start with visibility-aware five-second refreshes and bounded message/query windows; durable database records remain authoritative so Realtime or Telegram notifications can be added later without changing ownership.
 ---
 
 # Customer support inbox
 
-### Scenario: authenticated member opens support
+### Scenario: authenticated member requests help
 
-Given support is enabled and a signed-in member opens chat\
-When the support widget initializes\
-Then the server supplies a provider identity protected by a server-held secret\
-And the browser never receives the provider signing secret\
-And only the member's approved support identity fields are sent.
+Given an active signed-in Business, Fleet Transporter, or Driver has no open support conversation\
+When the member selects a short help category and starts a conversation\
+Then one open conversation owned by that user is created\
+And the first message is stored with a bounded body\
+And the conversation is assigned to the least-loaded available agent when capacity exists\
+And no shipment, tracking, verification, location, or payment record is copied into chat automatically.
 
 ### Scenario: support agents receive bounded work
 
@@ -25,35 +26,54 @@ Given multiple available customer-service agents and queued conversations\
 When automatic assignment runs\
 Then an agent at the configured open-conversation limit receives no additional conversation\
 And closing a conversation frees one assignment slot\
-And assignment, reassignment, and closure remain visible in the support audit trail.
+And equal-load agents are selected by the oldest assignment time\
+And assignment, claim, availability, and closure remain visible in the support audit trail.
 
-### Scenario: platform permissions remain scoped
+### Scenario: customer and agent reads are scoped
 
-Given a customer-service team member can access the external support inbox\
-When they enter Loadgistic administration\
-Then chat assignment does not grant platform administrator authority\
-And application, document, billing, client-view, and client-edit capabilities are granted separately\
-And every granted platform mutation is enforced by the server and audited.
+Given a support conversation exists\
+When its customer, assigned support agent, or administrator opens it\
+Then only the latest bounded message window and safe participant identity are returned\
+And an unrelated customer or unassigned support agent receives no conversation\
+And no account phone, password, tracking code, exact location, or private document is projected.
 
-### Scenario: disabled support fails closed
+### Scenario: support authority is not administration
 
-Given provider configuration is absent, invalid, or deliberately disabled\
-When a member opens Loadgistic\
-Then no broken chat launcher is rendered\
-And no member data is sent to an external service\
-And administrators see configuration status without secrets.
+Given a user has the SUPPORT role\
+When they request an application, document, billing, Operations, account-edit, or client-suspension page or command\
+Then access is denied\
+And the support role can access only its inbox, assigned conversations, availability, and account/logout controls.
 
-### Scenario: provider events are authenticated
+### Scenario: message and lifecycle mutations remain strict
 
-Given the support provider sends a conversation event\
-When Loadgistic receives the webhook\
-Then the request signature is verified before any local reference or metric changes\
-And duplicate provider events are idempotent\
-And invalid events are rejected and recorded without member data in logs.
+Given an open support conversation\
+When the owning customer or assigned agent sends a non-empty message\
+Then the body is length bounded, rate limited, stored once, and updates unread state\
+And only the assigned agent or administrator may close it\
+And closed conversations reject new messages\
+And denied mutations write no success audit.
+
+### Scenario: waiting work can be claimed
+
+Given no available agent had capacity when a member opened a conversation\
+When an available support agent below their limit claims the oldest waiting conversation\
+Then assignment is atomic\
+And another agent cannot claim the same conversation\
+And the member sees the assigned agent name after refresh.
+
+### Scenario: compact refresh preserves performance
+
+Given a customer or agent keeps one conversation open\
+When the page is visible\
+Then it refreshes at a bounded interval\
+And pauses refresh while hidden\
+And each response contains at most 50 recent messages\
+And queue and history lists use server pagination and supporting indexes.
 
 ## Contract ownership
 
-- Domain port: planned `SupportProvider`
-- External adapter: planned Chatwoot identity, widget, API, and webhook adapter
-- Platform authorization: scoped staff capability policy
-- Tests: provider contract, signature, authorization, and disabled-state browser tests required before rollout
+- Pages: `/app/support`, `/support`, `/support/[id]`, `/admin/support`
+- Application services: native support services in `src/lib/repository.js`
+- Inbound adapters: `/api/support/*` and `/api/admin/support-agents`
+- Persistence adapters: additive SQLite schema and Supabase migration `008`
+- Tests: domain, repository authorization/routing, E2E customer/agent flow, and desktop/mobile UI audit

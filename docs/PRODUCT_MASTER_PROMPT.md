@@ -142,6 +142,21 @@ Transporters are responsible for documenting vehicle ownership or owner authoriz
 
 Loadgistic is installable in standalone mode. Driver workflows are mobile-first with safe-area navigation and touch-sized controls. Authenticated pages remain network-first and are not stored as shared offline HTML. First service-worker installation takes control without reloading an in-progress login or application form. The service worker caches stable visual assets only; Next.js executable chunks are delivered through normal version-aware HTTP caching so upgrades cannot mix stale and current runtimes.
 
+## Customer Support
+
+Every active signed-in member can open one text-only support conversation from
+the workspace. Loadgistic stores the conversation and its messages, assigns work
+to the least-loaded available support agent below a configured limit, and keeps
+waiting work in a visible queue. Customers see only their own history. Support
+agents see only assigned conversations and cannot access marketplace,
+operations, tracking, verification, billing review, exact locations, or private
+files. Administrators manage support agents and supervise the queue.
+
+Conversation pages use bounded five-second refreshes while visible. Message
+history is capped per response and queue/history collections are paginated.
+Attachments, voice, presence, typing indicators, external channel mirroring,
+and AI replies are outside the initial product.
+
 ## Interaction Language
 
 Non-admin workflows are icon-first and low-language. Navigation, task titles,

@@ -13,6 +13,9 @@ import {
   validateFreightLoadType,
   validateMovementScope,
   validateServiceRadius,
+  validateSupportAgentLimit,
+  validateSupportCategory,
+  validateSupportMessage,
   pointInServiceArea,
   serviceAreasOverlap,
   assertTransition,
@@ -94,8 +97,8 @@ function workspaceSubscription(db,user) {
 }
 
 export function getWorkspaceAccess(user, at = new Date()) {
-  if (user?.role === USER_ROLES.ADMIN) {
-    return {granted:true,status:'ADMIN',ends_at:null,days_remaining:null,subscription:null};
+  if ([USER_ROLES.ADMIN,USER_ROLES.SUPPORT].includes(user?.role)) {
+    return {granted:true,status:user.role,ends_at:null,days_remaining:null,subscription:null};
   }
   const subscription = workspaceSubscription(getDb(),user);
   return {...subscriptionAccess(subscription,at),subscription};
@@ -226,6 +229,7 @@ export function getPlaceCoordinate(value) {
 
 export function searchDirectory(user,query,kind='ALL',limit=20) {
   assertWorkspaceAccess(user);
+  if(user.role===USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
   const value=String(query||'').trim().toLowerCase();
   if(value.length<2)return [];
   const boundedLimit=Math.max(1,Math.min(Number(limit)||20,50));
@@ -378,6 +382,7 @@ export function getDashboard(user) {
 
 export function listVisibleShipments(user) {
   assertWorkspaceAccess(user);
+  if(user.role===USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
   const db = getDb();
   let sql = `SELECT s.*, so.name AS shipper_name,so.handle AS shipper_handle,ro.name AS receiver_name,ro.handle AS receiver_handle,po.name AS provider_name,
     pp.business_name AS provider_profile_name,owner.name AS load_owner_name
@@ -2615,6 +2620,363 @@ export function updateFleetDriverPermissions(user, driverUserId, input) {
   audit(db,user,'DRIVER_PERMISSIONS_UPDATED','user',driver.id,values);
 }
 
+const SUPPORT_MEMBER_ROLES=new Set([
+  USER_ROLES.SHIPPER,
+  USER_ROLES.RECEIVER,
+  USER_ROLES.TRANSPORTER,
+  USER_ROLES.DRIVER
+]);
+
+function supportEvent(db,conversationId,actorUserId,eventType,details={}) {
+  db.prepare(`INSERT INTO support_events
+    (id,conversation_id,actor_user_id,event_type,details,created_at) VALUES (?,?,?,?,?,?)`)
+    .run(randomId('support-event-'),conversationId,actorUserId||null,eventType,JSON.stringify(details),nowIso());
+}
+
+function supportConversationBase() {
+  return `SELECT c.id,c.customer_user_id,c.assigned_agent_user_id,c.category,c.status,c.created_at,c.updated_at,
+      c.last_message_at,c.assigned_at,c.customer_last_read_at,c.agent_last_read_at,c.closed_at,
+      customer.name AS customer_name,customer.role AS customer_role,
+      COALESCE(customer_org.name,customer_profile.business_name,'Individual account') AS customer_workspace_name,
+      agent.name AS assigned_agent_name,
+      (SELECT COUNT(*) FROM support_messages message WHERE message.conversation_id=c.id) AS message_count
+    FROM support_conversations c
+    JOIN users customer ON customer.id=c.customer_user_id
+    LEFT JOIN organizations customer_org ON customer_org.id=customer.organization_id
+    LEFT JOIN provider_profiles customer_profile ON customer_profile.id=customer.provider_profile_id
+    LEFT JOIN users agent ON agent.id=c.assigned_agent_user_id`;
+}
+
+function assignSupportConversation(db,conversationId) {
+  const agent=db.prepare(`SELECT profile.user_id,profile.max_open_conversations,
+      COUNT(open_conversation.id) AS open_count
+    FROM support_agent_profiles profile
+    JOIN users user ON user.id=profile.user_id AND user.role='SUPPORT' AND user.active=1
+    LEFT JOIN support_conversations open_conversation
+      ON open_conversation.assigned_agent_user_id=profile.user_id AND open_conversation.status='OPEN'
+    WHERE profile.active=1 AND profile.available=1
+    GROUP BY profile.user_id,profile.max_open_conversations,profile.last_assigned_at
+    HAVING COUNT(open_conversation.id)<profile.max_open_conversations
+    ORDER BY open_count ASC,
+      CASE WHEN profile.last_assigned_at IS NULL THEN 0 ELSE 1 END,
+      profile.last_assigned_at ASC,profile.user_id ASC
+    LIMIT 1`).get();
+  if(!agent)return null;
+  const timestamp=nowIso();
+  const updated=db.prepare(`UPDATE support_conversations
+    SET assigned_agent_user_id=?,status='OPEN',assigned_at=?,updated_at=?
+    WHERE id=? AND status='WAITING' AND assigned_agent_user_id IS NULL`)
+    .run(agent.user_id,timestamp,timestamp,conversationId);
+  if(!updated.changes)return null;
+  db.prepare('UPDATE support_agent_profiles SET last_assigned_at=?,updated_at=? WHERE user_id=?')
+    .run(timestamp,timestamp,agent.user_id);
+  supportEvent(db,conversationId,null,'ASSIGNED',{agentUserId:agent.user_id});
+  notify(db,agent.user_id,'Support conversation assigned','A customer conversation is ready in your support inbox.');
+  return agent.user_id;
+}
+
+function assignWaitingSupportConversations(db,limit=100) {
+  let assigned=0;
+  const waiting=db.prepare(`SELECT id FROM support_conversations
+    WHERE status='WAITING' AND assigned_agent_user_id IS NULL
+    ORDER BY created_at,id LIMIT ?`).all(Math.max(1,Math.min(Number(limit)||100,100)));
+  for(const conversation of waiting) {
+    if(!assignSupportConversation(db,conversation.id))break;
+    assigned+=1;
+  }
+  return assigned;
+}
+
+function supportAgentRecord(db,userId) {
+  return db.prepare(`SELECT profile.*,user.name,user.email,user.active AS user_active,
+      (SELECT COUNT(*) FROM support_conversations conversation
+        WHERE conversation.assigned_agent_user_id=profile.user_id AND conversation.status='OPEN') AS open_count
+    FROM support_agent_profiles profile
+    JOIN users user ON user.id=profile.user_id AND user.role='SUPPORT'
+    WHERE profile.user_id=?`).get(userId);
+}
+
+function assertSupportMessageRate(db,userId) {
+  const cutoff=new Date(Date.now()-60_000).toISOString();
+  const count=db.prepare(`SELECT COUNT(*) AS n FROM support_messages
+    WHERE sender_user_id=? AND created_at>=?`).get(userId,cutoff).n;
+  if(count>=20)throw new Error('SUPPORT_MESSAGE_RATE_LIMITED');
+}
+
+export function createSupportConversation(user,input) {
+  if(!SUPPORT_MEMBER_ROLES.has(user?.role))throw new Error('FORBIDDEN');
+  const category=validateSupportCategory(input.category);
+  const body=validateSupportMessage(input.body);
+  const db=getDb();
+  const timestamp=nowIso();
+  const id=randomId('support-');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if(db.prepare(`SELECT 1 FROM support_conversations
+      WHERE customer_user_id=? AND status IN ('WAITING','OPEN')`).get(user.id)) {
+      throw new Error('SUPPORT_CONVERSATION_ALREADY_OPEN');
+    }
+    assertSupportMessageRate(db,user.id);
+    db.prepare(`INSERT INTO support_conversations
+      (id,customer_user_id,category,status,created_at,updated_at,last_message_at,customer_last_read_at)
+      VALUES (?,?,?,'WAITING',?,?,?,?)`)
+      .run(id,user.id,category,timestamp,timestamp,timestamp,timestamp);
+    db.prepare(`INSERT INTO support_messages
+      (id,conversation_id,sender_user_id,body,created_at) VALUES (?,?,?,?,?)`)
+      .run(randomId('support-message-'),id,user.id,body,timestamp);
+    supportEvent(db,id,user.id,'CREATED',{category});
+    const assignedAgentId=assignSupportConversation(db,id);
+    audit(db,user,'SUPPORT_CONVERSATION_CREATED','support_conversation',id,{category,assigned:Boolean(assignedAgentId)});
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  return id;
+}
+
+export function listMemberSupportConversations(user,options={}) {
+  if(!SUPPORT_MEMBER_ROLES.has(user?.role))throw new Error('FORBIDDEN');
+  const db=getDb();
+  return paginateQuery(db,`${supportConversationBase()} WHERE c.customer_user_id=?`,[user.id],'updated_at DESC,id',options);
+}
+
+export function listSupportInbox(user,view='ASSIGNED',options={}) {
+  if(![USER_ROLES.SUPPORT,USER_ROLES.ADMIN].includes(user?.role))throw new Error('FORBIDDEN');
+  const normalized=String(view||'ASSIGNED').toUpperCase();
+  if(!['ASSIGNED','WAITING','CLOSED','ALL'].includes(normalized))throw new Error('INVALID_SUPPORT_VIEW');
+  const db=getDb();
+  const args=[];
+  let where='1=1';
+  if(user.role===USER_ROLES.SUPPORT){
+    if(normalized==='WAITING')where=`c.status='WAITING' AND c.assigned_agent_user_id IS NULL`;
+    else if(normalized==='CLOSED'){where=`c.status='CLOSED' AND c.assigned_agent_user_id=?`;args.push(user.id);}
+    else {where=`c.status='OPEN' AND c.assigned_agent_user_id=?`;args.push(user.id);}
+  }else if(normalized==='WAITING')where=`c.status='WAITING'`;
+  else if(normalized==='ASSIGNED')where=`c.status='OPEN'`;
+  else if(normalized==='CLOSED')where=`c.status='CLOSED'`;
+  const orderBy=normalized==='WAITING'
+    ? 'created_at ASC,id'
+    : `CASE status WHEN 'WAITING' THEN 0 WHEN 'OPEN' THEN 1 ELSE 2 END,last_message_at DESC,id`;
+  const result=paginateQuery(db,`${supportConversationBase()} WHERE ${where}`,args,orderBy,options);
+  const agent=user.role===USER_ROLES.SUPPORT?supportAgentRecord(db,user.id):null;
+  const counts=user.role===USER_ROLES.SUPPORT
+    ? {
+        assigned:db.prepare(`SELECT COUNT(*) AS n FROM support_conversations WHERE assigned_agent_user_id=? AND status='OPEN'`).get(user.id).n,
+        waiting:db.prepare(`SELECT COUNT(*) AS n FROM support_conversations WHERE status='WAITING'`).get().n,
+        closed:db.prepare(`SELECT COUNT(*) AS n FROM support_conversations WHERE assigned_agent_user_id=? AND status='CLOSED'`).get(user.id).n
+      }
+    : {
+        assigned:db.prepare(`SELECT COUNT(*) AS n FROM support_conversations WHERE status='OPEN'`).get().n,
+        waiting:db.prepare(`SELECT COUNT(*) AS n FROM support_conversations WHERE status='WAITING'`).get().n,
+        closed:db.prepare(`SELECT COUNT(*) AS n FROM support_conversations WHERE status='CLOSED'`).get().n
+      };
+  return {...result,view:normalized,agent,counts};
+}
+
+export function getSupportConversation(user,conversationId,{messageLimit=50,markRead=true}={}) {
+  if(!user)throw new Error('FORBIDDEN');
+  const db=getDb();
+  const conversation=db.prepare(`${supportConversationBase()} WHERE c.id=?`).get(conversationId);
+  if(!conversation)throw new Error('NOT_FOUND');
+  const customerOwns=SUPPORT_MEMBER_ROLES.has(user.role)&&conversation.customer_user_id===user.id;
+  const agentOwns=user.role===USER_ROLES.SUPPORT&&conversation.assigned_agent_user_id===user.id;
+  if(!customerOwns&&!agentOwns&&user.role!==USER_ROLES.ADMIN)throw new Error('NOT_FOUND');
+  const boundedLimit=Math.max(1,Math.min(Number(messageLimit)||50,50));
+  conversation.messages=db.prepare(`SELECT * FROM (
+      SELECT message.id,message.conversation_id,message.sender_user_id,message.body,message.created_at,
+        sender.name AS sender_name,sender.role AS sender_role
+      FROM support_messages message JOIN users sender ON sender.id=message.sender_user_id
+      WHERE message.conversation_id=?
+      ORDER BY message.created_at DESC,message.id DESC LIMIT ?
+    ) ORDER BY created_at,id`).all(conversation.id,boundedLimit);
+  conversation.events=user.role===USER_ROLES.ADMIN
+    ? db.prepare(`SELECT event_type,created_at FROM support_events WHERE conversation_id=? ORDER BY created_at,id LIMIT 100`).all(conversation.id)
+    : [];
+  if(markRead){
+    const column=customerOwns?'customer_last_read_at':'agent_last_read_at';
+    db.prepare(`UPDATE support_conversations SET ${column}=? WHERE id=?`).run(nowIso(),conversation.id);
+  }
+  return conversation;
+}
+
+export function sendSupportMessage(user,conversationId,body) {
+  const cleanBody=validateSupportMessage(body);
+  const db=getDb();
+  const conversation=db.prepare('SELECT * FROM support_conversations WHERE id=?').get(conversationId);
+  if(!conversation)throw new Error('NOT_FOUND');
+  const customerOwns=SUPPORT_MEMBER_ROLES.has(user?.role)&&conversation.customer_user_id===user.id;
+  const agentOwns=user?.role===USER_ROLES.SUPPORT&&conversation.assigned_agent_user_id===user.id;
+  if(!customerOwns&&!agentOwns&&user?.role!==USER_ROLES.ADMIN)throw new Error('NOT_FOUND');
+  if(conversation.status==='CLOSED')throw new Error('SUPPORT_CONVERSATION_CLOSED');
+  if(user.role===USER_ROLES.SUPPORT&&conversation.status!=='OPEN')throw new Error('NOT_FOUND');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    assertSupportMessageRate(db,user.id);
+    db.prepare(`INSERT INTO support_messages
+      (id,conversation_id,sender_user_id,body,created_at) VALUES (?,?,?,?,?)`)
+      .run(randomId('support-message-'),conversation.id,user.id,cleanBody,timestamp);
+    db.prepare(`UPDATE support_conversations SET updated_at=?,last_message_at=?,
+      customer_last_read_at=CASE WHEN customer_user_id=? THEN ? ELSE customer_last_read_at END,
+      agent_last_read_at=CASE WHEN assigned_agent_user_id=? THEN ? ELSE agent_last_read_at END
+      WHERE id=?`).run(timestamp,timestamp,user.id,timestamp,user.id,timestamp,conversation.id);
+    supportEvent(db,conversation.id,user.id,'MESSAGE_SENT',{senderRole:user.role});
+    const recipientId=customerOwns?conversation.assigned_agent_user_id:conversation.customer_user_id;
+    if(recipientId)notify(db,recipientId,'New support message','Open Loadgistic Support to read the reply.');
+    audit(db,user,'SUPPORT_MESSAGE_SENT','support_conversation',conversation.id,{});
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+export function claimSupportConversation(user,conversationId) {
+  if(user?.role!==USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
+  const db=getDb();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const agent=supportAgentRecord(db,user.id);
+    if(!agent||!agent.user_active||!agent.active||!agent.available)throw new Error('SUPPORT_AGENT_UNAVAILABLE');
+    if(agent.open_count>=agent.max_open_conversations)throw new Error('SUPPORT_AGENT_AT_CAPACITY');
+    const conversation=db.prepare(`SELECT id FROM support_conversations
+      WHERE status='WAITING' AND assigned_agent_user_id IS NULL
+      ORDER BY created_at,id LIMIT 1`).get();
+    if(!conversation||conversation.id!==conversationId)throw new Error('SUPPORT_CONVERSATION_NOT_WAITING');
+    const timestamp=nowIso();
+    const updated=db.prepare(`UPDATE support_conversations
+      SET status='OPEN',assigned_agent_user_id=?,assigned_at=?,updated_at=?
+      WHERE id=? AND status='WAITING' AND assigned_agent_user_id IS NULL`)
+      .run(user.id,timestamp,timestamp,conversation.id);
+    if(!updated.changes)throw new Error('SUPPORT_CONVERSATION_NOT_WAITING');
+    db.prepare('UPDATE support_agent_profiles SET last_assigned_at=?,updated_at=? WHERE user_id=?')
+      .run(timestamp,timestamp,user.id);
+    supportEvent(db,conversation.id,user.id,'CLAIMED',{});
+    audit(db,user,'SUPPORT_CONVERSATION_CLAIMED','support_conversation',conversation.id,{});
+    notify(db,db.prepare('SELECT customer_user_id FROM support_conversations WHERE id=?').get(conversation.id).customer_user_id,
+      'Support agent assigned','A Loadgistic support agent is ready to help.');
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+export function closeSupportConversation(user,conversationId) {
+  if(![USER_ROLES.SUPPORT,USER_ROLES.ADMIN].includes(user?.role))throw new Error('FORBIDDEN');
+  const db=getDb();
+  const conversation=db.prepare('SELECT * FROM support_conversations WHERE id=?').get(conversationId);
+  if(!conversation||(user.role===USER_ROLES.SUPPORT&&conversation.assigned_agent_user_id!==user.id))throw new Error('NOT_FOUND');
+  if(conversation.status==='CLOSED')throw new Error('SUPPORT_CONVERSATION_CLOSED');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`UPDATE support_conversations SET status='CLOSED',closed_at=?,closed_by=?,updated_at=? WHERE id=?`)
+      .run(timestamp,user.id,timestamp,conversation.id);
+    supportEvent(db,conversation.id,user.id,'CLOSED',{});
+    audit(db,user,'SUPPORT_CONVERSATION_CLOSED','support_conversation',conversation.id,{});
+    notify(db,conversation.customer_user_id,'Support conversation closed','You can start a new support conversation whenever you need help.');
+    assignWaitingSupportConversations(db,1);
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+export function updateSupportAvailability(user,available) {
+  if(user?.role!==USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
+  const db=getDb();
+  const profile=supportAgentRecord(db,user.id);
+  if(!profile||!profile.active||!profile.user_active)throw new Error('SUPPORT_AGENT_UNAVAILABLE');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare('UPDATE support_agent_profiles SET available=?,updated_at=? WHERE user_id=?')
+      .run(available?1:0,timestamp,user.id);
+    audit(db,user,'SUPPORT_AGENT_AVAILABILITY_CHANGED','support_agent',user.id,{available:Boolean(available)});
+    if(available)assignWaitingSupportConversations(db,profile.max_open_conversations-profile.open_count);
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+export function listSupportAgents(user,options={}) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  return paginateQuery(getDb(),`SELECT profile.user_id,profile.active,profile.available,profile.max_open_conversations,
+      profile.last_assigned_at,profile.created_at,profile.updated_at,
+      account.name,account.email,account.active AS user_active,
+      (SELECT COUNT(*) FROM support_conversations conversation
+        WHERE conversation.assigned_agent_user_id=profile.user_id AND conversation.status='OPEN') AS open_count,
+      (SELECT COUNT(*) FROM support_conversations conversation
+        WHERE conversation.assigned_agent_user_id=profile.user_id AND conversation.status='CLOSED') AS closed_count
+    FROM support_agent_profiles profile JOIN users account ON account.id=profile.user_id
+    WHERE account.role='SUPPORT'`,[],'user_active DESC,active DESC,name,user_id',options);
+}
+
+export function createSupportAgent(user,input) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const name=String(input.name||'').trim();
+  const email=String(input.email||'').trim().toLowerCase();
+  const password=String(input.password||'');
+  const maxOpen=validateSupportAgentLimit(input.maxOpenConversations);
+  if(!name||!email||!password)throw new Error('MISSING_REQUIRED_FIELDS');
+  if(password.length<10)throw new Error('PASSWORD_TOO_SHORT');
+  if(findUserByEmail(email))throw new Error('EMAIL_ALREADY_EXISTS');
+  const db=getDb();
+  const id=randomId('support-user-');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`INSERT INTO users
+      (id,email,password_hash,name,role,active,created_at) VALUES (?,?,?,?, 'SUPPORT',1,?)`)
+      .run(id,email,hashPassword(password),name,timestamp);
+    db.prepare(`INSERT INTO support_agent_profiles
+      (user_id,active,available,max_open_conversations,created_at,updated_at)
+      VALUES (?,1,1,?,?,?)`).run(id,maxOpen,timestamp,timestamp);
+    audit(db,user,'SUPPORT_AGENT_CREATED','support_agent',id,{maxOpenConversations:maxOpen});
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  return id;
+}
+
+export function updateSupportAgent(user,agentUserId,input) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const db=getDb();
+  const agent=supportAgentRecord(db,agentUserId);
+  if(!agent)throw new Error('NOT_FOUND');
+  const maxOpen=validateSupportAgentLimit(input.maxOpenConversations);
+  const active=Boolean(input.active);
+  const available=active&&Boolean(input.available);
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`UPDATE support_agent_profiles SET active=?,available=?,max_open_conversations=?,updated_at=?
+      WHERE user_id=?`).run(active?1:0,available?1:0,maxOpen,timestamp,agent.user_id);
+    db.prepare('UPDATE users SET active=? WHERE id=?').run(active?1:0,agent.user_id);
+    if(!active){
+      const open=db.prepare(`SELECT id FROM support_conversations
+        WHERE assigned_agent_user_id=? AND status='OPEN'`).all(agent.user_id);
+      db.prepare(`UPDATE support_conversations SET status='WAITING',assigned_agent_user_id=NULL,
+        assigned_at=NULL,agent_last_read_at=NULL,updated_at=? WHERE assigned_agent_user_id=? AND status='OPEN'`)
+        .run(timestamp,agent.user_id);
+      for(const conversation of open)supportEvent(db,conversation.id,user.id,'REQUEUED',{disabledAgentUserId:agent.user_id});
+    }
+    audit(db,user,'SUPPORT_AGENT_UPDATED','support_agent',agent.user_id,{active,available,maxOpenConversations:maxOpen});
+    assignWaitingSupportConversations(db);
+    db.exec('COMMIT');
+  } catch(error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
 export function listApplications(user, options = /** @type {any} */ (null)) {
   if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
   const db=getDb();
@@ -2715,6 +3077,16 @@ export function setAdminRecordActive(user, recordType, recordId, active) {
     const target=db.prepare('SELECT id,role,active FROM users WHERE id=?').get(recordId);
     if(!target)throw new Error('NOT_FOUND');
     if(target.id===user.id&&!enabled)throw new Error('ADMIN_SELF_SUSPENSION_DENIED');
+    if(target.role===USER_ROLES.SUPPORT){
+      const profile=supportAgentRecord(db,target.id);
+      if(!profile)throw new Error('NOT_FOUND');
+      updateSupportAgent(user,target.id,{
+        active:enabled,
+        available:enabled&&Boolean(profile.available),
+        maxOpenConversations:profile.max_open_conversations
+      });
+      return;
+    }
     db.prepare('UPDATE users SET active=? WHERE id=?').run(enabled?1:0,target.id);
     audit(db,user,'ADMIN_USER_ACCESS_CHANGED','user',target.id,{active:enabled});
     return;

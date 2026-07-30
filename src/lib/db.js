@@ -60,7 +60,7 @@ function migrate(db) {
       phone TEXT,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('ADMIN','SHIPPER','RECEIVER','TRANSPORTER','DRIVER')),
+      role TEXT NOT NULL CHECK(role IN ('ADMIN','SUPPORT','SHIPPER','RECEIVER','TRANSPORTER','DRIVER')),
       organization_id TEXT,
       provider_profile_id TEXT,
       active INTEGER NOT NULL DEFAULT 1,
@@ -501,7 +501,54 @@ function migrate(db) {
       details TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS support_agent_profiles (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      active INTEGER NOT NULL DEFAULT 1,
+      available INTEGER NOT NULL DEFAULT 1,
+      max_open_conversations INTEGER NOT NULL DEFAULT 3 CHECK(max_open_conversations BETWEEN 1 AND 20),
+      last_assigned_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS support_conversations (
+      id TEXT PRIMARY KEY,
+      customer_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      assigned_agent_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      category TEXT NOT NULL CHECK(category IN ('ACCOUNT','PAYMENT','VERIFICATION','LOAD_TRACKING','CAPACITY','OTHER')),
+      status TEXT NOT NULL CHECK(status IN ('WAITING','OPEN','CLOSED')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      last_message_at TEXT NOT NULL,
+      assigned_at TEXT,
+      customer_last_read_at TEXT,
+      agent_last_read_at TEXT,
+      closed_at TEXT,
+      closed_by TEXT REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES support_conversations(id) ON DELETE CASCADE,
+      sender_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 2000),
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS support_events (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES support_conversations(id) ON DELETE CASCADE,
+      actor_user_id TEXT REFERENCES users(id),
+      event_type TEXT NOT NULL,
+      details TEXT,
+      created_at TEXT NOT NULL
+    );
   `);
+  ensureSupportRoleSchema(db);
+  const supportConversationColumns=new Set(db.prepare('PRAGMA table_info(support_conversations)').all().map(column=>column.name));
+  if(!supportConversationColumns.has('customer_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN customer_last_read_at TEXT');
+  if(!supportConversationColumns.has('agent_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN agent_last_read_at TEXT');
   const userColumns = new Set(db.prepare('PRAGMA table_info(users)').all().map(column => column.name));
   if (!userColumns.has('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
   const organizationColumns = new Set(db.prepare('PRAGMA table_info(organizations)').all().map(column => column.name));
@@ -712,6 +759,13 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_shipment_events_load ON shipment_events(shipment_id,created_at);
     CREATE INDEX IF NOT EXISTS idx_shipment_interests_load_provider ON shipment_interests(shipment_id,provider_organization_id,provider_profile_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id,created_at DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_support_customer_open ON support_conversations(customer_user_id)
+      WHERE status IN ('WAITING','OPEN');
+    CREATE INDEX IF NOT EXISTS idx_support_queue ON support_conversations(status,created_at,id);
+    CREATE INDEX IF NOT EXISTS idx_support_agent_open ON support_conversations(assigned_agent_user_id,status,updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_support_customer_history ON support_conversations(customer_user_id,updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_support_messages_recent ON support_messages(conversation_id,created_at DESC,id DESC);
+    CREATE INDEX IF NOT EXISTS idx_support_events_conversation ON support_events(conversation_id,created_at,id);
   `);
   db.exec(`
     UPDATE vehicles SET make='Isuzu',model='FSR',cargo_configuration='Medium Box Truck',category='Medium Box Truck' WHERE id='veh-trans-1';
@@ -740,6 +794,42 @@ function migrate(db) {
       }
     }
   }
+}
+
+function ensureSupportRoleSchema(db) {
+  const schema=String(db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='users'`).get()?.sql||'');
+  if(schema.includes("'SUPPORT'"))return;
+  db.exec('PRAGMA foreign_keys=OFF; PRAGMA legacy_alter_table=ON;');
+  try {
+    db.exec(`
+      BEGIN IMMEDIATE;
+      ALTER TABLE users RENAME TO users_before_support_role;
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        phone TEXT,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('ADMIN','SUPPORT','SHIPPER','RECEIVER','TRANSPORTER','DRIVER')),
+        organization_id TEXT,
+        provider_profile_id TEXT,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT INTO users (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at)
+        SELECT id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at
+        FROM users_before_support_role;
+      DROP TABLE users_before_support_role;
+      COMMIT;
+    `);
+  } catch(error) {
+    try { db.exec('ROLLBACK'); } catch {}
+    throw error;
+  } finally {
+    db.exec('PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;');
+  }
+  const violations=db.prepare('PRAGMA foreign_key_check').all();
+  if(violations.length)throw new Error('SUPPORT_ROLE_MIGRATION_FOREIGN_KEY_FAILURE');
 }
 
 function runDataMigrationOnce(db,key,migration) {
@@ -926,6 +1016,7 @@ function seed(db) {
 
   const users = [
     ['user-admin','admin@loadgistic.local','Platform Administrator','ADMIN',null,null],
+    ['user-support','support@loadgistic.local','Hana Support','SUPPORT',null,null],
     ['user-shipper','shipper@loadgistic.local','Selam Tesfaye','SHIPPER',orgs.shipper.id,null],
     ['user-receiver','receiver@loadgistic.local','Marta Alemu','RECEIVER',orgs.receiver.id,null],
     ['user-transporter','transporter@loadgistic.local','Samuel Tesfaye','TRANSPORTER',orgs.transporter.id,null],
@@ -938,6 +1029,10 @@ function seed(db) {
     (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?)`);
   for (const user of users) insertUser.run(user[0],user[1],'+251 900 000 000',passwordHash,user[2],user[3],user[4],user[5],user[6] ?? 1,iso);
+
+  db.prepare(`INSERT INTO support_agent_profiles
+    (user_id,active,available,max_open_conversations,last_assigned_at,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?)`).run('user-support',1,1,3,iso,iso,iso);
 
   const insertMembership = db.prepare('INSERT INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,?)');
   insertMembership.run(randomId('mem-'),'user-shipper',orgs.shipper.id,'OWNER');
@@ -1094,4 +1189,18 @@ function seed(db) {
   const notify = db.prepare(`INSERT INTO notifications (id,user_id,title,body,read_at,created_at) VALUES (?,?,?,?,?,?)`);
   notify.run(randomId('ntf-'),'user-transporter','New open freight load','A fixed-price load is available from Addis Ababa to Dire Dawa.',null,iso);
   notify.run(randomId('ntf-'),'user-admin','Low Business rating needs review','A 2-star rating for Fresh Foods Distribution on LGX-F2007 is waiting in Rating Reviews.',null,iso);
+
+  const supportCreatedAt=new Date(now.getTime()-50*60*1000).toISOString();
+  const supportReplyAt=new Date(now.getTime()-42*60*1000).toISOString();
+  db.prepare(`INSERT INTO support_conversations
+    (id,customer_user_id,assigned_agent_user_id,category,status,created_at,updated_at,last_message_at,assigned_at)
+    VALUES (?,?,?,?,?,?,?,?,?)`)
+    .run('support-demo-open','user-receiver','user-support','PAYMENT','OPEN',supportCreatedAt,supportReplyAt,supportReplyAt,supportCreatedAt);
+  const supportMessageInsert=db.prepare(`INSERT INTO support_messages
+    (id,conversation_id,sender_user_id,body,created_at) VALUES (?,?,?,?,?)`);
+  supportMessageInsert.run('support-message-demo-1','support-demo-open','user-receiver','My payment proof is still waiting for review.',supportCreatedAt);
+  supportMessageInsert.run('support-message-demo-2','support-demo-open','user-support','I found it in the review queue. We will update you here.',supportReplyAt);
+  db.prepare(`INSERT INTO support_events
+    (id,conversation_id,actor_user_id,event_type,details,created_at) VALUES (?,?,?,?,?,?)`)
+    .run('support-event-demo-assigned','support-demo-open',null,'ASSIGNED',JSON.stringify({agentUserId:'user-support'}),supportCreatedAt);
 }

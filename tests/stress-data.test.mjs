@@ -24,7 +24,7 @@ test('standard stress dataset covers every table, workflow state, and provider s
   const integrity=stress.assertStressDataIntegrity(db,report);
 
   assert.equal(integrity.ok,true);
-  assert.equal(integrity.tables,30);
+  assert.equal(integrity.tables,34);
   assert.ok(integrity.totalRows>8_000);
   assert.equal(report.foreignKeyViolations.length,0);
   assert.ok(Object.values(report.counts).every(count=>count>0));
@@ -34,6 +34,7 @@ test('standard stress dataset covers every table, workflow state, and provider s
   assert.ok(report.counts.service_areas>=100);
   assert.ok(report.counts.shipment_events>=1_800);
   assert.ok(report.counts.verification_requests>=500);
+  assert.ok(report.counts.support_conversations>=60);
 
   const generatedBusiness=repo.findUserByEmail('business-001@stress.loadgistic.local');
   const generatedFleet=repo.findUserByEmail('fleet-001@stress.loadgistic.local');
