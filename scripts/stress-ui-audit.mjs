@@ -69,8 +69,29 @@ function actionableBrowserErrors(errors){
   ));
 }
 
+async function gotoReady(page,route){
+  for(let attempt=0;attempt<3;attempt+=1){
+    const started=Date.now();
+    try{
+      const response=await page.goto(`${baseURL}${route}`,{waitUntil:'domcontentloaded',timeout:30_000});
+      return {response,elapsedMs:Date.now()-started,navigationRetries:attempt};
+    }catch(error){
+      const transient=[
+        'ERR_ABORTED',
+        'ERR_CONNECTION_RESET',
+        'ERR_EMPTY_RESPONSE',
+        'ERR_INCOMPLETE_CHUNKED_ENCODING',
+        'ERR_NETWORK_IO_SUSPENDED',
+        'Timeout'
+      ].some(message=>String(error).includes(message));
+      if(!transient||attempt===2)throw error;
+      await page.waitForTimeout(1_000*(attempt+1));
+    }
+  }
+}
+
 async function login(page,email){
-  await page.goto(`${baseURL}/login`,{waitUntil:'domcontentloaded',timeout:30_000});
+  await gotoReady(page,'/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button',{name:'Log in'}).click();
@@ -94,8 +115,7 @@ try{
       });
       await login(page,persona.email);
       for(const route of persona.routes){
-        const started=Date.now();
-        const response=await page.goto(`${baseURL}${route}`,{waitUntil:'domcontentloaded',timeout:30_000});
+        const navigation=await gotoReady(page,route);
         await page.waitForTimeout(500);
         if(await page.locator('.loading-map').count()){
           await page.locator('.leaflet-container').first().waitFor({state:'visible',timeout:10_000});
@@ -126,8 +146,9 @@ try{
           viewport:viewport.name,
           persona:persona.name,
           route,
-          status:response?.status()||null,
-          elapsedMs:Date.now()-started,
+          status:navigation.response?.status()||null,
+          elapsedMs:navigation.elapsedMs,
+          navigationRetries:navigation.navigationRetries,
           ...metrics,
           horizontalOverflow:metrics.scrollWidth>metrics.clientWidth,
           secondPageVisible,

@@ -26,6 +26,15 @@ When Partial capacity with an integer from 1 through 99 and an expiry is submitt
 Then the update records actor and time\
 And the fresh public record displays the declared percentage.
 
+### Scenario: capacity expiry is visible to its owner
+
+Given a truck has an Empty or Partial capacity signal\
+When less than two hours remain before expiry\
+Then the assigned driver and fleet owner see a warning to refresh the signal\
+And the warning changes to an expired and off-Board state at expiry\
+And the expired signal remains available in the owner's truck history or latest-truck control\
+And it is absent from every Capacity Board result and public route match.
+
 ### Scenario: capacity belongs to an identifiable real truck
 
 Given a fleet or self-managed driver selects a truck\
@@ -103,6 +112,16 @@ Given a self-managed driver signs in or opens Home\
 When the workspace loads\
 Then their truck capacity control panel is the first operational view\
 And they do not have to open a general dashboard before updating their truck.
+
+### Scenario: current availability and current route are one task
+
+Given a driver or fleet owner updates an on-duty truck\
+When Empty or Partial cargo space is selected\
+Then current available space and the current partial-capacity route appear in the same Capacity now section\
+And the current route is required only for Partial intercity or Both work\
+And Local-only work keeps Partial unavailable\
+And optional load preferences, future planned travel, visibility, and proof use clear progressive disclosure\
+And their saved summaries remain visible without opening every secondary control.
 
 ### Scenario: fleet transporter Home remains a management dashboard
 

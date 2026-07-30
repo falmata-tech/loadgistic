@@ -4,7 +4,8 @@ import { CapacityForm } from './capacity-form';
 import { StatusPill } from './status-pill';
 import { capacityLabel } from '@/lib/domain.js';
 import { relativeTime } from '@/lib/ui';
-import { Power, PowerOff, ShieldCheck } from 'lucide-react';
+import { Gauge, Power, PowerOff, ShieldCheck } from 'lucide-react';
+import { CapacityExpiryNotice } from './capacity-expiry-notice';
 
 export function DriverCapacityHome({ vehicles, capacities, access, query }: { vehicles: any[]; capacities: any[]; access:any; query: Record<string,string|undefined> }) {
   const latestByVehicle = new Map();
@@ -13,8 +14,9 @@ export function DriverCapacityHome({ vehicles, capacities, access, query }: { ve
   const current = capacities[0];
   const restricted=access?.kind==='COMPANY'&&!access.can_manage_capacity;
   return <div className="page capacity-home-page">
-    <PageHeader title={restricted?'My duty status':'My capacity'} subtitle={restricted?'Keep your assigned truck On Duty or Off Duty. Your fleet owner controls its market details.':'Keep your truck’s live market signal accurate, useful, and current.'}/>
+    <PageHeader icon={restricted?Power:Gauge} title={restricted?'Duty':'My capacity'} subtitle={restricted?'On Duty or Off Duty.':'Keep your truck signal current.'}/>
     <Flash error={query.error} success={query.success}/>
+    {restricted?<CapacityExpiryNotice expiresAt={current?.expires_at}/>:null}
     <section className="capacity-signal-strip" aria-label="Current capacity signal">
       <div><span className={`live-dot ${current?.status === 'OFF_DUTY' || !current ? 'off' : ''}`} aria-hidden="true"/><span><strong>{current ? capacityLabel(current.status,current.available_percent) : 'No capacity signal yet'}</strong><small>{current?.location_area || 'Add your general area to start'}</small></span></div>
       <div className="signal-facts">

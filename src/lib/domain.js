@@ -173,6 +173,26 @@ export function capacityFreshness(updatedAt, expiresAt, freshHours = 12) {
   return 'UPDATE_NEEDED';
 }
 
+export const CAPACITY_EXPIRY_WARNING_HOURS = 2;
+export const LOAD_BOARD_GRACE_DAYS = 2;
+
+export function capacityExpiryState(expiresAt, now = Date.now(), warningHours = CAPACITY_EXPIRY_WARNING_HOURS) {
+  const expires = new Date(expiresAt).getTime();
+  const current = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  if (!Number.isFinite(expires) || !Number.isFinite(current)) return 'UNKNOWN';
+  if (current >= expires) return 'EXPIRED';
+  return expires - current <= warningHours * 60 * 60 * 1000 ? 'EXPIRING' : 'CURRENT';
+}
+
+export function loadBoardDeadlineState(deliveryDate, todayDate, graceDays = LOAD_BOARD_GRACE_DAYS) {
+  if (!deliveryDate) return 'CURRENT';
+  const deadline = Date.parse(`${deliveryDate}T00:00:00.000Z`);
+  const today = Date.parse(`${todayDate}T00:00:00.000Z`);
+  if (!Number.isFinite(deadline) || !Number.isFinite(today)) return 'UNKNOWN';
+  if (today <= deadline) return 'CURRENT';
+  return today <= deadline + graceDays * 86_400_000 ? 'PAST_DUE' : 'EXPIRED';
+}
+
 export function capacityLabel(status, percent) {
   if (status === CAPACITY_STATUSES.EMPTY) return 'Empty · 100% available';
   if (status === CAPACITY_STATUSES.OFF_DUTY) return 'Off duty · Not shown';

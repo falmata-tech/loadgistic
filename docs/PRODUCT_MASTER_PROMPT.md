@@ -27,6 +27,8 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 - Every Capacity Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
 - Off Duty trucks never appear on the Capacity Board.
+- Capacity publishers receive an owner warning during the final two hours of a signal's 24-hour life. At expiry the signal leaves the Capacity Board immediately but remains available to refresh from the driver's Home or the owner's truck page.
+- Posted demand remains discoverable for two full days after its Drop off before date. Its owner is warned as soon as the date passes; on the third day it leaves the Load Board and pooled projections but remains in My Loads.
 - The Load Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
 - The Capacity Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, an optional privacy-aware current-area preference, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
 - Secondary Board controls remain collapsed under More filters until used.
@@ -68,13 +70,14 @@ The rich truck capacity control panel controls:
 - optional privacy-obscured device location
 - a dated current partial-capacity route when Partial
 - a separate future planned travel route with date and Full or Partial planned cargo space
-- Direct acceptance plus independent Multi Pick and Multi Drop choices
 - contract-route interest
 - Local, Between cities, or Both operating scope, with a reviewed locality and 5–100 km radius for Local service
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
 Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Between cities or Both scope plus a dated current route, because remaining space can be matched only when the truck's movement is known.
+
+The capacity editor presents current cargo space and its current partial route as one primary task. Current work area remains visible beside that task. Secondary load preferences, planned travel, visibility, and proof use in-page disclosures with saved-value summaries, while a compact publish review stays visible on desktop and follows the controls on mobile.
 
 The browser may briefly access an exact device coordinate, but it obscures that point before submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
 
@@ -138,6 +141,17 @@ Transporters are responsible for documenting vehicle ownership or owner authoriz
 ## PWA
 
 Loadgistic is installable in standalone mode. Driver workflows are mobile-first with safe-area navigation and touch-sized controls. Authenticated pages remain network-first and are not stored as shared offline HTML. First service-worker installation takes control without reloading an in-progress login or application form. The service worker caches stable visual assets only; Next.js executable chunks are delivered through normal version-aware HTTP caching so upgrades cannot mix stale and current runtimes.
+
+## Interaction Language
+
+Non-admin workflows are icon-first and low-language. Navigation, task titles,
+commands, and consequential choices pair a familiar icon with a short label.
+Primary mobile targets are at least 44 CSS pixels. Forms use stable visual
+choices for account type, movement, load size, visibility, and truck
+configuration. Operating pages avoid explanatory paragraphs except where
+privacy, payment, verification, tracking, visibility, or freight terminology
+would otherwise be misunderstood. Detail and creation workflows provide a
+consistent Back control with a safe parent fallback.
 
 ## Growing lists
 

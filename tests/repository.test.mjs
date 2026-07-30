@@ -264,6 +264,36 @@ test('Load Board can isolate the provider interests without adding them to Track
  assert.equal(repo.listVisibleShipments(driver).some(load=>load.id==='shp-freight-fixed'),false);
 });
 
+test('Load Board removes demand after two delivery-deadline grace days but keeps the owner record',()=>{
+ const db=dbModule.getDb();
+ const driver=repo.getUserById('user-driver');
+ const shipper=repo.getUserById('user-shipper');
+ const original=db.prepare('SELECT delivery_date FROM shipments WHERE id=?').get('shp-freight-fixed');
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const dateOffset=days=>{const date=new Date(`${today}T12:00:00.000Z`);date.setUTCDate(date.getUTCDate()+days);return date.toISOString().slice(0,10);};
+ db.prepare('UPDATE shipments SET delivery_date=? WHERE id=?').run(dateOffset(-2),'shp-freight-fixed');
+ assert.equal(repo.listLoads(driver).some(load=>load.id==='shp-freight-fixed'),true);
+ assert.equal(repo.listOwnedLoads(shipper).find(load=>load.id==='shp-freight-fixed').board_deadline_state,'PAST_DUE');
+ db.prepare('UPDATE shipments SET delivery_date=? WHERE id=?').run(dateOffset(-3),'shp-freight-fixed');
+ assert.equal(repo.listLoads(driver).some(load=>load.id==='shp-freight-fixed'),false);
+ assert.equal(repo.listOwnedLoads(shipper).find(load=>load.id==='shp-freight-fixed').board_deadline_state,'EXPIRED');
+ db.prepare('UPDATE shipments SET delivery_date=? WHERE id=?').run(original.delivery_date,'shp-freight-fixed');
+});
+
+test('capacity warns its owner before expiry and disappears from the Board at expiry',()=>{
+ const db=dbModule.getDb();
+ const driver=repo.getUserById('user-driver');
+ const shipper=repo.getUserById('user-shipper');
+ const original=db.prepare('SELECT expires_at FROM capacities WHERE id=?').get('cap-partial');
+ db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(new Date(Date.now()+60*60*1000).toISOString(),'cap-partial');
+ assert.equal(repo.listOwnCapacity(driver).find(capacity=>capacity.id==='cap-partial').expiry_state,'EXPIRING');
+ assert.equal(repo.listMarketCapacity(shipper).some(capacity=>capacity.id==='cap-partial'),true);
+ db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(new Date(Date.now()-1000).toISOString(),'cap-partial');
+ assert.equal(repo.listOwnCapacity(driver).find(capacity=>capacity.id==='cap-partial').expiry_state,'EXPIRED');
+ assert.equal(repo.listMarketCapacity(shipper).some(capacity=>capacity.id==='cap-partial'),false);
+ db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(original.expires_at,'cap-partial');
+});
+
 test('shipper creates quote-requested open freight load',()=>{
  const user=repo.getUserById('user-shipper');
  const result=repo.createShipment(user,{title:'Test quote load',serviceMode:'FREIGHT',distributionMode:'OPEN_MARKET',priceMode:'QUOTE_REQUESTED',origin:'Addis Ababa',destination:'Jimma',...routeRefs('Addis Ababa','Jimma'),cargoDescription:'Test goods',packageCount:'5',loadType:'PTL',pickupDate:new Date(Date.now()+86400000).toISOString().slice(0,10),trackingMode:'STATUS_ONLY'});

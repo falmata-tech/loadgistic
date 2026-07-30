@@ -17,6 +17,9 @@ import {
   serviceAreasOverlap,
   assertTransition,
   capacityFreshness,
+  capacityExpiryState,
+  loadBoardDeadlineState,
+  LOAD_BOARD_GRACE_DAYS,
   roleCanCreateShipment,
   roleCanPublishCapacity,
   roleCanBrowseLoads
@@ -49,6 +52,12 @@ function todayInEthiopia() {
     month:'2-digit',
     day:'2-digit'
   }).format(new Date());
+}
+
+function dateInEthiopiaOffset(days) {
+  const date=new Date(`${todayInEthiopia()}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate()+days);
+  return date.toISOString().slice(0,10);
 }
 
 function audit(db, user, action, entityType, entityId, details = {}) {
@@ -410,7 +419,8 @@ export function listOwnedLoads(user) {
     WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=?
     ORDER BY CASE s.operational_status
       WHEN 'POSTED' THEN 0 WHEN 'SENT' THEN 1 WHEN 'CONTACTED' THEN 2 WHEN 'AGREED' THEN 3 ELSE 4 END,
-      s.updated_at DESC`).all(user.organization_id);
+      s.updated_at DESC`).all(user.organization_id)
+    .map(load=>({...load,board_deadline_state:loadBoardDeadlineState(load.delivery_date,todayInEthiopia())}));
 }
 
 export function getShipmentForUser(user, idOrCode) {
@@ -1835,8 +1845,9 @@ function selectedBoardPlace(placeRef,label) {
 }
 
 function loadBoardQuery(user,mode,filters={}) {
-  let where=`s.service_mode='FREIGHT' AND s.operational_status IN ('POSTED','SENT','CONTACTED')`;
-  const args=[];
+  let where=`s.service_mode='FREIGHT' AND s.operational_status IN ('POSTED','SENT','CONTACTED')
+    AND (s.delivery_date IS NULL OR s.delivery_date>=?)`;
+  const args=[dateInEthiopiaOffset(-LOAD_BOARD_GRACE_DAYS)];
   if(user.role!==USER_ROLES.ADMIN){
     where+=` AND (
       (s.distribution_mode='OPEN_MARKET' AND s.operational_status='POSTED')
@@ -2133,7 +2144,8 @@ function marketCapacityRow(row, freshHours, additions = {}) {
     ...row,
     ...additions,
     proof_available:Boolean(row.proof_available),
-    freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours)
+    freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours),
+    expiry_state:capacityExpiryState(row.expires_at)
   };
 }
 
@@ -2312,7 +2324,7 @@ export function listOwnCapacity(user, capacityId = null) {
       AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
       AND c.${scope.column}=?${assignmentCondition}${idCondition}
     ORDER BY c.updated_at DESC`).all(...args)
-    .map(row => ({ ...row, proof_available: Boolean(row.photo_path), freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours), isOwn: true }));
+    .map(row => ({ ...row, proof_available: Boolean(row.photo_path), freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours), expiry_state:capacityExpiryState(row.expires_at), isOwn: true }));
 }
 
 export function listCapacity(user) {

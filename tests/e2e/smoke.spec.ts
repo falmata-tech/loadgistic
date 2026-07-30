@@ -32,7 +32,7 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
   expect(scope).toContain('/');
   await page.waitForTimeout(1_000);
-  await expect(page.getByRole('heading', { name: 'Log in to Loadgistic' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   await expect.poll(async () => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
   await expect(page.getByLabel('Email')).toHaveValue('pwa-install-probe@example.test');
   const executableChunkResult = await page.evaluate(async () => {
@@ -46,7 +46,7 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   expect(executableChunkResult.body).not.toBe('stale-runtime');
   await page.getByRole('link', { name: 'Loadgistic home' }).click();
   await expect(page).toHaveURL('/');
-  await expect(page.getByRole('heading', { name: 'Road freight for the businesses that make Ethiopia.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road freight for every Ethiopian business.' })).toBeVisible();
 });
 
 test('anonymous users cannot browse Business or transporter profiles', async ({ page, request }: { page: any; request: any }) => {
@@ -61,20 +61,20 @@ test('anonymous users cannot browse Business or transporter profiles', async ({ 
 test('authenticated directory browsing preserves the session and selected participants', async ({ page }: { page: any }) => {
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/providers?type=TRANSPORT');
-  await page.getByRole('link', { name: 'View Profile' }).first().click();
+  await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().click();
   await expect(page).toHaveURL(/\/app\/providers\/blueline-transport/);
   await expect(page.getByText('B2B logistics workspace')).toBeVisible();
   await expect(page.getByTestId('public-session-action')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Send request' }).click();
+  await page.getByRole('link', { name: 'Request' }).click();
   await expect(page).toHaveURL(/\/app\/shipments\/new\?provider=/);
   await expect(page.getByRole('combobox', { name: 'Selected transporter' })).not.toHaveValue('');
   await page.goto('/app/providers?type=DRIVER');
-  await page.getByRole('link', { name: 'View Profile' }).click();
-  await page.getByRole('link', { name: 'Send request' }).click();
+  await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).click();
+  await page.getByRole('link', { name: 'Request' }).click();
   await expect(page.getByRole('combobox', { name: 'Selected transporter' })).toHaveValue('Abebe Owner-Operator');
   await expect(page.locator('input[name="providerRef"]')).toHaveValue('profile:provider-driver');
   await page.goto('/app/providers?type=BUSINESS');
-  await page.getByRole('link', { name: 'View Profile' }).first().click();
+  await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().click();
   await expect(page.getByText('Account login contacts are private')).toBeVisible();
   await page.goto('/login');
   await expect(page).toHaveURL(/\/app\/home/);
@@ -147,57 +147,67 @@ test('expired workspace keeps a billing-focused Home and denies operating screen
   await page.goto('/app/more');
   await expect(page.getByText('Expired · unpaid')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Submit payment'})).toBeVisible();
-  await expect(page.getByLabel('Amount paid in ETB')).toBeVisible();
-  await expect(page.getByText('Standard plan prices are not displayed yet.')).toBeVisible();
+  await expect(page.getByLabel('Amount paid (ETB)')).toBeVisible();
+  await expect(page.getByText(/Never upload passwords, PINs, or OTP codes/)).toBeVisible();
 });
 
-test('mobile workspace menu exposes secondary business pages', async ({ page }: { page: any }) => {
+test('mobile workspace keeps occasional account tools under More', async ({ page }: { page: any }) => {
   test.skip((page.viewportSize()?.width || 1000) >= 980, 'Mobile navigation audit');
   await login(page, 'shipper@loadgistic.local');
   await page.getByText('Menu', { exact: true }).click();
   const menu=page.getByRole('navigation', { name: 'All workspace navigation' });
-  await expect(menu.getByRole('link', { name: 'Public Profile' })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'My Loads', exact: true })).toBeVisible();
   await expect(menu.getByRole('link', { name: 'Tracking', exact: true })).toHaveCount(0);
   await expect(menu.getByRole('link', { name: 'Post Load', exact: true })).toHaveCount(0);
-  await expect(menu.getByRole('link', { name: 'Verification' })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Public Profile' })).toHaveCount(0);
+  await menu.getByRole('link', { name: 'More' }).click();
+  await expect(page.getByRole('link', { name: 'Public Profile' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Verification' })).toBeVisible();
 });
 
 test('application presents one business category and two transporter categories', async ({ page }: { page: any }) => {
   await page.goto('/apply');
-  await expect(page.getByRole('heading', { name: 'Sign up for Loadgistic' })).toBeVisible();
-  const accountType = page.getByLabel('Account type');
-  await expect(accountType.locator('option')).toHaveText([
-    'Business',
-    'Self-managed Driver / Owner-Operator',
-    'Fleet Transporter'
-  ]);
+  await expect(page.getByRole('heading', { name: 'Sign up' })).toBeVisible();
+  const accountType = page.getByRole('group', { name: 'Account type' });
+  await expect(accountType.getByRole('radio')).toHaveCount(3);
+  await expect(accountType.getByRole('radio', { name: /Business/ })).toBeChecked();
+  await expect(accountType.getByRole('radio', { name: /Fleet transporter/ })).toBeVisible();
+  await expect(accountType.getByRole('radio', { name: /Self-managed driver/ })).toBeVisible();
+  await expect(accountType.locator('svg')).toHaveCount(3);
+  const businessChoice = await accountType.getByRole('radio', { name: /Business/ }).locator('..').boundingBox();
+  expect(businessChoice?.height).toBeGreaterThanOrEqual(44);
   await expect(page.getByText('Business receiving shipments')).toHaveCount(0);
-  await expect(page.getByLabel('Private account phone')).toBeVisible();
+  await expect(page.getByLabel('Account phone')).toBeVisible();
 });
 
 test('homepage centers Ethiopian producers and gives each market side a direct path', async ({ page }: { page: any }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Road freight for the businesses that make Ethiopia.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road freight for every Ethiopian business.' })).toBeVisible();
   await expect(page.getByText('Manufacturers', { exact: true })).toBeVisible();
   await expect(page.getByText('Artisans', { exact: true })).toBeVisible();
   await expect(page.getByText('Growers', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Sign up as a Business' }).first()).toHaveAttribute('href','/apply?type=ENTERPRISE_SHIPPER');
-  await expect(page.getByRole('link', { name: 'Sign up as Fleet Transporter' }).first()).toHaveAttribute('href','/apply?type=TRANSPORT_COMPANY');
-  await expect(page.getByRole('link', { name: 'Sign up as Self-managed Driver' }).first()).toHaveAttribute('href','/apply?type=INDEPENDENT_PROVIDER');
-  const signUp = page.getByRole('link', { name: 'Sign up', exact: true });
-  const logIn = page.getByRole('link', { name: 'Log in', exact: true });
+  await expect(page.getByRole('link', { name: 'I need a truck' })).toHaveAttribute('href','/apply?type=ENTERPRISE_SHIPPER');
+  await expect(page.getByRole('link', { name: 'I have a fleet' })).toHaveAttribute('href','/apply?type=TRANSPORT_COMPANY');
+  await expect(page.getByRole('link', { name: 'I drive a truck' })).toHaveAttribute('href','/apply?type=INDEPENDENT_PROVIDER');
+  await expect(page.getByAltText('Loadgistic Capacity Board showing route, truck, and cargo-space filters')).toBeVisible();
+  await expect(page.getByAltText('Loadgistic mobile driver capacity controls')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Built for the workshop. Ready for the enterprise.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'You keep Ethiopia moving.' })).toBeVisible();
+  const signUp = page.locator('.public-header a[href="/apply"]:visible');
+  const logIn = page.locator('.public-header a[href="/login"]:visible');
   await expect(signUp).toBeVisible();
   await expect(logIn).toBeVisible();
   await expect(signUp).toHaveClass(/button/);
   await expect(logIn).toHaveClass(/button/);
+  await expect(signUp.locator('svg')).toHaveCount(1);
+  await expect(logIn.locator('svg')).toHaveCount(1);
 });
 
 test('fleet transporter lands on a management dashboard and updates capacity in My Fleet', async ({ page }: { page: any }) => {
   await login(page, 'transporter@loadgistic.local');
-  await expect(page.getByRole('heading', { name: /Welcome, BlueLine Transport/ })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Network route coverage' })).toBeVisible();
-  await expect(page.getByText(/location.*recorded routes/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'BlueLine Transport PLC' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Network coverage' })).toBeVisible();
+  await expect(page.getByText('Your routes and partner Business areas.')).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading', { name: 'My Fleet' })).toBeVisible();
@@ -205,22 +215,28 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByText('Yonas Alemu')).toBeVisible();
   await expect(page.getByText(/Isuzu FSR/)).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
-  await page.getByRole('link',{name:'Open truck'}).first().click();
+  await page.getByRole('link',{name:'Truck'}).first().click();
   await expect(page).toHaveURL(/\/app\/fleet\/veh-trans-1/);
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await expect(page.getByRole('combobox',{name:'Truck'})).toHaveCount(0);
   await expect(page.getByText(/Only the driver with the truck can use phone GPS/)).toBeVisible();
-  await expect(page.getByRole('button',{name:/Use device location|Refresh area/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/Use phone|Refresh/})).toHaveCount(0);
   await expect(page.getByRole('radio', { name: 'On Duty' })).toBeChecked();
-  await expect(page.getByRole('heading', { name: 'Loads you will accept' })).toBeVisible();
+  await page.getByText('Load preferences',{exact:true}).click();
+  await expect(page.getByRole('heading', { name: 'Loads accepted' })).toBeVisible();
+  await page.getByText('Planned trip',{exact:true}).click();
   await expect(page.getByLabel('Planned travel date')).toBeVisible();
   await expect(page.getByText('Planned cargo space')).toBeVisible();
+  await page.getByText('Sharing & proof',{exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Visibility'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Photo proof'})).toBeVisible();
   await expect(page.getByText(/LG-TRK-/).first()).toBeVisible();
   await page.goto('/app/loads');
   await expect(page.getByRole('heading', { name: 'Load Board' })).toBeVisible();
+  await page.getByRole('button',{name:/Filters/}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByLabel('Match truck routes')).toBeVisible();
   await expect(page.getByLabel('Match truck routes').locator('option').filter({hasText:'All active truck routes'})).toHaveCount(1);
-  await page.getByText('More filters',{exact:true}).click();
   await expect(page.getByLabel('Price type')).toBeVisible();
   await expect(page.getByLabel('Minimum ETB')).toBeVisible();
   await expect(page.getByLabel('Posted within')).toBeVisible();
@@ -231,7 +247,8 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByText('Industrial supplies to Dire Dawa')).toBeVisible();
   await page.goto('/app/capacity');
   await expect(page.getByRole('heading', { name: 'Capacity Board' })).toBeVisible();
-  await page.getByText('More filters',{exact:true}).click();
+  await page.getByRole('button',{name:/Filters/}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByLabel('At least this much space')).toBeVisible();
   await expect(page.getByLabel('Route flexibility')).toBeVisible();
   await expect(page.getByLabel('Cargo-space proof')).toBeVisible();
@@ -246,15 +263,15 @@ test('fleet owner can reduce a company driver to duty-only Home and restore acce
   await page.goto('/app/fleet');
   const driverForm=page.locator('form').filter({hasText:'Yonas Alemu'});
   await driverForm.getByRole('checkbox',{name:'Load Board'}).uncheck();
-  await driverForm.getByRole('checkbox',{name:'Business contact'}).uncheck();
-  await driverForm.getByRole('checkbox',{name:'Load agreements'}).uncheck();
-  await driverForm.getByRole('checkbox',{name:'Rich capacity'}).uncheck();
-  await driverForm.getByRole('button',{name:'Save access'}).click();
+  await driverForm.getByRole('checkbox',{name:'Call Businesses'}).uncheck();
+  await driverForm.getByRole('checkbox',{name:'Agree loads'}).uncheck();
+  await driverForm.getByRole('checkbox',{name:'Capacity'}).uncheck();
+  await driverForm.getByRole('button',{name:'Save'}).click();
   await expect(page.getByText('Driver permissions updated.')).toBeVisible();
 
   await page.context().clearCookies();
   await login(page,'company-driver@loadgistic.local');
-  await expect(page.getByRole('heading',{name:'My duty status'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Duty'})).toBeVisible();
   await expect(page.getByRole('button',{name:/Go Off Duty|Go On Duty/})).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
   await page.goto('/app/loads');
@@ -265,18 +282,19 @@ test('fleet owner can reduce a company driver to duty-only Home and restore acce
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
   const restoreForm=page.locator('form').filter({hasText:'Yonas Alemu'});
-  for(const name of ['Load Board','Business contact','Load agreements','Rich capacity'])await restoreForm.getByRole('checkbox',{name}).check();
-  await restoreForm.getByRole('button',{name:'Save access'}).click();
+  for(const name of ['Load Board','Call Businesses','Agree loads','Capacity'])await restoreForm.getByRole('checkbox',{name}).check();
+  await restoreForm.getByRole('button',{name:'Save'}).click();
   await expect(page.getByText('Driver permissions updated.')).toBeVisible();
 });
 
 test('self-managed driver keeps the rich capacity control panel as Home', async ({ page }: { page: any }) => {
   await login(page, 'driver@loadgistic.local');
   await expect(page.getByRole('heading', { name: 'My capacity' })).toBeVisible();
+  await expect(page.locator('.task-heading-icon')).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toHaveAttribute('data-hydrated','true');
   await expect(page.getByLabel('Current general area')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Use device location|Refresh area/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Use phone|Refresh/ })).toBeVisible();
   await expect(page.getByText('Current partial-capacity route',{exact:true})).toBeVisible();
   await expect(page.getByLabel('Route date')).toBeVisible();
   await page.locator('input[name="movementScope"][value="LOCAL"]').check();
@@ -288,24 +306,28 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
 test('Business sees truck-first capacity detail and the full fleet roster', async ({ page }: { page: any }) => {
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/capacity');
+  await page.getByRole('button',{name:/Filters/}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByLabel('Match a posted load')).toBeVisible();
   await page.getByLabel('Match a posted load').selectOption('shp-freight-fixed');
-  await page.getByRole('button', { name: 'Show matching trucks' }).click();
+  await page.getByRole('button', { name: 'Show trucks' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('link',{name:/Remove Matched to posted load/})).toBeVisible();
   await expect(page.getByText(/Route match ·/).first()).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View truck details' })).toHaveCount(3);
-  await page.getByRole('link', { name: 'View truck details' }).first().click();
+  await expect(page.getByRole('link', { name: 'Truck details' })).toHaveCount(3);
+  await page.getByRole('link', { name: 'Truck details' }).first().click();
   await expect(page.getByRole('link',{name:'Back to previous workspace page'})).toBeVisible();
   await expect(page.getByText(/LG-TRK-/).first()).toBeVisible();
   await page.getByRole('link',{name:'Back to previous workspace page'}).click();
   await expect(page).toHaveURL(/\/app\/capacity(?:\?.*)?$/);
-  await page.getByRole('link', { name: 'View truck details' }).first().click();
+  await page.getByRole('link', { name: 'Truck details' }).first().click();
   await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Preferred Routes'})).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View Profile' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Profile', exact: true })).toBeVisible();
   await page.goto('/app/providers/blueline-transport');
   await expect(page.locator('.leaflet-container')).toBeVisible();
   await expect(page.getByText('Tracked activity').first()).toBeVisible();
-  await page.getByRole('link',{name:'Compare coverage'}).click();
+  await page.getByRole('link',{name:'Compare routes'}).click();
   await expect(page.getByText('How this comparison works')).toBeVisible();
   await expect(page.locator('.route-map-legend .viewer')).toBeVisible();
   await expect(page.locator('.route-map-legend')).toContainText('Profile coverage');
@@ -315,7 +337,7 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await expect(page.locator('.leaflet-overlay-pane path[stroke="#c45116"]').first()).toHaveAttribute('stroke-dasharray',/12 8/);
   await expect(page.getByText(/full route match/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:'Fresh truck routes'})).toBeVisible();
-  await expect(page.getByText(/2 active trucks registered/)).toBeVisible();
+  await expect(page.getByText('2 registered.')).toBeVisible();
   await expect(page.getByText('Isuzu · FSR').first()).toBeVisible();
   await expect(page.getByText('Sinotruk · HOWO TX')).toBeVisible();
   await expect(page.getByTitle('Vehicle authority: Verified')).toBeVisible();
@@ -337,7 +359,7 @@ test('Business profile editor uses paired Freight Route inputs', async ({ page }
 test('member verification center and admin review queue are available', async ({ page }: { page: any }) => {
   await login(page,'receiver@loadgistic.local');
   await page.goto('/app/verification');
-  await expect(page.getByRole('heading',{name:'Verification Center'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Verification',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Submit verification'})).toBeVisible();
   await expect(page.getByText('Business license').first()).toBeVisible();
   await page.context().clearCookies();
@@ -362,13 +384,13 @@ test('assigned load shows enforced approximate tracking and a real authenticated
   await login(page, 'transporter@loadgistic.local');
   await page.goto('/app/shipments/shp-freight-active');
   await expect(page.getByText('Location + status', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Current general area')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Use device location/ })).toHaveCount(0);
+  await expect(page.getByLabel('Current area')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Use phone/ })).toHaveCount(0);
   await expect(page.getByText(/Device location is available only to the driver/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Record tracking update' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Interested in this load?' })).toHaveCount(0);
   await expect(page.getByText('Secret load code')).toHaveCount(0);
-  await expect(page.getByRole('link',{name:'Open customer tracking'})).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'Customer tracking'})).toHaveCount(0);
   await page.goto('/track');
   await expect(page.getByRole('link',{name:'Open my Tracking'})).toBeVisible();
 
@@ -381,7 +403,7 @@ test('assigned load shows enforced approximate tracking and a real authenticated
   await page.goto('/app/shipments/shp-freight-active');
   const trackingCode=(await page.locator('.tracking-secret strong').textContent())!;
   expect(trackingCode).toMatch(/^LG-[A-F0-9]{4}-[A-F0-9]{4}$/);
-  await page.getByRole('link',{name:'Open customer tracking'}).click();
+  await page.getByRole('link',{name:'Customer tracking'}).click();
   await page.getByLabel('Secret load code').fill(trackingCode);
   await page.getByRole('button',{name:'Open tracking'}).click();
   await expect(page).toHaveURL(/\/track\/shp-freight-active/);
@@ -419,8 +441,10 @@ test('provider interest stays marked on the Load Board and outside Tracking',asy
   await page.goto('/app/loads');
   const card=page.locator('.load-board-card').filter({hasText:'Beverage load to Dire Dawa'});
   await card.getByRole('button',{name:'Express interest'}).click();
+  await page.getByRole('button',{name:/Filters/}).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByLabel('Board view').selectOption('INTERESTED');
-  await page.getByRole('button',{name:'Show matching loads'}).click();
+  await page.getByRole('button',{name:'Show loads'}).click();
   await expect(page.getByText('Interest sent').first()).toBeVisible();
   await expect(page.getByText('Beverage load to Dire Dawa')).toBeVisible();
   await page.goto('/app/shipments');
@@ -437,7 +461,7 @@ test('browse-only provider cannot see party controls or unrelated saved loads', 
     await interestButton.click();
     await page.goto('/app/shipments/shp-freight-fixed');
   }
-  await expect(page.getByRole('heading', { name: 'Load-size proof' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Load proof' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Internal note' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Next status' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Upload proof' })).toHaveCount(0);

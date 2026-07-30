@@ -18,6 +18,9 @@ rollout: Validate responsive and role-based E2E paths before releasing changed s
 - Render actual record data or verified inputs; never invent metrics.
 - Use ETB or Quote Requested and never add USD marketplace framing.
 - Hide actions the user cannot perform, while retaining server-side authorization as the authority.
+- Pair member-facing task titles and commands with familiar icons and short labels.
+- Keep primary touch targets at least 44 CSS pixels on narrow viewports.
+- Retain prose only for material rules, privacy, consequences, or necessary freight terminology.
 
 ## Base scenarios
 

@@ -15,11 +15,11 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
   const subjectResult:any=paginateResults(center.subjects,{page:query.subjectPage,pageSize:10});
   const requestResult:any=paginateResults(center.requests,{page:query.requestPage,pageSize:10});
   return <div className="page">
-    <PageHeader title="Verification Center" subtitle="Verify your Business, driver identity, and trucks with private documents."/>
+    <PageHeader icon={BadgeCheck} title="Verification" subtitle="Identity, business, driver, and truck badges."/>
     <Flash error={query.error} success={query.success}/>
     <div className="two-col">
       <div className="stack">
-        <section className="card"><div className="section-heading-icon"><BadgeCheck aria-hidden="true"/><div><h2>Verification status</h2><p className="meta">Blue means approved by an administrator. Gray means it is not yet verified.</p></div></div>
+        <section className="card"><div className="section-heading-icon"><BadgeCheck aria-hidden="true"/><div><h2>Badge status</h2><p className="meta">Blue: approved. Gray: not verified.</p></div></div>
           <div className="verification-subject-list">{subjectResult.items.map((subject:any)=><div key={`${subject.subject_type}:${subject.subject_id}`}><div><strong>{subject.name}</strong><div className="meta">{subject.type}</div></div><VerificationBadges badges={subject.badges}/></div>)}</div>
           <Pagination path="/app/verification" query={{requestPage:query.requestPage}} page={subjectResult.page} pageCount={subjectResult.pageCount} total={subjectResult.total} pageParam="subjectPage"/>
         </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { Check, LocateFixed, MapPin, MessageSquare, PackageSearch, Save } from 'lucide-react';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
@@ -61,31 +62,31 @@ export function ShipmentTrackingControls({
 
   return <section className="card tracking-control-panel">
     <div className="control-panel-title">
-      <div><h2>Tracking updates</h2><p>{requiresLocation ? 'This load requires an approximate area with every provider update.' : 'This load requires a clear status timeline.'}</p></div>
+      <div className="panel-title-copy"><PackageSearch aria-hidden="true"/><div><h2>Tracking updates</h2><p>{requiresLocation ? 'General area + status.' : 'Status timeline.'}</p></div></div>
       <span className={`status ${requiresLocation ? 'green' : ''}`}>{requiresLocation ? 'Location + status' : 'Status timeline'}</span>
     </div>
     {requiresLocation ? <div className="stack">
-      <div className="form-group"><label htmlFor="tracking-location-area">Current general area</label><EthiopiaPlaceInput id="tracking-location-area" value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Adama, Ethiopia" required/></div>
+      <div className="form-group"><label htmlFor="tracking-location-area"><MapPin aria-hidden="true"/>Current area</label><EthiopiaPlaceInput id="tracking-location-area" value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Adama, Ethiopia" required/></div>
       {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
         <div><strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use phone location'}</strong><span>{locationState === 'captured' ? `Only an obscured area with a ${privacyRadius} km privacy zone will be recorded.` : locationState === 'denied' ? 'Permission declined. Entering a general area is enough.' : locationState === 'error' ? 'Location unavailable. Entering a general area is enough.' : 'The exact point stays on this device.'}</span></div>
-        <button type="button" className="button secondary compact" onClick={useDeviceLocation} disabled={locationState === 'requesting'}>{locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh area' : 'Use device location'}</button>
+        <button type="button" className="button secondary compact" onClick={useDeviceLocation} disabled={locationState === 'requesting'}><LocateFixed aria-hidden="true"/>{locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh' : 'Use phone'}</button>
       </div>:<p className="meta panel-note">Enter a general area manually. Device location is available only to the driver with the truck.</p>}
     </div> : null}
 
     {canAddUpdate ? <form action={`/api/shipments/${shipmentId}/tracking-update`} method="post" className="tracking-action-form">
       {requiresLocation ? <input type="hidden" name="locationArea" value={locationArea}/> : null}
       {locationFields}
-      <div className="form-group"><label htmlFor="tracking-note">Update note {requiresLocation ? '(optional)' : ''}</label><input id="tracking-note" name="note" required={!requiresLocation} placeholder={requiresLocation ? 'Example: Departed after loading' : 'Example: Loading completed'}/></div>
-      <button className="button secondary">Record tracking update</button>
+      <div className="form-group"><label htmlFor="tracking-note"><MessageSquare aria-hidden="true"/>Update note {requiresLocation ? '(optional)' : ''}</label><input id="tracking-note" name="note" required={!requiresLocation} placeholder={requiresLocation ? 'Example: Departed after loading' : 'Example: Loading completed'}/></div>
+      <button className="button secondary"><Save aria-hidden="true"/>Record tracking update</button>
     </form> : null}
 
     {nextStatuses.length ? <form action={`/api/shipments/${shipmentId}/status`} method="post" className="tracking-action-form">
       {requiresLocation ? <input type="hidden" name="locationArea" value={locationArea}/> : null}
       {locationFields}
-      <div className="form-group"><label htmlFor="next-shipment-status">Next shipment status</label><select id="next-shipment-status" name="nextStatus" value={selectedStatus} onChange={event=>setSelectedStatus(event.target.value)}>{nextStatuses.map(status=><option key={status} value={status}>{status.replaceAll('_',' ')}</option>)}</select></div>
-      <div className="form-group"><label htmlFor="status-note">Status note (optional)</label><input id="status-note" name="note" placeholder="What changed?"/></div>
+      <div className="form-group"><label htmlFor="next-shipment-status"><Check aria-hidden="true"/>Next status</label><select id="next-shipment-status" name="nextStatus" value={selectedStatus} onChange={event=>setSelectedStatus(event.target.value)}>{nextStatuses.map(status=><option key={status} value={status}>{status.replaceAll('_',' ')}</option>)}</select></div>
+      <div className="form-group"><label htmlFor="status-note"><MessageSquare aria-hidden="true"/>Note <span className="meta">(optional)</span></label><input id="status-note" name="note" placeholder="What changed?"/></div>
       {needsReceiverContact?<div className="alert">The Business must add the receiver first name and phone before assignment.</div>:null}
-      <button className="button" disabled={(selectedStatus === 'ASSIGNED' && needsReceiverContact) || (requiresLocation && !locationArea.trim())}>Update shipment status</button>
+      <button className="button" disabled={(selectedStatus === 'ASSIGNED' && needsReceiverContact) || (requiresLocation && !locationArea.trim())}><Check aria-hidden="true"/>Update status</button>
     </form> : null}
   </section>;
 }

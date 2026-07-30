@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { CircleDotDashed, Plus, Trash2 } from 'lucide-react';
+import { CircleDotDashed, MapPin, Plus, Trash2 } from 'lucide-react';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 type ServiceArea={
@@ -27,11 +27,11 @@ export function ProfileServiceAreaFields({initialAreas=[]}:{initialAreas?:Servic
     <div className="service-area-editor-list">
       {areas.map((area:EditableServiceArea,index:number)=><div className="service-area-editor-row" key={area.key}>
         <div className="form-group">
-          <label htmlFor={`service-area-${index}`}>City or town</label>
+          <label htmlFor={`service-area-${index}`}><MapPin aria-hidden="true"/>City or town</label>
           <EthiopiaPlaceInput id={`service-area-${index}`} name="serviceAreaPlaceLabel" placeRefName="serviceAreaPlaceRef" defaultPlaceRef={area.place_ref} defaultValue={area.place_label} required placeholder="Addis Ababa, Ethiopia"/>
         </div>
         <div className="form-group">
-          <label htmlFor={`service-radius-${index}`}>Operating radius</label>
+          <label htmlFor={`service-radius-${index}`}><CircleDotDashed aria-hidden="true"/>Operating radius</label>
           <select id={`service-radius-${index}`} name="serviceAreaRadiusKm" defaultValue={String(area.radius_km||25)} required>
             {[10,25,40,60,100].map(radius=><option value={radius} key={radius}>{radius} km</option>)}
           </select>

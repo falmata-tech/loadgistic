@@ -33,6 +33,15 @@ When pickup and delivery deadlines are displayed\
 Then they are labeled Pick up before and Drop off before\
 And the saved values remain the canonical pickup and delivery deadlines.
 
+### Scenario: stale demand leaves the Load Board
+
+Given a Posted, Sent, or Contacted load has a Drop off before date\
+When that deadline passes\
+Then its Business owner immediately sees that the request is past due\
+And the permitted Load Board retains it for a two-day grace window\
+And after those two full days the load is absent from Load Board results, route matching, and pooled-load projections\
+And the canonical load remains in My Loads so its owner does not lose the record.
+
 ### Scenario: unsupported service creation is rejected at the service boundary
 
 Given an authenticated Business submits an unsupported service mode directly\

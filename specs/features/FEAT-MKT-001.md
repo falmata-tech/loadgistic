@@ -3,8 +3,8 @@ id: FEAT-MKT-001
 title: Ethiopia producer and transporter market positioning
 related_ids: [BASE-FE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001]
 problem: Small Ethiopian manufacturers, artisans, growers, processors, and transport operators need to recognize their real work and economic constraints immediately, without making the authenticated workspace feel limited to only small firms.
-behavior: The public homepage presents Loadgistic as practical production-to-market logistics for Ethiopian Businesses and transport providers, shows realistic freight examples without exposing member data, and uses consistent Sign up and Log in entry actions while routing each audience to the correct reviewed-account signup path.
-contracts: [PublicMarketPositioning, PublicExampleBoundary, AudienceCallToAction]
+behavior: The public homepage presents Loadgistic as practical production-to-market logistics for Ethiopian Businesses and transport providers of every size, uses authentic illustrative product screenshots to make the workflow tangible, and routes each audience to the correct reviewed-account signup path.
+contracts: [PublicMarketPositioning, PublicExampleBoundary, ProductScreenshot, AudienceCallToAction]
 observability: [application_source]
 rollout: Keep live marketplace data authenticated and review generated imagery for respectful, accurate, non-political representation before release.
 ---
@@ -17,6 +17,7 @@ Given an unauthenticated visitor opens the homepage\
 When the first viewport and Business value sections render\
 Then artisans, growers, processors, producers, and small manufacturers are named in plain language\
 And the page explains that they can reach transport capacity without owning a distribution fleet\
+And growing local Businesses are treated as important economic participants\
 And product language remains credible for larger Businesses.
 
 ### Scenario: transport providers recognize utilization value
@@ -25,13 +26,31 @@ Given a fleet transporter or self-managed driver opens the homepage\
 When the transporter value sections render\
 Then the page explains that Loadgistic connects recorded truck capacity with reviewed Business demand\
 And it distinguishes company fleet coordination from owner-operator capacity control\
+And it recognizes transport providers as essential to moving Ethiopian production and trade\
 And it does not promise guaranteed loads, income, or utilization.
+
+### Scenario: visitors see the actual product
+
+Given an unauthenticated visitor opens the homepage\
+When product workflow sections render\
+Then at least one authentic Loadgistic workspace screenshot is shown\
+And the screenshot uses illustrative local fixture data only\
+And it is labeled as a product preview rather than a live marketplace\
+And the visible interface demonstrates a real Board, capacity, load, tracking, or mobile-driver workflow.
 
 ### Scenario: public examples never expose member data
 
 Given live boards and Public Profiles require authentication\
 When the homepage demonstrates loads, corridors, producers, or trucks\
 Then every example is clearly illustrative and contains no live marketplace record, private contact, exact location, or customer data.
+
+### Scenario: the story has a purposeful flow
+
+Given a Business or transporter scans the homepage\
+When they move from the first viewport to the final account choice\
+Then the sections progress from shared economic purpose to Business value, product proof, transporter value, workflow, and audience-specific signup\
+And each section has one defined message and one primary visual purpose\
+And repeated marketing claims and long explanatory paragraphs are absent.
 
 ### Scenario: calls to action preserve the two marketplace sides
 

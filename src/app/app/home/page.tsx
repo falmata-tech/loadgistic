@@ -6,12 +6,40 @@ import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
 import { DriverCapacityHome } from '@/components/driver-capacity-home';
 import { NetworkCoverage } from '@/components/network-coverage';
-import { CreditCard, LockKeyhole } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Boxes,
+  CirclePlus,
+  CreditCard,
+  Eye,
+  Gauge,
+  LayoutDashboard,
+  ListChecks,
+  LockKeyhole,
+  MapPin,
+  Search,
+  Truck,
+  Users
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 function limitedAccessTitle(status:string){
   if(status==='PAYMENT_UNDER_REVIEW')return 'Payment is under review';
   if(status==='NO_SUBSCRIPTION')return 'A plan must be assigned';
   return 'Your plan has expired';
+}
+
+function actionIcon(href:string):LucideIcon {
+  if(href.includes('/shipments/new'))return CirclePlus;
+  if(href.includes('/shipments'))return MapPin;
+  if(href.includes('/capacity'))return Gauge;
+  if(href.includes('/loads'))return Boxes;
+  if(href.includes('/fleet'))return Truck;
+  if(href.includes('/providers'))return Search;
+  if(href.includes('/verification'))return BadgeCheck;
+  if(href.includes('/network'))return Users;
+  return ListChecks;
 }
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
@@ -21,7 +49,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
     const billing:any=getBillingSummary(user);
     const greeting=user.organization_name||user.provider_business_name||user.name;
     return <div className="page billing-limited-home">
-      <PageHeader title={`Welcome, ${greeting}`} subtitle="Your account is available, but operating access needs payment."/>
+      <PageHeader icon={LockKeyhole} title={greeting} subtitle="Payment needed for operating access."/>
       <Flash error={query.error} success={query.success}/>
       <section className="billing-access-panel">
         <div className="billing-access-icon"><LockKeyhole aria-hidden="true"/></div>
@@ -39,11 +67,11 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const data:any=getDashboard(user);
   const coverage=user.role==='TRANSPORTER'?getFleetNetworkCoverage(user):null;
   const greeting=user.organization_name||user.provider_business_name||user.name;
-  return <div className="page"><PageHeader title={`Welcome, ${greeting}`} subtitle="Your next useful logistics actions are shown first."/><Flash error={query.error} success={query.success}/>
-    <section className="action-grid">{data.actions.map((a:any)=><Link href={a.href} className="action-card" key={a.href}><div><h3>{a.label}</h3><div className="meta">{a.description}</div></div><strong>→</strong></Link>)}</section>
+  return <div className="page"><PageHeader icon={LayoutDashboard} title={greeting} subtitle="Choose your next task."/><Flash error={query.error} success={query.success}/>
+    <section className="action-grid">{data.actions.map((a:any)=>{const Icon=actionIcon(a.href);return <Link href={a.href} className="action-card" key={a.href}><span className="action-card-icon"><Icon aria-hidden="true"/></span><div><h3>{a.label}</h3><div className="meta">{a.description}</div></div><ArrowRight aria-hidden="true"/></Link>})}</section>
     <section className="stats">{Object.entries(data.counts).map(([label,value])=><div className="stat" key={label}><span className="meta">{label}</span><strong>{String(value)}</strong></div>)}</section>
     {coverage?<NetworkCoverage coverage={coverage}/>:null}
-    <div className="two-col"><section className="card"><div className="page-header" style={{marginBottom:12}}><div><h2 style={{fontSize:'1.4rem'}}>Recent tracking</h2><p className="page-subtitle">Only loads assigned to or directly involving this workspace.</p></div><Link href="/app/shipments" className="button secondary small">View all</Link></div>{data.recent.length?<div className="list">{data.recent.map((item:any)=><Link href={`/app/shipments/${item.id||item.code}`} className="list-row compact" key={item.id||item.code}><div><strong>{item.code}</strong><div className="meta">{item.title}</div></div><div className="route">{item.origin}<span>→</span>{item.destination}</div><StatusPill status={item.operational_status}/></Link>)}</div>:<div className="empty-state">No tracking activity yet.</div>}</section>
-    <aside className="stack"><section className="card"><h3>Workspace focus</h3><p className="muted">{user.role==='TRANSPORTER'||user.role==='DRIVER'?'Find business demand and keep Empty or Partial truck capacity fresh.':user.role==='ADMIN'?'Review applications and system activity.':'Create B2B freight demand and discover transport capacity.'}</p></section>{data.notifications?.length?<section className="card"><h3>Notifications</h3><div className="stack">{data.notifications.slice(0,4).map((n:any)=><div key={n.id}><strong>{n.title}</strong><div className="meta">{n.body}</div></div>)}</div></section>:null}</aside></div>
+    <div className="two-col"><section className="card"><div className="page-header" style={{marginBottom:12}}><div><h2 className="panel-heading"><MapPin aria-hidden="true"/>Recent tracking</h2><p className="page-subtitle">Loads involving this workspace.</p></div><Link href="/app/shipments" className="button secondary small"><Eye aria-hidden="true"/>View all</Link></div>{data.recent.length?<div className="list">{data.recent.map((item:any)=><Link href={`/app/shipments/${item.id||item.code}`} className="list-row compact" key={item.id||item.code}><div><strong>{item.code}</strong><div className="meta">{item.title}</div></div><div className="route">{item.origin}<span>→</span>{item.destination}</div><StatusPill status={item.operational_status}/></Link>)}</div>:<div className="empty-state">No tracking yet.</div>}</section>
+    <aside className="stack"><section className="card"><h3><ListChecks aria-hidden="true"/>Focus</h3><p className="muted">{user.role==='TRANSPORTER'||user.role==='DRIVER'?'Find loads. Keep capacity fresh.':user.role==='ADMIN'?'Review platform work.':'Post loads. Find trucks.'}</p></section>{data.notifications?.length?<section className="card"><h3><BadgeCheck aria-hidden="true"/>Notifications</h3><div className="stack">{data.notifications.slice(0,4).map((n:any)=><div key={n.id}><strong>{n.title}</strong><div className="meta">{n.body}</div></div>)}</div></section>:null}</aside></div>
   </div>;
 }

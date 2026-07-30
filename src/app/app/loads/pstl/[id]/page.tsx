@@ -15,7 +15,7 @@ export default async function PooledLoadPage({params,searchParams}:{params:Promi
   if(!pool)notFound();
   const memberResult:any=paginateResults(pool.members,{page:query.page,pageSize:12});
   return <div className="page">
-    <PageHeader title="Pooled shared truckload" subtitle={`${pool.member_count} compatible PTL loads near one route`} action={<Link className="button secondary icon-button-label" href="/app/loads?board=POOLED"><Layers3 aria-hidden="true"/>Pooled board</Link>}/>
+    <PageHeader icon={Layers3} title="Pooled shared truckload" subtitle={`${pool.member_count} compatible PTL loads`} action={<Link className="button secondary icon-button-label" href="/app/loads?board=POOLED"><Layers3 aria-hidden="true"/>Pooled board</Link>}/>
     <section className="pstl-explanation"><Route aria-hidden="true"/><div><strong>{pool.origin} → {pool.destination}</strong><span>This is a planning view, not one combined agreement. Multi Pick and Multi Drop may be required, and every owner must be contacted separately.</span></div></section>
     <div className="stack">
       {memberResult.items.map((load:any)=><article className="card pooled-member" key={load.id}>

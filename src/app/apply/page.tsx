@@ -1,4 +1,77 @@
+import Link from 'next/link';
+import {
+  ArrowLeft,
+  Building2,
+  Factory,
+  LockKeyhole,
+  Mail,
+  Phone,
+  Send,
+  Truck,
+  UserRound
+} from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 import { Flash } from '@/components/flash';
 
-export default async function ApplyPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){const query=await searchParams;const allowedTypes=['ENTERPRISE_SHIPPER','INDEPENDENT_PROVIDER','TRANSPORT_COMPANY'];const selectedType=allowedTypes.includes(query.type||'')?query.type:'ENTERPRISE_SHIPPER';return <><PublicHeader/><main className="section"><div className="container" style={{maxWidth:850}}><div className="section-title"><h1 className="page-title">Sign up for Loadgistic</h1><p className="lede">Choose a Business or transporter account. Loadgistic reviews new accounts before marketplace access is activated.</p></div><Flash error={query.error} success={query.success}/><form action="/api/applications" method="post" className="form-card stack"><div className="form-grid"><div className="form-group"><label htmlFor="applicant-name">Your name</label><input id="applicant-name" name="name" required/></div><div className="form-group"><label htmlFor="workspace-name">Business or transporter name</label><input id="workspace-name" name="businessName" required/></div><div className="form-group"><label htmlFor="application-email">Private account email</label><input id="application-email" name="email" type="email" required/><div className="meta">Used to log in. Never shown on your Public Profile.</div></div><div className="form-group"><label htmlFor="application-phone">Private account phone</label><input id="application-phone" name="phone" type="tel" required/><div className="meta">Used for account support. Add a separate public phone later.</div></div><div className="form-group"><label htmlFor="application-password">Password</label><input id="application-password" name="password" type="password" minLength={10} required/></div><div className="form-group full"><label htmlFor="application-type">Account type</label><select id="application-type" name="applicationType" required defaultValue={selectedType}><optgroup label="Looking for capacity"><option value="ENTERPRISE_SHIPPER">Business</option></optgroup><optgroup label="Looking for shipment demand"><option value="INDEPENDENT_PROVIDER">Self-managed Driver / Owner-Operator</option><option value="TRANSPORT_COMPANY">Fleet Transporter</option></optgroup></select></div><div className="form-group full"><label htmlFor="application-note">About your work (optional)</label><textarea id="application-note" name="notes" placeholder="Tell Loadgistic what capacity you need or what demand you want to receive."/></div></div><button className="button">Sign up</button></form></div></main></>}
+const accountTypes = [
+  {
+    value: 'ENTERPRISE_SHIPPER',
+    title: 'Business',
+    hint: 'Find trucks',
+    icon: Factory
+  },
+  {
+    value: 'TRANSPORT_COMPANY',
+    title: 'Fleet transporter',
+    hint: 'Find loads',
+    icon: Truck
+  },
+  {
+    value: 'INDEPENDENT_PROVIDER',
+    title: 'Self-managed driver',
+    hint: 'Find loads',
+    icon: UserRound
+  }
+];
+
+export default async function ApplyPage({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const query = await searchParams;
+  const selectedType = accountTypes.some((type) => type.value === query.type)
+    ? query.type
+    : 'ENTERPRISE_SHIPPER';
+
+  return <><PublicHeader/><main className="section"><div className="container" style={{maxWidth:850}}>
+    <div className="auth-heading"><span className="task-heading-icon"><Building2 aria-hidden="true"/></span><div><h1 className="page-title">Sign up</h1><p className="page-subtitle">Choose your workspace.</p></div></div>
+    <Flash error={query.error} success={query.success}/>
+    <form action="/api/applications" method="post" className="form-card stack">
+      <fieldset>
+        <legend>Account type</legend>
+        <div className="signup-role-grid">
+          {accountTypes.map((type) => {
+            const Icon = type.icon;
+            return <label className="signup-role" key={type.value}>
+              <input type="radio" name="applicationType" value={type.value} defaultChecked={selectedType === type.value} required/>
+              <Icon aria-hidden="true"/>
+              <strong>{type.title}</strong>
+              <span>{type.hint}</span>
+            </label>;
+          })}
+        </div>
+      </fieldset>
+      <div className="form-grid">
+        <div className="form-group"><label htmlFor="applicant-name"><UserRound aria-hidden="true"/>Your name</label><input id="applicant-name" name="name" autoComplete="name" required/></div>
+        <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Workspace name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
+        <div className="form-group"><label htmlFor="application-email"><Mail aria-hidden="true"/>Account email</label><input id="application-email" name="email" type="email" autoComplete="email" required/><div className="meta">Private. Used to log in.</div></div>
+        <div className="form-group"><label htmlFor="application-phone"><Phone aria-hidden="true"/>Account phone</label><input id="application-phone" name="phone" type="tel" autoComplete="tel" required/><div className="meta">Private. Add a public phone later.</div></div>
+        <div className="form-group"><label htmlFor="application-password"><LockKeyhole aria-hidden="true"/>Password</label><input id="application-password" name="password" type="password" autoComplete="new-password" minLength={10} required/></div>
+        <div className="form-group full"><label htmlFor="application-note"><Factory aria-hidden="true"/>About your work <span className="meta">(optional)</span></label><textarea id="application-note" name="notes"/></div>
+      </div>
+      <button className="button"><Send aria-hidden="true"/>Sign up</button>
+    </form>
+    <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Home</Link>
+  </div></main></>;
+}

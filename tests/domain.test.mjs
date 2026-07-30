@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
@@ -101,6 +101,21 @@ test('capacity freshness labels expired data honestly',()=>{
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now+3_600_000).toISOString(),12),'FRESH');
  assert.equal(capacityFreshness(new Date(now-13*3_600_000).toISOString(),new Date(now+3_600_000).toISOString(),12),'UPDATE_NEEDED');
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now-1).toISOString(),12),'EXPIRED');
+});
+
+test('capacity warns owners for its final two hours and expires exactly on time',()=>{
+ const now=new Date('2026-07-30T09:00:00.000Z');
+ assert.equal(capacityExpiryState('2026-07-30T12:00:01.000Z',now),'CURRENT');
+ assert.equal(capacityExpiryState('2026-07-30T10:59:59.000Z',now),'EXPIRING');
+ assert.equal(capacityExpiryState('2026-07-30T09:00:00.000Z',now),'EXPIRED');
+});
+
+test('load Board keeps two full grace days after its delivery deadline',()=>{
+ assert.equal(loadBoardDeadlineState(null,'2026-07-30'),'CURRENT');
+ assert.equal(loadBoardDeadlineState('2026-07-30','2026-07-30'),'CURRENT');
+ assert.equal(loadBoardDeadlineState('2026-07-29','2026-07-30'),'PAST_DUE');
+ assert.equal(loadBoardDeadlineState('2026-07-28','2026-07-30'),'PAST_DUE');
+ assert.equal(loadBoardDeadlineState('2026-07-27','2026-07-30'),'EXPIRED');
 });
 
 test('workspace access periods distinguish trial, paid, sponsored, and expired states',()=>{

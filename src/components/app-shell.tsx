@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Logo } from './logo';
 import {
   BadgeCheck,
-  Building2,
   ClipboardCheck,
   CreditCard,
   Database,
@@ -18,7 +17,8 @@ import {
   Star,
   Truck,
   Users,
-  Network
+  Network,
+  UserRound
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { LogoutButton } from './logout-button';
@@ -31,8 +31,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/providers', label: 'Directory', icon: Search },
     { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
-    { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
-    { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   RECEIVER: [
@@ -41,8 +39,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/providers', label: 'Directory', icon: Search },
     { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
-    { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
-    { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   TRANSPORTER: [
@@ -53,8 +49,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/network', label: 'My Network', icon: Network },
-    { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
-    { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   DRIVER: [
@@ -64,8 +58,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/network', label: 'My Network', icon: Network },
-    { href: '/app/company-page', label: 'Public Profile', icon: Building2 },
-    { href: '/app/verification', label: 'Verification', icon: BadgeCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   ADMIN: [
@@ -156,7 +148,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
       <main className="app-main">
         <header className="app-topbar">
           <div className="topbar-leading"><WorkspaceBackButton/><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">B2B logistics workspace</div></div></div>
-          <Link className="button secondary small desktop-account" href="/app/more">Account</Link>
+          <Link className="button secondary small desktop-account" href="/app/more"><UserRound aria-hidden="true"/>Account</Link>
           <details className="mobile-account-menu">
             <summary><Menu aria-hidden="true"/>Menu</summary>
             <div className="mobile-menu-panel">

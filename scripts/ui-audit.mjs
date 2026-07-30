@@ -55,8 +55,16 @@ async function gotoReady(page, route) {
       await page.waitForTimeout(750);
       return response;
     } catch (error) {
-      if (!String(error).includes('ERR_ABORTED') || attempt === 2) throw error;
-      await page.waitForTimeout(500);
+      const transientNavigationError = [
+        'ERR_ABORTED',
+        'ERR_CONNECTION_RESET',
+        'ERR_EMPTY_RESPONSE',
+        'ERR_INCOMPLETE_CHUNKED_ENCODING',
+        'ERR_NETWORK_IO_SUSPENDED',
+        'Timeout'
+      ].some((message) => String(error).includes(message));
+      if (!transientNavigationError || attempt === 2) throw error;
+      await page.waitForTimeout(1_000 * (attempt + 1));
     }
   }
 }
@@ -103,7 +111,16 @@ async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
           emptyButtons: [...document.querySelectorAll('button, a.button')]
             .filter((element) => !element.textContent?.trim() && !element.getAttribute('aria-label')).length,
           unlabeledInputs: [...document.querySelectorAll('input:not([type="hidden"]), select, textarea')]
-            .filter((element) => !element.getAttribute('aria-label') && !element.id && !element.closest('label')).length
+            .filter((element) => !element.getAttribute('aria-label') && !element.id && !element.closest('label')).length,
+          smallActionTargets: [...document.querySelectorAll('button, a.button, .workspace-back, .mobile-account-menu summary')]
+            .filter((element) => {
+              const box = element.getBoundingClientRect();
+              return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
+            }).length,
+          textActionsWithoutIcon: [...document.querySelectorAll('button.button, a.button')]
+            .filter((element) => element.textContent?.trim() && !element.querySelector('svg')).length,
+          labelsWithoutIcon: [...document.querySelectorAll('label[for]:not(.sr-only)')]
+            .filter((element) => !element.querySelector('svg')).length
         };
       });
       if (metrics) break;
@@ -167,7 +184,7 @@ try {
 
         if (['business-shipper', 'business-receiver'].includes(persona.name)) {
           await gotoReady(page, '/app/providers');
-          const companyHref = await page.getByRole('link', { name: 'View Profile' }).first().getAttribute('href');
+          const companyHref = await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().getAttribute('href');
           if (companyHref) {
             const result = await inspectPage(
               page,
@@ -184,7 +201,7 @@ try {
             report.results.push({ viewport: viewport.name, persona: persona.name, ...comparisonResult });
           }
           await gotoReady(page, '/app/capacity');
-          const capacityHref = await page.getByRole('link', { name: 'View truck details' }).first().getAttribute('href');
+          const capacityHref = await page.getByRole('link', { name: 'Truck details' }).first().getAttribute('href');
           if (capacityHref) {
             const result = await inspectPage(
               page,
@@ -262,7 +279,8 @@ try {
 await writeFile(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
 
 const failures = report.results.filter((result) =>
-  result.status >= 400 || result.horizontalOverflow || result.emptyButtons || result.unlabeledInputs
+  result.status >= 400 || result.horizontalOverflow || result.emptyButtons || result.unlabeledInputs ||
+  (result.persona !== 'admin' && (result.smallActionTargets || result.textActionsWithoutIcon || result.labelsWithoutIcon))
 );
 
 console.log(`UI audit captured ${report.results.length} screens in ${outputDir}`);
