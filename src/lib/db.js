@@ -569,12 +569,15 @@ function migrate(db) {
     ['destination_place_ref','TEXT'],['destination_lat','REAL'],['destination_lng','REAL'],
     ['current_origin_place_ref','TEXT'],['current_origin_lat','REAL'],['current_origin_lng','REAL'],
     ['current_destination_place_ref','TEXT'],['current_destination_lat','REAL'],['current_destination_lng','REAL'],
-    ['location_place_ref','TEXT']
+    ['location_place_ref','TEXT'],
+    ['market_status','TEXT'],
+    ['available_again_date','TEXT']
   ];
   for (const [name, definition] of additiveCapacityColumns) {
     if (!capacityColumns.has(name)) db.exec(`ALTER TABLE capacities ADD COLUMN ${name} ${definition}`);
   }
   db.exec(`UPDATE capacities SET
+    market_status=COALESCE(market_status,status),
     accepts_multi_pick=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_pick END,
     accepts_multi_drop=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_drop END`);
   db.exec(`
@@ -692,6 +695,8 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_vehicle_provider_active ON vehicles(provider_profile_id,active);
     CREATE INDEX IF NOT EXISTS idx_capacity_vehicle_latest ON capacities(vehicle_id,updated_at DESC,id DESC);
     CREATE INDEX IF NOT EXISTS idx_capacity_market ON capacities(visibility,status,expires_at,movement_scope);
+    CREATE INDEX IF NOT EXISTS idx_capacity_market_status ON capacities(visibility,market_status,updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_capacity_busy_date ON capacities(market_status,available_again_date);
     CREATE INDEX IF NOT EXISTS idx_capacity_organization ON capacities(provider_organization_id,expires_at);
     CREATE INDEX IF NOT EXISTS idx_capacity_provider ON capacities(provider_profile_id,expires_at);
     CREATE INDEX IF NOT EXISTS idx_capacity_local_place ON capacities(local_place_ref,movement_scope,expires_at);

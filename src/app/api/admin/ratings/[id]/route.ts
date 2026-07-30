@@ -11,8 +11,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   try {
     reviewBusinessRating(user,id,text(form,'status'),text(form,'reviewNote'));
-    return redirectWith(request,'/admin/ratings','success','Rating review completed.');
+    return redirectWith(request,'/admin/reviews?tab=ratings','success','Rating review completed.');
   } catch(error) {
-    return redirectWith(request,'/admin/ratings','error',errorMessage(error));
+    return redirectWith(request,'/admin/reviews?tab=ratings','error',errorMessage(error));
   }
 }

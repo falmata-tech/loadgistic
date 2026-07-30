@@ -1,10 +1,10 @@
 ---
 id: FEAT-ADM-001
-title: Platform operations inventory and controls
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001]
-problem: Platform administrators can review three queues but cannot inspect the connected operational records or safely suspend an account or truck from one Loadgistic workspace.
-behavior: Administrators receive a bounded, searchable Operations view of users, workspaces, trucks, loads, and latest truck capacity, with audited activation controls for users and trucks.
-contracts: [AdminOperationsProjection, AdminRecordSearch, UserActivationCommand, VehicleActivationCommand, AdminAudit]
+title: Focused platform operations and review center
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001]
+problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
+behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links application, document, rating, and payment queues through consistent tabs and compact review rows.
+contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, UserActivationCommand, VehicleActivationCommand, AdminAudit]
 observability: [admin_operations_read, admin_record_status_audit, denied_admin_command]
 rollout: Add the inventory without changing tenant-facing visibility; status commands are reversible, audited, and deny non-admin callers.
 ---
@@ -15,7 +15,7 @@ rollout: Add the inventory without changing tenant-facing visibility; status com
 
 Given an authenticated platform administrator\
 When Operations is opened or searched\
-Then bounded result sets show users, workspaces, trucks, loads, and latest capacity from authoritative records\
+Then one selected bounded result set shows users, workspaces, trucks, loads, or latest capacity from authoritative records\
 And relationships are identified with workspace, provider, truck platform number, shipment code, and current status\
 And private proof paths, passwords, session values, tracking secrets, and exact coordinates are absent.
 
@@ -25,16 +25,26 @@ Given applications, verification requests, or payment proofs contain many record
 When an administrator searches, filters by status, or changes result pages\
 Then the server returns one bounded page of matching records\
 And terminal records do not render active review commands\
-And the administrator can reach every matching record without rendering the entire queue at once.
+And the administrator can reach every matching record without rendering the entire queue at once\
+And review controls remain collapsed until the administrator opens one record.
 
-### Scenario: Operations starts with bounded record pages
+### Scenario: Operations queries only the selected record type
 
 Given the platform contains many operational records\
-When an administrator opens Operations without a search\
-Then each inventory section returns its first bounded page\
+When an administrator opens Operations or changes its record-type tab\
+Then only the selected inventory query returns a bounded page\
 And platform-wide counts remain visible\
-And each section has independent page navigation that can reach every matching record\
-And entering a search narrows every record group and resets their pages.
+And entering a search narrows the selected record type and resets its page\
+And switching record type preserves a useful search term but does not render hidden inventory rows.
+
+### Scenario: Review Center keeps related queues together
+
+Given an administrator needs to review onboarding or trust evidence\
+When Review Center is opened\
+Then Applications, Documents, Ratings, and Payments are reachable as consistent tabs\
+And one selected queue is rendered at a time\
+And legacy queue URLs redirect to their corresponding Review Center tab\
+And the browser Back action and tab links preserve understandable navigation.
 
 ### Scenario: administrator suspends or restores an account
 

@@ -210,3 +210,32 @@ them unambiguously; unresolved records remain visible but cannot match. The
 Supabase target uses PostGIS geography points, GiST indexes, and `ST_DWithin`.
 This preserves one domain contract while allowing the production adapter to
 execute indexed geographic predicates before pagination.
+
+## ADR-026 — Availability freshness and provider-backed customer support
+
+Model truck duty, cargo-space availability, and signal freshness independently.
+Empty, Partial, and Busy are On Duty; Off Duty is the explicit hidden state.
+Empty and Partial remain visible during the early-market rollout when their
+updates become old, but their relative update times and stale warning are
+prominent and stale records rank below otherwise equivalent fresh records.
+Dated current and planned routes still expire independently. Busy means the
+truck has no cargo space now but remains open to calls, requires an
+available-again date and structured city, displays Preferred Routes instead of a
+current capacity route, and leaves discovery after that date unless refreshed.
+For Both movement, the Local place is also the current general-area place so a
+driver enters the city once.
+
+Do not implement real-time customer chat, presence, media, assignment, and
+delivery semantics inside the Next.js and SQLite application. Put them behind a
+`SupportProvider` port and use Chatwoot as the initial target adapter. Chatwoot
+supports authenticated web widgets, teams, assignment, webhooks, conversation
+closure, and an optional per-agent open-conversation limit. Exact capacity and
+role features require a qualifying paid plan; self-hosting additionally requires
+PostgreSQL, Redis, background workers, mail, storage, backups, monitoring, and
+upgrades.
+
+Keep the integration disabled until the deployment model, data residency,
+retention, credentials, webhook verification, and operating ownership are
+approved. A Chatwoot agent is not automatically a Loadgistic administrator.
+Platform access uses separately granted, server-enforced staff capabilities for
+applications, verification, billing, client viewing, and client mutation.

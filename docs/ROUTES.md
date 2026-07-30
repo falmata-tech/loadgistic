@@ -40,15 +40,13 @@ Administrators and sponsored workspaces are not time limited.
 
 ## Administration
 
-- `/admin/applications`
 - `/admin/operations`
-- `/admin/verifications`
-- `/admin/ratings`
-- `/admin/billing`
+- `/admin/reviews`
 
-Administrative queues use `page`. `/admin/operations` uses independent
-`userPage`, `workspacePage`, `truckPage`, `loadPage`, and `capacityPage` keys so
-one record group can move without changing the others.
+Administrative queues use `page`. `/admin/operations` uses one selected `view`
+for Clients, Users, Trucks, Loads, or Capacity. `/admin/reviews` uses one
+selected `tab` for Applications, Documents, Ratings, or Payments. Legacy queue
+URLs redirect to the matching Review Center tab.
 
 ## System
 

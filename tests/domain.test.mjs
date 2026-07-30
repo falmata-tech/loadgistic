@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
@@ -10,6 +10,7 @@ import { obscureCoordinate } from '../src/lib/location-privacy.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
+ assert.equal(validateCapacity('BUSY',''),0);
  assert.equal(validateCapacity('OFF_DUTY',''),0);
  assert.equal(validateCapacity('PARTIAL','40'),40);
  assert.throws(()=>validateCapacity('FULL',''),/INVALID_CAPACITY_STATUS/);
@@ -22,6 +23,7 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
  assert.deepEqual(validateAcceptedLoads('EMPTY','PTL'),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('EMPTY','BOTH'),{acceptsFullLoad:true,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('OFF_DUTY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
+ assert.deepEqual(validateAcceptedLoads('BUSY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
  assert.throws(()=>validateAcceptedLoads('PARTIAL',''),/ACCEPTED_LOADS_REQUIRED/);
 });
 
@@ -103,7 +105,13 @@ test('capacity freshness labels expired data honestly',()=>{
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now-1).toISOString(),12),'EXPIRED');
 });
 
-test('capacity warns owners for its final two hours and expires exactly on time',()=>{
+test('cargo-space freshness stays visible while Busy expires by ready date',()=>{
+ assert.equal(capacitySignalFreshness('EMPTY','2026-07-28T09:00:00.000Z',null,12,'2026-07-30'),'UPDATE_NEEDED');
+ assert.equal(capacitySignalFreshness('BUSY','2026-07-30T09:00:00.000Z','2026-07-30',12,'2026-07-30'),'FRESH');
+ assert.equal(capacitySignalFreshness('BUSY','2026-07-30T09:00:00.000Z','2026-07-29',12,'2026-07-30'),'EXPIRED');
+});
+
+test('legacy capacity expiry utility remains deterministic for historical records',()=>{
  const now=new Date('2026-07-30T09:00:00.000Z');
  assert.equal(capacityExpiryState('2026-07-30T12:00:01.000Z',now),'CURRENT');
  assert.equal(capacityExpiryState('2026-07-30T10:59:59.000Z',now),'EXPIRING');

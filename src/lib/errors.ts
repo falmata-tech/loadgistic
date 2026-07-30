@@ -30,11 +30,13 @@ const messages: Record<string,string> = {
   NOTE_REQUIRED: 'Enter a note before saving.',
   INVALID_VEHICLE: 'Choose one of your active vehicles.',
   CAPACITY_CONFIGURATION_REQUIRED: 'A fleet owner must configure this truck before it can return On Duty.',
-  INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
+  INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, Busy, or Off Duty.',
   CAPACITY_PERCENT_REQUIRED: 'Enter a whole percentage from 1 to 99 for partial capacity.',
   LOCAL_CAPACITY_MUST_BE_EMPTY: 'Local-only capacity must be Empty with 100% of the truck available. Use Between cities or Both for Partial capacity.',
   ACCEPTED_LOADS_REQUIRED: 'Choose FTL, PTL, or Both.',
   CAPACITY_AREA_REQUIRED: 'Enter the general area where the truck is now.',
+  BUSY_AVAILABLE_DATE_REQUIRED: 'Choose when the truck will be available again.',
+  INVALID_BUSY_AVAILABLE_DATE: 'The available-again date cannot be in the past.',
   INVALID_CAPACITY_VISIBILITY: 'Choose Public or Partners.',
   CURRENT_ROUTE_DATE_REQUIRED: 'Choose the date for the current partial-capacity route.',
   PLANNED_ROUTE_DATE_REQUIRED: 'Choose the planned travel date.',
@@ -79,7 +81,8 @@ const messages: Record<string,string> = {
   NETWORK_RELATIONSHIP_NOT_FOUND: 'That network relationship was not found.',
   NETWORK_REQUEST_NOT_ACTIONABLE: 'That network request is no longer available.',
   ADMIN_SELF_SUSPENSION_DENIED: 'An administrator cannot suspend their own account.',
-  INVALID_ADMIN_RECORD_TYPE: 'Choose a supported account or truck record.'
+  INVALID_ADMIN_RECORD_TYPE: 'Choose a supported account or truck record.',
+  INVALID_ADMIN_OPERATIONS_VIEW: 'Choose a supported platform record view.'
 };
 
 export function errorMessage(error: unknown) {

@@ -3,37 +3,66 @@ id: FEAT-CAP-001
 title: Truck-first Capacity Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state, Empty or Partial cargo space, accepted load sizes, general current area, dated current-partial movement, dated and capacity-labeled planned movement, contract-route openness, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, while all active fleet trucks remain in the owner's roster even when Off Duty.
-contracts: [CapacityUpdate, CapacityStatus, CapacityPercentage, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand, Expiry]
-observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, expires_at]
-rollout: Preserve minimal capacity semantics and validate public expiry filtering before release.
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state separately from Empty, Partial, or Busy availability, general current area, accepted work, dated movement, Preferred Routes, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Capacity Board, with freshness made explicit rather than silently removing stale Empty or Partial signals.
+contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
+observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
+rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
 ---
 
 # Capacity publication
 
 ### Scenario: Capacity Board remains bounded
 
-Given more fresh visible trucks match than one Capacity Board page\
+Given more visible trucks match than one Capacity Board page\
 When a member opens, filters, route-ranks, or changes page\
 Then the server renders one bounded page of independently actionable truck cards\
 And page navigation preserves every active capacity filter\
-And no search is required to see the first fresh page.
+And no search is required to see the first page\
+And fresh signals rank ahead of stale signals when all stronger filters and route scores are equal.
 
 ### Scenario: partial capacity is published for one truck
 
 Given an authorized transporter, driver, or administrator owns the vehicle\
-When Partial capacity with an integer from 1 through 99 and an expiry is submitted\
+When Partial capacity with an integer from 1 through 99 is submitted\
 Then the update records actor and time\
-And the fresh public record displays the declared percentage.
+And the public record displays the declared percentage.
 
-### Scenario: capacity expiry is visible to its owner
+### Scenario: stale cargo-space capacity remains explicit
 
-Given a truck has an Empty or Partial capacity signal\
-When less than two hours remain before expiry\
-Then the assigned driver and fleet owner see a warning to refresh the signal\
-And the warning changes to an expired and off-Board state at expiry\
-And the expired signal remains available in the owner's truck history or latest-truck control\
-And it is absent from every Capacity Board result and public route match.
+Given a truck has an Empty or Partial capacity signal and remains On Duty\
+When its capacity or location update becomes old\
+Then it remains on the Capacity Board during the early-market rollout\
+And its card shows the relative last capacity and location update times\
+And a strong stale warning tells the viewer to confirm availability\
+And stale signals rank below equivalent fresh signals\
+And dated current-partial or planned routes still stop matching after their own route dates.
+
+### Scenario: Busy advertises future availability
+
+Given an authorized driver or fleet owner is carrying work but remains open to calls\
+When Busy is selected\
+Then the truck remains On Duty\
+And an available-again date and one structured current or expected city are required\
+And the Capacity Board labels the truck Busy and open to contact\
+And it displays Preferred Routes but no current cargo-space percentage or current partial-capacity route\
+And Empty or Partial load-size and stop preferences are not represented as currently available capacity.
+
+### Scenario: unrefreshed Busy leaves discovery after its ready date
+
+Given a truck publishes Busy with an available-again date\
+When that local calendar date passes without a newer Empty, Partial, or Busy update\
+Then the truck is absent from the Capacity Board and route matching\
+And its latest owner and driver control indicates that a fresh availability decision is required\
+And the persisted historical update remains available to its owner and administrators.
+
+### Scenario: duty and availability remain separate
+
+Given a truck has a latest availability state\
+When Empty, Partial, or Busy is selected\
+Then the truck is On Duty\
+And when Off Duty is selected it is hidden from Capacity Board discovery\
+And freshness never changes the persisted duty choice by itself\
+And an expired Busy signal is treated as undiscoverable until refreshed rather than silently rewritten as a user-authored Off Duty command.
 
 ### Scenario: capacity belongs to an identifiable real truck
 
@@ -47,7 +76,7 @@ And generic tonnage labels are not used as the truck identity.
 
 ### Scenario: every visible truck stands alone on the Capacity Board
 
-Given a fleet transporter has multiple fresh Empty or Partial trucks\
+Given a fleet transporter has multiple discoverable Empty, Partial, or Busy trucks\
 When an authenticated user opens the Capacity Board\
 Then each truck is a separate capacity contributor and card\
 And no provider-level summary collapses those trucks into one signal.
@@ -64,7 +93,7 @@ And the same visibility authorization is reapplied to the detail read.
 Given a fleet transporter owns active truck records\
 When its Public Profile or Fleet page is displayed\
 Then its truck count equals the active vehicle rows\
-And every active truck appears in the roster as Empty, Partial, Off Duty, or Not updated\
+And every active truck appears in the roster as Empty, Partial, Busy, Off Duty, or Not updated\
 And Off Duty trucks remain absent from the Capacity Board.
 
 ### Scenario: empty capacity is published
@@ -116,12 +145,22 @@ And they do not have to open a general dashboard before updating their truck.
 ### Scenario: current availability and current route are one task
 
 Given a driver or fleet owner updates an on-duty truck\
-When Empty or Partial cargo space is selected\
+When Empty, Partial, or Busy is selected\
 Then current available space and the current partial-capacity route appear in the same Capacity now section\
 And the current route is required only for Partial intercity or Both work\
 And Local-only work keeps Partial unavailable\
+And Busy replaces cargo-space controls with available-again date and city controls\
 And optional load preferences, future planned travel, visibility, and proof use clear progressive disclosure\
 And their saved summaries remain visible without opening every secondary control.
+
+### Scenario: Both reuses the Local city as current area
+
+Given a truck is available for both Local and Between cities work\
+When its driver selects the structured Local city or town\
+Then that place is also the truck's declared current general area\
+And the driver is not asked for a second current-area city\
+And device-assisted location may update that same structured place and obscured area\
+And Local radius and intercity route controls remain independently available.
 
 ### Scenario: fleet transporter Home remains a management dashboard
 
@@ -154,13 +193,13 @@ And route fields remain optional for Local-only capacity.
 
 Given a Business chooses one of its own open load routes\
 When Capacity Board results are displayed\
-Then every fresh current and planned route is compared by endpoint distance\
+Then every eligible dated current and planned route is compared by endpoint distance\
 And trucks satisfying both adjustable endpoint radii rank by their strongest route\
 And each result explains endpoint distances, direction, and route source without claiming dispatch suitability or availability beyond the recorded capacity.
 
 Given a provider compares routes or ranks the Load Board\
-When fresh truck route records exist\
-Then every owned truck contributes its unexpired current-partial route and eligible planned route independently\
+When eligible truck route records exist\
+Then every owned truck contributes its current unexpired partial route and eligible planned route independently\
 And the best match across selected or all active truck routes is used\
 And each option identifies the truck platform number, route source, date, and planned Full or Partial cargo-space label.
 
@@ -217,7 +256,7 @@ Then the Capacity Board displays that signal without changing Empty, Partial, or
 
 ### Scenario: off-duty capacity is private
 
-Given a truck is full or unavailable\
+Given a truck is unavailable and does not want calls\
 When the owner marks it Off Duty or stops publishing capacity\
 Then that truck is absent from public and relationship-scoped capacity discovery.
 
@@ -233,12 +272,6 @@ Given a transporter or driver views capacity belonging to other providers\
 When the Capacity Board loads\
 Then the records are read only\
 And no contact or interest action is available.
-
-### Scenario: expired capacity is hidden
-
-Given a capacity record is past its expiry\
-When public capacity is queried\
-Then that record is absent.
 
 ## Contract ownership
 

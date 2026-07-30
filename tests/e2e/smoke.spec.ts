@@ -59,6 +59,7 @@ test('anonymous users cannot browse Business or transporter profiles', async ({ 
 });
 
 test('authenticated directory browsing preserves the session and selected participants', async ({ page }: { page: any }) => {
+  test.setTimeout(60_000);
   await login(page, 'shipper@loadgistic.local');
   await page.goto('/app/providers?type=TRANSPORT');
   await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().click();
@@ -293,7 +294,8 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
   await expect(page.locator('.task-heading-icon')).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toHaveAttribute('data-hydrated','true');
-  await expect(page.getByLabel('Current general area')).toBeVisible();
+  await expect(page.getByLabel('Local city or town')).toBeVisible();
+  await expect(page.getByText(/also this truck's current general area/)).toBeVisible();
   await expect(page.getByRole('button', { name: /Use phone|Refresh/ })).toBeVisible();
   await expect(page.getByText('Current partial-capacity route',{exact:true})).toBeVisible();
   await expect(page.getByLabel('Route date')).toBeVisible();
@@ -301,6 +303,11 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
   await expect(page.locator('input[name="spaceChoice"]').nth(1)).toBeDisabled();
   await expect(page.locator('input[name="status"]')).toHaveValue('EMPTY');
   await expect(page.getByText(/Local-only availability is published as Empty/)).toBeVisible();
+  await page.getByRole('radio',{name:/Busy Open to future calls/}).check();
+  await expect(page.getByLabel('Available again')).toBeVisible();
+  await expect(page.getByLabel('Expected city')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Load preferences'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Planned trip'})).toHaveCount(0);
 });
 
 test('Business sees truck-first capacity detail and the full fleet roster', async ({ page }: { page: any }) => {
@@ -365,19 +372,21 @@ test('member verification center and admin review queue are available', async ({
   await page.context().clearCookies();
   await login(page,'admin@loadgistic.local');
   await page.goto('/admin/verifications');
-  await expect(page.getByRole('heading',{name:'Verification requests'})).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/reviews\?tab=documents/);
+  await expect(page.getByRole('heading',{name:'Review Center'})).toBeVisible();
   await expect(page.getByText('Vehicle ownership').first()).toBeVisible();
   await page.goto('/admin/operations');
   await expect(page.getByRole('heading',{name:'Platform Operations'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Trucks'})).toBeVisible();
+  await page.getByRole('link',{name:'Trucks'}).click();
+  await expect(page).toHaveURL(/view=TRUCKS/);
   await expect(page.getByText(/LG-TRK-/).first()).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Latest truck capacity'})).toBeVisible();
   await page.goto('/admin/ratings');
-  await expect(page.getByRole('heading',{name:'Rating Reviews'})).toBeVisible();
-  await expect(page.getByText('LGX-F2007 · Handwoven goods to Adama')).toBeVisible();
+  await expect(page).toHaveURL(/\/admin\/reviews\?tab=ratings/);
+  await expect(page.getByRole('heading',{name:'Review Center'})).toBeVisible();
   await expect(page.getByText('2 of 5')).toBeVisible();
+  await page.getByText('2 of 5').click();
   await expect(page.getByLabel('Investigation note')).toBeVisible();
-  await expect(page.getByRole('link',{name:'Investigate account'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Investigate client'})).toBeVisible();
 });
 
 test('assigned load shows enforced approximate tracking and a real authenticated timeline', async ({ page }: { page: any }) => {

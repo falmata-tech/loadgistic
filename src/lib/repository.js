@@ -16,8 +16,7 @@ import {
   pointInServiceArea,
   serviceAreasOverlap,
   assertTransition,
-  capacityFreshness,
-  capacityExpiryState,
+  capacitySignalFreshness,
   loadBoardDeadlineState,
   LOAD_BOARD_GRACE_DAYS,
   roleCanCreateShipment,
@@ -325,12 +324,15 @@ export function getDashboard(user) {
       'Rating Reviews': db.prepare(`SELECT COUNT(*) AS n FROM business_reviews WHERE status='PENDING'`).get().n,
       Organizations: db.prepare('SELECT COUNT(*) AS n FROM organizations').get().n,
       Loads: db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
-      'Fresh Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE expires_at > ?`).get(nowIso()).n
+      'Board Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities c
+        WHERE c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
+          AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')
+            OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))`).get(todayInEthiopia()).n
     };
     data.actions = [
-      { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect accounts, workspaces, trucks, loads, and current capacity.' },
-      { href: '/admin/ratings', label: 'Review low ratings', description: 'Investigate private one- to three-star Business ratings.' },
-      { href: '/admin/applications', label: 'Review applications', description: 'Approve or request more information.' },
+      { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect one focused client, truck, load, or capacity view.' },
+      { href: '/admin/reviews?tab=ratings', label: 'Review low ratings', description: 'Investigate private one- to three-star Business ratings.' },
+      { href: '/admin/reviews?tab=applications', label: 'Review applications', description: 'Approve or request more information.' },
       { href: '/app/providers', label: 'View transporter directory', description: 'Inspect authenticated transporter pages.' }
     ];
     data.recent = db.prepare('SELECT code,title,service_mode,operational_status,origin,destination,created_at FROM shipments ORDER BY created_at DESC LIMIT 6').all();
@@ -359,7 +361,9 @@ export function getDashboard(user) {
   data.counts = {
     'Available Loads': listLoads(user).length,
     'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${scope.column}=? AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(scope.id).n,
-    'Current Capacity': db.prepare(`SELECT COUNT(*) AS n FROM capacities WHERE ${scope.column}=? AND expires_at > ?`).get(scope.id,nowIso()).n,
+    'On-duty Trucks': db.prepare(`SELECT COUNT(*) AS n FROM capacities c WHERE c.${scope.column}=?
+      AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
+      AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL','BUSY')`).get(scope.id).n,
     'Proof Pending': db.prepare(`SELECT COUNT(*) AS n FROM shipments s WHERE s.${scope.column}=? AND s.operational_status IN ('DELIVERED','IN_TRANSIT') AND NOT EXISTS (SELECT 1 FROM proof_files p WHERE p.shipment_id=s.id AND p.proof_type='DELIVERY')`).get(scope.id).n
   };
   data.actions = [
@@ -1065,10 +1069,12 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
       (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.organization_id=o.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
-       WHERE v.organization_id=o.id AND v.active=1 AND c.visibility='OPEN' AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?) AS active_capacity_count,
+       WHERE v.organization_id=o.id AND v.active=1 AND c.visibility='OPEN'
+         AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
+         AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))) AS active_capacity_count,
       0 AS review_count,NULL AS average_rating
       FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1 WHERE o.type='TRANSPORT_COMPANY'`);
-    selectArgs.push(nowIso());
+    selectArgs.push(todayInEthiopia());
   }
   if (kind === 'ALL' || kind === 'DRIVER') {
     selects.push(`SELECT p.id,'profile' AS ref_kind,p.business_name AS name,p.handle,'INDEPENDENT_PROVIDER' AS type,
@@ -1077,10 +1083,12 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
       (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.provider_profile_id=p.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
-       WHERE v.provider_profile_id=p.id AND v.active=1 AND c.visibility='OPEN' AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?) AS active_capacity_count,
+       WHERE v.provider_profile_id=p.id AND v.active=1 AND c.visibility='OPEN'
+         AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
+         AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))) AS active_capacity_count,
       0 AS review_count,NULL AS average_rating
       FROM provider_profiles p JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.public_visibility='PUBLIC'`);
-    selectArgs.push(nowIso());
+    selectArgs.push(todayInEthiopia());
   }
   if(!selects.length)return options?paginateResults([],options):[];
   const search = String(options?.q||'').trim().toLowerCase();
@@ -1124,7 +1132,7 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
 
 function listProviderVehicles(db, ownerColumn, ownerId) {
   const vehicles = db.prepare(`SELECT v.id AS vehicle_id,v.label,v.category,v.plate,v.platform_number,v.make,v.model,v.cargo_configuration,
-    c.id AS capacity_id,c.status,c.available_percent,c.visibility,c.updated_at,c.expires_at,u.name AS updated_by_name
+    c.id AS capacity_id,COALESCE(c.market_status,c.status) AS status,c.available_percent,c.visibility,c.updated_at,c.expires_at,c.available_again_date,u.name AS updated_by_name
     FROM vehicles v
     LEFT JOIN capacities c ON c.id=(
       SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC LIMIT 1
@@ -1152,7 +1160,7 @@ function hasTrackedExecution(db, shipmentId) {
 
 function capacityRouteCandidates(capacity, { requireCurrentDate = false } = {}) {
   const routes = [];
-  if (capacity.movement_scope===MOVEMENT_SCOPES.LOCAL) return routes;
+  if (capacity.status==='BUSY'||capacity.movement_scope===MOVEMENT_SCOPES.LOCAL) return routes;
   const today = todayInEthiopia();
   if (
     capacity.status === 'PARTIAL'
@@ -1220,9 +1228,9 @@ function listLiveTruckRoutesForPage(db, page, includeAllVisibility = false) {
     FROM vehicles v JOIN capacities c ON c.id=(
       SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC LIMIT 1
     )
-    WHERE v.${owner.column}=? AND v.active=1 AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?${visibilityClause}
-    ORDER BY v.platform_number`).all(owner.id,nowIso());
-  return capacities.flatMap(capacity => capacityRouteCandidates(capacity,{requireCurrentDate:true}));
+    WHERE v.${owner.column}=? AND v.active=1 AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')${visibilityClause}
+    ORDER BY v.platform_number`).all(owner.id);
+  return capacities.flatMap(capacity => capacityRouteCandidates({...capacity,status:capacity.market_status||capacity.status},{requireCurrentDate:true}));
 }
 
 function listProfileRoutesWithEvidence(db, page) {
@@ -1238,7 +1246,8 @@ function listProfileRoutesWithEvidence(db, page) {
           capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,travel_date,current_route_origin,current_route_destination,
             current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,current_route_date
-            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_organization_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_organization_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id)
+            .map(capacity=>({...capacity,status:capacity.market_status||capacity.status})),
           shipments:db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,
             EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
@@ -1248,7 +1257,8 @@ function listProfileRoutesWithEvidence(db, page) {
           capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,travel_date,current_route_origin,current_route_destination,
             current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,current_route_date
-            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_profile_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_profile_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id)
+            .map(capacity=>({...capacity,status:capacity.market_status||capacity.status})),
           shipments:db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,
             EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
@@ -1276,14 +1286,14 @@ function listServiceAreasWithEvidence(db,page) {
     : owner.organizationId
       ? {
           capacity:db.prepare(`SELECT id,local_center_lat AS lat,local_center_lng AS lng FROM capacities
-            WHERE movement_scope IN ('LOCAL','BOTH') AND provider_organization_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+            WHERE movement_scope IN ('LOCAL','BOTH') AND provider_organization_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id),
           shipments:db.prepare(`SELECT id,local_center_lat AS lat,local_center_lng AS lng,
             EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
             FROM shipments WHERE movement_scope='LOCAL' AND provider_organization_id=?`).all(owner.id)
         }
       : {
           capacity:db.prepare(`SELECT id,local_center_lat AS lat,local_center_lng AS lng FROM capacities
-            WHERE movement_scope IN ('LOCAL','BOTH') AND provider_profile_id=? AND status IN ('EMPTY','PARTIAL')`).all(owner.id),
+            WHERE movement_scope IN ('LOCAL','BOTH') AND provider_profile_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id),
           shipments:db.prepare(`SELECT id,local_center_lat AS lat,local_center_lng AS lng,
             EXISTS(SELECT 1 FROM shipment_events e WHERE e.shipment_id=shipments.id AND e.status IN ('ASSIGNED','IN_TRANSIT','DELIVERED','COMPLETED')) AS has_tracked
             FROM shipments WHERE movement_scope='LOCAL' AND provider_profile_id=?`).all(owner.id)
@@ -1311,10 +1321,10 @@ function listLiveTruckAreasForPage(db,page,includeAllVisibility=false) {
     FROM vehicles v JOIN capacities c ON c.id=(
       SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1
     )
-    WHERE v.${owner.column}=? AND v.active=1 AND c.status IN ('EMPTY','PARTIAL')
+    WHERE v.${owner.column}=? AND v.active=1 AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')
       AND c.movement_scope IN ('LOCAL','BOTH') AND c.local_place_ref IS NOT NULL
-      AND c.expires_at>?${visibilityClause}
-    ORDER BY v.platform_number`).all(owner.id,nowIso()).map(area=>({...area}));
+      ${visibilityClause}
+    ORDER BY v.platform_number`).all(owner.id).map(area=>({...area}));
 }
 
 function attachProfileCoverage(db, page) {
@@ -1812,7 +1822,7 @@ export function listOwnTruckRouteOptions(user) {
     if (!latestByVehicle.has(capacity.vehicle_id)) latestByVehicle.set(capacity.vehicle_id,capacity);
   }
   const routes = [...latestByVehicle.values()]
-    .filter(capacity => ['EMPTY','PARTIAL'].includes(capacity.status) && new Date(capacity.expires_at).getTime() > Date.now())
+    .filter(capacity => ['EMPTY','PARTIAL'].includes(capacity.status))
     .flatMap(capacity => capacityRouteCandidates(capacity,{requireCurrentDate:true}))
     .map(route => ({
       ...route,
@@ -2126,6 +2136,7 @@ export function acceptDirectedShipment(user, shipmentId) {
 }
 
 const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile_id,c.vehicle_id,c.status,c.available_percent,
+  COALESCE(c.market_status,c.status) AS market_status,c.available_again_date,
   c.origin,c.destination,c.origin_place_ref,c.origin_lat,c.origin_lng,c.destination_place_ref,c.destination_lat,c.destination_lng,
   c.corridor,c.travel_date,c.next_available,c.visibility,c.updated_by,c.updated_at,c.expires_at,
   c.location_area,c.location_updated_at,c.location_precision_km,c.location_source,c.accepts_full_load,c.accepts_partial_load,
@@ -2137,23 +2148,31 @@ const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile
   v.label AS vehicle_label,v.category AS vehicle_category,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,
   v.cargo_configuration,o.name AS organization_name,o.handle AS organization_handle,
   p.business_name AS provider_name,p.handle AS provider_handle,u.name AS updated_by_name,
-  CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available`;
+  cp.contact_phone AS provider_contact_phone,
+  CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available,
+  (SELECT GROUP_CONCAT(r.origin || ' → ' || r.destination,' • ') FROM profile_routes r
+    WHERE r.organization_id=c.provider_organization_id OR r.provider_profile_id=c.provider_profile_id) AS preferred_routes_label`;
 
 function marketCapacityRow(row, freshHours, additions = {}) {
+  const status=row.market_status||row.status;
   return {
     ...row,
     ...additions,
+    status,
     proof_available:Boolean(row.proof_available),
-    freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours),
-    expiry_state:capacityExpiryState(row.expires_at)
+    freshness: capacitySignalFreshness(status,row.updated_at,row.available_again_date,freshHours,todayInEthiopia()),
+    expiry_state:status==='BUSY'&&row.available_again_date<todayInEthiopia()?'EXPIRED':'CURRENT'
   };
 }
 
 function capacityBoardQuery(user,filters={}) {
   let where=`v.active=1
     AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
-    AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?`;
-  const args=[nowIso()];
+    AND (
+      COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')
+      OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?)
+    )`;
+  const args=[todayInEthiopia()];
   if([USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role)&&user.organization_id){
     where+=` AND (c.visibility='OPEN' OR (c.visibility='SAVED_PARTNERS' AND EXISTS(
       SELECT 1 FROM partner_relationships rel WHERE rel.owner_organization_id=? AND rel.status='CONNECTED'
@@ -2207,12 +2226,24 @@ function capacityBoardQuery(user,filters={}) {
         clauses.push(`(${parts.join(' AND ')})`);
       }
     }
+    for(const reversed of [false,...(eitherDirection?[true]:[])]){
+      const parts=[`(pr.organization_id=c.provider_organization_id OR pr.provider_profile_id=c.provider_profile_id)`];
+      if(originPlace){
+        parts.push(`geo_distance_km(?,?,${reversed?'pr.destination_lat':'pr.origin_lat'},${reversed?'pr.destination_lng':'pr.origin_lng'})<=?`);
+        routeArgs.push(originPlace.center_lat,originPlace.center_lng,originRadius);
+      }
+      if(destinationPlace){
+        parts.push(`geo_distance_km(?,?,${reversed?'pr.origin_lat':'pr.destination_lat'},${reversed?'pr.origin_lng':'pr.destination_lng'})<=?`);
+        routeArgs.push(destinationPlace.center_lat,destinationPlace.center_lng,destinationRadius);
+      }
+      clauses.push(`EXISTS (SELECT 1 FROM profile_routes pr WHERE ${parts.join(' AND ')})`);
+    }
     where+=` AND c.movement_scope IN ('INTERCITY','BOTH') AND (${clauses.join(' OR ')})`;
     args.push(...routeArgs);
   }
-  if(filters.status){where+=` AND c.status=?`;args.push(filters.status);}
-  if(filters.loadType==='FTL')where+=` AND c.accepts_full_load=1`;
-  if(filters.loadType==='PTL')where+=` AND c.accepts_partial_load=1`;
+  if(filters.status){where+=` AND COALESCE(c.market_status,c.status)=?`;args.push(filters.status);}
+  if(filters.loadType==='FTL')where+=` AND COALESCE(c.market_status,c.status)<>'BUSY' AND c.accepts_full_load=1`;
+  if(filters.loadType==='PTL')where+=` AND COALESCE(c.market_status,c.status)<>'BUSY' AND c.accepts_partial_load=1`;
   if(filters.vehicleCategory){where+=` AND (v.cargo_configuration=? OR v.category=?)`;args.push(filters.vehicleCategory,filters.vehicleCategory);}
   if(Number(filters.minAvailable)>0){where+=` AND c.available_percent>=?`;args.push(Number(filters.minAvailable));}
   if(filters.routeBy){where+=` AND ((c.travel_date IS NOT NULL AND c.travel_date<=?) OR (c.current_route_date IS NOT NULL AND c.current_route_date<=?))`;args.push(filters.routeBy,filters.routeBy);}
@@ -2233,6 +2264,7 @@ function capacityBoardQuery(user,filters={}) {
   const from=`FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
     LEFT JOIN organizations o ON o.id=c.provider_organization_id
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
+    LEFT JOIN company_pages cp ON cp.organization_id=c.provider_organization_id OR cp.provider_profile_id=c.provider_profile_id
     JOIN users u ON u.id=c.updated_by`;
   return {where,args,from,currentAreaMatchExpression};
 }
@@ -2242,9 +2274,30 @@ function capacityBoardRows(user,filters={},limit=null,offset=0) {
   const areaProjection=query.currentAreaMatchExpression?`,${query.currentAreaMatchExpression} AS current_area_match`:'';
   const areaOrder=query.currentAreaMatchExpression&&filters.currentAreaMode==='PREFER'?'current_area_match DESC,':'';
   const rows=getDb().prepare(`SELECT ${CAPACITY_BOARD_COLUMNS}${areaProjection} ${query.from} WHERE ${query.where}
-    ORDER BY ${areaOrder}c.updated_at DESC${limit==null?'':' LIMIT ? OFFSET ?'}`)
-    .all(...query.args,...(limit==null?[]:[limit,offset]));
-  return rows.map(row=>marketCapacityRow(row,Number(process.env.CAPACITY_FRESH_HOURS||12),{relationshipVisible:row.visibility==='SAVED_PARTNERS'}));
+    ORDER BY ${areaOrder}CASE WHEN c.updated_at>=? THEN 0 ELSE 1 END,c.updated_at DESC${limit==null?'':' LIMIT ? OFFSET ?'}`)
+    .all(...query.args,hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)),...(limit==null?[]:[limit,offset]));
+  const organizationIds=[...new Set(rows.map(row=>row.provider_organization_id).filter(Boolean))];
+  const profileIds=[...new Set(rows.map(row=>row.provider_profile_id).filter(Boolean))];
+  const routeClauses=[];
+  const routeArgs=[];
+  if(organizationIds.length){routeClauses.push(`organization_id IN (${organizationIds.map(()=>'?').join(',')})`);routeArgs.push(...organizationIds);}
+  if(profileIds.length){routeClauses.push(`provider_profile_id IN (${profileIds.map(()=>'?').join(',')})`);routeArgs.push(...profileIds);}
+  const preferredRoutes=routeClauses.length
+    ? getDb().prepare(`SELECT * FROM profile_routes WHERE ${routeClauses.join(' OR ')} ORDER BY created_at,id`).all(...routeArgs)
+    : [];
+  const routesByOwner=new Map();
+  for(const route of preferredRoutes){
+    const key=route.organization_id?`org:${route.organization_id}`:`profile:${route.provider_profile_id}`;
+    if(!routesByOwner.has(key))routesByOwner.set(key,[]);
+    routesByOwner.get(key).push({...route,source_label:'Preferred Route',route_kind:'PROFILE'});
+  }
+  return rows.map(row=>{
+    const ownerKey=row.provider_organization_id?`org:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`;
+    return marketCapacityRow(row,Number(process.env.CAPACITY_FRESH_HOURS||12),{
+      relationshipVisible:row.visibility==='SAVED_PARTNERS',
+      preferred_routes:routesByOwner.get(ownerKey)||[]
+    });
+  });
 }
 
 function capacityMatch(row,selectedLoad){
@@ -2256,7 +2309,8 @@ function capacityMatch(row,selectedLoad){
     });
     return {score:match?2:0,label:match?'Local area covers load city':'Local areas do not align',source_label:'Local service area'};
   }
-  return bestGeographicRouteMatch(selectedLoad,capacityRouteCandidates(row,{requireCurrentDate:true}),{
+  const routes=row.status==='BUSY'?row.preferred_routes||[]:capacityRouteCandidates(row,{requireCurrentDate:true});
+  return bestGeographicRouteMatch(selectedLoad,routes,{
     originRadiusKm:50,destinationRadiusKm:50,directionMode:'DIRECT'
   });
 }
@@ -2266,7 +2320,9 @@ function rankCapacityRows(rows,selectedLoad){
     const match=capacityMatch(row,selectedLoad);
     return {...row,route_match_score:match?.score??null,route_match_label:match?.label??null,route_match_source:match?.source_label||null};
   });
-  if(selectedLoad)mapped.sort((a,b)=>(b.route_match_score??0)-(a.route_match_score??0)||new Date(b.updated_at).getTime()-new Date(a.updated_at).getTime());
+  if(selectedLoad)mapped.sort((a,b)=>(b.route_match_score??0)-(a.route_match_score??0)
+    ||(a.freshness==='FRESH'?0:1)-(b.freshness==='FRESH'?0:1)
+    ||new Date(b.updated_at).getTime()-new Date(a.updated_at).getTime());
   return mapped;
 }
 
@@ -2324,7 +2380,10 @@ export function listOwnCapacity(user, capacityId = null) {
       AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
       AND c.${scope.column}=?${assignmentCondition}${idCondition}
     ORDER BY c.updated_at DESC`).all(...args)
-    .map(row => ({ ...row, proof_available: Boolean(row.photo_path), freshness: capacityFreshness(row.updated_at,row.expires_at,freshHours), expiry_state:capacityExpiryState(row.expires_at), isOwn: true }));
+    .map(row => {
+      const status=row.market_status||row.status;
+      return { ...row, status, proof_available: Boolean(row.photo_path), freshness: capacitySignalFreshness(status,row.updated_at,row.available_again_date,freshHours,todayInEthiopia()), expiry_state:status==='BUSY'&&row.available_again_date<todayInEthiopia()?'EXPIRED':'CURRENT', isOwn: true };
+    });
 }
 
 export function listCapacity(user) {
@@ -2387,6 +2446,9 @@ export function publishCapacity(user, input, photo = null) {
   const acceptedLoads = validateAcceptedLoads(input.status,input.acceptedLoads);
   const movementScope=validateMovementScope(input.movementScope||MOVEMENT_SCOPES.INTERCITY,{allowBoth:true});
   if(movementScope===MOVEMENT_SCOPES.LOCAL&&input.status==='PARTIAL')throw new Error('LOCAL_CAPACITY_MUST_BE_EMPTY');
+  const availableAgainDate=input.status==='BUSY'?String(input.availableAgainDate||'').trim():null;
+  if(input.status==='BUSY'&&!availableAgainDate)throw new Error('BUSY_AVAILABLE_DATE_REQUIRED');
+  if(availableAgainDate&&availableAgainDate<todayInEthiopia())throw new Error('INVALID_BUSY_AVAILABLE_DATE');
   const localPlace=input.status!=='OFF_DUTY'&&[MOVEMENT_SCOPES.LOCAL,MOVEMENT_SCOPES.BOTH].includes(movementScope)
     ? {...resolvePlaceReference(input.localPlaceRef,input.localPlaceLabel),radius_km:validateServiceRadius(input.localRadiusKm)}
     : null;
@@ -2396,7 +2458,7 @@ export function publishCapacity(user, input, photo = null) {
   if(acceptsIntercity&&input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin)!==Boolean(input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
   if(acceptsIntercity&&Boolean(input.origin)!==Boolean(input.destination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
   const hasCurrentRoute=acceptsIntercity&&input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin&&input.currentRouteDestination);
-  const hasPlannedRoute=acceptsIntercity&&input.status!=='OFF_DUTY'&&Boolean(input.origin&&input.destination);
+  const hasPlannedRoute=acceptsIntercity&&!['BUSY','OFF_DUTY'].includes(input.status)&&Boolean(input.origin&&input.destination);
   const currentOriginPlace=hasCurrentRoute?resolvePlaceReference(input.currentOriginPlaceRef,input.currentRouteOrigin):null;
   const currentDestinationPlace=hasCurrentRoute?resolvePlaceReference(input.currentDestinationPlaceRef,input.currentRouteDestination):null;
   const plannedOriginPlace=hasPlannedRoute?resolvePlaceReference(input.originPlaceRef,input.origin):null;
@@ -2418,7 +2480,7 @@ export function publishCapacity(user, input, photo = null) {
   if (hasDeviceArea && (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90 || !Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180 || locationPrecisionKm !== 40)) {
     throw new Error('INVALID_APPROXIMATE_LOCATION');
   }
-  const manualLocationPlace=input.status!=='OFF_DUTY'&&acceptsIntercity&&!hasDeviceArea
+  const manualLocationPlace=input.status!=='OFF_DUTY'&&acceptsIntercity&&!localPlace&&!hasDeviceArea
     ? resolvePlaceReference(input.locationPlaceRef,input.locationArea)
     : null;
   const expiresHours = Number(process.env.CAPACITY_EXPIRES_HOURS || 24);
@@ -2429,6 +2491,7 @@ export function publishCapacity(user, input, photo = null) {
   const destination=plannedDestinationPlace?.place_label||null;
   const currentRouteOrigin=currentOriginPlace?.place_label||null;
   const currentRouteDestination=currentDestinationPlace?.place_label||null;
+  const legacyStatus=input.status==='BUSY'?'OFF_DUTY':input.status;
   const locationArea=input.status==='OFF_DUTY'?null:localPlace
     ? `Around ${localPlace.place_label}`
     : manualLocationPlace
@@ -2440,16 +2503,17 @@ export function publishCapacity(user, input, photo = null) {
     db.prepare(`INSERT INTO capacities
       (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng,local_radius_km,
        origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng,
-       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicle.id,input.status,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,
+      current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref,
+      market_status,available_again_date)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id,scope.organizationId,scope.profileId,vehicle.id,legacyStatus,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,
         hasDeviceArea?locationLat:manualLocationPlace?.center_lat??null,hasDeviceArea?locationLng:manualLocationPlace?.center_lng??null,hasDeviceArea?locationPrecisionKm:manualLocationPlace?40:null,
-        hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,hasCurrentRoute?input.currentRouteDate:null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
+        input.status==='OFF_DUTY'?null:hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,hasCurrentRoute?input.currentRouteDate:null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
         plannedOriginPlace?.place_ref||null,plannedOriginPlace?.center_lat??null,plannedOriginPlace?.center_lng??null,
         plannedDestinationPlace?.place_ref||null,plannedDestinationPlace?.center_lat??null,plannedDestinationPlace?.center_lng??null,
         currentOriginPlace?.place_ref||null,currentOriginPlace?.center_lat??null,currentOriginPlace?.center_lng??null,
         currentDestinationPlace?.place_ref||null,currentDestinationPlace?.center_lat??null,currentDestinationPlace?.center_lng??null,
-        manualLocationPlace?.place_ref||null);
+        localPlace?.place_ref||manualLocationPlace?.place_ref||null,input.status,availableAgainDate);
     audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, movementScope, localPlaceRef:localPlace?.place_ref||null, localRadiusKm:localPlace?.radius_km||null, locationArea, locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, currentRouteDate:hasCurrentRoute?input.currentRouteDate:null,plannedRouteDate:hasPlannedRoute?input.travelDate:null,plannedSpaceStatus:hasPlannedRoute?input.plannedSpaceStatus:null, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
     db.exec('COMMIT');
   } catch (error) {
@@ -2472,14 +2536,15 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
   if (!assignment) throw new Error('INVALID_VEHICLE');
   const source = onDuty
     ? db.prepare(`SELECT c.* FROM capacities c JOIN users u ON u.id=c.updated_by
-      WHERE c.vehicle_id=? AND c.status IN ('EMPTY','PARTIAL') AND (?=0 OR u.role='TRANSPORTER')
+      WHERE c.vehicle_id=? AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') AND (?=0 OR u.role='TRANSPORTER')
       ORDER BY c.updated_at DESC LIMIT 1`).get(vehicleId,isCompanyDriver(user) ? 1 : 0)
     : db.prepare('SELECT * FROM capacities WHERE vehicle_id=? ORDER BY updated_at DESC LIMIT 1').get(vehicleId);
   if (onDuty && !source) throw new Error('CAPACITY_CONFIGURATION_REQUIRED');
   const timestamp = nowIso();
   const expiresAt = hoursFromNow(Number(process.env.CAPACITY_EXPIRES_HOURS || 24));
   const id = randomId('cap-');
-  const status = onDuty ? source.status : 'OFF_DUTY';
+  const status = onDuty ? (source.market_status||source.status) : 'OFF_DUTY';
+  const legacyStatus=status==='BUSY'?'OFF_DUTY':status;
   const percent = onDuty ? source.available_percent : 0;
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -2487,14 +2552,15 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
     db.prepare(`INSERT INTO capacities
       (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,accepts_full_load,accepts_partial_load,open_to_contract_lanes,accepts_multi_stop,proof_recorded_at,current_route_origin,current_route_destination,current_route_date,planned_space_status,accepts_multi_pick,accepts_multi_drop,movement_scope,local_place_ref,local_place_label,local_center_lat,local_center_lng,local_radius_km,
        origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng,
-       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicleId,status,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,onDuty?source.current_route_date:null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null,
+      current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref,
+      market_status,available_again_date)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id,scope.organizationId,scope.profileId,vehicleId,legacyStatus,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,onDuty?source.current_route_date:null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null,
         onDuty?source.origin_place_ref:null,onDuty?source.origin_lat:null,onDuty?source.origin_lng:null,
         onDuty?source.destination_place_ref:null,onDuty?source.destination_lat:null,onDuty?source.destination_lng:null,
         onDuty?source.current_origin_place_ref:null,onDuty?source.current_origin_lat:null,onDuty?source.current_origin_lng:null,
         onDuty?source.current_destination_place_ref:null,onDuty?source.current_destination_lat:null,onDuty?source.current_destination_lng:null,
-        onDuty?source.location_place_ref:null);
+        onDuty?source.location_place_ref:null,status,onDuty?source.available_again_date:null);
     audit(db,user,onDuty ? 'VEHICLE_SET_ON_DUTY' : 'VEHICLE_SET_OFF_DUTY','vehicle',vehicleId,{restoredCapacityId:onDuty ? source.id : null});
     db.exec('COMMIT');
   } catch (error) {
@@ -2565,6 +2631,8 @@ export function listApplications(user, options = /** @type {any} */ (null)) {
 export function getAdminOperations(user, query = '', options = {}) {
   if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
   const db=getDb();
+  const view=String(options.view||'WORKSPACES').toUpperCase();
+  if(!['USERS','WORKSPACES','TRUCKS','LOADS','CAPACITY'].includes(view))throw new Error('INVALID_ADMIN_OPERATIONS_VIEW');
   const term=String(query||'').trim().toLowerCase().slice(0,80);
   const pattern=`%${term}%`;
   const matches=(expression)=>`(?='' OR lower(${expression}) LIKE ?)`;
@@ -2589,7 +2657,7 @@ export function getAdminOperations(user, query = '', options = {}) {
     WHERE ${matches("p.business_name")}`;
   const vehicleBase=`SELECT v.id,v.platform_number,v.make,v.model,v.cargo_configuration,v.plate,v.active,
       COALESCE(o.name,p.business_name) AS owner_name,
-      c.id AS capacity_id,c.status AS capacity_status,c.location_area,c.updated_at AS capacity_updated_at,c.expires_at
+      c.id AS capacity_id,COALESCE(c.market_status,c.status) AS capacity_status,c.location_area,c.updated_at AS capacity_updated_at,c.available_again_date
     FROM vehicles v
     LEFT JOIN organizations o ON o.id=v.organization_id
     LEFT JOIN provider_profiles p ON p.id=v.provider_profile_id
@@ -2602,7 +2670,7 @@ export function getAdminOperations(user, query = '', options = {}) {
     LEFT JOIN organizations provider ON provider.id=s.provider_organization_id
     LEFT JOIN provider_profiles profile ON profile.id=s.provider_profile_id
     WHERE ${matches("s.code || ' ' || s.title || ' ' || owner.name || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'')")}`;
-  const capacityBase=`SELECT c.id,c.status,c.available_percent,c.visibility,c.location_area,c.updated_at,c.expires_at,
+  const capacityBase=`SELECT c.id,COALESCE(c.market_status,c.status) AS status,c.available_percent,c.visibility,c.location_area,c.updated_at,c.available_again_date,
       v.platform_number,v.make,v.model,COALESCE(o.name,p.business_name) AS owner_name
     FROM capacities c
     JOIN vehicles v ON v.id=c.vehicle_id
@@ -2615,28 +2683,26 @@ export function getAdminOperations(user, query = '', options = {}) {
     workspaces:db.prepare('SELECT (SELECT COUNT(*) FROM organizations)+(SELECT COUNT(*) FROM provider_profiles) AS n').get().n,
     trucks:db.prepare('SELECT COUNT(*) AS n FROM vehicles').get().n,
     loads:db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
-    fresh_capacity:db.prepare(`SELECT COUNT(DISTINCT c.vehicle_id) AS n FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id WHERE v.active=1 AND c.status IN ('EMPTY','PARTIAL') AND c.expires_at>?`).get(nowIso()).n
+    board_capacity:db.prepare(`SELECT COUNT(DISTINCT c.vehicle_id) AS n FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
+      WHERE v.active=1 AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
+        AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))`).get(todayInEthiopia()).n
   };
-  const pageOptions=page=>({page,pageSize:10});
-  const pages={
-    users:paginateQuery(db,userBase,searchArgs,'active DESC,created_at DESC,id',pageOptions(options.userPage)),
-    workspaces:paginateQuery(
-      db,`${organizationBase} UNION ALL ${providerBase}`,[...searchArgs,...searchArgs],
-      'name COLLATE NOCASE,id',pageOptions(options.workspacePage)
-    ),
-    vehicles:paginateQuery(db,vehicleBase,searchArgs,'active DESC,platform_number,id',pageOptions(options.truckPage)),
-    loads:paginateQuery(db,loadBase,searchArgs,'updated_at DESC,id',pageOptions(options.loadPage)),
-    capacities:paginateQuery(db,capacityBase,searchArgs,'updated_at DESC,id',pageOptions(options.capacityPage))
-  };
-  audit(db,user,'ADMIN_OPERATIONS_VIEWED','platform',null,{queryUsed:Boolean(term)});
+  const pageOptions={page:options.page,pageSize:20};
+  const selected=view==='USERS'
+    ? paginateQuery(db,userBase,searchArgs,'active DESC,created_at DESC,id',pageOptions)
+    : view==='WORKSPACES'
+      ? paginateQuery(db,`${organizationBase} UNION ALL ${providerBase}`,[...searchArgs,...searchArgs],'name COLLATE NOCASE,id',pageOptions)
+      : view==='TRUCKS'
+        ? paginateQuery(db,vehicleBase,searchArgs,'active DESC,platform_number,id',pageOptions)
+        : view==='LOADS'
+          ? paginateQuery(db,loadBase,searchArgs,'updated_at DESC,id',pageOptions)
+          : paginateQuery(db,capacityBase,searchArgs,'updated_at DESC,id',pageOptions);
+  audit(db,user,'ADMIN_OPERATIONS_VIEWED','platform',null,{queryUsed:Boolean(term),view});
   return {
     counts,
-    users:pages.users.items,
-    workspaces:pages.workspaces.items,
-    vehicles:pages.vehicles.items,
-    loads:pages.loads.items,
-    capacities:pages.capacities.items,
-    pagination:pages,
+    view,
+    items:selected.items,
+    pagination:selected,
     query:term
   };
 }

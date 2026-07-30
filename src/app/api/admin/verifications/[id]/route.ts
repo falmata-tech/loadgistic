@@ -11,8 +11,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   try {
     reviewVerification(user,id,text(form,'status'),text(form,'note'));
-    return redirectWith(request,'/admin/verifications','success','Verification reviewed.');
+    return redirectWith(request,'/admin/reviews?tab=documents','success','Verification reviewed.');
   } catch(error) {
-    return redirectWith(request,'/admin/verifications','error',errorMessage(error));
+    return redirectWith(request,'/admin/reviews?tab=documents','error',errorMessage(error));
   }
 }

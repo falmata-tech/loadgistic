@@ -17,7 +17,9 @@
 - Virtual PSTL discovery over compatible Posted PTL demand
 - Road-freight workflows
 - Load discovery and provider interest
-- Self-managed Driver capacity Home with duty state, Empty/Partial slider, FTL/PTL/Both, Direct/Multi Pick/Multi Drop, general-area freshness, dated current partial route, dated Full/Partial future travel, contract routes, Public/Partners visibility, expiry, and timestamped photo support
+- Self-managed Driver capacity Home with duty state, Empty/Partial/Busy availability, FTL/PTL/Both, Direct/Multi Pick/Multi Drop, general-area freshness, dated current partial route, dated Full/Partial future travel, contract routes, Public/Partners visibility, and timestamped photo support
+- Persistent stale Empty/Partial Capacity Board signals with explicit relative-age warnings, plus Busy available-again signals that leave discovery after their ready date until refreshed
+- Single-city Local and Both capacity input, where the local city is also the truck's current general area
 - Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
 - My Fleet roster with truck-specific detail/capacity pages and read-only provider Capacity Board
 - Permanent Loadgistic truck numbers used in member discovery, with private operational plates retained for owners and administrators
@@ -78,11 +80,12 @@
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reversible deep-detail Back controls with safe direct-link fallbacks
-- Searchable admin Operations inventory with bounded safe projections and audited account/truck controls
+- Searchable, tabbed admin Operations inventory with one bounded safe projection at a time and audited account/truck controls
+- Unified admin Review Center for applications, documents, low ratings, and payments, with server-side queue filtering and pagination
 - Server-owned pagination for Boards, Directory, My Loads/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
 - Opt-in comprehensive local dataset covering all 30 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 178 desktop/mobile screenshots and zero browser-flow errors; its one mobile Operations overflow finding was fixed and passed a focused 412 px re-audit
-- Local Node evidence: 70 tests passed, including coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Reusable all-role visual audit with 186 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
+- Local Node evidence: 76 tests passed, including Busy/stale capacity behavior, coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 38 passed and four expected viewport skips
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
@@ -92,6 +95,10 @@
 ## Requires an internet-enabled environment
 
 - Apply Supabase migrations `001` through `007` through Supabase CLI
+
+## Planned external integration
+
+- Implement the disabled `FEAT-SUP-001` support adapter after choosing and provisioning Chatwoot Cloud or self-hosted Premium, defining retention and residency, and supplying signed identity-validation and webhook credentials.
 
 ## Repository administration still required
 

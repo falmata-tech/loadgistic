@@ -244,7 +244,9 @@ test('Board geography uses endpoint coordinates, radii, direction, and obscured 
   destinationPlaceRef:'builtin:mekelle',destination:'Mekelle, Ethiopia',destinationRadiusKm:'10',
   directionMode:'EITHER'
  });
- assert.equal(direct.some(capacity=>capacity.id==='cap-partner-partial'),false);
+ // Preferred Routes are authoritative matching candidates even when the truck's
+ // dated partial route points in the reverse direction.
+ assert.equal(direct.some(capacity=>capacity.id==='cap-partner-partial'),true);
  assert.equal(either.some(capacity=>capacity.id==='cap-partner-partial'),true);
  const nearCurrent=repo.listMarketCapacity(shipper,{
   currentAreaPlaceRef:'builtin:addis ababa',currentArea:'Addis Ababa, Ethiopia',
@@ -280,18 +282,40 @@ test('Load Board removes demand after two delivery-deadline grace days but keeps
  db.prepare('UPDATE shipments SET delivery_date=? WHERE id=?').run(original.delivery_date,'shp-freight-fixed');
 });
 
-test('capacity warns its owner before expiry and disappears from the Board at expiry',()=>{
+test('stale Empty or Partial stays on the Board with an old-update warning',()=>{
  const db=dbModule.getDb();
  const driver=repo.getUserById('user-driver');
  const shipper=repo.getUserById('user-shipper');
- const original=db.prepare('SELECT expires_at FROM capacities WHERE id=?').get('cap-partial');
- db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(new Date(Date.now()+60*60*1000).toISOString(),'cap-partial');
- assert.equal(repo.listOwnCapacity(driver).find(capacity=>capacity.id==='cap-partial').expiry_state,'EXPIRING');
- assert.equal(repo.listMarketCapacity(shipper).some(capacity=>capacity.id==='cap-partial'),true);
- db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(new Date(Date.now()-1000).toISOString(),'cap-partial');
- assert.equal(repo.listOwnCapacity(driver).find(capacity=>capacity.id==='cap-partial').expiry_state,'EXPIRED');
- assert.equal(repo.listMarketCapacity(shipper).some(capacity=>capacity.id==='cap-partial'),false);
- db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(original.expires_at,'cap-partial');
+ const original=db.prepare('SELECT expires_at,updated_at FROM capacities WHERE id=?').get('cap-partial');
+ db.prepare('UPDATE capacities SET expires_at=?,updated_at=? WHERE id=?').run(new Date(Date.now()-1000).toISOString(),new Date(Date.now()-48*60*60*1000).toISOString(),'cap-partial');
+ const own=repo.listOwnCapacity(driver).find(capacity=>capacity.id==='cap-partial');
+ assert.equal(own.freshness,'UPDATE_NEEDED');
+ assert.equal(repo.listMarketCapacity(shipper).find(capacity=>capacity.id==='cap-partial').freshness,'UPDATE_NEEDED');
+ db.prepare('UPDATE capacities SET expires_at=?,updated_at=? WHERE id=?').run(original.expires_at,original.updated_at,'cap-partial');
+});
+
+test('Busy requires future availability and leaves the Board after its ready date',()=>{
+ const db=dbModule.getDb();
+ const driver=repo.getUserById('user-driver');
+ const shipper=repo.getUserById('user-shipper');
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const tomorrow=new Date(`${today}T12:00:00.000Z`);tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+ const id=repo.publishCapacity(driver,{
+  vehicleId:'veh-driver-1',
+  status:'BUSY',
+  movementScope:'BOTH',
+  localPlaceRef:'builtin:addis ababa',
+  localPlaceLabel:'Addis Ababa, Ethiopia',
+  localRadiusKm:'25',
+  availableAgainDate:tomorrow.toISOString().slice(0,10),
+  visibility:'OPEN'
+ });
+ const busy=repo.listMarketCapacity(shipper).find(capacity=>capacity.id===id);
+ assert.equal(busy.status,'BUSY');
+ assert.equal(busy.available_percent,0);
+ assert.ok(Array.isArray(busy.preferred_routes));
+ db.prepare('UPDATE capacities SET available_again_date=? WHERE id=?').run('2020-01-01',id);
+ assert.equal(repo.listMarketCapacity(shipper).some(capacity=>capacity.id===id),false);
 });
 
 test('shipper creates quote-requested open freight load',()=>{
@@ -465,11 +489,14 @@ test('local capacity can publish without an intercity route and is filterable by
 
 test('admin operations inventory is bounded and omits sensitive fields',()=>{
  const admin=repo.getUserById('user-admin');
- const operations=repo.getAdminOperations(admin,'LG-TRK');
- assert.ok(operations.vehicles.length>=3);
- assert.ok(operations.vehicles.every(vehicle=>vehicle.platform_number));
- assert.ok(operations.capacities.every(capacity=>!Object.hasOwn(capacity,'location_lat')&&!Object.hasOwn(capacity,'photo_path')));
- assert.ok(operations.users.every(user=>!Object.hasOwn(user,'password_hash')));
+ const trucks=repo.getAdminOperations(admin,'LG-TRK',{view:'TRUCKS'});
+ assert.equal(trucks.view,'TRUCKS');
+ assert.ok(trucks.items.length>=3);
+ assert.ok(trucks.items.every(vehicle=>vehicle.platform_number));
+ const capacity=repo.getAdminOperations(admin,'',{view:'CAPACITY'});
+ assert.ok(capacity.items.every(row=>!Object.hasOwn(row,'location_lat')&&!Object.hasOwn(row,'photo_path')));
+ const users=repo.getAdminOperations(admin,'',{view:'USERS'});
+ assert.ok(users.items.every(user=>!Object.hasOwn(user,'password_hash')));
 });
 
 test('provider Capacity Board excludes own trucks and does not expose photo paths',()=>{

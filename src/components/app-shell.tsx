@@ -4,7 +4,6 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from './logo';
 import {
-  BadgeCheck,
   ClipboardCheck,
   CreditCard,
   Database,
@@ -14,7 +13,6 @@ import {
   MoreHorizontal,
   PackageSearch,
   Search,
-  Star,
   Truck,
   Users,
   Network,
@@ -63,10 +61,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   ADMIN: [
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/admin/operations', label: 'Operations', icon: Database },
-    { href: '/admin/applications', label: 'Applications', icon: ClipboardCheck },
-    { href: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
-    { href: '/admin/ratings', label: 'Rating Reviews', icon: Star },
-    { href: '/admin/billing', label: 'Billing Review', icon: ClipboardCheck },
+    { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
@@ -78,7 +73,7 @@ const mobileNavigation: Record<string, string[]> = {
   RECEIVER: ['/app/home', '/app/shipments', '/app/providers', '/app/capacity', '/app/more'],
   TRANSPORTER: ['/app/home', '/app/fleet', '/app/loads', '/app/shipments', '/app/more'],
   DRIVER: ['/app/home', '/app/loads', '/app/shipments', '/app/providers', '/app/more'],
-  ADMIN: ['/app/home', '/admin/operations', '/admin/applications', '/app/shipments', '/app/more']
+  ADMIN: ['/app/home', '/admin/operations', '/admin/reviews', '/app/shipments', '/app/more']
 };
 
 const roleLabels: Record<string, string> = {
@@ -93,7 +88,7 @@ const mobileLabels: Record<string, string> = {
   '/app/company-page': 'Profile',
   '/app/loads': 'Loads',
   '/app/capacity': 'Capacity',
-  '/admin/applications': 'Applications',
+  '/admin/reviews': 'Reviews',
   '/admin/operations': 'Operations',
   '/admin/ratings': 'Rating Reviews',
   '/admin/billing': 'Billing'
