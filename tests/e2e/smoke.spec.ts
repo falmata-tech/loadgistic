@@ -221,6 +221,25 @@ test('application presents one business category and two transporter categories'
   await expect(page.getByLabel('Account phone')).toBeVisible();
 });
 
+test('self-service signup creates an immediately usable seven-day trial', async ({ page }: { page:any }) => {
+  const email=`new-business-${Date.now()}@loadgistic.local`;
+  await page.goto('/apply');
+  await page.getByLabel('Your name').fill('New Business Owner');
+  await page.getByLabel('Workspace name').fill('New Workshop PLC');
+  await page.getByLabel('Account email').fill(email);
+  await page.getByLabel('Account phone').fill('+251 911 765 432');
+  await page.getByLabel('Password').fill('StrongPass123!');
+  await page.getByRole('button',{name:'Sign up'}).click();
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByText('Account ready. Log in to start your 7-day trial.')).toBeVisible();
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill('StrongPass123!');
+  await page.getByRole('button',{name:/Log in/i}).click();
+  await expect(page).toHaveURL(/\/app\/home/);
+  await page.goto('/app/more');
+  await expect(page.getByText(/Trial/i).first()).toBeVisible();
+});
+
 test('homepage previews live structured Board facts without exposing member identity', async ({ page }: { page: any }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: "Ethiopia's road-freight marketplace." })).toBeVisible();
@@ -396,7 +415,7 @@ test('Business sees truck-first capacity detail and the full fleet roster', asyn
   await expect(page.getByText('2 registered.')).toBeVisible();
   await expect(page.getByText('Isuzu · FSR').first()).toBeVisible();
   await expect(page.getByText('Sinotruk · HOWO TX')).toBeVisible();
-  await expect(page.getByTitle('Vehicle authority: Verified')).toBeVisible();
+  await expect(page.getByTitle('Truck authority: Verified')).toBeVisible();
 });
 
 test('Business profile editor uses paired Freight Route inputs', async ({ page }: { page: any }) => {
@@ -417,12 +436,13 @@ test('member verification center and admin review queue are available', async ({
   await page.goto('/app/verification');
   await expect(page.getByRole('heading',{name:'Verification',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Submit verification'})).toBeVisible();
-  await expect(page.getByText('Business license').first()).toBeVisible();
+  await expect(page.getByRole('option',{name:'Business license'})).toHaveCount(1);
   await page.context().clearCookies();
   await login(page,'admin@loadgistic.local');
   await page.goto('/admin/verifications');
   await expect(page).toHaveURL(/\/admin\/reviews\?tab=documents/);
   await expect(page.getByRole('heading',{name:'Review Center'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Applications'})).toHaveCount(0);
   await expect(page.getByText('Vehicle ownership').first()).toBeVisible();
   await page.goto('/admin/operations');
   await expect(page.getByRole('heading',{name:'Platform Operations'})).toBeVisible();

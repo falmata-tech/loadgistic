@@ -1,22 +1,23 @@
 ---
 id: FEAT-APP-001
-title: Account signup and approval
+title: Immediate account signup
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001]
-problem: Businesses looking for logistics capacity and transporters looking for shipment demand require reviewed accounts before accessing operating features.
-behavior: A public user signs up for either a Business account or a Transporter category; an administrator approves or rejects once; only approval activates the user and workspace.
-contracts: [ApplicationCommand, ApplicationStatus, AdminReviewPolicy, WorkspaceProvisioner]
-observability: [application_audit, review_outcome, rate_limit_outcome]
-rollout: Monitor failed submissions and approval errors; keep activation transactional.
+problem: Businesses looking for logistics capacity and transporters looking for shipment demand need low-friction accounts without confusing account access with document verification.
+behavior: A public user signs up for either a Business account or a Transporter category; the active account, correct workspace, and seven-day trial are provisioned atomically; authenticity remains unverified until evidence is approved.
+contracts: [SignupCommand, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
+observability: [signup_audit, workspace_provisioned, trial_provisioned, rate_limit_outcome]
+rollout: Monitor failed signups and transactional provisioning errors; retain immutable signup records without an administrator application queue.
 ---
 
-# Business applications
+# Account signup
 
 ### Scenario: signup submitted
 
 Given a unique email, supported account type, and password of at least ten characters\
 When the public signup form is submitted\
-Then an inactive user and pending application are created atomically\
-And the user is told approval is required before login.
+Then an active user, the correct workspace, a draft Public Profile Info record, and seven-day trial are created atomically\
+And an approved signup record is retained for audit history\
+And the user can log in immediately.
 
 ### Scenario: application choices use demand and transporter language
 
@@ -26,36 +27,24 @@ Then demand-side companies are presented as Businesses looking for capacity\
 And supply-side applicants are presented as Fleet Transporter or Self-managed Driver / Owner-Operator\
 And no additional provider category is available.
 
-### Scenario: administrator approves
+### Scenario: signup provisions the right workspace
 
-Given a pending application and an authenticated administrator\
-When the administrator approves it\
-Then the correct organization or independent provider profile is provisioned\
-And the user becomes active\
-And the workspace receives either its seven-day trial or an eligible reviewed Business sponsorship.
+Given a supported account type\
+When signup succeeds\
+Then a Business receives an organization workspace\
+And a Fleet Transporter receives a transporter organization workspace\
+And a Self-managed Driver receives an independent provider profile\
+And no identity, license, driver, or truck verification is inferred from signup.
 
-### Scenario: non-admin review is denied
+### Scenario: signup is atomic
 
-Given a non-administrator\
-When they attempt to review an application\
-Then the command is rejected and no application state changes.
-
-### Scenario: terminal application review is immutable
-
-Given an application has been approved or rejected\
-When an administrator attempts another review\
-Then the command is rejected\
-And no second workspace, subscription, or review audit is created.
-
-### Scenario: pending seed application respects the approval boundary
-
-Given the deterministic local fixture database is initialized\
-When the seeded pending application is inspected\
-Then its applicant is inactive and has no organization or provider profile\
-And no active workspace user is also represented as that pending applicant.
+Given any user, workspace, profile, membership, company-page, signup-record, or trial write fails\
+When signup is attempted\
+Then the transaction is rolled back\
+And no partially usable account or orphan signup record remains.
 
 ## Contract ownership
 
-- Inbound adapters: `/apply`, `/admin/applications`, related route handlers
-- Application service: `createBusinessApplication`, `reviewApplication`
+- Inbound adapter: `/apply` and its signup route handler
+- Application service: `createBusinessApplication`
 - Tests: `tests/repository.test.mjs`

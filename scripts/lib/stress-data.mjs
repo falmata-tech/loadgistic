@@ -474,20 +474,18 @@ export function populateStressData(db, { scale = 1 } = {}) {
       VALUES (?,?,?,?,?,?,?,?,?)`);
     for (let applicantIndex = 1; applicantIndex <= profile.applicants; applicantIndex += 1) {
       const suffix = pad(applicantIndex);
-      const applicationTypes = ['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER','TRANSPORT_COMPANY','INDEPENDENT_PROVIDER'];
-      const applicationType = applicationTypes[(applicantIndex - 1) % applicationTypes.length];
-      const role = applicationType === 'TRANSPORT_COMPANY' ? 'TRANSPORTER' : applicationType === 'INDEPENDENT_PROVIDER' ? 'DRIVER' : applicantIndex % 2 ? 'SHIPPER' : 'RECEIVER';
-      const statuses = ['PENDING','MORE_INFO','REJECTED'];
-      const status = statuses[(applicantIndex - 1) % statuses.length];
-      const userId = `stress-user-applicant-${suffix}`;
+      const business=businesses[(applicantIndex-1)%businesses.length];
+      const applicationType=business.role==='SHIPPER'?'ENTERPRISE_SHIPPER':'ENTERPRISE_RECEIVER';
+      const userId=`stress-user-signup-${suffix}`;
       userInsert.run(
-        userId,`applicant-${suffix}@stress.loadgistic.local`,null,passwordHash,
-        `Applicant ${suffix}`,role,null,null,0,days(now,-applicantIndex).toISOString()
+        userId,`signup-${suffix}@stress.loadgistic.local`,null,passwordHash,
+        `Signup Member ${suffix}`,business.role,business.id,null,1,days(now,-applicantIndex).toISOString()
       );
+      db.prepare(`INSERT INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,'MEMBER')`)
+        .run(`stress-membership-signup-${suffix}`,userId,business.id);
       applicationInsert.run(
-        `stress-application-${suffix}`,userId,`Growing Enterprise ${suffix}`,applicationType,status,0,
-        status === 'PENDING' ? 'Awaiting initial document review.' : status === 'MORE_INFO' ? 'Please provide a clearer business document.' : 'Application details could not be verified.',
-        days(now,-applicantIndex).toISOString(),days(now,-Math.max(0,applicantIndex - 1)).toISOString()
+        `stress-application-${suffix}`,userId,business.name,applicationType,'APPROVED',0,
+        'Workspace created by self-service signup.',days(now,-applicantIndex).toISOString(),days(now,-applicantIndex).toISOString()
       );
     }
     for (let approvedIndex = 0; approvedIndex < Math.min(10,businesses.length); approvedIndex += 1) {
@@ -495,7 +493,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
       applicationInsert.run(
         `stress-application-approved-${pad(approvedIndex + 1)}`,business.userId,business.name,
         business.role === 'SHIPPER' ? 'ENTERPRISE_SHIPPER' : 'ENTERPRISE_RECEIVER','APPROVED',approvedIndex === 5 ? 1 : 0,
-        'Workspace provisioned after successful review.',days(now,-180 - approvedIndex).toISOString(),days(now,-175 - approvedIndex).toISOString()
+        'Workspace created by self-service signup.',days(now,-180 - approvedIndex).toISOString(),days(now,-180 - approvedIndex).toISOString()
       );
     }
 
@@ -1254,7 +1252,7 @@ export function assertStressDataIntegrity(db, report = getStressDataReport(db)) 
     capacityMovementScopes:['BOTH','INTERCITY','LOCAL'],
     relationshipStates:['CONNECTED','DECLINED','FAVORITE','PENDING'],
     verificationStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
-    applicationStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
+    applicationStates:['APPROVED'],
     subscriptionStates:['ACTIVE','PAYMENT_REQUIRED','PAYMENT_UNDER_REVIEW','SPONSORED','TRIAL'],
     paymentStates:['APPROVED','MORE_INFO','PENDING','REJECTED'],
     ratingStates:['DISMISSED','PENDING','PUBLISHED']

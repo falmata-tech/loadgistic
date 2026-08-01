@@ -73,8 +73,8 @@
 
 - Workspace-owned subscription: Business and Fleet Transporter subscriptions belong to an organization; a Self-managed Driver subscription belongs to its provider profile
 - Company Drivers inherit their Fleet Transporter's subscription
-- Seven-day Trial created on application approval
-- Business-only Sponsored access selected by an administrator during application review
+- Seven-day Trial created on successful signup
+- Business-only Sponsored access granted by an administrator from Operations
 - Positive amount actually paid and optional private Payment Proof
 - Thirty-day Active period created when an administrator marks payment paid
 - Expired or under-review operating restriction with retained Home, account, billing, and logout access

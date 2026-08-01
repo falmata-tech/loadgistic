@@ -324,7 +324,6 @@ export function getDashboard(user) {
   const data = { role: user.role, actions: [], counts: {}, recent: [], capacities: [], notifications: listNotifications(user) };
   if (user.role === USER_ROLES.ADMIN) {
     data.counts = {
-      Applications: db.prepare(`SELECT COUNT(*) AS n FROM applications WHERE status='PENDING'`).get().n,
       'Rating Reviews': db.prepare(`SELECT COUNT(*) AS n FROM business_reviews WHERE status='PENDING'`).get().n,
       Organizations: db.prepare('SELECT COUNT(*) AS n FROM organizations').get().n,
       Loads: db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
@@ -336,7 +335,7 @@ export function getDashboard(user) {
     data.actions = [
       { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect one focused client, truck, shipment, or capacity view.' },
       { href: '/admin/reviews?tab=ratings', label: 'Review low ratings', description: 'Investigate private one- to three-star Business ratings.' },
-      { href: '/admin/reviews?tab=applications', label: 'Review applications', description: 'Approve or request more information.' },
+      { href: '/admin/reviews?tab=documents', label: 'Review trust documents', description: 'Verify identities, licenses, drivers, and trucks.' },
       { href: '/app/providers', label: 'View transporter directory', description: 'Inspect authenticated transporter pages.' }
     ];
     data.recent = db.prepare('SELECT code,title,service_mode,operational_status,origin,destination,created_at FROM shipments ORDER BY created_at DESC LIMIT 6').all();
@@ -1028,6 +1027,14 @@ function verificationBadgesBySubject(db,subjects) {
 function ratingSummary(db, organizationId) {
   return db.prepare(`SELECT COUNT(*) AS review_count,ROUND(AVG(rating),1) AS average_rating
     FROM business_reviews WHERE subject_organization_id=? AND status='PUBLISHED'`).get(organizationId);
+}
+
+function ratingSummariesByOrganization(db, organizationIds) {
+  const ids=[...new Set(organizationIds.filter(Boolean))];
+  if(!ids.length)return new Map();
+  return new Map(db.prepare(`SELECT subject_organization_id,COUNT(*) AS review_count,ROUND(AVG(rating),1) AS average_rating
+    FROM business_reviews WHERE status='PUBLISHED' AND subject_organization_id IN (${ids.map(()=>'?').join(',')})
+    GROUP BY subject_organization_id`).all(...ids).map(row=>[row.subject_organization_id,row]));
 }
 
 export function paginateResults(rows, options = {}) {
@@ -1952,6 +1959,7 @@ function loadBoardQuery(user,mode,filters={}) {
 
 const LOAD_BOARD_COLUMNS=`s.id,s.code,s.title,s.service_mode,s.distribution_mode,s.price_mode,s.price_minor,s.target_price_minor,
   s.shipper_organization_id,s.receiver_organization_id,s.provider_organization_id,s.provider_profile_id,
+  COALESCE(s.load_owner_organization_id,s.shipper_organization_id) AS load_owner_organization_id,
   s.origin,s.destination,s.origin_place_ref,s.origin_lat,s.origin_lng,s.destination_place_ref,s.destination_lat,s.destination_lng,
   s.cargo_description,s.package_count,s.vehicle_category,s.load_type,s.pickup_date,s.delivery_date,
   s.commercial_status,s.operational_status,s.tracking_mode,s.created_at,s.updated_at,s.movement_scope,
@@ -1982,7 +1990,16 @@ function loadBoardRows(user,mode,filters={},limit=null,offset=0){
     EXISTS(SELECT 1 FROM shipment_interests i WHERE i.shipment_id=s.id AND (i.provider_organization_id=? OR i.provider_profile_id=?)) AS interested
     ${query.from} WHERE ${query.where} ORDER BY s.created_at DESC${suffix}`)
     .all(user.organization_id||'',user.provider_profile_id||'',...query.args,...(limit==null?[]:[limit,offset]));
-  return canContactBusinesses(user)?rows:rows.map(row=>({...row,load_contact_phone:null}));
+  const ownerIds=rows.map(row=>row.load_owner_organization_id).filter(Boolean);
+  const badges=verificationBadgesBySubject(db,[...new Set(ownerIds)].map(id=>({type:'ORGANIZATION',id})));
+  const ratings=ratingSummariesByOrganization(db,ownerIds);
+  const trustedRows=rows.map(row=>({
+    ...row,
+    owner_verification_badges:badges.get(`ORGANIZATION:${row.load_owner_organization_id}`)||[],
+    owner_review_count:ratings.get(row.load_owner_organization_id)?.review_count||0,
+    owner_average_rating:ratings.get(row.load_owner_organization_id)?.average_rating||null
+  }));
+  return canContactBusinesses(user)?trustedRows:trustedRows.map(row=>({...row,load_contact_phone:null}));
 }
 
 export function listLoadsPage(user,mode='ALL',filters={},options={}) {
@@ -2314,11 +2331,29 @@ function capacityBoardRows(user,filters={},limit=null,offset=0) {
     if(!routesByOwner.has(key))routesByOwner.set(key,[]);
     routesByOwner.get(key).push({...route,source_label:'Preferred Route',route_kind:'PROFILE'});
   }
+  const ownerSubjects=[];
+  const vehicleSubjects=rows.map(row=>({type:'VEHICLE',id:row.vehicle_id}));
+  for(const row of rows)ownerSubjects.push(row.provider_organization_id
+    ? {type:'ORGANIZATION',id:row.provider_organization_id}
+    : {type:'PROVIDER_PROFILE',id:row.provider_profile_id});
+  const vehicleIds=[...new Set(rows.map(row=>row.vehicle_id).filter(Boolean))];
+  const assignments=vehicleIds.length?getDb().prepare(`SELECT a.vehicle_id,u.id AS driver_user_id,u.name AS driver_name
+    FROM driver_vehicle_assignments a JOIN users u ON u.id=a.driver_user_id
+    WHERE a.active=1 AND a.vehicle_id IN (${vehicleIds.map(()=>'?').join(',')})`).all(...vehicleIds):[];
+  const assignmentByVehicle=new Map(assignments.map(assignment=>[assignment.vehicle_id,assignment]));
+  const driverSubjects=assignments.map(assignment=>({type:'DRIVER',id:assignment.driver_user_id}));
+  const trustBadges=verificationBadgesBySubject(getDb(),[...ownerSubjects,...vehicleSubjects,...driverSubjects]);
   return rows.map(row=>{
     const ownerKey=row.provider_organization_id?`org:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`;
+    const ownerSubject=row.provider_organization_id?`ORGANIZATION:${row.provider_organization_id}`:`PROVIDER_PROFILE:${row.provider_profile_id}`;
+    const assignment=assignmentByVehicle.get(row.vehicle_id);
     return marketCapacityRow(row,Number(process.env.CAPACITY_FRESH_HOURS||12),{
       relationshipVisible:row.visibility==='SAVED_PARTNERS',
-      preferred_routes:routesByOwner.get(ownerKey)||[]
+      preferred_routes:routesByOwner.get(ownerKey)||[],
+      owner_verification_badges:trustBadges.get(ownerSubject)||[],
+      vehicle_verification_badges:trustBadges.get(`VEHICLE:${row.vehicle_id}`)||[],
+      assigned_driver_name:assignment?.driver_name||null,
+      driver_verification_badges:assignment?trustBadges.get(`DRIVER:${assignment.driver_user_id}`)||[]:[]
     });
   });
 }
@@ -3057,17 +3092,40 @@ export function updateSupportAgent(user,agentUserId,input) {
   }
 }
 
-export function listApplications(user, options = /** @type {any} */ (null)) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
-  const db=getDb();
-  if (!options) return db.prepare(`SELECT a.*,u.email,u.name FROM applications a JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC`).all();
-  const status = String(options.status||'ALL').toUpperCase();
-  const search = String(options.q||'').trim().toLowerCase();
-  const args=[];
-  let where='1=1';
-  if(status!=='ALL'){where+=' AND a.status=?';args.push(status);}
-  if(search){where+=` AND lower(a.business_name || ' ' || u.email || ' ' || u.name || ' ' || a.application_type || ' ' || a.status) LIKE ?`;args.push(`%${search}%`);}
-  return paginateQuery(db,`SELECT a.*,u.email,u.name FROM applications a JOIN users u ON u.id=a.user_id WHERE ${where}`,args,'created_at DESC',options);
+function provisionApplicationWorkspace(db, application, timestamp, sponsoredFree = false) {
+  if (application.organization_id || application.provider_profile_id) {
+    return {organizationId:application.organization_id||null,providerProfileId:application.provider_profile_id||null};
+  }
+  const handle = `${slugify(application.business_name)}-${Math.random().toString(16).slice(2,6)}`;
+  const trialEndsAt = accessPeriodEnd(timestamp,TRIAL_DAYS);
+  if (application.application_type === 'INDEPENDENT_PROVIDER') {
+    const providerId = randomId('provider-');
+    db.prepare(`INSERT INTO provider_profiles (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at) VALUES (?,?,?,?,0,0,0,NULL,NULL,NULL,NULL,?,'PUBLIC',?)`)
+      .run(providerId,application.user_id,application.business_name,handle,'Complete your profile and submit documents to earn trust badges.',timestamp);
+    db.prepare(`INSERT INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,contact_email,published,updated_at) VALUES (?,NULL,?,?,?,?,?,?,?,?,?,?)`)
+      .run(randomId('page-'),providerId,'Self-managed freight provider','Complete this Public Profile Info before publishing.','','','','','',0,timestamp);
+    db.prepare('UPDATE users SET provider_profile_id=?,active=1 WHERE id=?').run(providerId,application.user_id);
+    db.prepare(`INSERT INTO subscriptions
+      (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
+      VALUES (?,NULL,?,'plan-solo','TRIAL','FLAT_MONTHLY',?,?,?)`)
+      .run(randomId('sub-'),providerId,timestamp,trialEndsAt,timestamp);
+    return {organizationId:null,providerProfileId:providerId,trialEndsAt};
+  }
+  const orgId = randomId('org-');
+  db.prepare(`INSERT INTO organizations (id,name,handle,type,verified,industry,description,phone,email,city,public_visibility,created_at) VALUES (?,?,?,?,0,NULL,?,NULL,NULL,NULL,'PUBLIC',?)`)
+    .run(orgId,application.business_name,handle,application.application_type,'Complete your profile and submit documents to earn trust badges.',timestamp);
+  db.prepare(`INSERT INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,'OWNER')`).run(randomId('mem-'),application.user_id,orgId);
+  db.prepare(`INSERT INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,contact_email,published,updated_at) VALUES (?,?,NULL,?,?,?,?,?,?,?,0,?)`)
+    .run(randomId('page-'),orgId,'Business logistics profile','Complete this Public Profile Info before publishing.','','','','','',timestamp);
+  db.prepare('UPDATE users SET organization_id=?,active=1 WHERE id=?').run(orgId,application.user_id);
+  const planId = application.application_type === 'TRANSPORT_COMPANY' ? 'plan-transport' : 'plan-business';
+  const subscriptionStatus = sponsoredFree ? 'SPONSORED' : 'TRIAL';
+  const billingModel = sponsoredFree ? 'SPONSORED_FREE' : 'FLAT_MONTHLY';
+  db.prepare(`INSERT INTO subscriptions
+    (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
+    VALUES (?,?,NULL,?,?,?,?,?,?)`)
+    .run(randomId('sub-'),orgId,planId,subscriptionStatus,billingModel,timestamp,sponsoredFree ? null : trialEndsAt,timestamp);
+  return {organizationId:orgId,providerProfileId:null,trialEndsAt:sponsoredFree?null:trialEndsAt};
 }
 
 export function getAdminOperations(user, query = '', options = {}) {
@@ -3088,13 +3146,15 @@ export function getAdminOperations(user, query = '', options = {}) {
   const organizationBase=`SELECT o.id,'ORGANIZATION' AS record_kind,o.name,o.type,o.city,o.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.organization_id=o.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS truck_count,
-      (SELECT COUNT(*) FROM shipments s WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=o.id OR s.provider_organization_id=o.id) AS load_count
+      (SELECT COUNT(*) FROM shipments s WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=o.id OR s.provider_organization_id=o.id) AS load_count,
+      (SELECT status FROM subscriptions sub WHERE sub.organization_id=o.id ORDER BY sub.updated_at DESC LIMIT 1) AS subscription_status
     FROM organizations o
     WHERE ${matches("o.name || ' ' || o.type")}`;
   const providerBase=`SELECT p.id,'PROVIDER_PROFILE' AS record_kind,p.business_name AS name,'SELF_MANAGED_DRIVER' AS type,p.city,p.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.provider_profile_id=p.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS truck_count,
-      (SELECT COUNT(*) FROM shipments s WHERE s.provider_profile_id=p.id) AS load_count
+      (SELECT COUNT(*) FROM shipments s WHERE s.provider_profile_id=p.id) AS load_count,
+      (SELECT status FROM subscriptions sub WHERE sub.provider_profile_id=p.id ORDER BY sub.updated_at DESC LIMIT 1) AS subscription_status
     FROM provider_profiles p
     WHERE ${matches("p.business_name")}`;
   const vehicleBase=`SELECT v.id,v.platform_number,v.make,v.model,v.cargo_configuration,v.plate,v.active,
@@ -3181,60 +3241,23 @@ export function setAdminRecordActive(user, recordType, recordId, active) {
   throw new Error('INVALID_ADMIN_RECORD_TYPE');
 }
 
-export function reviewApplication(user, applicationId, status, notes = '', options = {}) {
+export function grantSponsoredBusinessAccess(user, organizationId) {
   if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
-  if (!['APPROVED','MORE_INFO','REJECTED'].includes(status)) throw new Error('INVALID_STATUS');
-  const db = getDb();
-  const application = db.prepare(`SELECT a.*,u.role,u.organization_id,u.provider_profile_id FROM applications a JOIN users u ON u.id=a.user_id WHERE a.id=?`).get(applicationId);
-  if (!application) throw new Error('NOT_FOUND');
-  if (['APPROVED','REJECTED'].includes(application.status)) throw new Error('APPLICATION_ALREADY_REVIEWED');
-  const sponsoredFree = status === 'APPROVED' && Boolean(options.sponsoredFree);
-  const isBusinessApplication = ['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER'].includes(application.application_type);
-  if (sponsoredFree && !isBusinessApplication) throw new Error('SPONSORED_ACCESS_BUSINESS_ONLY');
-  const timestamp = nowIso();
-  const trialEndsAt = accessPeriodEnd(timestamp,TRIAL_DAYS);
+  const db=getDb();
+  const organization=db.prepare(`SELECT id,type FROM organizations WHERE id=?`).get(organizationId);
+  if(!organization)throw new Error('NOT_FOUND');
+  if(!['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER'].includes(organization.type))throw new Error('SPONSORED_ACCESS_BUSINESS_ONLY');
+  const subscription=db.prepare(`SELECT id,status FROM subscriptions WHERE organization_id=? ORDER BY updated_at DESC LIMIT 1`).get(organization.id);
+  if(!subscription)throw new Error('NOT_FOUND');
+  if(subscription.status==='SPONSORED')return;
+  const timestamp=nowIso();
   db.exec('BEGIN IMMEDIATE');
-  try {
-    db.prepare('UPDATE applications SET status=?,sponsored_free=?,notes=?,updated_at=? WHERE id=?')
-      .run(status,sponsoredFree ? 1 : 0,notes || null,timestamp,applicationId);
-    if (status === 'APPROVED' && !application.organization_id && !application.provider_profile_id) {
-      const handle = `${slugify(application.business_name)}-${Math.random().toString(16).slice(2,6)}`;
-      if (application.application_type === 'INDEPENDENT_PROVIDER') {
-        const providerId = randomId('provider-');
-        db.prepare(`INSERT INTO provider_profiles (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at) VALUES (?,?,?,?,1,1,0,NULL,NULL,NULL,NULL,?,'PUBLIC',?)`)
-          .run(providerId,application.user_id,application.business_name,handle,'New independent provider approved through Loadgistic.',timestamp);
-        db.prepare(`INSERT INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,contact_email,published,updated_at) VALUES (?,NULL,?,?,?,?,?,?,?,?,?,?)`)
-          .run(randomId('page-'),providerId,'Independent B2B freight provider','Complete this company page before publishing.','','','','','',0,timestamp);
-        db.prepare('UPDATE users SET provider_profile_id=?,active=1 WHERE id=?').run(providerId,application.user_id);
-        db.prepare(`INSERT INTO subscriptions
-          (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
-          VALUES (?,NULL,?,'plan-solo','TRIAL','FLAT_MONTHLY',?,?,?)`)
-          .run(randomId('sub-'),providerId,timestamp,trialEndsAt,timestamp);
-      } else {
-        const orgId = randomId('org-');
-        db.prepare(`INSERT INTO organizations (id,name,handle,type,verified,industry,description,phone,email,city,public_visibility,created_at) VALUES (?,?,?,?,1,NULL,?,NULL,NULL,NULL,'PUBLIC',?)`)
-          .run(orgId,application.business_name,handle,application.application_type,'New approved Loadgistic business.',timestamp);
-        db.prepare(`INSERT INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,'OWNER')`).run(randomId('mem-'),application.user_id,orgId);
-        db.prepare(`INSERT INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,contact_email,published,updated_at) VALUES (?,?,NULL,?,?,?,?,?,?,?,0,?)`)
-          .run(randomId('page-'),orgId,'B2B logistics company page','Complete this company page before publishing.','','','','','',timestamp);
-        db.prepare('UPDATE users SET organization_id=?,active=1 WHERE id=?').run(orgId,application.user_id);
-        const planId = application.application_type === 'TRANSPORT_COMPANY' ? 'plan-transport' : 'plan-business';
-        const subscriptionStatus = sponsoredFree ? 'SPONSORED' : 'TRIAL';
-        const billingModel = sponsoredFree ? 'SPONSORED_FREE' : 'FLAT_MONTHLY';
-        db.prepare(`INSERT INTO subscriptions
-          (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
-          VALUES (?,?,NULL,?,?,?,?,?,?)`)
-          .run(randomId('sub-'),orgId,planId,subscriptionStatus,billingModel,timestamp,sponsoredFree ? null : trialEndsAt,timestamp);
-      }
-    }
-    audit(db,user,'APPLICATION_REVIEWED','application',applicationId,{
-      status,
-      sponsoredFree,
-      accessStatus:status === 'APPROVED' ? sponsoredFree ? 'SPONSORED' : 'TRIAL' : null,
-      accessEndsAt:status === 'APPROVED' && !sponsoredFree ? trialEndsAt : null
-    });
+  try{
+    db.prepare(`UPDATE subscriptions SET status='SPONSORED',billing_model='SPONSORED_FREE',ends_at=NULL,updated_at=? WHERE id=?`)
+      .run(timestamp,subscription.id);
+    audit(db,user,'SPONSORED_ACCESS_GRANTED','organization',organization.id,{subscriptionId:subscription.id});
     db.exec('COMMIT');
-  } catch (error) {
+  }catch(error){
     db.exec('ROLLBACK');
     throw error;
   }
@@ -3352,8 +3375,19 @@ export function createBusinessApplication(input) {
     db.prepare(`INSERT INTO users (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at) VALUES (?,?,?,?,?,?,?,?,0,?)`)
       .run(userId,input.email.toLowerCase(),String(input.phone).trim(),hashPassword(input.password),input.name,role,null,null,timestamp);
     db.prepare(`INSERT INTO applications (id,user_id,business_name,application_type,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(applicationId,userId,input.businessName,input.applicationType,'PENDING',input.notes || null,timestamp,timestamp);
-    audit(db,{id:userId,organization_id:null},'BUSINESS_APPLICATION_CREATED','application',applicationId,{ applicationType: input.applicationType });
+      .run(applicationId,userId,input.businessName,input.applicationType,'APPROVED',input.notes || null,timestamp,timestamp);
+    const workspace=provisionApplicationWorkspace(db,{
+      user_id:userId,
+      business_name:input.businessName,
+      application_type:input.applicationType,
+      organization_id:null,
+      provider_profile_id:null
+    },timestamp,false);
+    audit(db,{id:userId,organization_id:workspace.organizationId,provider_profile_id:workspace.providerProfileId},'ACCOUNT_SELF_PROVISIONED','application',applicationId,{
+      applicationType:input.applicationType,
+      accessStatus:'TRIAL',
+      accessEndsAt:workspace.trialEndsAt
+    });
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');

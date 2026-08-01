@@ -3,8 +3,8 @@ id: FEAT-ADM-001
 title: Focused platform operations and review center
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001]
 problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
-behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links application, document, rating, and payment queues through consistent tabs and compact review rows.
-contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, AdminAudit]
+behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document, rating, and payment queues through consistent tabs and compact review rows; signup needs no application decision.
+contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
 observability: [admin_operations_read, admin_record_status_audit, denied_admin_command]
 rollout: Add the inventory without changing tenant-facing visibility; status commands are reversible, audited, and deny non-admin callers.
 ---
@@ -21,7 +21,7 @@ And private proof paths, passwords, session values, tracking secrets, and exact 
 
 ### Scenario: dense administrative queues remain operable
 
-Given applications, verification requests, or payment proofs contain many records\
+Given verification requests, rating reports, or payment proofs contain many records\
 When an administrator searches, filters by status, or changes result pages\
 Then the server returns one bounded page of matching records\
 And terminal records do not render active review commands\
@@ -39,12 +39,20 @@ And switching record type preserves a useful search term but does not render hid
 
 ### Scenario: Review Center keeps related queues together
 
-Given an administrator needs to review onboarding or trust evidence\
+Given an administrator needs to review trust, rating, or payment evidence\
 When Review Center is opened\
-Then Applications, Documents, Ratings, and Payments are reachable as consistent tabs\
+Then Documents, Ratings, and Payments are reachable as consistent tabs\
 And one selected queue is rendered at a time\
-And legacy queue URLs redirect to their corresponding Review Center tab\
+And the legacy application URL redirects to Operations because signup no longer needs approval\
 And the browser Back action and tab links preserve understandable navigation.
+
+### Scenario: administrator grants sponsored Business access
+
+Given an existing Business workspace is selected in Operations\
+When an administrator grants sponsored free access\
+Then its subscription becomes Sponsored without an expiry\
+And the action is audited\
+And the command rejects transporter or self-managed driver workspaces.
 
 ### Scenario: administrator suspends or restores an account
 

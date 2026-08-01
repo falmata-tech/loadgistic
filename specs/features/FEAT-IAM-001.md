@@ -2,7 +2,7 @@
 id: FEAT-IAM-001
 title: Local identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
-problem: Approved businesses and transporters need secure workspace access while inactive, anonymous, or unauthorized accounts remain blocked from marketplace information.
+problem: Signed-up businesses and transporters need secure workspace access while suspended, anonymous, or unauthorized accounts remain blocked from private marketplace information.
 behavior: Valid active users receive a signed HTTP-only session, are routed to role-scoped pages on the current browser origin, and must be authenticated before reading company, provider, capacity, shipment-marketplace, or support information. Support staff use a support-only role that grants no marketplace or administration authority.
 contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
@@ -20,7 +20,7 @@ And the response redirects relatively to `/app/home` on the current origin.
 
 ### Scenario: invalid or inactive account
 
-Given an unknown email, wrong password, or inactive applicant\
+Given an unknown email, wrong password, or suspended account\
 When login is attempted\
 Then no session is created\
 And a generic credential error is returned without revealing account state.

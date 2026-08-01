@@ -11,7 +11,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Transport company workspace
 - Independent owner-operator workspace
 - Platform administrator workspace
-- Business application and approval workflow
+- Immediate Business and transporter signup with a seven-day trial
 - Role-aware desktop and mobile navigation
 - Authenticated transporter directory and company pages
 - B2B road-freight shipment creation

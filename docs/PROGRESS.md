@@ -6,7 +6,7 @@
 - Local persistent database and deterministic seed
 - Signed local authentication
 - Role-aware navigation and workspaces
-- Applications and admin approval
+- Immediate self-service signup with atomic workspace creation and seven-day trial
 - Authenticated Business and Transporter Directory with Public Profiles
 - Workspace-contained Directory and Public Profile navigation with authenticated legacy redirects
 - My Network with private Favorites, directional requests, mutual Connected relationships, and profile/directory actions
@@ -72,22 +72,23 @@
 - Explicit actor/tenant/record authorization matrix
 - Default-deny shipment-party policy shared by status, note, and proof services
 - Connected-relationship filtering for Partners freight and capacity discovery
-- Immutable terminal application and payment-proof reviews
+- Immutable terminal payment-proof reviews
 - Negative authorization contract suite and browse-only E2E coverage
 - Session-aware public navigation and authenticated provider-request continuity
-- Public login credential-fixture removal and pending-applicant seed correction
+- Public login credential-fixture removal and active self-signup seed record
 - Separate `.next-dev`, `.next`, and `.next-e2e` artifacts for the live dev server, production build, and isolated Playwright runtime
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable, tabbed admin Operations inventory with one bounded safe projection at a time and audited account/truck controls
-- Unified admin Review Center for applications, documents, low ratings, and payments, with server-side queue filtering and pagination
+- Unified admin Review Center for documents, low ratings, and payments, with server-side queue filtering and pagination
+- Board trust strips for shipment-owner identity, Business license, published reviews, company or owner-operator identity, truck authority, and assigned-driver license evidence
 - Server-owned pagination for Boards, Directory, My Shipments/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
 - Native authenticated member Support with one-open-thread enforcement, six visual topics, text-only bounded messages, least-loaded assignment, waiting queue, agent availability/capacity, dedicated SUPPORT role, admin supervision, and safe agent requeue
 - Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
 - Reusable all-role visual audit with 208 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
-- Local Node evidence: 81 tests passed, including the anonymous live-Board whitelist, Support isolation/routing, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
-- Local Playwright E2E evidence: 39 passing scenarios and five expected viewport skips, plus a focused desktop/mobile pass for the live anonymous Board and Login-to-Sign-up flow
+- Local Node evidence: 82 tests passed, including immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Playwright E2E evidence: 41 passing scenarios and five expected viewport skips across desktop and mobile, including immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
 - Stress-dataset warm-query evidence: Directory 5.19 ms median, Shipment Board 1.33 ms, Truck Board 1.42 ms, direct capacity detail 0.63 ms, and PSTL grouping 3.58 ms

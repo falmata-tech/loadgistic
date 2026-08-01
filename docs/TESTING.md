@@ -50,7 +50,7 @@ Covered workflows:
 - Transporter opens loads and capacity
 - Authenticated public-company navigation retains its session and preselects the requested provider
 - Expired workspaces retain Home and Plan & billing while operating navigation and deep links are denied
-- Application approval creates a seven-day trial or Business-only sponsorship, and payment approval creates a 30-day period
+- Self-service signup creates an active unverified workspace with a seven-day trial, Business-only sponsorship remains admin-controlled, and payment approval creates a 30-day period
 - Public login does not expose local fixture credentials
 - A member starts one private support conversation, the assigned SUPPORT agent
   replies and closes it, and an Administrator supervises the team

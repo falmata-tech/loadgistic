@@ -3,7 +3,7 @@ id: FEAT-BIL-001
 title: Time-bounded workspace subscription access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-APP-001, FEAT-TRK-001]
 problem: Business, self-managed driver, and fleet transporter workspaces need a useful trial, manually confirmed monthly access, a reviewed free-access path for qualifying starting Businesses, and predictable limits after access expires.
-behavior: Approval starts a seven-day workspace trial unless an administrator grants sponsored Business access; a manually approved payment grants 30 days; expired or unpaid workspaces retain login, Home, Account, and billing access while operating screens and commands are denied.
+behavior: Successful signup starts a seven-day workspace trial; an administrator may separately grant sponsored Business access; a manually approved payment grants 30 days; expired or unpaid workspaces retain login, Home, Account, and billing access while operating screens and commands are denied.
 contracts: [WorkspaceSubscription, SubscriptionAccessPolicy, TrialPeriod, PaidPeriod, SponsoredBusinessAccess, PaymentProofAggregate, EtbAmount, BillingReviewPolicy, BillingFilePort]
 observability: [billing_audit, subscription_access_denial, trial_provisioned, sponsored_access_granted, paid_period_started, submission_outcome, review_outcome]
 rollout: Keep review manual and plan prices undisclosed until a separately specified payment integration and commercial price schedule are approved; monitor expiry denials and renewal-review time.
@@ -36,18 +36,18 @@ And every proof remains reachable without exposing another workspace's proof.
 
 ### Scenario: new workspace receives a trial
 
-Given an administrator approves a Business, Fleet Transporter, or Self-managed Driver application\
+Given a Business, Fleet Transporter, or Self-managed Driver completes signup\
 When the workspace and subscription are provisioned\
 Then access begins immediately as a seven-day trial\
 And company Drivers use their Fleet Transporter's workspace access rather than receiving separate subscriptions.
 
 ### Scenario: administrator supports a qualifying starting Business
 
-Given a pending Business application\
-When the administrator approves it with sponsored free access\
+Given an existing Business workspace\
+When the administrator grants sponsored free access from platform operations\
 Then the Business receives continuing platform access without a payment deadline\
 And the sponsorship decision is persisted and audited\
-And the same option is rejected for Fleet Transporter or Self-managed Driver applications.
+And the same option is rejected for Fleet Transporter or Self-managed Driver workspaces.
 
 ### Scenario: administrator confirms a monthly payment
 

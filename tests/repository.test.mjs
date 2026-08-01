@@ -50,15 +50,14 @@ test('bounded result pages clamp size and keep deterministic page slices',()=>{
  assert.equal(repo.paginateResults(rows,{page:99,pageSize:500}).pageSize,100);
 });
 
-test('seeded pending application belongs only to an inactive tenantless applicant',()=>{
+test('seeded signup record belongs to an active workspace member',()=>{
  const db=dbModule.getDb();
- const pending=db.prepare(`SELECT a.id,u.active,u.organization_id,u.provider_profile_id
+ const signup=db.prepare(`SELECT a.id,u.active,u.organization_id,u.provider_profile_id
    FROM applications a JOIN users u ON u.id=a.user_id
-   WHERE a.id='app-pending' AND a.status='PENDING'`).get();
- assert.ok(pending);
- assert.equal(pending.active,0);
- assert.equal(pending.organization_id,null);
- assert.equal(pending.provider_profile_id,null);
+   WHERE a.id='app-self-signup' AND a.status='APPROVED'`).get();
+ assert.ok(signup);
+ assert.equal(signup.active,1);
+ assert.ok(signup.organization_id);
  const activePending=db.prepare(`SELECT COUNT(*) AS n FROM applications a
    JOIN users u ON u.id=a.user_id WHERE a.status='PENDING' AND u.active=1`).get();
  assert.equal(activePending.n,0);
@@ -226,6 +225,22 @@ test('Shipment and Truck Boards filter and rank by an owned route',()=>{
  assert.ok(repo.listMarketCapacity(shipper,{minAvailable:'100'}).every(truck=>truck.available_percent===100));
  assert.ok(repo.listMarketCapacity(shipper,{stopOption:'DIRECT_ONLY'}).every(truck=>!truck.accepts_multi_pick&&!truck.accepts_multi_drop));
  assert.ok(repo.listMarketCapacity(shipper,{visibility:'SAVED_PARTNERS'}).every(truck=>truck.visibility==='SAVED_PARTNERS'));
+});
+
+test('marketplace boards project approved trust evidence by owner, truck, and assigned driver',()=>{
+ const shipper=repo.getUserById('user-shipper');
+ const transporter=repo.getUserById('user-transporter');
+ const shipment=repo.listLoads(transporter).find(load=>load.load_owner_organization_id==='org-shipper');
+ assert.ok(shipment);
+ assert.deepEqual(shipment.owner_verification_badges.map(badge=>[badge.type,badge.verified]),[
+   ['IDENTITY',true],['BUSINESS_LICENSE',true]
+ ]);
+ const truck=repo.listCapacity(shipper).find(capacity=>capacity.vehicle_id==='veh-trans-1');
+ assert.ok(truck);
+ assert.ok(truck.owner_verification_badges.every(badge=>badge.verified));
+ assert.deepEqual(truck.vehicle_verification_badges,[{type:'VEHICLE_AUTHORITY',verified:true}]);
+ assert.equal(truck.assigned_driver_name,'Yonas Alemu');
+ assert.deepEqual(truck.driver_verification_badges,[{type:'DRIVER_IDENTITY',verified:true}]);
 });
 
 test('Board geography uses endpoint coordinates, radii, direction, and obscured current areas',()=>{
@@ -529,12 +544,11 @@ test('saved relationship capacity is visible only to the related business',()=>{
 });
 
 
-test('business application approval provisions a workspace and keeps account phone private',()=>{
+test('signup immediately provisions an unverified workspace trial and keeps account phone private',()=>{
  const appId=repo.createBusinessApplication({name:'Test Applicant',businessName:'Test Freight PLC',email:'test-applicant@loadgistic.local',phone:'+251 911 700 100',password:'StrongPass123!',applicationType:'TRANSPORT_COMPANY',notes:'Local test'});
- const pending=repo.getApplicationStatus('test-applicant@loadgistic.local');
- assert.equal(pending.status,'PENDING');
- const admin=repo.getUserById('user-admin');
- repo.reviewApplication(admin,appId,'APPROVED','Verified in local test');
+ const signup=repo.getApplicationStatus('test-applicant@loadgistic.local');
+ assert.equal(signup.id,appId);
+ assert.equal(signup.status,'APPROVED');
  const user=repo.findUserByEmail('test-applicant@loadgistic.local');
  assert.equal(user.active,1);
  assert.equal(user.phone,'+251 911 700 100');
@@ -545,22 +559,26 @@ test('business application approval provisions a workspace and keeps account pho
  assert.equal(billing.access.granted,true);
  const trialLength=new Date(billing.subscription.ends_at).getTime()-new Date(billing.subscription.starts_at).getTime();
  assert.equal(trialLength,7*86_400_000);
+ const approvedEvidence=dbModule.getDb().prepare(`SELECT COUNT(*) AS n FROM verification_requests
+   WHERE subject_type='ORGANIZATION' AND subject_id=? AND status='APPROVED'`).get(hydrated.organization_id);
+ assert.equal(approvedEvidence.n,0);
 });
 
 test('administrator can sponsor a qualifying Business but not a transport provider',()=>{
  const admin=repo.getUserById('user-admin');
- const businessId=repo.createBusinessApplication({name:'Sponsored Applicant',businessName:'Sponsored Workshop PLC',email:'sponsored-applicant@loadgistic.local',phone:'+251 911 700 101',password:'StrongPass123!',applicationType:'ENTERPRISE_SHIPPER',notes:'Qualifying starting Business'});
- repo.reviewApplication(admin,businessId,'APPROVED','Approved for support',{sponsoredFree:true});
+ repo.createBusinessApplication({name:'Sponsored Applicant',businessName:'Sponsored Workshop PLC',email:'sponsored-applicant@loadgistic.local',phone:'+251 911 700 101',password:'StrongPass123!',applicationType:'ENTERPRISE_SHIPPER',notes:'Qualifying starting Business'});
  const business=repo.findUserByEmail('sponsored-applicant@loadgistic.local');
+ repo.grantSponsoredBusinessAccess(admin,business.organization_id);
  const billing=repo.getBillingSummary(repo.getUserById(business.id));
  assert.equal(billing.subscription.status,'SPONSORED');
  assert.equal(billing.subscription.ends_at,null);
  assert.equal(billing.access.granted,true);
  assert.throws(()=>repo.submitPaymentProof(repo.getUserById(business.id),'100','NOT-NEEDED'),/PAYMENT_NOT_REQUIRED/);
 
- const providerId=repo.createBusinessApplication({name:'Provider Applicant',businessName:'Provider Fleet PLC',email:'provider-sponsor-test@loadgistic.local',phone:'+251 911 700 102',password:'StrongPass123!',applicationType:'TRANSPORT_COMPANY',notes:'Cannot be sponsored'});
- assert.throws(()=>repo.reviewApplication(admin,providerId,'APPROVED','Invalid sponsorship',{sponsoredFree:true}),/SPONSORED_ACCESS_BUSINESS_ONLY/);
- assert.equal(repo.getApplicationStatus('provider-sponsor-test@loadgistic.local').status,'PENDING');
+ repo.createBusinessApplication({name:'Provider Applicant',businessName:'Provider Fleet PLC',email:'provider-sponsor-test@loadgistic.local',phone:'+251 911 700 102',password:'StrongPass123!',applicationType:'TRANSPORT_COMPANY',notes:'Cannot be sponsored'});
+ const provider=repo.findUserByEmail('provider-sponsor-test@loadgistic.local');
+ assert.throws(()=>repo.grantSponsoredBusinessAccess(admin,provider.organization_id),/SPONSORED_ACCESS_BUSINESS_ONLY/);
+ assert.equal(repo.getApplicationStatus('provider-sponsor-test@loadgistic.local').status,'APPROVED');
 });
 
 test('manual payment proof can be submitted and approved',()=>{

@@ -35,7 +35,7 @@ const personas = [
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=applications', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
   },
   {
     name:'support-agent',

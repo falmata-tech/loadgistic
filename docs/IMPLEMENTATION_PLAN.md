@@ -11,7 +11,7 @@ The current implementation is a local Next.js and SQLite MVP. Accepted behavior 
 
 ## Implemented Product Areas
 
-1. Reviewed applications and signed local sessions.
+1. Immediate self-service signup and signed local sessions.
 2. Authenticated Shipment Board and truck-first Truck Board.
 3. FTL/PTL freight creation, interest, direct requests, agreement, assignment, and execution.
 4. Receiver-contact privacy after agreement.

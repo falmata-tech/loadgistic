@@ -7,7 +7,7 @@ Loadgistic is an authenticated B2B road-freight network for Ethiopia.
 - **Businesses** are shippers and receivers. The same workspace may send or receive freight.
 - **Fleet Transporters** manage multiple real trucks and the people operating them.
 - **Self-managed Drivers / Owner-Operators** manage their own truck and capacity.
-- **Administrators** review applications, billing evidence, document verification, and platform activity.
+- **Administrators** review billing evidence, document verification, ratings, and platform activity.
 
 Businesses currently join free to find capacity, publish freight shipments, request quotes, and maintain private transporter relationships. Transporters pay for access to reviewed Business demand and the organized workflow.
 
@@ -128,7 +128,7 @@ The account email and account phone used for access or account administration ar
 
 ## Verification
 
-Verification is evidence-based and separate from workspace approval. Every supported entity displays gray Not verified or blue Verified badges derived from administrator-reviewed requests. Administrators also receive a separate Rating Reviews queue for private low-rating investigation; publishing or dismissing a rating does not automatically suspend an account, and account or truck enforcement remains an explicit audited Operations action.
+Signup immediately creates an active workspace and verification remains a separate evidence-based trust layer. Every supported entity displays gray Not verified or blue Verified badges derived from administrator-reviewed requests. Shipment Board cards show shipment-owner evidence and published Business reviews. Truck Board cards separately show company or owner-operator, truck authority, and assigned-driver evidence. Administrators also receive a separate Rating Reviews queue for private low-rating investigation; publishing or dismissing a rating does not automatically suspend an account, and account or truck enforcement remains an explicit audited Operations action.
 
 - Businesses: Identity and Business license
 - Fleet transporters: Identity and Business license
@@ -185,16 +185,16 @@ they wait for meaningful input and return only bounded matches.
 
 Manual ETB payment-proof review remains a local MVP workflow. No bank password, PIN, or OTP is collected.
 
-Every newly approved workspace receives seven days of trial access. Company
+Every newly signed-up workspace receives seven days of trial access. Company
 Drivers share the Fleet Transporter's subscription. An administrator may grant
-continuing sponsored access only while approving a qualifying starting
-Business. Standard prices are not displayed yet. Approving a payment proof
+continuing sponsored access to a qualifying starting Business from Operations.
+Standard prices are not displayed yet. Approving a payment proof
 opens a 30-day access period. After trial or paid access expires, or while a
 late payment remains under review, members may still sign in, see a
 billing-focused Home, open Account and billing, submit proof, and log out; all
 operating screens and commands remain unavailable until access is restored.
 
-Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. Its initial overview is compact and searches return larger bounded results. Application, verification, and billing queues provide server-bounded search, status filters, and pagination. Administrators may reversibly suspend users or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
+Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. Its initial overview is compact and searches return larger bounded results. Verification, rating, and billing queues provide server-bounded search, status filters, and pagination. Administrators may grant sponsored access to a qualifying Business, reversibly suspend users, or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
 
 ## Source Of Truth
 

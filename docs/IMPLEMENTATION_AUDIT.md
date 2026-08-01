@@ -15,7 +15,7 @@ This rebuild is a real Next.js App Router codebase running on Node.js.
 - ETB, target-price, and Quote Requested pricing
 - Provider discovery
 - Shipment creation
-- Business application approval and workspace provisioning
+- Immediate account signup, workspace provisioning, and seven-day trial
 - Manual payment-proof approval
 - Source-route completeness check
 - Offline TypeScript syntax/type pass using local module shims

@@ -3,7 +3,7 @@ id: FEAT-VER-001
 title: Entity and truck verification
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-CAP-001]
 problem: Marketplace participants need visible, evidence-based trust signals for people, Businesses, transporters, drivers, and trucks without treating a workspace approval as document verification.
-behavior: Authorized users submit private verification documents for an owned entity, administrators review each request, and profile or truck badges are derived only from approved requests.
+behavior: Authorized users submit private verification documents for an owned entity, administrators review each request, and profiles, Shipment Board cards, or Truck Board cards derive trust badges only from approved requests while unverified accounts retain normal trial or paid access.
 contracts: [VerificationSubject, VerificationTypePolicy, VerificationSubmission, VerificationReview, VerificationBadgeSummary, VerificationFileAuthorization]
 observability: [verification_submitted_audit, verification_reviewed_audit, verification_denied_outcome]
 rollout: Document names remain extensible; keep files private, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history.
@@ -53,8 +53,27 @@ When no approved request exists\
 Then the category badge is gray and states Not verified.
 
 Given an administrator approves the category\
-When an authenticated user opens the directory profile or truck roster\
+When an authenticated user opens the directory profile, Shipment Board, Truck Board, or truck roster\
 Then that category badge is blue and states Verified.
+
+### Scenario: marketplace cards explain entity trust
+
+Given an authenticated user opens the Shipment Board\
+When a shipment owner has approved identity or Business-license evidence and published reviews\
+Then the card shows the corresponding verified owner badges and review summary\
+And absent evidence is shown as Not verified rather than omitted or inferred.
+
+Given an authenticated user opens the Truck Board\
+When a truck belongs to a fleet or self-managed driver\
+Then the card separately shows owner or company evidence, truck authority evidence, and the assigned driver's approved driver-license evidence where an assignment exists\
+And a self-managed owner-operator receives the relevant combined owner and driver evidence without duplicate claims.
+
+### Scenario: verification does not gate account access
+
+Given a newly signed-up workspace has no approved verification requests\
+When its trial or paid access is current\
+Then its authorized user can use the workspace and marketplace\
+And gray Not verified badges encourage evidence submission without blocking access.
 
 ### Scenario: verification document remains private
 

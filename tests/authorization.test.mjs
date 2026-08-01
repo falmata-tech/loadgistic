@@ -298,19 +298,21 @@ test('contact permission hides the designated Business phone and blocks negotiat
   });
 });
 
-test('application review is admin-only and terminal outcomes are immutable', () => {
-  const applicationId = repo.createBusinessApplication({
+test('self-service signup is immediately active and sponsorship remains admin-only', () => {
+  const email=`authorization-${Date.now()}@loadgistic.local`;
+  repo.createBusinessApplication({
     name: 'Authorization Applicant',
     businessName: 'Authorization Freight PLC',
-    email: `authorization-${Date.now()}@loadgistic.local`,
+    email,
     phone: '+251 911 700 200',
     password: 'StrongPass123!',
     applicationType: 'TRANSPORT_COMPANY',
     notes: 'Permission test'
   });
-  assert.throws(() => repo.reviewApplication(users.shipper, applicationId, 'APPROVED'), /FORBIDDEN/);
-  repo.reviewApplication(users.admin, applicationId, 'REJECTED', 'Rejected once');
-  assert.throws(() => repo.reviewApplication(users.admin, applicationId, 'APPROVED'), /APPLICATION_ALREADY_REVIEWED/);
+  const applicant=repo.findUserByEmail(email);
+  assert.equal(applicant.active,1);
+  assert.ok(applicant.organization_id);
+  assert.throws(()=>repo.grantSponsoredBusinessAccess(users.shipper,applicant.organization_id),/FORBIDDEN/);
 });
 
 test('verification submission enforces ownership and admin-only review', () => {
@@ -411,13 +413,11 @@ test('role and tenant checks guard remaining mutation boundaries', () => {
     serviceMode: 'FREIGHT', distributionMode: 'OPEN_MARKET', priceMode: 'QUOTE_REQUESTED'
   }), /FORBIDDEN/);
   assert.throws(() => repo.publishCapacity(users.driver, { vehicleId: 'veh-trans-1', status: 'EMPTY' }), /INVALID_VEHICLE/);
-  assert.throws(() => repo.listApplications(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.listPaymentProofs(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.listVerificationRequests(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.getAdminOperations(users.shipper), /FORBIDDEN/);
   assert.throws(() => repo.setAdminRecordActive(users.shipper,'USER',users.receiver.id,false), /FORBIDDEN/);
   assert.throws(() => repo.getAdminOperations(users.support), /FORBIDDEN/);
-  assert.throws(() => repo.listApplications(users.support), /FORBIDDEN/);
   assert.throws(() => repo.listVisibleShipments(users.support), /FORBIDDEN/);
   assert.throws(() => repo.searchDirectory(users.support,'Blue'), /FORBIDDEN/);
   assert.throws(() => repo.createSupportAgent(users.support,{name:'No',email:'no@example.com',password:'NoAccess123!',maxOpenConversations:2}), /FORBIDDEN/);

@@ -84,7 +84,7 @@ test('standard stress dataset covers every table, workflow state, and provider s
   const usersPageTwo=repo.getAdminOperations(admin,'',{view:'USERS',page:2});
   assert.equal(usersPageTwo.pagination.page,2);
   assert.equal(operationUsers.items.some(first=>usersPageTwo.items.some(second=>second.id===first.id)),false);
-  assert.equal(repo.listApplications(admin,{page:1,pageSize:20}).items.length,20);
+  assert.ok(db.prepare(`SELECT COUNT(*) AS n FROM applications WHERE status='APPROVED'`).get().n>=20);
   assert.equal(repo.listVerificationRequests(admin,{status:'PENDING',page:1,pageSize:20}).items.length,20);
   assert.equal(repo.listPaymentProofs(admin,{status:'APPROVED',page:1,pageSize:20}).items.length,20);
   const stressFleetProfile=repo.getPublicCompany('stress-fleet-001');

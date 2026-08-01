@@ -1022,7 +1022,7 @@ function seed(db) {
     ['user-transporter','transporter@loadgistic.local','Samuel Tesfaye','TRANSPORTER',orgs.transporter.id,null],
     ['user-company-driver','company-driver@loadgistic.local','Yonas Alemu','DRIVER',orgs.transporter.id,null],
     ['user-driver','driver@loadgistic.local','Abebe Kebede','DRIVER',null,'provider-driver',1],
-    ['user-applicant','pending-applicant@fixtures.loadgistic.test','Liya Bekele','RECEIVER',null,null,0],
+    ['user-applicant','signup-member@fixtures.loadgistic.test','Liya Bekele','RECEIVER',orgs.receiver.id,null,1],
     ['user-expired','expired@loadgistic.local','Meron Desta','SHIPPER',orgs.expired.id,null]
   ];
   const insertUser = db.prepare(`INSERT INTO users
@@ -1039,6 +1039,7 @@ function seed(db) {
   insertMembership.run(randomId('mem-'),'user-receiver',orgs.receiver.id,'OWNER');
   insertMembership.run(randomId('mem-'),'user-transporter',orgs.transporter.id,'OWNER');
   insertMembership.run(randomId('mem-'),'user-company-driver',orgs.transporter.id,'DRIVER');
+  insertMembership.run(randomId('mem-'),'user-applicant',orgs.receiver.id,'MEMBER');
   insertMembership.run(randomId('mem-'),'user-expired',orgs.expired.id,'OWNER');
 
   db.prepare(`INSERT INTO provider_profiles
@@ -1162,6 +1163,7 @@ function seed(db) {
     ['verification-transporter-license','ORGANIZATION',orgs.transporter.id,'BUSINESS_LICENSE','Transport business license','user-transporter'],
     ['verification-driver-id','PROVIDER_PROFILE','provider-driver','IDENTITY','National identity','user-driver'],
     ['verification-driver-license','PROVIDER_PROFILE','provider-driver','DRIVER_IDENTITY','Driver license','user-driver'],
+    ['verification-company-driver-license','DRIVER','user-company-driver','DRIVER_IDENTITY','Driver license','user-transporter'],
     ['verification-truck-1','VEHICLE','veh-trans-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-transporter'],
     ['verification-truck-driver','VEHICLE','veh-driver-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-driver']
   ];
@@ -1184,7 +1186,7 @@ function seed(db) {
   subInsert.run('sub-expired',orgs.expired.id,null,'plan-business','TRIAL','FLAT_MONTHLY',expiredStartedAt,expiredAt,expiredAt);
 
   db.prepare(`INSERT INTO applications (id,user_id,business_name,application_type,status,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`)
-    .run('app-pending','user-applicant','Hawassa Retail Distribution PLC','ENTERPRISE_RECEIVER','PENDING','Confirm business registration document',iso,iso);
+    .run('app-self-signup','user-applicant','Fresh Foods Distribution PLC','ENTERPRISE_RECEIVER','APPROVED','Workspace created by self-service signup.',iso,iso);
 
   const notify = db.prepare(`INSERT INTO notifications (id,user_id,title,body,read_at,created_at) VALUES (?,?,?,?,?,?)`);
   notify.run(randomId('ntf-'),'user-transporter','New open freight shipment','A fixed-price shipment is available from Addis Ababa to Dire Dawa.',null,iso);

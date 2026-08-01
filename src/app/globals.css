@@ -957,6 +957,12 @@ legend { font-weight:800; padding:0 7px; }
 .verification-badge.verified { border-color:#b8d3fa; background:var(--blue-soft); color:var(--blue-dark); }
 .verification-badges.compact .verification-badge { min-width:0; padding:6px 7px; }
 .verification-badges.compact .verification-badge small { display:none; }
+.verification-group { min-width:0; }
+.verification-group-label { display:block; margin-top:10px; color:var(--ink); font-size:.72rem; }
+.verification-group .verification-badges { margin-top:5px; }
+.verification-badge.reputation svg { fill:currentColor; }
+.market-trust-strip { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
+.market-trust-strip .verification-group-label { margin-top:0; }
 .verification-subject-list { display:grid; margin-top:16px; border-top:1px solid var(--line); }
 .verification-subject-list > div { display:grid; grid-template-columns:minmax(150px,.7fr) 1fr; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
 .request-history-row { display:grid; gap:7px; padding-bottom:14px; border-bottom:1px solid var(--line); }

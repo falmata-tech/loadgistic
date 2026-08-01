@@ -149,12 +149,13 @@ company Drivers share one Fleet Transporter subscription; a self-managed Driver
 uses the subscription attached to its provider profile. Administrators remain
 outside subscription enforcement.
 
-Workspace approval starts a seven-day trial. During Business application review,
-an administrator may instead record continuing sponsored access for a
-qualifying starting Business; transporter categories cannot receive that
-decision. Standard plan prices remain undisclosed until the commercial schedule
-is accepted. A submitted proof records the amount actually paid, and
-administrator approval opens a new 30-day period from review.
+Successful self-service signup atomically creates an active workspace and starts
+a seven-day trial. Verification is not an activation gate. An administrator may
+separately grant continuing sponsored access to a qualifying starting Business
+from Operations; transporter categories cannot receive that decision. Standard
+plan prices remain undisclosed until the commercial schedule is accepted. A
+submitted proof records the amount actually paid, and administrator approval
+opens a new 30-day period from review.
 
 Expired, unpaid, and late-payment-review states preserve authentication, a
 billing-focused Home, Account and payment submission, and logout. Server page

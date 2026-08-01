@@ -27,7 +27,7 @@ Excluded:
 - attachments, document sharing, voice, video, presence, and typing indicators
 - AI replies
 - Telegram or WhatsApp message mirroring
-- support-agent access to applications, verification, payments, Operations,
+- support-agent access to verification, payments, Operations,
   shipment tracking, exact location, or private files
 
 ## Queue policy
