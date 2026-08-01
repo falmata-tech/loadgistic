@@ -790,6 +790,14 @@ legend { font-weight:800; padding:0 7px; }
 .capacity-market-card h2 { font-size:1.15rem; margin:10px 0 4px; }
 .market-gauge-card h2 { display:flex; align-items:center; gap:7px; margin:10px 0 0; font-size:1.05rem; }
 .market-gauge-alert { display:flex; align-items:center; gap:8px; }
+.truck-status-visual { position:relative; flex:0 0 auto; }
+.truck-status-visual > span { position:absolute; right:2px; bottom:4px; min-width:42px; padding:3px 7px; border:2px solid var(--surface); border-radius:999px; background:var(--ink); color:#fff; font-size:.72rem; font-weight:800; text-align:center; }
+.team-permission-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; grid-column:1/-1; }
+.admin-view-picker { display:none; }
+@media (max-width: 700px) {
+  .admin-operations .admin-view-tabs { display:none; }
+  .admin-view-picker { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:8px; }
+}
 .market-gauge-alert > svg { width:20px; height:20px; flex:0 0 auto; }
 .market-gauge-card h2 svg,.market-gauge-card .market-signal-grid small svg { width:16px; height:16px; vertical-align:middle; }
 .market-gauge-card .market-signal-grid { grid-template-columns:repeat(2,1fr); margin-top:16px; }

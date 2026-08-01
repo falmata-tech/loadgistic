@@ -536,15 +536,43 @@ test('admin operations inventory is bounded and omits sensitive fields',()=>{
  assert.ok(capacity.items.every(row=>!Object.hasOwn(row,'location_lat')&&!Object.hasOwn(row,'photo_path')));
  const users=repo.getAdminOperations(admin,'',{view:'USERS'});
  assert.ok(users.items.every(user=>!Object.hasOwn(user,'password_hash')));
+ const network=repo.getAdminOperations(admin,'',{view:'NETWORK'});
+ const routes=repo.getAdminOperations(admin,'',{view:'ROUTES'});
+ const drivers=repo.getAdminOperations(admin,'',{view:'DRIVERS'});
+ const subscriptions=repo.getAdminOperations(admin,'',{view:'SUBSCRIPTIONS'});
+ assert.ok(network.items.length&&routes.items.length&&drivers.items.length&&subscriptions.items.length);
+ assert.ok(network.items.every(row=>row.owner_name&&row.target_name));
+ assert.ok(routes.items.every(row=>row.owner_name&&row.origin));
+
+ const db=dbModule.getDb();
+ db.prepare(`INSERT INTO profile_routes (id,organization_id,origin,destination,created_by,created_at)
+   VALUES ('route-admin-test','org-shipper','Test Origin','Test Destination','user-shipper',CURRENT_TIMESTAMP)`).run();
+ repo.moderateAdminRecord(admin,'PROFILE_ROUTE','route-admin-test','REMOVE');
+ assert.equal(db.prepare("SELECT 1 FROM profile_routes WHERE id='route-admin-test'").get(),undefined);
+ assert.ok(db.prepare("SELECT 1 FROM audit_logs WHERE action='ADMIN_RECORD_MODERATED' AND entity_id='route-admin-test'").get());
+
+ repo.updateFleetDriverPermissions(admin,'user-company-driver',{canBrowseLoadBoard:false,canContactBusinesses:false,canNegotiateLoads:false,canManageCapacity:false});
+ assert.equal(repo.getDriverAccess(repo.getUserById('user-company-driver')).can_manage_capacity,false);
+ repo.updateFleetDriverPermissions(admin,'user-company-driver',{canBrowseLoadBoard:true,canContactBusinesses:true,canNegotiateLoads:true,canManageCapacity:true});
+
+ db.prepare(`INSERT INTO subscriptions (id,organization_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
+   VALUES ('sub-admin-test','org-receiver','plan-business','TRIAL','FLAT_MONTHLY',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)`).run();
+ repo.moderateAdminRecord(admin,'SUBSCRIPTION','sub-admin-test','PAID');
+ assert.equal(db.prepare("SELECT status FROM subscriptions WHERE id='sub-admin-test'").get().status,'ACTIVE');
+ repo.moderateAdminRecord(admin,'SUBSCRIPTION','sub-admin-test','EXPIRE');
+ assert.equal(db.prepare("SELECT status FROM subscriptions WHERE id='sub-admin-test'").get().status,'EXPIRED');
+ db.prepare("DELETE FROM subscriptions WHERE id='sub-admin-test'").run();
 });
 
-test('provider Truck Board returns only identity-safe aggregate supply groups',()=>{
+test('provider Truck Board returns one identity-safe operational card per competing truck',()=>{
  const driver=repo.getUserById('user-driver');
- const result=repo.listCapacityMarketGaugePage(driver,{},{page:1,pageSize:12});
- assert.ok(result.truckTotal>0);
- assert.ok(result.items.every(row=>Object.keys(row).every(key=>['area_label','status','movement_scope','truck_count','accepts_ftl_count','accepts_ptl_count','fresh_count'].includes(key))));
+ const result=repo.listProviderCapacityBoardPage(driver,{},{page:1,pageSize:12});
+ assert.ok(result.total>0);
+ const safeKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_destination','current_route_origin','destination','freshness','local_place_label','local_radius_km','location_area','location_updated_at','movement_scope','open_to_contract_lanes','origin','planned_space_status','preferred_routes_label','proof_available','proof_recorded_at','status','travel_date','updated_at'];
+ assert.ok(result.items.every(row=>Object.keys(row).every(key=>safeKeys.includes(key))));
+ assert.ok(result.items.every(row=>row.cargo_configuration&&row.status));
  const serialized=JSON.stringify(result);
- for(const privateValue of ['BlueLine Transport PLC','LG-TRK-','Isuzu','+251'])assert.equal(serialized.includes(privateValue),false);
+ for(const privateValue of ['BlueLine Transport PLC','LG-TRK-','Isuzu','NPR','+251','cap-empty','veh-trans'])assert.equal(serialized.includes(privateValue),false);
  assert.throws(()=>repo.listMarketCapacity(driver),/FORBIDDEN/);
  assert.equal(repo.getCapacityForUser(driver,'cap-empty'),null);
 });
@@ -654,6 +682,19 @@ test('native support assigns safely, isolates customers, requeues, and stays ava
  assert.deepEqual(waiting.items.slice(0,2).map(item=>item.id),[expiredId,receiverId]);
  assert.ok(repo.listSupportAgents(admin,{page:1,pageSize:20}).items.some(agent=>agent.user_id===createdId));
  assert.throws(()=>repo.listSupportAgents(shipper),/FORBIDDEN/);
+
+ repo.updateSupportAgent(admin,support.id,{active:true,available:true,maxOpenConversations:2,canManageCustomers:true,canManageSupport:true});
+ const customerTeamMember=repo.getUserById(support.id);
+ assert.ok(repo.getAdminOperations(customerTeamMember,'',{view:'WORKSPACES',page:1,pageSize:5}).items.length);
+ assert.throws(()=>repo.getAdminOperations(customerTeamMember,'',{view:'TRUCKS'}),/FORBIDDEN/);
+ assert.throws(()=>repo.listVerificationRequests(customerTeamMember,{page:1,pageSize:5}),/FORBIDDEN/);
+ assert.throws(()=>repo.setAdminRecordActive(customerTeamMember,'USER',admin.id,false),/FORBIDDEN/);
+
+ repo.updateSupportAgent(admin,support.id,{active:true,available:false,maxOpenConversations:2,canManageCustomers:false,canManageOperations:true,canManageTrust:false,canManageBilling:false,canManageSupport:false});
+ const operationsTeamMember=repo.getUserById(support.id);
+ assert.ok(repo.getAdminOperations(operationsTeamMember,'',{view:'TRUCKS',page:1,pageSize:5}).items.length);
+ assert.throws(()=>repo.getAdminOperations(operationsTeamMember,'',{view:'USERS'}),/FORBIDDEN/);
+ assert.throws(()=>repo.listSupportInbox(operationsTeamMember,'ASSIGNED',{page:1,pageSize:5}),/FORBIDDEN/);
 });
 
 test.after(()=>{dbModule.closeDb();for(const suffix of ['', '-wal','-shm'])if(fs.existsSync(file+suffix))fs.rmSync(file+suffix);});

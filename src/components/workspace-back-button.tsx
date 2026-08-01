@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 function fallbackFor(pathname:string) {
@@ -20,6 +20,7 @@ function isWorkspacePath(value:string|null) {
 }
 
 export function WorkspaceBackButton() {
+  const router=useRouter();
   const pathname=usePathname();
   const searchParams=useSearchParams();
   const fallback=fallbackFor(pathname);
@@ -36,11 +37,15 @@ export function WorkspaceBackButton() {
   },[current]);
 
   if(!fallback)return null;
-  const target=previous&&previous!==current?previous:fallback;
   return <a
-    href={target}
+    href={fallback}
     className="workspace-back"
     title="Back"
     aria-label="Back to previous workspace page"
+    onClick={event=>{
+      event.preventDefault();
+      if(previous&&previous!==current&&window.history.length>1)router.back();
+      else router.push(fallback);
+    }}
   ><ArrowLeft aria-hidden="true"/><span>Back</span></a>;
 }

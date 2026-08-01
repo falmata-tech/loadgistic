@@ -11,7 +11,7 @@ declare module 'next/navigation' {
   export function notFound(): never;
   export function usePathname(): string;
   export function useSearchParams(): Readonly<URLSearchParams>;
-  export function useRouter(): { replace(path:string):void; refresh():void };
+  export function useRouter(): { back():void; push(path:string):void; replace(path:string):void; refresh():void };
 }
 declare module 'next/headers' { export function cookies(): Promise<any>; }
 declare module 'next/server' {

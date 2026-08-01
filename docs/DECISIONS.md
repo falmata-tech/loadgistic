@@ -44,7 +44,7 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 ## ADR-011 — Driver home and temporary load proof
 
-Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Businesses receive actionable truck-level Truck Board records; providers receive only aggregate supply counts by approximate area and status, with no truck or owner identity projection. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
+Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Businesses receive actionable truck-level Truck Board records; providers receive one read-only card per competing Public truck with its visual cargo configuration and operational capacity facts, but no truck, driver, owner, company, contact, or profile identity. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
 Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. The primary manual actions are Loading, En route, Unloading, and Problem, each with optional inline proof; uncommon terminal commands remain secondary. A Business party may reduce tracking to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
 
@@ -106,11 +106,13 @@ Shared-load discovery presents two modes in one workspace because both help a pr
 
 Use `profile_routes` as the single durable source for member-declared route pairs. Business-facing UI calls these Freight Routes; fleet transporters and self-managed drivers see Preferred Routes. The legacy company-page corridor field is retained only for additive database compatibility and is not written or rendered as a second route model.
 
-Current partial-capacity and planned truck routes remain dated, expiring capacity facts rather than profile declarations. Matching and maps combine every fresh active route for the viewer's eligible trucks with the stable profile routes, preserve each source label in operational data, and exclude past or expired records. Comparison-map styling represents ownership rather than route source: all viewed-profile routes are solid blue and all viewer-owned routes are consolidated under one warm-brown dashed Your routes layer drawn above them. Current-partial and planned routes do not create separate comparison legend colors. Public truck capacity may show the owner's Preferred Routes for context without implying that every preferred route is the current truck movement.
+Current partial-capacity routes are live and use capacity freshness as their clock; planned truck routes remain dated capacity facts rather than profile declarations. Matching and maps combine every fresh active route for the viewer's eligible trucks with the stable profile routes, preserve each source label in operational data, and exclude stale or past records. Comparison-map styling represents ownership rather than route source: all viewed-profile routes are solid blue and all viewer-owned routes are consolidated under one warm-brown dashed Your routes layer drawn above them. Current-partial and planned routes do not create separate comparison legend colors. Public truck capacity may show the owner's Preferred Routes for context without implying that every preferred route is the current truck movement.
 
 Every truck receives one unique, immutable `LG-TRK-*` platform number. Member discovery and Public Profiles use that number; license plates remain private operational data for the truck owner and administrators.
 
-Deep workspace detail routes expose a Back link with a route-specific fallback that works before client hydration. Administrators receive a bounded, searchable Operations projection across users, workspaces, trucks, loads, and latest capacity. It excludes credentials, sessions, tracking secrets, exact coordinates, and proof paths. User suspension and truck deactivation are reversible, admin-only, audited commands, and an administrator cannot suspend their own account.
+Deep workspace detail routes expose a Back link with a route-specific fallback that works before client hydration. A safe prior workspace page is reached by popping browser history so the control cannot create a two-page navigation loop.
+
+Administrators receive bounded, searchable Operations projections across users, workspaces, trucks, company-driver authority, loads, latest capacity, network relationships, Business favorites, Preferred Routes, local service areas, and subscriptions. It excludes credentials, sessions, tracking secrets, exact coordinates, and proof paths. Account/truck controls, capacity removal, network/route moderation, driver permissions, and monthly or sponsored plan state are explicit audited commands. Immutable events, messages, reviews, evidence, and audit records remain history rather than generic editable rows.
 
 ## ADR-021 — Private low-rating moderation
 
@@ -249,10 +251,14 @@ An eligible agent may atomically claim the oldest waiting conversation.
 Closing frees capacity. Disabling an agent returns open work to the queue before
 reassignment.
 
-SUPPORT is a dedicated platform role, excluded from workspace subscriptions and
-from marketplace, tracking, verification, payment review, Operations, and
-client-mutation authority. A customer reads only their own conversation; a
-support agent reads only assigned work; an administrator may supervise all.
+SUPPORT is a dedicated platform-team role excluded from workspace subscriptions,
+marketplace, and tracking. New members receive Support responsibility only by
+default. An administrator may independently grant Customer, Operations, Trust,
+Billing, and Support responsibilities; navigation and every server query,
+mutation, review, and private-file read enforce the same permission. Team
+management and administrator authority are never delegated through these flags.
+A customer reads only their own conversation; a Support-authorized team member
+reads only assigned work; an administrator may supervise all.
 Bodies are required, length bounded, rate limited, and unavailable after close.
 Every assignment, availability change, staff change, claim, and closure is
 audited without copying message text into audit records.

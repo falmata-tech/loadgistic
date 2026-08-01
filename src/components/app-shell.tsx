@@ -106,6 +106,12 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
   const pathname = usePathname();
   const searchParams=useSearchParams();
   let items = navigation[user.role] || navigation.SHIPPER;
+  if(user.role==='SUPPORT'){
+    items=[];
+    if(user.can_manage_support)items.push({href:'/support',label:'Inbox',icon:Headphones});
+    if(user.can_manage_customers||user.can_manage_operations)items.push({href:'/admin/operations',label:'Operations',icon:Database});
+    if(user.can_manage_trust||user.can_manage_billing)items.push({href:'/admin/reviews',label:'Review Center',icon:ClipboardCheck});
+  }
   if (user.driver_kind === 'COMPANY') {
     items = items.filter(item => item.href !== '/app/company-page' && (item.href !== '/app/loads' || Boolean(user.can_browse_load_board)));
   }
@@ -123,12 +129,12 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     }
     return true;
   }).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
-  const mobileItems = user.billing_limited
+  const mobileItems = user.role==='SUPPORT' ? items : user.billing_limited
     ? items.map(item=>({...item,label:item.href==='/app/more'?'Plan & billing':item.label}))
     : (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
   const isSupport=user.role==='SUPPORT';
-  const homeHref=isSupport?'/support':'/app/home';
+  const homeHref=isSupport?(items[0]?.href||'/login'):'/app/home';
   return (
     <div className="app-frame">
       <aside className="sidebar">

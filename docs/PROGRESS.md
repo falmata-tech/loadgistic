@@ -21,7 +21,7 @@
 - Persistent stale Empty/Partial Truck Board signals with explicit relative-age warnings, plus Busy available-again signals that leave discovery after their ready date until refreshed
 - Single-city Local and Both capacity input, where the local city is also the truck's current general area
 - Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
-- My Fleet roster with truck-specific detail/capacity pages, complete Business Truck Board cards, and an identity-safe provider supply gauge
+- My Fleet roster with truck-specific detail/capacity pages, complete Business Truck Board cards, and one identity-safe read-only provider card per competing truck
 - Permanent Loadgistic truck numbers used in member discovery, with private operational plates retained for owners and administrators
 - Owner-controlled company Driver permissions for Shipment Board browsing, Business contact, shipment agreements, and rich assigned-truck capacity
 - Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
@@ -80,15 +80,15 @@
 - Freight-only shipment creation with FTL/PTL requirements
 - Complete mobile workspace menu and role-friendly Business/transporter labels
 - Reversible deep-detail Back controls with safe direct-link fallbacks
-- Searchable, tabbed admin Operations inventory with one bounded safe projection at a time and audited account/truck controls
+- Searchable, tabbed admin Operations inventory spanning clients, users, trucks, driver authority, shipments, capacity, network, routes/service areas, and plans, with audited management controls
 - Unified admin Review Center for documents, low ratings, and payments, with server-side queue filtering and pagination
 - Board trust strips for shipment-owner identity, Business license, published reviews, company or owner-operator identity, truck authority, and assigned-driver license evidence
 - Server-owned pagination for Boards, Directory, My Shipments/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
-- Native authenticated member Support with one-open-thread enforcement, six visual topics, text-only bounded messages, least-loaded assignment, waiting queue, agent availability/capacity, dedicated SUPPORT role, admin supervision, and safe agent requeue
+- Native authenticated member Support with one-open-thread enforcement, six visual topics, text-only bounded messages, least-loaded assignment, waiting queue, agent availability/capacity, permissioned platform-team responsibilities, admin supervision, and safe agent requeue
 - Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 206 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
+- Reusable all-role visual audit with 214 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
 - Local Node evidence: 83 tests passed, including provider-safe Truck Board aggregation, live undated Partial routes, optional tracking-action proof, canonical network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
-- Local Playwright E2E evidence: 41 passing scenarios and five expected viewport skips across desktop and mobile, including immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
+- Local Playwright E2E evidence: 43 passing scenarios and five expected viewport skips across desktop and mobile, including anonymous per-truck provider discovery, loop-free Back navigation, immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
 - Stress-dataset warm-query evidence: Directory 5.19 ms median, Shipment Board 1.33 ms, Truck Board 1.42 ms, direct capacity detail 0.63 ms, and PSTL grouping 3.58 ms

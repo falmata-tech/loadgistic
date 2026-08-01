@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Truck-first Truck Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each update records general current area, accepted work, live Partial movement, dated planned movement, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards while drivers and transporters receive only an identity-safe aggregate supply gauge. Freshness is explicit rather than silently removing stale Empty or Partial signals.
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each update records general current area, accepted work, live Partial movement, dated planned movement, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards while drivers and transporters receive one anonymized, read-only card per visible truck. Freshness is explicit rather than silently removing stale Empty or Partial signals.
 contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
 rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
@@ -15,7 +15,8 @@ rollout: Add Busy additively, backfill existing status into the new availability
 
 Given more visible trucks match than one Truck Board page\
 When a member opens, filters, route-ranks, or changes page\
-Then the server renders one bounded page of independently actionable truck cards for a Business or aggregate supply groups for a provider\
+Then the server renders one bounded page containing one card per visible truck\
+And Business cards are actionable while provider cards are anonymized and read only\
 And page navigation preserves every active capacity filter\
 And no search is required to see the first page\
 And fresh signals rank ahead of stale signals when all stronger filters and route scores are equal.
@@ -82,6 +83,16 @@ Given a fleet transporter has multiple discoverable Empty, Partial, or Busy truc
 When an authenticated Business opens the Truck Board\
 Then each truck is a separate capacity contributor and card\
 And no provider-level summary collapses those trucks into one signal.
+
+### Scenario: providers see anonymized trucks standing alone
+
+Given a driver or fleet transporter opens the Truck Board to gauge competing supply\
+When Public truck capacity is rendered\
+Then each visible truck remains one separate card rather than becoming an aggregate count\
+And the card shows its standardized cargo-configuration image and name, availability, approximate area, active route or service area, accepted work, timing, and freshness\
+And it does not expose the company, owner, driver, make, model, platform number, plate, contact, verification subjects, raw capacity identifier, proof file, profile link, or interaction action\
+And provider Board search and filtering use only displayed operational capacity fields so hidden identity cannot be inferred through a query oracle\
+And the provider's own trucks remain excluded from this market-discovery view.
 
 ### Scenario: Truck Board card is complete for discovery
 
@@ -284,14 +295,14 @@ Given a transporter publishes capacity to Connected business relationships\
 When businesses browse capacity\
 Then only businesses with a mutual Connected relationship to that transporter can see it.
 
-### Scenario: providers see an identity-safe supply gauge
+### Scenario: provider cards cannot disclose hidden identity
 
 Given a transporter or driver views capacity belonging to other providers\
 When the Truck Board loads\
-Then visible current signals are grouped into approximate area and availability counts\
-And no individual truck, platform number, make, model, owner, company, contact, proof, badge, or profile link is returned or rendered\
+Then visible current signals remain separate anonymized cards\
+And no raw capacity or vehicle identifier, platform number, make, model, owner, company, driver, contact, badge, proof file, or profile link is returned or rendered\
 And no contact or interest action is available\
-And filtering changes the aggregate cohort without disclosing its members.
+And filtering uses only visible operational fields without disclosing hidden identity.
 
 ## Contract ownership
 

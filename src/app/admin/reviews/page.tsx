@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { BadgeCheck, Check, CreditCard, ExternalLink, HelpCircle, Search, ShieldAlert, Star, X } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { listPaymentProofs, listRatingModerationQueue, listVerificationRequests } from '@/lib/repository.js';
+import { hasPlatformPermission, listPaymentProofs, listRatingModerationQueue, listVerificationRequests, PLATFORM_PERMISSIONS } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
@@ -9,15 +10,17 @@ import { Pagination } from '@/components/pagination';
 import { formatEtb } from '@/lib/domain.js';
 
 const tabs=[
-  {id:'documents',label:'Documents',icon:BadgeCheck},
-  {id:'ratings',label:'Ratings',icon:Star},
-  {id:'payments',label:'Payments',icon:CreditCard}
+  {id:'documents',label:'Documents',icon:BadgeCheck,permission:'TRUST'},
+  {id:'ratings',label:'Ratings',icon:Star,permission:'TRUST'},
+  {id:'payments',label:'Payments',icon:CreditCard,permission:'BILLING'}
 ] as const;
 export default async function AdminReviewsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
-  const user=await requireUser(['ADMIN']);
+  const user=await requireUser(['ADMIN','SUPPORT'],{allowLimited:true});
   const query=await searchParams;
+  const allowedTabs=tabs.filter(item=>hasPlatformPermission(user,PLATFORM_PERMISSIONS[item.permission]));
+  if(!allowedTabs.length)redirect('/support');
   const requested=String(query.tab||'documents').toLowerCase();
-  const tab=tabs.some(item=>item.id===requested)?requested:'documents';
+  const tab=allowedTabs.some(item=>item.id===requested)?requested:allowedTabs[0].id;
   const status=String(query.status||(tab==='ratings'?'PENDING':'ALL')).toUpperCase();
   const options={q:query.q,status,page:query.page,pageSize:12};
   const result:any=tab==='documents'
@@ -31,7 +34,7 @@ export default async function AdminReviewsPage({searchParams}:{searchParams:Prom
     <PageHeader title="Review Center" subtitle="Trust documents, ratings, and payments in one focused queue."/>
     <Flash error={query.error} success={query.success}/>
     <nav className="admin-view-tabs" aria-label="Review queue">
-      {tabs.map(item=>{const Icon=item.icon;return <Link key={item.id} className={tab===item.id?'active':''} href={`/admin/reviews?tab=${item.id}`}><Icon aria-hidden="true"/>{item.label}</Link>;})}
+      {allowedTabs.map(item=>{const Icon=item.icon;return <Link key={item.id} className={tab===item.id?'active':''} href={`/admin/reviews?tab=${item.id}`}><Icon aria-hidden="true"/>{item.label}</Link>;})}
     </nav>
     <form className="board-filter-bar queue-filter-bar" method="get">
       <input type="hidden" name="tab" value={tab}/>

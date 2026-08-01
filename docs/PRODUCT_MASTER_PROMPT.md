@@ -147,10 +147,13 @@ Loadgistic is installable in standalone mode. Driver workflows are mobile-first 
 Every active signed-in member can open one text-only support conversation from
 the workspace. Loadgistic stores the conversation and its messages, assigns work
 to the least-loaded available support agent below a configured limit, and keeps
-waiting work in a visible queue. Customers see only their own history. Support
-agents see only assigned conversations and cannot access marketplace,
-operations, tracking, verification, billing review, exact locations, or private
-files. Administrators manage support agents and supervise the queue.
+waiting work in a visible queue. Customers see only their own history.
+Support-authorized platform team members see only assigned conversations.
+Administrators assign Customer, Operations, Trust, Billing, and Support
+responsibilities independently; hidden navigation is backed by the same
+server-side permission checks. Team members never receive marketplace,
+tracking, administrator, or team-management authority. Administrators manage
+the platform team and supervise the queue.
 
 Conversation pages use bounded five-second refreshes while visible. Message
 history is capped per response and queue/history collections are paginated.
@@ -194,7 +197,7 @@ late payment remains under review, members may still sign in, see a
 billing-focused Home, open Account and billing, submit proof, and log out; all
 operating screens and commands remain unavailable until access is restored.
 
-Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, loads, and latest capacity. Its initial overview is compact and searches return larger bounded results. Verification, rating, and billing queues provide server-bounded search, status filters, and pagination. Administrators may grant sponsored access to a qualifying Business, reversibly suspend users, or deactivate trucks; those commands are audited, and administrators cannot suspend themselves.
+Administrators also have a searchable Operations inventory for bounded safe views of users, workspaces, trucks, company-driver authority, loads, latest capacity, network relationships, Business favorites, Preferred Routes, local service areas, and every subscription. Verification, rating, billing, and support queues remain bounded and searchable. Admin commands cover account and truck activation, driver authority, capacity removal, relationship disconnection, route/service-area moderation, and Paid, Expired, or eligible Sponsored plan state. All mutations are audited; credentials, tracking secrets, exact coordinates, and private file paths stay excluded, and immutable evidence or history is not silently rewritten.
 
 ## Source Of Truth
 

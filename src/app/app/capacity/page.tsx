@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { requireUser } from '@/lib/auth';
-import { listCapacityMarketGaugePage, listMarketCapacityPage, listOwnLoadRouteOptions } from '@/lib/repository.js';
+import { listMarketCapacityPage, listOwnLoadRouteOptions, listProviderCapacityBoardPage } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { capacityLabel } from '@/lib/domain.js';
@@ -14,7 +14,7 @@ import { BoardGeographyFilters } from '@/components/board-geography-filters';
 import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';
 import { BoardFilterSheet } from '@/components/board-filter-sheet';
 import { VerificationBadges } from '@/components/verification-badges';
-import { ProviderTruckMarketGauge } from '@/components/provider-truck-market-gauge';
+import { ProviderTruckMarketBoard } from '@/components/provider-truck-market-gauge';
 
 function acceptedLoads(capacity:any) {
   if (capacity.accepts_full_load && capacity.accepts_partial_load) return 'FTL + PTL';
@@ -30,8 +30,8 @@ function stopPolicy(capacity:any){
 }
 
 export default async function CapacityPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
- const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',movementScope:query.movementScope||'',localPlaceRef:query.localPlaceRef||'',locality:query.locality||'',localRadiusKm:query.localRadiusKm||'50',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'50',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'50',directionMode:query.directionMode||'DIRECT',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'50',currentAreaMode:query.currentAreaMode||'PREFER',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',routeBy:query.routeBy||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',contractRoutes:query.contractRoutes||'',proof:query.proof||''}; const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const result:any=isProvider?listCapacityMarketGaugePage(user,filters,{page:query.page,pageSize:12}):listMarketCapacityPage(user,filters,{page:query.page,pageSize:12}); const rows:any[]=result.items; const loadRoutes:any[]=isProvider?[]:listOwnLoadRouteOptions(user);
- if(isProvider)return <ProviderTruckMarketGauge filters={filters} result={result}/>;
+ const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',movementScope:query.movementScope||'',localPlaceRef:query.localPlaceRef||'',locality:query.locality||'',localRadiusKm:query.localRadiusKm||'50',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'50',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'50',directionMode:query.directionMode||'DIRECT',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'50',currentAreaMode:query.currentAreaMode||'PREFER',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',routeBy:query.routeBy||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',contractRoutes:query.contractRoutes||'',proof:query.proof||''}; const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const result:any=isProvider?listProviderCapacityBoardPage(user,filters,{page:query.page,pageSize:12}):listMarketCapacityPage(user,filters,{page:query.page,pageSize:12}); const rows:any[]=result.items; const loadRoutes:any[]=isProvider?[]:listOwnLoadRouteOptions(user);
+ if(isProvider)return <ProviderTruckMarketBoard filters={filters} result={result}/>;
  const clearFilterHref=(keys:string[])=>{
    const params=new URLSearchParams();
    Object.entries(filters).forEach(([key,value])=>{ if(!keys.includes(key)&&value) params.set(key,value); });

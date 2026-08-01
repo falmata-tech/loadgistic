@@ -3,8 +3,8 @@ id: FEAT-ADM-001
 title: Focused platform operations and review center
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001]
 problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
-behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document, rating, and payment queues through consistent tabs and compact review rows; signup needs no application decision.
-contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
+behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document, rating, and payment queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust, Billing, and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
+contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, PlatformTeamPermissionPolicy, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
 observability: [admin_operations_read, admin_record_status_audit, denied_admin_command]
 rollout: Add the inventory without changing tenant-facing visibility; status commands are reversible, audited, and deny non-admin callers.
 ---
@@ -18,6 +18,15 @@ When Operations is opened or searched\
 Then one selected bounded result set shows users, workspaces, trucks, loads, or latest capacity from authoritative records\
 And relationships are identified with workspace, provider, truck platform number, shipment code, and current status\
 And private proof paths, passwords, session values, tracking secrets, and exact coordinates are absent.
+
+### Scenario: admin inventory stays connected to user-side entities
+
+Given users can create or change accounts, workspaces, Public Profiles, trucks, drivers, routes, service areas, network relationships, shipments, capacity, verification requests, reviews, payments, subscriptions, or support conversations\
+When an administrator opens the relevant management area\
+Then every current entity can be found from a bounded authoritative list and traced to its owning user or workspace\
+And the administrator receives an appropriate inspect, correct, moderate, activate, suspend, expire, disconnect, or review command\
+And immutable shipment events, audit records, message history, and accepted evidence are preserved as history rather than silently rewritten\
+And every mutation is validated, attributed, timestamped, and audited.
 
 ### Scenario: dense administrative queues remain operable
 
@@ -75,9 +84,19 @@ And the actor, target, resulting state, and time are audited.
 Given an authenticated administrator opens Support Team\
 When the administrator creates or updates a support agent\
 Then the agent receives only the SUPPORT role\
-And availability, active state, and maximum open conversations are validated and audited\
+And availability, active state, maximum open conversations, and Customer, Operations, Trust, Billing, and Support permissions are validated and audited\
 And credentials are never redisplayed after creation\
-And disabling an agent returns their open conversations to the waiting queue for safe reassignment.
+And disabling an agent or removing Support permission returns their open conversations to the waiting queue for safe reassignment.
+
+### Scenario: platform team permissions are least privilege
+
+Given an administrator configures a platform team member\
+When one or more management responsibilities are enabled\
+Then navigation shows only the matching management areas\
+And every page, query, mutation, file read, and review command independently enforces the same permission server side\
+And Customer permission governs accounts and client profiles, Operations governs trucks, routes, network, shipments, and capacity, Trust governs documents and ratings, Billing governs plans and payment state, and Support governs customer conversations\
+And only an administrator can create team members, change their permissions, or grant administrator authority\
+And permission changes take effect on the next authorized request and are audited.
 
 ## Contract ownership
 

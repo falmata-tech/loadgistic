@@ -77,6 +77,7 @@ Given a member opens a profile, load, truck, capacity, pooled load, tracking det
 When the page renders\
 Then a visually consistent Back control appears near the task title\
 And it returns to the recorded previous workspace page when safe\
+And returning pops the existing history entry instead of adding a second entry that loops between the two pages\
 And a direct deep link falls back to the correct parent list or Board.
 
 ### Scenario: essential text remains available

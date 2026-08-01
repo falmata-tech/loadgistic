@@ -110,6 +110,32 @@ export function assertWorkspaceAccess(user) {
   return access;
 }
 
+export const PLATFORM_PERMISSIONS=Object.freeze({
+  CUSTOMERS:'CUSTOMERS',
+  OPERATIONS:'OPERATIONS',
+  TRUST:'TRUST',
+  BILLING:'BILLING',
+  SUPPORT:'SUPPORT'
+});
+
+const PLATFORM_PERMISSION_FIELDS=Object.freeze({
+  CUSTOMERS:'can_manage_customers',
+  OPERATIONS:'can_manage_operations',
+  TRUST:'can_manage_trust',
+  BILLING:'can_manage_billing',
+  SUPPORT:'can_manage_support'
+});
+
+export function hasPlatformPermission(user,permission){
+  if(user?.role===USER_ROLES.ADMIN)return true;
+  const field=PLATFORM_PERMISSION_FIELDS[permission];
+  return Boolean(field&&user?.role===USER_ROLES.SUPPORT&&user[field]);
+}
+
+export function assertPlatformPermission(user,permission){
+  if(!hasPlatformPermission(user,permission))throw new Error('FORBIDDEN');
+}
+
 function providerScope(user) {
   if (isSelfManagedDriver(user)) return { column:'provider_profile_id', id:user.provider_profile_id, organizationId:null, profileId:user.provider_profile_id };
   if ([USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role) && user.organization_id) {
@@ -300,11 +326,17 @@ export function getUserById(id) {
            COALESCE(dp.can_browse_load_board,1) AS can_browse_load_board,
            COALESCE(dp.can_contact_businesses,1) AS can_contact_businesses,
            COALESCE(dp.can_negotiate_loads,1) AS can_negotiate_loads,
-           COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity
+           COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity,
+           COALESCE(sap.can_manage_customers,0) AS can_manage_customers,
+           COALESCE(sap.can_manage_operations,0) AS can_manage_operations,
+           COALESCE(sap.can_manage_trust,0) AS can_manage_trust,
+           COALESCE(sap.can_manage_billing,0) AS can_manage_billing,
+           COALESCE(sap.can_manage_support,0) AS can_manage_support
     FROM users u
     LEFT JOIN organizations o ON o.id = u.organization_id
     LEFT JOIN provider_profiles p ON p.id = u.provider_profile_id
     LEFT JOIN driver_permissions dp ON dp.user_id=u.id
+    LEFT JOIN support_agent_profiles sap ON sap.user_id=u.id
     WHERE u.id = ?
   `).get(id) || null;
 }
@@ -1729,7 +1761,7 @@ export function submitVerification(user,input,upload) {
 }
 
 export function listVerificationRequests(user, options = /** @type {any} */ (null)) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.TRUST);
   const db=getDb();
   const status = String(options?.status||'ALL').toUpperCase();
   const search = String(options?.q||'').trim().toLowerCase();
@@ -1751,7 +1783,7 @@ export function listVerificationRequests(user, options = /** @type {any} */ (nul
 }
 
 export function reviewVerification(user,requestId,status,note='') {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.TRUST);
   if (!['APPROVED','REJECTED','MORE_INFO'].includes(status)) throw new Error('INVALID_STATUS');
   const db = getDb();
   const request = db.prepare('SELECT * FROM verification_requests WHERE id=?').get(requestId);
@@ -1768,7 +1800,7 @@ export function getVerificationFile(user,requestId) {
   const db = getDb();
   const request = db.prepare('SELECT * FROM verification_requests WHERE id=?').get(requestId);
   if (!request) return null;
-  if (user.role !== USER_ROLES.ADMIN && request.submitted_by !== user.id) return null;
+  if (!hasPlatformPermission(user,PLATFORM_PERMISSIONS.TRUST) && request.submitted_by !== user.id) return null;
   return request;
 }
 
@@ -1813,7 +1845,7 @@ export function submitBusinessReview(user,shipmentId,rating,note='') {
 }
 
 export function listRatingModerationQueue(user,status='PENDING',options=/** @type {any} */ (null)) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.TRUST);
   const normalizedStatus = String(status || 'PENDING').toUpperCase();
   if (!['PENDING','PUBLISHED','DISMISSED'].includes(normalizedStatus)) throw new Error('INVALID_RATING_REVIEW_STATUS');
   const db = getDb();
@@ -1839,7 +1871,7 @@ export function listRatingModerationQueue(user,status='PENDING',options=/** @typ
 }
 
 export function reviewBusinessRating(user,reviewId,status,note='') {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.TRUST);
   const normalizedStatus = String(status || '').toUpperCase();
   if (!['PUBLISHED','DISMISSED'].includes(normalizedStatus)) throw new Error('INVALID_RATING_REVIEW_STATUS');
   const cleanNote = String(note || '').trim();
@@ -2454,7 +2486,7 @@ export function listMarketCapacityPage(user,filters={},options={}) {
   return {items:rankCapacityRows(rows,null),total,page,pageSize,pageCount};
 }
 
-export function listCapacityMarketGaugePage(user,filters={},options={}) {
+export function listProviderCapacityBoardPage(user,filters={},options={}) {
   assertWorkspaceAccess(user);
   if (![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
   const safeFilters={
@@ -2473,27 +2505,46 @@ export function listCapacityMarketGaugePage(user,filters={},options={}) {
     currentArea:filters.currentArea,
     currentAreaRadiusKm:filters.currentAreaRadiusKm,
     currentAreaMode:filters.currentAreaMode,
-    status:filters.status
+    status:filters.status,
+    loadType:filters.loadType,
+    vehicleCategory:filters.vehicleCategory,
+    minAvailable:filters.minAvailable,
+    routeBy:filters.routeBy,
+    freshness:filters.freshness,
+    stopOption:filters.stopOption,
+    contractRoutes:filters.contractRoutes,
+    proof:filters.proof
   };
   const pageSize=Math.max(1,Math.min(50,Number(options.pageSize)||12));
   const query=capacityBoardQuery(user,safeFilters);
-  const areaExpression=`CASE
-    WHEN c.movement_scope IN ('LOCAL','BOTH') AND c.local_place_label IS NOT NULL THEN c.local_place_label
-    ELSE COALESCE(c.location_area,c.current_route_origin,c.origin,'Area not updated') END`;
-  const grouped=`SELECT ${areaExpression} AS area_label,COALESCE(c.market_status,c.status) AS status,
-      c.movement_scope,COUNT(*) AS truck_count,
-      SUM(CASE WHEN c.accepts_full_load=1 THEN 1 ELSE 0 END) AS accepts_ftl_count,
-      SUM(CASE WHEN c.accepts_partial_load=1 THEN 1 ELSE 0 END) AS accepts_ptl_count,
-      SUM(CASE WHEN c.updated_at>=? THEN 1 ELSE 0 END) AS fresh_count
-    ${query.from} WHERE ${query.where}
-    GROUP BY ${areaExpression},COALESCE(c.market_status,c.status),c.movement_scope`;
-  const args=[hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)),...query.args];
-  const countRow=getDb().prepare(`SELECT COUNT(*) AS group_count,COALESCE(SUM(truck_count),0) AS truck_count FROM (${grouped})`).get(...args);
-  const pageCount=Math.max(1,Math.ceil(countRow.group_count/pageSize));
+  const total=getDb().prepare(`SELECT COUNT(*) AS n ${query.from} WHERE ${query.where}`).get(...query.args).n;
+  const pageCount=Math.max(1,Math.ceil(total/pageSize));
   const page=Math.max(1,Math.min(pageCount,Number(options.page)||1));
-  const items=getDb().prepare(`${grouped} ORDER BY truck_count DESC,area_label,status LIMIT ? OFFSET ?`)
-    .all(...args,pageSize,(page-1)*pageSize);
-  return {items,total:countRow.group_count,truckTotal:countRow.truck_count,page,pageSize,pageCount};
+  const areaProjection=query.currentAreaMatchExpression?`,${query.currentAreaMatchExpression} AS current_area_match`:'';
+  const areaOrder=query.currentAreaMatchExpression&&safeFilters.currentAreaMode==='PREFER'?'current_area_match DESC,':'';
+  const rows=getDb().prepare(`SELECT
+      COALESCE(c.market_status,c.status) AS status,c.available_percent,c.available_again_date,
+      c.origin,c.destination,c.travel_date,c.updated_at,c.location_area,c.location_updated_at,
+      c.accepts_full_load,c.accepts_partial_load,c.open_to_contract_lanes,c.proof_recorded_at,
+      c.current_route_origin,c.current_route_destination,c.planned_space_status,
+      c.accepts_multi_pick,c.accepts_multi_drop,c.movement_scope,c.local_place_label,c.local_radius_km,
+      COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
+      CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available,
+      (SELECT GROUP_CONCAT(r.origin || ' → ' || r.destination,' • ') FROM profile_routes r
+        WHERE r.organization_id=c.provider_organization_id OR r.provider_profile_id=c.provider_profile_id) AS preferred_routes_label
+      ${areaProjection}
+    ${query.from} WHERE ${query.where}
+    ORDER BY ${areaOrder}CASE WHEN c.updated_at>=? THEN 0 ELSE 1 END,c.updated_at DESC
+    LIMIT ? OFFSET ?`).all(...query.args,hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)),pageSize,(page-1)*pageSize);
+  const items=rows.map(row=>{
+    const {current_area_match:unused,...safeRow}=row;
+    return {
+      ...safeRow,
+      proof_available:Boolean(row.proof_available),
+      freshness:capacitySignalFreshness(row.status,row.updated_at,row.available_again_date,Number(process.env.CAPACITY_FRESH_HOURS||12),todayInEthiopia())
+    };
+  });
+  return {items,total,page,pageSize,pageCount};
 }
 
 export function listMarketCapacity(user,filters={}) {
@@ -2809,10 +2860,14 @@ export function listFleetDrivers(user) {
 
 export function updateFleetDriverPermissions(user, driverUserId, input) {
   assertWorkspaceAccess(user);
-  if (user.role !== USER_ROLES.TRANSPORTER || !user.organization_id) throw new Error('FORBIDDEN');
+  const platformManager=hasPlatformPermission(user,PLATFORM_PERMISSIONS.OPERATIONS);
+  if (!platformManager&&(user.role !== USER_ROLES.TRANSPORTER || !user.organization_id)) throw new Error('FORBIDDEN');
   const db = getDb();
-  const driver = db.prepare(`SELECT u.id FROM users u JOIN drivers d ON d.user_id=u.id
-    WHERE u.id=? AND u.role='DRIVER' AND u.organization_id=? AND u.active=1 AND d.active=1`).get(driverUserId,user.organization_id);
+  const driver = platformManager
+    ? db.prepare(`SELECT u.id FROM users u JOIN drivers d ON d.user_id=u.id
+      WHERE u.id=? AND u.role='DRIVER' AND u.organization_id IS NOT NULL AND u.active=1 AND d.active=1`).get(driverUserId)
+    : db.prepare(`SELECT u.id FROM users u JOIN drivers d ON d.user_id=u.id
+      WHERE u.id=? AND u.role='DRIVER' AND u.organization_id=? AND u.active=1 AND d.active=1`).get(driverUserId,user.organization_id);
   if (!driver) throw new Error('NOT_FOUND');
   const values = {
     browse:Boolean(input.canBrowseLoadBoard),
@@ -2868,7 +2923,7 @@ function assignSupportConversation(db,conversationId) {
     JOIN users user ON user.id=profile.user_id AND user.role='SUPPORT' AND user.active=1
     LEFT JOIN support_conversations open_conversation
       ON open_conversation.assigned_agent_user_id=profile.user_id AND open_conversation.status='OPEN'
-    WHERE profile.active=1 AND profile.available=1
+    WHERE profile.active=1 AND profile.available=1 AND profile.can_manage_support=1
     GROUP BY profile.user_id,profile.max_open_conversations,profile.last_assigned_at
     HAVING COUNT(open_conversation.id)<profile.max_open_conversations
     ORDER BY open_count ASC,
@@ -2957,6 +3012,7 @@ export function listMemberSupportConversations(user,options={}) {
 
 export function listSupportInbox(user,view='ASSIGNED',options={}) {
   if(![USER_ROLES.SUPPORT,USER_ROLES.ADMIN].includes(user?.role))throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const normalized=String(view||'ASSIGNED').toUpperCase();
   if(!['ASSIGNED','WAITING','CLOSED','ALL'].includes(normalized))throw new Error('INVALID_SUPPORT_VIEW');
   const db=getDb();
@@ -2990,6 +3046,7 @@ export function listSupportInbox(user,view='ASSIGNED',options={}) {
 
 export function getSupportConversation(user,conversationId,{messageLimit=50,markRead=true}={}) {
   if(!user)throw new Error('FORBIDDEN');
+  if(user.role===USER_ROLES.SUPPORT)assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const db=getDb();
   const conversation=db.prepare(`${supportConversationBase()} WHERE c.id=?`).get(conversationId);
   if(!conversation)throw new Error('NOT_FOUND');
@@ -3015,6 +3072,7 @@ export function getSupportConversation(user,conversationId,{messageLimit=50,mark
 }
 
 export function sendSupportMessage(user,conversationId,body) {
+  if(user?.role===USER_ROLES.SUPPORT)assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const cleanBody=validateSupportMessage(body);
   const db=getDb();
   const conversation=db.prepare('SELECT * FROM support_conversations WHERE id=?').get(conversationId);
@@ -3048,6 +3106,7 @@ export function sendSupportMessage(user,conversationId,body) {
 
 export function claimSupportConversation(user,conversationId) {
   if(user?.role!==USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const db=getDb();
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -3079,6 +3138,7 @@ export function claimSupportConversation(user,conversationId) {
 
 export function closeSupportConversation(user,conversationId) {
   if(![USER_ROLES.SUPPORT,USER_ROLES.ADMIN].includes(user?.role))throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const db=getDb();
   const conversation=db.prepare('SELECT * FROM support_conversations WHERE id=?').get(conversationId);
   if(!conversation||(user.role===USER_ROLES.SUPPORT&&conversation.assigned_agent_user_id!==user.id))throw new Error('NOT_FOUND');
@@ -3101,6 +3161,7 @@ export function closeSupportConversation(user,conversationId) {
 
 export function updateSupportAvailability(user,available) {
   if(user?.role!==USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const db=getDb();
   const profile=supportAgentRecord(db,user.id);
   if(!profile||!profile.active||!profile.user_active)throw new Error('SUPPORT_AGENT_UNAVAILABLE');
@@ -3121,6 +3182,8 @@ export function updateSupportAvailability(user,available) {
 export function listSupportAgents(user,options={}) {
   if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
   return paginateQuery(getDb(),`SELECT profile.user_id,profile.active,profile.available,profile.max_open_conversations,
+      profile.can_manage_customers,profile.can_manage_operations,profile.can_manage_trust,
+      profile.can_manage_billing,profile.can_manage_support,
       profile.last_assigned_at,profile.created_at,profile.updated_at,
       account.name,account.email,account.active AS user_active,
       (SELECT COUNT(*) FROM support_conversations conversation
@@ -3143,15 +3206,21 @@ export function createSupportAgent(user,input) {
   const db=getDb();
   const id=randomId('support-user-');
   const timestamp=nowIso();
+  const permissions={
+    customers:Boolean(input.canManageCustomers),operations:Boolean(input.canManageOperations),
+    trust:Boolean(input.canManageTrust),billing:Boolean(input.canManageBilling),support:Boolean(input.canManageSupport??true)
+  };
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`INSERT INTO users
       (id,email,password_hash,name,role,active,created_at) VALUES (?,?,?,?, 'SUPPORT',1,?)`)
       .run(id,email,hashPassword(password),name,timestamp);
     db.prepare(`INSERT INTO support_agent_profiles
-      (user_id,active,available,max_open_conversations,created_at,updated_at)
-      VALUES (?,1,1,?,?,?)`).run(id,maxOpen,timestamp,timestamp);
-    audit(db,user,'SUPPORT_AGENT_CREATED','support_agent',id,{maxOpenConversations:maxOpen});
+      (user_id,active,available,max_open_conversations,can_manage_customers,can_manage_operations,
+       can_manage_trust,can_manage_billing,can_manage_support,created_at,updated_at)
+      VALUES (?,1,?,?,?,?,?,?,?,?,?)`).run(id,permissions.support?1:0,maxOpen,permissions.customers?1:0,
+        permissions.operations?1:0,permissions.trust?1:0,permissions.billing?1:0,permissions.support?1:0,timestamp,timestamp);
+    audit(db,user,'SUPPORT_AGENT_CREATED','support_agent',id,{maxOpenConversations:maxOpen,permissions});
     db.exec('COMMIT');
   } catch(error) {
     db.exec('ROLLBACK');
@@ -3167,14 +3236,21 @@ export function updateSupportAgent(user,agentUserId,input) {
   if(!agent)throw new Error('NOT_FOUND');
   const maxOpen=validateSupportAgentLimit(input.maxOpenConversations);
   const active=Boolean(input.active);
-  const available=active&&Boolean(input.available);
+  const permissions={
+    customers:Boolean(input.canManageCustomers??agent.can_manage_customers),operations:Boolean(input.canManageOperations??agent.can_manage_operations),
+    trust:Boolean(input.canManageTrust??agent.can_manage_trust),billing:Boolean(input.canManageBilling??agent.can_manage_billing),
+    support:Boolean(input.canManageSupport??agent.can_manage_support)
+  };
+  const available=active&&permissions.support&&Boolean(input.available);
   const timestamp=nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
-    db.prepare(`UPDATE support_agent_profiles SET active=?,available=?,max_open_conversations=?,updated_at=?
-      WHERE user_id=?`).run(active?1:0,available?1:0,maxOpen,timestamp,agent.user_id);
+    db.prepare(`UPDATE support_agent_profiles SET active=?,available=?,max_open_conversations=?,
+      can_manage_customers=?,can_manage_operations=?,can_manage_trust=?,can_manage_billing=?,can_manage_support=?,updated_at=?
+      WHERE user_id=?`).run(active?1:0,available?1:0,maxOpen,permissions.customers?1:0,permissions.operations?1:0,
+        permissions.trust?1:0,permissions.billing?1:0,permissions.support?1:0,timestamp,agent.user_id);
     db.prepare('UPDATE users SET active=? WHERE id=?').run(active?1:0,agent.user_id);
-    if(!active){
+    if(!active||!permissions.support){
       const open=db.prepare(`SELECT id FROM support_conversations
         WHERE assigned_agent_user_id=? AND status='OPEN'`).all(agent.user_id);
       db.prepare(`UPDATE support_conversations SET status='WAITING',assigned_agent_user_id=NULL,
@@ -3182,7 +3258,7 @@ export function updateSupportAgent(user,agentUserId,input) {
         .run(timestamp,agent.user_id);
       for(const conversation of open)supportEvent(db,conversation.id,user.id,'REQUEUED',{disabledAgentUserId:agent.user_id});
     }
-    audit(db,user,'SUPPORT_AGENT_UPDATED','support_agent',agent.user_id,{active,available,maxOpenConversations:maxOpen});
+    audit(db,user,'SUPPORT_AGENT_UPDATED','support_agent',agent.user_id,{active,available,maxOpenConversations:maxOpen,permissions});
     assignWaitingSupportConversations(db);
     db.exec('COMMIT');
   } catch(error) {
@@ -3228,10 +3304,12 @@ function provisionApplicationWorkspace(db, application, timestamp, sponsoredFree
 }
 
 export function getAdminOperations(user, query = '', options = {}) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
   const db=getDb();
   const view=String(options.view||'WORKSPACES').toUpperCase();
-  if(!['USERS','WORKSPACES','TRUCKS','LOADS','CAPACITY'].includes(view))throw new Error('INVALID_ADMIN_OPERATIONS_VIEW');
+  if(!['USERS','WORKSPACES','TRUCKS','DRIVERS','LOADS','CAPACITY','NETWORK','ROUTES','SUBSCRIPTIONS'].includes(view))throw new Error('INVALID_ADMIN_OPERATIONS_VIEW');
+  const viewPermission=['USERS','WORKSPACES'].includes(view)?PLATFORM_PERMISSIONS.CUSTOMERS
+    : view==='SUBSCRIPTIONS'?PLATFORM_PERMISSIONS.BILLING:PLATFORM_PERMISSIONS.OPERATIONS;
+  assertPlatformPermission(user,viewPermission);
   const term=String(query||'').trim().toLowerCase().slice(0,80);
   const pattern=`%${term}%`;
   const matches=(expression)=>`(?='' OR lower(${expression}) LIKE ?)`;
@@ -3264,6 +3342,16 @@ export function getAdminOperations(user, query = '', options = {}) {
     LEFT JOIN provider_profiles p ON p.id=v.provider_profile_id
     LEFT JOIN capacities c ON c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC LIMIT 1)
     WHERE ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(v.cargo_configuration,'') || ' ' || COALESCE(v.plate,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'')")}`;
+  const driverBase=`SELECT u.id,u.name,u.email,u.active,o.name AS owner_name,v.platform_number,
+      COALESCE(dp.can_browse_load_board,1) AS can_browse_load_board,
+      COALESCE(dp.can_contact_businesses,1) AS can_contact_businesses,
+      COALESCE(dp.can_negotiate_loads,1) AS can_negotiate_loads,
+      COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity
+    FROM users u JOIN organizations o ON o.id=u.organization_id
+    LEFT JOIN driver_permissions dp ON dp.user_id=u.id
+    LEFT JOIN driver_vehicle_assignments assignment ON assignment.driver_user_id=u.id AND assignment.active=1
+    LEFT JOIN vehicles v ON v.id=assignment.vehicle_id
+    WHERE u.role='DRIVER' AND ${matches("u.name || ' ' || u.email || ' ' || o.name || ' ' || COALESCE(v.platform_number,'')")}`;
   const loadBase=`SELECT s.id,s.code,s.title,s.origin,s.destination,s.load_type,s.operational_status,s.updated_at,
       owner.name AS owner_name,COALESCE(provider.name,profile.business_name) AS provider_name
     FROM shipments s
@@ -3279,6 +3367,35 @@ export function getAdminOperations(user, query = '', options = {}) {
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
     WHERE c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC LIMIT 1)
       AND ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'')")}`;
+  const relationshipBase=`SELECT rel.id,'RELATIONSHIP' AS record_kind,business.name AS owner_name,
+      COALESCE(provider.name,profile.business_name) AS target_name,rel.status,
+      rel.requested_by_side AS detail,rel.updated_at
+    FROM partner_relationships rel JOIN organizations business ON business.id=rel.owner_organization_id
+    LEFT JOIN organizations provider ON provider.id=rel.provider_organization_id
+    LEFT JOIN provider_profiles profile ON profile.id=rel.provider_profile_id
+    WHERE ${matches("business.name || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'') || ' ' || rel.status")}`;
+  const favoriteBase=`SELECT favorite.id,'BUSINESS_FAVORITE' AS record_kind,owner.name AS owner_name,
+      target.name AS target_name,'FAVORITE' AS status,'Business favorite' AS detail,favorite.created_at AS updated_at
+    FROM member_favorites favorite JOIN organizations owner ON owner.id=favorite.owner_organization_id
+    JOIN organizations target ON target.id=favorite.target_organization_id
+    WHERE ${matches("owner.name || ' ' || target.name")}`;
+  const profileRouteBase=`SELECT route.id,'PROFILE_ROUTE' AS record_kind,COALESCE(owner.name,profile.business_name) AS owner_name,
+      route.origin AS origin,route.destination AS destination,NULL AS radius_km,route.created_at
+    FROM profile_routes route LEFT JOIN organizations owner ON owner.id=route.organization_id
+    LEFT JOIN provider_profiles profile ON profile.id=route.provider_profile_id
+    WHERE ${matches("COALESCE(owner.name,'') || ' ' || COALESCE(profile.business_name,'') || ' ' || route.origin || ' ' || route.destination")}`;
+  const serviceAreaBase=`SELECT area.id,'SERVICE_AREA' AS record_kind,COALESCE(owner.name,profile.business_name) AS owner_name,
+      area.place_label AS origin,NULL AS destination,area.radius_km,area.created_at
+    FROM service_areas area LEFT JOIN organizations owner ON owner.id=area.organization_id
+    LEFT JOIN provider_profiles profile ON profile.id=area.provider_profile_id
+    WHERE ${matches("COALESCE(owner.name,'') || ' ' || COALESCE(profile.business_name,'') || ' ' || area.place_label")}`;
+  const subscriptionBase=`SELECT subscription.id,subscription.status,subscription.billing_model,subscription.starts_at,
+      subscription.ends_at,subscription.updated_at,plan.name AS plan_name,
+      COALESCE(owner.name,profile.business_name) AS owner_name,owner.type AS organization_type
+    FROM subscriptions subscription JOIN plans plan ON plan.id=subscription.plan_id
+    LEFT JOIN organizations owner ON owner.id=subscription.organization_id
+    LEFT JOIN provider_profiles profile ON profile.id=subscription.provider_profile_id
+    WHERE ${matches("COALESCE(owner.name,'') || ' ' || COALESCE(profile.business_name,'') || ' ' || plan.name || ' ' || subscription.status")}`;
   const counts={
     users:db.prepare('SELECT COUNT(*) AS n FROM users').get().n,
     workspaces:db.prepare('SELECT (SELECT COUNT(*) FROM organizations)+(SELECT COUNT(*) FROM provider_profiles) AS n').get().n,
@@ -3286,7 +3403,10 @@ export function getAdminOperations(user, query = '', options = {}) {
     loads:db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
     board_capacity:db.prepare(`SELECT COUNT(DISTINCT c.vehicle_id) AS n FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
       WHERE v.active=1 AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
-        AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))`).get(todayInEthiopia()).n
+        AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))`).get(todayInEthiopia()).n,
+    network:db.prepare('SELECT (SELECT COUNT(*) FROM partner_relationships)+(SELECT COUNT(*) FROM member_favorites) AS n').get().n,
+    routes:db.prepare('SELECT (SELECT COUNT(*) FROM profile_routes)+(SELECT COUNT(*) FROM service_areas) AS n').get().n
+    ,subscriptions:db.prepare('SELECT COUNT(*) AS n FROM subscriptions').get().n
   };
   const pageOptions={page:options.page,pageSize:20};
   const selected=view==='USERS'
@@ -3295,9 +3415,17 @@ export function getAdminOperations(user, query = '', options = {}) {
       ? paginateQuery(db,`${organizationBase} UNION ALL ${providerBase}`,[...searchArgs,...searchArgs],'name COLLATE NOCASE,id',pageOptions)
       : view==='TRUCKS'
         ? paginateQuery(db,vehicleBase,searchArgs,'active DESC,platform_number,id',pageOptions)
+        : view==='DRIVERS'
+          ? paginateQuery(db,driverBase,searchArgs,'active DESC,name,id',pageOptions)
         : view==='LOADS'
           ? paginateQuery(db,loadBase,searchArgs,'updated_at DESC,id',pageOptions)
-          : paginateQuery(db,capacityBase,searchArgs,'updated_at DESC,id',pageOptions);
+          : view==='CAPACITY'
+            ? paginateQuery(db,capacityBase,searchArgs,'updated_at DESC,id',pageOptions)
+            : view==='NETWORK'
+              ? paginateQuery(db,`${relationshipBase} UNION ALL ${favoriteBase}`,[...searchArgs,...searchArgs],'updated_at DESC,id',pageOptions)
+              : view==='ROUTES'
+                ? paginateQuery(db,`${profileRouteBase} UNION ALL ${serviceAreaBase}`,[...searchArgs,...searchArgs],'created_at DESC,id',pageOptions)
+                : paginateQuery(db,subscriptionBase,searchArgs,'updated_at DESC,id',pageOptions);
   audit(db,user,'ADMIN_OPERATIONS_VIEWED','platform',null,{queryUsed:Boolean(term),view});
   return {
     counts,
@@ -3308,13 +3436,48 @@ export function getAdminOperations(user, query = '', options = {}) {
   };
 }
 
+export function moderateAdminRecord(user,recordType,recordId,command){
+  const db=getDb();
+  const type=String(recordType||'').toUpperCase();
+  const action=String(command||'').toUpperCase();
+  assertPlatformPermission(user,type==='SUBSCRIPTION'?PLATFORM_PERMISSIONS.BILLING:PLATFORM_PERMISSIONS.OPERATIONS);
+  const timestamp=nowIso();
+  if(type==='RELATIONSHIP'&&action==='DISCONNECT'){
+    const result=db.prepare(`UPDATE partner_relationships SET status='FAVORITE',business_favorite=0,
+      provider_favorite=0,responded_at=?,updated_at=? WHERE id=?`).run(timestamp,timestamp,recordId);
+    if(!result.changes)throw new Error('NOT_FOUND');
+  }else if(type==='BUSINESS_FAVORITE'&&action==='REMOVE'){
+    if(!db.prepare('DELETE FROM member_favorites WHERE id=?').run(recordId).changes)throw new Error('NOT_FOUND');
+  }else if(type==='PROFILE_ROUTE'&&action==='REMOVE'){
+    if(!db.prepare('DELETE FROM profile_routes WHERE id=?').run(recordId).changes)throw new Error('NOT_FOUND');
+  }else if(type==='SERVICE_AREA'&&action==='REMOVE'){
+    if(!db.prepare('DELETE FROM service_areas WHERE id=?').run(recordId).changes)throw new Error('NOT_FOUND');
+  }else if(type==='CAPACITY'&&action==='OFF_DUTY'){
+    const result=db.prepare(`UPDATE capacities SET status='OFF_DUTY',market_status='OFF_DUTY',on_duty=0,
+      visibility='HIDDEN',updated_at=?,expires_at=? WHERE id=?`).run(timestamp,timestamp,recordId);
+    if(!result.changes)throw new Error('NOT_FOUND');
+  }else if(type==='SUBSCRIPTION'&&['PAID','EXPIRE','SPONSOR'].includes(action)){
+    const subscription=db.prepare(`SELECT subscription.*,owner.type AS organization_type
+      FROM subscriptions subscription LEFT JOIN organizations owner ON owner.id=subscription.organization_id WHERE subscription.id=?`).get(recordId);
+    if(!subscription)throw new Error('NOT_FOUND');
+    if(action==='SPONSOR'&&!['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER'].includes(subscription.organization_type))throw new Error('SPONSORED_ACCESS_BUSINESS_ONLY');
+    if(action==='PAID')db.prepare(`UPDATE subscriptions SET status='ACTIVE',billing_model='FLAT_MONTHLY',starts_at=?,ends_at=?,updated_at=? WHERE id=?`)
+      .run(timestamp,accessPeriodEnd(timestamp,PAID_ACCESS_DAYS),timestamp,recordId);
+    if(action==='EXPIRE')db.prepare(`UPDATE subscriptions SET status='EXPIRED',ends_at=?,updated_at=? WHERE id=?`).run(timestamp,timestamp,recordId);
+    if(action==='SPONSOR')db.prepare(`UPDATE subscriptions SET status='SPONSORED',billing_model='SPONSORED_FREE',ends_at=NULL,updated_at=? WHERE id=?`).run(timestamp,recordId);
+  }else throw new Error('INVALID_ADMIN_RECORD_COMMAND');
+  audit(db,user,'ADMIN_RECORD_MODERATED',type.toLowerCase(),recordId,{command:action});
+}
+
 export function setAdminRecordActive(user, recordType, recordId, active) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,recordType==='USER'?PLATFORM_PERMISSIONS.CUSTOMERS:PLATFORM_PERMISSIONS.OPERATIONS);
   const db=getDb();
   const enabled=Boolean(active);
-  if(recordType==='USER'){
+  if(['USER','DRIVER'].includes(recordType)){
     const target=db.prepare('SELECT id,role,active FROM users WHERE id=?').get(recordId);
     if(!target)throw new Error('NOT_FOUND');
+    if(recordType==='DRIVER'&&target.role!==USER_ROLES.DRIVER)throw new Error('INVALID_ADMIN_RECORD_TYPE');
+    if(user.role!==USER_ROLES.ADMIN&&[USER_ROLES.ADMIN,USER_ROLES.SUPPORT].includes(target.role))throw new Error('FORBIDDEN');
     if(target.id===user.id&&!enabled)throw new Error('ADMIN_SELF_SUSPENSION_DENIED');
     if(target.role===USER_ROLES.SUPPORT){
       const profile=supportAgentRecord(db,target.id);
@@ -3341,7 +3504,7 @@ export function setAdminRecordActive(user, recordType, recordId, active) {
 }
 
 export function grantSponsoredBusinessAccess(user, organizationId) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.BILLING);
   const db=getDb();
   const organization=db.prepare(`SELECT id,type FROM organizations WHERE id=?`).get(organizationId);
   if(!organization)throw new Error('NOT_FOUND');
@@ -3531,7 +3694,7 @@ export function submitPaymentProof(user, amountEtb, reference, upload = null) {
 }
 
 export function listPaymentProofs(user, options = /** @type {any} */ (null)) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.BILLING);
   const db=getDb();
   const baseSelect=`SELECT pp.*,p.name AS plan_name,o.name AS organization_name,pr.business_name AS provider_name,
       s.status AS subscription_status,s.ends_at AS subscription_ends_at
@@ -3552,7 +3715,7 @@ export function listPaymentProofs(user, options = /** @type {any} */ (null)) {
 }
 
 export function reviewPaymentProof(user, proofId, status) {
-  if (user.role !== USER_ROLES.ADMIN) throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.BILLING);
   if (!['APPROVED','REJECTED','MORE_INFO'].includes(status)) throw new Error('INVALID_STATUS');
   const db = getDb();
   const proof = db.prepare('SELECT * FROM payment_proofs WHERE id=?').get(proofId);

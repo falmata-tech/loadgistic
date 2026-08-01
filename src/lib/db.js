@@ -508,6 +508,11 @@ function migrate(db) {
       active INTEGER NOT NULL DEFAULT 1,
       available INTEGER NOT NULL DEFAULT 1,
       max_open_conversations INTEGER NOT NULL DEFAULT 3 CHECK(max_open_conversations BETWEEN 1 AND 20),
+      can_manage_customers INTEGER NOT NULL DEFAULT 0,
+      can_manage_operations INTEGER NOT NULL DEFAULT 0,
+      can_manage_trust INTEGER NOT NULL DEFAULT 0,
+      can_manage_billing INTEGER NOT NULL DEFAULT 0,
+      can_manage_support INTEGER NOT NULL DEFAULT 1,
       last_assigned_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -550,6 +555,14 @@ function migrate(db) {
   const supportConversationColumns=new Set(db.prepare('PRAGMA table_info(support_conversations)').all().map(column=>column.name));
   if(!supportConversationColumns.has('customer_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN customer_last_read_at TEXT');
   if(!supportConversationColumns.has('agent_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN agent_last_read_at TEXT');
+  const supportAgentColumns=new Set(db.prepare('PRAGMA table_info(support_agent_profiles)').all().map(column=>column.name));
+  for(const [name,definition] of [
+    ['can_manage_customers','INTEGER NOT NULL DEFAULT 0'],
+    ['can_manage_operations','INTEGER NOT NULL DEFAULT 0'],
+    ['can_manage_trust','INTEGER NOT NULL DEFAULT 0'],
+    ['can_manage_billing','INTEGER NOT NULL DEFAULT 0'],
+    ['can_manage_support','INTEGER NOT NULL DEFAULT 1']
+  ])if(!supportAgentColumns.has(name))db.exec(`ALTER TABLE support_agent_profiles ADD COLUMN ${name} ${definition}`);
   const userColumns = new Set(db.prepare('PRAGMA table_info(users)').all().map(column => column.name));
   if (!userColumns.has('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT');
   const organizationColumns = new Set(db.prepare('PRAGMA table_info(organizations)').all().map(column => column.name));
@@ -1125,7 +1138,7 @@ function seed(db) {
     (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   capacityInsert.run('cap-empty',orgs.transporter.id,null,'veh-trans-1','EMPTY',100,'Addis Ababa','Dire Dawa','Addis Ababa ↔ Dire Dawa',tomorrow,'Today 16:00','OPEN',null,'user-transporter',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
-  capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',dayAfter,'Ready now','SAVED_PARTNERS',null,'user-driver',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
+  capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',dayAfter,'Ready now','OPEN',null,'user-driver',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
   capacityInsert.run('cap-partner-partial',orgs.transporter.id,null,'veh-trans-2','PARTIAL',25,'Mekelle','Addis Ababa','Mekelle ↔ Addis Ababa',dayAfter,'After current delivery','SAVED_PARTNERS',null,'user-transporter',iso,expiresFresh,'Around Mekelle',iso,13.5,39.5,40,'DEVICE_OBSCURED');
   db.prepare(`UPDATE capacities SET movement_scope='BOTH',local_place_ref='builtin:addis ababa',
     local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,local_radius_km=40

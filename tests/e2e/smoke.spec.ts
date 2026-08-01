@@ -148,6 +148,9 @@ test('native support carries one private conversation from customer to agent and
 
   await login(page,'support@loadgistic.local','/support');
   await expect(page.getByRole('heading',{name:'Support Inbox'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Operations'})).toHaveCount(0);
+  await page.goto('/admin/operations');
+  await expect(page).toHaveURL(/\/support$/);
   const customerRow=page.locator('.support-conversation-list article').filter({hasText:'Blue Nile Trading PLC'});
   await expect(customerRow).toBeVisible();
   await customerRow.getByRole('link',{name:'Open'}).click();
@@ -170,6 +173,13 @@ test('native support carries one private conversation from customer to agent and
   await expect(page.getByRole('heading',{name:'Customer Support'})).toBeVisible();
   await expect(page.getByText('Hana Support',{exact:true})).toBeVisible();
   await expect(page.getByText('support@loadgistic.local')).toBeVisible();
+  await page.getByText('Hana Support',{exact:true}).click();
+  const memberPermissions=page.locator('.support-agent-list details[open]');
+  await expect(memberPermissions.getByLabel('Customers')).toBeVisible();
+  await expect(memberPermissions.getByLabel('Operations')).toBeVisible();
+  await expect(memberPermissions.getByLabel('Trust')).toBeVisible();
+  await expect(memberPermissions.getByLabel('Billing')).toBeVisible();
+  await expect(memberPermissions.getByLabel('Support')).toBeVisible();
 });
 
 test('expired workspace keeps a billing-focused Home and denies operating screens',async({page}:{page:any})=>{
@@ -318,9 +328,11 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByLabel('Availability')).toBeVisible();
   await expect(page.getByLabel('Truck area near')).toBeVisible();
-  await expect(page.getByText(/Market gauge only/i)).toBeVisible();
+  await expect(page.getByText(/Anonymous market view/i)).toBeVisible();
   await expect(page.getByText(/LG-TRK-/)).toHaveCount(0);
-  await expect(page.locator('.market-gauge-card').getByText('BlueLine Transport PLC')).toHaveCount(0);
+  await expect(page.locator('.provider-market-card')).not.toHaveCount(0);
+  await expect(page.locator('.provider-market-card').first().locator('img')).toBeVisible();
+  await expect(page.locator('.provider-market-card').getByText('BlueLine Transport PLC')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /view transporter/i })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /interest|contact/i })).toHaveCount(0);
 });
@@ -543,4 +555,15 @@ test('connected provider sees Partners demand without receiving party controls',
   await expect(page.getByRole('heading', { name: 'Internal note' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Next status' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Upload proof' })).toHaveCount(0);
+});
+
+test('workspace Back returns through history without creating a navigation loop', async ({ page }: { page:any }) => {
+  await login(page,'shipper@loadgistic.local');
+  await page.goto('/app/providers?q=Blue');
+  await page.getByRole('link',{name:'Profile'}).first().click();
+  await expect(page).toHaveURL(/\/app\/providers\//);
+  await page.getByRole('link',{name:'Back to previous workspace page'}).click();
+  await expect(page).toHaveURL(/\/app\/providers\?q=Blue/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/app\/providers\//);
 });

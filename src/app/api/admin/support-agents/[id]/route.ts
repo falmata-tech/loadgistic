@@ -13,7 +13,12 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     updateSupportAgent(user,id,{
       active:checked(form,'active'),
       available:checked(form,'available'),
-      maxOpenConversations:text(form,'maxOpenConversations')
+      maxOpenConversations:text(form,'maxOpenConversations'),
+      canManageCustomers:checked(form,'canManageCustomers'),
+      canManageOperations:checked(form,'canManageOperations'),
+      canManageTrust:checked(form,'canManageTrust'),
+      canManageBilling:checked(form,'canManageBilling'),
+      canManageSupport:checked(form,'canManageSupport')
     });
     return redirectWith(request,'/admin/support','success','Support agent updated.');
   } catch(error) {
