@@ -31,13 +31,13 @@
     "@supabase/supabase-js": "2.49.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.51.1",
-    "@types/node": "22.13.10",
+    "@playwright/test": "1.62.0",
+    "@types/node": "26.1.2",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
-    "eslint": "9.22.0",
-    "eslint-config-next": "15.2.4",
-    "typescript": "5.8.2"
+    "eslint": "10.8.0",
+    "eslint-config-next": "16.2.12",
+    "typescript": "7.0.2"
   },
   "type": "module"
 }
