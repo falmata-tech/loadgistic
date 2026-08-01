@@ -7,6 +7,9 @@ import { redirectWith } from '@/lib/redirects';
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}){
   const user=await getCurrentUser(); if(!user) return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
-  try{acceptDirectedShipment(user,id);return redirectWith(request,`/app/shipments/${id}`,'success','Direct request accepted.');}
-  catch(error){return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));}
+  const form=await request.formData();
+  const requestedReturn=String(form.get('returnTo')||'');
+  const returnTo=requestedReturn==='/app/loads'?requestedReturn:`/app/shipments/${id}`;
+  try{acceptDirectedShipment(user,id);return redirectWith(request,returnTo,'success','Direct request accepted.');}
+  catch(error){return redirectWith(request,returnTo,'error',errorMessage(error));}
 }

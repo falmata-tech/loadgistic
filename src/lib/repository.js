@@ -755,7 +755,8 @@ export function setReceiverContact(user, shipmentId, firstName, phone) {
   assertWorkspaceAccess(user);
   const db = getDb();
   const shipment = db.prepare('SELECT * FROM shipments WHERE id=? OR code=?').get(shipmentId,shipmentId);
-  const ownsShipment = shipment && (user.role === USER_ROLES.ADMIN || (shipment.load_owner_organization_id||shipment.shipper_organization_id) === user.organization_id);
+  const ownerOrganizationId=shipment&&(shipment.load_owner_organization_id||shipment.shipper_organization_id);
+  const ownsShipment = shipment && (user.role === USER_ROLES.ADMIN || ownerOrganizationId === user.organization_id);
   if (!ownsShipment) throw new Error('NOT_FOUND');
   if (shipment.operational_status !== 'AGREED') throw new Error('RECEIVER_CONTACT_NOT_READY');
   const cleanFirstName = String(firstName || '').trim();
@@ -764,6 +765,41 @@ export function setReceiverContact(user, shipmentId, firstName, phone) {
   db.prepare('UPDATE shipments SET receiver_first_name=?,receiver_phone=?,updated_at=? WHERE id=?')
     .run(cleanFirstName,cleanPhone,nowIso(),shipment.id);
   audit(db,user,'SHIPMENT_RECEIVER_CONTACT_SET','shipment',shipment.id,{});
+}
+
+export function setShipmentParties(user, shipmentId, input) {
+  assertWorkspaceAccess(user);
+  const db = getDb();
+  const shipment = db.prepare('SELECT * FROM shipments WHERE id=? OR code=?').get(shipmentId,shipmentId);
+  const ownerOrganizationId=shipment&&(shipment.load_owner_organization_id||shipment.shipper_organization_id);
+  const ownsShipment = shipment && (user.role === USER_ROLES.ADMIN || ownerOrganizationId === user.organization_id);
+  if (!ownsShipment) throw new Error('NOT_FOUND');
+  if (shipment.operational_status !== 'AGREED') throw new Error('RECEIVER_CONTACT_NOT_READY');
+  const ownerPartyRole=['SHIPPER','RECEIVER'].includes(input.ownerPartyRole)?input.ownerPartyRole:'SHIPPER';
+  const cleanFirstName=String(input.receiverFirstName||'').trim();
+  const cleanPhone=String(input.receiverPhone||'').trim();
+  if(!cleanFirstName||!cleanPhone)throw new Error('RECEIVER_CONTACT_REQUIRED');
+  let counterpartyOrganizationId=null;
+  let externalCounterpartyName=null;
+  if(input.counterpartyType==='ACCOUNT'){
+    const [kind,id]=String(input.counterpartyRef||'').split(':');
+    if(kind!=='org')throw new Error('INVALID_BUSINESS_PARTY');
+    const counterpart=db.prepare(`SELECT id FROM organizations WHERE id=? AND id<>? AND type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')`).get(id,ownerOrganizationId);
+    if(!counterpart)throw new Error('INVALID_BUSINESS_PARTY');
+    counterpartyOrganizationId=counterpart.id;
+  }else if(input.counterpartyType==='EXTERNAL'){
+    externalCounterpartyName=String(input.externalCounterpartyName||'').trim();
+    if(!externalCounterpartyName)throw new Error('EXTERNAL_PARTY_REQUIRED');
+  }else throw new Error('BUSINESS_PARTY_REQUIRED');
+  const shipperOrganizationId=ownerPartyRole==='SHIPPER'?ownerOrganizationId:counterpartyOrganizationId;
+  const receiverOrganizationId=ownerPartyRole==='RECEIVER'?ownerOrganizationId:counterpartyOrganizationId;
+  db.prepare(`UPDATE shipments SET load_owner_party_role=?,shipper_organization_id=?,receiver_organization_id=?,
+    external_shipper_name=?,external_shipper_phone=NULL,external_receiver_name=?,external_receiver_phone=NULL,
+    receiver_first_name=?,receiver_phone=?,updated_at=? WHERE id=?`)
+    .run(ownerPartyRole,shipperOrganizationId,receiverOrganizationId,
+      ownerPartyRole==='RECEIVER'?externalCounterpartyName:null,ownerPartyRole==='SHIPPER'?externalCounterpartyName:null,
+      cleanFirstName,cleanPhone,nowIso(),shipment.id);
+  audit(db,user,'SHIPMENT_PARTIES_SET','shipment',shipment.id,{ownerPartyRole,counterpartyType:input.counterpartyType});
 }
 
 export function addShipmentNote(user, shipmentId, note) {
@@ -1068,7 +1104,9 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
   if (kind === 'ALL' || kind === 'BUSINESS') {
     selects.push(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,o.city_place_ref,o.city_lat,o.city_lng,
       cp.headline,cp.about,cp.services,cp.operating_regions,
-      cp.contact_phone,cp.contact_email,1 AS is_business,NULL AS preferred_routes_text,0 AS fleet_size,0 AS active_capacity_count,
+      cp.contact_phone,cp.contact_email,
+      (SELECT u.name FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=o.id AND m.membership_role='OWNER' AND u.active=1 ORDER BY u.created_at LIMIT 1) AS owner_name,
+      1 AS is_business,NULL AS preferred_routes_text,0 AS fleet_size,0 AS active_capacity_count,
       (SELECT COUNT(*) FROM business_reviews r WHERE r.subject_organization_id=o.id AND r.status='PUBLISHED') AS review_count,
       (SELECT ROUND(AVG(r.rating),1) FROM business_reviews r WHERE r.subject_organization_id=o.id AND r.status='PUBLISHED') AS average_rating
       FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id AND cp.published=1
@@ -1077,7 +1115,9 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
   if (kind === 'ALL' || kind === 'TRANSPORT') {
     selects.push(`SELECT o.id,'org' AS ref_kind,o.name,o.handle,o.type,o.city,o.city_place_ref,o.city_lat,o.city_lng,
       cp.headline,cp.about,cp.services,cp.operating_regions,
-      cp.contact_phone,cp.contact_email,0 AS is_business,
+      cp.contact_phone,cp.contact_email,
+      (SELECT u.name FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=o.id AND m.membership_role='OWNER' AND u.active=1 ORDER BY u.created_at LIMIT 1) AS owner_name,
+      0 AS is_business,
       (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.organization_id=o.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
@@ -1091,7 +1131,7 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
   if (kind === 'ALL' || kind === 'DRIVER') {
     selects.push(`SELECT p.id,'profile' AS ref_kind,p.business_name AS name,p.handle,'INDEPENDENT_PROVIDER' AS type,
       p.city,p.city_place_ref,p.city_lat,p.city_lng,cp.headline,p.about,cp.services,cp.operating_regions,
-      cp.contact_phone,cp.contact_email,0 AS is_business,
+      cp.contact_phone,cp.contact_email,u.name AS owner_name,0 AS is_business,
       (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.provider_profile_id=p.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
@@ -1099,13 +1139,13 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
          AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
          AND (COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))) AS active_capacity_count,
       0 AS review_count,NULL AS average_rating
-      FROM provider_profiles p JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.public_visibility='PUBLIC'`);
+      FROM provider_profiles p JOIN users u ON u.id=p.user_id JOIN company_pages cp ON cp.provider_profile_id=p.id AND cp.published=1 WHERE p.public_visibility='PUBLIC'`);
     selectArgs.push(todayInEthiopia());
   }
   if(!selects.length)return options?paginateResults([],options):[];
   const search = String(options?.q||'').trim().toLowerCase();
   const source=`FROM (${selects.join(' UNION ALL ')}) profiles`;
-  const searchColumns=['name','about','headline','services'];
+  const searchColumns=['name','owner_name','contact_phone','about','headline','services'];
   const conditions=search?[`(${searchColumns.map(column=>`lower(COALESCE(${column},'')) LIKE ?`).join(' OR ')})`]:[];
   const searchArgs=search?Array(searchColumns.length).fill(`%${search}%`):[];
   const nearPlace=selectedBoardPlace(options?.nearPlaceRef,options?.nearPlace);
@@ -1965,7 +2005,7 @@ const LOAD_BOARD_COLUMNS=`s.id,s.code,s.title,s.service_mode,s.distribution_mode
   s.commercial_status,s.operational_status,s.tracking_mode,s.created_at,s.updated_at,s.movement_scope,
   s.local_place_ref,s.local_place_label,s.pickup_area_label,s.dropoff_area_label,
   COALESCE(s.external_shipper_name,shipper.name) AS shipper_name,
-  COALESCE(s.external_receiver_name,receiver.name) AS receiver_name,owner.name AS load_owner_name,
+  COALESCE(s.external_receiver_name,receiver.name) AS receiver_name,owner.name AS load_owner_name,owner.handle AS load_owner_handle,
   CASE WHEN cp.show_contact_phone_on_loads=1 THEN cp.contact_phone ELSE NULL END AS load_contact_phone`;
 
 function rankLoadRows(rows,selectedRoute){
@@ -2575,7 +2615,7 @@ export function publishCapacity(user, input, photo = null) {
   const acceptsIntercity=movementScope!==MOVEMENT_SCOPES.LOCAL;
   const acceptsMultiPick=Boolean(input.acceptsMultiPick||input.acceptsMultiStop);
   const acceptsMultiDrop=Boolean(input.acceptsMultiDrop||input.acceptsMultiStop);
-  if(acceptsIntercity&&input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin)!==Boolean(input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
+  if(acceptsIntercity&&input.status==='PARTIAL'&&(!input.currentRouteOrigin||!input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
   if(acceptsIntercity&&Boolean(input.origin)!==Boolean(input.destination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
   const hasCurrentRoute=acceptsIntercity&&input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin&&input.currentRouteDestination);
   const hasPlannedRoute=acceptsIntercity&&!['BUSY','OFF_DUTY'].includes(input.status)&&Boolean(input.origin&&input.destination);

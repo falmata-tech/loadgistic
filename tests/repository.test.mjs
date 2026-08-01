@@ -116,6 +116,17 @@ test('directory separates descriptive search from coordinate proximity',()=>{
  }
 });
 
+test('directory search matches public phone and owner name without account contacts',()=>{
+ const db=dbModule.getDb();
+ const profile=db.prepare(`SELECT cp.contact_phone,u.name AS owner_name,u.phone AS login_phone
+   FROM organizations o JOIN company_pages cp ON cp.organization_id=o.id
+   JOIN memberships m ON m.organization_id=o.id AND m.membership_role='OWNER'
+   JOIN users u ON u.id=m.user_id WHERE o.id='org-transporter' LIMIT 1`).get();
+ assert.ok(repo.listDirectoryProfiles('TRANSPORT',{q:profile.contact_phone,page:1,pageSize:7}).items.some(item=>item.id==='org-transporter'));
+ assert.ok(repo.listDirectoryProfiles('TRANSPORT',{q:profile.owner_name,page:1,pageSize:7}).items.some(item=>item.id==='org-transporter'));
+ assert.equal(repo.listDirectoryProfiles('TRANSPORT',{q:profile.login_phone,page:1,pageSize:7}).items.length,0);
+});
+
 test('seeded low rating is private, excluded from reputation, and safely projected to administrators',()=>{
  const shipper=repo.getUserById('user-shipper');
  const receiver=repo.getUserById('user-receiver');
@@ -469,6 +480,7 @@ test('capacity update enforces partial percentage and expires old vehicle record
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/ACCEPTED_LOADS_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'',visibility:'OPEN'}),/CAPACITY_AREA_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'5'}),/INVALID_APPROXIMATE_LOCATION/);
+ assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',...locationRef(),visibility:'OPEN'}),/ROUTE_ENDPOINTS_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',...locationRef(),currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),visibility:'OPEN'}),/CURRENT_ROUTE_DATE_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',...locationRef(),origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),visibility:'OPEN'}),/PLANNED_ROUTE_DATE_REQUIRED/);
  const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),currentRouteDate:routeDate,origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),travelDate:routeDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});

@@ -27,11 +27,21 @@ Then the server returns one bounded page of matching profiles\
 And the interface preserves the selected account type and search text\
 And the member can reach every matching profile without rendering the entire directory at once.
 
-### Scenario: directory supports discovery without requiring search
+### Scenario: directory starts as a focused search surface
 
 Given an authenticated member opens the directory without filters\
-When the first result page is rendered\
-Then a bounded default page appears immediately\
+When the first page is rendered\
+Then no profile results or profile count are returned\
+And a prominent search control invites a query before any member data is read\
+And typing a name, public phone, owner name, or company name returns only matching profiles\
+And account login phones and other private contacts are never searchable.
+
+### Scenario: directory result pages remain small and server bounded
+
+Given a meaningful directory query matches more than seven profiles\
+When the member searches or changes pages\
+Then the server returns at most seven matching profiles for that page\
+And page navigation preserves the query, account type, and location filters\
 And desktop cards follow left-to-right, top-to-bottom reading order\
 And mobile shows one card per row.
 

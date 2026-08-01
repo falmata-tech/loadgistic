@@ -7,45 +7,34 @@ import {
   ArrowRightLeft,
   Banknote,
   Boxes,
-  Building2,
   CalendarClock,
   Check,
   Clock3,
   MapPin,
   Navigation,
   PackageOpen,
-  Phone,
   Route,
   Search,
   Send,
   Share2,
   ShieldCheck,
   Truck,
-  UserRound
 } from 'lucide-react';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 import { AsyncMemberSelect } from './async-member-select';
 import { LocalLoadMapPicker } from './local-load-map-picker';
 
 export function ShipmentForm({
-  workspaceName,
   selectedProvider,
-  selectedReceiver,
   selectedProviderLabel,
-  selectedReceiverLabel,
   minDate
 }: {
-  workspaceName: string;
   selectedProvider: string;
-  selectedReceiver: string;
   selectedProviderLabel:string;
-  selectedReceiverLabel:string;
   minDate: string;
 }) {
   const [distributionMode, setDistributionMode] = React.useState(selectedProvider ? 'DIRECT_TO_PROVIDER' : 'OPEN_MARKET');
   const [priceMode, setPriceMode] = React.useState('QUOTE_REQUESTED');
-  const [ownerPartyRole,setOwnerPartyRole]=React.useState('SHIPPER');
-  const [counterpartyType,setCounterpartyType]=React.useState(selectedReceiver?'ACCOUNT':'ACCOUNT');
   const [loadType,setLoadType]=React.useState('');
   const [movementScope,setMovementScope]=React.useState('INTERCITY' as 'LOCAL'|'INTERCITY');
   const [localCenter,setLocalCenter]=React.useState(null as {lat:number;lng:number}|null);
@@ -57,10 +46,6 @@ export function ShipmentForm({
       <div className="load-step-heading"><span>1</span><PackageOpen aria-hidden="true"/><div><h2>Shipment and route</h2><p>What is moving, and where should it go?</p></div></div>
       <div className="form-grid">
         <div className="form-group full"><label htmlFor="shipment-title"><Boxes aria-hidden="true"/>Shipment name</label><input id="shipment-title" name="title" required placeholder="Example: Woven baskets for a shop in Hawassa, Ethiopia"/></div>
-        <div className="form-group"><label htmlFor="business-account"><Building2 aria-hidden="true"/>Shipment owner</label><input id="business-account" value={workspaceName} readOnly/></div>
-        <fieldset className="form-group"><legend><UserRound aria-hidden="true"/>Your role on this shipment</legend><div className="segmented-control"><label onClick={()=>setOwnerPartyRole('SHIPPER')}><input type="radio" name="ownerPartyRole" value="SHIPPER" checked={ownerPartyRole==='SHIPPER'} onChange={()=>setOwnerPartyRole('SHIPPER')}/><span>Shipper</span></label><label onClick={()=>setOwnerPartyRole('RECEIVER')}><input type="radio" name="ownerPartyRole" value="RECEIVER" checked={ownerPartyRole==='RECEIVER'} onChange={()=>setOwnerPartyRole('RECEIVER')}/><span>Receiver</span></label></div></fieldset>
-        <fieldset className="form-group full"><legend><Building2 aria-hidden="true"/>{ownerPartyRole==='SHIPPER'?'Who receives it?':'Who ships it?'}</legend><div className="segmented-control"><label onClick={()=>setCounterpartyType('ACCOUNT')}><input type="radio" name="counterpartyType" value="ACCOUNT" checked={counterpartyType==='ACCOUNT'} onChange={()=>setCounterpartyType('ACCOUNT')}/><span>Loadgistic Business</span></label><label onClick={()=>setCounterpartyType('EXTERNAL')}><input type="radio" name="counterpartyType" value="EXTERNAL" checked={counterpartyType==='EXTERNAL'} onChange={()=>setCounterpartyType('EXTERNAL')}/><span>External Business</span></label></div></fieldset>
-        {counterpartyType==='ACCOUNT'?<AsyncMemberSelect id="counterparty-search" name="counterpartyRef" kind="BUSINESS" label={ownerPartyRole==='SHIPPER'?'Receiver Business':'Shipper Business'} placeholder="Start typing a Business name" initialRef={selectedReceiver?`org:${selectedReceiver}`:''} initialLabel={selectedReceiverLabel} required/>:<><div className="form-group"><label htmlFor="external-counterparty"><Building2 aria-hidden="true"/>{ownerPartyRole==='SHIPPER'?'Receiver':'Shipper'} name</label><input id="external-counterparty" name="externalCounterpartyName" required placeholder="Business or person name"/></div><div className="form-group"><label htmlFor="external-counterparty-phone"><Phone aria-hidden="true"/>Phone <span className="meta">(optional)</span></label><input id="external-counterparty-phone" name="externalCounterpartyPhone" type="tel" placeholder="+251 …"/></div></>}
         <fieldset className="form-group full"><legend><Route aria-hidden="true"/>Movement</legend><div className="rich-choice-grid two"><label className="rich-choice"><input type="radio" name="movementScope" value="LOCAL" checked={movementScope==='LOCAL'} onChange={()=>setMovementScope('LOCAL')}/><MapPin aria-hidden="true"/><span><strong>Local</strong><small>Within one city or town area</small></span><Check className="choice-check" aria-hidden="true"/></label><label className="rich-choice"><input type="radio" name="movementScope" value="INTERCITY" checked={movementScope==='INTERCITY'} onChange={()=>setMovementScope('INTERCITY')}/><Route aria-hidden="true"/><span><strong>Between cities</strong><small>Origin city to destination city</small></span><Check className="choice-check" aria-hidden="true"/></label></div></fieldset>
         {movementScope==='INTERCITY'?<div className="route-inputs full"><div className="form-group"><label htmlFor="shipment-origin"><MapPin aria-hidden="true"/>From city</label><EthiopiaPlaceInput id="shipment-origin" name="origin" placeRefName="originPlaceRef" required placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true"><ArrowRightLeft/></div><div className="form-group"><label htmlFor="shipment-destination"><MapPin aria-hidden="true"/>To city</label><EthiopiaPlaceInput id="shipment-destination" name="destination" placeRefName="destinationPlaceRef" required placeholder="Hawassa, Ethiopia"/></div></div>:<div className="local-load-location full">
           <div className="form-group"><label htmlFor="shipment-locality"><MapPin aria-hidden="true"/>Local city or town</label><EthiopiaPlaceInput id="shipment-locality" name="localPlaceLabel" placeRefName="localPlaceRef" required placeholder="Addis Ababa, Ethiopia" onPlaceSelect={place=>setLocalCenter({lat:place.lat,lng:place.lng})}/></div>

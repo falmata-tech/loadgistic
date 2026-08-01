@@ -16,6 +16,7 @@ export function Pagination({
   total:number;
   pageParam?:string;
 }){
+  if(total===0)return null;
   if(pageCount<=1)return <p className="pagination-summary">{total} results</p>;
   const href=(target:number)=>{
     const params=new URLSearchParams();

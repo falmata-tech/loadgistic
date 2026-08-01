@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Truck-first Truck Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; each publishes duty state separately from Empty, Partial, or Busy availability, general current area, accepted work, dated movement, Preferred Routes, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Truck Board, with freshness made explicit rather than silently removing stale Empty or Partial signals.
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each update records general current area, accepted work, dated movement, Preferred Routes, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Truck Board, with freshness made explicit rather than silently removing stale Empty or Partial signals.
 contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
 rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
@@ -55,12 +55,13 @@ Then the truck is absent from the Truck Board and route matching\
 And its latest owner and driver control indicates that a fresh availability decision is required\
 And the persisted historical update remains available to its owner and administrators.
 
-### Scenario: duty and availability remain separate
+### Scenario: availability selection controls duty
 
 Given a truck has a latest availability state\
 When Empty, Partial, or Busy is selected\
 Then the truck is On Duty\
 And when Off Duty is selected it is hidden from Truck Board discovery\
+And the editor presents Empty, Partial, Busy, and Off Duty together without a separate On Duty control\
 And freshness never changes the persisted duty choice by itself\
 And an expired Busy signal is treated as undiscoverable until refreshed rather than silently rewritten as a user-authored Off Duty command.
 
@@ -81,12 +82,13 @@ When an authenticated user opens the Truck Board\
 Then each truck is a separate capacity contributor and card\
 And no provider-level summary collapses those trucks into one signal.
 
-### Scenario: capacity card opens truck detail
+### Scenario: Truck Board card is complete for discovery
 
 Given a user may view a truck's Public or Partners capacity\
-When they open its capacity detail\
-Then the detail shows the truck, cargo configuration, availability, area, active routes, accepted load policy, freshness, and owning transporter or self-managed driver\
-And the same visibility authorization is reapplied to the detail read.
+When its Truck Board card is rendered\
+Then the card shows the truck, cargo configuration, availability, area, active routes, accepted load policy, freshness, and trust signals\
+And no truck-detail step is required before the user can call or open the owning fleet or owner-operator Public Profile\
+And all Board and profile reads reapply the same visibility authorization.
 
 ### Scenario: fleet roster count is authoritative
 
@@ -130,7 +132,8 @@ And both acceptance policies are displayed independently from cargo-space status
 
 Given a truck has Partial cargo space\
 When its driver publishes capacity\
-Then it may declare the current route and date on which that partial space exists\
+Then it must declare the exact current travel route and date on which that partial space exists\
+And that route describes the truck's current direction rather than requiring the final destination of cargo already aboard\
 And any on-duty truck may separately declare one future planned travel route, date, and Full or Partial planned cargo-space label\
 And regular Preferred Routes remain a multiple-value Public Profile setting controlled by the fleet company admin or self-managed owner\
 And expired capacity, past current-route dates, and past planned-route dates are excluded from live matching.
@@ -144,9 +147,10 @@ And they do not have to open a general dashboard before updating their truck.
 
 ### Scenario: capacity publication follows three decisions
 
-Given a driver or fleet owner updates an on-duty truck\
+Given a driver or fleet owner updates a truck\
 When the capacity editor opens\
-Then the primary flow asks what the truck can do now, where it can work, and whether to publish\
+Then the primary flow asks what the truck can do now, where it can work, and whether to publish in that logical order\
+And Empty, Partial, Busy, and Off Duty are one availability choice\
 And the selected truck is a compact identity header rather than a separate form section\
 And current available space and the current partial-capacity route remain visibly connected\
 And the current route is required only for Partial intercity or Both work\
@@ -178,7 +182,7 @@ Given a company driver is assigned to a fleet truck\
 When the driver opens Home\
 Then the truck's current duty state and latest capacity actor are visible\
 And rich capacity controls appear only when the fleet owner permits capacity management\
-And duty On or Off remains available when rich controls are disabled.
+And assigned-truck availability or Off Duty remains available when rich controls are disabled without exposing route, visibility, or shipment-preference controls.
 
 ### Scenario: Truck Board supports route-aware discovery
 

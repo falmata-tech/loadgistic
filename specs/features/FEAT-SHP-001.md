@@ -26,6 +26,14 @@ When shipment creation is submitted\
 Then one canonical shipment is created with its initial status\
 And pricing is Fixed ETB, Target ETB, or Quote Requested.
 
+### Scenario: initial shipment posting asks only for marketplace facts
+
+Given an authenticated Business opens shipment creation\
+When it posts demand to a provider or the Shipment Board\
+Then the primary form asks for shipment identity, movement, route, deadlines, cargo size and detail, visibility, price, and tracking policy in operational order\
+And selecting the shipper, receiver, and private receiver contact is deferred until provider agreement and assignment preparation\
+And the posting Business remains the load owner throughout that later execution setup.
+
 ### Scenario: shipment form is freight only
 
 Given an authenticated Business user opens shipment creation\
@@ -146,6 +154,15 @@ Given a fleet transporter or self-managed driver\
 When they browse the Shipment Board\
 Then only Open, Direct, or Partners records permitted by visibility policy appear\
 And internal notes and competing interest remain hidden.
+
+### Scenario: Shipment Board card completes marketplace discovery
+
+Given a provider may view a permitted Shipment Board record\
+When its card is rendered\
+Then route, deadline, cargo, load type, price, visibility, trust, contact, and provider action are available on the card\
+And no shipment-detail step is required to express interest or accept a direct request\
+And the owner Public Profile is the only discovery drill-down from the card\
+And participant-only negotiation, assignment, and tracking details remain inside My Shipments or Tracking.
 
 ### Scenario: provider can return to its expressed interests
 

@@ -124,9 +124,11 @@ test('receiver contact is private and required between agreement and assignment'
   const shipment = createFreight('DIRECT_TO_PROVIDER', 'profile:provider-driver');
   repo.acceptDirectedShipment(users.driver,shipment.id);
   assert.throws(() => repo.transitionShipment(users.driver,shipment.id,'ASSIGNED'), /RECEIVER_CONTACT_REQUIRED/);
-  assert.throws(() => repo.setReceiverContact(users.receiver,shipment.id,'Hana','+251 911 600 700'), /NOT_FOUND/);
-  repo.setReceiverContact(users.shipper,shipment.id,'Hana','+251 911 600 700');
+  assert.throws(() => repo.setShipmentParties(users.receiver,shipment.id,{ownerPartyRole:'SHIPPER',counterpartyType:'ACCOUNT',counterpartyRef:`org:${users.receiver.organization_id}`,receiverFirstName:'Hana',receiverPhone:'+251 911 600 700'}), /NOT_FOUND/);
+  repo.setShipmentParties(users.shipper,shipment.id,{ownerPartyRole:'SHIPPER',counterpartyType:'ACCOUNT',counterpartyRef:`org:${users.receiver.organization_id}`,receiverFirstName:'Hana',receiverPhone:'+251 911 600 700'});
   const partyView = repo.getShipmentForUser(users.driver,shipment.id);
+  assert.equal(partyView.shipper_organization_id,users.shipper.organization_id);
+  assert.equal(partyView.receiver_organization_id,users.receiver.organization_id);
   assert.equal(partyView.receiver_first_name,'Hana');
   assert.equal(partyView.receiver_phone,'+251 911 600 700');
   repo.transitionShipment(users.driver,shipment.id,'ASSIGNED');
@@ -242,7 +244,7 @@ test('fleet owner controls company driver load and capacity authority without re
   const ownerView=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.ok(ownerView.interests.some(interest=>interest.provider_organization_id===users.transporter.organization_id&&interest.created_by===users.companyDriver.id&&interest.created_by_name==='Yonas Alemu'));
   assert.ok(repo.getShipmentForUser(users.transporter,shipment.id));
-  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Addis Ababa',...locationRef(),origin:'Addis Ababa',destination:'Dire Dawa',...routeRefs('Addis Ababa','Dire Dawa'),travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
+  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Addis Ababa',...locationRef(),currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),currentRouteDate:futureRouteDate,origin:'Addis Ababa',destination:'Dire Dawa',...routeRefs('Addis Ababa','Dire Dawa'),travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
   assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
   assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
   assert.throws(()=>repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',visibility:'OPEN'}),/DEVICE_LOCATION_DRIVER_ONLY/);

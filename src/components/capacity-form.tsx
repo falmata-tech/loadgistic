@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Boxes, CalendarClock, Camera, ChevronDown, CircleDotDashed, Clock3, Eye, Gauge, LocateFixed, MapPin, MapPinned, Route, Save, Truck } from 'lucide-react';
+import { Boxes, CalendarClock, Camera, ChevronDown, CircleDotDashed, Clock3, Eye, Gauge, LocateFixed, MapPin, MapPinned, PowerOff, Route, Save, Truck } from 'lucide-react';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
 import { obscureCoordinate } from '@/lib/location-privacy.js';
@@ -35,7 +35,6 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   const selectedVehicle=vehicles.find(vehicle=>vehicle.id===vehicleId);
   const current=selectedVehicle?.current;
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
-  const [lastOnDutyStatus,setLastOnDutyStatus]=React.useState(['EMPTY','PARTIAL','BUSY'].includes(current?.status||'')?current?.status||'EMPTY':'EMPTY');
   const [percent,setPercent]=React.useState(current?.available_percent||50);
   const [locationState,setLocationState]=React.useState((current?.location_source==='DEVICE_OBSCURED'?'captured':'idle') as LocationState);
   const [approximateLocation,setApproximateLocation]=React.useState(current?.location_source==='DEVICE_OBSCURED'&&current.location_lat!=null&&current.location_lng!=null?{lat:current.location_lat,lng:current.location_lng}:null as {lat:number;lng:number}|null);
@@ -57,7 +56,6 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   React.useEffect(()=>{
     if(movementScope==='LOCAL'&&status==='PARTIAL'){
       setStatus('EMPTY');
-      setLastOnDutyStatus('EMPTY');
     }
   },[movementScope,status]);
 
@@ -87,7 +85,6 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   function chooseVehicle(nextId:string){
     const next=vehicles.find(vehicle=>vehicle.id===nextId)?.current;
     setVehicleId(nextId); setStatus(next?.status||'EMPTY');
-    setLastOnDutyStatus(['EMPTY','PARTIAL','BUSY'].includes(next?.status||'')?next?.status||'EMPTY':'EMPTY');
     setPercent(next?.available_percent||50); setLocationArea(next?.location_area||''); setLocalPlaceLabel(next?.local_place_label||'');
     setDeviceLocalPlaceRef(''); setAvailableAgainDate(next?.available_again_date||''); setMovementScope(next?.movement_scope||'INTERCITY');
     setAcceptedLoads(acceptedLoadValue(next)); setVisibility(next?.visibility==='SAVED_PARTNERS'?'SAVED_PARTNERS':'OPEN');
@@ -95,12 +92,11 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     setLocationState(next?.location_source==='DEVICE_OBSCURED'?'captured':'requesting');
   }
 
-  function setSpace(nextStatus:string){setStatus(nextStatus);setLastOnDutyStatus(nextStatus);}
+  function setSpace(nextStatus:string){setStatus(nextStatus);}
   function chooseMovementScope(nextScope:string){
     setMovementScope(nextScope);
     if(nextScope==='LOCAL'&&status==='PARTIAL'){
       setStatus('EMPTY');
-      setLastOnDutyStatus('EMPTY');
     }
   }
   if(!vehicles.length)return <div className="empty-state">No active truck is assigned to this account.</div>;
@@ -121,20 +117,20 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
       <Image src={vehicleConfigurationImage(selectedVehicle?.cargoConfiguration)} alt={selectedVehicle?.cargoConfiguration||'Truck'} width={112} height={88}/>
       <div className="capacity-truck-copy"><small>Updating</small><strong>{selectedVehicle?.make} {selectedVehicle?.model}</strong><span>{selectedVehicle?.platformNumber} · {selectedVehicle?.cargoConfiguration}</span></div>
       {lockVehicleSelection?<input type="hidden" name="vehicleId" value={vehicleId}/>:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/>Truck</label><select id="capacity-vehicle" name="vehicleId" value={vehicleId} onChange={event=>chooseVehicle(event.target.value)} required>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} · {vehicle.model}</option>)}</select></div>}
-      <div className="segmented-control duty-control" aria-label="Duty state"><label><input type="radio" checked={onDuty} disabled={!interactive} onChange={()=>setStatus(lastOnDutyStatus)}/><span>On Duty</span></label><label><input type="radio" checked={!onDuty} disabled={!interactive} onChange={()=>setStatus('OFF_DUTY')}/><span>Off Duty</span></label></div>
+      <div className="segmented-control space-control capacity-status-choices compact-status-choices" role="group" aria-label="Truck availability">
+        <button type="button" aria-pressed={status==='EMPTY'} disabled={!interactive} onClick={()=>setSpace('EMPTY')}><Truck aria-hidden="true"/><strong>Empty</strong></button>
+        <button type="button" aria-pressed={status==='PARTIAL'} disabled={!interactive} onClick={()=>{if(movementScope==='LOCAL')setMovementScope('INTERCITY');setSpace('PARTIAL');}}><Boxes aria-hidden="true"/><strong>Partial</strong></button>
+        <button type="button" aria-pressed={status==='BUSY'} disabled={!interactive} onClick={()=>setSpace('BUSY')}><Clock3 aria-hidden="true"/><strong>Busy</strong></button>
+        <button type="button" aria-pressed={status==='OFF_DUTY'} disabled={!interactive} onClick={()=>setSpace('OFF_DUTY')}><PowerOff aria-hidden="true"/><strong>Off Duty</strong></button>
+      </div>
     </section>
 
     {onDuty?<div className="capacity-primary-flow" key={vehicleId}>
       <section className="control-panel capacity-decision">
         <div className="capacity-step-title"><span>1</span><Gauge aria-hidden="true"/><div><h2>Available now</h2><p>Choose one.</p></div><strong>{status==='EMPTY'?'100%':status==='PARTIAL'?`${percent}%`:'Busy'}</strong></div>
-        <div className="segmented-control space-control capacity-status-choices" role="group" aria-label="Capacity status">
-          <button type="button" aria-pressed={status==='EMPTY'} disabled={!interactive} onClick={()=>setSpace('EMPTY')}><Truck aria-hidden="true"/><strong>Empty</strong><small>All space</small></button>
-          <button type="button" aria-pressed={status==='PARTIAL'} disabled={!interactive||movementScope==='LOCAL'} onClick={()=>setSpace('PARTIAL')}><Boxes aria-hidden="true"/><strong>Partial</strong><small>Some space</small></button>
-          <button type="button" aria-pressed={status==='BUSY'} disabled={!interactive} onClick={()=>setSpace('BUSY')}><Clock3 aria-hidden="true"/><strong>Busy</strong><small>Ready later</small></button>
-        </div>
         {status==='PARTIAL'?<div className="capacity-linked-fields">
           <div className="range-control"><div><label htmlFor="capacity-percent"><Gauge aria-hidden="true"/>Space available</label><strong>{percent}%</strong></div><input id="capacity-percent" type="range" min="5" max="95" step="5" value={percent} onChange={event=>setPercent(Number(event.target.value))}/></div>
-          <div><h3><Route aria-hidden="true"/>Current route</h3><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin"><MapPin aria-hidden="true"/>From</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" placeRefName="currentOriginPlaceRef" defaultPlaceRef={current?.current_origin_place_ref||''} defaultValue={current?.current_route_origin||''} required placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination"><MapPin aria-hidden="true"/>To</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" placeRefName="currentDestinationPlaceRef" defaultPlaceRef={current?.current_destination_place_ref||''} defaultValue={current?.current_route_destination||''} required placeholder="Adama, Ethiopia"/></div></div><div className="form-group"><label htmlFor="current-route-date"><CalendarClock aria-hidden="true"/>Travel date</label><input id="current-route-date" name="currentRouteDate" type="date" defaultValue={current?.current_route_date||''} required/></div></div>
+          <div><h3><Route aria-hidden="true"/>Current route</h3><p className="meta">The direction this truck is traveling now.</p><div className="route-inputs"><div className="form-group"><label htmlFor="current-route-origin"><MapPin aria-hidden="true"/>From</label><EthiopiaPlaceInput id="current-route-origin" name="currentRouteOrigin" placeRefName="currentOriginPlaceRef" defaultPlaceRef={current?.current_origin_place_ref||''} defaultValue={current?.current_route_origin||''} required placeholder="Addis Ababa, Ethiopia"/></div><div className="route-arrow" aria-hidden="true">→</div><div className="form-group"><label htmlFor="current-route-destination"><MapPin aria-hidden="true"/>To</label><EthiopiaPlaceInput id="current-route-destination" name="currentRouteDestination" placeRefName="currentDestinationPlaceRef" defaultPlaceRef={current?.current_destination_place_ref||''} defaultValue={current?.current_route_destination||''} required placeholder="Adama, Ethiopia"/></div></div><div className="form-group"><label htmlFor="current-route-date"><CalendarClock aria-hidden="true"/>Travel date</label><input id="current-route-date" name="currentRouteDate" type="date" defaultValue={current?.current_route_date||''} required/></div></div>
         </div>:null}
         {status==='BUSY'?<div className="busy-availability-fields"><div className="form-group"><label htmlFor="available-again-date"><CalendarClock aria-hidden="true"/>Ready date</label><input id="available-again-date" name="availableAgainDate" type="date" min={new Date().toISOString().slice(0,10)} value={availableAgainDate} onChange={event=>setAvailableAgainDate(event.target.value)} required/></div></div>:null}
       </section>
@@ -159,7 +155,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
           <section className="capacity-option-group sharing-proof-grid"><div><h3><Eye aria-hidden="true"/>Who can see it?</h3><div className="segmented-control"><label><input name="visibility" value="OPEN" type="radio" checked={visibility==='OPEN'} onChange={()=>setVisibility('OPEN')}/><span>Public</span></label><label><input name="visibility" value="SAVED_PARTNERS" type="radio" checked={visibility==='SAVED_PARTNERS'} onChange={()=>setVisibility('SAVED_PARTNERS')}/><span>Partners</span></label></div></div>{status!=='BUSY'?<div><h3><Camera aria-hidden="true"/>Cargo photo</h3><label className="photo-drop" htmlFor="capacity-photo"><Camera aria-hidden="true"/><strong>Add photo</strong><input id="capacity-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"/></label></div>:null}</section>
         </div>
       </details>
-    </div>:<section className="control-panel off-duty-panel"><strong>Truck hidden from the Truck Board.</strong><p>Publish On Duty when it is ready for work.</p></section>}
+    </div>:<section className="control-panel off-duty-panel"><strong>Truck hidden from the Truck Board.</strong><p>Choose Empty, Partial, or Busy above when it is ready for work.</p></section>}
 
     <div className="capacity-publish-bar"><span><strong>{onDuty?status.replace('_',' '):'Off Duty'}</strong><small>{onDuty?(movementScope==='LOCAL'?'Local':movementScope==='BOTH'?'Local + between cities':'Between cities'):'Not visible'}</small></span><button className={`button capacity-submit ${onDuty?'success':'danger'}`} disabled={!interactive}><Save aria-hidden="true"/>{onDuty?'Publish update':'Set Off Duty'}</button></div>
   </form>;
