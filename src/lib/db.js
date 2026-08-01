@@ -27,6 +27,7 @@ export function getDb() {
   runDataMigrationOnce(database,'ethiopia-place-qualification-v2',qualifyExistingEthiopiaData);
   runDataMigrationOnce(database,'structured-route-geography-v1',backfillStructuredGeography);
   runDataMigrationOnce(database,'local-capacity-empty-v1',normalizeLocalCapacity);
+  runDataMigrationOnce(database,'tracking-proof-types-v1',expandTrackingProofTypes);
   return database;
 }
 
@@ -367,7 +368,7 @@ function migrate(db) {
     CREATE TABLE IF NOT EXISTS proof_files (
       id TEXT PRIMARY KEY,
       shipment_id TEXT NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
-      proof_type TEXT NOT NULL CHECK(proof_type IN ('LOADING','DELIVERY','ISSUE')),
+      proof_type TEXT NOT NULL CHECK(proof_type IN ('LOADING','TRANSIT','UNLOADING','DELIVERY','ISSUE')),
       file_path TEXT NOT NULL,
       original_name TEXT NOT NULL,
       mime_type TEXT NOT NULL,
@@ -840,6 +841,29 @@ function runDataMigrationOnce(db,key,migration) {
     .run(key,'complete',new Date().toISOString());
 }
 
+function expandTrackingProofTypes(db) {
+  const definition=db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='proof_files'`).get()?.sql||'';
+  if(definition.includes("'TRANSIT'")&&definition.includes("'UNLOADING'"))return;
+  db.exec(`
+    BEGIN IMMEDIATE;
+    ALTER TABLE proof_files RENAME TO proof_files_before_tracking_actions;
+    CREATE TABLE proof_files (
+      id TEXT PRIMARY KEY,
+      shipment_id TEXT NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+      proof_type TEXT NOT NULL CHECK(proof_type IN ('LOADING','TRANSIT','UNLOADING','DELIVERY','ISSUE')),
+      file_path TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      note TEXT,
+      uploaded_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    INSERT INTO proof_files SELECT * FROM proof_files_before_tracking_actions;
+    DROP TABLE proof_files_before_tracking_actions;
+    COMMIT;
+  `);
+}
+
 function normalizedPlaceName(value) {
   return String(placeLocalName(value)||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
 }
@@ -994,7 +1018,6 @@ function seed(db) {
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const dayAfter = new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const expiresFresh = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-  const expiresStale = new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
   const passwordHash = hashPassword('Loadgistic123!');
 
   const orgs = {
@@ -1047,10 +1070,14 @@ function seed(db) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run('provider-driver','user-driver','Abebe Owner-Operator','abebe-owner-operator',1,1,1,'Light Stake Body Truck','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','+251 911 234 567','Addis Ababa','Independent owner-operator serving business shippers on major Ethiopian corridors.','PUBLIC',iso);
 
-  db.prepare(`INSERT INTO partner_relationships
+  const relationshipInsert=db.prepare(`INSERT INTO partner_relationships
     (id,owner_organization_id,provider_organization_id,provider_profile_id,status,requested_by_side,business_favorite,provider_favorite,created_at,updated_at,responded_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
-    .run('partner-1',orgs.shipper.id,orgs.transporter.id,null,'CONNECTED','BUSINESS',1,1,iso,iso,iso);
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
+  relationshipInsert.run('partner-1',orgs.shipper.id,orgs.transporter.id,null,'CONNECTED','BUSINESS',1,1,iso,iso,iso);
+  relationshipInsert.run('partner-2',orgs.shipper.id,null,'provider-driver','CONNECTED','PROVIDER',1,1,iso,iso,iso);
+  relationshipInsert.run('partner-3',orgs.receiver.id,orgs.transporter.id,null,'PENDING','BUSINESS',1,0,iso,iso,null);
+  db.prepare(`INSERT INTO member_favorites (id,owner_organization_id,target_organization_id,created_by,created_at) VALUES (?,?,?,?,?)`)
+    .run('favorite-blue-nile-fresh-foods',orgs.shipper.id,orgs.receiver.id,'user-shipper',iso);
 
   const insertPage = db.prepare(`INSERT INTO company_pages
     (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at)
@@ -1098,11 +1125,19 @@ function seed(db) {
     (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   capacityInsert.run('cap-empty',orgs.transporter.id,null,'veh-trans-1','EMPTY',100,'Addis Ababa','Dire Dawa','Addis Ababa ↔ Dire Dawa',tomorrow,'Today 16:00','OPEN',null,'user-transporter',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
-  capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',dayAfter,'Tomorrow 08:00','OPEN',null,'user-driver',new Date(now.getTime()-13*60*60*1000).toISOString(),expiresStale,'Around Addis Ababa',new Date(now.getTime()-13*60*60*1000).toISOString(),9,38.5,40,'DEVICE_OBSCURED');
+  capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',dayAfter,'Ready now','SAVED_PARTNERS',null,'user-driver',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
   capacityInsert.run('cap-partner-partial',orgs.transporter.id,null,'veh-trans-2','PARTIAL',25,'Mekelle','Addis Ababa','Mekelle ↔ Addis Ababa',dayAfter,'After current delivery','SAVED_PARTNERS',null,'user-transporter',iso,expiresFresh,'Around Mekelle',iso,13.5,39.5,40,'DEVICE_OBSCURED');
   db.prepare(`UPDATE capacities SET movement_scope='BOTH',local_place_ref='builtin:addis ababa',
     local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,local_radius_km=40
     WHERE id='cap-partial'`).run();
+  db.prepare(`UPDATE capacities SET current_route_origin='Addis Ababa',current_route_destination='Hawassa',
+    current_origin_place_ref='builtin:addis ababa',current_origin_lat=9.03,current_origin_lng=38.74,
+    current_destination_place_ref='builtin:hawassa',current_destination_lat=7.06,current_destination_lng=38.48,
+    current_route_date=NULL WHERE id='cap-partial'`).run();
+  db.prepare(`UPDATE capacities SET current_route_origin='Mekelle',current_route_destination='Addis Ababa',
+    current_origin_place_ref='builtin:mekelle',current_origin_lat=13.50,current_origin_lng=39.47,
+    current_destination_place_ref='builtin:addis ababa',current_destination_lat=9.03,current_destination_lng=38.74,
+    current_route_date=NULL WHERE id='cap-partner-partial'`).run();
 
   const shipmentInsert = db.prepare(`INSERT INTO shipments
     (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,receiver_first_name,receiver_phone,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_code_hash,created_by,created_at,updated_at)
@@ -1116,7 +1151,9 @@ function seed(db) {
     ['shp-pstl-baskets','LGX-F2005','Woven baskets for Hawassa shops','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packed woven baskets from a local artisan workshop',1,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-pstl-coffee','LGX-F2006','Roasted coffee cartons to Shashamane','FREIGHT','OPEN_MARKET','TARGET_PRICE',null,1800000,orgs.shipper.id,null,null,null,'Addis Ababa','Shashamane','Sealed coffee cartons from a small local roaster',1,null,'Light Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-completed','LGX-F2007','Handwoven goods to Adama','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',2100000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Adama','Packed handwoven home goods',24,null,'Mini Box Truck','PTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','COMPLETED','STATUS_ONLY','user-shipper'],
-    ['shp-local-addis','LGX-F2008','Workshop supplies across Addis','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Addis Ababa','Packed workshop supplies for a local maker',12,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper']
+    ['shp-local-addis','LGX-F2008','Workshop supplies across Addis','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Addis Ababa','Packed workshop supplies for a local maker',12,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-driver-direct','LGX-F2009','Coffee cartons for Abebe','FREIGHT','DIRECT_TO_PROVIDER','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,'provider-driver','Addis Ababa','Hawassa','Sealed coffee cartons for owner-operator delivery',36,null,'Light Stake Body Truck','PTL',null,null,tomorrow,dayAfter,'SENT','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-transporter-direct','LGX-F2010','Beverage restock for BlueLine','FREIGHT','DIRECT_TO_PROVIDER','TARGET_PRICE',null,4200000,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Palletized local beverage restock',48,null,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'SENT','POSTED','STATUS_ONLY','user-shipper']
   ];
   for (const s of seededShipments) {
     const createdBy = s.at(-1);
@@ -1129,6 +1166,11 @@ function seed(db) {
     local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,
     pickup_area_label='Bole',dropoff_area_label='Saris'
     WHERE id='shp-local-addis'`).run();
+  const interestInsert=db.prepare(`INSERT INTO shipment_interests
+    (id,shipment_id,provider_organization_id,provider_profile_id,status,note,created_by,created_at)
+    VALUES (?,?,?,?,?,?,?,?)`);
+  interestInsert.run('interest-abebe-open','shp-freight-fixed',null,'provider-driver','INTERESTED','Available for this route.','user-driver',iso);
+  interestInsert.run('interest-blueline-open','shp-freight-quote',orgs.transporter.id,null,'INTERESTED','Fleet can quote this movement.','user-transporter',iso);
 
   const eventInsert = db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`);
   for (const s of seededShipments) {

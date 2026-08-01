@@ -49,11 +49,13 @@ function createFreight(distributionMode = 'OPEN_MARKET', providerRef = undefined
   });
 }
 
-test('saved-partner freight is visible only to a related provider', () => {
+test('saved-partner freight is visible to each connected canonical provider', () => {
   assert.ok(repo.getShipmentForUser(users.transporter, 'shp-freight-target'));
-  assert.equal(repo.getShipmentForUser(users.driver, 'shp-freight-target'), null);
+  assert.ok(repo.getShipmentForUser(users.driver, 'shp-freight-target'));
   assert.ok(repo.listLoads(users.transporter).some(row => row.id === 'shp-freight-target'));
-  assert.equal(repo.listLoads(users.driver).some(row => row.id === 'shp-freight-target'), false);
+  assert.ok(repo.listLoads(users.driver).some(row => row.id === 'shp-freight-target'));
+  assert.ok(repo.listLoads(users.driver).some(row => row.id === 'shp-driver-direct'));
+  assert.equal(repo.listLoads(users.transporter).some(row => row.id === 'shp-driver-direct'), false);
 });
 
 test('browse visibility cannot change an unassigned shipment status', () => {
@@ -133,6 +135,13 @@ test('receiver contact is private and required between agreement and assignment'
   assert.equal(partyView.receiver_phone,'+251 911 600 700');
   repo.transitionShipment(users.driver,shipment.id,'ASSIGNED');
   assert.equal(repo.getShipmentForUser(users.shipper,shipment.id).operational_status,'ASSIGNED');
+  const proofCount=dbModule.getDb().prepare('SELECT COUNT(*) AS n FROM proof_files WHERE shipment_id=?').get(shipment.id).n;
+  const upload={path:'/tmp/loadgistic-transit-proof.pdf',originalName:'transit-proof.pdf',mimeType:'application/pdf'};
+  repo.transitionShipment(users.driver,shipment.id,'IN_TRANSIT','Departed',{}, {upload,proofType:'TRANSIT'});
+  const updated=repo.getShipmentForUser(users.shipper,shipment.id);
+  assert.equal(updated.operational_status,'IN_TRANSIT');
+  assert.equal(updated.proofs.length,proofCount+1);
+  assert.ok(updated.proofs.some(proof=>proof.proof_type==='TRANSIT'));
 });
 
 test('assigned location tracking is enforced until a Business party reduces it', () => {
@@ -244,7 +253,7 @@ test('fleet owner controls company driver load and capacity authority without re
   const ownerView=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.ok(ownerView.interests.some(interest=>interest.provider_organization_id===users.transporter.organization_id&&interest.created_by===users.companyDriver.id&&interest.created_by_name==='Yonas Alemu'));
   assert.ok(repo.getShipmentForUser(users.transporter,shipment.id));
-  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Addis Ababa',...locationRef(),currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),currentRouteDate:futureRouteDate,origin:'Addis Ababa',destination:'Dire Dawa',...routeRefs('Addis Ababa','Dire Dawa'),travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
+  const driverCapacityId=repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-1',status:'PARTIAL',availablePercent:'60',acceptedLoads:'BOTH',locationArea:'Addis Ababa',...locationRef(),currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),origin:'Addis Ababa',destination:'Dire Dawa',...routeRefs('Addis Ababa','Dire Dawa'),travelDate:futureRouteDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN'});
   assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
   assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
   assert.throws(()=>repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',visibility:'OPEN'}),/DEVICE_LOCATION_DRIVER_ONLY/);

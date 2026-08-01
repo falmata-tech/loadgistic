@@ -68,14 +68,14 @@ The rich truck capacity control panel controls:
 - stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
 - current general area and freshness
 - optional privacy-obscured device location
-- a dated current partial-capacity route when Partial
+- a live, undated current partial-capacity route when Partial
 - a separate future planned travel route with date and Full or Partial planned cargo space
 - contract-route interest
 - Local, Between cities, or Both operating scope, with a reviewed locality and 5–100 km radius for Local service
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
-Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Between cities or Both scope plus a dated current route, because remaining space can be matched only when the truck's movement is known.
+Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Between cities or Both scope plus a live current route, because remaining space can be matched only when the truck's movement is known. Its freshness comes from the capacity update timestamp rather than a separately entered route date.
 
 The capacity editor asks three operational questions in order: what the truck can do now, where it can work, and whether to publish. Truck identity is compact. Partial space and its current route remain linked. Shipment preferences, planned travel, visibility, and proof share one Optional details disclosure, and one final publish row replaces a duplicate review card.
 

@@ -31,7 +31,7 @@ test('anonymous marketplace preview is live and limited to an identity-safe whit
  assert.ok(preview.shipments.length>0&&preview.shipments.length<=3);
  assert.ok(preview.trucks.length>0&&preview.trucks.length<=3);
  const shipmentKeys=['delivery_label','destination','distribution_mode','load_type','local_place_label','movement_scope','origin','pickup_label','posted_label','price_minor','price_mode','vehicle_category'];
- const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_date','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
+ const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
  assert.deepEqual(Object.keys(preview.shipments[0]).sort(),shipmentKeys.sort());
  assert.deepEqual(Object.keys(preview.trucks[0]).sort(),truckKeys.sort());
  const serialized=JSON.stringify(preview);
@@ -481,11 +481,10 @@ test('capacity update enforces partial percentage and expires old vehicle record
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'',visibility:'OPEN'}),/CAPACITY_AREA_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'5'}),/INVALID_APPROXIMATE_LOCATION/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',...locationRef(),visibility:'OPEN'}),/ROUTE_ENDPOINTS_REQUIRED/);
- assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',...locationRef(),currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),visibility:'OPEN'}),/CURRENT_ROUTE_DATE_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',...locationRef(),origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),visibility:'OPEN'}),/PLANNED_ROUTE_DATE_REQUIRED/);
- const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),currentRouteDate:routeDate,origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),travelDate:routeDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
+ const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),travelDate:routeDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
  const rows=repo.listCapacity(user);
- assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.current_route_date===routeDate&&r.planned_space_status==='PARTIAL'&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
+ assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.current_route_date===null&&r.planned_space_status==='PARTIAL'&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
  const audit=dbModule.getDb().prepare(`SELECT details FROM audit_logs WHERE entity_id=?`).get(id);
  assert.equal(audit.details.includes('38.5'),false);
  const offDutyId=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'OFF_DUTY',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'});
@@ -539,11 +538,15 @@ test('admin operations inventory is bounded and omits sensitive fields',()=>{
  assert.ok(users.items.every(user=>!Object.hasOwn(user,'password_hash')));
 });
 
-test('provider Truck Board excludes own trucks and does not expose photo paths',()=>{
+test('provider Truck Board returns only identity-safe aggregate supply groups',()=>{
  const driver=repo.getUserById('user-driver');
- const rows=repo.listMarketCapacity(driver);
- assert.equal(rows.some(row=>row.provider_profile_id===driver.provider_profile_id),false);
- assert.ok(rows.every(row=>!Object.hasOwn(row,'photo_path')));
+ const result=repo.listCapacityMarketGaugePage(driver,{},{page:1,pageSize:12});
+ assert.ok(result.truckTotal>0);
+ assert.ok(result.items.every(row=>Object.keys(row).every(key=>['area_label','status','movement_scope','truck_count','accepts_ftl_count','accepts_ptl_count','fresh_count'].includes(key))));
+ const serialized=JSON.stringify(result);
+ for(const privateValue of ['BlueLine Transport PLC','LG-TRK-','Isuzu','+251'])assert.equal(serialized.includes(privateValue),false);
+ assert.throws(()=>repo.listMarketCapacity(driver),/FORBIDDEN/);
+ assert.equal(repo.getCapacityForUser(driver,'cap-empty'),null);
 });
 
 test('saved relationship capacity is visible only to the related business',()=>{

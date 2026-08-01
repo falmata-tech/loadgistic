@@ -38,7 +38,6 @@ const messages: Record<string,string> = {
   BUSY_AVAILABLE_DATE_REQUIRED: 'Choose when the truck will be available again.',
   INVALID_BUSY_AVAILABLE_DATE: 'The available-again date cannot be in the past.',
   INVALID_CAPACITY_VISIBILITY: 'Choose Public or Partners.',
-  CURRENT_ROUTE_DATE_REQUIRED: 'Choose the date for the current partial-capacity route.',
   PLANNED_ROUTE_DATE_REQUIRED: 'Choose the planned travel date.',
   INVALID_ROUTE_DATE: 'Route dates cannot be in the past.',
   PLANNED_SPACE_STATUS_REQUIRED: 'Choose Full or Partial cargo space for the planned route.',

@@ -189,7 +189,7 @@ try {
         }
 
         if (['business-shipper', 'business-receiver'].includes(persona.name)) {
-          await gotoReady(page, '/app/providers');
+          await gotoReady(page, '/app/providers?q=Blue');
           const companyHref = await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().getAttribute('href');
           if (companyHref) {
             const result = await inspectPage(
@@ -206,16 +206,12 @@ try {
             );
             report.results.push({ viewport: viewport.name, persona: persona.name, ...comparisonResult });
           }
-          await gotoReady(page, '/app/capacity');
-          const capacityHref = await page.getByRole('link', { name: 'Truck details' }).first().getAttribute('href');
-          if (capacityHref) {
-            const result = await inspectPage(
-              page,
-              capacityHref,
-              path.join(outputDir, `${viewport.name}-${persona.name}-capacity-detail.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-          }
+          const result = await inspectPage(
+            page,
+            '/app/capacity/cap-empty',
+            path.join(outputDir, `${viewport.name}-${persona.name}-capacity-detail.png`)
+          );
+          report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
         }
 
         await gotoReady(page, '/app/shipments');

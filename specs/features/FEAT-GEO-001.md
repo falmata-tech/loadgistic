@@ -61,7 +61,7 @@ When Local or Both service scope is chosen\
 Then a reviewed current city or town and a radius from 5 through 100 kilometers are required\
 And the fresh capacity may be published without current or planned intercity routes\
 And Local-only capacity must be Empty with 100 percent available\
-And Both may use Partial only with the required current intercity route and date\
+And Both may use Partial only with the required live current intercity route\
 And normal duty, accepted-load, stop, visibility, proof, and expiry rules still apply.
 
 ### Scenario: local capacity does not claim device location

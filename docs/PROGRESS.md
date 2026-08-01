@@ -21,7 +21,7 @@
 - Persistent stale Empty/Partial Truck Board signals with explicit relative-age warnings, plus Busy available-again signals that leave discovery after their ready date until refreshed
 - Single-city Local and Both capacity input, where the local city is also the truck's current general area
 - Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
-- My Fleet roster with truck-specific detail/capacity pages and read-only provider Truck Board
+- My Fleet roster with truck-specific detail/capacity pages, complete Business Truck Board cards, and an identity-safe provider supply gauge
 - Permanent Loadgistic truck numbers used in member discovery, with private operational plates retained for owners and administrators
 - Owner-controlled company Driver permissions for Shipment Board browsing, Business contact, shipment agreements, and rich assigned-truck capacity
 - Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
@@ -40,7 +40,7 @@
 - Connected-network route coverage using structured intercity routes and local service-area circles without exposing exact shipment pins
 - Short Ethiopian road-freight purpose banner followed by live Shipment Board and Truck Board previews
 - Anonymous server projection that shows structured route, timing, price, truck, capacity, flexibility, proof, and freshness facts while excluding identities, contacts, handles, raw IDs, coordinates, files, and free text
-- Enforceable Status timeline or Approximate location + status tracking, with real in-between events
+- Enforceable Status timeline or Approximate location + status tracking, four plain manual field actions, optional proof beside each action, and real in-between events
 - Secret-code customer tracking for account or non-account shipper/receiver parties with a five-minute idle lock
 - Party-only Tracking separated from Shipment Board discovery
 - Rich icon-led Post Shipment composer with operational deadline labels
@@ -53,7 +53,7 @@
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
 - Local, Between cities, and Both movement scopes across shipment posting, capacity publishing, Boards, profiles, and route comparison
-- Local-only truck availability constrained to Empty/100 percent, with Partial reserved for dated Between cities or Both routes
+- Local-only truck availability constrained to Empty/100 percent, with Partial reserved for a live undated Between cities or Both route
 - Repeatable profile service areas with 5–100 km coverage radii and mixed circle/route comparison evidence
 - Optional local pickup/drop-off map points excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
 - Tracking and proof kept as separate contracts
@@ -86,8 +86,8 @@
 - Server-owned pagination for Boards, Directory, My Shipments/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
 - Native authenticated member Support with one-open-thread enforcement, six visual topics, text-only bounded messages, least-loaded assignment, waiting queue, agent availability/capacity, dedicated SUPPORT role, admin supervision, and safe agent requeue
 - Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 208 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
-- Local Node evidence: 82 tests passed, including immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, named network visibility, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Reusable all-role visual audit with 206 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
+- Local Node evidence: 83 tests passed, including provider-safe Truck Board aggregation, live undated Partial routes, optional tracking-action proof, canonical network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 41 passing scenarios and five expected viewport skips across desktop and mobile, including immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { transitionShipment } from '@/lib/repository.js';
+import { saveUpload, transitionShipment } from '@/lib/repository.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text } from '@/lib/redirects';
 
@@ -10,7 +10,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const form = await request.formData();
   try {
-    transitionShipment(user,id,text(form,'nextStatus'),text(form,'note'),{locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')});
+    const nextStatus=text(form,'nextStatus');
+    const proofTypeByStatus:Record<string,string>={ASSIGNED:'LOADING',IN_TRANSIT:'TRANSIT',DELIVERED:'UNLOADING',ISSUE:'ISSUE'};
+    const proofFile=form.get('proof');
+    if(proofFile&&typeof proofFile!=='string'&&proofFile.size&&!proofTypeByStatus[nextStatus])throw new Error('INVALID_PROOF_TYPE');
+    const upload=await saveUpload(proofFile,'tracking-proof');
+    transitionShipment(user,id,nextStatus,text(form,'note'),{locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')},upload?{upload,proofType:proofTypeByStatus[nextStatus]}:null);
     return redirectWith(request,`/app/shipments/${id}`,'success','Shipment status updated.');
   } catch (error) {
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));

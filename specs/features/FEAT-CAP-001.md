@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Truck-first Truck Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each update records general current area, accepted work, dated movement, Preferred Routes, visibility, and optional timestamped proof. Each visible truck stands alone on the searchable Truck Board, with freshness made explicit rather than silently removing stale Empty or Partial signals.
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each update records general current area, accepted work, live Partial movement, dated planned movement, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards while drivers and transporters receive only an identity-safe aggregate supply gauge. Freshness is explicit rather than silently removing stale Empty or Partial signals.
 contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
 rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
@@ -15,7 +15,7 @@ rollout: Add Busy additively, backfill existing status into the new availability
 
 Given more visible trucks match than one Truck Board page\
 When a member opens, filters, route-ranks, or changes page\
-Then the server renders one bounded page of independently actionable truck cards\
+Then the server renders one bounded page of independently actionable truck cards for a Business or aggregate supply groups for a provider\
 And page navigation preserves every active capacity filter\
 And no search is required to see the first page\
 And fresh signals rank ahead of stale signals when all stronger filters and route scores are equal.
@@ -35,7 +35,8 @@ Then it remains on the Truck Board during the early-market rollout\
 And its card shows the relative last capacity and location update times\
 And a strong stale warning tells the viewer to confirm availability\
 And stale signals rank below equivalent fresh signals\
-And dated current-partial or planned routes still stop matching after their own route dates.
+And a current Partial route stops matching when its capacity signal is stale\
+And planned routes still stop matching after their own route dates.
 
 ### Scenario: Busy advertises future availability
 
@@ -75,16 +76,16 @@ And member-facing Capacity and Public Profile views use the platform number inst
 And the cargo configuration uses the standardized visual truck catalog\
 And generic tonnage labels are not used as the truck identity.
 
-### Scenario: every visible truck stands alone on the Truck Board
+### Scenario: every visible truck stands alone for a Business
 
 Given a fleet transporter has multiple discoverable Empty, Partial, or Busy trucks\
-When an authenticated user opens the Truck Board\
+When an authenticated Business opens the Truck Board\
 Then each truck is a separate capacity contributor and card\
 And no provider-level summary collapses those trucks into one signal.
 
 ### Scenario: Truck Board card is complete for discovery
 
-Given a user may view a truck's Public or Partners capacity\
+Given a Business may view a truck's Public or Partners capacity\
 When its Truck Board card is rendered\
 Then the card shows the truck, cargo configuration, availability, area, active routes, accepted load policy, freshness, and trust signals\
 And no truck-detail step is required before the user can call or open the owning fleet or owner-operator Public Profile\
@@ -110,7 +111,7 @@ Given an authorized driver or fleet owner chooses Local-only work for one truck\
 When capacity is published\
 Then the cargo-space state must be Empty with 100 percent available\
 And Partial is rejected because it has no current intercity route on which to locate the remaining space\
-And Both may still use Partial when its required current intercity route and date are recorded.
+And Both may still use Partial when its required live current intercity route is recorded.
 
 ### Scenario: route cities are entered separately
 
@@ -132,11 +133,12 @@ And both acceptance policies are displayed independently from cargo-space status
 
 Given a truck has Partial cargo space\
 When its driver publishes capacity\
-Then it must declare the exact current travel route and date on which that partial space exists\
+Then it must declare the exact live current travel route on which that partial space exists\
 And that route describes the truck's current direction rather than requiring the final destination of cargo already aboard\
+And the driver is not asked for a date because the capacity update time is the route's clock\
 And any on-duty truck may separately declare one future planned travel route, date, and Full or Partial planned cargo-space label\
 And regular Preferred Routes remain a multiple-value Public Profile setting controlled by the fleet company admin or self-managed owner\
-And expired capacity, past current-route dates, and past planned-route dates are excluded from live matching.
+And stale current Partial capacity and past planned-route dates are excluded from live matching.
 
 ### Scenario: self-managed driver Home prioritizes live capacity controls
 
@@ -199,7 +201,7 @@ And route fields remain optional for Local-only capacity.
 
 Given a Business chooses one of its own open load routes\
 When Truck Board results are displayed\
-Then every eligible dated current and planned route is compared by endpoint distance\
+Then every eligible live current Partial route and dated planned route is compared by endpoint distance\
 And trucks satisfying both adjustable endpoint radii rank by their strongest route\
 And each result explains endpoint distances, direction, and route source without claiming dispatch suitability or availability beyond the recorded capacity.
 
@@ -207,7 +209,7 @@ Given a provider compares routes or ranks the Shipment Board\
 When eligible truck route records exist\
 Then every owned truck contributes its current unexpired partial route and eligible planned route independently\
 And the best match across selected or all active truck routes is used\
-And each option identifies the truck platform number, route source, date, and planned Full or Partial cargo-space label.
+And each option identifies the truck platform number, route source, signal freshness or planned date, and planned Full or Partial cargo-space label.
 
 ### Scenario: a general location update protects precise movement
 
@@ -282,12 +284,14 @@ Given a transporter publishes capacity to Connected business relationships\
 When businesses browse capacity\
 Then only businesses with a mutual Connected relationship to that transporter can see it.
 
-### Scenario: providers browse the Truck Board read only
+### Scenario: providers see an identity-safe supply gauge
 
 Given a transporter or driver views capacity belonging to other providers\
 When the Truck Board loads\
-Then the records are read only\
-And no contact or interest action is available.
+Then visible current signals are grouped into approximate area and availability counts\
+And no individual truck, platform number, make, model, owner, company, contact, proof, badge, or profile link is returned or rendered\
+And no contact or interest action is available\
+And filtering changes the aggregate cohort without disclosing its members.
 
 ## Contract ownership
 

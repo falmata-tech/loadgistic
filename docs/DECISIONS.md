@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, dated current partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. Local-only work can publish only Empty/100-percent availability because Partial requires a dated route; Both and Between cities retain Partial. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, a live undated Partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. The capacity update time is the current Partial route's clock. Local-only work can publish only Empty/100-percent availability because Partial requires a live intercity route; Both and Between cities retain Partial. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -44,9 +44,9 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 ## ADR-011 — Driver home and temporary load proof
 
-Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. The Truck Board is read only for providers. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
+Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Businesses receive actionable truck-level Truck Board records; providers receive only aggregate supply counts by approximate area and status, with no truck or owner identity projection. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
-Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. A Business party may reduce it to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
+Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. The primary manual actions are Loading, En route, Unloading, and Problem, each with optional inline proof; uncommon terminal commands remain secondary. A Business party may reduce tracking to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
 
 ## ADR-012 — Visual trucks and staged contact disclosure
 

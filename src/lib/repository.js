@@ -684,7 +684,18 @@ function insertTrackingEvent(db, shipment, user, eventType, note, location, time
     .run(randomId('evt-'),shipment.id,shipment.operational_status,eventType,note || null,location.area,location.lat,location.lng,location.precisionKm,location.source,user.id,1,timestamp);
 }
 
-export function transitionShipment(user, shipmentId, nextStatus, note = '', locationInput = {}) {
+function insertProofFile(db,user,shipment,proofType,upload,note='') {
+  if (!['LOADING','TRANSIT','UNLOADING','DELIVERY','ISSUE'].includes(proofType)) throw new Error('INVALID_PROOF_TYPE');
+  if (!upload) throw new Error('FILE_REQUIRED');
+  const id=randomId('proof-');
+  db.prepare(`INSERT INTO proof_files (id,shipment_id,proof_type,file_path,original_name,mime_type,note,uploaded_by,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?)`).run(id,shipment.id,proofType,upload.path,upload.originalName,upload.mimeType,note||null,user.id,nowIso());
+  audit(db,user,'PROOF_UPLOADED','shipment',shipment.id,{proofType,proofId:id});
+  return id;
+}
+
+/** @param {{upload?: {path:string,originalName:string,mimeType:string},proofType?:string}|null} evidence */
+export function transitionShipment(user, shipmentId, nextStatus, note = '', locationInput = {}, evidence = null) {
   assertWorkspaceAccess(user);
   const db = getDb();
   const shipment = getShipmentParty(user, shipmentId);
@@ -700,6 +711,7 @@ export function transitionShipment(user, shipmentId, nextStatus, note = '', loca
   try {
     db.prepare('UPDATE shipments SET operational_status=?, updated_at=? WHERE id=?').run(nextStatus,timestamp,shipment.id);
     insertTrackingEvent(db,{...shipment,operational_status:nextStatus},user,'STATUS',note,location,timestamp);
+    if(evidence?.upload)insertProofFile(db,user,shipment,evidence.proofType,evidence.upload,note);
     audit(db,user,'SHIPMENT_STATUS_CHANGED','shipment',shipment.id,{ from: shipment.operational_status, to: nextStatus, trackingMode: shipment.tracking_mode, locationSource: location.source, locationPrecisionKm: location.precisionKm });
     db.exec('COMMIT');
   } catch (error) {
@@ -1218,7 +1230,7 @@ function capacityRouteCandidates(capacity, { requireCurrentDate = false } = {}) 
     capacity.status === 'PARTIAL'
     && capacity.current_route_origin
     && capacity.current_route_destination
-    && (!requireCurrentDate || (capacity.current_route_date && capacity.current_route_date >= today))
+    && (!requireCurrentDate || capacity.updated_at >= hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)))
   ) {
     routes.push({
       id:`${capacity.id}:current`,
@@ -1236,8 +1248,8 @@ function capacityRouteCandidates(capacity, { requireCurrentDate = false } = {}) 
       destination_lat:capacity.current_destination_lat,
       destination_lng:capacity.current_destination_lng,
       route_kind:'CURRENT_PARTIAL',
-      source_label:'Current partial route',
-      route_date:capacity.current_route_date,
+      source_label:'Live partial route',
+      route_date:null,
       planned_space_status:'PARTIAL',
       expires_at:capacity.expires_at
     });
@@ -2326,7 +2338,7 @@ function capacityBoardQuery(user,filters={}) {
   if(filters.loadType==='PTL')where+=` AND COALESCE(c.market_status,c.status)<>'BUSY' AND c.accepts_partial_load=1`;
   if(filters.vehicleCategory){where+=` AND (v.cargo_configuration=? OR v.category=?)`;args.push(filters.vehicleCategory,filters.vehicleCategory);}
   if(Number(filters.minAvailable)>0){where+=` AND c.available_percent>=?`;args.push(Number(filters.minAvailable));}
-  if(filters.routeBy){where+=` AND ((c.travel_date IS NOT NULL AND c.travel_date<=?) OR (c.current_route_date IS NOT NULL AND c.current_route_date<=?))`;args.push(filters.routeBy,filters.routeBy);}
+  if(filters.routeBy){where+=` AND c.travel_date IS NOT NULL AND c.travel_date<=?`;args.push(filters.routeBy);}
   if(filters.visibility){where+=` AND c.visibility=?`;args.push(filters.visibility);}
   if(filters.freshness==='FRESH'){where+=` AND c.updated_at>=?`;args.push(hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)));}
   if(filters.freshness==='UPDATE_NEEDED'){where+=` AND c.updated_at<?`;args.push(hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)));}
@@ -2426,6 +2438,7 @@ function rankCapacityRows(rows,selectedLoad){
 
 export function listMarketCapacityPage(user,filters={},options={}) {
   assertWorkspaceAccess(user);
+  if ([USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
   const pageSize=Math.max(1,Math.min(100,Number(options.pageSize)||20));
   const selectedLoad = filters.matchLoadId
     ? listOwnLoadRouteOptions(user).find(option => option.id === filters.matchLoadId)
@@ -2441,8 +2454,51 @@ export function listMarketCapacityPage(user,filters={},options={}) {
   return {items:rankCapacityRows(rows,null),total,page,pageSize,pageCount};
 }
 
+export function listCapacityMarketGaugePage(user,filters={},options={}) {
+  assertWorkspaceAccess(user);
+  if (![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
+  const safeFilters={
+    movementScope:filters.movementScope,
+    localPlaceRef:filters.localPlaceRef,
+    locality:filters.locality,
+    localRadiusKm:filters.localRadiusKm,
+    originPlaceRef:filters.originPlaceRef,
+    origin:filters.origin,
+    originRadiusKm:filters.originRadiusKm,
+    destinationPlaceRef:filters.destinationPlaceRef,
+    destination:filters.destination,
+    destinationRadiusKm:filters.destinationRadiusKm,
+    directionMode:filters.directionMode,
+    currentAreaPlaceRef:filters.currentAreaPlaceRef,
+    currentArea:filters.currentArea,
+    currentAreaRadiusKm:filters.currentAreaRadiusKm,
+    currentAreaMode:filters.currentAreaMode,
+    status:filters.status
+  };
+  const pageSize=Math.max(1,Math.min(50,Number(options.pageSize)||12));
+  const query=capacityBoardQuery(user,safeFilters);
+  const areaExpression=`CASE
+    WHEN c.movement_scope IN ('LOCAL','BOTH') AND c.local_place_label IS NOT NULL THEN c.local_place_label
+    ELSE COALESCE(c.location_area,c.current_route_origin,c.origin,'Area not updated') END`;
+  const grouped=`SELECT ${areaExpression} AS area_label,COALESCE(c.market_status,c.status) AS status,
+      c.movement_scope,COUNT(*) AS truck_count,
+      SUM(CASE WHEN c.accepts_full_load=1 THEN 1 ELSE 0 END) AS accepts_ftl_count,
+      SUM(CASE WHEN c.accepts_partial_load=1 THEN 1 ELSE 0 END) AS accepts_ptl_count,
+      SUM(CASE WHEN c.updated_at>=? THEN 1 ELSE 0 END) AS fresh_count
+    ${query.from} WHERE ${query.where}
+    GROUP BY ${areaExpression},COALESCE(c.market_status,c.status),c.movement_scope`;
+  const args=[hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)),...query.args];
+  const countRow=getDb().prepare(`SELECT COUNT(*) AS group_count,COALESCE(SUM(truck_count),0) AS truck_count FROM (${grouped})`).get(...args);
+  const pageCount=Math.max(1,Math.ceil(countRow.group_count/pageSize));
+  const page=Math.max(1,Math.min(pageCount,Number(options.page)||1));
+  const items=getDb().prepare(`${grouped} ORDER BY truck_count DESC,area_label,status LIMIT ? OFFSET ?`)
+    .all(...args,pageSize,(page-1)*pageSize);
+  return {items,total:countRow.group_count,truckTotal:countRow.truck_count,page,pageSize,pageCount};
+}
+
 export function listMarketCapacity(user,filters={}) {
   assertWorkspaceAccess(user);
+  if ([USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
   const selectedLoad=filters.matchLoadId?listOwnLoadRouteOptions(user).find(option=>option.id===filters.matchLoadId):null;
   return rankCapacityRows(capacityBoardRows(user,filters),selectedLoad);
 }
@@ -2489,7 +2545,6 @@ export function listAnonymousMarketplacePreview(limit=3) {
     location_precision_km:row.location_precision_km,
     current_route_origin:publicPlaceLabel(row.current_route_origin,row.current_origin_place_ref),
     current_route_destination:publicPlaceLabel(row.current_route_destination,row.current_destination_place_ref),
-    current_route_date:row.current_route_date,
     origin:publicPlaceLabel(row.origin,row.origin_place_ref),
     destination:publicPlaceLabel(row.destination,row.destination_place_ref),
     travel_date:row.travel_date,
@@ -2548,6 +2603,7 @@ export function listOwnCapacity(user, capacityId = null) {
 
 export function listCapacity(user) {
   assertWorkspaceAccess(user);
+  if ([USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) return listOwnCapacity(user);
   const visibleRows = listMarketCapacity(user).map(row => ({ ...row, isOwn: false }));
   if (!roleCanPublishCapacity(user.role) || user.role === USER_ROLES.ADMIN) return visibleRows;
   const ownRows = listOwnCapacity(user);
@@ -2557,6 +2613,10 @@ export function listCapacity(user) {
 
 export function getCapacityForUser(user, capacityId) {
   assertWorkspaceAccess(user);
+  if ([USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) {
+    const own=listOwnCapacity(user,capacityId)[0];
+    return own?attachCapacityPreferredRoutes(own):null;
+  }
   const visible = capacityBoardRows(user,{capacityId},1)[0];
   if (visible) return attachCapacityPreferredRoutes(visible);
   if (roleCanPublishCapacity(user.role) && user.role !== USER_ROLES.ADMIN) {
@@ -2625,9 +2685,8 @@ export function publishCapacity(user, input, photo = null) {
   const plannedDestinationPlace=hasPlannedRoute?resolvePlaceReference(input.destinationPlaceRef,input.destination):null;
   if(hasCurrentRoute&&currentOriginPlace.place_ref===currentDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   if(hasPlannedRoute&&plannedOriginPlace.place_ref===plannedDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
-  if(hasCurrentRoute&&!input.currentRouteDate)throw new Error('CURRENT_ROUTE_DATE_REQUIRED');
   if(hasPlannedRoute&&!input.travelDate)throw new Error('PLANNED_ROUTE_DATE_REQUIRED');
-  if((hasCurrentRoute&&input.currentRouteDate<todayInEthiopia())||(hasPlannedRoute&&input.travelDate<todayInEthiopia()))throw new Error('INVALID_ROUTE_DATE');
+  if(hasPlannedRoute&&input.travelDate<todayInEthiopia())throw new Error('INVALID_ROUTE_DATE');
   if(hasPlannedRoute&&!['FULL','PARTIAL'].includes(input.plannedSpaceStatus))throw new Error('PLANNED_SPACE_STATUS_REQUIRED');
   const visibility = input.visibility || 'OPEN';
   if (!['OPEN','SAVED_PARTNERS'].includes(visibility)) throw new Error('INVALID_CAPACITY_VISIBILITY');
@@ -2668,13 +2727,13 @@ export function publishCapacity(user, input, photo = null) {
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(id,scope.organizationId,scope.profileId,vehicle.id,legacyStatus,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,
         hasDeviceArea?locationLat:manualLocationPlace?.center_lat??null,hasDeviceArea?locationLng:manualLocationPlace?.center_lng??null,hasDeviceArea?locationPrecisionKm:manualLocationPlace?40:null,
-        input.status==='OFF_DUTY'?null:hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,hasCurrentRoute?input.currentRouteDate:null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
+        input.status==='OFF_DUTY'?null:hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
         plannedOriginPlace?.place_ref||null,plannedOriginPlace?.center_lat??null,plannedOriginPlace?.center_lng??null,
         plannedDestinationPlace?.place_ref||null,plannedDestinationPlace?.center_lat??null,plannedDestinationPlace?.center_lng??null,
         currentOriginPlace?.place_ref||null,currentOriginPlace?.center_lat??null,currentOriginPlace?.center_lng??null,
         currentDestinationPlace?.place_ref||null,currentDestinationPlace?.center_lat??null,currentDestinationPlace?.center_lng??null,
         localPlace?.place_ref||manualLocationPlace?.place_ref||null,input.status,availableAgainDate);
-    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, movementScope, localPlaceRef:localPlace?.place_ref||null, localRadiusKm:localPlace?.radius_km||null, locationArea, locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, currentRouteDate:hasCurrentRoute?input.currentRouteDate:null,plannedRouteDate:hasPlannedRoute?input.travelDate:null,plannedSpaceStatus:hasPlannedRoute?input.plannedSpaceStatus:null, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
+    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, movementScope, localPlaceRef:localPlace?.place_ref||null, localRadiusKm:localPlace?.radius_km||null, locationArea, locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, currentRouteLive:hasCurrentRoute,plannedRouteDate:hasPlannedRoute?input.travelDate:null,plannedSpaceStatus:hasPlannedRoute?input.plannedSpaceStatus:null, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -2715,7 +2774,7 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref,
       market_status,available_again_date)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicleId,legacyStatus,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,onDuty?source.current_route_date:null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null,
+      .run(id,scope.organizationId,scope.profileId,vehicleId,legacyStatus,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null,
         onDuty?source.origin_place_ref:null,onDuty?source.origin_lat:null,onDuty?source.origin_lng:null,
         onDuty?source.destination_place_ref:null,onDuty?source.destination_lat:null,onDuty?source.destination_lng:null,
         onDuty?source.current_origin_place_ref:null,onDuty?source.current_origin_lat:null,onDuty?source.current_origin_lng:null,
@@ -3329,14 +3388,8 @@ export function addProof(user, shipmentId, proofType, upload, note = '') {
   assertWorkspaceAccess(user);
   const shipment = getShipmentParty(user,shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
-  if (!['LOADING','DELIVERY','ISSUE'].includes(proofType)) throw new Error('INVALID_PROOF_TYPE');
-  if (!upload) throw new Error('FILE_REQUIRED');
   const db = getDb();
-  const id = randomId('proof-');
-  db.prepare(`INSERT INTO proof_files (id,shipment_id,proof_type,file_path,original_name,mime_type,note,uploaded_by,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?)`).run(id,shipment.id,proofType,upload.path,upload.originalName,upload.mimeType,note || null,user.id,nowIso());
-  audit(db,user,'PROOF_UPLOADED','shipment',shipment.id,{ proofType, proofId: id });
-  return id;
+  return insertProofFile(db,user,shipment,proofType,upload,note);
 }
 
 export function getProofFile(user, proofId) {

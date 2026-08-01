@@ -75,6 +75,16 @@ Then a real timestamped event is added without inventing a status transition\
 And location is required for Approximate location + status\
 And a note is required for Status timeline.
 
+### Scenario: manual tracking uses four clear field actions
+
+Given an assigned provider may advance or report a shipment\
+When the manual tracking control is displayed\
+Then operational choices use the plain labels Loading, En route, Unloading, and Problem where each action is valid\
+And the service still records the corresponding governed shipment status\
+And each action offers one optional proof file beside its note\
+And omitting proof never blocks an otherwise valid update\
+And an attached proof is privately authorized against the same shipment and action.
+
 ### Scenario: only a Business may reduce tracking
 
 Given an assigned load requires Approximate location + status\

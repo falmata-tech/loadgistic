@@ -316,10 +316,11 @@ test('fleet transporter lands on a management dashboard and updates capacity in 
   await expect(page.getByRole('heading', { name: 'Truck Board' })).toBeVisible();
   await page.getByRole('button',{name:/Filters/}).click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByLabel('At least this much space')).toBeVisible();
-  await expect(page.getByLabel('Route flexibility')).toBeVisible();
-  await expect(page.getByLabel('Cargo-space proof')).toBeVisible();
-  await expect(page.getByText(/read only for transporters and drivers/i)).toBeVisible();
+  await expect(page.getByLabel('Availability')).toBeVisible();
+  await expect(page.getByLabel('Truck area near')).toBeVisible();
+  await expect(page.getByText(/Market gauge only/i)).toBeVisible();
+  await expect(page.getByText(/LG-TRK-/)).toHaveCount(0);
+  await expect(page.locator('.market-gauge-card').getByText('BlueLine Transport PLC')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /view transporter/i })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /interest|contact/i })).toHaveCount(0);
 });
@@ -365,8 +366,8 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
   await expect(page.getByText('Approximate location ready')).toBeVisible();
   await expect(page.getByRole('button', { name: /Use phone|Refresh/ })).toHaveCount(0);
   await expect(page.getByLabel('City or town')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Current route'})).toBeVisible();
-  await expect(page.getByLabel('Travel date').first()).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Live route'})).toBeVisible();
+  await expect(page.locator('.capacity-linked-fields').getByLabel('Travel date')).toHaveCount(0);
   await expect(page.getByTestId('capacity-form')).toHaveAttribute('data-interactive','true',{timeout:15_000});
   await page.getByRole('group',{name:'Work area'}).getByRole('button',{name:'Local'}).click();
   await expect(page.getByRole('group',{name:'Work area'}).getByRole('button',{name:'Local'})).toHaveAttribute('aria-pressed','true');
@@ -458,11 +459,13 @@ test('member verification center and admin review queue are available', async ({
 test('assigned shipment shows enforced approximate tracking and a real authenticated timeline', async ({ page }: { page:any }) => {
   await login(page, 'transporter@loadgistic.local');
   await page.goto('/app/shipments/shp-freight-active');
-  await expect(page.getByText('Location + status', { exact: true })).toBeVisible();
+  await expect(page.getByText('Area + one clear status', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Current area')).toBeVisible();
   await expect(page.getByRole('button', { name: /Use phone/ })).toHaveCount(0);
-  await expect(page.getByText(/Device location is available only to the driver/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Record tracking update' })).toBeVisible();
+  await expect(page.getByText(/Enter the truck's general area/)).toBeVisible();
+  await expect(page.getByText('Unloading',{exact:true})).toBeVisible();
+  await expect(page.getByText('Problem',{exact:true})).toBeVisible();
+  await expect(page.getByLabel(/Photo or document/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Interested in this shipment?' })).toHaveCount(0);
   await expect(page.getByText('Secret shipment code')).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Customer tracking'})).toHaveCount(0);
@@ -515,7 +518,7 @@ test('provider interest stays marked on the Shipment Board and outside Tracking'
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/loads');
   const card=page.locator('.load-board-card').filter({hasText:'Beverage shipment to Dire Dawa'});
-  await card.getByRole('button',{name:'Express interest'}).click();
+  await expect(card.getByText('Interest sent')).toBeVisible();
   await page.getByRole('button',{name:/Filters/}).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByLabel('Board view').selectOption('INTERESTED');
@@ -526,10 +529,10 @@ test('provider interest stays marked on the Shipment Board and outside Tracking'
   await expect(page.getByText('Beverage shipment to Dire Dawa')).toHaveCount(0);
 });
 
-test('browse-only provider cannot see party controls or unrelated saved loads', async ({ page }: { page: any }) => {
+test('connected provider sees Partners demand without receiving party controls', async ({ page }: { page: any }) => {
   await login(page, 'driver@loadgistic.local');
   await page.goto('/app/loads');
-  await expect(page.getByText('Packaged food to Hawassa')).toHaveCount(0);
+  await expect(page.getByText('Packaged food to Hawassa')).toBeVisible();
   await page.goto('/app/shipments/shp-freight-fixed');
   const interestButton=page.getByRole('button',{name:'Express interest'});
   if(await interestButton.count()){

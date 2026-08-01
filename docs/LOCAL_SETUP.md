@@ -93,9 +93,12 @@ The cohort includes clearly titled records:
 - `LG-TRK-S00102` has hidden capacity and must not appear on any member Board.
 - `LG-TRK-S00104` publishes Public capacity for comparison.
 
-The small `npm run db:reset` fixture also keeps Business
-`shipper@loadgistic.local` Connected to `transporter@loadgistic.local`, with one
-Partners load, one Partners truck, and direct execution examples.
+The small `npm run db:reset` fixture connects Business
+`shipper@loadgistic.local` with both `transporter@loadgistic.local` and
+`driver@loadgistic.local`. It includes Public and Partners capacity, a
+Partners-only shipment, provider-specific Direct shipments, saved interests,
+one pending network request, and active tracking examples across those original
+accounts.
 
 The command is destructive to the configured local database and refuses to run
 with `NODE_ENV=production`. Set `STRESS_SCALE` from 1 through 5 to increase the
