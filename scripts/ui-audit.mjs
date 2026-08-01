@@ -233,7 +233,7 @@ try {
           const trackingCode = await page.locator('.tracking-secret strong').textContent().catch(() => null);
           if (trackingCode) {
             await gotoReady(page,'/track');
-            await page.getByLabel('Secret load code').fill(trackingCode.trim());
+            await page.getByLabel('Secret shipment code').fill(trackingCode.trim());
             await page.getByRole('button',{name:'Open tracking'}).click();
             await page.waitForLoadState('domcontentloaded');
             const trackingResult = await inspectCurrentPage(

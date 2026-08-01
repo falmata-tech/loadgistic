@@ -3,61 +3,61 @@ id: FEAT-MKT-001
 title: Ethiopia producer and transporter market positioning
 related_ids: [BASE-FE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001]
 problem: Small Ethiopian manufacturers, artisans, growers, processors, and transport operators need to recognize their real work and economic constraints immediately, without making the authenticated workspace feel limited to only small firms.
-behavior: The public homepage presents Loadgistic as practical production-to-market logistics for Ethiopian Businesses and transport providers of every size, uses authentic illustrative product screenshots to make the workflow tangible, and routes each audience to the correct reviewed-account signup path.
-contracts: [PublicMarketPositioning, PublicExampleBoundary, ProductScreenshot, AudienceCallToAction]
-observability: [application_source]
-rollout: Keep live marketplace data authenticated and review generated imagery for respectful, accurate, non-political representation before release.
+behavior: The public homepage introduces Loadgistic in one short statement and immediately shows real-time, identity-safe Shipment Board and Truck Board projections, then routes visitors through consistent sign-up and sign-in actions.
+contracts: [PublicMarketPositioning, PublicExampleBoundary, AnonymousBoardPreview, AudienceCallToAction]
+observability: [application_source, anonymous_board_projection]
+rollout: Monitor the anonymous projection whitelist whenever authenticated Board fields change; no raw marketplace row may cross the public boundary.
 ---
 
 # Public market positioning
 
-### Scenario: local producers recognize the Business value
+### Scenario: the Business side is immediately recognizable
 
 Given an unauthenticated visitor opens the homepage\
-When the first viewport and Business value sections render\
-Then artisans, growers, processors, producers, and small manufacturers are named in plain language\
-And the page explains that they can reach transport capacity without owning a distribution fleet\
-And growing local Businesses are treated as important economic participants\
-And product language remains credible for larger Businesses.
+When the first viewport and account-entry band render\
+Then the road-freight marketplace statement and Shipment Board identify the demand side\
+And Need a truck routes a Business to shipment and truck access\
+And the concise language remains credible for a local producer or a larger enterprise.
 
-### Scenario: transport providers recognize utilization value
+### Scenario: the transporter side is immediately recognizable
 
 Given a fleet transporter or self-managed driver opens the homepage\
-When the transporter value sections render\
-Then the page explains that Loadgistic connects recorded truck capacity with reviewed Business demand\
-And it distinguishes company fleet coordination from owner-operator capacity control\
-And it recognizes transport providers as essential to moving Ethiopian production and trade\
-And it does not promise guaranteed loads, income, or utilization.
+When the first viewport and account-entry band render\
+Then the Truck Board identifies the capacity side\
+And Have a truck routes a transporter into the reviewed signup choices\
+And the page does not promise guaranteed shipments, income, or utilization.
 
-### Scenario: visitors see the actual product
+### Scenario: visitors see the two-sided marketplace immediately
 
 Given an unauthenticated visitor opens the homepage\
-When product workflow sections render\
-Then at least one authentic Loadgistic workspace screenshot is shown\
-And the screenshot uses illustrative local fixture data only\
-And it is labeled as a product preview rather than a live marketplace\
-And the visible interface demonstrates a real Board, capacity, load, tracking, or mobile-driver workflow.
+When the first viewport renders\
+Then one short purpose statement is followed by Shipment Board and Truck Board tabs\
+And switching tabs shows current Public shipment and truck signals from the server\
+And the page avoids a long sequence of repeated marketing sections.
 
-### Scenario: public examples never expose member data
+### Scenario: public Board projections never expose member data
 
-Given live boards and Public Profiles require authentication\
-When the homepage demonstrates loads, corridors, producers, or trucks\
-Then every example is clearly illustrative and contains no live marketplace record, private contact, exact location, or customer data.
+Given full Boards and Public Profiles require authentication\
+When the homepage projects current Public shipments or trucks\
+Then cards may expose structured marketplace facts including routes, general areas, deadlines, price mode, truck configuration, capacity status, flexibility, proof signal, and freshness\
+And cards expose no organization or person name, phone, email, handle, profile link, raw record identifier, proof file, free-text field, or exact coordinate\
+And the server returns an explicit anonymous whitelist rather than a raw Board row\
+And place labels require a structured place reference and the visible page refreshes the bounded projection once per minute while active\
+And all details and contact actions resolve to sign in.
 
 ### Scenario: the story has a purposeful flow
 
 Given a Business or transporter scans the homepage\
-When they move from the first viewport to the final account choice\
-Then the sections progress from shared economic purpose to Business value, product proof, transporter value, workflow, and audience-specific signup\
-And each section has one defined message and one primary visual purpose\
-And repeated marketing claims and long explanatory paragraphs are absent.
+When they move from the purpose statement through the identity-safe Boards to account entry\
+Then each region has one defined task\
+And repeated claims, feature inventories, and long explanatory paragraphs are absent.
 
 ### Scenario: calls to action preserve the two marketplace sides
 
 Given an unauthenticated visitor wants to sign up\
 When they choose a homepage call to action\
-Then Businesses are routed to the application for capacity demand\
-And fleet transporters and self-managed drivers are routed to their respective applications for Business demand.
+Then Businesses are routed to the Business signup choice for capacity demand\
+And transporters enter the transporter signup choice and may choose Fleet or Self-managed Driver.
 
 ### Scenario: public account entry is consistent
 
@@ -65,6 +65,7 @@ Given an unauthenticated visitor views public navigation\
 When account entry actions render at desktop or mobile size\
 Then Sign up and Log in are both visible\
 And both actions receive the same primary visual importance\
+And the Login page includes a visible Sign up action\
 And Apply and Join are not presented as separate account actions.
 
 ## Contract ownership

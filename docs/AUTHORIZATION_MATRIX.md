@@ -4,12 +4,12 @@ This matrix defines the application-service boundary. Route handlers authenticat
 
 | Capability | Allowed actor and scope | Denial behavior |
 |---|---|---|
-| Post load | Active Shipper or Receiver with its organization | `FORBIDDEN`; no load or event |
-| Read Tracking workspace | Shipper, receiver, directly addressed or assigned provider; Admin oversight | Discoverable unrelated Load Board records are excluded |
+| Post shipment | Active Shipper or Receiver with its organization | `FORBIDDEN`; no shipment or event |
+| Read Tracking workspace | Shipper, receiver, directly addressed or assigned provider; Admin oversight | Discoverable unrelated Shipment Board records are excluded |
 | View shipment party data | Admin or shipment shipper, receiver, assigned provider organization, or assigned provider profile | Return no record |
 | Set receiver contact | Business that owns an Agreed shipment, or Admin; first name and phone are required | `NOT_FOUND`, `RECEIVER_CONTACT_NOT_READY`, or `RECEIVER_CONTACT_REQUIRED`; no contact update |
-| Browse open freight | Authenticated Transporter or self-managed Driver; company Driver only with Load Board permission; Freight, Posted, Open Market only | Return no record |
-| Browse Partners freight | Transporter or self-managed Driver with a mutual Connected relationship; company Driver additionally requires Load Board permission for that transporter organization | Return no record |
+| Browse open freight | Authenticated Transporter or self-managed Driver; company Driver only with Shipment Board permission; Freight, Posted, Open Market only | Return no record |
+| Browse Partners freight | Transporter or self-managed Driver with a mutual Connected relationship; company Driver additionally requires Shipment Board permission for that transporter organization | Return no record |
 | View designated load phone | Transporter or self-managed Driver allowed to view the load; company Driver additionally requires Business contact permission; owning Business must opt in | Return a null phone |
 | Express load interest or request load proof | Transporter or self-managed Driver allowed to browse; company Driver additionally requires negotiation and Business contact permission | `NOT_FOUND` or `FORBIDDEN`; no interest, request, notification, or audit |
 | Accept direct freight | The specifically addressed Transporter or self-managed Driver while the request is `SENT`; company Driver additionally requires negotiation and Business contact permission for the addressed organization | `FORBIDDEN`, `NOT_FOUND`, or `DIRECT_REQUEST_NOT_PENDING`; no state change |

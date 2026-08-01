@@ -40,6 +40,14 @@ Then it resets and uses a dedicated test database on a dedicated port\
 And it does not reuse a running development server or its business records\
 And its generated Next.js artifacts are isolated from both the live development server and production build output.
 
+### Scenario: local development uses incremental compilation
+
+Given a developer starts Loadgistic with the documented development command\
+When application routes are opened and edited\
+Then Next.js uses its stable Turbopack development bundler explicitly\
+And development compilation time is distinguished from repository query time\
+And production performance claims are verified against a production build rather than inferred from first-visit development compilation.
+
 ## Contract details
 
 `BuildArtifact` is produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable SQLite fixture and a non-development port.

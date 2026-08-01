@@ -22,28 +22,28 @@ And every active truck and Driver remains reachable.
 ### Scenario: fleet owner controls driver authority
 
 Given an authenticated fleet owner and an active driver in the same transporter organization\
-When the owner changes that driver's Load Board, Business contact, load negotiation, or capacity-control permission\
+When the owner changes that driver's Shipment Board, Business contact, shipment negotiation, or capacity-control permission\
 Then the setting is saved only for that driver\
 And the change is audited with actor, driver, permission, and resulting value.
 
 ### Scenario: permitted company driver handles Business demand
 
-Given a fleet driver may browse the Load Board, contact Businesses, and negotiate loads\
+Given a fleet driver may browse the Shipment Board, contact Businesses, and negotiate shipments\
 When the driver views a permitted load, expresses interest, requests load proof, or accepts a direct request addressed to the company\
 Then the action is recorded for the transporter organization with the driver as actor\
 And the fleet owner can see the resulting interest, agreement, assignment, and tracking history.
 
 ### Scenario: company driver restrictions are enforced at the service boundary
 
-Given a fleet owner has disabled a driver's Load Board or negotiation permission\
+Given a fleet owner has disabled a driver's Shipment Board or negotiation permission\
 When that driver attempts the denied read or command through a page or direct request\
-Then no protected load or designated Business phone is returned when Load Board access is denied\
+Then no protected shipment or designated Business phone is returned when Shipment Board access is denied\
 And no interest, proof request, acceptance, notification, event, or success audit is created when negotiation is denied.
 
-### Scenario: contact permission is narrower than Load Board access
+### Scenario: contact permission is narrower than Shipment Board access
 
 Given a fleet driver may browse loads but may not contact Businesses\
-When the driver opens the Load Board or a discoverable load detail\
+When the driver opens the Shipment Board or a discoverable shipment detail\
 Then load facts remain visible\
 And the designated Business phone and contact actions are absent\
 And commands that initiate Business contact or negotiation are denied.
@@ -67,13 +67,13 @@ And the driver cannot update an unassigned or differently owned truck.
 ### Scenario: self-managed driver is not subordinate to fleet permissions
 
 Given a Driver account owns its provider profile and truck\
-When it uses Load Board, Business contact, negotiation, capacity, duty, assignment, or tracking workflows\
+When it uses Shipment Board, Business contact, negotiation, capacity, duty, assignment, or tracking workflows\
 Then it has the full provider authority defined by the related feature specs\
 And no fleet-owner permission record can reduce that authority.
 
 ## Contract ownership
 
 - Application policy and services: driver access, shipment, and capacity functions in `src/lib/repository.js`
-- Inbound adapters: Driver Home, Load Board, shipment detail, Fleet team controls, and related route handlers
+- Inbound adapters: Driver Home, Shipment Board, shipment detail, Fleet team controls, and related route handlers
 - Persistence adapter: additive fleet-driver permission and vehicle-assignment tables in `src/lib/db.js`
 - Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`

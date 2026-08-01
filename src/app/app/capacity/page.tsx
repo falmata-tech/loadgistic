@@ -36,7 +36,7 @@ export default async function CapacityPage({searchParams}:{searchParams:Promise<
    return `/app/capacity${queryString?`?${queryString}`:''}`;
  };
  const activeFilters=[
-   filters.matchLoadId?{label:'Matched to posted load',href:clearFilterHref(['matchLoadId'])}:null,
+   filters.matchLoadId?{label:'Matched to posted shipment',href:clearFilterHref(['matchLoadId'])}:null,
    filters.movementScope==='LOCAL'?{label:`Local: ${filters.locality||'selected place'}`,href:clearFilterHref(['movementScope','localPlaceRef','locality','localRadiusKm'])}:null,
    filters.movementScope==='INTERCITY'?{label:`${filters.origin||'City 1'} to ${filters.destination||'City 2'}`,href:clearFilterHref(['movementScope','originPlaceRef','origin','originRadiusKm','destinationPlaceRef','destination','destinationRadiusKm','directionMode'])}:null,
    filters.status?{label:filters.status.toLowerCase(),href:clearFilterHref(['status'])}:null,
@@ -51,11 +51,11 @@ export default async function CapacityPage({searchParams}:{searchParams:Promise<
    filters.proof?{label:'Photo proof',href:clearFilterHref(['proof'])}:null,
    filters.currentAreaPlaceRef?{label:`Near ${filters.currentArea||'selected area'}`,href:clearFilterHref(['currentAreaPlaceRef','currentArea','currentAreaRadiusKm','currentAreaMode'])}:null
  ].filter(Boolean) as {label:string;href:string}[];
- return <div className="page"><PageHeader icon={Gauge} title="Capacity Board" subtitle={isProvider?'See current truck supply.':'Find an available truck.'}/>
- {isProvider?<div className="alert">The Capacity Board is read only for transporters and drivers. Use it to understand supply; contact and interest actions are not available here.</div>:<div className="alert">Each truck stands on its own. Public means all logged-in businesses; Partners means only Connected network Businesses.</div>}
+ return <div className="page"><PageHeader icon={Gauge} title="Truck Board" subtitle={isProvider?'See current truck supply.':'Find an available truck.'}/>
+ {isProvider?<div className="alert">The Truck Board is read only for transporters and drivers. Use it to understand supply; contact and interest actions are not available here.</div>:<div className="alert">Each truck stands on its own. Public means all logged-in businesses; Partners means only Connected network Businesses.</div>}
  <BoardFilterSheet
    title="Find the closest capacity"
-   description="Search or rank trucks against one of your load routes."
+   description="Search or rank trucks against one of your shipment routes."
    applyLabel="Show trucks"
    clearHref="/app/capacity"
    resultLabel={`${result.total} ${result.total===1?'truck':'trucks'}`}
@@ -63,7 +63,7 @@ export default async function CapacityPage({searchParams}:{searchParams:Promise<
    search={{id:'capacity-search',value:filters.q,placeholder:'Truck, transporter, or cargo',hiddenFields:{...filters,q:''}}}
  >
    <div className="board-filter-grid">
-     {loadRoutes.length?<div className="form-group filter-match"><label htmlFor="capacity-match"><Route aria-hidden="true"/>Match a posted load</label><select id="capacity-match" name="matchLoadId" defaultValue={filters.matchLoadId}><option value="">Do not rank by a load</option>{loadRoutes.map(load=><option key={load.id} value={load.id}>{load.code} · {load.movement_scope==='LOCAL'?`Local in ${load.local_place_label}`:`${load.origin} → ${load.destination}`}</option>)}</select></div>:null}
+     {loadRoutes.length?<div className="form-group filter-match"><label htmlFor="capacity-match"><Route aria-hidden="true"/>Match a posted shipment</label><select id="capacity-match" name="matchLoadId" defaultValue={filters.matchLoadId}><option value="">Do not rank by a shipment</option>{loadRoutes.map(load=><option key={load.id} value={load.id}>{load.code} · {load.movement_scope==='LOCAL'?`Local in ${load.local_place_label}`:`${load.origin} → ${load.destination}`}</option>)}</select></div>:null}
      <BoardGeographyFilters idPrefix="capacity" movementScope={filters.movementScope} localPlaceRef={filters.localPlaceRef} locality={filters.locality} localRadiusKm={filters.localRadiusKm} originPlaceRef={filters.originPlaceRef} origin={filters.origin} originRadiusKm={filters.originRadiusKm} destinationPlaceRef={filters.destinationPlaceRef} destination={filters.destination} destinationRadiusKm={filters.destinationRadiusKm} directionMode={filters.directionMode} routeLabels={['Route city 1','Route city 2']}/>
      <div className="form-group"><label htmlFor="capacity-status"><Gauge aria-hidden="true"/>Availability</label><select id="capacity-status" name="status" defaultValue={filters.status}><option value="">Empty, Partial, or Busy</option><option value="EMPTY">Empty</option><option value="PARTIAL">Partial</option><option value="BUSY">Busy · available soon</option></select></div>
      <div className="form-group"><label htmlFor="capacity-load-type"><Boxes aria-hidden="true"/>Accepts</label><select id="capacity-load-type" name="loadType" defaultValue={filters.loadType}><option value="">FTL or PTL</option><option value="FTL">FTL</option><option value="PTL">PTL</option></select></div>

@@ -21,7 +21,7 @@ And a typed label without a selected catalog identity is not accepted as geograp
 
 ### Scenario: member filters by two endpoint circles
 
-Given an authenticated member opens the Load Board or Capacity Board\
+Given an authenticated member opens the Shipment Board or Truck Board\
 When the member selects City A with Radius A and City B with Radius B\
 Then a direct candidate matches only when its origin is inside Radius A and its destination is inside Radius B\
 And an Either direction query may also match the reversed endpoint assignment\

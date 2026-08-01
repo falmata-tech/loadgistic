@@ -26,6 +26,19 @@ test('seeded users and role workspaces exist',()=>{
  assert.ok(repo.getDashboard(shipper).actions.length>=2);
 });
 
+test('anonymous marketplace preview is live and limited to an identity-safe whitelist',()=>{
+ const preview=repo.listAnonymousMarketplacePreview(3);
+ assert.ok(preview.shipments.length>0&&preview.shipments.length<=3);
+ assert.ok(preview.trucks.length>0&&preview.trucks.length<=3);
+ const shipmentKeys=['delivery_label','destination','distribution_mode','load_type','local_place_label','movement_scope','origin','pickup_label','posted_label','price_minor','price_mode','vehicle_category'];
+ const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_date','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
+ assert.deepEqual(Object.keys(preview.shipments[0]).sort(),shipmentKeys.sort());
+ assert.deepEqual(Object.keys(preview.trucks[0]).sort(),truckKeys.sort());
+ const serialized=JSON.stringify(preview);
+ for(const privateValue of ['BlueLine Transport PLC','Blue Nile Trading PLC','shipper@loadgistic.local','+251'])assert.equal(serialized.includes(privateValue),false);
+ assert.equal(/"(?:id|handle|phone|email|lat|lng|title|cargo_description|photo_path)"/.test(serialized),false);
+});
+
 test('bounded result pages clamp size and keep deterministic page slices',()=>{
  const rows=Array.from({length:27},(_,index)=>({id:index+1}));
  const first=repo.paginateResults(rows,{page:1,pageSize:10});
@@ -188,7 +201,7 @@ test('company driver is assigned to one fleet truck and defaults to full owner-d
  assert.throws(()=>repo.listFleetDrivers(driver),/FORBIDDEN/);
 });
 
-test('Load and Capacity Boards filter and rank by an owned route',()=>{
+test('Shipment and Truck Boards filter and rank by an owned route',()=>{
  const transporter=repo.getUserById('user-transporter');
  const loads=repo.listLoads(transporter,'ALL',{matchCapacityId:'cap-empty'});
  assert.ok(loads.length>1);
@@ -257,7 +270,7 @@ test('Board geography uses endpoint coordinates, radii, direction, and obscured 
  assert.ok(nearCurrent.every(capacity=>!Object.hasOwn(capacity,'location_lat')&&!Object.hasOwn(capacity,'location_lng')));
 });
 
-test('Load Board can isolate the provider interests without adding them to Tracking',()=>{
+test('Shipment Board can isolate the provider interests without adding them to Tracking',()=>{
  const driver=repo.getUserById('user-driver');
  repo.expressInterest(driver,'shp-freight-fixed','Interested view fixture');
  const interested=repo.listLoads(driver,'INTERESTED');
@@ -266,7 +279,7 @@ test('Load Board can isolate the provider interests without adding them to Track
  assert.equal(repo.listVisibleShipments(driver).some(load=>load.id==='shp-freight-fixed'),false);
 });
 
-test('Load Board removes demand after two delivery-deadline grace days but keeps the owner record',()=>{
+test('Shipment Board removes demand after two delivery-deadline grace days but keeps the owner record',()=>{
  const db=dbModule.getDb();
  const driver=repo.getUserById('user-driver');
  const shipper=repo.getUserById('user-shipper');
@@ -499,7 +512,7 @@ test('admin operations inventory is bounded and omits sensitive fields',()=>{
  assert.ok(users.items.every(user=>!Object.hasOwn(user,'password_hash')));
 });
 
-test('provider Capacity Board excludes own trucks and does not expose photo paths',()=>{
+test('provider Truck Board excludes own trucks and does not expose photo paths',()=>{
  const driver=repo.getUserById('user-driver');
  const rows=repo.listMarketCapacity(driver);
  assert.equal(rows.some(row=>row.provider_profile_id===driver.provider_profile_id),false);

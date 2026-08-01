@@ -3,13 +3,21 @@ id: FEAT-SHP-001
 title: B2B shipment creation and execution
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
-behavior: Authorized Business actors create road-freight loads as either shipper or receiver owners, manage posting and execution from one My Loads workspace, transporters discover or accept permitted work through the Load Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
-contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, EtbAmount, StatusTransition, BusinessParticipantReview]
+behavior: Authorized Business actors create road-freight shipments as either shipper or receiver owners, manage posting and execution from one My Shipments workspace, transporters discover or accept permitted work through the Shipment Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
+contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, SharedLoadProjection, PooledLoadCandidate, AlongRouteCandidate, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
 
 # Shipment lifecycle
+
+### Scenario: user-facing demand language is Shipment
+
+Given any user-facing workflow refers to a freight demand record or its marketplace\
+When navigation, headings, forms, filters, buttons, notices, or tracking prompts are rendered\
+Then the record is called a Shipment and the marketplace is called the Shipment Board\
+And standard freight abbreviations FTL and PTL may retain their truckload meaning\
+And internal compatibility identifiers are not exposed as product terminology.
 
 ### Scenario: business creates a shipment
 
@@ -33,14 +41,14 @@ When pickup and delivery deadlines are displayed\
 Then they are labeled Pick up before and Drop off before\
 And the saved values remain the canonical pickup and delivery deadlines.
 
-### Scenario: stale demand leaves the Load Board
+### Scenario: stale demand leaves the Shipment Board
 
 Given a Posted, Sent, or Contacted load has a Drop off before date\
 When that deadline passes\
 Then its Business owner immediately sees that the request is past due\
-And the permitted Load Board retains it for a two-day grace window\
-And after those two full days the load is absent from Load Board results, route matching, and pooled-load projections\
-And the canonical load remains in My Loads so its owner does not lose the record.
+And the permitted Shipment Board retains it for a two-day grace window\
+And after those two full days the shipment is absent from Shipment Board results, route matching, and pooled-shipment projections\
+And the canonical shipment remains in My Shipments so its owner does not lose the record.
 
 ### Scenario: unsupported service creation is rejected at the service boundary
 
@@ -92,7 +100,7 @@ And favorited Businesses rank before other matching Businesses.
 
 Given a Business creates or reviews a freight load\
 When cargo details are displayed\
-Then the descriptive field is labeled Load detail\
+Then the descriptive field is labeled Shipment detail\
 And the workflow does not request or display estimated kilograms.
 
 ### Scenario: Business may expose a designated load phone
@@ -119,14 +127,14 @@ Then access is denied and no shipment can be created.
 
 Given an authenticated Business uses the workspace navigation\
 When load work is displayed\
-Then one My Loads navigation entry replaces separate Post Load and Tracking entries\
-And the My Loads page provides an All my loads view, an Active Tracking view, and a Post load action\
+Then one My Shipments navigation entry replaces separate Post Shipment and Tracking entries\
+And the My Shipments page provides an All my shipments view, an Active Tracking view, and a Post shipment action\
 And Posted, negotiating, execution, and completed records remain projections of one canonical load\
 And transport providers retain their own Tracking navigation because they do not own Business demand.
 
 ### Scenario: load work and marketplace demand remain bounded
 
-Given My Loads, Tracking, or the Load Board contains more records than one page\
+Given My Shipments, Tracking, or the Shipment Board contains more records than one page\
 When the user opens, searches, filters, or pages the list\
 Then the server renders one bounded page\
 And the active view and filters remain in page navigation\
@@ -135,21 +143,58 @@ And a new search or filter submission starts from page one.
 ### Scenario: provider discovers permitted freight
 
 Given a fleet transporter or self-managed driver\
-When they browse the Load Board\
+When they browse the Shipment Board\
 Then only Open, Direct, or Partners records permitted by visibility policy appear\
 And internal notes and competing interest remain hidden.
 
 ### Scenario: provider can return to its expressed interests
 
 Given an authorized provider expressed interest in one or more visible loads\
-When it selects My interests on the Load Board\
+When it selects My interests on the Shipment Board\
 Then only currently discoverable loads with that provider's recorded interest are shown\
 And every matching card is labeled Interest sent\
 And the loads do not enter Tracking until the provider becomes a shipment party.
 
+### Scenario: Shared Shipments keeps two compatible strategies clear
+
+Given an authorized provider can browse two or more Posted Between-cities loads\
+When the provider opens Shared Shipments\
+Then one workspace offers Pool together and Along the route modes\
+And each mode explains its operational pattern without mixing both patterns in one result list\
+And both modes use only shipments already permitted by the Shipment Board visibility policy\
+And every source load remains independently owned, priced, negotiated, assigned, tracked, and updated.
+
+### Scenario: pooled candidates are pairwise compatible
+
+Given permitted Posted PTL loads have reviewed endpoint coordinates and operating deadlines\
+When Pool together candidates are calculated\
+Then every pair in a candidate falls within the configured origin and destination radii\
+And their pickup and drop-off deadline windows are close enough to be discussed as one movement\
+And a load that is close only through a third transitive load is not silently added\
+And the result is labeled as a candidate because recorded data does not prove physical cargo fit.
+
+### Scenario: along-route candidates form a forward sequence
+
+Given permitted Posted Between-cities loads have reviewed endpoint coordinates and operating deadlines\
+When Along the route candidates are calculated\
+Then each next pickup is within the configured handoff radius of the previous drop-off\
+And each leg continues in a broadly consistent forward direction\
+And recorded deadlines allow the previous leg to be dropped before the next pickup deadline\
+And the sequence contains at least two independently negotiable loads\
+And the interface shows ordered pickup and drop-off stops, connector distance, load type, and deadline context\
+And the result warns the provider to confirm timing, cargo fit, and every agreement.
+
+### Scenario: shared-load projections remain bounded and stable
+
+Given the permitted Shipment Board contains many candidate records\
+When either Shared Shipments mode is opened or paged\
+Then candidate input and sequence length are bounded\
+And result identifiers and ordering are deterministic for the same eligible records and configuration\
+And detail lookup re-applies current authorization and eligibility rather than persisting a combined load.
+
 ### Scenario: authorized fleet driver represents its company
 
-Given a company driver has Load Board, contact, and negotiation permission\
+Given a company driver has Shipment Board, contact, and negotiation permission\
 When the driver browses a permitted load or starts a provider action\
 Then the load is read and the action is owned by the driver's transporter organization\
 And the driver remains the recorded actor\
@@ -162,9 +207,9 @@ When the driver views a load or submits an interest, proof request, or direct ac
 Then the designated Business phone and contact controls are hidden when contact is disabled\
 And denied commands create no commercial record, notification, event, or success audit.
 
-### Scenario: Load Board supports truck-aware discovery
+### Scenario: Shipment Board supports truck-aware discovery
 
-Given a fleet transporter or self-managed driver opens the Load Board\
+Given a fleet transporter or self-managed driver opens the Shipment Board\
 When they filter by text, route cities, cargo configuration, load type, visibility mode, price mode or range, pickup or drop-off deadline, or posted recency\
 Then only loads satisfying every supplied filter are displayed\
 And a price range excludes Quote Requested loads because they have no comparable saved amount\
@@ -177,7 +222,7 @@ And origin and destination route filters apply only to Between cities records\
 And exact Local pickup or drop-off coordinates are not returned to the Board.
 
 Given a provider chooses one of its own trucks with a current planned route\
-When Load Board results are displayed\
+When Shipment Board results are displayed\
 Then loads with both route endpoints aligned are ranked before one-endpoint and unmatched loads\
 And each result explains its route-match strength without claiming that the truck is assigned.
 
@@ -186,12 +231,12 @@ And each result explains its route-match strength without claiming that the truc
 Given a fleet transporter or self-managed driver can discover an unassigned posted load\
 When they open Tracking\
 Then that unrelated posted load is absent\
-And it remains available on the Load Board according to discovery visibility.
+And it remains available on the Shipment Board according to discovery visibility.
 
 Given the transporter organization, self-managed driver, shipper Business, or receiver Business is a party to a load\
 When that actor opens Tracking\
 Then only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, or Completed loads are listed\
-And Posted, Sent, Contacted, and merely saved or interested loads remain in their Load Board or negotiation context.
+And Posted, Sent, Contacted, and merely saved or interested shipments remain in their Shipment Board or negotiation context.
 
 ### Scenario: invalid transition
 

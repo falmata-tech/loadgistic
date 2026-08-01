@@ -12,7 +12,7 @@ const categories=[
   {value:'ACCOUNT',label:'Account',icon:UserRound},
   {value:'PAYMENT',label:'Payment',icon:CreditCard},
   {value:'VERIFICATION',label:'Verification',icon:BadgeCheck},
-  {value:'LOAD_TRACKING',label:'Load & tracking',icon:PackageSearch},
+  {value:'LOAD_TRACKING',label:'Shipment & tracking',icon:PackageSearch},
   {value:'CAPACITY',label:'Capacity',icon:Truck},
   {value:'OTHER',label:'Other',icon:CircleHelp}
 ];

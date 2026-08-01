@@ -5,7 +5,8 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 function fallbackFor(pathname:string) {
-  if(pathname.startsWith('/app/loads/pstl/'))return '/app/loads?board=POOLED';
+  if(pathname.startsWith('/app/loads/pstl/'))return '/app/loads?board=SHARED';
+  if(pathname.startsWith('/app/loads/route/'))return '/app/loads?board=SHARED&sharedMode=ROUTE';
   if(pathname==='/app/shipments/new')return '/app/shipments?view=MY_LOADS';
   if(pathname.startsWith('/app/shipments/'))return '/app/shipments';
   if(pathname.startsWith('/app/capacity/'))return '/app/capacity';

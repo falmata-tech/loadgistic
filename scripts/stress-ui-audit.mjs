@@ -20,7 +20,7 @@ const personas=[
   {
     name:'generated-fleet',
     email:'fleet-001@stress.loadgistic.local',
-    routes:['/app/home','/app/fleet','/app/network','/app/network?view=REQUESTS','/app/loads','/app/loads?page=2','/app/loads?mode=PARTNERS','/app/loads?mode=DIRECT']
+    routes:['/app/home','/app/fleet','/app/network','/app/network?view=REQUESTS','/app/loads','/app/loads?page=2','/app/loads?mode=PARTNERS','/app/loads?mode=DIRECT','/app/loads?board=SHARED','/app/loads?board=SHARED&sharedMode=ROUTE']
   },
   {
     name:'generated-driver',
@@ -53,6 +53,8 @@ const cohortExpectations=new Map([
   ['generated-fleet:/app/network?view=REQUESTS',['Highland Honey 003 PLC','Unity Leather 006 PLC']],
   ['generated-fleet:/app/loads?mode=PARTNERS',['Partners-only coffee cartons to Hawassa']],
   ['generated-fleet:/app/loads?mode=DIRECT',['Direct flour request for Horizon Freight 001']],
+  ['generated-fleet:/app/loads?board=SHARED',['Pool together','3 PTL shipments']],
+  ['generated-fleet:/app/loads?board=SHARED&sharedMode=ROUTE',['Along the route','Addis Ababa, Ethiopia']],
   ['generated-driver:/app/network',['Rift Valley Foods 001 PLC']],
   ['generated-driver:/app/loads?mode=PARTNERS',['Partners-only coffee cartons to Hawassa']],
   ['generated-driver:/app/loads?mode=DIRECT',['Direct furniture request for Owner Operator 001']]

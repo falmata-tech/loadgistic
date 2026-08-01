@@ -38,12 +38,12 @@ Playwright resets `data/test-e2e.db`, writes generated Next.js artifacts to `.ne
 
 Covered workflows:
 
-- Public homepage identifies Ethiopian producer audiences and preserves separate Business, Fleet Transporter, and Self-managed Driver application paths
-- Business opens the rich Post Load workflow
+- Public homepage switches between live Shipment Board and Truck Board projections, exposes useful structured facts, and withholds member identity and contact fields
+- Business opens the rich Post Shipment workflow
 - Fleet Transporter lands on a management dashboard and updates an individual truck inside My Fleet
-- Self-managed Driver retains the rich capacity control panel as Home
+- Self-managed Driver uses the simplified capacity Home and receives automatic obscured device location with manual fallback
 - Provider searches marketplace demand by truck route but sees only involved loads in Tracking
-- Business ranks Capacity Board trucks against an owned open load
+- Business ranks Truck Board trucks against an owned open shipment
 - Signed-in members browse Business and transporter profiles with declared regions but without private account contacts
 - Members and administrators open their role-specific verification workflows
 - Assigned-provider tracking enforces the load's selected mode

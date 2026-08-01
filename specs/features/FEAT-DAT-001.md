@@ -55,7 +55,7 @@ And every relationship view is backed by persisted relationship rows rather than
 ### Scenario: cohort visibility records prove authorization
 
 Given the named network cohort\
-When its members browse the Load Board and Capacity Board\
+When its members browse the Shipment Board and Truck Board\
 Then Fleet 001 and Driver 001 can see Business 001's Partners-only load\
 And Fleet 002 cannot see that load merely because it has a Pending request\
 And only the addressed provider can see each Direct load\

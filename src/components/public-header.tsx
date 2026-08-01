@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Building2, CirclePlus, LayoutDashboard, ListChecks, LogIn, Route } from 'lucide-react';
+import { Boxes, CirclePlus, LayoutDashboard, LogIn, Truck } from 'lucide-react';
 import { Logo } from './logo';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -10,9 +10,8 @@ export async function PublicHeader() {
       <div className="container public-nav">
         <Logo />
         <nav className="public-links" aria-label="Public navigation">
-          <Link href="/#businesses"><Building2 aria-hidden="true"/>Businesses</Link>
-          <Link href="/#transporters"><Route aria-hidden="true"/>Transporters</Link>
-          <Link href="/#product"><ListChecks aria-hidden="true"/>Platform</Link>
+          <Link href="/#marketplace-preview-title"><Boxes aria-hidden="true"/>Shipment Board</Link>
+          <Link href="/#marketplace-preview-title"><Truck aria-hidden="true"/>Truck Board</Link>
           {user
             ? <Link className="button" href="/app/home"><LayoutDashboard aria-hidden="true"/>Workspace</Link>
             : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Sign up</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Log in</Link></>}

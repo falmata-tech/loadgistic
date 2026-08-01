@@ -10,6 +10,6 @@ export default async function NewShipmentPage({searchParams}:{searchParams:Promi
  const today=new Date().toISOString().slice(0,10);
  const selectedProvider=query.provider?getMemberSelection(query.provider):null;
  const selectedReceiver=query.receiver?getMemberSelection(`org:${query.receiver}`):null;
- return <div className="page load-posting-page"><PageHeader icon={CirclePlus} title="Post a load" subtitle="Cargo, route, deadline."/><Flash error={query.error}/>
+ return <div className="page load-posting-page"><PageHeader icon={CirclePlus} title="Post a shipment" subtitle="Cargo, route, deadline."/><Flash error={query.error}/>
  <ShipmentForm workspaceName={user.organization_name||user.name} selectedProvider={selectedProvider?.ref||''} selectedProviderLabel={selectedProvider?.name||''} selectedReceiver={selectedReceiver?.id||''} selectedReceiverLabel={selectedReceiver?.name||''} minDate={today}/></div>;
 }

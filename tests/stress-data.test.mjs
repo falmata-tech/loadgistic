@@ -61,6 +61,14 @@ test('standard stress dataset covers every table, workflow state, and provider s
   const capacityPage=repo.paginateResults(repo.listCapacity(generatedBusiness),{page:2,pageSize:12});
   assert.ok(capacityPage.total>24);
   assert.equal(capacityPage.items.length,12);
+  const pools=repo.listPooledLoads(generatedFleet);
+  const alongRoutes=repo.listAlongRouteLoads(generatedFleet);
+  assert.ok(pools.length>=4);
+  assert.ok(pools.filter(pool=>pool.member_count>=3).length>=4);
+  assert.ok(alongRoutes.length>=4);
+  assert.ok(alongRoutes.filter(route=>route.member_count>=3).length>=4);
+  assert.ok(alongRoutes.some(route=>route.members.some(load=>load.id==='stress-shared-route-east-4')));
+  assert.equal(repo.getAlongRouteLoad(generatedFleet,alongRoutes[0].id).id,alongRoutes[0].id);
 
   const admin=repo.getUserById('user-admin');
   const operationUsers=repo.getAdminOperations(admin,'',{view:'USERS'});

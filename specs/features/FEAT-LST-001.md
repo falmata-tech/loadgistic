@@ -13,7 +13,7 @@ rollout: Keep deterministic ordering and existing authorization; page sizes may 
 
 ### Scenario: discovery pages open with useful results
 
-Given an authenticated member opens the Directory, Load Board, or Capacity Board\
+Given an authenticated member opens the Directory, Shipment Board, or Truck Board\
 When no search or filter has been entered\
 Then the server returns the first bounded page in deterministic useful order\
 And discovery does not require an artificial search before showing records\
@@ -31,7 +31,7 @@ And Previous or Next preserves the active filters and view.
 
 ### Scenario: operational lists remain bounded
 
-Given My Loads, Tracking, Network, Fleet, verification or payment history, Rating Reviews, or an Operations record group contains more than its page size\
+Given My Shipments, Tracking, Network, Fleet, verification or payment history, Rating Reviews, or an Operations record group contains more than its page size\
 When the page is rendered\
 Then only one bounded result page is rendered for that list\
 And the total and current page are visible\
@@ -71,6 +71,6 @@ And private columns are selected only for an authorized detail workflow.
 
 ## Contract ownership
 
-- Pages: member Boards, Directory, My Loads/Tracking, Network, Fleet, account history, verification, and admin queues/inventory
+- Pages: member Boards, Directory, My Shipments/Tracking, Network, Fleet, account history, verification, and admin queues/inventory
 - Application services: bounded result helpers and list projections in `src/lib/repository.js`
 - Tests: repository, stress-data, E2E, and dense UI audit

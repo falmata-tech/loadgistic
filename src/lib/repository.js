@@ -35,7 +35,7 @@ import {
 } from './security.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace } from './route-matching.js';
 import { ETHIOPIA_PLACES, getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
-import { poolCompatibleLoads } from './pstl.js';
+import { buildAlongRouteChains, poolCompatibleLoads } from './pstl.js';
 import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel } from './place-labels.js';
 import { accessPeriodEnd, PAID_ACCESS_DAYS, subscriptionAccess, TRIAL_DAYS } from './subscription-access.js';
 
@@ -334,7 +334,7 @@ export function getDashboard(user) {
             OR (COALESCE(c.market_status,c.status)='BUSY' AND c.available_again_date>=?))`).get(todayInEthiopia()).n
     };
     data.actions = [
-      { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect one focused client, truck, load, or capacity view.' },
+      { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect one focused client, truck, shipment, or capacity view.' },
       { href: '/admin/reviews?tab=ratings', label: 'Review low ratings', description: 'Investigate private one- to three-star Business ratings.' },
       { href: '/admin/reviews?tab=applications', label: 'Review applications', description: 'Approve or request more information.' },
       { href: '/app/providers', label: 'View transporter directory', description: 'Inspect authenticated transporter pages.' }
@@ -346,15 +346,15 @@ export function getDashboard(user) {
   if (user.role === USER_ROLES.SHIPPER || user.role === USER_ROLES.RECEIVER) {
     const condition = 'COALESCE(load_owner_organization_id,shipper_organization_id) = ? OR shipper_organization_id = ? OR receiver_organization_id = ?';
     data.counts = {
-      'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND operational_status NOT IN ('COMPLETED','CANCELLED','RETURNED')`).get(user.organization_id,user.organization_id,user.organization_id).n,
+      'Active Shipments': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND operational_status NOT IN ('COMPLETED','CANCELLED','RETURNED')`).get(user.organization_id,user.organization_id,user.organization_id).n,
       'Open Requests': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE (${condition}) AND commercial_status IN ('POSTED','SENT','CONTACTED')`).get(user.organization_id,user.organization_id,user.organization_id).n,
       'Network Partners': db.prepare(`SELECT COUNT(*) AS n FROM partner_relationships WHERE owner_organization_id=? AND status='CONNECTED'`).get(user.organization_id).n,
       'Recent Updates': db.prepare(`SELECT COUNT(*) AS n FROM shipment_events e JOIN shipments s ON s.id=e.shipment_id WHERE (${condition}) AND e.created_at >= datetime('now','-7 days')`).get(user.organization_id,user.organization_id,user.organization_id).n
     };
     data.actions = [
-      { href: '/app/shipments/new', label: 'Post a load', description: 'Request quotes or publish a road-freight load.' },
+      { href: '/app/shipments/new', label: 'Post a shipment', description: 'Request quotes or publish a road-freight shipment.' },
       { href: '/app/providers', label: 'Open directory', description: 'Confirm Businesses, fleet transporters, and self-managed drivers.' },
-      { href: '/app/capacity', label: 'Open Capacity Board', description: 'See fresh truck availability on active routes.' }
+      { href: '/app/capacity', label: 'Open Truck Board', description: 'See fresh truck availability on active routes.' }
     ];
     data.recent = listVisibleShipments(user).slice(0,6);
     return data;
@@ -363,15 +363,15 @@ export function getDashboard(user) {
   const scope = providerScope(user);
   if (!scope) return data;
   data.counts = {
-    'Available Loads': listLoads(user).length,
-    'Active Loads': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${scope.column}=? AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(scope.id).n,
+    'Available Shipments': listLoads(user).length,
+    'Active Shipments': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${scope.column}=? AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(scope.id).n,
     'On-duty Trucks': db.prepare(`SELECT COUNT(*) AS n FROM capacities c WHERE c.${scope.column}=?
       AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
       AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL','BUSY')`).get(scope.id).n,
     'Proof Pending': db.prepare(`SELECT COUNT(*) AS n FROM shipments s WHERE s.${scope.column}=? AND s.operational_status IN ('DELIVERED','IN_TRANSIT') AND NOT EXISTS (SELECT 1 FROM proof_files p WHERE p.shipment_id=s.id AND p.proof_type='DELIVERY')`).get(scope.id).n
   };
   data.actions = [
-    { href: '/app/loads', label: 'Open Load Board', description: 'View direct, partner, and open B2B freight.' },
+    { href: '/app/loads', label: 'Open Shipment Board', description: 'View direct, partner, and open B2B freight.' },
     { href: user.role === USER_ROLES.TRANSPORTER ? '/app/fleet' : '/app/home', label: 'Update capacity', description: 'Publish Empty or Partial truck availability.' },
     { href: '/app/company-page', label: 'Update Public Profile', description: 'Keep Preferred Routes and contact details current.' }
   ];
@@ -1963,7 +1963,7 @@ const LOAD_BOARD_COLUMNS=`s.id,s.code,s.title,s.service_mode,s.distribution_mode
 function rankLoadRows(rows,selectedRoute){
   if(!selectedRoute)return rows.map(load=>({...load,route_match_score:null,route_match_label:null,route_match_source:null,route_match_platform_number:null}));
   return rows.map(load=>{
-    if(load.movement_scope==='LOCAL')return {...load,route_match_score:0,route_match_label:'Local load',route_match_source:null,route_match_platform_number:null};
+    if(load.movement_scope==='LOCAL')return {...load,route_match_score:0,route_match_label:'Local shipment',route_match_source:null,route_match_platform_number:null};
     const candidates=selectedRoute.routes||[selectedRoute];
     const match=bestGeographicRouteMatch(load,candidates,{
       originRadiusKm:selectedRoute.originRadiusKm||50,
@@ -2010,26 +2010,44 @@ export function listLoads(user,mode='ALL',filters={}) {
   return rankLoadRows(loadBoardRows(user,mode,filters),selectedRoute);
 }
 
-export function listPooledLoads(user,filters={}) {
+function sharedLoadCandidates(user,filters={}) {
   assertWorkspaceAccess(user);
   if(!canBrowseLoads(user)&&user.role!==USER_ROLES.ADMIN)return [];
-  const candidateLimit=Math.max(100,Math.min(1000,Number(process.env.PSTL_CANDIDATE_LIMIT)||500));
-  const loads = loadBoardRows(user,'ALL',{...filters,loadType:'PTL',movementScope:'INTERCITY'},candidateLimit)
+  const candidateLimit=Math.max(100,Math.min(1000,Number(process.env.SHARED_LOAD_CANDIDATE_LIMIT||process.env.PSTL_CANDIDATE_LIMIT)||500));
+  return loadBoardRows(user,'ALL',{...filters,movementScope:'INTERCITY'},candidateLimit)
     .filter(load=>load.operational_status==='POSTED'&&load.movement_scope==='INTERCITY')
     .map(load=>({
       ...load,
       origin_coordinate:Number.isFinite(Number(load.origin_lat))?{lat:load.origin_lat,lng:load.origin_lng}:null,
       destination_coordinate:Number.isFinite(Number(load.destination_lat))?{lat:load.destination_lat,lng:load.destination_lng}:null
     }));
+}
+
+export function listPooledLoads(user,filters={}) {
+  const loads=sharedLoadCandidates(user,{...filters,loadType:'PTL'});
   return poolCompatibleLoads(loads,{
     originRadiusKm:Number(process.env.PSTL_ORIGIN_RADIUS_KM||40),
-    destinationRadiusKm:Number(process.env.PSTL_DESTINATION_RADIUS_KM||40)
+    destinationRadiusKm:Number(process.env.PSTL_DESTINATION_RADIUS_KM||40),
+    deadlineWindowDays:Number(process.env.PSTL_DEADLINE_WINDOW_DAYS||3)
   });
 }
 
 export function getPooledLoad(user,poolId) {
   assertWorkspaceAccess(user);
   return listPooledLoads(user).find(pool=>pool.id===poolId)||null;
+}
+
+export function listAlongRouteLoads(user,filters={}) {
+  return buildAlongRouteChains(sharedLoadCandidates(user,filters),{
+    handoffRadiusKm:Number(process.env.ALONG_ROUTE_HANDOFF_RADIUS_KM||60),
+    maxBearingDifferenceDegrees:Number(process.env.ALONG_ROUTE_MAX_BEARING_DEGREES||90),
+    maxLegs:Number(process.env.ALONG_ROUTE_MAX_LEGS||8)
+  });
+}
+
+export function getAlongRouteLoad(user,routeId) {
+  assertWorkspaceAccess(user);
+  return listAlongRouteLoads(user).find(route=>route.id===routeId)||null;
 }
 
 export function expressInterest(user, shipmentId, note = '') {
@@ -2062,7 +2080,7 @@ export function requestLoadProof(user, shipmentId) {
   db.prepare(`INSERT INTO load_proof_requests (id,shipment_id,interest_id,requested_at,fulfilled_at) VALUES (?,?,?,?,NULL)`)
     .run(id,shipment.id,interest.id,nowIso());
   const owner = db.prepare(`SELECT id FROM users WHERE organization_id=? AND active=1 ORDER BY created_at LIMIT 1`).get(shipment.load_owner_organization_id||shipment.shipper_organization_id);
-  if (owner) notify(db,owner.id,'Load proof requested',`${user.organization_name || user.provider_business_name || user.name} requested load-size proof for ${shipment.code}.`);
+  if (owner) notify(db,owner.id,'Shipment proof requested',`${user.organization_name || user.provider_business_name || user.name} requested shipment-size proof for ${shipment.code}.`);
   audit(db,user,'LOAD_PROOF_REQUESTED','shipment',shipment.id,{ interestId: interest.id });
   return id;
 }
@@ -2089,7 +2107,7 @@ export async function shareLoadProof(user, shipmentId, interestId, file, note = 
     const recipient = interest.provider_organization_id
       ? db.prepare(`SELECT id FROM users WHERE organization_id=? AND active=1 ORDER BY created_at LIMIT 1`).get(interest.provider_organization_id)
       : db.prepare(`SELECT user_id AS id FROM provider_profiles WHERE id=?`).get(interest.provider_profile_id);
-    if (recipient) notify(db,recipient.id,'Load proof shared',`Temporary load-size proof is available for ${shipment.code}.`);
+    if (recipient) notify(db,recipient.id,'Shipment proof shared',`Temporary shipment-size proof is available for ${shipment.code}.`);
     audit(db,user,'LOAD_PROOF_SHARED','shipment',shipment.id,{ interestId: interest.id, proofId: id, expiresAt });
     db.exec('COMMIT');
   } catch (error) {
@@ -2144,7 +2162,7 @@ const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile
   COALESCE(c.market_status,c.status) AS market_status,c.available_again_date,
   c.origin,c.destination,c.origin_place_ref,c.origin_lat,c.origin_lng,c.destination_place_ref,c.destination_lat,c.destination_lng,
   c.corridor,c.travel_date,c.next_available,c.visibility,c.updated_by,c.updated_at,c.expires_at,
-  c.location_area,c.location_updated_at,c.location_precision_km,c.location_source,c.accepts_full_load,c.accepts_partial_load,
+  c.location_area,c.location_place_ref,c.location_updated_at,c.location_precision_km,c.location_source,c.accepts_full_load,c.accepts_partial_load,
   c.open_to_contract_lanes,c.accepts_multi_stop,c.proof_recorded_at,c.current_route_origin,c.current_route_destination,
   c.current_origin_place_ref,c.current_origin_lat,c.current_origin_lng,
   c.current_destination_place_ref,c.current_destination_lat,c.current_destination_lng,
@@ -2312,7 +2330,7 @@ function capacityMatch(row,selectedLoad){
     const match=pointInServiceArea({lat:selectedLoad.local_center_lat,lng:selectedLoad.local_center_lng},{
       center_lat:row.local_center_lat,center_lng:row.local_center_lng,radius_km:row.local_radius_km
     });
-    return {score:match?2:0,label:match?'Local area covers load city':'Local areas do not align',source_label:'Local service area'};
+    return {score:match?2:0,label:match?'Local area covers shipment city':'Local areas do not align',source_label:'Local service area'};
   }
   const routes=row.status==='BUSY'?row.preferred_routes||[]:capacityRouteCandidates(row,{requireCurrentDate:true});
   return bestGeographicRouteMatch(selectedLoad,routes,{
@@ -2352,6 +2370,68 @@ export function listMarketCapacity(user,filters={}) {
   assertWorkspaceAccess(user);
   const selectedLoad=filters.matchLoadId?listOwnLoadRouteOptions(user).find(option=>option.id===filters.matchLoadId):null;
   return rankCapacityRows(capacityBoardRows(user,filters),selectedLoad);
+}
+
+function publicBoardTime(value) {
+  if (!value) return null;
+  const date=new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('en-US',{
+    timeZone:'Africa/Addis_Ababa',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'
+  }).format(date);
+}
+
+function publicPlaceLabel(label,placeRef) {
+  if (!label || !placeRef) return null;
+  return String(label).slice(0,120);
+}
+
+export function listAnonymousMarketplacePreview(limit=3) {
+  const boundedLimit=Math.max(1,Math.min(6,Number(limit)||3));
+  const anonymousAdmin={role:USER_ROLES.ADMIN,organization_id:null,provider_profile_id:null};
+  const shipments=loadBoardRows(anonymousAdmin,'OPEN',{},boundedLimit).map(row=>({
+    movement_scope:row.movement_scope,
+    origin:row.movement_scope==='LOCAL'?null:publicPlaceLabel(row.origin,row.origin_place_ref),
+    destination:row.movement_scope==='LOCAL'?null:publicPlaceLabel(row.destination,row.destination_place_ref),
+    local_place_label:row.movement_scope==='LOCAL'?publicPlaceLabel(row.local_place_label,row.local_place_ref):null,
+    load_type:row.load_type,
+    vehicle_category:row.vehicle_category,
+    pickup_label:publicBoardTime(row.pickup_date),
+    delivery_label:publicBoardTime(row.delivery_date),
+    price_mode:row.price_mode,
+    price_minor:['FIXED_PRICE','TARGET_PRICE'].includes(row.price_mode)?row.price_minor||row.target_price_minor:null,
+    distribution_mode:row.distribution_mode,
+    posted_label:publicBoardTime(row.created_at)
+  }));
+  const trucks=capacityBoardRows(anonymousAdmin,{},boundedLimit).map(row=>({
+    status:row.status,
+    available_percent:row.available_percent,
+    available_again_date:row.available_again_date,
+    movement_scope:row.movement_scope,
+    local_place_label:publicPlaceLabel(row.local_place_label,row.local_place_ref),
+    local_radius_km:row.local_radius_km,
+    location_area:publicPlaceLabel(row.location_area,row.location_place_ref),
+    location_precision_km:row.location_precision_km,
+    current_route_origin:publicPlaceLabel(row.current_route_origin,row.current_origin_place_ref),
+    current_route_destination:publicPlaceLabel(row.current_route_destination,row.current_destination_place_ref),
+    current_route_date:row.current_route_date,
+    origin:publicPlaceLabel(row.origin,row.origin_place_ref),
+    destination:publicPlaceLabel(row.destination,row.destination_place_ref),
+    travel_date:row.travel_date,
+    planned_space_status:row.planned_space_status,
+    vehicle_make:row.vehicle_make,
+    vehicle_model:row.vehicle_model,
+    cargo_configuration:row.cargo_configuration||row.vehicle_category,
+    accepts_full_load:Boolean(row.accepts_full_load),
+    accepts_partial_load:Boolean(row.accepts_partial_load),
+    accepts_multi_pick:Boolean(row.accepts_multi_pick),
+    accepts_multi_drop:Boolean(row.accepts_multi_drop),
+    open_to_contract_lanes:Boolean(row.open_to_contract_lanes),
+    proof_available:Boolean(row.proof_available),
+    freshness:row.freshness,
+    updated_label:publicBoardTime(row.updated_at)
+  }));
+  return {shipments,trucks};
 }
 
 export function listPublicCapacity(ownerColumn=null,ownerId=null) {

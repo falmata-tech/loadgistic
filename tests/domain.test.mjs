@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
 import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
-import { distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
+import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
 import { obscureCoordinate } from '../src/lib/location-privacy.js';
@@ -28,7 +28,7 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
 });
 
 test('PSTL pooling is deterministic and distance bounded',()=>{
- const base={load_type:'PTL',operational_status:'POSTED',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
+ const base={load_type:'PTL',operational_status:'POSTED',movement_scope:'INTERCITY',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
  const loads=[
   {...base,id:'a',origin:'Addis Ababa',destination:'Adama',origin_coordinate:{lat:9.03,lng:38.74},destination_coordinate:{lat:8.54,lng:39.27}},
   {...base,id:'b',origin:'Akaki',destination:'Mojo',origin_coordinate:{lat:8.88,lng:38.78},destination_coordinate:{lat:8.59,lng:39.12}},
@@ -39,6 +39,38 @@ test('PSTL pooling is deterministic and distance bounded',()=>{
  assert.equal(pools.length,1);
  assert.deepEqual(pools[0].members.map(load=>load.id),['a','b']);
  assert.equal(poolCompatibleLoads(loads.reverse())[0].id,pools[0].id);
+});
+
+test('PSTL requires complete pair compatibility and close deadlines',()=>{
+ const base={load_type:'PTL',operational_status:'POSTED',movement_scope:'INTERCITY',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
+ const loads=[
+  {...base,id:'a',origin:'A',destination:'D',origin_coordinate:{lat:9,lng:38},destination_coordinate:{lat:7,lng:38}},
+  {...base,id:'b',origin:'B',destination:'E',origin_coordinate:{lat:9.2,lng:38},destination_coordinate:{lat:7.2,lng:38}},
+  {...base,id:'c',origin:'C',destination:'F',origin_coordinate:{lat:9.4,lng:38},destination_coordinate:{lat:7.4,lng:38}},
+  {...base,id:'late',pickup_date:'2026-08-10',delivery_date:'2026-08-11',origin:'A',destination:'D',origin_coordinate:{lat:9,lng:38},destination_coordinate:{lat:7,lng:38}}
+ ];
+ const pools=poolCompatibleLoads(loads,{originRadiusKm:30,destinationRadiusKm:30,deadlineWindowDays:3});
+ assert.equal(pools.length,1);
+ assert.deepEqual(pools[0].members.map(load=>load.id),['a','b']);
+ assert.equal(pools[0].members.some(load=>load.id==='c'),false);
+ assert.equal(pools[0].members.some(load=>load.id==='late'),false);
+});
+
+test('along-route candidates chain nearby forward legs in deadline order',()=>{
+ const base={operational_status:'POSTED',movement_scope:'INTERCITY',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
+ const loads=[
+  {...base,id:'addis-adama',load_type:'FTL',origin:'Addis Ababa',destination:'Adama',origin_coordinate:{lat:9.03,lng:38.74},destination_coordinate:{lat:8.54,lng:39.27}},
+  {...base,id:'adama-batu',load_type:'PTL',pickup_date:'2026-08-02',delivery_date:'2026-08-03',origin:'Adama',destination:'Batu',origin_coordinate:{lat:8.54,lng:39.27},destination_coordinate:{lat:7.93,lng:38.72}},
+  {...base,id:'batu-hawassa',load_type:'PTL',pickup_date:'2026-08-03',delivery_date:'2026-08-04',origin:'Batu',destination:'Hawassa',origin_coordinate:{lat:7.93,lng:38.72},destination_coordinate:{lat:7.06,lng:38.48}},
+  {...base,id:'reverse',load_type:'PTL',pickup_date:'2026-08-04',delivery_date:'2026-08-05',origin:'Hawassa',destination:'Addis Ababa',origin_coordinate:{lat:7.06,lng:38.48},destination_coordinate:{lat:9.03,lng:38.74}}
+ ];
+ const chains=buildAlongRouteChains(loads,{handoffRadiusKm:10});
+ assert.equal(chains.length,1);
+ assert.deepEqual(chains[0].members.map(load=>load.id),['addis-adama','adama-batu','batu-hawassa']);
+ assert.equal(chains[0].member_count,3);
+ assert.equal(chains[0].connectors.length,2);
+ assert.equal(chains[0].members.some(load=>load.id==='reverse'),false);
+ assert.equal(buildAlongRouteChains(loads,{handoffRadiusKm:10})[0].id,chains[0].id);
 });
 
 test('road freight requires the same FTL or PTL language',()=>{
@@ -107,7 +139,7 @@ test('capacity freshness labels expired data honestly',()=>{
 
 test('cargo-space freshness stays visible while Busy expires by ready date',()=>{
  assert.equal(capacitySignalFreshness('EMPTY','2026-07-28T09:00:00.000Z',null,12,'2026-07-30'),'UPDATE_NEEDED');
- assert.equal(capacitySignalFreshness('BUSY','2026-07-30T09:00:00.000Z','2026-07-30',12,'2026-07-30'),'FRESH');
+ assert.equal(capacitySignalFreshness('BUSY',new Date().toISOString(),'2026-07-30',12,'2026-07-30'),'FRESH');
  assert.equal(capacitySignalFreshness('BUSY','2026-07-30T09:00:00.000Z','2026-07-29',12,'2026-07-30'),'EXPIRED');
 });
 

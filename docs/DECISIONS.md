@@ -44,7 +44,7 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 ## ADR-011 — Driver home and temporary load proof
 
-Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. The Capacity Board is read only for providers. Freight loads use the same FTL/PTL language as capacity. Load-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
+Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. The Truck Board is read only for providers. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
 Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. A Business party may reduce it to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
 
@@ -54,7 +54,7 @@ Use one image-backed cargo-configuration catalog across freight creation, driver
 
 ## ADR-013 — Discovery, Tracking, and authenticated directory
 
-Keep one canonical load record while separating its UI by permission and stage. The Load Board is provider discovery plus interest. Businesses use one My Loads navigation destination containing posting, all owned demand, and an Active Tracking projection. Providers retain a separate Tracking destination because they do not own Business demand. Tracking contains only execution-stage party records from Agreed onward.
+Keep one canonical shipment record while separating its UI by permission and stage. The Shipment Board is provider discovery plus interest. Businesses use one My Shipments navigation destination containing posting, all owned demand, and an Active Tracking projection. Providers retain a separate Tracking destination because they do not own Business demand. Tracking contains only execution-stage party records from Agreed onward.
 
 Use one authenticated directory for Businesses, fleet transporters, and self-managed drivers. Business profiles support participant confirmation and completed-load reputation. Private account email and phone are never public-profile fallbacks; only explicitly maintained profile contacts are displayed.
 
@@ -68,13 +68,13 @@ Store Business operating regions as member-entered city or regional names and st
 
 For Businesses, route evidence counts canonical loads posted on a matching endpoint pair and the subset that reached tracked execution. For fleet transporters and self-managed drivers, it counts matching capacity reports and the subset of assigned shipments that reached tracked execution. Evidence is labeled Tracked activity, Reported activity, or Declared only; it is not a trust score or guarantee.
 
-Load Board and Capacity Board matching uses normalized recorded endpoint names. Results receive only three explainable strengths: both route cities align, one city aligns, or no recorded match. Matching affects filtering and order but never visibility, assignment, pricing, or authorization.
+Shipment Board and Truck Board matching uses normalized recorded endpoint names. Results receive only three explainable strengths: both route cities align, one city aligns, or no recorded match. Matching affects filtering and order but never visibility, assignment, pricing, or authorization.
 
 The public homepage centers Ethiopian makers, growers, processors, producers, and the small transport providers that connect them to markets. This reflects documented manufacturing and logistics priorities without claiming public-sector sponsorship.
 
 ## ADR-016 — Fleet-driver capability policy
 
-A `DRIVER` may be either self-managed through a provider profile or employed through one transporter organization. Self-managed drivers retain full provider authority. Company drivers receive owner-controlled Load Board, Business contact, negotiation, and rich capacity permissions, with every command enforced in repository services and attributed to the acting driver.
+A `DRIVER` may be either self-managed through a provider profile or employed through one transporter organization. Self-managed drivers retain full provider authority. Company drivers receive owner-controlled Shipment Board, Business contact, negotiation, and rich capacity permissions, with every command enforced in repository services and attributed to the acting driver.
 
 Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty or Partial signal. If no prior active configuration exists, an owner must configure the truck first. Fleet owners retain organization-wide visibility and authority.
 
@@ -99,6 +99,8 @@ Store a repeatably imported Ethiopia settlement catalog in the local SQLite adap
 Separate `load_owner_organization_id` and `load_owner_party_role` from shipper and receiver roles. The posting Business remains owner regardless of whether it ships or receives. External shipper or receiver identity is load-scoped and receives no account authorization; possession of the owner-distributed secret code grants only the customer-safe tracking view.
 
 PSTL is a deterministic, read-only projection over viewer-authorized Posted PTL loads. Compatible origin and destination settlement coordinates create a virtual group. A group has no status, price, assignment, acceptance, or mutation API, and disabling it leaves every source load unchanged.
+
+Shared-load discovery presents two modes in one workspace because both help a provider use one truck across multiple independently negotiated loads, while preserving their operational difference. Pool together uses complete-link endpoint and deadline compatibility so every member is compatible with every other member rather than being admitted through a transitive neighbor. Along the route builds bounded forward sequences where one load's drop-off is near the next load's pickup and the recorded deadline order remains feasible. Both projections are deterministic, re-authorized on read, and explicitly advisory because Loadgistic does not yet record enough cargo dimensions or scheduled appointment times to prove fit.
 
 ## ADR-020 — Authoritative routes, truck identity, and platform operations
 
@@ -253,3 +255,34 @@ support agent reads only assigned work; an administrator may supervise all.
 Bodies are required, length bounded, rate limited, and unavailable after close.
 Every assignment, availability change, staff change, claim, and closure is
 audited without copying message text into audit records.
+
+## ADR-027 — Identity-safe public Boards and decision-first capacity controls
+
+Make the two-sided marketplace, rather than a long feature story, the public
+homepage's primary product demonstration. The public Shipment Board and Truck
+Board tabs use a dedicated anonymous server projection over current Public
+records. The projection explicitly whitelists structured route, general-area,
+deadline, price-mode, truck, capacity, flexibility, proof-signal, and freshness
+facts. It excludes identities, contacts, handles, raw IDs, exact coordinates,
+files, and free text so a member cannot smuggle personal data into the public
+view. Every record action goes to sign in; Login also offers Sign up. This
+demonstrates a changing real marketplace without exposing the authenticated
+detail or contact surface.
+
+Reduce capacity publication to the order in which a driver works: current
+availability, work area, then publish. Keep a current Partial route attached to
+Partial space. Put shipment policy, future travel, visibility, and cargo proof
+inside one Optional details disclosure. Use one final publish row and never a
+second review card. Fleet owners use the same editor on a truck-specific page
+but remain unable to claim their office device as the truck location.
+
+An eligible Driver screen starts a throttled browser geolocation watcher when
+capacity or location-required Tracking mounts and clears it on unmount. Exact
+coordinates are obscured before application state. Permission denial and device
+failure preserve manual general-area entry and do not cause repeated prompts in
+one mounted screen.
+
+Run local development explicitly with Next 15's stable Turbopack bundler.
+Measure route compilation separately from repository latency and production
+response time: first development visits compile on demand, while warm Board
+queries remain bounded SQLite work.

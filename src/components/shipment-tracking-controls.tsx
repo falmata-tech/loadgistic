@@ -3,6 +3,7 @@
 import React from 'react';
 import { Check, LocateFixed, MapPin, MessageSquare, PackageSearch, Save } from 'lucide-react';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
+import { obscureCoordinate } from '@/lib/location-privacy.js';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 type LocationState = 'idle' | 'requesting' | 'captured' | 'denied' | 'error';
@@ -31,27 +32,29 @@ export function ShipmentTrackingControls({
   const [approximateLocation,setApproximateLocation] = React.useState(null as {lat:number;lng:number} | null);
   const [selectedStatus,setSelectedStatus] = React.useState(nextStatuses[0] || '');
   const privacyRadius=loadType==='FTL'?20:40;
+  const lastLocationUpdate=React.useRef(0);
 
-  function useDeviceLocation() {
-    if (!navigator.geolocation) {
+  React.useEffect(()=>{
+    if(!requiresLocation||!allowDeviceLocation)return;
+    if(!navigator.geolocation){
       setLocationState('error');
       return;
     }
     setLocationState('requesting');
-    navigator.geolocation.getCurrentPosition(position => {
-      const gridFactor=privacyRadius===20?4:2;
-      setApproximateLocation({
-        lat: Math.round(position.coords.latitude * gridFactor) / gridFactor,
-        lng: Math.round(position.coords.longitude * gridFactor) / gridFactor
-      });
+    const watcher=navigator.geolocation.watchPosition(position => {
+      const now=Date.now();
+      if(lastLocationUpdate.current&&now-lastLocationUpdate.current<60000)return;
+      lastLocationUpdate.current=now;
+      setApproximateLocation(obscureCoordinate(position.coords.latitude,position.coords.longitude,privacyRadius));
       const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
       if(nearest)setLocationArea(`Around ${nearest.name}, Ethiopia`);
       setLocationState('captured');
     }, error => {
       setApproximateLocation(null);
       setLocationState(error.code === error.PERMISSION_DENIED ? 'denied' : 'error');
-    }, { enableHighAccuracy:true, timeout:12000, maximumAge:300000 });
-  }
+    }, {enableHighAccuracy:false,timeout:12000,maximumAge:300000});
+    return()=>navigator.geolocation.clearWatch(watcher);
+  },[allowDeviceLocation,privacyRadius,requiresLocation]);
 
   const locationFields = <>
     <input type="hidden" name="approximateLat" value={allowDeviceLocation ? approximateLocation?.lat ?? '' : ''}/>
@@ -67,10 +70,7 @@ export function ShipmentTrackingControls({
     </div>
     {requiresLocation ? <div className="stack">
       <div className="form-group"><label htmlFor="tracking-location-area"><MapPin aria-hidden="true"/>Current area</label><EthiopiaPlaceInput id="tracking-location-area" value={locationArea} onChange={event=>setLocationArea(event.target.value)} placeholder="Around Adama, Ethiopia" required/></div>
-      {allowDeviceLocation?<div className={`device-location-control ${locationState}`}>
-        <div><strong>{locationState === 'captured' ? 'Approximate device area ready' : 'Use phone location'}</strong><span>{locationState === 'captured' ? `Only an obscured area with a ${privacyRadius} km privacy zone will be recorded.` : locationState === 'denied' ? 'Permission declined. Entering a general area is enough.' : locationState === 'error' ? 'Location unavailable. Entering a general area is enough.' : 'The exact point stays on this device.'}</span></div>
-        <button type="button" className="button secondary compact" onClick={useDeviceLocation} disabled={locationState === 'requesting'}><LocateFixed aria-hidden="true"/>{locationState === 'requesting' ? 'Locating…' : locationState === 'captured' ? 'Refresh' : 'Use phone'}</button>
-      </div>:<p className="meta panel-note">Enter a general area manually. Device location is available only to the driver with the truck.</p>}
+      {allowDeviceLocation?<div className={`automatic-location ${locationState}`}><LocateFixed aria-hidden="true"/><span><strong>{locationState==='captured'?'Approximate location ready':locationState==='requesting'?'Finding location...':locationState==='denied'?'Location permission denied':'Device location unavailable'}</strong><small>{locationState==='captured'?`Only an obscured ${privacyRadius} km area is recorded.`:'Enter a general area above.'}</small></span></div>:<p className="meta panel-note">Enter a general area manually. Device location is available only to the driver with the truck.</p>}
     </div> : null}
 
     {canAddUpdate ? <form action={`/api/shipments/${shipmentId}/tracking-update`} method="post" className="tracking-action-form">

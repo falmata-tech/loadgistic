@@ -14,9 +14,9 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Business application and approval workflow
 - Role-aware desktop and mobile navigation
 - Authenticated transporter directory and company pages
-- B2B road-freight load creation
-- Shipper- or receiver-owned loads with account or external shipment parties
-- Separate My Loads, Load Board, and execution-only Tracking workspaces
+- B2B road-freight shipment creation
+- Shipper- or receiver-owned shipments with account or external shipment parties
+- Separate My Shipments, Shipment Board, and execution-only Tracking workspaces
 - Virtual pooled shared truckload (PSTL) discovery for compatible PTL demand
 - Direct, Connected-Partners, and open freight visibility
 - My Network with private Favorites, connection requests, and mutual Connected relationships
@@ -30,7 +30,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Privacy-obscured device location: 40 km capacity/PTL and 20 km FTL tracking
 - Searchable local OpenStreetMap catalog of Ethiopian settlements
 - Local service-area circles, intercity route lines, and mixed geography matching
-- Private local-load map points disclosed to non-owner parties only after agreement
+- Private local-shipment map points disclosed to non-owner parties only after agreement
 - Loading, delivery, and issue proof uploads
 - Manual subscription payment-proof submission and admin review
 - Native member support with bounded agent queues and admin supervision
@@ -59,6 +59,7 @@ Open `http://127.0.0.1:3000`.
 
 The database is created at `data/loadgistic.db` and seeded automatically. `npm run places:setup` downloads only Ethiopian OpenStreetMap settlement records through Overpass and imports them locally. The app retains a small built-in fallback when this optional network step is unavailable. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
 After the first setup, the only command needed to start the app is `npm run dev`.
+This command explicitly uses Turbopack. In development, the first visit to a route compiles that route and is expected to be slower; repeat visits should be fast. Use `npm run build && npm start` when measuring production behavior.
 
 ## Comprehensive local data
 
@@ -72,7 +73,7 @@ npm run db:stress
 The standard profile creates more than 8,000 related records across every
 application table while preserving the documented demo accounts. It includes
 Businesses, fleet transporters, company Drivers, self-managed Drivers, trucks,
-loads, capacity, tracking, network, billing, verification, moderation, and
+shipments, capacity, tracking, network, billing, verification, moderation, and
 administrative states. This command resets the configured local database and is
 refused when `NODE_ENV=production`.
 

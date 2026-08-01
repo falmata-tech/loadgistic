@@ -796,7 +796,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         if (fulfilled) {
           shareInsert.run(
             `stress-load-proof-share-${suffix}`,shipmentId,interestId,demoFile,
-            `stress-load-size-${suffix}.jpg`,'image/jpeg','Temporary pallet and load-size evidence.',
+            `stress-load-size-${suffix}.jpg`,'image/jpeg','Temporary pallet and shipment-size evidence.',
             owner.userId,hours(new Date(createdAt),22).toISOString(),hours(now,index % 27 === 0 ? -1 : 48).toISOString(),
             index % 36 === 0 ? hours(now,-2).toISOString() : null
           );
@@ -817,11 +817,11 @@ export function populateStressData(db, { scale = 1 } = {}) {
           `stress-review-${suffix}-shipper`,shipmentId,shipper.id,receiver.id,
           reviewPattern.rating,reviewPattern.rating < 4 ? 'Delivery experience requires administrator review.' : 'Reliable Business partner.',
           reviewPattern.status,shipper.userId,updatedAt,reviewed ? 'user-admin' : null,
-          reviewed ? 'Reviewed against the load timeline and participant records.' : null,reviewed ? hours(new Date(updatedAt),2).toISOString() : null
+          reviewed ? 'Reviewed against the shipment timeline and participant records.' : null,reviewed ? hours(new Date(updatedAt),2).toISOString() : null
         );
         reviewInsert.run(
           `stress-review-${suffix}-receiver`,shipmentId,receiver.id,shipper.id,
-          index % 2 ? 5 : 4,'Clear load information and receiving coordination.','PUBLISHED',
+          index % 2 ? 5 : 4,'Clear shipment information and receiving coordination.','PUBLISHED',
           receiver.userId,updatedAt,null,null,null
         );
       }
@@ -908,6 +908,101 @@ export function populateStressData(db, { scale = 1 } = {}) {
         receiver,
         provider:fixture.provider,
         hasProvider:Boolean(fixture.provider)
+      });
+    }
+
+    const sharedLoadFixtures=[];
+    const poolCorridors=[
+      {key:'south-addis-adama',origin:['Addis Ababa, Ethiopia','Addis Ababa, Ethiopia','Bishoftu, Ethiopia'],destination:['Adama, Ethiopia','Adama, Ethiopia','Adama, Ethiopia'],day:20,cargo:['Packaged workshop tools','Palletized flour bags','Crated furniture parts']},
+      {key:'sidama-hawassa-dilla',origin:['Hawassa, Ethiopia','Shashamane, Ethiopia','Hawassa, Ethiopia'],destination:['Dilla, Ethiopia','Dilla, Ethiopia','Dilla, Ethiopia'],day:24,cargo:['Roasted coffee cartons','Woven producer baskets','Packed agricultural inputs']},
+      {key:'north-mekelle-woldiya',origin:['Mekelle, Ethiopia','Mekelle, Ethiopia','Mekelle, Ethiopia'],destination:['Woldiya, Ethiopia','Woldiya, Ethiopia','Woldiya, Ethiopia'],day:28,cargo:['Textile rolls','Packaged spare parts','Dry food cartons']},
+      {key:'northwest-bahir-gondar',origin:['Bahir Dar, Ethiopia','Bahir Dar, Ethiopia','Bahir Dar, Ethiopia'],destination:['Gondar, Ethiopia','Gondar, Ethiopia','Gondar, Ethiopia'],day:32,cargo:['Artisan home goods','Sealed honey cartons','Leather workshop supplies']}
+    ];
+    for(const [groupIndex,group] of poolCorridors.entries()){
+      for(let memberIndex=0;memberIndex<group.origin.length;memberIndex+=1){
+        sharedLoadFixtures.push({
+          key:`pool-${group.key}-${memberIndex+1}`,
+          title:`Pool candidate ${group.cargo[memberIndex]}`,
+          origin:group.origin[memberIndex],
+          destination:group.destination[memberIndex],
+          loadType:'PTL',
+          pickupDay:group.day+(memberIndex%2),
+          deliveryDay:group.day+2+(memberIndex%2),
+          cargo:group.cargo[memberIndex],
+          vehicleCategory:CARGO_CONFIGURATIONS[(groupIndex*2+memberIndex)%CARGO_CONFIGURATIONS.length]
+        });
+      }
+    }
+    const alongRouteCorridors=[
+      {
+        key:'south',
+        day:40,
+        stops:['Addis Ababa, Ethiopia','Bishoftu, Ethiopia','Adama, Ethiopia','Ziway, Ethiopia','Shashamane, Ethiopia','Hawassa, Ethiopia','Dilla, Ethiopia']
+      },
+      {
+        key:'east',
+        day:52,
+        stops:['Addis Ababa, Ethiopia','Adama, Ethiopia','Dire Dawa, Ethiopia','Harar, Ethiopia','Jijiga, Ethiopia']
+      },
+      {
+        key:'north',
+        day:64,
+        stops:['Addis Ababa, Ethiopia','Debre Birhan, Ethiopia','Kombolcha, Ethiopia','Dessie, Ethiopia','Woldiya, Ethiopia','Mekelle, Ethiopia']
+      },
+      {
+        key:'northwest',
+        day:76,
+        stops:['Addis Ababa, Ethiopia','Debre Markos, Ethiopia','Bahir Dar, Ethiopia','Gondar, Ethiopia']
+      }
+    ];
+    for(const [corridorIndex,corridor] of alongRouteCorridors.entries()){
+      for(let legIndex=0;legIndex<corridor.stops.length-1;legIndex+=1){
+        const loadType=legIndex%3===0?'FTL':'PTL';
+        sharedLoadFixtures.push({
+          key:`route-${corridor.key}-${legIndex+1}`,
+          title:`${corridor.key[0].toUpperCase()+corridor.key.slice(1)} corridor leg ${legIndex+1}`,
+          origin:corridor.stops[legIndex],
+          destination:corridor.stops[legIndex+1],
+          loadType,
+          pickupDay:corridor.day+legIndex*2,
+          deliveryDay:corridor.day+legIndex*2+1,
+          cargo:CARGO_DESCRIPTIONS[(corridorIndex*3+legIndex)%CARGO_DESCRIPTIONS.length],
+          vehicleCategory:CARGO_CONFIGURATIONS[(corridorIndex*2+legIndex+3)%CARGO_CONFIGURATIONS.length]
+        });
+      }
+    }
+    for(const [fixtureIndex,fixture] of sharedLoadFixtures.entries()){
+      const suffix=pad(fixtureIndex+1,3);
+      const shipmentId=`stress-shared-${fixture.key}`;
+      const owner=businesses[fixtureIndex%businesses.length];
+      const receiver=businesses[(fixtureIndex+13)%businesses.length];
+      const createdAt=hours(now,-(fixtureIndex%18)-1).toISOString();
+      shipmentInsert.run(
+        shipmentId,`LGX-SHARED-${suffix}`,fixture.title,'FREIGHT','OPEN_MARKET',
+        fixtureIndex%2?'TARGET_PRICE':'QUOTE_REQUESTED',null,
+        fixtureIndex%2?1_800_000+fixtureIndex*50_000:null,
+        owner.id,receiver.id,null,null,
+        fixture.origin,fixture.destination,fixture.cargo,
+        4+fixtureIndex%22,null,fixture.vehicleCategory,fixture.loadType,
+        null,null,dateOnly(days(now,fixture.pickupDay)),dateOnly(days(now,fixture.deliveryDay)),
+        'POSTED','POSTED','STATUS_ONLY',hashTrackingAccessCode(trackingAccessCode(shipmentId)),
+        owner.id,'SHIPPER',null,null,null,null,owner.userId,createdAt,createdAt
+      );
+      eventInsert.run(
+        `stress-event-shared-${suffix}`,shipmentId,'POSTED','CREATED',
+        fixture.key.startsWith('pool-')
+          ? 'Deterministic PTL pooling example.'
+          : 'Deterministic along-route example.',
+        null,null,null,null,null,owner.userId,1,createdAt
+      );
+      generatedShipments.push({
+        id:shipmentId,
+        code:`LGX-SHARED-${suffix}`,
+        state:'POSTED',
+        owner,
+        receiver,
+        provider:null,
+        hasProvider:false
       });
     }
 

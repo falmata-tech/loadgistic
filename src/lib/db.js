@@ -1056,8 +1056,8 @@ function seed(db) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   insertPage.run('page-shipper',orgs.shipper.id,null,'Locally made goods for regional buyers','Small manufacturer using trusted freight partners for B2B shipping.','Woven home goods; packaged products','Addis Ababa; Dire Dawa; Hawassa','Addis Ababa; Adama; Dire Dawa','+251 911 111 111',1,'logistics@blue-nile.local',1,iso);
   insertPage.run('page-receiver',orgs.receiver.id,null,'Reliable receiving operations','Distribution business receiving goods from enterprise suppliers.','Food distribution; wholesale receiving','Hawassa; Addis Ababa','Hawassa; Shashamane; Addis Ababa','+251 911 222 222',0,'receiving@fresh-foods.local',1,iso);
-  insertPage.run('page-transporter',orgs.transporter.id,null,'Road freight for Ethiopian businesses','Transport company serving business freight on major domestic corridors.','Full-load and shared-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Mekelle; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Mekelle; Hawassa','+251 911 444 444',0,'dispatch@blueline.local',1,iso);
-  insertPage.run('page-driver',null,'provider-driver','Independent freight capacity','Owner-operated truck available for direct and open B2B loads.','Full-load and partial-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Hawassa','+251 911 234 567',0,'abebe@owneroperator.local',1,iso);
+  insertPage.run('page-transporter',orgs.transporter.id,null,'Road freight for Ethiopian businesses','Transport company serving business freight on major domestic corridors.','FTL and shared-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Mekelle; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Mekelle; Hawassa','+251 911 444 444',0,'dispatch@blueline.local',1,iso);
+  insertPage.run('page-driver',null,'provider-driver','Independent freight capacity','Owner-operated truck available for direct and open B2B shipments.','FTL and partial-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Hawassa','+251 911 234 567',0,'abebe@owneroperator.local',1,iso);
 
   const vehicleInsert = db.prepare(`INSERT INTO vehicles (id,organization_id,provider_profile_id,label,category,plate,active,make,model,cargo_configuration) VALUES (?,?,?,?,?,?,?,?,?,?)`);
   vehicleInsert.run('veh-trans-1',orgs.transporter.id,null,'Truck 01','Medium Box Truck','AA-3-10001',1,'Isuzu','FSR','Medium Box Truck');
@@ -1108,7 +1108,7 @@ function seed(db) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
 
   const seededShipments = [
-    ['shp-freight-fixed','LGX-F2001','Beverage load to Dire Dawa','FREIGHT','OPEN_MARKET','FIXED_PRICE',4850000,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Dire Dawa','Palletized beverages',120,18000,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-freight-fixed','LGX-F2001','Beverage shipment to Dire Dawa','FREIGHT','OPEN_MARKET','FIXED_PRICE',4850000,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Dire Dawa','Palletized beverages',120,18000,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-quote','LGX-F2002','Construction materials to Mekelle','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Mekelle','Bagged building materials',400,20000,'Heavy Rigid Stake Body Truck','FTL',null,null,dayAfter,null,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-target','LGX-F2003','Packaged food to Hawassa','FREIGHT','SAVED_PARTNERS','TARGET_PRICE',null,3500000,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packaged food cartons',250,9000,'Medium Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-freight-active','LGX-F2004','Industrial supplies to Dire Dawa','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',5200000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Industrial supplies',80,19000,'Heavy Rigid Stake Body Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','IN_TRANSIT','LOCATION_AND_STATUS','user-shipper'],
@@ -1141,8 +1141,8 @@ function seed(db) {
   db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,public,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(randomId('evt-'),'shp-freight-active','IN_TRANSIT','STATUS','Truck departed Addis Ababa','Around Addis Ababa',9,38.5,40,'DEVICE_OBSCURED','user-transporter',1,new Date(now.getTime()-90*60*1000).toISOString());
-  eventInsert.run(randomId('evt-'),'shp-freight-completed','SENT','CREATED','Load posted by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-72*60*60*1000).toISOString());
-  eventInsert.run(randomId('evt-'),'shp-freight-completed','AGREED','STATUS','Businesses and transporter agreed to the load','user-transporter',1,new Date(now.getTime()-48*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-completed','SENT','CREATED','Shipment posted by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-72*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-completed','AGREED','STATUS','Businesses and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-48*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-completed','COMPLETED','STATUS','Delivery completed and received','user-transporter',1,new Date(now.getTime()-24*60*60*1000).toISOString());
 
   db.prepare(`INSERT INTO business_reviews
@@ -1187,7 +1187,7 @@ function seed(db) {
     .run('app-pending','user-applicant','Hawassa Retail Distribution PLC','ENTERPRISE_RECEIVER','PENDING','Confirm business registration document',iso,iso);
 
   const notify = db.prepare(`INSERT INTO notifications (id,user_id,title,body,read_at,created_at) VALUES (?,?,?,?,?,?)`);
-  notify.run(randomId('ntf-'),'user-transporter','New open freight load','A fixed-price load is available from Addis Ababa to Dire Dawa.',null,iso);
+  notify.run(randomId('ntf-'),'user-transporter','New open freight shipment','A fixed-price shipment is available from Addis Ababa to Dire Dawa.',null,iso);
   notify.run(randomId('ntf-'),'user-admin','Low Business rating needs review','A 2-star rating for Fresh Foods Distribution on LGX-F2007 is waiting in Rating Reviews.',null,iso);
 
   const supportCreatedAt=new Date(now.getTime()-50*60*1000).toISOString();

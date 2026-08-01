@@ -23,13 +23,13 @@ const accountTypes = [
   {
     value: 'TRANSPORT_COMPANY',
     title: 'Fleet transporter',
-    hint: 'Find loads',
+    hint: 'Find shipments',
     icon: Truck
   },
   {
     value: 'INDEPENDENT_PROVIDER',
     title: 'Self-managed driver',
-    hint: 'Find loads',
+    hint: 'Find shipments',
     icon: UserRound
   }
 ];

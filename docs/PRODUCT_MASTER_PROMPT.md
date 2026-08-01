@@ -9,31 +9,31 @@ Loadgistic is an authenticated B2B road-freight network for Ethiopia.
 - **Self-managed Drivers / Owner-Operators** manage their own truck and capacity.
 - **Administrators** review applications, billing evidence, document verification, and platform activity.
 
-Businesses currently join free to find capacity, publish freight loads, request quotes, and maintain private transporter relationships. Transporters pay for access to reviewed Business demand and the organized workflow.
+Businesses currently join free to find capacity, publish freight shipments, request quotes, and maintain private transporter relationships. Transporters pay for access to reviewed Business demand and the organized workflow.
 
-Live loads, Capacity Board data, Public Profiles, and interactions require authentication. Every signed-in account may browse the Business and Transporter Directory.
+Live shipments, Truck Board data, Public Profiles, and interactions require authentication. Every signed-in account may browse the Business and Transporter Directory.
 
 ## Current Audience
 
-The initial Business audience is artisans, growers, farmers, processors, producers, distributors, and small manufacturers that move cartons, pallets, sacks, crates, quarter-truck, half-truck, or full-truck freight without maintaining a large private fleet. The public story centers production-to-market movement and the practical ability to access existing road capacity. Authenticated product language remains neutral enough for larger enterprises.
+The initial Business audience is artisans, growers, farmers, processors, producers, distributors, and small manufacturers that move cartons, pallets, sacks, crates, quarter-truck, half-truck, or full-truck freight without maintaining a large private fleet. The public homepage states the road-freight purpose briefly, then shows live Shipment Board and Truck Board previews. A dedicated anonymous server projection exposes structured marketplace facts such as routes, general areas, deadlines, price mode, truck configuration, capacity status, flexibility, proof signal, and freshness, while withholding identities, contacts, handles, record IDs, exact coordinates, files, and free text. Sign-in unlocks details and contact. Authenticated product language remains neutral enough for larger enterprises.
 
 This positioning is informed by Ethiopia's manufacturing policy and enterprise-development priorities, which identify manufacturing SMEs, domestic production linkages, and fair, sector-aligned transport and logistics as development needs. Loadgistic may describe that alignment but must never imply government sponsorship or endorsement. Research and source links are recorded in `docs/ETHIOPIA_MARKET_CONTEXT.md`.
 
 ## Boards
 
-- The **Load Board** contains FTL and PTL Business demand.
-- The **Pooled shared truckload** tab is a read-only projection of compatible Posted PTL loads whose origin and destination areas fall within configured radii. It never combines agreements, assignments, prices, or source records.
-- The **Capacity Board** contains fresh Empty or Partial capacity.
-- Every Capacity Board card represents one real truck, not a transporter-level aggregate.
+- The **Shipment Board** contains FTL and PTL Business demand.
+- **Shared Shipments** is one Shipment Board workspace with two distinct read-only modes. **Pool together** suggests pairwise-compatible Posted PTL shipments with nearby origins, nearby destinations, and compatible deadline windows. **Along the route** suggests an ordered sequence of Posted Between-cities shipments where each next pickup is near the previous drop-off, travel continues broadly forward, and recorded deadlines appear compatible. Both are negotiation aids only: they never combine ownership, agreements, assignments, prices, tracking, or source records, and they never claim that physical cargo fit or timing is confirmed.
+- The **Truck Board** contains fresh Empty or Partial capacity.
+- Every Truck Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
-- Off Duty trucks never appear on the Capacity Board.
-- Empty and Partial capacity remain on the Capacity Board when their updates become old, with relative update times, a prominent confirmation warning, and lower freshness rank. Busy means the truck is On Duty but occupied and open to future calls; it requires an available-again date and expected city, shows Preferred Routes instead of current capacity movement, and leaves discovery after that date until refreshed. Off Duty is the explicit hidden state.
-- Posted demand remains discoverable for two full days after its Drop off before date. Its owner is warned as soon as the date passes; on the third day it leaves the Load Board and pooled projections but remains in My Loads.
-- The Load Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
-- The Capacity Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, an optional privacy-aware current-area preference, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
+- Off Duty trucks never appear on the Truck Board.
+- Empty and Partial capacity remain on the Truck Board when their updates become old, with relative update times, a prominent confirmation warning, and lower freshness rank. Busy means the truck is On Duty but occupied and open to future calls; it requires an available-again date and expected city, shows Preferred Routes instead of current capacity movement, and leaves discovery after that date until refreshed. Off Duty is the explicit hidden state.
+- Posted demand remains discoverable for two full days after its Drop off before date. Its owner is warned as soon as the date passes; on the third day it leaves the Shipment Board and pooled projections but remains in My Shipments.
+- The Shipment Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
+- The Truck Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, an optional privacy-aware current-area preference, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
 - Secondary Board controls remain collapsed under More filters until used.
-- A provider may rank permitted loads against one of its own recorded truck routes.
-- A Business may rank permitted trucks against one of its own open load routes.
+- A provider may rank permitted shipments against one of its own recorded truck routes.
+- A Business may rank permitted trucks against one of its own open shipment routes.
 - Intercity matching compares both endpoint coordinates against independently adjustable radii. Direction may be direct or either way; every eligible current and planned route belonging to a truck is checked and the strongest match reports rounded endpoint distances. It is not dispatch, assignment, road-distance calculation, or a guarantee.
 
 ## Fleet Truth
@@ -64,7 +64,7 @@ The rich truck capacity control panel controls:
 - On Duty or Off Duty
 - Empty or Partial cargo space
 - available percentage for Partial capacity
-- accepted load policy: FTL, PTL, or Both
+- accepted shipment policy: FTL, PTL, or Both
 - stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
 - current general area and freshness
 - optional privacy-obscured device location
@@ -77,36 +77,36 @@ The rich truck capacity control panel controls:
 
 Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Between cities or Both scope plus a dated current route, because remaining space can be matched only when the truck's movement is known.
 
-The capacity editor presents current cargo space and its current partial route as one primary task. Current work area remains visible beside that task. Secondary load preferences, planned travel, visibility, and proof use in-page disclosures with saved-value summaries, while a compact publish review stays visible on desktop and follows the controls on mobile.
+The capacity editor asks three operational questions in order: what the truck can do now, where it can work, and whether to publish. Truck identity is compact. Partial space and its current route remain linked. Shipment preferences, planned travel, visibility, and proof share one Optional details disclosure, and one final publish row replaces a duplicate review card.
 
-The browser may briefly access an exact device coordinate, but it obscures that point before submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
+When an assigned or self-managed Driver opens capacity or location-required Tracking controls, the browser requests and refreshes device location automatically while that screen remains mounted. A denial or unavailable device leaves structured manual area entry available and does not repeatedly prompt in the same screen lifecycle. The browser may briefly access an exact device coordinate, but it obscures that point before application state or submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
 
-## Loads And Relationships
+## Shipments And Relationships
 
 Businesses post FTL or PTL freight with fixed price, target price, or quote requested. Demand visibility is Open, Partners, or Direct to one transporter.
 
 My Network separates a private Favorite from a mutual operating relationship. Either market side may Favorite the other or request a cross-market connection. Businesses may also Favorite other Businesses so frequent shipment parties rank first in selection; this same-side Favorite never creates a transport partnership.
 
-The posting Business declares whether it is shipper or receiver while remaining the load owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required.
+The posting Business declares whether it is shipper or receiver while remaining the shipment owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required.
 
-The Load Board is provider discovery. Businesses receive one My Loads navigation entry: its page contains the Post load action, an All my loads view of owned demand, and an Active Tracking view. Transport providers retain a Tracking navigation entry because they do not own Business demand. Tracking contains only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, and Completed records involving the viewer. Posted, Sent, Contacted, saved, and merely interested records never mix into Tracking.
+The Shipment Board is provider discovery. Businesses receive one My Shipments navigation entry: its page contains the Post shipment action, an All my shipments view of owned demand, and an Active Tracking view. Transport providers retain a Tracking navigation entry because they do not own Business demand. Tracking contains only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, and Completed records involving the viewer. Posted, Sent, Contacted, saved, and merely interested records never mix into Tracking.
 
-Load dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
+Shipment dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
 
-After a completed load, the shipper and receiver Businesses may rate each other once for that load. Four- and five-star ratings publish immediately. One- through three-star ratings require an explanatory note and remain private to the submitting Business and administrators until an administrator records an investigation note and either Publishes or Dismisses the rating. Pending and Dismissed ratings never affect the public count or average. These are shipment-domain roles; both accounts remain the same Business account type. The Business that created the load remains its owner and provider-facing decision maker.
+After a completed shipment, the shipper and receiver Businesses may rate each other once for that shipment. Four- and five-star ratings publish immediately. One- through three-star ratings require an explanatory note and remain private to the submitting Business and administrators until an administrator records an investigation note and either Publishes or Dismisses the rating. Pending and Dismissed ratings never affect the public count or average. These are shipment-domain roles; both accounts remain the same Business account type. The Business that created the shipment remains its owner and provider-facing decision maker.
 
 ## Tracking
 
-Every load has one tracking obligation:
+Every shipment has one tracking obligation:
 
 - **Status timeline** requires real timestamped status or note updates.
 - **Approximate location + status** requires a general area on each assigned-provider operational update. Device areas use 20 km privacy for FTL and 40 km for PTL.
 
 The assigned provider cannot reduce the tracking requirement. Only the shipper Business, receiver Business, or administrator may change Approximate location + status to Status timeline. The change is recorded as a tracking event.
 
-Assigned providers may record in-between tracking updates without inventing a status transition. Customer tracking requires the secret code supplied by the load owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their internal timeline instead.
+Assigned providers may record in-between tracking updates without inventing a status transition. Customer tracking requires the secret code supplied by the shipment owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their internal timeline instead.
 
-Operational proof and temporary load-size proof are separate from tracking mode.
+Operational proof and temporary shipment-size proof are separate from tracking mode.
 
 ## Directory, Profiles, And Contact
 
@@ -118,11 +118,11 @@ Fleet Transporter Home compares Preferred Routes, fresh truck geography, and Loc
 
 Coverage comparisons group routes and service areas by ownership rather than source. Every viewed-profile line or circle is solid blue Profile coverage. Every equivalent line or circle belonging to the viewer is grouped as Your coverage and drawn with a warm-brown dashed treatment above the blue geometry so overlap remains visible. Current-partial and planned source details remain available outside the map but do not create additional legend colors. Map geometry and matches use stored coordinates, endpoint circles, point-in-radius, or circle overlap only; labels are display text and unresolved legacy labels cannot produce match evidence.
 
-A Local load requires one reviewed locality. The owner may optionally record safe landmark labels and map-selected pickup or drop-off points for execution. Exact points never appear on Boards, pooled-load views, Directory, Public Profiles, or administrative summaries. The owner can review what it entered; another authorized shipper, receiver, or assigned provider receives exact points only after agreement.
+A Local shipment requires one reviewed locality. The owner may optionally record safe landmark labels and map-selected pickup or drop-off points for execution. Exact points never appear on Boards, pooled-shipment views, Directory, Public Profiles, or administrative summaries. The owner can review what it entered; another authorized shipper, receiver, or assigned provider receives exact points only after agreement.
 
 Deep workspace detail routes provide a Back control. A direct deep link has a safe parent-board fallback, while in-workspace navigation returns to the recorded previous workspace page.
 
-A Business may explicitly opt to display its separate public phone beside loads visible to transporters. The receiver first name and phone recorded after agreement remain private load-party data.
+A Business may explicitly opt to display its separate public phone beside shipments visible to transporters. The receiver first name and phone recorded after agreement remain private shipment-party data.
 
 The account email and account phone used for access or account administration are private fields. Public Profile email and phone are separate, explicitly maintained fields. A profile must never fall back to account contacts.
 
@@ -171,7 +171,7 @@ consistent Back control with a safe parent fallback.
 ## Growing lists
 
 Directory and marketplace discovery show a useful first page without requiring a
-search. Boards, My Loads, Tracking, Network, Fleet, histories, and
+search. Boards, My Shipments, Tracking, Network, Fleet, histories, and
 administrative record groups use bounded server-owned pages with deterministic
 ordering. Search and filters reset to page one, and page navigation preserves
 the active view and filters. Participant-selection controls remain different:

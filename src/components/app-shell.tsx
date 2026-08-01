@@ -26,25 +26,25 @@ import { WorkspaceBackButton } from './workspace-back-button';
 const navigation: Record<string, Array<{ href: string; label: string; icon: LucideIcon }>> = {
   SHIPPER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/shipments', label: 'My Loads', icon: ClipboardCheck },
+    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Search },
     { href: '/app/network', label: 'My Network', icon: Network },
-    { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
+    { href: '/app/capacity', label: 'Truck Board', icon: LayoutList },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   RECEIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/shipments', label: 'My Loads', icon: ClipboardCheck },
+    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Search },
     { href: '/app/network', label: 'My Network', icon: Network },
-    { href: '/app/capacity', label: 'Capacity Board', icon: LayoutList },
+    { href: '/app/capacity', label: 'Truck Board', icon: LayoutList },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   TRANSPORTER: [
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/app/fleet', label: 'Fleet', icon: Truck },
-    { href: '/app/loads', label: 'Load Board', icon: LayoutList },
-    { href: '/app/capacity', label: 'Capacity Board', icon: PackageSearch },
+    { href: '/app/loads', label: 'Shipment Board', icon: LayoutList },
+    { href: '/app/capacity', label: 'Truck Board', icon: PackageSearch },
     { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/network', label: 'My Network', icon: Network },
@@ -52,8 +52,8 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/loads', label: 'Load Board', icon: LayoutList },
-    { href: '/app/capacity', label: 'Capacity Board', icon: PackageSearch },
+    { href: '/app/loads', label: 'Shipment Board', icon: LayoutList },
+    { href: '/app/capacity', label: 'Truck Board', icon: PackageSearch },
     { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/network', label: 'My Network', icon: Network },
@@ -93,7 +93,7 @@ const roleLabels: Record<string, string> = {
 
 const mobileLabels: Record<string, string> = {
   '/app/company-page': 'Profile',
-  '/app/loads': 'Loads',
+  '/app/loads': 'Shipments',
   '/app/capacity': 'Capacity',
   '/admin/reviews': 'Reviews',
   '/admin/operations': 'Operations',

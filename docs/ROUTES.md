@@ -14,13 +14,13 @@
 
 - `/app/home`
 - `/app/shipments` — party-only Tracking
-- `/app/shipments/new` — rich Post Load workflow
+- `/app/shipments/new` — rich Post Shipment workflow
 - `/app/shipments/[id]`
 - `/app/providers` — Business and Transporter Directory
 - `/app/providers/[handle]` — Business or Transporter Public Profile inside the workspace shell
 - `/app/network` — Connected relationships, requests, and private Favorites
-- `/app/loads` — searchable Load Board with optional owned-truck route ranking
-- `/app/capacity` — searchable Capacity Board with optional owned-load route ranking
+- `/app/loads` — searchable Shipment Board with optional owned-truck route ranking
+- `/app/capacity` — searchable Truck Board with optional owned-shipment route ranking
 - `/app/fleet` — fleet roster for Fleet Transporters
 - `/app/fleet/[id]` — one truck's detail and capacity controls
 - `/app/company-page` — Public Profile editor

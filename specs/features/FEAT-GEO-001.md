@@ -74,7 +74,7 @@ And location freshness refers to the capacity declaration time.
 
 ### Scenario: Local and Between cities Board filters
 
-Given an authenticated member opens the Load Board or Capacity Board\
+Given an authenticated member opens the Shipment Board or Truck Board\
 When it selects All, Local, or Between cities\
 Then only authorized records in that movement scope are considered\
 And Local results may be narrowed by a bounded searchable locality\

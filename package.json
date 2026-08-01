@@ -6,7 +6,7 @@
     "node": ">=22.5.0"
   },
   "scripts": {
-    "dev": "NEXT_DIST_DIR=${NEXT_DIST_DIR:-.next-dev} next dev",
+    "dev": "NEXT_DIST_DIR=${NEXT_DIST_DIR:-.next-dev} next dev --turbopack",
     "build": "node scripts/run-next-build.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",

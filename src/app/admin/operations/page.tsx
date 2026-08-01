@@ -12,7 +12,7 @@ const views=[
   {id:'WORKSPACES',label:'Clients',icon:Building2},
   {id:'USERS',label:'Users',icon:Users},
   {id:'TRUCKS',label:'Trucks',icon:Truck},
-  {id:'LOADS',label:'Loads',icon:PackageSearch},
+  {id:'LOADS',label:'Shipments',icon:PackageSearch},
   {id:'CAPACITY',label:'Capacity',icon:Gauge}
 ] as const;
 
@@ -38,7 +38,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
       <div className="stat"><span className="meta">Clients</span><strong>{data.counts.workspaces}</strong></div>
       <div className="stat"><span className="meta">Users</span><strong>{data.counts.users}</strong></div>
       <div className="stat"><span className="meta">Trucks</span><strong>{data.counts.trucks}</strong></div>
-      <div className="stat"><span className="meta">Loads</span><strong>{data.counts.loads}</strong></div>
+      <div className="stat"><span className="meta">Shipments</span><strong>{data.counts.loads}</strong></div>
       <div className="stat"><span className="meta">On Board</span><strong>{data.counts.board_capacity}</strong></div>
     </section>
     <nav className="admin-view-tabs" aria-label="Platform record type">
@@ -46,7 +46,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
     </nav>
     <form className="board-filter-bar" method="get">
       <input type="hidden" name="view" value={view}/>
-      <div className="form-group"><label htmlFor="operations-search"><Search aria-hidden="true"/>Search {views.find(item=>item.id===view)?.label}</label><input id="operations-search" name="q" defaultValue={query.q||''} placeholder="Name, account, truck number, or load code"/></div>
+      <div className="form-group"><label htmlFor="operations-search"><Search aria-hidden="true"/>Search {views.find(item=>item.id===view)?.label}</label><input id="operations-search" name="q" defaultValue={query.q||''} placeholder="Name, account, truck number, or shipment code"/></div>
       <button className="button icon-button-label"><Search aria-hidden="true"/>Search</button>
       {data.query?<Link href={`/admin/operations?view=${view}`} className="button secondary">Clear</Link>:null}
     </form>
@@ -54,7 +54,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
     <section className="admin-record-section">
       <div className="admin-record-list">
         {view==='USERS'?records.map(record=><article key={record.id}><div><strong>{record.name}</strong><span>{record.email} · {record.phone||'Phone not added'}</span><small>{record.workspace_name} · {record.role.replaceAll('_',' ')}</small></div><StatusPill status={record.active?'ACTIVE':'SUSPENDED'}/><form action={`/api/admin/records/user/${record.id}`} method="post">{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button small icon-button-label ${record.active?'danger':'success'}`} disabled={record.id===user.id}>{record.active?'Suspend':'Restore'}</button></form></article>):null}
-        {view==='WORKSPACES'?records.map(record=><article key={`${record.record_kind}-${record.id}`}><div><strong>{record.name}</strong><span>{workspaceTypeLabel(record.type)} · {record.city||'Location not added'}</span><small>{record.user_count} users · {record.truck_count} active trucks · {record.load_count} loads</small></div><StatusPill status={record.public_visibility}/></article>):null}
+        {view==='WORKSPACES'?records.map(record=><article key={`${record.record_kind}-${record.id}`}><div><strong>{record.name}</strong><span>{workspaceTypeLabel(record.type)} · {record.city||'Location not added'}</span><small>{record.user_count} users · {record.truck_count} active trucks · {record.load_count} shipments</small></div><StatusPill status={record.public_visibility}/></article>):null}
         {view==='TRUCKS'?records.map(record=><article key={record.id}><div><strong>{record.platform_number} · {record.make} {record.model}</strong><span>{record.owner_name} · {record.cargo_configuration} · plate {record.plate||'not recorded'}</span><small>{record.capacity_status?`${record.capacity_status.replaceAll('_',' ')} · ${record.location_area||'Area not updated'} · ${relativeTime(record.capacity_updated_at)}`:'No capacity update'}</small></div><StatusPill status={record.active?'ACTIVE':'INACTIVE'}/><form action={`/api/admin/records/vehicle/${record.id}`} method="post">{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button small icon-button-label ${record.active?'danger':'success'}`}>{record.active?'Deactivate':'Reactivate'}</button></form></article>):null}
         {view==='LOADS'?records.map(record=><article key={record.id}><div><strong>{record.code} · {record.title}</strong><span>{record.origin} → {record.destination}</span><small>Owner: {record.owner_name} · Provider: {record.provider_name||'Not assigned'} · Updated {relativeTime(record.updated_at)}</small></div><StatusPill status={record.operational_status}/><Link className="button secondary small" href={`/app/shipments/${record.id}`}><PackageSearch aria-hidden="true"/>Open</Link></article>):null}
         {view==='CAPACITY'?records.map(record=><article key={record.id}><div><strong>{record.platform_number} · {record.make} {record.model}</strong><span>{record.owner_name} · {record.location_area||'Area not updated'}</span><small>{record.status==='BUSY'?`Available again ${record.available_again_date}`:`${record.available_percent}% available`} · {record.visibility.replaceAll('_',' ')} · updated {relativeTime(record.updated_at)}</small></div><StatusPill status={record.status}/></article>):null}

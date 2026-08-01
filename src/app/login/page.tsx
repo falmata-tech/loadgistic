@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowLeft, LockKeyhole, LogIn, Mail } from 'lucide-react';
+import { ArrowLeft, CirclePlus, LockKeyhole, LogIn, Mail } from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 import { Flash } from '@/components/flash';
 import { getCurrentUser } from '@/lib/auth';
@@ -18,6 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="form-group"><label htmlFor="password"><LockKeyhole aria-hidden="true"/>Password</label><input id="password" name="password" type="password" autoComplete="current-password" required/></div>
         <button className="button" type="submit"><LogIn aria-hidden="true"/>Log in</button>
       </form>
+      <div className="auth-signup"><span>New to Loadgistic?</span><Link className="button secondary" href="/apply"><CirclePlus aria-hidden="true"/>Sign up</Link></div>
     </section>
     <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Home</Link>
   </div></main></>;

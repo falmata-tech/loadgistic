@@ -28,6 +28,15 @@ And the primary action is visually strongest\
 And related choices are grouped in the order the member needs them\
 And supporting prose is omitted unless it explains a material rule, privacy boundary, or consequence.
 
+### Scenario: operational editors ask only current decisions first
+
+Given a member opens a frequently used operational editor\
+When its first screen renders\
+Then identity and current state are summarized compactly\
+And required decisions appear in the order the member naturally makes them\
+And uncommon policy, evidence, and future-planning controls share one clearly labeled optional area\
+And a second summary card does not repeat values already visible beside the controls.
+
 ### Scenario: primary navigation contains daily work
 
 Given a Business, fleet transporter, or driver opens the workspace\
@@ -38,7 +47,7 @@ And the same destination is not repeated in both the primary navigation and the 
 
 ### Scenario: discovery controls do not crowd the results
 
-Given a member opens the Load Board, Capacity Board, or Directory\
+Given a member opens the Shipment Board, Truck Board, or Directory\
 When discovery controls render\
 Then the result list remains the dominant page content\
 And advanced search and matching choices open in one consistent dismissible filter sheet\
