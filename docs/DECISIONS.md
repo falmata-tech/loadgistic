@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, a live undated Partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. The capacity update time is the current Partial route's clock. Local-only work can publish only Empty/100-percent availability because Partial requires a live intercity route; Both and Between cities retain Partial. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, a live undated Partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. The capacity update time is the current Partial route's clock. Local-only work can publish only Empty/100-percent availability because Partial requires a live long-distance route; Both and Long-distance routes retain Partial. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -54,7 +54,9 @@ Use one image-backed cargo-configuration catalog across freight creation, driver
 
 ## ADR-013 — Discovery, Tracking, and authenticated directory
 
-Keep one canonical shipment record while separating its UI by permission and stage. The Shipment Board is provider discovery plus interest. Businesses use one My Shipments navigation destination containing posting, all owned demand, and an Active Tracking projection. Providers retain a separate Tracking destination because they do not own Business demand. Tracking contains only execution-stage party records from Agreed onward.
+Keep one canonical shipment record while separating its UI by permission and stage. The Shipment Board is provider discovery plus interest. Every member role uses one My Shipments destination; Businesses receive Posted, Tracking, and History, while providers receive Interested, Direct requests, Tracking, and History. Tracking is an execution category rather than a separate destination. Recorded provider interests remain in that provider's workspace without becoming a Business-visible agreement stage.
+
+An Agreed Shipment must bind one active provider-owned truck and its current Driver before it moves to Assigned. Fleet owners may choose any driver-backed truck in their fleet, company Drivers may choose only their own current truck, and owner-operators are paired with their own active truck. Shipment parties see the permanent platform number, make, model, cargo configuration, and Driver; plates remain operationally private.
 
 Use one authenticated directory for Businesses, fleet transporters, and self-managed drivers. Business profiles support participant confirmation and completed-load reputation. Private account email and phone are never public-profile fallbacks; only explicitly maintained profile contacts are displayed.
 
@@ -166,7 +168,7 @@ removing links is never the enforcement boundary.
 
 ## ADR-024 — Mixed local geography and bounded discovery queries
 
-Model freight movement as Local, Between cities, or Both where the actor
+Model freight movement as Local, Long-distance routes, or Both where the actor
 contract permits it. Local coverage is one reviewed place plus a 5–100 km
 service radius and renders as a translucent circle; intercity coverage remains
 an origin/destination pair and renders as a line. Comparison uses point-in-area,
@@ -276,12 +278,22 @@ view. Every record action goes to sign in; Login also offers Sign up. This
 demonstrates a changing real marketplace without exposing the authenticated
 detail or contact surface.
 
-Reduce capacity publication to the order in which a driver works: current
-availability, work area, then publish. Keep a current Partial route attached to
-Partial space. Put shipment policy, future travel, visibility, and cargo proof
-inside one Optional details disclosure. Use one final publish row and never a
-second review card. Fleet owners use the same editor on a truck-specific page
-but remain unable to claim their office device as the truck location.
+Capacity publication follows the order in which a driver works: truck status,
+work area, status-specific details, accepted shipment size, stop flexibility,
+future work, then visibility and publish. Keep a current Partial route attached
+to Partial space. FTL/PTL, Multi Pick/Multi Drop, contract-route interest, and
+visibility remain visible numbered decisions; only optional evidence and an
+unused planned trip are secondary. Use one final publish row and never a second
+review card. Fleet owners use the same editor on a truck-specific page but
+remain unable to claim their office device as the truck location.
+
+Fleet driver management follows identity, current truck, then allowed work.
+Each company driver and each truck has at most one active assignment. A
+reassignment ends both conflicting active assignments transactionally, retains
+their history, and records the owner who performed it. An unassigned fleet
+truck remains an active fleet asset but cannot publish on-duty capacity; legacy
+unassigned signals are suppressed from discovery. Owner-operator trucks satisfy
+the driver requirement through their owning Driver profile.
 
 An eligible Driver screen starts a throttled browser geolocation watcher when
 capacity or location-required Tracking mounts and clears it on unmount. Exact

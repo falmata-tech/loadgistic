@@ -12,9 +12,9 @@ import { StatusPill } from '@/components/status-pill';
 import { Clock3, Eye, Gauge, Route, Truck } from 'lucide-react';
 
 function acceptedLoads(capacity: any) {
-  if (capacity.accepts_full_load && capacity.accepts_partial_load) return 'FTL and PTL';
-  if (capacity.accepts_partial_load) return 'PTL only';
-  return 'FTL only';
+  if (capacity.accepts_full_load && capacity.accepts_partial_load) return 'Full or Partial Truckload';
+  if (capacity.accepts_partial_load) return 'Partial Truckload (PTL) only';
+  return 'Full Truckload (FTL) only';
 }
 
 function stopPolicy(capacity:any){

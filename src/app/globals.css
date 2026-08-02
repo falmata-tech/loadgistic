@@ -286,6 +286,9 @@ h3 { margin: 0 0 8px; font-size: 1.06rem; }
 .board-filter-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding-top:3px; }
 .board-filter-actions .meta { margin-left:auto; }
 .board-more-filters { padding-top:12px; border-top:1px solid var(--line); }
+.board-filter-step { display:grid; gap:14px; }
+.board-filter-step + .board-filter-step { margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
+.board-filter-step.board-more-filters { margin-top:18px; }
 .board-more-filters h3 { display:flex; align-items:center; gap:7px; margin:0 0 14px; font-size:.95rem; }
 .board-more-filters h3 svg { width:17px; height:17px; color:var(--blue); }
 .board-more-filters summary { width:max-content; display:flex; align-items:center; gap:7px; color:var(--blue-dark); font-size:.82rem; font-weight:800; cursor:pointer; }
@@ -408,7 +411,17 @@ h3 { margin: 0 0 8px; font-size: 1.06rem; }
 .duty-truck > div { display:grid; gap:3px; }
 .duty-truck span,.duty-truck small { color:var(--muted); font-size:.78rem; }
 .fleet-team { margin-top:20px; }
-.fleet-driver-permissions { display:grid; grid-template-columns:minmax(210px,.8fr) minmax(390px,1.5fr) auto; gap:16px; align-items:center; padding:14px; border:1px solid var(--line); border-radius:7px; }
+.fleet-driver-manager { border:1px solid var(--line); border-radius:7px; background:white; overflow:hidden; }
+.fleet-driver-manager > summary { min-height:68px; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 14px; list-style:none; cursor:pointer; }
+.fleet-driver-manager > summary::-webkit-details-marker { display:none; }
+.fleet-driver-manager > summary .button { pointer-events:none; }
+.fleet-driver-permissions { display:grid; gap:14px; padding:16px; border-top:1px solid var(--line); background:#f8fafc; }
+.fleet-management-step { display:grid; gap:12px; padding:14px; border:1px solid var(--line); border-radius:7px; background:white; }
+.workflow-step-heading { display:grid; grid-template-columns:30px 34px minmax(0,1fr); align-items:center; gap:9px; }
+.workflow-step-heading > span { width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:var(--ink); color:white; font-size:.78rem; font-weight:850; }
+.workflow-step-heading > svg { width:34px; height:34px; padding:7px; border-radius:7px; background:var(--blue-soft); color:var(--blue); }
+.workflow-step-heading h3 { margin:0; font-size:1rem; }
+.workflow-step-heading p { margin:2px 0 0; color:var(--muted); font-size:.78rem; }
 .fleet-driver-identity { display:grid; gap:3px; }
 .fleet-driver-identity span,.fleet-driver-identity small { color:var(--muted); font-size:.76rem; }
 .permission-toggles { display:grid; grid-template-columns:repeat(2,minmax(150px,1fr)); gap:8px; }
@@ -621,6 +634,8 @@ legend { font-weight:800; padding:0 7px; }
 .admin-support-heading summary::-webkit-details-marker { display:none; }
 .support-agent-create { position:absolute; z-index:10; top:50px; right:0; width:min(480px,calc(100vw - 42px)); display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px; border:1px solid var(--line); border-radius:8px; background:white; box-shadow:var(--shadow); }
 .support-agent-create .button { align-self:end; }
+.support-create-step { grid-column:1/-1; display:grid; gap:12px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.support-agent-create > .button { grid-column:1/-1; justify-self:end; }
 .support-agent-list { display:grid; margin-top:14px; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
 .support-agent-list details { border-bottom:1px solid var(--line); }
 .support-agent-list details:last-child { border-bottom:0; }
@@ -643,7 +658,7 @@ legend { font-weight:800; padding:0 7px; }
 .signal-facts .status { width:max-content; }
 .capacity-console { display:grid; gap:16px; }
 .simple-capacity-console { max-width:920px; margin:0 auto; }
-.capacity-truck-bar { display:grid; grid-template-columns:92px minmax(170px,1fr) minmax(190px,280px) minmax(220px,300px); align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--line); border-radius:8px; background:white; }
+.capacity-truck-bar { display:grid; grid-template-columns:92px minmax(170px,1fr) minmax(190px,280px); align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--line); border-radius:8px; background:white; }
 .capacity-truck-bar > img { width:92px; height:72px; object-fit:contain; border:1px solid var(--line); border-radius:7px; background:#f8fafc; }
 .capacity-truck-copy { min-width:0; display:grid; gap:3px; }
 .capacity-truck-copy small,.capacity-truck-copy span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:.76rem; }
@@ -666,6 +681,17 @@ legend { font-weight:800; padding:0 7px; }
 .capacity-linked-fields .range-control { margin:0; padding:0 16px 0 0; border:0; border-right:1px solid #cfe4da; }
 .capacity-linked-fields h3,.capacity-option-group h3 { display:flex; align-items:center; gap:7px; margin:0 0 12px; font-size:.9rem; }
 .capacity-linked-fields h3 svg,.capacity-option-group h3 svg { width:18px; height:18px; color:var(--blue); }
+.capacity-ready-note,.capacity-term-hint,.direct-route-choice { display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid #cfe4da; border-radius:7px; background:#f5fbf8; }
+.capacity-ready-note > svg,.capacity-term-hint > svg,.direct-route-choice > svg { width:25px; height:25px; flex:0 0 auto; color:var(--green); }
+.capacity-ready-note span,.capacity-ready-note small,.direct-route-choice span,.direct-route-choice small { display:block; }
+.capacity-ready-note small,.direct-route-choice small { margin-top:2px; color:var(--muted); font-size:.76rem; }
+.capacity-term-hint { border-color:var(--line); background:#f8fafc; color:var(--muted); font-size:.82rem; }
+.capacity-term-hint > svg { color:var(--blue); }
+.direct-route-choice { border-color:#cbdcf1; background:#f4f8fd; }
+.direct-route-choice > svg { color:var(--blue); }
+.future-trip-fields { display:grid; gap:14px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+.future-trip-fields h3 { display:flex; align-items:center; gap:7px; margin:0; font-size:.92rem; }
+.future-trip-fields h3 svg { width:18px; height:18px; color:var(--blue); }
 .visual-scope-control span,.visual-scope-control button { display:flex; align-items:center; justify-content:center; gap:7px; }
 .visual-scope-control svg { width:19px; height:19px; }
 .automatic-location { display:grid; grid-template-columns:36px 1fr; align-items:center; gap:10px; padding:11px 13px; border:1px solid #d8e5f5; border-radius:7px; background:#f8fbff; }
@@ -729,7 +755,9 @@ legend { font-weight:800; padding:0 7px; }
 .capacity-disclosure[open] > summary { border-bottom:1px solid var(--line); }
 .capacity-disclosure[open] > summary > svg { transform:rotate(180deg); }
 .capacity-disclosure-body { display:grid; gap:16px; padding:18px; }
-.sharing-proof-grid { grid-template-columns:1fr 1fr; }
+.sharing-proof-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.sharing-proof-grid > div { min-width:0; }
+.sharing-proof-grid > div + div { padding-left:18px; border-left:1px solid var(--line); }
 .sharing-proof-grid > section { display:grid; align-content:start; gap:12px; min-width:0; }
 .sharing-proof-grid > section + section { padding-left:18px; border-left:1px solid var(--line); }
 .sharing-proof-grid h3,.capacity-review h2 { display:flex; align-items:center; gap:8px; margin:0; font-size:.94rem; }
@@ -1153,6 +1181,7 @@ legend { font-weight:800; padding:0 7px; }
   .capacity-console-side { display:grid; grid-template-columns:1fr; }
   .capacity-console-side .capacity-submit { grid-column:auto; }
   .sharing-proof-grid { grid-template-columns:1fr; }
+  .sharing-proof-grid > div + div { padding:16px 0 0; border-left:0; border-top:1px solid var(--line); }
   .sharing-proof-grid > section + section { padding:16px 0 0; border-left:0; border-top:1px solid var(--line); }
   .control-panel { padding:17px; }
   .route-inputs { grid-template-columns:1fr; }
@@ -1266,6 +1295,8 @@ legend { font-weight:800; padding:0 7px; }
   .duty-truck form { grid-column:1/-1; }
   .duty-truck form .button { width:100%; }
   .permission-toggles { grid-template-columns:1fr; }
+  .fleet-driver-manager > summary { align-items:flex-start; }
+  .fleet-driver-manager > summary .button { padding-left:10px; padding-right:10px; }
   .admin-record-list article { grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:8px 10px; padding:13px; }
   .admin-record-list article > div { grid-column:1; grid-row:1 / span 2; }
   .admin-record-list article > .status { grid-column:2; grid-row:1; justify-self:end; }

@@ -66,7 +66,7 @@ npm run test:ui-stress
 ```
 
 The stress generator validates all 34 application tables, foreign keys, entity
-ownership, fleet assignments, rating eligibility, Local/Between cities/Both
+ownership, fleet assignments, rating eligibility, Local/Long-distance/Both
 movement coverage, support queues, and material workflow-state coverage.
 `tests/stress-data.test.mjs` runs the same generator against an isolated
 database and proves that Production execution is rejected before any database

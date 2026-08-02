@@ -21,16 +21,16 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 
 ## Boards
 
-- The **Shipment Board** contains FTL and PTL Business demand.
-- **Shared Shipments** is one Shipment Board workspace with two distinct read-only modes. **Pool together** suggests pairwise-compatible Posted PTL shipments with nearby origins, nearby destinations, and compatible deadline windows. **Along the route** suggests an ordered sequence of Posted Between-cities shipments where each next pickup is near the previous drop-off, travel continues broadly forward, and recorded deadlines appear compatible. Both are negotiation aids only: they never combine ownership, agreements, assignments, prices, tracking, or source records, and they never claim that physical cargo fit or timing is confirmed.
+- The **Shipment Board** contains Full Truckload (FTL) and Partial Truckload (PTL) Business demand.
+- **Shared Shipments** is one Shipment Board workspace with two distinct read-only modes. **Pool together** suggests pairwise-compatible Posted PTL shipments with nearby origins, nearby destinations, and compatible deadline windows. **Along the route** suggests an ordered sequence of Posted Long-distance route shipments where each next pickup is near the previous drop-off, travel continues broadly forward, and recorded deadlines appear compatible. Both are negotiation aids only: they never combine ownership, agreements, assignments, prices, tracking, or source records, and they never claim that physical cargo fit or timing is confirmed.
 - The **Truck Board** contains fresh Empty or Partial capacity.
 - Every Truck Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
 - Off Duty trucks never appear on the Truck Board.
 - Empty and Partial capacity remain on the Truck Board when their updates become old, with relative update times, a prominent confirmation warning, and lower freshness rank. Busy means the truck is On Duty but occupied and open to future calls; it requires an available-again date and expected city, shows Preferred Routes instead of current capacity movement, and leaves discovery after that date until refreshed. Off Duty is the explicit hidden state.
 - Posted demand remains discoverable for two full days after its Drop off before date. Its owner is warned as soon as the date passes; on the third day it leaves the Shipment Board and pooled projections but remains in My Shipments.
-- The Shipment Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, FTL/PTL, cargo configuration, visibility, price type/range, deadline, and posted-recency filters.
-- The Truck Board supports descriptive text, Local or Between cities geography, selected endpoint circles with adjustable radii and direction, an optional privacy-aware current-area preference, cargo space, FTL/PTL acceptance, cargo configuration, minimum space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters.
+- The Shipment Board supports descriptive text, Local or Long-distance route geography, selected endpoint circles with adjustable radii and direction, shipment size, cargo configuration, visibility, deadline, recency, and price filters, grouped in that operational order.
+- The Truck Board supports descriptive text, Local or Long-distance route geography, selected endpoint circles with adjustable radii and direction, privacy-aware current-area matching, availability, shipment-size acceptance, cargo configuration, space, route date, visibility, freshness, stop flexibility, contract-route, and proof filters, grouped in that operational order.
 - Secondary Board controls remain collapsed under More filters until used.
 - A provider may rank permitted shipments against one of its own recorded truck routes.
 - A Business may rank permitted trucks against one of its own open shipment routes.
@@ -61,8 +61,7 @@ Home for a self-managed driver is the rich capacity control panel. A Fleet Trans
 
 The rich truck capacity control panel controls:
 
-- On Duty or Off Duty
-- Empty or Partial cargo space
+- Empty, Partial, Busy, or Off Duty status; the first three imply On Duty
 - available percentage for Partial capacity
 - accepted shipment policy: FTL, PTL, or Both
 - stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
@@ -71,13 +70,17 @@ The rich truck capacity control panel controls:
 - a live, undated current partial-capacity route when Partial
 - a separate future planned travel route with date and Full or Partial planned cargo space
 - contract-route interest
-- Local, Between cities, or Both operating scope, with a reviewed locality and 5–100 km radius for Local service
+- Local, Long-distance routes, or Both operating scope, with a reviewed locality and 5–100 km radius for Local service
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
-Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Between cities or Both scope plus a live current route, because remaining space can be matched only when the truck's movement is known. Its freshness comes from the capacity update timestamp rather than a separately entered route date.
+Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Long-distance routes or Both scope plus a live current route, because remaining space can be matched only when the truck's movement is known. Its freshness comes from the capacity update timestamp rather than a separately entered route date.
 
-The capacity editor asks three operational questions in order: what the truck can do now, where it can work, and whether to publish. Truck identity is compact. Partial space and its current route remain linked. Shipment preferences, planned travel, visibility, and proof share one Optional details disclosure, and one final publish row replaces a duplicate review card.
+The capacity editor uses visible numbered decisions in operational order: truck status, work area, status-specific details, accepted shipment size, stop flexibility, future work, then visibility and publish. Truck identity is compact. Partial space and its current route remain linked. FTL/PTL, Multi Pick/Multi Drop, recurring-work interest, and visibility are never hidden under Additional options. Busy skips current shipment-size and stop choices; Off Duty ends after the status choice. One final publish row replaces a duplicate review card.
+
+Fleet owners manage each company Driver in one ordered control: confirm the Driver, assign one current active company truck or leave the Driver unassigned, choose allowed work, then save. A Driver and truck can each have only one active assignment; reassignment ends conflicting active assignments while retaining assignment history and audit evidence.
+
+An active fleet truck without a current Driver stays in My Fleet but cannot publish Empty, Partial, or Busy capacity and never appears on the Truck Board. Off Duty remains available so the owner can explicitly hide its old signal. Self-managed trucks are driven by their owner-operator and do not require a separate company-Driver assignment.
 
 When an assigned or self-managed Driver opens capacity or location-required Tracking controls, the browser requests and refreshes device location automatically while that screen remains mounted. A denial or unavailable device leaves structured manual area entry available and does not repeatedly prompt in the same screen lifecycle. The browser may briefly access an exact device coordinate, but it obscures that point before application state or submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
 
@@ -87,9 +90,9 @@ Businesses post FTL or PTL freight with fixed price, target price, or quote requ
 
 My Network separates a private Favorite from a mutual operating relationship. Either market side may Favorite the other or request a cross-market connection. Businesses may also Favorite other Businesses so frequent shipment parties rank first in selection; this same-side Favorite never creates a transport partnership.
 
-The posting Business declares whether it is shipper or receiver while remaining the shipment owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required.
+The posting Business declares whether it is shipper or receiver while remaining the shipment owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required. The provider must then bind one active in-scope truck and its current Driver to the Shipment; a fleet truck without an active Driver cannot be assigned, and the Shipment cannot move to Assigned without that pair.
 
-The Shipment Board is provider discovery. Businesses receive one My Shipments navigation entry: its page contains the Post shipment action, an All my shipments view of owned demand, and an Active Tracking view. Transport providers retain a Tracking navigation entry because they do not own Business demand. Tracking contains only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, and Completed records involving the viewer. Posted, Sent, Contacted, saved, and merely interested records never mix into Tracking.
+The Shipment Board is provider discovery. Every member role receives one My Shipments navigation entry and Tracking is a category inside it. Businesses see Posted, Tracking, and History plus the Post shipment action. Transport providers see Interested, Direct requests, Tracking, and History. Tracking contains only Agreed through Delivered execution records involving the viewer, while Completed and Cancelled records move to History. A recorded interest remains visible to its provider without becoming an agreement or appearing in the Business owner's execution stages.
 
 Shipment dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
 

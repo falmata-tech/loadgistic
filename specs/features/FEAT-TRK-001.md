@@ -106,7 +106,7 @@ And the secret code is never placed in a URL or stored in clear text.
 
 Given a signed-in assigned transporter or driver\
 When it follows a load\
-Then the app directs it to the internal Tracking workspace\
+Then the app directs it to the Tracking category inside My Shipments\
 And customer tracking does not grant provider-only notes, proof, or actions.
 
 ### Scenario: tracking view expires after inactivity

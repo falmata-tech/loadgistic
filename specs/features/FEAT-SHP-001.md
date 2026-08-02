@@ -3,8 +3,8 @@ id: FEAT-SHP-001
 title: B2B shipment creation and execution
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Businesses and authorized transporters need one canonical freight record from load request through completion.
-behavior: Authorized Business actors create road-freight shipments as either shipper or receiver owners, manage posting and execution from one My Shipments workspace, transporters discover or accept permitted work through the Shipment Board, only execution-stage party records appear in Tracking, and explicit domain transitions govern execution.
-contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, FleetDriverLoadPermission, LoadRouteMatch, SharedLoadProjection, PooledLoadCandidate, AlongRouteCandidate, EtbAmount, StatusTransition, BusinessParticipantReview]
+behavior: Authorized Business actors create road-freight shipments as either shipper or receiver owners, every member role manages its shipment interactions from one My Shipments workspace, transporters discover permitted work through the Shipment Board, Tracking is an execution stage inside My Shipments, and explicit domain transitions govern execution.
+contracts: [ShipmentAggregate, LoadOwner, ShipmentParty, ExternalShipmentParty, ShipmentCommand, ShipmentVisibilityPolicy, BusinessLoadWorkspace, ProviderShipmentWorkspace, TrackingWorkspacePolicy, FreightLoadPolicy, ShipmentVehicleAssignment, FleetDriverLoadPermission, LoadRouteMatch, SharedLoadProjection, PooledLoadCandidate, AlongRouteCandidate, EtbAmount, StatusTransition, BusinessParticipantReview]
 observability: [shipment_audit, status_event, command_outcome]
 rollout: Require tests for every new role, visibility mode, price mode, or state edge.
 ---
@@ -16,7 +16,7 @@ rollout: Require tests for every new role, visibility mode, price mode, or state
 Given any user-facing workflow refers to a freight demand record or its marketplace\
 When navigation, headings, forms, filters, buttons, notices, or tracking prompts are rendered\
 Then the record is called a Shipment and the marketplace is called the Shipment Board\
-And standard freight abbreviations FTL and PTL may retain their truckload meaning\
+And FTL is introduced as Full Truckload and PTL as Partial Truckload before compact cards or controls reuse the abbreviations\
 And internal compatibility identifiers are not exposed as product terminology.
 
 ### Scenario: business creates a shipment
@@ -31,6 +31,7 @@ And pricing is Fixed ETB, Target ETB, or Quote Requested.
 Given an authenticated Business opens shipment creation\
 When it posts demand to a provider or the Shipment Board\
 Then the primary form asks for shipment identity, movement, route, deadlines, cargo size and detail, visibility, price, and tracking policy in operational order\
+And those decisions are presented as visible numbered sections for shipment facts, route and deadlines, truck need, audience, and commercial and tracking choices\
 And selecting the shipper, receiver, and private receiver contact is deferred until provider agreement and assignment preparation\
 And the posting Business remains the load owner throughout that later execution setup.
 
@@ -125,20 +126,45 @@ When the Business records the receiver's first name and phone\
 Then only authorized shipment parties may read those fields\
 And a provider cannot move the shipment to Assigned until both fields exist.
 
+### Scenario: assignment binds a driver-backed truck
+
+Given a provider has accepted a Shipment and it has reached Agreed status\
+When an authorized transporter or Driver prepares it for execution\
+Then the provider chooses one active truck from its own provider scope\
+And a fleet truck is selectable only when it has one active assigned Driver\
+And a company Driver may choose only that Driver's currently assigned truck\
+And an owner-operator's own active truck is paired with that owner-operator\
+And the Shipment records the selected truck and Driver before it may move to Assigned\
+And shipment parties see the truck's permanent Loadgistic platform number, make, model, cargo configuration, and assigned Driver\
+And private plate and exact public identity rules remain unchanged.
+
 ### Scenario: administrator cannot originate business demand
 
 Given an authenticated platform administrator without a Business workspace\
 When they request shipment creation\
 Then access is denied and no shipment can be created.
 
-### Scenario: Business load work has one navigation entry
+### Scenario: every member has one My Shipments navigation entry
 
-Given an authenticated Business uses the workspace navigation\
-When load work is displayed\
-Then one My Shipments navigation entry replaces separate Post Shipment and Tracking entries\
-And the My Shipments page provides an All my shipments view, an Active Tracking view, and a Post shipment action\
-And Posted, negotiating, execution, and completed records remain projections of one canonical load\
-And transport providers retain their own Tracking navigation because they do not own Business demand.
+Given an authenticated Business, fleet transporter, company Driver, or owner-operator uses the workspace navigation\
+When shipment work is displayed\
+Then one My Shipments navigation entry replaces direct Tracking navigation\
+And Businesses receive Posted, Tracking, and History categories plus a Post shipment action\
+And transport providers receive Interested, Direct requests, Tracking, and History categories\
+And All combines only that workspace's owned or recorded interactions\
+And an interest does not become visible to the Business owner as an agreement stage or enter Tracking\
+And Posted, interested, direct, execution, and completed views remain projections of one canonical Shipment.
+
+### Scenario: provider My Shipments retains recorded interactions
+
+Given a provider has expressed interest, received a direct request, or become assigned to a Shipment\
+When it opens My Shipments\
+Then its recorded interest remains in Interested even if the Shipment later leaves public Board discovery\
+And an addressed pre-agreement Shipment appears in Direct requests\
+And Agreed through Delivered records appear in Tracking\
+And Completed or Cancelled records appear in History\
+And a pre-execution detail labels its events Shipment activity and does not present a Tracking summary or Tracking controls\
+And each row opens only when existing shipment authorization permits it.
 
 ### Scenario: load work and marketplace demand remain bounded
 
@@ -174,7 +200,7 @@ And the loads do not enter Tracking until the provider becomes a shipment party.
 
 ### Scenario: Shared Shipments keeps two compatible strategies clear
 
-Given an authorized provider can browse two or more Posted Between-cities loads\
+Given an authorized provider can browse two or more Posted Long-distance route loads\
 When the provider opens Shared Shipments\
 Then one workspace offers Pool together and Along the route modes\
 And each mode explains its operational pattern without mixing both patterns in one result list\
@@ -232,10 +258,10 @@ Then only loads satisfying every supplied filter are displayed\
 And a price range excludes Quote Requested loads because they have no comparable saved amount\
 And clearing the filters restores all loads permitted by visibility policy.
 
-Given Local and Between cities loads coexist\
+Given Local and Long-distance route loads coexist\
 When the provider filters movement scope or Local locality\
 Then structured movement and place identities are used\
-And origin and destination route filters apply only to Between cities records\
+And origin and destination route filters apply only to Long-distance route records\
 And exact Local pickup or drop-off coordinates are not returned to the Board.
 
 Given a provider chooses one of its own trucks with a current planned route\

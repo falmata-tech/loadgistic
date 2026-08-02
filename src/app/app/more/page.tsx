@@ -43,7 +43,7 @@ function accessLabel(status:string){
 
 function workspaceLinks(role:string){
  if(role==='SHIPPER'||role==='RECEIVER'||role==='TRANSPORTER'||role==='DRIVER')return [['/app/company-page','Public Profile'],['/app/verification','Verification']];
- return [['/admin/operations','Operations'],['/admin/reviews','Review Center'],['/app/shipments','Tracking'],['/app/providers','Directory']];
+ return [['/admin/operations','Operations'],['/admin/reviews','Review Center'],['/app/shipments','Shipments'],['/app/providers','Directory']];
 }
 
 function workspaceLinkIcon(href:string):LucideIcon {

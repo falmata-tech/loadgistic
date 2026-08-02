@@ -110,6 +110,14 @@ Then its truck count equals the active vehicle rows\
 And every active truck appears in the roster as Empty, Partial, Busy, Off Duty, or Not updated\
 And Off Duty trucks remain absent from the Truck Board.
 
+### Scenario: fleet capacity requires a current driver
+
+Given an active fleet truck has no current company Driver assignment\
+When a fleet owner attempts to publish Empty, Partial, or Busy capacity\
+Then the command is rejected before a capacity record is created\
+And any legacy on-duty signal for an unassigned fleet truck is excluded from Truck Board discovery\
+And the truck remains active and visible in My Fleet so an owner can assign a Driver or set it Off Duty.
+
 ### Scenario: empty capacity is published
 
 Given an authorized transporter, driver, or administrator owns the vehicle\
@@ -158,23 +166,32 @@ When the workspace loads\
 Then their truck capacity control panel is the first operational view\
 And they do not have to open a general dashboard before updating their truck.
 
-### Scenario: capacity publication follows three decisions
+### Scenario: capacity publication follows visible ordered decisions
 
 Given a driver or fleet owner updates a truck\
 When the capacity editor opens\
-Then the primary flow asks what the truck can do now, where it can work, and whether to publish in that logical order\
-And Empty, Partial, Busy, and Off Duty are one availability choice\
+Then the primary flow visibly numbers truck status, work area, status-specific details, accepted shipment size, route flexibility, future-work preferences, and visibility in that logical order\
+And Empty, Partial, Busy, and Off Duty are the first availability choice\
 And the selected truck is a compact identity header rather than a separate form section\
 And current available space and the current partial-capacity route remain visibly connected\
 And the current route is required only for Partial intercity or Both work\
 And Local-only work keeps Partial unavailable\
 And Busy replaces cargo-space controls with available-again date and city controls\
-And shipment preferences, future planned travel, visibility, and proof are grouped under one optional-details disclosure\
+And FTL, PTL, Both, Direct, Multi Pick, Multi Drop, contract-route interest, and visibility are not hidden inside an additional-options disclosure\
+And only optional evidence and an unused future trip may use compact secondary presentation\
 And publication uses one persistent primary action without a duplicate review panel.
+
+### Scenario: irrelevant capacity steps disappear without obscuring the task
+
+Given a driver chooses Busy or Off Duty\
+When the remaining capacity controls render\
+Then Off Duty ends the workflow after the status choice and publishes a hidden state\
+And Busy asks for ready date, expected area, future-work preference, and visibility without asking for current FTL, PTL, Multi Pick, or Multi Drop availability\
+And every visible step keeps a stable increasing number so the next required action is unambiguous.
 
 ### Scenario: Both reuses the Local city as current area
 
-Given a truck is available for both Local and Between cities work\
+Given a truck is available for both Local and Long-distance route work\
 When its driver selects the structured Local city or town\
 Then that place is also the truck's declared current general area\
 And the driver is not asked for a second current-area city\
@@ -204,7 +221,7 @@ When they filter by text, route cities, cargo configuration, capacity status, ac
 Then only trucks satisfying every supplied filter are displayed\
 And clearing the filters restores all capacity permitted by visibility policy.
 
-Given Local, Between cities, and Both truck signals coexist\
+Given Local, Long-distance route, and Both truck signals coexist\
 When a member filters movement scope or Local locality\
 Then each truck remains one independently authorized result\
 And Local matching uses its structured locality and radius\

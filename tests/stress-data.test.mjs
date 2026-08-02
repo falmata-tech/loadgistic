@@ -45,7 +45,7 @@ test('standard stress dataset covers every table, workflow state, and provider s
   assert.equal(generatedDriver.role,'DRIVER');
 
   assert.equal(repo.listOwnVehicles(generatedFleet).length,6);
-  assert.equal(repo.listFleetDrivers(generatedFleet).length,3);
+  assert.equal(repo.listFleetDrivers(generatedFleet).length,6);
   assert.ok(repo.listLoads(generatedDriver).length>10);
   assert.ok(repo.listCapacity(generatedBusiness).length>20);
   assert.ok(repo.listDirectoryProfiles('ALL').length>100);

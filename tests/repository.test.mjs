@@ -206,9 +206,65 @@ test('company driver is assigned to one fleet truck and defaults to full owner-d
  assert.equal(access.can_negotiate_loads,true);
  assert.deepEqual(repo.listOwnVehicles(driver).map(vehicle=>vehicle.id),['veh-trans-1']);
  const team=repo.listFleetDrivers(owner);
- assert.equal(team.length,1);
- assert.match(team[0].assigned_vehicles,/Isuzu FSR/);
+ assert.equal(team.length,2);
+ assert.match(team.find(member=>member.id==='user-company-driver').assigned_vehicles,/Isuzu FSR/);
+ assert.match(team.find(member=>member.id==='user-company-driver-2').assigned_vehicles,/Sinotruk HOWO TX/);
  assert.throws(()=>repo.listFleetDrivers(driver),/FORBIDDEN/);
+});
+
+test('fleet owner exclusively assigns and unassigns company drivers within the owned fleet',()=>{
+ const db=dbModule.getDb();
+ const owner=repo.getUserById('user-transporter');
+ db.prepare(`INSERT INTO users (id,email,phone,password_hash,name,role,organization_id,active,created_at)
+   SELECT 'user-company-driver-test','driver-assignment-test@loadgistic.local',phone,password_hash,'Test Driver','DRIVER',organization_id,1,created_at
+   FROM users WHERE id='user-company-driver'`).run();
+ db.prepare(`INSERT INTO drivers (id,organization_id,user_id,name,phone,license_verified,active)
+   VALUES ('driver-company-test','org-transporter','user-company-driver-test','Test Driver','+251 900 111 222',0,1)`).run();
+ try{
+  repo.assignFleetDriverVehicle(owner,'user-company-driver-test','veh-trans-2');
+  repo.assignFleetDriverVehicle(owner,'user-company-driver','veh-trans-2');
+  const active=db.prepare(`SELECT driver_user_id,vehicle_id FROM driver_vehicle_assignments WHERE active=1 ORDER BY driver_user_id`).all();
+  assert.ok(active.some(row=>row.driver_user_id==='user-company-driver'&&row.vehicle_id==='veh-trans-2'));
+  assert.equal(active.some(row=>row.driver_user_id==='user-company-driver-test'),false);
+  assert.equal(active.some(row=>row.driver_user_id==='user-company-driver'&&row.vehicle_id==='veh-trans-1'),false);
+  repo.assignFleetDriverVehicle(owner,'user-company-driver','');
+  assert.equal(db.prepare(`SELECT COUNT(*) AS n FROM driver_vehicle_assignments WHERE driver_user_id='user-company-driver' AND active=1`).get().n,0);
+  assert.throws(()=>repo.publishCapacity(owner,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',movementScope:'INTERCITY',locationArea:'Addis Ababa',...locationRef(),visibility:'OPEN'}),/DRIVER_REQUIRED_FOR_CAPACITY/);
+  assert.throws(()=>repo.assignFleetDriverVehicle(owner,'user-company-driver','veh-driver-1'),/NOT_FOUND/);
+  assert.ok(db.prepare(`SELECT id FROM audit_logs WHERE action='DRIVER_VEHICLE_ASSIGNED' AND entity_id='user-company-driver'`).get());
+ } finally {
+  repo.assignFleetDriverVehicle(owner,'user-company-driver','veh-trans-1');
+  repo.assignFleetDriverVehicle(owner,'user-company-driver-2','veh-trans-2');
+  db.prepare(`DELETE FROM users WHERE id='user-company-driver-test'`).run();
+ }
+});
+
+test('shipment assignment accepts only a provider truck with its active Driver',()=>{
+ const db=dbModule.getDb();
+ const owner=repo.getUserById('user-transporter');
+ const driver=repo.getUserById('user-company-driver');
+ const before=db.prepare(`SELECT commercial_status,operational_status,receiver_first_name,receiver_phone,
+   assigned_vehicle_id,assigned_driver_user_id,updated_at FROM shipments WHERE id='shp-transporter-direct'`).get();
+ try{
+  db.prepare(`UPDATE shipments SET commercial_status='AGREED',operational_status='AGREED',receiver_first_name='Almaz',
+    receiver_phone='+251 900 123 456',assigned_vehicle_id=NULL,assigned_driver_user_id=NULL WHERE id='shp-transporter-direct'`).run();
+  assert.throws(()=>repo.transitionShipment(owner,'shp-transporter-direct','ASSIGNED'),/SHIPMENT_VEHICLE_REQUIRED/);
+  assert.throws(()=>repo.assignShipmentVehicle(owner,'shp-transporter-direct','veh-driver-1'),/INVALID_VEHICLE/);
+  assert.deepEqual(repo.listShipmentAssignmentVehicles(driver,'shp-transporter-direct').map(vehicle=>vehicle.id),['veh-trans-1']);
+  assert.throws(()=>repo.assignShipmentVehicle(driver,'shp-transporter-direct','veh-trans-2'),/INVALID_VEHICLE/);
+  const assignment=repo.assignShipmentVehicle(owner,'shp-transporter-direct','veh-trans-1');
+  assert.deepEqual(assignment,{vehicleId:'veh-trans-1',driverUserId:'user-company-driver'});
+  repo.transitionShipment(owner,'shp-transporter-direct','ASSIGNED');
+  const shipment=repo.getShipmentForUser(owner,'shp-transporter-direct');
+  assert.match(shipment.assigned_vehicle_platform_number,/^LG-TRK-[A-Z0-9]+$/);
+  assert.equal(shipment.assigned_driver_name,'Yonas Alemu');
+ }finally{
+  db.prepare(`UPDATE shipments SET commercial_status=?,operational_status=?,receiver_first_name=?,receiver_phone=?,
+    assigned_vehicle_id=?,assigned_driver_user_id=?,updated_at=? WHERE id='shp-transporter-direct'`)
+    .run(before.commercial_status,before.operational_status,before.receiver_first_name,before.receiver_phone,
+      before.assigned_vehicle_id,before.assigned_driver_user_id,before.updated_at);
+  db.prepare(`DELETE FROM shipment_events WHERE shipment_id='shp-transporter-direct' AND event_type='STATUS'`).run();
+ }
 });
 
 test('Shipment and Truck Boards filter and rank by an owned route',()=>{
@@ -296,13 +352,15 @@ test('Board geography uses endpoint coordinates, radii, direction, and obscured 
  assert.ok(nearCurrent.every(capacity=>!Object.hasOwn(capacity,'location_lat')&&!Object.hasOwn(capacity,'location_lng')));
 });
 
-test('Shipment Board can isolate the provider interests without adding them to Tracking',()=>{
+test('provider interests remain in My Shipments without entering Tracking',()=>{
  const driver=repo.getUserById('user-driver');
  repo.expressInterest(driver,'shp-freight-fixed','Interested view fixture');
  const interested=repo.listLoads(driver,'INTERESTED');
  assert.ok(interested.some(load=>load.id==='shp-freight-fixed'));
  assert.ok(interested.every(load=>load.interested));
- assert.equal(repo.listVisibleShipments(driver).some(load=>load.id==='shp-freight-fixed'),false);
+ const workspace=repo.listMyShipments(driver);
+ assert.equal(workspace.find(load=>load.id==='shp-freight-fixed')?.workspace_stage,'INTERESTED');
+ assert.equal(workspace.some(load=>load.id==='shp-freight-fixed'&&load.workspace_stage==='TRACKING'),false);
 });
 
 test('Shipment Board removes demand after two delivery-deadline grace days but keeps the owner record',()=>{

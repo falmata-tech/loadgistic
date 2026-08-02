@@ -133,6 +133,7 @@ test('receiver contact is private and required between agreement and assignment'
   assert.equal(partyView.receiver_organization_id,users.receiver.organization_id);
   assert.equal(partyView.receiver_first_name,'Hana');
   assert.equal(partyView.receiver_phone,'+251 911 600 700');
+  repo.assignShipmentVehicle(users.driver,shipment.id,'veh-driver-1');
   repo.transitionShipment(users.driver,shipment.id,'ASSIGNED');
   assert.equal(repo.getShipmentForUser(users.shipper,shipment.id).operational_status,'ASSIGNED');
   const proofCount=dbModule.getDb().prepare('SELECT COUNT(*) AS n FROM proof_files WHERE shipment_id=?').get(shipment.id).n;
@@ -163,6 +164,7 @@ test('assigned location tracking is enforced until a Business party reduces it',
   });
   repo.acceptDirectedShipment(users.driver,shipment.id);
   repo.setReceiverContact(users.shipper,shipment.id,'Hana','+251 911 600 700');
+  repo.assignShipmentVehicle(users.driver,shipment.id,'veh-driver-1');
   assert.throws(()=>repo.transitionShipment(users.driver,shipment.id,'ASSIGNED'),/TRACKING_LOCATION_REQUIRED/);
   repo.transitionShipment(users.driver,shipment.id,'ASSIGNED','Driver assigned',{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'});
   assert.throws(()=>repo.setTrackingMode(users.driver,shipment.id,'STATUS_ONLY'),/NOT_FOUND/);

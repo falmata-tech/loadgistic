@@ -12,18 +12,17 @@
 - My Network with private Favorites, directional requests, mutual Connected relationships, and profile/directory actions
 - B2B shipment creation with independent shipment owner and shipper/receiver roles
 - Account or external shipment counterpart
-- My Shipments separated from execution-only Tracking
-- One Business My Shipments navigation destination containing Post shipment, All my shipments, and Active Tracking
+- Universal My Shipments navigation for Businesses, fleet owners, company Drivers, and owner-operators, with role-specific Posted, Interested, Direct requests, Tracking, and History categories
 - Shared Shipments workspace with pairwise-compatible PTL pooling and forward, deadline-aware Along the route sequences
 - Road-freight workflows
 - Shipment discovery and provider interest
-- Three-decision Self-managed Driver capacity Home with compact truck identity, Empty/Partial/Busy availability, linked current route, automatic obscured location, one Optional details area, and one final publish action
+- Seven-decision Self-managed Driver capacity Home with compact truck identity, visible Empty/Partial/Busy status details, FTL/PTL and stop choices, linked current route, automatic obscured location, and one final publish action
 - Persistent stale Empty/Partial Truck Board signals with explicit relative-age warnings, plus Busy available-again signals that leave discovery after their ready date until refreshed
 - Single-city Local and Both capacity input, where the local city is also the truck's current general area
 - Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
 - My Fleet roster with truck-specific detail/capacity pages, complete Business Truck Board cards, and one identity-safe read-only provider card per competing truck
 - Permanent Loadgistic truck numbers used in member discovery, with private operational plates retained for owners and administrators
-- Owner-controlled company Driver permissions for Shipment Board browsing, Business contact, shipment agreements, and rich assigned-truck capacity
+- Ordered fleet Driver management with exclusive current truck assignment plus owner-controlled Shipment Board, Business contact, shipment agreement, and rich capacity permissions
 - Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
 - One authoritative paired profile-route model, labeled Freight Routes for Businesses and Preferred Routes for transport providers
 - Approximate OpenStreetMap route lines, record-derived evidence counts, fresh all-truck route projections, and member-to-member comparison
@@ -31,7 +30,7 @@
 - Real truck identity fields: make, model, cargo configuration, and plate; generic tonnage labels removed
 - Ten-image standardized cargo-configuration catalog used by freight creation, driver Home, Fleet, and Capacity
 - Freight FTL/PTL requirement and recipient-specific temporary shipment-size proof sharing
-- Business-designated shipment-phone opt in and party-only receiver contact required before Freight assignment
+- Business-designated shipment-phone opt in, party-only receiver contact, and a real driver-backed truck pair required before Freight assignment
 - Separate city-pair route controls across freight and capacity forms
 - Coordinate-authoritative Shipment and Truck Boards with adjustable endpoint radii, direct/either direction, all-truck-route ranking, and rounded distance evidence
 - Privacy-aware Truck Board current-area Prefer/Require filtering without coordinate disclosure
@@ -52,8 +51,8 @@
 - Local OpenStreetMap Ethiopia settlement catalog with 3,575 imported records, including Addis Ababa sub-city localities
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
-- Local, Between cities, and Both movement scopes across shipment posting, capacity publishing, Boards, profiles, and route comparison
-- Local-only truck availability constrained to Empty/100 percent, with Partial reserved for a live undated Between cities or Both route
+- Local, Long-distance routes, and Both movement scopes across shipment posting, capacity publishing, Boards, profiles, and route comparison
+- Local-only truck availability constrained to Empty/100 percent, with Partial reserved for a live undated Long-distance or Both route
 - Repeatable profile service areas with 5–100 km coverage radii and mixed circle/route comparison evidence
 - Optional local pickup/drop-off map points excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
 - Tracking and proof kept as separate contracts

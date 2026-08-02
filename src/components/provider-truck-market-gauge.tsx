@@ -23,9 +23,9 @@ type MarketTruck={
 type BoardResult={items:MarketTruck[];total:number;page:number;pageCount:number};
 
 function acceptedLoads(truck:MarketTruck){
-  if(truck.accepts_full_load&&truck.accepts_partial_load)return 'FTL + PTL';
-  if(truck.accepts_partial_load)return 'PTL';
-  return 'FTL';
+  if(truck.accepts_full_load&&truck.accepts_partial_load)return 'Full or partial truckload';
+  if(truck.accepts_partial_load)return 'Partial Truckload (PTL)';
+  return 'Full Truckload (FTL)';
 }
 
 function stopPolicy(truck:MarketTruck){
@@ -52,7 +52,7 @@ export function ProviderTruckMarketBoard({filters,result}:{filters:Filters;resul
       <div className="board-filter-grid">
         <BoardGeographyFilters idPrefix="capacity-provider" movementScope={filters.movementScope} localPlaceRef={filters.localPlaceRef} locality={filters.locality} localRadiusKm={filters.localRadiusKm} originPlaceRef={filters.originPlaceRef} origin={filters.origin} originRadiusKm={filters.originRadiusKm} destinationPlaceRef={filters.destinationPlaceRef} destination={filters.destination} destinationRadiusKm={filters.destinationRadiusKm} directionMode={filters.directionMode} routeLabels={['Route city 1','Route city 2']}/>
         <div className="form-group"><label htmlFor="provider-status"><Gauge aria-hidden="true"/>Availability</label><select id="provider-status" name="status" defaultValue={filters.status}><option value="">Empty, Partial, or Busy</option><option value="EMPTY">Empty</option><option value="PARTIAL">Partial</option><option value="BUSY">Busy</option></select></div>
-        <div className="form-group"><label htmlFor="provider-load-type"><Boxes aria-hidden="true"/>Accepts</label><select id="provider-load-type" name="loadType" defaultValue={filters.loadType}><option value="">FTL or PTL</option><option value="FTL">FTL</option><option value="PTL">PTL</option></select></div>
+        <div className="form-group"><label htmlFor="provider-load-type"><Boxes aria-hidden="true"/>Accepts</label><select id="provider-load-type" name="loadType" defaultValue={filters.loadType}><option value="">Any shipment size</option><option value="FTL">Full Truckload (FTL)</option><option value="PTL">Partial Truckload (PTL)</option></select></div>
         <div className="form-group"><label htmlFor="provider-truck-type"><Truck aria-hidden="true"/>Cargo configuration</label><select id="provider-truck-type" name="vehicleCategory" defaultValue={filters.vehicleCategory}><option value="">All truck types</option>{VEHICLE_CONFIGURATIONS.map(type=><option value={type.name} key={type.name}>{type.name}</option>)}</select></div>
       </div>
       <section className="board-more-filters">
@@ -72,7 +72,7 @@ export function ProviderTruckMarketBoard({filters,result}:{filters:Filters;resul
       {truck.freshness==='UPDATE_NEEDED'?<div className="alert warning stale-capacity-alert"><CalendarClock aria-hidden="true"/>Old update. Treat this only as a market signal.</div>:null}
       <div className="market-signal-grid">
         <div><small><MapPin aria-hidden="true"/>{truck.status==='BUSY'?'Expected area':'Current area'}</small><strong>{truck.movement_scope!=='INTERCITY'&&truck.local_place_label?`${truck.local_place_label} · ${truck.local_radius_km} km radius`:truck.location_area||truck.origin||'Area not updated'}</strong><span>{truck.location_updated_at?`Location ${relativeTime(truck.location_updated_at)}`:'Location time unavailable'}</span></div>
-        {truck.status==='BUSY'?<div><small><Route aria-hidden="true"/>Preferred Routes</small><strong>{truck.preferred_routes_label||'No routes declared'}</strong><span>Future-work preference</span></div>:<div><small><Route aria-hidden="true"/>{truck.movement_scope==='LOCAL'?'Movement':truck.status==='PARTIAL'?'Live partial route':'Planned route'}</small>{truck.movement_scope==='LOCAL'?<><strong>Local availability</strong><span>No between-city route required</span></>:<><strong>{truck.status==='PARTIAL'?(truck.current_route_origin||'Not recorded'):(truck.origin||'Not recorded')} → {truck.status==='PARTIAL'?(truck.current_route_destination||'Not recorded'):(truck.destination||'Not recorded')}</strong><span>{truck.status==='PARTIAL'?`Live now · refreshed ${relativeTime(truck.updated_at)}`:(truck.travel_date?`${truck.travel_date} · ${truck.planned_space_status==='PARTIAL'?'Partial':'Full'} cargo space`:'No planned date')}</span></>}</div>}
+        {truck.status==='BUSY'?<div><small><Route aria-hidden="true"/>Preferred Routes</small><strong>{truck.preferred_routes_label||'No routes declared'}</strong><span>Future-work preference</span></div>:<div><small><Route aria-hidden="true"/>{truck.movement_scope==='LOCAL'?'Movement':truck.status==='PARTIAL'?'Live partial route':'Planned route'}</small>{truck.movement_scope==='LOCAL'?<><strong>Local availability</strong><span>No long-distance route required</span></>:<><strong>{truck.status==='PARTIAL'?(truck.current_route_origin||'Not recorded'):(truck.origin||'Not recorded')} → {truck.status==='PARTIAL'?(truck.current_route_destination||'Not recorded'):(truck.destination||'Not recorded')}</strong><span>{truck.status==='PARTIAL'?`Live now · refreshed ${relativeTime(truck.updated_at)}`:(truck.travel_date?`${truck.travel_date} · ${truck.planned_space_status==='PARTIAL'?'Partial':'Full'} cargo space`:'No planned date')}</span></>}</div>}
         {truck.status!=='BUSY'?<div><small><Boxes aria-hidden="true"/>Accepting</small><strong>{acceptedLoads(truck)}</strong><span>{stopPolicy(truck)} · {truck.open_to_contract_lanes?'Contract routes':'Single-trip work'}</span></div>:null}
         {truck.status!=='BUSY'?<div><small><Camera aria-hidden="true"/>Proof signal</small><strong>{truck.proof_available?'Photo recorded':'No photo'}</strong><span>{truck.proof_recorded_at?relativeTime(truck.proof_recorded_at):'Not recorded'}</span></div>:null}
       </div>

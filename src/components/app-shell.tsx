@@ -45,7 +45,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/fleet', label: 'Fleet', icon: Truck },
     { href: '/app/loads', label: 'Shipment Board', icon: LayoutList },
     { href: '/app/capacity', label: 'Truck Board', icon: PackageSearch },
-    { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
+    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
@@ -54,7 +54,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/app/loads', label: 'Shipment Board', icon: LayoutList },
     { href: '/app/capacity', label: 'Truck Board', icon: PackageSearch },
-    { href: '/app/shipments', label: 'Tracking', icon: ClipboardCheck },
+    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/network', label: 'My Network', icon: Network },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
@@ -64,7 +64,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/operations', label: 'Operations', icon: Database },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
-    { href: '/app/shipments', label: 'Tracking', icon: PackageSearch },
+    { href: '/app/shipments', label: 'Shipments', icon: PackageSearch },
     { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],

@@ -3,10 +3,10 @@ id: FEAT-GEO-001
 title: Local service areas and mixed freight geography
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001, FEAT-MAT-001]
 problem: City-radius freight is forced into intercity route fields even when a Business or truck serves only one locality, producing misleading map lines and weak discovery.
-behavior: Loads, truck capacity, and authenticated profiles distinguish Local service areas from Between cities routes; local discovery uses structured Ethiopian places and bounded radii while exact load pins remain private to authorized shipment parties.
+behavior: Loads, truck capacity, and authenticated profiles distinguish Local service areas from Long-distance routes; local discovery uses structured Ethiopian places and bounded radii while exact load pins remain private to authorized shipment parties.
 contracts: [MovementScope, ServiceArea, LocalLoadLocation, LocalCapacityArea, CoverageProjection, CoverageComparison, GeographicMatch, PrivateLoadPoint]
 observability: [service_area_update_audit, movement_scope_filter, geographic_match_kind, bounded_geography_query]
-rollout: Additive columns default existing records to Between cities, existing profile routes remain authoritative, member-entered operating-region text is not silently converted, and local controls can be hidden without deleting stored geography.
+rollout: Additive columns default existing records to the internal intercity scope, existing profile routes remain authoritative, member-entered operating-region text is not silently converted, and local controls can be hidden without deleting stored geography.
 ---
 
 # Local and intercity freight geography
@@ -72,13 +72,13 @@ Then the settlement center and service radius describe declared operating covera
 And they are not labeled as a current GPS position\
 And location freshness refers to the capacity declaration time.
 
-### Scenario: Local and Between cities Board filters
+### Scenario: Local and Long-distance route Board filters
 
 Given an authenticated member opens the Shipment Board or Truck Board\
-When it selects All, Local, or Between cities\
+When it selects All, Local, or Long-distance routes\
 Then only authorized records in that movement scope are considered\
 And Local results may be narrowed by a bounded searchable locality\
-And Between cities results retain separate origin and destination filters\
+And Long-distance route results retain separate origin and destination filters\
 And all other compatible Board filters remain available.
 
 ### Scenario: geographic matches state their evidence
@@ -93,7 +93,7 @@ And free-text landmarks never become verified geographic matches.
 
 Given a load or capacity existed before mixed freight geography\
 When the additive migration runs\
-Then its movement scope becomes Between cities\
+Then its movement scope becomes Long-distance routes\
 And its existing route endpoints and matching behavior remain unchanged\
 And no operating-region text is assigned an arbitrary radius.
 

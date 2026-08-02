@@ -225,7 +225,7 @@ export function stressProfile(scale = 1) {
     businesses:80 * value,
     fleetTransporters:20 * value,
     fleetTrucksPerTransporter:6,
-    companyDriversPerTransporter:3,
+    companyDriversPerTransporter:6,
     selfManagedDrivers:40 * value,
     applicants:30 * value,
     extraAdmins:5,
@@ -399,12 +399,12 @@ export function populateStressData(db, { scale = 1 } = {}) {
           `Truck ${pad(truckIndex,2)}`,cargo,
           `ET-${pad(fleetIndex,3)}-${pad(truckIndex,3)}`,active,make,model,cargo
         );
-        const driverUserId = driverUserIds[(truckIndex - 1) % driverUserIds.length];
-        assignmentInsert.run(
-          `stress-assignment-fleet-${suffix}-${truckIndex}`,driverUserId,vehicleId,ownerId,
+        const assignedDriverUserId = driverUserIds[truckIndex - 1]||null;
+        if(assignedDriverUserId)assignmentInsert.run(
+          `stress-assignment-fleet-${suffix}-${truckIndex}`,assignedDriverUserId,vehicleId,ownerId,
           days(now,-120 + truckIndex).toISOString(),active
         );
-        const vehicle = {id:vehicleId,organizationId,providerProfileId:null,ownerUserId:ownerId,driverUserId,active,index:vehicles.length + 1};
+        const vehicle = {id:vehicleId,organizationId,providerProfileId:null,ownerUserId:ownerId,driverUserId:assignedDriverUserId||ownerId,assignedDriverUserId,active,index:vehicles.length + 1};
         vehicles.push(vehicle);
         fleetVehicles.push(vehicle);
       }
@@ -553,7 +553,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         historicalStatus === 'PARTIAL' ? 'PARTIAL' : 'FULL',
         vehicle.index % 4 === 0 ? 1 : 0,vehicle.index % 5 === 0 ? 1 : 0
       );
-      const latestStatus = !vehicle.active || vehicle.index % 7 === 0 ? 'OFF_DUTY' : vehicle.index % 3 === 0 ? 'PARTIAL' : 'EMPTY';
+      const latestStatus = !vehicle.active || (vehicle.organizationId&&!vehicle.assignedDriverUserId) || vehicle.index % 7 === 0 ? 'OFF_DUTY' : vehicle.index % 3 === 0 ? 'PARTIAL' : 'EMPTY';
       const latestPercent = latestStatus === 'OFF_DUTY' ? 0 : latestStatus === 'PARTIAL' ? 20 + (vehicle.index % 4) * 20 : 100;
       const visibility = ['OPEN','SAVED_PARTNERS','PRIVATE','DIRECT_TO_SELECTED_BUSINESS'][vehicle.index % 4];
       const updatedAt = vehicle.index % 11 === 0 ? hours(now,-18).toISOString() : hours(now,-(vehicle.index % 6)).toISOString();
@@ -660,8 +660,8 @@ export function populateStressData(db, { scale = 1 } = {}) {
     }
 
     const shipmentInsert = db.prepare(`INSERT INTO shipments
-      (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,receiver_first_name,receiver_phone,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_code_hash,load_owner_organization_id,load_owner_party_role,external_shipper_name,external_shipper_phone,external_receiver_name,external_receiver_phone,created_by,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      (id,code,title,service_mode,distribution_mode,price_mode,price_minor,target_price_minor,shipper_organization_id,receiver_organization_id,provider_organization_id,provider_profile_id,assigned_vehicle_id,assigned_driver_user_id,origin,destination,cargo_description,package_count,estimated_weight,vehicle_category,load_type,receiver_first_name,receiver_phone,pickup_date,delivery_date,commercial_status,operational_status,tracking_mode,tracking_code_hash,load_owner_organization_id,load_owner_party_role,external_shipper_name,external_shipper_phone,external_receiver_name,external_receiver_phone,created_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
     const eventInsert = db.prepare(`INSERT INTO shipment_events
       (id,shipment_id,status,event_type,note,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,public,created_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
@@ -708,6 +708,9 @@ export function populateStressData(db, { scale = 1 } = {}) {
       const createdAt = days(now,-(index % 120) - 2).toISOString();
       const updatedAt = hours(now,-(index % 72)).toISOString();
       const needsReceiverContact = ['AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED','COMPLETED'].includes(state);
+      const assignedVehicle = needsReceiverContact
+        ? useFleet ? provider.vehicles.find(vehicle=>vehicle.active&&vehicle.assignedDriverUserId) : provider.vehicle
+        : null;
       const trackingMode = index % 2 ? 'STATUS_ONLY' : 'LOCATION_AND_STATUS';
       const vehicleCategory = CARGO_CONFIGURATIONS[index % CARGO_CONFIGURATIONS.length];
       const title = `${CARGO_DESCRIPTIONS[index % CARGO_DESCRIPTIONS.length]} to ${destination.replace(', Ethiopia','')}`;
@@ -717,6 +720,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         priceMode === 'TARGET_PRICE' ? 1_250_000 + index * 10_000 : null,
         shipper.id,receiver?.id || null,
         hasProvider && useFleet ? provider.id : null,hasProvider && !useFleet ? provider.id : null,
+        assignedVehicle?.id||null,assignedVehicle?.assignedDriverUserId||assignedVehicle?.driverUserId||null,
         origin,destination,CARGO_DESCRIPTIONS[index % CARGO_DESCRIPTIONS.length],
         1 + index % 240,null,vehicleCategory,loadType,
         needsReceiverContact ? `Receiver ${index % 40 + 1}` : null,
@@ -884,6 +888,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         owner.id,receiver.id,
         fixture.providerKind === 'FLEET' ? fixture.provider.id : null,
         fixture.providerKind === 'DRIVER' ? fixture.provider.id : null,
+        null,null,
         'Addis Ababa, Ethiopia','Hawassa, Ethiopia',fixture.cargo,
         12 + index * 6,null,fixture.vehicleCategory,fixture.loadType,
         null,null,dateOnly(days(now,2 + index)),dateOnly(days(now,4 + index)),
@@ -979,7 +984,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         shipmentId,`LGX-SHARED-${suffix}`,fixture.title,'FREIGHT','OPEN_MARKET',
         fixtureIndex%2?'TARGET_PRICE':'QUOTE_REQUESTED',null,
         fixtureIndex%2?1_800_000+fixtureIndex*50_000:null,
-        owner.id,receiver.id,null,null,
+        owner.id,receiver.id,null,null,null,null,
         fixture.origin,fixture.destination,fixture.cargo,
         4+fixtureIndex%22,null,fixture.vehicleCategory,fixture.loadType,
         null,null,dateOnly(days(now,fixture.pickupDay)),dateOnly(days(now,fixture.deliveryDay)),

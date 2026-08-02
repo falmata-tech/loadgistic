@@ -15,8 +15,8 @@ const fieldActionByStatus={
 } as const;
 const otherActionLabels:Record<string,string>={CONTACTED:'Contacted',AGREED:'Agreement reached',ON_HOLD:'Pause shipment',COMPLETED:'Complete shipment',CANCELLED:'Cancel shipment',DECLINED:'Decline',WITHDRAWN:'Withdraw'};
 
-export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,needsReceiverContact,operationalStatus,allowDeviceLocation,loadType}:{
-  shipmentId:string;trackingMode:string;nextStatuses:string[];needsReceiverContact:boolean;operationalStatus:string;allowDeviceLocation:boolean;loadType:string;
+export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,needsReceiverContact,needsShipmentVehicle,operationalStatus,allowDeviceLocation,loadType}:{
+  shipmentId:string;trackingMode:string;nextStatuses:string[];needsReceiverContact:boolean;needsShipmentVehicle:boolean;operationalStatus:string;allowDeviceLocation:boolean;loadType:string;
 }){
   const requiresLocation=trackingMode==='LOCATION_AND_STATUS';
   const canAddUpdate=['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(operationalStatus);
@@ -72,7 +72,8 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
       <div className="form-group"><label htmlFor="status-note"><MessageSquare aria-hidden="true"/>Note <span className="meta">(optional)</span></label><input id="status-note" name="note" placeholder="Short note"/></div>
       <div className="form-group"><label htmlFor="status-proof"><Upload aria-hidden="true"/>Photo or document <span className="meta">(optional)</span></label><input id="status-proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div>
       {needsReceiverContact?<div className="alert">Business must add the receiver name and phone first.</div>:null}
-      <button className="button" disabled={(selectedStatus==='ASSIGNED'&&needsReceiverContact)||(requiresLocation&&!locationArea.trim())}><Check aria-hidden="true"/>Save update</button>
+      {selectedStatus==='ASSIGNED'&&needsShipmentVehicle?<div className="alert">Choose a truck and Driver first.</div>:null}
+      <button className="button" disabled={(selectedStatus==='ASSIGNED'&&(needsReceiverContact||needsShipmentVehicle))||(requiresLocation&&!locationArea.trim())}><Check aria-hidden="true"/>Save update</button>
     </form>:null}
 
     {canAddUpdate?<details className="capacity-options"><summary><MapPin aria-hidden="true"/>Location or note only</summary><form action={`/api/shipments/${shipmentId}/tracking-update`} method="post" className="tracking-action-form">

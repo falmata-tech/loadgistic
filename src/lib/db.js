@@ -194,6 +194,11 @@ function migrate(db) {
       UNIQUE(driver_user_id, vehicle_id)
     );
 
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_vehicle_active_driver
+      ON driver_vehicle_assignments(driver_user_id) WHERE active=1;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_vehicle_active_vehicle
+      ON driver_vehicle_assignments(vehicle_id) WHERE active=1;
+
     CREATE TABLE IF NOT EXISTS profile_routes (
       id TEXT PRIMARY KEY,
       organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
@@ -294,6 +299,8 @@ function migrate(db) {
       receiver_organization_id TEXT REFERENCES organizations(id),
       provider_organization_id TEXT REFERENCES organizations(id),
       provider_profile_id TEXT REFERENCES provider_profiles(id),
+      assigned_vehicle_id TEXT REFERENCES vehicles(id),
+      assigned_driver_user_id TEXT REFERENCES users(id),
       origin TEXT NOT NULL,
       destination TEXT NOT NULL,
       cargo_description TEXT NOT NULL,
@@ -577,6 +584,8 @@ function migrate(db) {
   for (const [name,definition] of [
     ['origin_place_ref','TEXT'],['origin_lat','REAL'],['origin_lng','REAL'],
     ['destination_place_ref','TEXT'],['destination_lat','REAL'],['destination_lng','REAL']
+    ,['assigned_vehicle_id','TEXT REFERENCES vehicles(id)']
+    ,['assigned_driver_user_id','TEXT REFERENCES users(id)']
   ]) if(!profileRouteColumns.has(name))db.exec(`ALTER TABLE profile_routes ADD COLUMN ${name} ${definition}`);
   const placeColumns = new Set(db.prepare('PRAGMA table_info(place_catalog)').all().map(column => column.name));
   if (!placeColumns.has('country_name')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_name TEXT NOT NULL DEFAULT 'Ethiopia'");
@@ -770,6 +779,8 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_organization_city_geo ON organizations(city_lat,city_lng);
     CREATE INDEX IF NOT EXISTS idx_provider_city_geo ON provider_profiles(city_lat,city_lng);
     CREATE INDEX IF NOT EXISTS idx_shipment_owner ON shipments(load_owner_organization_id,updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_shipment_assigned_vehicle ON shipments(assigned_vehicle_id,operational_status);
+    CREATE INDEX IF NOT EXISTS idx_shipment_assigned_driver ON shipments(assigned_driver_user_id,operational_status);
     CREATE INDEX IF NOT EXISTS idx_shipment_events_load ON shipment_events(shipment_id,created_at);
     CREATE INDEX IF NOT EXISTS idx_shipment_interests_load_provider ON shipment_interests(shipment_id,provider_organization_id,provider_profile_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id,created_at DESC);
@@ -791,6 +802,10 @@ function migrate(db) {
     UPDATE capacities SET location_area='Around ' || origin WHERE (location_area IS NULL OR trim(location_area)='') AND origin IS NOT NULL;
     UPDATE capacities SET location_updated_at=updated_at WHERE location_updated_at IS NULL AND location_area IS NOT NULL;
     UPDATE shipments SET receiver_first_name='Marta',receiver_phone='+251 911 222 222' WHERE id='shp-freight-active' AND operational_status IN ('ASSIGNED','IN_TRANSIT','ARRIVED','DELIVERED','COMPLETED');
+    UPDATE shipments SET assigned_vehicle_id='veh-trans-1',assigned_driver_user_id='user-company-driver'
+      WHERE id IN ('shp-freight-active','shp-freight-completed')
+        AND provider_organization_id='org-transporter'
+        AND assigned_vehicle_id IS NULL;
   `);
   db.exec(`UPDATE shipments SET load_type='FTL' WHERE load_type='FULL_LOAD'; UPDATE shipments SET load_type='PTL' WHERE load_type='SHARED_CAPACITY';`);
   const routePages = db.prepare(`SELECT organization_id,provider_profile_id,corridors FROM company_pages
@@ -1057,6 +1072,7 @@ function seed(db) {
     ['user-receiver','receiver@loadgistic.local','Marta Alemu','RECEIVER',orgs.receiver.id,null],
     ['user-transporter','transporter@loadgistic.local','Samuel Tesfaye','TRANSPORTER',orgs.transporter.id,null],
     ['user-company-driver','company-driver@loadgistic.local','Yonas Alemu','DRIVER',orgs.transporter.id,null],
+    ['user-company-driver-2','company-driver-2@loadgistic.local','Dawit Bekele','DRIVER',orgs.transporter.id,null],
     ['user-driver','driver@loadgistic.local','Abebe Kebede','DRIVER',null,'provider-driver',1],
     ['user-applicant','signup-member@fixtures.loadgistic.test','Liya Bekele','RECEIVER',orgs.receiver.id,null,1],
     ['user-expired','expired@loadgistic.local','Meron Desta','SHIPPER',orgs.expired.id,null]
@@ -1075,6 +1091,7 @@ function seed(db) {
   insertMembership.run(randomId('mem-'),'user-receiver',orgs.receiver.id,'OWNER');
   insertMembership.run(randomId('mem-'),'user-transporter',orgs.transporter.id,'OWNER');
   insertMembership.run(randomId('mem-'),'user-company-driver',orgs.transporter.id,'DRIVER');
+  insertMembership.run(randomId('mem-'),'user-company-driver-2',orgs.transporter.id,'DRIVER');
   insertMembership.run(randomId('mem-'),'user-applicant',orgs.receiver.id,'MEMBER');
   insertMembership.run(randomId('mem-'),'user-expired',orgs.expired.id,'OWNER');
 
@@ -1106,12 +1123,20 @@ function seed(db) {
   vehicleInsert.run('veh-driver-1',null,'provider-driver','My truck','Light Stake Body Truck','AA-2-44001',1,'Isuzu','NPR','Light Stake Body Truck');
   db.prepare(`INSERT INTO drivers (id,organization_id,user_id,name,phone,license_verified,active) VALUES (?,?,?,?,?,?,?)`)
     .run('driver-company-1',orgs.transporter.id,'user-company-driver','Yonas Alemu','+251 911 555 001',1,1);
+  db.prepare(`INSERT INTO drivers (id,organization_id,user_id,name,phone,license_verified,active) VALUES (?,?,?,?,?,?,?)`)
+    .run('driver-company-2',orgs.transporter.id,'user-company-driver-2','Dawit Bekele','+251 911 555 002',1,1);
   db.prepare(`INSERT INTO driver_permissions
     (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at)
     VALUES (?,?,?,?,?,?,?)`).run('user-company-driver',1,1,1,1,'user-transporter',iso);
+  db.prepare(`INSERT INTO driver_permissions
+    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at)
+    VALUES (?,?,?,?,?,?,?)`).run('user-company-driver-2',1,1,1,1,'user-transporter',iso);
   db.prepare(`INSERT INTO driver_vehicle_assignments
     (id,driver_user_id,vehicle_id,assigned_by,assigned_at,active) VALUES (?,?,?,?,?,1)`)
     .run('driver-vehicle-company-1','user-company-driver','veh-trans-1','user-transporter',iso);
+  db.prepare(`INSERT INTO driver_vehicle_assignments
+    (id,driver_user_id,vehicle_id,assigned_by,assigned_at,active) VALUES (?,?,?,?,?,1)`)
+    .run('driver-vehicle-company-2','user-company-driver-2','veh-trans-2','user-transporter',iso);
 
   const profileRouteInsert = db.prepare(`INSERT INTO profile_routes
     (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,?,?)`);
@@ -1179,6 +1204,8 @@ function seed(db) {
     local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,
     pickup_area_label='Bole',dropoff_area_label='Saris'
     WHERE id='shp-local-addis'`).run();
+  db.prepare(`UPDATE shipments SET assigned_vehicle_id='veh-trans-1',assigned_driver_user_id='user-company-driver'
+    WHERE id IN ('shp-freight-active','shp-freight-completed')`).run();
   const interestInsert=db.prepare(`INSERT INTO shipment_interests
     (id,shipment_id,provider_organization_id,provider_profile_id,status,note,created_by,created_at)
     VALUES (?,?,?,?,?,?,?,?)`);

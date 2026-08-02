@@ -34,7 +34,7 @@ export function BoardGeographyFilters({
       <div className="segmented-control movement-segments">
         <label><input type="radio" name="movementScope" value="" checked={!movementScope} onChange={()=>setMovementScope('')}/><span>All</span></label>
         <label><input type="radio" name="movementScope" value="LOCAL" checked={movementScope==='LOCAL'} onChange={()=>setMovementScope('LOCAL')}/><span>Local</span></label>
-        <label><input type="radio" name="movementScope" value="INTERCITY" checked={movementScope==='INTERCITY'} onChange={()=>setMovementScope('INTERCITY')}/><span>Between cities</span></label>
+        <label><input type="radio" name="movementScope" value="INTERCITY" checked={movementScope==='INTERCITY'} onChange={()=>setMovementScope('INTERCITY')}/><span>Long distance</span></label>
       </div>
     </fieldset>
     {movementScope==='LOCAL'?<div className="form-group full">
@@ -73,6 +73,6 @@ export function BoardGeographyFilters({
         </div>
       </fieldset>
     </>:null}
-    {!movementScope?<p className="meta full geography-filter-hint">Choose Local or Between cities to narrow the Board by geography.</p>:null}
+    {!movementScope?<p className="meta full geography-filter-hint">Choose Local or Long distance to narrow the Board by geography.</p>:null}
   </>;
 }
