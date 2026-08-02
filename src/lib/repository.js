@@ -925,7 +925,7 @@ function insertProofFile(db,user,shipment,proofType,upload,note='') {
 }
 
 /** @param {{upload?: {path:string,originalName:string,mimeType:string},proofType?:string}|null} evidence */
-export function transitionShipment(user, shipmentId, nextStatus, note = '', locationInput = {}, evidence = null) {
+export function transitionShipment(user, shipmentId, nextStatus, note = '', evidence = null) {
   assertWorkspaceAccess(user);
   const db = getDb();
   const shipment = getShipmentParty(user, shipmentId);
@@ -940,7 +940,7 @@ export function transitionShipment(user, shipmentId, nextStatus, note = '', loca
     throw new Error('RECEIVER_CONTACT_REQUIRED');
   }
   if(nextStatus==='ASSIGNED'&&(!shipment.assigned_vehicle_id||!shipment.assigned_driver_user_id))throw new Error('SHIPMENT_VEHICLE_REQUIRED');
-  const location = trackingLocation(locationInput,shipment.tracking_mode === 'LOCATION_AND_STATUS',user.role === USER_ROLES.DRIVER,shipment.load_type==='FTL'?20:40);
+  const location = trackingLocation();
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -960,19 +960,29 @@ export function addTrackingUpdate(user, shipmentId, input) {
   const db = getDb();
   const shipment = getShipmentParty(user,shipmentId);
   if (!shipment) throw new Error('NOT_FOUND');
-  const assignedProvider = (user.role === USER_ROLES.TRANSPORTER && shipment.provider_organization_id === user.organization_id)
-    || (isCompanyDriver(user) && shipment.provider_organization_id === user.organization_id && shipment.assigned_driver_user_id===user.id)
-    || (isSelfManagedDriver(user) && shipment.provider_profile_id === user.provider_profile_id)
-    || user.role === USER_ROLES.ADMIN;
-  if (!assignedProvider || !['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(shipment.operational_status)) throw new Error('FORBIDDEN');
-  const note = String(input.note || '').trim();
+  const assignedDriver=user.role===USER_ROLES.DRIVER
+    && shipment.assigned_driver_user_id===user.id
+    && ((isCompanyDriver(user)&&shipment.provider_organization_id===user.organization_id)
+      || (isSelfManagedDriver(user)&&shipment.provider_profile_id===user.provider_profile_id));
+  if (!assignedDriver || !['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(shipment.operational_status)) throw new Error('FORBIDDEN');
   const needsLocation = shipment.tracking_mode === 'LOCATION_AND_STATUS';
   if (!needsLocation) throw new Error('TRACKING_LOCATION_NOT_ENABLED');
-  const location = trackingLocation(input,needsLocation,user.role === USER_ROLES.DRIVER,shipment.load_type==='FTL'?20:40);
+  if(input.locationSource!=='DEVICE_OBSCURED')throw new Error('TRACKING_DEVICE_LOCATION_REQUIRED');
+  const location = trackingLocation(input,true,true,shipment.load_type==='FTL'?20:40);
   const timestamp = nowIso();
-  insertTrackingEvent(db,shipment,user,'LOCATION',note,location,timestamp);
-  db.prepare('UPDATE shipments SET updated_at=? WHERE id=?').run(timestamp,shipment.id);
-  audit(db,user,'SHIPMENT_TRACKING_UPDATED','shipment',shipment.id,{ trackingMode: shipment.tracking_mode, locationSource: location.source, locationPrecisionKm: location.precisionKm });
+  const latest=db.prepare(`SELECT created_at FROM shipment_events WHERE shipment_id=? AND event_type='LOCATION' ORDER BY created_at DESC LIMIT 1`).get(shipment.id);
+  if(latest&&Date.now()-new Date(latest.created_at).getTime()<10*60*1000)return {recorded:false,reason:'THROTTLED'};
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    insertTrackingEvent(db,shipment,user,'LOCATION','Automatic device location',location,timestamp);
+    db.prepare('UPDATE shipments SET updated_at=? WHERE id=?').run(timestamp,shipment.id);
+    audit(db,user,'SHIPMENT_TRACKING_UPDATED','shipment',shipment.id,{ trackingMode: shipment.tracking_mode, locationSource: location.source, locationPrecisionKm: location.precisionKm });
+    db.exec('COMMIT');
+  }catch(error){
+    db.exec('ROLLBACK');
+    throw error;
+  }
+  return {recorded:true};
 }
 
 export function setTrackingMode(user, shipmentId, trackingMode) {
@@ -995,7 +1005,7 @@ export function setTrackingMode(user, shipmentId, trackingMode) {
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare('UPDATE shipments SET tracking_mode=?,updated_at=? WHERE id=?').run(trackingMode,timestamp,shipment.id);
-    const modeLabel=trackingMode==='LOCATION_AND_STATUS'?'approximate location and status':'status timeline';
+    const modeLabel=trackingMode==='LOCATION_AND_STATUS'?'automatic location and status':'status only';
     insertTrackingEvent(db,{...shipment,operational_status:shipment.operational_status},user,'TRACKING_MODE',`Tracking changed to ${modeLabel} by a Business party`,trackingLocation(),timestamp);
     audit(db,user,'SHIPMENT_TRACKING_MODE_CHANGED','shipment',shipment.id,{ from: shipment.tracking_mode, to: trackingMode });
     db.exec('COMMIT');

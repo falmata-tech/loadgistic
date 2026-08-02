@@ -3,7 +3,7 @@ id: FEAT-TRK-001
 title: Tracking and proof
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001]
 problem: Shipment parties need enforceable, understandable tracking and controlled operational evidence without exposing precise movement or private files.
-behavior: A newly posted Shipment starts with the low-friction Status timeline. After agreement and before truck assignment, its Business owner may retain that mode or require Approximate location + status; after assignment the provider must satisfy the chosen mode and only a Business party may reduce it to status-only. Shipper and receiver parties, including an external party, may unlock customer-safe tracking with the secret code and inactivity expiry; assigned providers use their shipment timeline instead of a separate internal-notes channel.
+behavior: A newly posted Shipment starts with the low-friction Status timeline. After agreement and before truck assignment, its Business owner may retain that mode or require Automatic location + status; the assigned Driver's device publishes obscured location while the shipment screen is open, status actions remain one ordered workflow, and only a Business party may reduce the mode to status-only. Shipper and receiver parties, including an external party, may unlock customer-safe tracking with the secret code and inactivity expiry; assigned providers use their shipment timeline instead of a separate internal-notes channel.
 contracts: [TrackingMode, TrackingObligation, TrackingAccessCode, BrowserTrackingGrant, TrackingIdleTimeout, CustomerSafeTrackingView, LoadTypeTrackingPrecision, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant]
 observability: [tracking_mode_audit, tracking_update, tracking_location_source, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, proof_audit, load_proof_request, load_proof_share, load_proof_expiry, file_access_denial]
 rollout: Require private storage, MIME and size validation, malware scanning, and access-denial monitoring before production.
@@ -61,44 +61,48 @@ And tracking proof is not implied.
 ### Scenario: Business chooses stronger tracking after agreement
 
 Given a freight Shipment is Agreed and has not been assigned to a truck\
-When its owning Business retains Status timeline or chooses Approximate location + status\
+When its owning Business retains Status timeline or chooses Automatic location + status\
 Then that mode is stored and shown to the assigned provider\
 And the provider cannot assign the truck in the same request as an unreviewed mode change\
 And tracking proof remains separate from either mode.
 
-### Scenario: assigned provider must follow location tracking
+### Scenario: assigned Driver supplies automatic location tracking
 
-Given an assigned load requires Approximate location + status\
-When the provider records assignment, movement, hold, issue, or delivery\
-Then a fresh general-area location is required with the event\
+Given an assigned load requires Automatic location + status\
+When its assigned Driver keeps the shipment screen open and grants device-location permission\
+Then the browser publishes a throttled location event without a separate save button\
 And an FTL device coordinate is obscured to a 20 km privacy zone before submission\
 And a PTL device coordinate is obscured to a 40 km privacy zone before submission\
-And the precise coordinate is never submitted, stored, logged, or displayed.
+And the precise coordinate is never submitted, stored, logged, or displayed\
+And a fleet owner, administrator, or unassigned Driver cannot publish a manual substitute location.
 
-### Scenario: assigned provider sends an in-between location update
+### Scenario: status-only tracking has no location workflow
 
-Given a freight load is assigned, not terminal, and requires Approximate location + status\
-When its assigned provider sends a tracking update\
-Then a real timestamped event is added without inventing a status transition\
-And a fresh general-area location is required\
-And its note is optional\
-And Status timeline uses the governed operational status actions instead of a separate note-only composer.
+Given a freight load uses Status timeline\
+When an assigned provider opens its shipment\
+Then no location field, manual-location action, permission prompt, or location-save button is displayed\
+And the timeline contains only governed shipment actions and any historical events.
 
-### Scenario: manual tracking uses four clear field actions
+### Scenario: tracking uses one ordered action panel
 
 Given an assigned provider may advance or report a shipment\
-When the manual tracking control is displayed\
-Then operational choices use the plain labels Loading, En route, Unloading, and Problem where each action is valid\
+When the tracking control is displayed\
+Then Loading, En route, Unloading, Complete, and Problem remain visible together in that order\
+And only actions allowed by the current shipment state are selectable\
+And while a shipment is En route both Unloading and Problem are selectable\
+And after Unloading only Complete is selectable and Problem is disabled\
 And the service still records the corresponding governed shipment status\
-And each action offers one optional proof file beside its note\
+And Loading, En route, Unloading, and Problem offer one optional proof file in the same form\
+And Complete does not ask for proof\
 And omitting proof never blocks an otherwise valid update\
-And an attached proof is privately authorized against the same shipment and action.
+And an attached proof is privately authorized against the same shipment and action\
+And no second More shipment actions or location-update control is shown.
 
 ### Scenario: only a Business may reduce tracking after assignment
 
-Given an assigned load requires Approximate location + status\
+Given an assigned load requires Automatic location + status\
 When the shipper or receiver Business changes it to Status timeline\
-Then future provider events no longer require location\
+Then the assigned Driver's screen stops publishing location events\
 And the mode change is recorded as a public tracking event\
 And the provider cannot make that change.
 

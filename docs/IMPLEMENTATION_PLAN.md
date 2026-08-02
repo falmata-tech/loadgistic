@@ -18,7 +18,7 @@ The current implementation is a local Next.js and SQLite MVP. Accepted behavior 
 5. Fleet roster with permanent platform number, make, model, private plate, and cargo configuration.
 6. Self-managed Driver capacity Home with duty, space, load, stop, dated route, visibility, location, and proof controls; Fleet Transporter controls remain in My Fleet.
 7. Public, Partners, and mutual Connected relationships.
-8. Enforceable Status timeline or Approximate location + status tracking.
+8. Enforceable Status only or Automatic location + status tracking.
 9. Private operational proof and temporary per-interest load-size proof.
 10. Workspace-specific plans and manual ETB payment review.
 11. Installable PWA shell with network-first authenticated pages.

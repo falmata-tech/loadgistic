@@ -9,10 +9,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!user) return NextResponse.redirect(new URL('/login',request.url),303);
   const { id } = await params;
   const form = await request.formData();
+  const automatic=request.headers.get('x-loadgistic-automatic-location')==='1';
   try {
-    addTrackingUpdate(user,id,{note:text(form,'note'),locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')});
+    const result=addTrackingUpdate(user,id,{locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')});
+    if(automatic)return NextResponse.json({ok:true,...result});
     return redirectWith(request,`/app/shipments/${id}`,'success','Tracking update recorded.');
   } catch (error) {
+    if(automatic)return NextResponse.json({ok:false,error:errorMessage(error)},{status:400});
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));
   }
 }

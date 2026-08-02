@@ -82,7 +82,7 @@ Fleet owners manage each company Driver in one ordered control: confirm the Driv
 
 An active fleet truck without a current Driver stays in My Fleet but cannot publish Empty, Partial, or Busy capacity and never appears on the Truck Board. Off Duty remains available so the owner can explicitly hide its old signal. Self-managed trucks are driven by their owner-operator and do not require a separate company-Driver assignment.
 
-When an assigned or self-managed Driver opens capacity or location-required Tracking controls, the browser requests and refreshes device location automatically while that screen remains mounted. A denial or unavailable device leaves structured manual area entry available and does not repeatedly prompt in the same screen lifecycle. The browser may briefly access an exact device coordinate, but it obscures that point before application state or submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
+When an assigned or self-managed Driver opens capacity or location-required Tracking controls, the browser requests and refreshes device location automatically while that screen remains mounted. Capacity keeps structured general-area fallback. Tracking has no manual-location input or save action: only the assigned Driver's obscured device point may publish its throttled automatic events. A denial or unavailable device is shown plainly and does not repeatedly prompt in the same screen lifecycle. The browser may briefly access an exact device coordinate, but it obscures that point before application state or submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
 
 ## Shipments And Relationships
 
@@ -100,14 +100,14 @@ After a completed shipment, the shipper and receiver Businesses may rate each ot
 
 ## Tracking
 
-Every newly posted shipment starts with Status timeline, so posting demand does not require a premature tracking decision. After agreement and before truck assignment, the owning Business may retain that low-friction mode or require Approximate location + status. Every shipment therefore has one tracking obligation:
+Every newly posted shipment starts with Status timeline, so posting demand does not require a premature tracking decision. After agreement and before truck assignment, the owning Business may retain that low-friction mode or require Automatic location + status. Every shipment therefore has one tracking obligation:
 
 - **Status timeline** requires real timestamped status or note updates.
-- **Approximate location + status** requires a general area on each assigned-provider operational update. Device areas use 20 km privacy for FTL and 40 km for PTL.
+- **Automatic location + status** adds throttled location events from the assigned Driver's device while the shipment screen is open. Device areas use 20 km privacy for FTL and 40 km for PTL.
 
-The assigned provider cannot change the tracking requirement. Before assignment, the owning Business or administrator may choose either mode. After assignment, only a shipper Business, receiver Business, or administrator may reduce Approximate location + status to Status timeline. The change is recorded as a tracking event.
+The assigned provider cannot change the tracking requirement. Before assignment, the owning Business or administrator may choose either mode. After assignment, only a shipper Business, receiver Business, or administrator may reduce Automatic location + status to Status timeline. The change is recorded as a tracking event.
 
-Approximate location + status permits in-between area updates without inventing a status transition. Status timeline uses only governed operational actions and does not add a note-only composer. Shipment activity and operational notes live on that governed timeline; there is no separate internal-notes channel. Customer tracking requires the secret code supplied by the shipment owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their shipment timeline instead.
+One action panel always shows Loading, En route, Unloading, Complete, and Problem in order, while disabling actions that are not valid yet. En route allows either Unloading or Problem; after Unloading only Complete is actionable. The first four operational actions accept optional private proof, while Complete does not ask for it. Automatic location events are separate from status actions and have no manual composer. Status timeline has no location control. There is no separate internal-notes channel. Customer tracking requires the secret code supplied by the shipment owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their shipment timeline instead.
 
 Operational proof and temporary shipment-size proof are separate from tracking mode.
 

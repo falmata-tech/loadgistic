@@ -121,6 +121,10 @@ test('freight status transitions preserve agreement before movement',()=>{
  assert.equal(canTransition('FREIGHT','POSTED','CONTACTED'),true);
  assert.equal(canTransition('FREIGHT','POSTED','IN_TRANSIT'),false);
  assert.equal(canTransition('FREIGHT','ASSIGNED','IN_TRANSIT'),true);
+ assert.equal(canTransition('FREIGHT','IN_TRANSIT','DELIVERED'),true);
+ assert.equal(canTransition('FREIGHT','IN_TRANSIT','ISSUE'),true);
+ assert.equal(canTransition('FREIGHT','DELIVERED','COMPLETED'),true);
+ assert.equal(canTransition('FREIGHT','DELIVERED','ISSUE'),false);
 });
 
 test('only business workspace roles can originate shipment demand',()=>{

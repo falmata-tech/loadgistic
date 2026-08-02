@@ -46,7 +46,7 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Businesses receive actionable truck-level Truck Board records; providers receive one read-only card per competing Public truck with its visual cargo configuration and operational capacity facts, but no truck, driver, owner, company, contact, or profile identity. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
-Tracking is a load-level Business choice: Status timeline or Approximate location + status. Once assigned, providers must satisfy that choice on updates and cannot reduce it. The primary manual actions are Loading, En route, Unloading, and Problem, each with optional inline proof; uncommon terminal commands remain secondary. A Business party may reduce tracking to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
+Tracking is a load-level Business choice: Status timeline or Automatic location + status. The assigned Driver's screen publishes throttled obscured device-location events while it is open; there is no manual tracking-location fallback or save action. One ordered action panel always shows Loading, En route, Unloading, Complete, and Problem, disabling actions that are not yet valid. Unloading and Problem are both valid while En route; after Unloading, Complete is valid and Problem is not. Loading, En route, Unloading, and Problem accept optional inline proof. A Business party may reduce tracking to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
 
 ## ADR-012 — Visual trucks and staged contact disclosure
 
@@ -302,9 +302,10 @@ the driver requirement through their owning Driver profile.
 
 An eligible Driver screen starts a throttled browser geolocation watcher when
 capacity or location-required Tracking mounts and clears it on unmount. Exact
-coordinates are obscured before application state. Permission denial and device
-failure preserve manual general-area entry and do not cause repeated prompts in
-one mounted screen.
+coordinates are obscured before application state. Capacity retains its general-
+area fallback. Tracking does not: only the assigned Driver's obscured device
+position may create automatic location events, and denial or device failure is
+shown plainly without exposing a manual substitute control.
 
 Run local development explicitly with Next 15's stable Turbopack bundler.
 Measure route compilation separately from repository latency and production

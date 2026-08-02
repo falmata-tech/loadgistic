@@ -65,11 +65,15 @@ test('seeded signup record belongs to an active workspace member',()=>{
  assert.equal(activePending.n,0);
 });
 
-test('seeded assigned load has a chronological tracking history that satisfies its location mode',()=>{
+test('seeded assigned load separates status actions from automatic Driver location',()=>{
  const shipper=repo.getUserById('user-shipper');
  const shipment=repo.getShipmentForUser(shipper,'shp-freight-active');
- assert.deepEqual(shipment.events.map(event=>event.status),['SENT','AGREED','ASSIGNED','IN_TRANSIT']);
- assert.ok(shipment.events.filter(event=>['ASSIGNED','IN_TRANSIT'].includes(event.status)).every(event=>event.location_area));
+ assert.deepEqual(shipment.events.map(event=>event.status),['SENT','AGREED','ASSIGNED','IN_TRANSIT','IN_TRANSIT']);
+ assert.ok(shipment.events.filter(event=>event.event_type==='STATUS').every(event=>!event.location_source));
+ const location=shipment.events.find(event=>event.event_type==='LOCATION');
+ assert.equal(location.location_source,'DEVICE_OBSCURED');
+ assert.equal(location.location_precision_km,40);
+ assert.equal(location.actor_name,'Yonas Alemu');
  assert.ok(shipment.events.every((event,index,events)=>index===0||new Date(event.created_at)>=new Date(events[index-1].created_at)));
 });
 

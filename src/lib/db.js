@@ -1231,12 +1231,11 @@ function seed(db) {
   }
   eventInsert.run(randomId('evt-'),'shp-freight-active','SENT','CREATED','Direct request sent by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-6*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-active','AGREED','STATUS','Business and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-5*60*60*1000).toISOString());
-  db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,location_area,location_precision_km,location_source,created_by,public,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(randomId('evt-'),'shp-freight-active','ASSIGNED','STATUS','Truck and driver assigned','Around Addis Ababa',null,'MANUAL_GENERAL_AREA','user-transporter',1,new Date(now.getTime()-3*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-active','ASSIGNED','STATUS','Loading started','user-transporter',1,new Date(now.getTime()-3*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-freight-active','IN_TRANSIT','STATUS','Truck departed Addis Ababa','user-transporter',1,new Date(now.getTime()-90*60*1000).toISOString());
   db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,public,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run(randomId('evt-'),'shp-freight-active','IN_TRANSIT','STATUS','Truck departed Addis Ababa','Around Addis Ababa',9,38.5,40,'DEVICE_OBSCURED','user-transporter',1,new Date(now.getTime()-90*60*1000).toISOString());
+    .run(randomId('evt-'),'shp-freight-active','IN_TRANSIT','LOCATION','Automatic device location','Around Addis Ababa',9,38.5,40,'DEVICE_OBSCURED','user-company-driver',1,new Date(now.getTime()-60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-completed','SENT','CREATED','Shipment posted by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-72*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-completed','AGREED','STATUS','Businesses and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-48*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-completed','COMPLETED','STATUS','Delivery completed and received','user-transporter',1,new Date(now.getTime()-24*60*60*1000).toISOString());

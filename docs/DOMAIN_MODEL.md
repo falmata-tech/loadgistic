@@ -22,7 +22,7 @@
 - Status Events
 - Secret Tracking Access Code stored as a keyed digest
 - Five-minute browser/load-bound customer Tracking Grant
-- Tracking obligation: Status timeline or Approximate location + status
+- Tracking obligation: Status only or Automatic location + status
 - Customer-safe tracking event with optional privacy-obscured general area
 - Proof Files
 - Temporary Load Proof Request and recipient grant

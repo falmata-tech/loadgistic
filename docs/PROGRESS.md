@@ -39,7 +39,7 @@
 - Connected-network route coverage using structured intercity routes and local service-area circles without exposing exact shipment pins
 - Short Ethiopian road-freight purpose banner followed by live Shipment Board and Truck Board previews
 - Anonymous server projection that shows structured route, timing, price, truck, capacity, flexibility, proof, and freshness facts while excluding identities, contacts, handles, raw IDs, coordinates, files, and free text
-- Status timeline by default at posting, Business-selected stronger tracking after agreement and before assignment, four plain manual field actions, optional proof beside each action, and real location events when enabled
+- Status timeline by default at posting, Business-selected automatic tracking after agreement and before assignment, one ordered five-action panel with state-aware disabling, optional inline proof for operational actions, and throttled assigned-Driver location events when enabled
 - Secret-code customer tracking for account or non-account shipper/receiver parties with a five-minute idle lock
 - Party-only Tracking separated from Shipment Board discovery
 - Rich icon-led Post Shipment composer with operational deadline labels
@@ -47,7 +47,7 @@
 - Entity and truck verification submissions, private documents, admin review, and evidence-derived badges
 - Separate private account and explicit Public Profile phone/email fields
 - Browser-obscured device areas with 40 km capacity/PTL and 20 km FTL privacy zones
-- Automatic Driver-only device location while capacity or required Tracking controls are open, with fleet-owner manual-area enforcement and manual Driver fallback
+- Automatic Driver-only device location while capacity or required Tracking controls are open; capacity keeps general-area fallback while tracking accepts no manual substitute
 - Local OpenStreetMap Ethiopia settlement catalog with 3,575 imported records, including Addis Ababa sub-city localities
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
 - Bounded async place and member search without large HTML option lists
@@ -86,7 +86,7 @@
 - Native authenticated member Support with persistent New chat, Continue chat, and Past chats states; member-owned End chat and immediate restart; immediate sent-message rendering; direct active-chat lookup; paginated closed history; six visual topics; text-only bounded messages; least-loaded assignment; waiting queue; agent availability/capacity; permissioned platform-team responsibilities; filtered admin triage; and safe agent requeue
 - Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
 - Reusable all-role visual audit with 226 desktop/mobile screenshots and zero layout or accessibility-label flags; one development-server hydration warning did not reproduce across eight fresh mobile transporter sessions or the production browser suite
-- Local Node evidence: 86 tests passed, including provider-safe Truck Board aggregation, live undated Partial routes, optional tracking-action proof, canonical network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing/member closure, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Local Node evidence: 87 tests passed, including the governed five-action tracking sequence, Driver-only automatic shipment location, provider-safe Truck Board aggregation, live undated Partial routes, optional tracking-action proof, canonical network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing/member closure, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 43 passing scenarios and five expected viewport skips across desktop and mobile, including anonymous per-truck provider discovery, loop-free Back navigation, immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed

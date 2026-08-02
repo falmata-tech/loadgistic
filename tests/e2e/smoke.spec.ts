@@ -125,8 +125,8 @@ test('Business manages posting and active Tracking from one My Shipments workspa
   await expect(page.getByText('Industrial supplies to Dire Dawa')).toBeVisible();
   await page.goto('/app/shipments/shp-tracking-setup');
   await expect(page.getByRole('heading',{name:'Tracking setup'})).toBeVisible();
-  await expect(page.getByText('Status updates',{exact:true})).toBeVisible();
-  await expect(page.getByText('Area + status',{exact:true})).toBeVisible();
+  await expect(page.getByRole('radio',{name:/^Status only/})).toBeVisible();
+  await expect(page.getByRole('radio',{name:/^Automatic location \+ status/})).toBeVisible();
   await expect(page.getByRole('button',{name:'Save tracking'})).toBeVisible();
 });
 
@@ -496,22 +496,35 @@ test('member verification center and admin review queue are available', async ({
   await expect(page.getByRole('link',{name:'Investigate client'})).toBeVisible();
 });
 
-test('assigned shipment shows enforced approximate tracking and a real authenticated timeline', async ({ page }: { page:any }) => {
+test('assigned shipment uses one action panel and automatic Driver location', async ({ page }: { page:any }) => {
   test.setTimeout(60_000);
   await login(page, 'transporter@loadgistic.local');
   await page.goto('/app/shipments/shp-freight-active');
-  await expect(page.getByText('Area + one clear status', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Current area')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Use phone/ })).toHaveCount(0);
-  await expect(page.getByText(/Enter the truck's general area/)).toBeVisible();
-  await expect(page.getByText('Unloading',{exact:true})).toBeVisible();
-  await expect(page.getByText('Problem',{exact:true})).toBeVisible();
-  await expect(page.getByLabel(/Photo or document/)).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Shipment update'})).toBeVisible();
+  await expect(page.getByText('Driver location',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Current area')).toHaveCount(0);
+  await expect(page.locator('.tracking-control-panel').getByText('Location update',{exact:true})).toHaveCount(0);
+  await expect(page.locator('.tracking-control-panel').getByText('More shipment actions',{exact:true})).toHaveCount(0);
+  for(const action of ['Loading','En route','Unloading','Complete','Problem'])await expect(page.getByRole('radio',{name:new RegExp(action)})).toBeVisible();
+  await expect(page.getByRole('radio',{name:/Loading/})).toBeDisabled();
+  await expect(page.getByRole('radio',{name:/En route/})).toBeDisabled();
+  await expect(page.getByRole('radio',{name:/Unloading/})).toBeEnabled();
+  await expect(page.getByRole('radio',{name:/Complete/})).toBeDisabled();
+  await expect(page.getByRole('radio',{name:/Problem/})).toBeEnabled();
+  await expect(page.getByLabel(/Proof/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Interested in this shipment?' })).toHaveCount(0);
   await expect(page.getByText('Secret shipment code')).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Customer tracking'})).toHaveCount(0);
   await page.goto('/track');
   await expect(page.getByRole('link',{name:'Open My Shipments'})).toHaveAttribute('href','/app/shipments?view=TRACKING');
+
+  await page.context().clearCookies();
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({latitude:9.03,longitude:38.74});
+  await login(page,'company-driver@loadgistic.local');
+  await page.goto('/app/shipments/shp-freight-active');
+  await expect(page.getByText('Automatic location on',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Current area')).toHaveCount(0);
 
   await page.context().clearCookies();
   await login(page,'shipper@loadgistic.local');
@@ -526,11 +539,12 @@ test('assigned shipment shows enforced approximate tracking and a real authentic
   await page.getByLabel('Secret shipment code').fill(trackingCode);
   await page.getByRole('button',{name:'Open tracking'}).click();
   await expect(page).toHaveURL(/\/track\/shp-freight-active/);
-  await expect(page.getByText('Approximate location + status', { exact: true })).toBeVisible();
+  await expect(page.getByText('Automatic location + status', { exact: true })).toBeVisible();
   await expect(page.getByText(/Locks after 5 minutes without activity/)).toBeVisible();
   await expect(page.getByText(/40 km privacy zone/).first()).toBeVisible();
   await expect(page.getByText('Around Addis Ababa').first()).toBeVisible();
-  await expect(page.locator('.timeline li')).toHaveCount(4);
+  await expect(page.locator('.timeline li')).toHaveCount(6);
+  await expect(page.getByText('Location update',{exact:true})).toHaveCount(2);
 });
 
 test('cross-market members can favorite, request, and accept a network connection',async({page}:{page:any})=>{

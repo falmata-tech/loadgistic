@@ -130,14 +130,14 @@ test('receiver contact is private and required between agreement and assignment'
   assert.equal(repo.getShipmentForUser(users.shipper,shipment.id).operational_status,'ASSIGNED');
   const proofCount=dbModule.getDb().prepare('SELECT COUNT(*) AS n FROM proof_files WHERE shipment_id=?').get(shipment.id).n;
   const upload={path:'/tmp/loadgistic-transit-proof.pdf',originalName:'transit-proof.pdf',mimeType:'application/pdf'};
-  repo.transitionShipment(users.driver,shipment.id,'IN_TRANSIT','Departed',{}, {upload,proofType:'TRANSIT'});
+  repo.transitionShipment(users.driver,shipment.id,'IN_TRANSIT','Departed',{upload,proofType:'TRANSIT'});
   const updated=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.equal(updated.operational_status,'IN_TRANSIT');
   assert.equal(updated.proofs.length,proofCount+1);
   assert.ok(updated.proofs.some(proof=>proof.proof_type==='TRANSIT'));
 });
 
-test('assigned location tracking is enforced until a Business party reduces it', () => {
+test('automatic tracking accepts only assigned Driver device events and keeps status actions independent', () => {
   const shipment = repo.createShipment(users.shipper,{
     title:'Tracked direct freight',
     serviceMode:'FREIGHT',
@@ -158,16 +158,35 @@ test('assigned location tracking is enforced until a Business party reduces it',
   repo.setTrackingMode(users.shipper,shipment.id,'LOCATION_AND_STATUS');
   repo.setReceiverContact(users.shipper,shipment.id,'Hana','+251 911 600 700');
   repo.assignShipmentVehicle(users.driver,shipment.id,'veh-driver-1');
-  assert.throws(()=>repo.transitionShipment(users.driver,shipment.id,'ASSIGNED'),/TRACKING_LOCATION_REQUIRED/);
-  repo.transitionShipment(users.driver,shipment.id,'ASSIGNED','Driver assigned',{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'});
+  repo.transitionShipment(users.driver,shipment.id,'ASSIGNED','Loading started');
+  assert.throws(()=>repo.addTrackingUpdate(users.driver,shipment.id,{locationArea:'Around Addis Ababa',locationSource:'MANUAL_GENERAL_AREA'}),/TRACKING_DEVICE_LOCATION_REQUIRED/);
+  assert.throws(()=>repo.addTrackingUpdate(users.admin,shipment.id,{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'}),/FORBIDDEN/);
+  repo.addTrackingUpdate(users.driver,shipment.id,{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'});
   assert.throws(()=>repo.setTrackingMode(users.driver,shipment.id,'STATUS_ONLY'),/NOT_FOUND/);
   repo.setTrackingMode(users.receiver,shipment.id,'STATUS_ONLY');
-  assert.throws(()=>repo.addTrackingUpdate(users.driver,shipment.id,{note:'Loading completed'}),/TRACKING_LOCATION_NOT_ENABLED/);
+  assert.throws(()=>repo.addTrackingUpdate(users.driver,shipment.id,{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'}),/TRACKING_LOCATION_NOT_ENABLED/);
   repo.transitionShipment(users.driver,shipment.id,'IN_TRANSIT','Loading completed');
   const tracked=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.equal(tracked.tracking_mode,'STATUS_ONLY');
   assert.ok(tracked.events.some(event=>event.event_type==='TRACKING_MODE'));
   assert.ok(tracked.events.some(event=>event.location_source==='DEVICE_OBSCURED'&&event.location_precision_km===20));
+  assert.ok(tracked.events.some(event=>event.status==='IN_TRANSIT'&&!event.location_source));
+});
+
+test('unloading ends the Problem branch and enables completion',()=>{
+  const shipment=createFreight('DIRECT_TO_PROVIDER','profile:provider-driver');
+  repo.acceptDirectedShipment(users.driver,shipment.id);
+  repo.setReceiverContact(users.shipper,shipment.id,'Hana','+251 911 600 700');
+  repo.assignShipmentVehicle(users.driver,shipment.id,'veh-driver-1');
+  repo.transitionShipment(users.driver,shipment.id,'ASSIGNED');
+  repo.transitionShipment(users.driver,shipment.id,'IN_TRANSIT');
+  const upload={path:'/tmp/loadgistic-unloading-proof.pdf',originalName:'unloading-proof.pdf',mimeType:'application/pdf'};
+  repo.transitionShipment(users.driver,shipment.id,'DELIVERED','Unloading',{upload,proofType:'UNLOADING'});
+  assert.throws(()=>repo.transitionShipment(users.driver,shipment.id,'ISSUE'),/INVALID_STATUS_TRANSITION/);
+  repo.transitionShipment(users.driver,shipment.id,'COMPLETED');
+  const completed=repo.getShipmentForUser(users.shipper,shipment.id);
+  assert.equal(completed.operational_status,'COMPLETED');
+  assert.ok(completed.proofs.some(proof=>proof.proof_type==='UNLOADING'));
 });
 
 test('customer tracking code grants account and non-account parties but denies providers', () => {
