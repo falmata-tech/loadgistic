@@ -137,13 +137,14 @@ test('logout clears the session and immediately returns to login',async({page}:{
 test('native support carries one private conversation from customer to agent and admin',async({page}:{page:any})=>{
   test.skip((page.viewportSize()?.width||0)<980,'Stateful support workflow runs once; mobile support screens are covered by UI audit.');
   test.setTimeout(90_000);
-  await login(page,'shipper@loadgistic.local');
+  await login(page,'transporter@loadgistic.local');
   await page.goto('/app/support');
   await expect(page.getByRole('heading',{name:'Support',exact:true})).toBeVisible();
-  await page.getByRole('radio',{name:'Payment'}).check();
-  await page.getByLabel('What do you need?').fill('Please confirm the status of my latest payment.');
+  await page.getByRole('radio',{name:'Capacity'}).check();
+  await page.getByLabel('What do you need?').fill('Please help with my fleet capacity update.');
   await page.getByRole('button',{name:'Send to support'}).click();
-  await expect(page.getByText('Please confirm the status of my latest payment.')).toBeVisible();
+  await expect(page.locator('.support-messages').getByText('Please help with my fleet capacity update.')).toBeVisible();
+  await expect(page.locator('.member-support-list')).toContainText('Please help with my fleet capacity update.');
   await expect(page.getByText(/is helping|Waiting for the next available agent/)).toBeVisible();
   await page.context().clearCookies();
 
@@ -152,21 +153,26 @@ test('native support carries one private conversation from customer to agent and
   await expect(page.getByRole('link',{name:'Operations'})).toHaveCount(0);
   await page.goto('/admin/operations');
   await expect(page).toHaveURL(/\/support$/);
-  const customerRow=page.locator('.support-conversation-list article').filter({hasText:'Blue Nile Trading PLC'});
+  const customerRow=page.locator('.support-conversation-list article').filter({hasText:'BlueLine Transport PLC'});
   await expect(customerRow).toBeVisible();
   await customerRow.getByRole('link',{name:'Open'}).click();
-  await expect(page.getByText('Please confirm the status of my latest payment.')).toBeVisible();
-  await page.getByLabel('Message').fill('Your payment is in the review queue.');
+  await expect(page.getByText('Please help with my fleet capacity update.')).toBeVisible();
+  await page.getByLabel('Message').fill('Your capacity request is in the support queue.');
   await page.getByRole('button',{name:'Send'}).click();
-  await expect(page.getByText('Your payment is in the review queue.')).toBeVisible();
+  await expect(page.getByText('Your capacity request is in the support queue.')).toBeVisible();
   await page.getByRole('button',{name:'Close conversation'}).click();
   await expect(page).toHaveURL(/\/support/);
   await page.context().clearCookies();
 
-  await login(page,'shipper@loadgistic.local');
+  await login(page,'transporter@loadgistic.local');
   await page.goto('/app/support');
-  await expect(page.getByText('Your payment is in the review queue.')).toHaveCount(0);
-  await expect(page.getByText('Previous conversations')).toBeVisible();
+  await expect(page.locator('.support-messages').getByText('Your capacity request is in the support queue.')).toHaveCount(0);
+  await expect(page.getByText('Your conversations')).toBeVisible();
+  const previousConversation=page.locator('.member-support-list article').filter({hasText:'Your capacity request is in the support queue.'});
+  await expect(previousConversation).toBeVisible();
+  await previousConversation.getByRole('link').click();
+  await expect(page.locator('.support-messages').getByText('Your capacity request is in the support queue.')).toBeVisible();
+  await expect(page.getByText('Conversation closed')).toBeVisible();
   await page.context().clearCookies();
 
   await login(page,'admin@loadgistic.local');

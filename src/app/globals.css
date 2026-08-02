@@ -615,6 +615,11 @@ legend { font-weight:800; padding:0 7px; }
 .support-conversation-list > article:last-child { border-bottom:0; }
 .support-conversation-list article > div,.support-conversation-list article > div span { min-width:0; display:block; }
 .support-conversation-list small { display:block; overflow:hidden; text-overflow:ellipsis; color:var(--muted); font-size:.75rem; }
+.member-support-list > article { display:block; padding:0; }
+.member-support-list > article > a { min-width:0; display:grid; grid-template-columns:38px minmax(0,1fr) auto; align-items:center; gap:11px; padding:13px 15px; color:inherit; text-decoration:none; }
+.member-support-list > article > a > svg { width:22px; height:22px; color:var(--blue); }
+.member-support-list > article.selected { background:var(--blue-soft); box-shadow:inset 3px 0 var(--blue); }
+.member-support-list > article > a:hover { background:#f7f9fc; }
 .support-conversation-main { min-width:0; display:grid; grid-template-columns:42px minmax(0,1fr); align-items:center; gap:10px; color:inherit; text-decoration:none; }
 .support-avatar { width:42px; height:42px; display:grid; place-items:center; border-radius:50%; background:var(--blue-soft); color:var(--blue-dark); font-size:.78rem; font-weight:900; }
 .support-agent-strip { display:flex; align-items:center; gap:11px; padding:12px 15px; margin-bottom:14px; border:1px solid var(--line); border-radius:8px; background:white; }
@@ -1217,6 +1222,8 @@ legend { font-weight:800; padding:0 7px; }
   .support-composer .button { width:100%; }
   .support-conversation-list > article { grid-template-columns:minmax(0,1fr) auto; }
   .support-conversation-list > article > form,.support-conversation-list > article > .button { grid-column:1/-1; width:100%; }
+  .member-support-list > article > a { grid-template-columns:32px minmax(0,1fr); }
+  .member-support-list > article > a .status { grid-column:2; justify-self:start; }
   .support-tabs a { grid-template-columns:auto 1fr; }
   .support-tabs a strong { grid-column:2; justify-self:start; }
   .support-agent-create { position:fixed; inset:auto 10px 10px; width:auto; max-height:85vh; overflow:auto; grid-template-columns:1fr; }

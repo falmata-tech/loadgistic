@@ -18,6 +18,7 @@ When the member selects a short help category and starts a conversation\
 Then one open conversation owned by that user is created\
 And the first message is stored with a bounded body\
 And the conversation is assigned to the least-loaded available agent when capacity exists\
+And the redirect immediately renders that stored message inside the member's active chat\
 And no shipment, tracking, verification, location, or payment record is copied into chat automatically.
 
 ### Scenario: support agents receive bounded work
@@ -36,6 +37,16 @@ When its customer, assigned support agent, or administrator opens it\
 Then only the latest bounded message window and safe participant identity are returned\
 And an unrelated customer or unassigned support agent receives no conversation\
 And no account phone, password, tracking code, exact location, or private document is projected.
+
+### Scenario: member conversations remain easy to find
+
+Given a member has an active conversation and any number of closed conversations\
+When the member opens Support or pages through conversation history\
+Then the active conversation is fetched independently of the bounded history page\
+And it cannot be hidden by a newer closed conversation or pagination\
+And the member sees a bounded conversation list with status, update time, message count, and a short latest-message preview\
+And selecting an owned closed conversation opens its read-only message history\
+And another member's conversation remains inaccessible.
 
 ### Scenario: support authority is not administration
 

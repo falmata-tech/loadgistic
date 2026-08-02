@@ -3060,6 +3060,8 @@ function supportConversationBase() {
       customer.name AS customer_name,customer.role AS customer_role,
       COALESCE(customer_org.name,customer_profile.business_name,'Individual account') AS customer_workspace_name,
       agent.name AS assigned_agent_name,
+      (SELECT SUBSTR(message.body,1,120) FROM support_messages message
+        WHERE message.conversation_id=c.id ORDER BY message.created_at DESC,message.id DESC LIMIT 1) AS last_message_preview,
       (SELECT COUNT(*) FROM support_messages message WHERE message.conversation_id=c.id) AS message_count
     FROM support_conversations c
     JOIN users customer ON customer.id=c.customer_user_id
@@ -3160,6 +3162,13 @@ export function listMemberSupportConversations(user,options={}) {
   if(!SUPPORT_MEMBER_ROLES.has(user?.role))throw new Error('FORBIDDEN');
   const db=getDb();
   return paginateQuery(db,`${supportConversationBase()} WHERE c.customer_user_id=?`,[user.id],'updated_at DESC,id',options);
+}
+
+export function getOpenMemberSupportConversation(user) {
+  if(!SUPPORT_MEMBER_ROLES.has(user?.role))throw new Error('FORBIDDEN');
+  return getDb().prepare(`${supportConversationBase()}
+    WHERE c.customer_user_id=? AND c.status IN ('WAITING','OPEN')
+    ORDER BY c.updated_at DESC,c.id LIMIT 1`).get(user.id)||null;
 }
 
 export function listSupportInbox(user,view='ASSIGNED',options={}) {

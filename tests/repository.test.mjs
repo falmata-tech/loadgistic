@@ -700,11 +700,14 @@ test('native support assigns safely, isolates customers, requeues, and stays ava
  const support=repo.getUserById('user-support');
  const shipper=repo.getUserById('user-shipper');
  const receiver=repo.getUserById('user-receiver');
+ const transporter=repo.getUserById('user-transporter');
  const expired=repo.getUserById('user-expired');
  assert.equal(support.role,'SUPPORT');
  assert.equal(repo.getWorkspaceAccess(support).granted,true);
 
  const conversationId=repo.createSupportConversation(shipper,{category:'PAYMENT',body:'Please review my payment status.'});
+ assert.equal(repo.getOpenMemberSupportConversation(shipper).id,conversationId);
+ assert.match(repo.listMemberSupportConversations(shipper,{page:1,pageSize:10}).items[0].last_message_preview,/review my payment/);
  assert.throws(()=>repo.createSupportConversation(shipper,{category:'ACCOUNT',body:'Duplicate open request.'}),/SUPPORT_CONVERSATION_ALREADY_OPEN/);
  const assigned=repo.getSupportConversation(support,conversationId,{markRead:false});
  assert.equal(assigned.status,'OPEN');
@@ -716,7 +719,16 @@ test('native support assigns safely, isolates customers, requeues, and stays ava
  assert.match(repo.getSupportConversation(shipper,conversationId,{markRead:false}).messages.at(-1).body,/being reviewed/);
  assert.throws(()=>repo.closeSupportConversation(shipper,conversationId),/FORBIDDEN/);
  repo.closeSupportConversation(support,conversationId);
+ assert.equal(repo.getOpenMemberSupportConversation(shipper),null);
  assert.throws(()=>repo.sendSupportMessage(shipper,conversationId,'One more thing'),/SUPPORT_CONVERSATION_CLOSED/);
+
+ const transporterConversationId=repo.createSupportConversation(transporter,{category:'CAPACITY',body:'My fleet capacity chat must stay visible.'});
+ repo.sendSupportMessage(transporter,transporterConversationId,'This is a second BlueLine message.');
+ const transporterConversation=repo.getOpenMemberSupportConversation(transporter);
+ assert.equal(transporterConversation.id,transporterConversationId);
+ assert.match(transporterConversation.last_message_preview,/second BlueLine message/);
+ assert.equal(repo.getSupportConversation(transporter,transporterConversationId,{markRead:false}).messages.length,2);
+ repo.closeSupportConversation(support,transporterConversationId);
 
  repo.updateSupportAgent(admin,support.id,{active:true,available:true,maxOpenConversations:1});
  const waitingId=repo.createSupportConversation(shipper,{category:'CAPACITY',body:'I need help publishing capacity.'});

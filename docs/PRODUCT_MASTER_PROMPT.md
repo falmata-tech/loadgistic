@@ -148,9 +148,12 @@ Loadgistic is installable in standalone mode. Driver workflows are mobile-first 
 ## Customer Support
 
 Every active signed-in member can open one text-only support conversation from
-the workspace. Loadgistic stores the conversation and its messages, assigns work
-to the least-loaded available support agent below a configured limit, and keeps
-waiting work in a visible queue. Customers see only their own history.
+the workspace. Loadgistic stores the conversation and its messages, immediately
+renders a sent message in the active chat, assigns work to the least-loaded
+available support agent below a configured limit, and keeps waiting work in a
+visible queue. The active chat is resolved independently from paginated history;
+customers see only their own bounded conversation list, latest-message previews,
+and selectable read-only closed threads.
 Support-authorized platform team members see only assigned conversations.
 Administrators assign Customer, Operations, Trust, Billing, and Support
 responsibilities independently; hidden navigation is backed by the same

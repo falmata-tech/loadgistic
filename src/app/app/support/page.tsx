@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { BadgeCheck, CircleHelp, CreditCard, Headphones, History, PackageSearch, Send, Truck, UserRound } from 'lucide-react';
+import { notFound } from 'next/navigation';
+import { ArrowLeft, BadgeCheck, CircleHelp, CreditCard, Headphones, History, MessageCircle, PackageSearch, Send, Truck, UserRound } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getSupportConversation, listMemberSupportConversations } from '@/lib/repository.js';
+import { getOpenMemberSupportConversation, getSupportConversation, listMemberSupportConversations } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { SupportThread } from '@/components/support-thread';
@@ -21,13 +22,20 @@ export default async function MemberSupportPage({searchParams}:{searchParams:Pro
   const user=await requireUser(['SHIPPER','RECEIVER','TRANSPORTER','DRIVER'],{allowLimited:true});
   const query=await searchParams;
   const result:any=listMemberSupportConversations(user,{page:query.page,pageSize:10});
-  const latest:any=listMemberSupportConversations(user,{page:1,pageSize:1});
-  const current=latest.items.find((item:any)=>item.status!=='CLOSED');
-  const conversation=current?getSupportConversation(user,current.id):null;
-  const closed=result.items.filter((item:any)=>item.status==='CLOSED');
+  const open:any=getOpenMemberSupportConversation(user);
+  let conversation:any=null;
+  try {
+    conversation=query.conversation
+      ? getSupportConversation(user,query.conversation)
+      : open?getSupportConversation(user,open.id):null;
+  } catch(error) {
+    if(String((error as Error)?.message).includes('NOT_FOUND'))notFound();
+    throw error;
+  }
+  const viewingHistory=Boolean(query.conversation&&conversation?.status==='CLOSED');
 
   return <div className="page support-page">
-    <PageHeader icon={Headphones} title="Support" subtitle={conversation?'Continue your conversation.':'Choose a topic and send one message.'}/>
+    <PageHeader icon={Headphones} title="Support" subtitle={viewingHistory?'Previous conversation':conversation?'Continue your conversation.':'Choose a topic and send one message.'} action={query.conversation?<Link className="button secondary icon-button-label" href="/app/support">{open?<MessageCircle aria-hidden="true"/>:<ArrowLeft aria-hidden="true"/>}{open?'Open chat':'Back'}</Link>:undefined}/>
     <Flash error={query.error} success={query.success}/>
     {conversation?<SupportThread conversation={conversation} user={user}/>:<form className="form-card support-start-form" action="/api/support/conversations" method="post">
       <fieldset>
@@ -37,8 +45,8 @@ export default async function MemberSupportPage({searchParams}:{searchParams:Pro
       <div className="form-group"><label htmlFor="support-message"><span className="step-number">2</span><Send aria-hidden="true"/>What do you need?</label><textarea id="support-message" name="body" maxLength={2000} rows={5} required placeholder="Describe the problem"/></div>
       <button className="button icon-button-label"><Send aria-hidden="true"/>Send to support</button>
     </form>}
-    {closed.length?<section className="support-history"><h2 className="panel-heading"><History aria-hidden="true"/>Previous conversations</h2><div className="support-conversation-list">{closed.map((item:any)=><article key={item.id}><div><strong>{item.category.replaceAll('_',' ')}</strong><span>{new Date(item.updated_at).toLocaleDateString()} · {item.message_count} messages</span></div><StatusPill status={item.status}/></article>)}</div></section>:null}
-    {!conversation&&result.pageCount>1?<Pagination path="/app/support" query={{}} page={result.page} pageCount={result.pageCount} total={result.total}/>:null}
+    {result.items.length?<section className="support-history"><h2 className="panel-heading"><History aria-hidden="true"/>Your conversations</h2><div className="support-conversation-list member-support-list">{result.items.map((item:any)=><article className={conversation?.id===item.id?'selected':''} key={item.id}><Link href={item.id===open?.id?'/app/support':`/app/support?conversation=${item.id}`}><MessageCircle aria-hidden="true"/><span><strong>{item.category.replaceAll('_',' ')}</strong><small>{item.last_message_preview||'No message preview'}</small><small>{new Date(item.updated_at).toLocaleString()} · {item.message_count} {item.message_count===1?'message':'messages'}</small></span><StatusPill status={item.status}/></Link></article>)}</div></section>:null}
+    {result.pageCount>1?<Pagination path="/app/support" query={{conversation:query.conversation}} page={result.page} pageCount={result.pageCount} total={result.total}/>:null}
     <p className="support-safety-note"><Headphones aria-hidden="true"/>Support never asks for passwords, PINs, or one-time codes.</p>
   </div>;
 }

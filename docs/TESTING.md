@@ -52,8 +52,9 @@ Covered workflows:
 - Expired workspaces retain Home and Plan & billing while operating navigation and deep links are denied
 - Self-service signup creates an active unverified workspace with a seven-day trial, Business-only sponsorship remains admin-controlled, and payment approval creates a 30-day period
 - Public login does not expose local fixture credentials
-- A member starts one private support conversation, the assigned SUPPORT agent
-  replies and closes it, and an Administrator supervises the team
+- A Fleet Transporter starts one private support conversation, immediately sees
+  its sent message and conversation preview, reads the assigned SUPPORT agent's
+  reply from selectable closed history, and an Administrator supervises the team
 
 Add tests for every permission or state-transition change.
 
