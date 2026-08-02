@@ -1,5 +1,5 @@
-const CACHE = 'loadgistic-static-v3';
-const STATIC = ['/manifest.webmanifest', '/icon.svg'];
+const CACHE = 'loadgistic-static-v4';
+const STATIC = ['/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting()));
@@ -18,6 +18,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   const cacheable = url.pathname === '/icon.svg'
+    || url.pathname === '/icon-192.png'
+    || url.pathname === '/icon-512.png'
+    || url.pathname === '/apple-touch-icon.png'
     || url.pathname === '/manifest.webmanifest'
     || url.pathname.startsWith('/vehicle-configurations/');
   if (!cacheable) return;

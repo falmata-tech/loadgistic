@@ -6,7 +6,7 @@ import { redirectWith, text } from '@/lib/redirects';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 
 function returnPath(user:any,id:string) {
-  return user.role==='SUPPORT'||user.role==='ADMIN'?`/support/${id}`:'/app/support';
+  return user.role==='SUPPORT'||user.role==='ADMIN'?`/support/${id}`:`/app/support?conversation=${id}`;
 }
 
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}) {

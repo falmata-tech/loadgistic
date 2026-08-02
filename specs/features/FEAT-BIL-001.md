@@ -17,7 +17,8 @@ Given an authenticated workspace has a subscription\
 When a positive ETB amount and optional validated file are submitted\
 Then a pending proof is linked to that workspace\
 And an already active trial or paid period is not shortened\
-And bank passwords, PINs, or OTPs are never requested.
+And bank passwords, PINs, or OTPs are never requested\
+And the submitting workspace and an authorized billing administrator may open an attached private proof through a reauthorized route.
 
 ### Scenario: plan page reflects workspace type
 

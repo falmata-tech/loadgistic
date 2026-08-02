@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Check, LocateFixed, MapPin, MessageSquare, Navigation, PackageCheck, PackageOpen, PackageSearch, Save, TriangleAlert, Upload } from 'lucide-react';
+import { Check, LocateFixed, MapPin, Navigation, PackageCheck, PackageOpen, PackageSearch, Save, TriangleAlert, Upload } from 'lucide-react';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
 import { obscureCoordinate } from '@/lib/location-privacy.js';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
@@ -69,23 +69,20 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
         const Icon=action.Icon;
         return <label className="rich-choice" key={status}><input type="radio" name="nextStatus" value={status} checked={selectedStatus===status} onChange={()=>setSelectedStatus(status)}/><Icon aria-hidden="true"/><span><strong>{action.label}</strong><small>{action.hint}</small></span><Check className="choice-check" aria-hidden="true"/></label>;
       })}</div></fieldset>
-      <div className="form-group"><label htmlFor="status-note"><MessageSquare aria-hidden="true"/>Note <span className="meta">(optional)</span></label><input id="status-note" name="note" placeholder="Short note"/></div>
       <div className="form-group"><label htmlFor="status-proof"><Upload aria-hidden="true"/>Photo or document <span className="meta">(optional)</span></label><input id="status-proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div>
       {needsReceiverContact?<div className="alert">Business must add the receiver name and phone first.</div>:null}
       {selectedStatus==='ASSIGNED'&&needsShipmentVehicle?<div className="alert">Choose a truck and Driver first.</div>:null}
       <button className="button" disabled={(selectedStatus==='ASSIGNED'&&(needsReceiverContact||needsShipmentVehicle))||(requiresLocation&&!locationArea.trim())}><Check aria-hidden="true"/>Save update</button>
     </form>:null}
 
-    {canAddUpdate?<details className="capacity-options"><summary><MapPin aria-hidden="true"/>Location or note only</summary><form action={`/api/shipments/${shipmentId}/tracking-update`} method="post" className="tracking-action-form">
-      {requiresLocation?<input type="hidden" name="locationArea" value={locationArea}/>:null}{locationFields}
-      <div className="form-group"><label htmlFor="tracking-note"><MessageSquare aria-hidden="true"/>Note {requiresLocation?'(optional)':''}</label><input id="tracking-note" name="note" required={!requiresLocation} placeholder="Short update"/></div>
+    {canAddUpdate&&requiresLocation?<details className="capacity-options"><summary><MapPin aria-hidden="true"/>Location update</summary><form action={`/api/shipments/${shipmentId}/tracking-update`} method="post" className="tracking-action-form">
+      <input type="hidden" name="locationArea" value={locationArea}/>{locationFields}
       <button className="button secondary"><Save aria-hidden="true"/>Save</button>
     </form></details>:null}
 
     {otherActions.length?<details className="capacity-options"><summary><Check aria-hidden="true"/>More shipment actions</summary><form action={`/api/shipments/${shipmentId}/status`} method="post" className="tracking-action-form">
       {requiresLocation?<input type="hidden" name="locationArea" value={locationArea}/>:null}{locationFields}
       <div className="form-group"><label htmlFor="other-shipment-status"><Check aria-hidden="true"/>Action</label><select id="other-shipment-status" name="nextStatus">{otherActions.map(status=><option value={status} key={status}>{otherActionLabels[status]||status.replaceAll('_',' ')}</option>)}</select></div>
-      <div className="form-group"><label htmlFor="other-status-note"><MessageSquare aria-hidden="true"/>Note <span className="meta">(optional)</span></label><input id="other-status-note" name="note"/></div>
       <button className="button secondary" disabled={requiresLocation&&!locationArea.trim()}><Check aria-hidden="true"/>Continue</button>
     </form></details>:null}
   </section>;

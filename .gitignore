@@ -8,6 +8,8 @@ playwright-report/
 test-results/
 artifacts/ui-audit/
 artifacts/stress-ui/
+artifacts/marketing/
+artifacts/support-review/
 reference-files/
 *.tsbuildinfo
 

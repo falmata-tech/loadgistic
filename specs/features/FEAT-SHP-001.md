@@ -179,7 +179,7 @@ And a new search or filter submission starts from page one.
 Given a fleet transporter or self-managed driver\
 When they browse the Shipment Board\
 Then only Open, Direct, or Partners records permitted by visibility policy appear\
-And internal notes and competing interest remain hidden.
+And participant-only activity and competing interest remain hidden.
 
 ### Scenario: Shipment Board card completes marketplace discovery
 
@@ -291,9 +291,9 @@ And no status event is persisted.
 ### Scenario: browsing provider cannot operate an unassigned load
 
 Given a provider can browse an open freight load but is not assigned to it\
-When the provider attempts to change status or add an internal note\
+When the provider attempts to change its status or add participant-only activity\
 Then the command is denied as not found or forbidden\
-And no shipment, note, event, or success audit changes.
+And no shipment, event, or success audit changes.
 
 ### Scenario: Partners visibility is relationship-scoped
 

@@ -10,12 +10,12 @@ const personas = [
   {
     name: 'business-shipper',
     email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-tracking-setup', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/support?new=1', '/app/more']
   },
   {
     name: 'business-receiver',
     email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/support?conversation=support-demo-open', '/app/more']
   },
   {
     name: 'fleet-transporter',
@@ -35,7 +35,7 @@ const personas = [
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=DRIVERS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/operations?view=NETWORK', '/admin/operations?view=ROUTES', '/admin/operations?view=SUBSCRIPTIONS', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=DRIVERS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/operations?view=NETWORK', '/admin/operations?view=ROUTES', '/admin/operations?view=SUBSCRIPTIONS', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/admin/support?view=WAITING', '/admin/support?view=CLOSED', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
   },
   {
     name:'support-agent',

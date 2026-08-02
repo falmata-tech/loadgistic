@@ -9,8 +9,8 @@ export async function POST(request:NextRequest) {
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const form=await request.formData();
   try {
-    createSupportConversation(user,{category:text(form,'category'),body:text(form,'body')});
-    return redirectWith(request,'/app/support','success','Support request sent.');
+    const id=createSupportConversation(user,{category:text(form,'category'),body:text(form,'body')});
+    return redirectWith(request,`/app/support?conversation=${id}`,'success','Support request sent.');
   } catch(error) {
     return redirectWith(request,'/app/support','error',errorMessage(error));
   }

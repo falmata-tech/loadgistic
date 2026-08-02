@@ -34,7 +34,7 @@ GitHub Actions performs locked dependency installation, specification and source
 
 ## ADR-009 — Browse permission is not shipment-party permission
 
-Treat Open and Partners load visibility as authenticated read-only discovery. Internal notes, proof files, and execution transitions require an actual shipment party: Business owner, assigned provider organization/profile, or administrator. Partners visibility requires a mutual Connected relationship to the shipment owner. Application and payment-proof approvals/rejections are terminal in the MVP.
+Treat Open and Partners load visibility as authenticated read-only discovery. Participant shipment activity, proof files, and execution transitions require an actual shipment party: Business owner, assigned provider organization/profile, or administrator. Partners visibility requires a mutual Connected relationship to the shipment owner. Application and payment-proof approvals/rejections are terminal in the MVP. A separate internal-notes channel is intentionally retired; operational notes belong to governed timeline updates.
 
 ## ADR-010 — Browser fixtures are isolated from development data
 
@@ -250,8 +250,13 @@ One member may have one open conversation. Creation atomically assigns it to
 the least-loaded available SUPPORT user below their configured open-conversation
 limit, with deterministic oldest-assignment tie breaking. Otherwise it waits.
 An eligible agent may atomically claim the oldest waiting conversation.
-Closing frees capacity. Disabling an agent returns open work to the queue before
-reassignment.
+The member Support home always presents one primary lifecycle action: New chat
+when none is open or Continue chat when one is active, with closed transcripts
+kept under Past chats. The owning member, assigned agent, or an administrator
+may close a conversation. Closing immediately frees capacity and restores New
+chat for the member. Disabling an agent returns open work to the queue before
+reassignment. Administrators triage the bounded queue through explicit Waiting,
+Open, Closed, and All views while team management remains a separate section.
 
 SUPPORT is a dedicated platform-team role excluded from workspace subscriptions,
 marketplace, and tracking. New members receive Support responsibility only by

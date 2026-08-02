@@ -1,6 +1,6 @@
 import { CheckCircle2, Clock3, Headphones, Send, UserRound } from 'lucide-react';
 import { StatusPill } from './status-pill';
-import { SupportRefresh } from './support-refresh';
+import { SupportAutoScroll, SupportRefresh } from './support-refresh';
 
 export function SupportThread({ conversation, user, canClose=false }:{
   conversation:any;
@@ -8,13 +8,15 @@ export function SupportThread({ conversation, user, canClose=false }:{
   canClose?:boolean;
 }) {
   const open=conversation.status!=='CLOSED';
+  const messageContainerId=`support-messages-${conversation.id}`;
   return <section className="support-thread" aria-label="Support conversation">
     <SupportRefresh enabled={open}/>
+    <SupportAutoScroll containerId={messageContainerId} lastMessageId={conversation.messages.at(-1)?.id}/>
     <header className="support-thread-header">
       <div className="section-heading-icon"><Headphones aria-hidden="true"/><div><h2>{conversation.category.replaceAll('_',' ')}</h2><p className="meta">{conversation.assigned_agent_name?`${conversation.assigned_agent_name} is helping`:'Waiting for the next available agent'}</p></div></div>
       <StatusPill status={conversation.status}/>
     </header>
-    <div className="support-messages" aria-live="polite">
+    <div className="support-messages" id={messageContainerId} aria-live="polite">
       {conversation.messages.map((message:any)=>{
         const mine=message.sender_user_id===user.id;
         const fromCustomer=message.sender_role!=='SUPPORT'&&message.sender_role!=='ADMIN';
@@ -30,7 +32,7 @@ export function SupportThread({ conversation, user, canClose=false }:{
       <textarea id="support-reply" name="body" maxLength={2000} rows={3} required placeholder="Type your message"/>
       <button className="button icon-button-label"><Send aria-hidden="true"/>Send</button>
     </form>:<div className="support-closed-note"><CheckCircle2 aria-hidden="true"/><span><strong>Conversation closed</strong><small>Start a new request when you need more help.</small></span></div>}
-    {canClose&&open?<form className="support-close-action" action={`/api/support/conversations/${conversation.id}/close`} method="post"><button className="button secondary small"><CheckCircle2 aria-hidden="true"/>Close conversation</button></form>:null}
+    {canClose&&open?<form className="support-close-action" action={`/api/support/conversations/${conversation.id}/close`} method="post"><button className="button secondary small"><CheckCircle2 aria-hidden="true"/>{user.role==='SUPPORT'||user.role==='ADMIN'?'Close conversation':'End chat'}</button></form>:null}
     {conversation.message_count>conversation.messages.length?<p className="support-limit-note"><Clock3 aria-hidden="true"/>Showing the latest {conversation.messages.length} messages.</p>:null}
   </section>;
 }

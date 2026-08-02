@@ -3,7 +3,7 @@ id: FEAT-SUP-001
 title: Native authenticated customer support inbox
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001]
 problem: Members need simple in-app help while platform owners need bounded assignment, scoped support-agent access, and accountable resolution without per-agent fees or a second operational platform.
-behavior: Loadgistic stores text-only support conversations and messages in its authoritative database, routes one open member conversation to the least-loaded available support agent within an explicit limit, and keeps support authority separate from platform administration.
+behavior: Loadgistic presents Support as a simple New chat, Continue chat, and Past chats workflow; stores text-only conversations and messages in its authoritative database; lets either participant end an owned chat; routes one open member conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration.
 contracts: [SupportConversation, SupportMessage, SupportCategory, SupportAgentState, SupportQueueAssignment, SupportAccessPolicy, SupportAudit]
 observability: [support_conversation_created, support_message_sent, support_conversation_assigned, support_conversation_claimed, support_conversation_closed, support_agent_availability_changed, support_assignment_capacity_reached, denied_support_access]
 rollout: Additive schema and SUPPORT role. Start with visibility-aware five-second refreshes and bounded message/query windows; durable database records remain authoritative so Realtime or Telegram notifications can be added later without changing ownership.
@@ -44,7 +44,10 @@ Given a member has an active conversation and any number of closed conversations
 When the member opens Support or pages through conversation history\
 Then the active conversation is fetched independently of the bounded history page\
 And it cannot be hidden by a newer closed conversation or pagination\
-And the member sees a bounded conversation list with status, update time, message count, and a short latest-message preview\
+And Support first shows one clear Continue chat action plus a separate bounded Past chats list\
+And an owner may end the active chat so New chat becomes available immediately\
+And when no active chat exists, New chat remains visible even when closed history exists\
+And each history row shows status, update time, message count, and a short latest-message preview\
 And selecting an owned closed conversation opens its read-only message history\
 And another member's conversation remains inaccessible.
 
@@ -60,9 +63,17 @@ And the support role can access only its inbox, assigned conversations, availabi
 Given an open support conversation\
 When the owning customer or assigned agent sends a non-empty message\
 Then the body is length bounded, rate limited, stored once, and updates unread state\
-And only the assigned agent or administrator may close it\
+And the owning member, assigned agent, or administrator may close it\
 And closed conversations reject new messages\
 And denied mutations write no success audit.
+
+### Scenario: administrator triages support work
+
+Given support conversations exist in Waiting, Open, and Closed states\
+When an administrator opens Customer Support\
+Then status tabs filter a bounded server page of safe conversation summaries\
+And each row shows the customer workspace, topic, latest message preview, update time, assigned agent, and state\
+And agent capacity and permissions remain managed separately from the conversation queue.
 
 ### Scenario: waiting work can be claimed
 

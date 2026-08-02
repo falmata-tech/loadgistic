@@ -13,7 +13,7 @@
 - Five-minute HTTP-only tracking grants bound to one Business user and load
 - Security headers and Content Security Policy
 - Capacity expiry and visibility filtering
-- Anonymous visitors cannot access company pages, transporter directory, loads, capacity, internal notes, proof, other-provider interest, or receiver details
+- Anonymous visitors cannot access company pages, transporter directory, full marketplace records, participant activity, proof, other-provider interest, or receiver details
 - Audit records for sensitive mutations
 - Explicit authorization contracts in `docs/AUTHORIZATION_MATRIX.md`
 - Browse-only load visibility cannot grant status, internal-note, or private-proof access

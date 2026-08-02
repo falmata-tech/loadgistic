@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       loadType: text(form,'loadType'),
       pickupDate: text(form,'pickupDate'),
       deliveryDate: text(form,'deliveryDate'),
-      trackingMode: text(form,'trackingMode') || 'STATUS_ONLY'
+      trackingMode: 'STATUS_ONLY'
     });
     return NextResponse.redirect(new URL(`/app/shipments/${result.id}?success=Shipment+posted`, request.url), 303);
   } catch (error) {

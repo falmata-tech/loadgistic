@@ -21,6 +21,13 @@ type Props=React.InputHTMLAttributes<HTMLInputElement>&{
   onPlaceSelect?:(place:PlaceResult)=>void;
 };
 
+const placeCache=new Map<string,PlaceResult[]>();
+
+function cachePlaces(query:string,results:PlaceResult[]){
+  if(placeCache.size>=100)placeCache.delete(placeCache.keys().next().value as string);
+  placeCache.set(query,results);
+}
+
 export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,placeRefName,defaultPlaceRef='',onPlaceSelect,...props}:Props) {
   const [text,setText]=React.useState(String(value ?? defaultValue ?? ''));
   const [results,setResults]=React.useState([] as PlaceResult[]);
@@ -36,13 +43,18 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,placeR
   React.useEffect(()=>{
     const query=text.trim();
     if(!dirty||query.length<2){setResults([]);setLoading(false);return;}
+    const cacheKey=query.toLocaleLowerCase();
+    const cached=placeCache.get(cacheKey);
+    if(cached){setResults(cached);setOpen(true);setLoading(false);return;}
     const controller=new AbortController();
     const timer=window.setTimeout(async()=>{
       setLoading(true);
       try{
         const response=await fetch(`/api/places?q=${encodeURIComponent(query)}`,{signal:controller.signal});
         const body=response.ok?await response.json():{results:[]};
-        setResults(body.results||[]);
+        const nextResults=body.results||[];
+        cachePlaces(cacheKey,nextResults);
+        setResults(nextResults);
         setOpen(true);
       }catch(error){
         if((error as Error).name!=='AbortError')setResults([]);

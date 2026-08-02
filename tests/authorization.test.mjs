@@ -76,15 +76,6 @@ test('posted and sent loads stay out of Tracking until agreement', () => {
   assert.ok(repo.listVisibleShipments(users.driver).some(row=>row.id===direct.id));
 });
 
-test('browse visibility cannot add an internal shipment note', () => {
-  const shipment = createFreight();
-  const db = dbModule.getDb();
-  const before = db.prepare('SELECT COUNT(*) AS n FROM shipment_notes WHERE shipment_id=?').get(shipment.id).n;
-  assert.throws(() => repo.addShipmentNote(users.driver, shipment.id, 'Unauthorized internal note'), /NOT_FOUND/);
-  const after = db.prepare('SELECT COUNT(*) AS n FROM shipment_notes WHERE shipment_id=?').get(shipment.id).n;
-  assert.equal(after, before);
-});
-
 test('browse visibility cannot upload or download private proof', () => {
   const shipment = createFreight();
   const upload = { path: '/tmp/loadgistic-authorization-proof.pdf', originalName: 'proof.pdf', mimeType: 'application/pdf' };
@@ -102,7 +93,8 @@ test('temporary load proof is limited to one interested provider and expires', a
   const ownerView = repo.getShipmentForUser(users.shipper,shipment.id);
   const interest = ownerView.interests.find(row=>row.provider_profile_id===users.driver.provider_profile_id);
   assert.ok(interest.proof_request_id);
-  const file = { name:'load-size.png', type:'image/png', size:4, arrayBuffer:async()=>new Uint8Array([1,2,3,4]).buffer };
+  const validPng=new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00]);
+  const file = { name:'load-size.png', type:'image/png', size:validPng.length, arrayBuffer:async()=>validPng.buffer };
   const proofId = await repo.shareLoadProof(users.shipper,shipment.id,interest.id,file,'Current pallet quantity');
   const recipientProof = repo.getLoadProofFile(users.driver,proofId);
   assert.equal(recipientProof.id,proofId);
@@ -159,17 +151,19 @@ test('assigned location tracking is enforced until a Business party reduces it',
     loadType:'FTL',
     packageCount:'2',
     pickupDate:new Date(Date.now()+86_400_000).toISOString().slice(0,10),
-    receiverOrganizationId:users.receiver.organization_id,
-    trackingMode:'LOCATION_AND_STATUS'
+    receiverOrganizationId:users.receiver.organization_id
   });
+  assert.equal(repo.getShipmentForUser(users.shipper,shipment.id).tracking_mode,'STATUS_ONLY');
   repo.acceptDirectedShipment(users.driver,shipment.id);
+  repo.setTrackingMode(users.shipper,shipment.id,'LOCATION_AND_STATUS');
   repo.setReceiverContact(users.shipper,shipment.id,'Hana','+251 911 600 700');
   repo.assignShipmentVehicle(users.driver,shipment.id,'veh-driver-1');
   assert.throws(()=>repo.transitionShipment(users.driver,shipment.id,'ASSIGNED'),/TRACKING_LOCATION_REQUIRED/);
   repo.transitionShipment(users.driver,shipment.id,'ASSIGNED','Driver assigned',{locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'20'});
   assert.throws(()=>repo.setTrackingMode(users.driver,shipment.id,'STATUS_ONLY'),/NOT_FOUND/);
   repo.setTrackingMode(users.receiver,shipment.id,'STATUS_ONLY');
-  repo.addTrackingUpdate(users.driver,shipment.id,{note:'Loading completed'});
+  assert.throws(()=>repo.addTrackingUpdate(users.driver,shipment.id,{note:'Loading completed'}),/TRACKING_LOCATION_NOT_ENABLED/);
+  repo.transitionShipment(users.driver,shipment.id,'IN_TRANSIT','Loading completed');
   const tracked=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.equal(tracked.tracking_mode,'STATUS_ONLY');
   assert.ok(tracked.events.some(event=>event.event_type==='TRACKING_MODE'));

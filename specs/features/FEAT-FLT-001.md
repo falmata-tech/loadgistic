@@ -48,7 +48,7 @@ And ownership and active-state checks are repeated at the service boundary.
 ### Scenario: permitted company driver handles Business demand
 
 Given a fleet driver may browse the Shipment Board, contact Businesses, and negotiate shipments\
-When the driver views a permitted load, expresses interest, requests load proof, or accepts a direct request addressed to the company\
+When the driver views a permitted load, expresses interest, requests load proof, accepts a direct request addressed to the company, or assigns the Driver's current truck after agreement\
 Then the action is recorded for the transporter organization with the driver as actor\
 And the fleet owner can see the resulting interest, agreement, assignment, and tracking history.
 

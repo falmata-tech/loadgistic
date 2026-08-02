@@ -11,7 +11,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   try {
     closeSupportConversation(user,id);
     const path=user.role==='ADMIN'?'/admin/support':user.role==='SUPPORT'?'/support':'/app/support';
-    return redirectWith(request,path,'success','Conversation closed.');
+    return redirectWith(request,path,'success',user.role==='SUPPORT'||user.role==='ADMIN'?'Conversation closed.':'Chat ended. You can start a new one.');
   } catch(error) {
     const path=user.role==='SUPPORT'||user.role==='ADMIN'?`/support/${id}`:'/app/support';
     return redirectWith(request,path,'error',errorMessage(error));

@@ -12,13 +12,12 @@ nvm use
 cp .env.example .env.local
 npm install
 npm run db:reset
-npm run places:setup
 npm run dev
 ```
 
 Open `http://127.0.0.1:3000`.
 
-The app creates `data/loadgistic.db` and local upload files under `data/uploads/`. `npm run places:setup` downloads and imports the local Ethiopia OpenStreetMap settlement catalog; the app retains a built-in fallback when that optional network step is unavailable.
+The app creates `data/loadgistic.db` and local upload files under `data/uploads/`. Reset automatically imports the bundled 3,575-place Ethiopia OpenStreetMap settlement catalog. `npm run places:setup` is only needed to attempt a network refresh.
 
 Development writes generated Next.js files to `.next-dev`, while `npm run build` writes to `.next`. This keeps an always-on local dev server healthy while a production build runs.
 
@@ -43,6 +42,12 @@ All accounts use the local password `Loadgistic123!`.
 
 ```bash
 npm run db:reset
+```
+
+After this first setup, start the app with the single command:
+
+```bash
+npm run dev
 ```
 
 ## Comprehensive UI and workflow data

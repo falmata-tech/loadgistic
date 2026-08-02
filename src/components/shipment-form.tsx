@@ -35,7 +35,6 @@ export function ShipmentForm({
 }) {
   const [distributionMode, setDistributionMode] = React.useState(selectedProvider ? 'DIRECT_TO_PROVIDER' : 'OPEN_MARKET');
   const [priceMode, setPriceMode] = React.useState('QUOTE_REQUESTED');
-  const [loadType,setLoadType]=React.useState('');
   const [movementScope,setMovementScope]=React.useState('INTERCITY' as 'LOCAL'|'INTERCITY');
   const [localCenter,setLocalCenter]=React.useState(null as {lat:number;lng:number}|null);
 
@@ -68,7 +67,7 @@ export function ShipmentForm({
     <section className="load-composer-section">
       <div className="load-step-heading"><span>3</span><Truck aria-hidden="true"/><div><h2>Truck needed</h2><p>Full truck, shared space, and truck shape.</p></div></div>
       <div className="form-grid">
-        <fieldset className="form-group full"><legend><Truck aria-hidden="true"/>Shipment size</legend><div className="rich-choice-grid two"><label className="rich-choice"><input type="radio" name="loadType" value="FTL" required onChange={event=>setLoadType(event.target.value)}/><Truck aria-hidden="true"/><span><strong>Full Truckload (FTL)</strong><small>Needs a full truck</small></span><Check className="choice-check" aria-hidden="true"/></label><label className="rich-choice"><input type="radio" name="loadType" value="PTL" required onChange={event=>setLoadType(event.target.value)}/><Boxes aria-hidden="true"/><span><strong>Partial Truckload (PTL)</strong><small>Can share truck space</small></span><Check className="choice-check" aria-hidden="true"/></label></div></fieldset>
+        <fieldset className="form-group full"><legend><Truck aria-hidden="true"/>Shipment size</legend><div className="rich-choice-grid two"><label className="rich-choice"><input type="radio" name="loadType" value="FTL" required/><Truck aria-hidden="true"/><span><strong>Full Truckload (FTL)</strong><small>Needs a full truck</small></span><Check className="choice-check" aria-hidden="true"/></label><label className="rich-choice"><input type="radio" name="loadType" value="PTL" required/><Boxes aria-hidden="true"/><span><strong>Partial Truckload (PTL)</strong><small>Can share truck space</small></span><Check className="choice-check" aria-hidden="true"/></label></div></fieldset>
         <fieldset className="form-group full vehicle-choice-field"><legend><Truck aria-hidden="true"/>Best cargo configuration (optional)</legend><p className="meta">Choose by picture. Leave every option unselected when any truck can work.</p><div className="vehicle-choice-grid">{VEHICLE_CONFIGURATIONS.map((configuration)=><label className="vehicle-choice" key={configuration.name}><input type="radio" name="vehicleCategory" value={configuration.name}/><Image src={configuration.image} alt={configuration.name} width={180} height={180}/><span>{configuration.name}</span><Check className="choice-check" aria-hidden="true"/></label>)}</div></fieldset>
       </div>
     </section>
@@ -82,12 +81,11 @@ export function ShipmentForm({
     </section>
 
     <section className="load-composer-section">
-      <div className="load-step-heading"><span>5</span><Banknote aria-hidden="true"/><div><h2>Price and tracking</h2><p>Set the offer and updates after assignment.</p></div></div>
+      <div className="load-step-heading"><span>5</span><Banknote aria-hidden="true"/><div><h2>Price</h2><p>Request quotes or share an amount.</p></div></div>
       <div className="form-grid">
         <div className="form-group"><label htmlFor="price-mode"><Banknote aria-hidden="true"/>Pricing</label><select id="price-mode" name="priceMode" value={priceMode} onChange={(event) => setPriceMode(event.target.value)}><option value="QUOTE_REQUESTED">Request quotes</option><option value="FIXED_PRICE">Fixed price in ETB</option><option value="TARGET_PRICE">Target price in ETB</option></select></div>
         {priceMode === 'FIXED_PRICE' ? <div className="form-group"><label htmlFor="fixed-price"><Banknote aria-hidden="true"/>Fixed amount (ETB)</label><input id="fixed-price" name="priceEtb" type="number" min="0" step="1" required placeholder="35000"/></div> : null}
         {priceMode === 'TARGET_PRICE' ? <div className="form-group"><label htmlFor="target-price"><Banknote aria-hidden="true"/>Target amount (ETB)</label><input id="target-price" name="targetPriceEtb" type="number" min="0" step="1" required placeholder="35000"/></div> : null}
-        <div className="form-group"><label htmlFor="tracking-mode"><Route aria-hidden="true"/>Tracking after assignment</label><select id="tracking-mode" name="trackingMode" defaultValue="STATUS_ONLY"><option value="STATUS_ONLY">Status timeline</option><option value="LOCATION_AND_STATUS">Approximate location + status</option></select><div className="meta">Device location uses a {loadType==='FTL'?'20':loadType==='PTL'?'40':'20 or 40'} km privacy area based on shipment size. Proof is handled separately.</div></div>
       </div>
     </section>
     <button className="button load-submit icon-button-label" type="submit"><Send aria-hidden="true"/>Post shipment</button>

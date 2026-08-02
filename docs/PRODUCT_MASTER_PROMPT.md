@@ -76,7 +76,7 @@ The rich truck capacity control panel controls:
 
 Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Long-distance routes or Both scope plus a live current route, because remaining space can be matched only when the truck's movement is known. Its freshness comes from the capacity update timestamp rather than a separately entered route date.
 
-The capacity editor uses visible numbered decisions in operational order: truck status, work area, status-specific details, accepted shipment size, stop flexibility, future work, then visibility and publish. Truck identity is compact. Partial space and its current route remain linked. FTL/PTL, Multi Pick/Multi Drop, recurring-work interest, and visibility are never hidden under Additional options. Busy skips current shipment-size and stop choices; Off Duty ends after the status choice. One final publish row replaces a duplicate review card.
+The capacity editor uses visible numbered decisions in operational order: truck status, work area, accepted shipment size, stop flexibility, future work, then visibility and publish. Truck identity is compact. Choosing Partial reveals its available-space control and required current route directly inside Truck status; those controls are absent for every other status. Busy reveals its ready date in Truck status and uses Work area for its expected city. FTL/PTL, Multi Pick/Multi Drop, recurring-work interest, and visibility are never hidden under Additional options. Busy skips current shipment-size and stop choices; Off Duty ends after the status choice. One final publish row replaces a duplicate review card.
 
 Fleet owners manage each company Driver in one ordered control: confirm the Driver, assign one current active company truck or leave the Driver unassigned, choose allowed work, then save. A Driver and truck can each have only one active assignment; reassignment ends conflicting active assignments while retaining assignment history and audit evidence.
 
@@ -100,14 +100,14 @@ After a completed shipment, the shipper and receiver Businesses may rate each ot
 
 ## Tracking
 
-Every shipment has one tracking obligation:
+Every newly posted shipment starts with Status timeline, so posting demand does not require a premature tracking decision. After agreement and before truck assignment, the owning Business may retain that low-friction mode or require Approximate location + status. Every shipment therefore has one tracking obligation:
 
 - **Status timeline** requires real timestamped status or note updates.
 - **Approximate location + status** requires a general area on each assigned-provider operational update. Device areas use 20 km privacy for FTL and 40 km for PTL.
 
-The assigned provider cannot reduce the tracking requirement. Only the shipper Business, receiver Business, or administrator may change Approximate location + status to Status timeline. The change is recorded as a tracking event.
+The assigned provider cannot change the tracking requirement. Before assignment, the owning Business or administrator may choose either mode. After assignment, only a shipper Business, receiver Business, or administrator may reduce Approximate location + status to Status timeline. The change is recorded as a tracking event.
 
-Assigned providers may record in-between tracking updates without inventing a status transition. Customer tracking requires the secret code supplied by the shipment owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their internal timeline instead.
+Approximate location + status permits in-between area updates without inventing a status transition. Status timeline uses only governed operational actions and does not add a note-only composer. Shipment activity and operational notes live on that governed timeline; there is no separate internal-notes channel. Customer tracking requires the secret code supplied by the shipment owner. Account and non-account shipper or receiver parties may use it; the browser grant expires after five idle minutes. Signed-in assigned transport providers use their shipment timeline instead.
 
 Operational proof and temporary shipment-size proof are separate from tracking mode.
 
@@ -153,7 +153,11 @@ renders a sent message in the active chat, assigns work to the least-loaded
 available support agent below a configured limit, and keeps waiting work in a
 visible queue. The active chat is resolved independently from paginated history;
 customers see only their own bounded conversation list, latest-message previews,
-and selectable read-only closed threads.
+and selectable read-only closed threads. The member Support home uses three
+plain actions: New chat when none is active, Continue chat while one is active,
+and Past chats for closed history. Either the owning member, assigned support
+agent, or administrator can end an open chat; ending it immediately restores
+New chat while preserving the read-only transcript.
 Support-authorized platform team members see only assigned conversations.
 Administrators assign Customer, Operations, Trust, Billing, and Support
 responsibilities independently; hidden navigation is backed by the same

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { listMyShipments, paginateResults } from '@/lib/repository.js';
+import { getOwnedShipmentDeadlineSummary, listMyShipmentsPage } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
@@ -17,24 +17,15 @@ export default async function ShipmentsPage({searchParams}:{searchParams:Promise
     : [{id:'ALL',label:'All',icon:ClipboardList},{id:'INTERESTED',label:'Interested',icon:Handshake},{id:'DIRECT',label:'Direct requests',icon:Send},{id:'TRACKING',label:'Tracking',icon:PackageSearch},{id:'HISTORY',label:'History',icon:History}];
   const requestedView=String(query.view||'ALL').toUpperCase();
   const view=availableViews.some(item=>item.id===requestedView)?requestedView:'ALL';
-  const shipments:any[]=listMyShipments(user);
   const search=String(query.q||'').trim().toLowerCase();
   const status=String(query.status||'ALL').toUpperCase();
-  const filtered=shipments
-    .filter(shipment=>view==='ALL'||shipment.workspace_stage===view)
-    .filter(shipment=>status==='ALL'||shipment.operational_status===status)
-    .filter(shipment=>!search||[
-      shipment.code,shipment.title,
-      shipment.shipper_name,shipment.receiver_name,shipment.cargo_description
-    ].some(value=>String(value||'').toLowerCase().includes(search)));
-  const result:any=paginateResults(filtered,{page:query.page,pageSize:12});
-  const overdueLoads=isBusiness?shipments.filter(shipment=>shipment.workspace_stage==='POSTED'&&['PAST_DUE','EXPIRED'].includes(shipment.board_deadline_state)):[];
-  const hiddenLoadCount=overdueLoads.filter(shipment=>shipment.board_deadline_state==='EXPIRED').length;
+  const result:any=listMyShipmentsPage(user,{view,status,q:search},{page:query.page,pageSize:12});
+  const deadlineSummary=isBusiness?getOwnedShipmentDeadlineSummary(user):{needsReview:0,hidden:0};
   const visibleStatuses=['POSTED','SENT','CONTACTED','AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED','COMPLETED','CANCELLED'];
   return <div className="page">
     <PageHeader icon={ClipboardList} title="My Shipments" subtitle={isBusiness?'Posted work, Tracking, and history.':'Interests, direct requests, Tracking, and history.'} action={isBusiness?<Link href="/app/shipments/new" className="button icon-button-label"><CirclePlus aria-hidden="true"/>Post shipment</Link>:undefined}/>
     <Flash error={query.error} success={query.success}/>
-    {overdueLoads.length?<div className="permission-note warning"><ClockAlert aria-hidden="true"/><div><strong>{overdueLoads.length} {overdueLoads.length===1?'shipment needs':'shipments need'} review</strong><span>{hiddenLoadCount?`${hiddenLoadCount} ${hiddenLoadCount===1?'is':'are'} now off the Shipment Board. `:''}Past-due requests stay on the Board for two full grace days, then remain only in My Shipments.</span></div></div>:null}
+    {deadlineSummary.needsReview?<div className="permission-note warning"><ClockAlert aria-hidden="true"/><div><strong>{deadlineSummary.needsReview} {deadlineSummary.needsReview===1?'shipment needs':'shipments need'} review</strong><span>{deadlineSummary.hidden?`${deadlineSummary.hidden} ${deadlineSummary.hidden===1?'is':'are'} now off the Shipment Board. `:''}Past-due requests stay on the Board for two full grace days, then remain only in My Shipments.</span></div></div>:null}
     <nav className="board-view-tabs shipment-stage-tabs" aria-label="My Shipments categories">{availableViews.map(item=>{const Icon=item.icon;return <Link key={item.id} className={`button icon-button-label ${view===item.id?'':'secondary'}`} href={`/app/shipments${item.id==='ALL'?'':`?view=${item.id}`}`}><Icon aria-hidden="true"/>{item.label}</Link>;})}</nav>
     <form className="board-filter-bar compact-list-filter" method="get">
       <input type="hidden" name="view" value={view}/>

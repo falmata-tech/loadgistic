@@ -14,18 +14,18 @@ export default function HomePage() {
       <section className="marketplace-intro">
         <div className="marketplace-intro-shade"/>
         <div className="container marketplace-intro-content">
-          <span>Businesses <ArrowRight aria-hidden="true"/> Transporters</span>
+          <span>Local products <ArrowRight aria-hidden="true"/> Ethiopian trucks</span>
           <h1>Ethiopia's road-freight marketplace.</h1>
-          <p>Give every shipment one clear path to the right truck.</p>
+          <p>Growing businesses find road capacity. Transporters find useful demand.</p>
         </div>
       </section>
 
-      <PublicBoardPreview shipments={preview.shipments} trucks={preview.trucks}/>
+      <PublicBoardPreview shipments={preview.shipments} trucks={preview.trucks} shared={preview.shared}/>
 
       <section className="public-entry-band">
         <div className="container public-entry-grid">
-          <div><Boxes aria-hidden="true"/><span><strong>Need a truck?</strong><small>Post and manage shipments.</small></span><Link className="button" href="/apply?type=ENTERPRISE_SHIPPER">Business sign up<ArrowRight aria-hidden="true"/></Link></div>
-          <div><Truck aria-hidden="true"/><span><strong>Have a truck?</strong><small>Find business demand.</small></span><Link className="button" href="/apply?type=TRANSPORT_COMPANY">Transporter sign up<ArrowRight aria-hidden="true"/></Link></div>
+          <div><Boxes aria-hidden="true"/><span><strong>Need a truck?</strong><small>Move locally made goods without owning a distribution fleet.</small></span><Link className="button" href="/apply?type=ENTERPRISE_SHIPPER">Business sign up<ArrowRight aria-hidden="true"/></Link></div>
+          <div><Truck aria-hidden="true"/><span><strong>Have a truck?</strong><small>Make empty and partial cargo space easier to find.</small></span><Link className="button" href="/apply?type=TRANSPORT_COMPANY">Transporter sign up<ArrowRight aria-hidden="true"/></Link></div>
         </div>
       </section>
     </main>

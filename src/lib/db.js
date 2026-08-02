@@ -700,6 +700,9 @@ function migrate(db) {
   if (!subscriptionColumns.has('updated_at')) {
     db.exec('ALTER TABLE subscriptions ADD COLUMN updated_at TEXT');
   }
+  const paymentProofColumns = new Set(db.prepare('PRAGMA table_info(payment_proofs)').all().map(column => column.name));
+  if (!paymentProofColumns.has('original_name')) db.exec('ALTER TABLE payment_proofs ADD COLUMN original_name TEXT');
+  if (!paymentProofColumns.has('mime_type')) db.exec('ALTER TABLE payment_proofs ADD COLUMN mime_type TEXT');
   db.exec(`
     UPDATE subscriptions
     SET ends_at=strftime('%Y-%m-%dT%H:%M:%fZ',starts_at,'+30 days')
@@ -1045,6 +1048,9 @@ function seed(db) {
   const iso = now.toISOString();
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const dayAfter = new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const dayThree = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const dayFour = new Date(now.getTime() + 96 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const dayFive = new Date(now.getTime() + 120 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const expiresFresh = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
   const passwordHash = hashPassword('Loadgistic123!');
 
@@ -1191,7 +1197,14 @@ function seed(db) {
     ['shp-freight-completed','LGX-F2007','Handwoven goods to Adama','FREIGHT','DIRECT_TO_PROVIDER','FIXED_PRICE',2100000,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Adama','Packed handwoven home goods',24,null,'Mini Box Truck','PTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','COMPLETED','STATUS_ONLY','user-shipper'],
     ['shp-local-addis','LGX-F2008','Workshop supplies across Addis','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Addis Ababa','Packed workshop supplies for a local maker',12,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
     ['shp-driver-direct','LGX-F2009','Coffee cartons for Abebe','FREIGHT','DIRECT_TO_PROVIDER','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,'provider-driver','Addis Ababa','Hawassa','Sealed coffee cartons for owner-operator delivery',36,null,'Light Stake Body Truck','PTL',null,null,tomorrow,dayAfter,'SENT','POSTED','STATUS_ONLY','user-shipper'],
-    ['shp-transporter-direct','LGX-F2010','Beverage restock for BlueLine','FREIGHT','DIRECT_TO_PROVIDER','TARGET_PRICE',null,4200000,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Palletized local beverage restock',48,null,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'SENT','POSTED','STATUS_ONLY','user-shipper']
+    ['shp-transporter-direct','LGX-F2010','Beverage restock for BlueLine','FREIGHT','DIRECT_TO_PROVIDER','TARGET_PRICE',null,4200000,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Dire Dawa','Palletized local beverage restock',48,null,'Medium Box Truck','FTL',null,null,tomorrow,dayAfter,'SENT','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-pstl-honey','LGX-F2011','Honey jars for Hawassa retailers','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,null,null,'Addis Ababa','Hawassa','Packed jars from a small honey producer',1,null,'Mini Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-pstl-leather','LGX-F2012','Leather goods for Shashamane shops','FREIGHT','OPEN_MARKET','TARGET_PRICE',null,1600000,orgs.shipper.id,null,null,null,'Addis Ababa','Shashamane','Boxed finished goods from a local workshop',1,null,'Light Box Truck','PTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-route-addis-bishoftu','LGX-F2013','Metalwork order to Bishoftu','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.shipper.id,null,null,null,'Addis Ababa','Bishoftu','Protected metalwork from a small fabricator',1,null,'Light Stake Body Truck','FTL',null,null,tomorrow,dayAfter,'POSTED','POSTED','STATUS_ONLY','user-shipper'],
+    ['shp-route-bishoftu-adama','LGX-F2014','Dairy cartons to Adama','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.receiver.id,null,null,null,'Bishoftu','Adama','Chilled cartons from a growing local processor',1,null,'Medium Box Truck','PTL',null,null,dayAfter,dayThree,'POSTED','POSTED','STATUS_ONLY','user-receiver'],
+    ['shp-route-adama-shashamane','LGX-F2015','Milled grain to Shashamane','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.receiver.id,null,null,null,'Adama','Shashamane','Bagged grain from an independent mill',1,null,'Medium Stake Body Truck','FTL',null,null,dayThree,dayFour,'POSTED','POSTED','STATUS_ONLY','user-receiver'],
+    ['shp-route-shashamane-hawassa','LGX-F2016','Farm inputs to Hawassa','FREIGHT','OPEN_MARKET','QUOTE_REQUESTED',null,null,orgs.receiver.id,orgs.shipper.id,null,null,'Shashamane','Hawassa','Packed farm inputs for local growers',1,null,'Light Stake Body Truck','PTL',null,null,dayFour,dayFive,'POSTED','POSTED','STATUS_ONLY','user-receiver'],
+    ['shp-tracking-setup','LGX-F2017','Furniture shipment ready for assignment','FREIGHT','DIRECT_TO_PROVIDER','QUOTE_REQUESTED',null,null,orgs.shipper.id,orgs.receiver.id,orgs.transporter.id,null,'Addis Ababa','Adama','Finished furniture from a growing local workshop',18,null,'Medium Box Truck','FTL','Marta','+251 911 222 222',tomorrow,dayAfter,'AGREED','AGREED','STATUS_ONLY','user-shipper']
   ];
   for (const s of seededShipments) {
     const createdBy = s.at(-1);
@@ -1214,7 +1227,7 @@ function seed(db) {
 
   const eventInsert = db.prepare(`INSERT INTO shipment_events (id,shipment_id,status,event_type,note,created_by,public,created_at) VALUES (?,?,?,?,?,?,?,?)`);
   for (const s of seededShipments) {
-    if (!['shp-freight-active','shp-freight-completed'].includes(s[0])) eventInsert.run(randomId('evt-'),s[0],s[24],'CREATED','Shipment created in Loadgistic',s[26],1,iso);
+    if (!['shp-freight-active','shp-freight-completed','shp-tracking-setup'].includes(s[0])) eventInsert.run(randomId('evt-'),s[0],s[24],'CREATED','Shipment created in Loadgistic',s[26],1,iso);
   }
   eventInsert.run(randomId('evt-'),'shp-freight-active','SENT','CREATED','Direct request sent by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-6*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-active','AGREED','STATUS','Business and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-5*60*60*1000).toISOString());
@@ -1227,6 +1240,8 @@ function seed(db) {
   eventInsert.run(randomId('evt-'),'shp-freight-completed','SENT','CREATED','Shipment posted by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-72*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-completed','AGREED','STATUS','Businesses and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-48*60*60*1000).toISOString());
   eventInsert.run(randomId('evt-'),'shp-freight-completed','COMPLETED','STATUS','Delivery completed and received','user-transporter',1,new Date(now.getTime()-24*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-tracking-setup','SENT','CREATED','Direct request sent by Blue Nile Trading','user-shipper',1,new Date(now.getTime()-4*60*60*1000).toISOString());
+  eventInsert.run(randomId('evt-'),'shp-tracking-setup','AGREED','STATUS','Business and transporter agreed to the shipment','user-transporter',1,new Date(now.getTime()-2*60*60*1000).toISOString());
 
   db.prepare(`INSERT INTO business_reviews
     (id,shipment_id,reviewer_organization_id,subject_organization_id,rating,note,status,created_by,created_at)

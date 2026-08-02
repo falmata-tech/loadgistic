@@ -5,7 +5,9 @@ import path from 'node:path';
 import { getDb } from '../src/lib/db.js';
 import { normalizePlace } from '../src/lib/route-matching.js';
 
-const defaultJson=path.resolve('data/osm/ethiopia-settlements.json');
+const bundledJson=path.resolve('resources/geo/ethiopia-settlements.json');
+const downloadedJson=path.resolve('data/osm/ethiopia-settlements.json');
+const defaultJson=fs.existsSync(bundledJson)?bundledJson:downloadedJson;
 const sourcePath=path.resolve(process.argv[2]||(
   fs.existsSync(defaultJson)?defaultJson:'data/osm/ethiopia-latest.osm.pbf'
 ));

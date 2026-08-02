@@ -30,6 +30,8 @@ test('anonymous marketplace preview is live and limited to an identity-safe whit
  const preview=repo.listAnonymousMarketplacePreview(3);
  assert.ok(preview.shipments.length>0&&preview.shipments.length<=3);
  assert.ok(preview.trucks.length>0&&preview.trucks.length<=3);
+ assert.ok(preview.shared.pool?.member_count>=2);
+ assert.ok(preview.shared.along?.member_count>=2);
  const shipmentKeys=['delivery_label','destination','distribution_mode','load_type','local_place_label','movement_scope','origin','pickup_label','posted_label','price_minor','price_mode','vehicle_category'];
  const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
  assert.deepEqual(Object.keys(preview.shipments[0]).sort(),shipmentKeys.sort());
@@ -361,6 +363,10 @@ test('provider interests remain in My Shipments without entering Tracking',()=>{
  const workspace=repo.listMyShipments(driver);
  assert.equal(workspace.find(load=>load.id==='shp-freight-fixed')?.workspace_stage,'INTERESTED');
  assert.equal(workspace.some(load=>load.id==='shp-freight-fixed'&&load.workspace_stage==='TRACKING'),false);
+ const page=repo.listMyShipmentsPage(driver,{view:'INTERESTED',q:'Beverage'},{page:1,pageSize:5});
+ assert.ok(page.total>=1);
+ assert.ok(page.items.every(load=>load.workspace_stage==='INTERESTED'));
+ assert.equal(page.items[0].id,'shp-freight-fixed');
 });
 
 test('Shipment Board removes demand after two delivery-deadline grace days but keeps the owner record',()=>{
@@ -717,10 +723,13 @@ test('native support assigns safely, isolates customers, requeues, and stays ava
  assert.throws(()=>repo.getSupportConversation(receiver,conversationId),/NOT_FOUND/);
  repo.sendSupportMessage(support,conversationId,'Your payment is being reviewed.');
  assert.match(repo.getSupportConversation(shipper,conversationId,{markRead:false}).messages.at(-1).body,/being reviewed/);
- assert.throws(()=>repo.closeSupportConversation(shipper,conversationId),/FORBIDDEN/);
- repo.closeSupportConversation(support,conversationId);
+ assert.throws(()=>repo.closeSupportConversation(receiver,conversationId),/NOT_FOUND/);
+ repo.closeSupportConversation(shipper,conversationId);
  assert.equal(repo.getOpenMemberSupportConversation(shipper),null);
  assert.throws(()=>repo.sendSupportMessage(shipper,conversationId,'One more thing'),/SUPPORT_CONVERSATION_CLOSED/);
+ const replacementId=repo.createSupportConversation(shipper,{category:'ACCOUNT',body:'This new chat appears after I ended the last one.'});
+ assert.equal(repo.getOpenMemberSupportConversation(shipper).id,replacementId);
+ repo.closeSupportConversation(support,replacementId);
 
  const transporterConversationId=repo.createSupportConversation(transporter,{category:'CAPACITY',body:'My fleet capacity chat must stay visible.'});
  repo.sendSupportMessage(transporter,transporterConversationId,'This is a second BlueLine message.');

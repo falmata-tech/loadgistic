@@ -1,6 +1,8 @@
 # Supabase Migration
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `008`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, coordinate-authoritative route matching, and native support with row-level participant isolation.
+The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `009`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, coordinate-authoritative route matching, native support with row-level participant isolation, private payment media, Busy capacity, and indexed place search.
+
+`src/lib/private-storage.js` is a working private-file adapter for local disk or Supabase Storage. `DATA_BACKEND=supabase` is not implemented yet: setting that environment value does not move business data or authentication to Supabase, and production readiness intentionally remains blocked.
 
 ## Replacement boundary
 
@@ -61,3 +63,9 @@ member conversations, text messages, lifecycle events, queue/message indexes,
 and participant/admin RLS. Assignment, claiming, closure, availability, and
 rate limits remain transactional server operations; the browser never receives
 a service-role credential.
+
+Migration `009` aligns the target with the launch candidate. It adds Busy truck
+availability, payment-proof metadata and its private bucket, plus prefix and
+trigram indexes for the Ethiopia place catalog. Import the bundled place data
+with `npm run places:import:supabase` only after the schema and production
+credentials are configured.

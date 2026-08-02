@@ -170,13 +170,14 @@ And they do not have to open a general dashboard before updating their truck.
 
 Given a driver or fleet owner updates a truck\
 When the capacity editor opens\
-Then the primary flow visibly numbers truck status, work area, status-specific details, accepted shipment size, route flexibility, future-work preferences, and visibility in that logical order\
+Then the primary flow visibly numbers truck status, work area, accepted shipment size, route flexibility, future-work preferences, and visibility in that logical order\
 And Empty, Partial, Busy, and Off Duty are the first availability choice\
 And the selected truck is a compact identity header rather than a separate form section\
-And current available space and the current partial-capacity route remain visibly connected\
+And choosing Partial reveals current available space and its current partial-capacity route inside the Truck status step\
+And choosing anything other than Partial removes those controls from the rendered form\
 And the current route is required only for Partial intercity or Both work\
 And Local-only work keeps Partial unavailable\
-And Busy replaces cargo-space controls with available-again date and city controls\
+And Busy reveals its available-again date inside Truck status and uses the structured area in Work area\
 And FTL, PTL, Both, Direct, Multi Pick, Multi Drop, contract-route interest, and visibility are not hidden inside an additional-options disclosure\
 And only optional evidence and an unused future trip may use compact secondary presentation\
 And publication uses one persistent primary action without a duplicate review panel.

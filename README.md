@@ -14,7 +14,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Immediate Business and transporter signup with a seven-day trial
 - Role-aware desktop and mobile navigation
 - Authenticated transporter directory and company pages
-- B2B road-freight shipment creation
+- Lightweight B2B road-freight shipment creation, with tracking configured after agreement
 - Shipper- or receiver-owned shipments with account or external shipment parties
 - Separate My Shipments, Shipment Board, and execution-only Tracking workspaces
 - Virtual pooled shared truckload (PSTL) discovery for compatible PTL demand
@@ -23,7 +23,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Fixed ETB, target ETB, and Quote Requested pricing
 - Simple freight status workflow
 - Empty and Partial truck capacity, with full or unavailable trucks kept off duty
-- Partial capacity percentage, update attribution, freshness, expiry, and optional photo
+- Partial capacity percentage and live route tied directly to truck status, plus update attribution, freshness, expiry, and optional photo
 - Provider interest and direct-request acceptance
 - Enforced Status timeline or Approximate location + status tracking
 - Account or external-party secret-code tracking with a five-minute idle lock
@@ -35,7 +35,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - Manual subscription payment-proof submission and admin review
 - Native member support with bounded agent queues and admin supervision
 - Audit records and deterministic demo data
-- PWA manifest and responsive, app-like mobile layout
+- Installable PWA with responsive, app-like mobile layout and PNG install icons
 - Supabase PostgreSQL/RLS migration target
 - Playwright and Browserbase-ready smoke-test structure
 
@@ -51,13 +51,12 @@ nvm use
 cp .env.example .env.local
 npm install
 npm run db:reset
-npm run places:setup
 npm run dev
 ```
 
 Open `http://127.0.0.1:3000`.
 
-The database is created at `data/loadgistic.db` and seeded automatically. `npm run places:setup` downloads only Ethiopian OpenStreetMap settlement records through Overpass and imports them locally. The app retains a small built-in fallback when this optional network step is unavailable. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
+The database is created at `data/loadgistic.db` and seeded automatically. Reset imports the bundled OpenStreetMap-derived catalog of 3,575 Ethiopian cities, towns, villages, hamlets, suburbs, and neighbourhoods. `npm run places:setup` is optional and refreshes that catalog from Overpass when the service is available. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
 After the first setup, the only command needed to start the app is `npm run dev`.
 This command explicitly uses Turbopack. In development, the first visit to a route compiles that route and is expected to be slower; repeat visits should be fast. Use `npm run build && npm start` when measuring production behavior.
 
@@ -120,10 +119,11 @@ supabase/migrations/005_subscription_access.sql
 supabase/migrations/006_local_geography_and_board_indexes.sql
 supabase/migrations/007_coordinate_route_matching.sql
 supabase/migrations/008_native_support.sql
+supabase/migrations/009_launch_storage_places_and_capacity.sql
 ```
 
-The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Production migration replaces repository calls with RLS-protected Supabase queries or RPCs while preserving the domain commands and UI routes.
+The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Private files can already use Supabase Storage, but the business repository and identity adapters are not yet Supabase-backed. `npm run launch:check` therefore refuses to approve the current runtime for public production traffic. See `docs/LAUNCH_READINESS.md`.
 
 ## Important security note
 
-The local authentication adapter is suitable for an offline MVP and demo. Before public deployment, use Supabase Auth or another managed identity provider, configure a strong `SESSION_SECRET`, use managed PostgreSQL, enable storage scanning, and complete the deployment security checklist.
+The local authentication and SQLite adapters are suitable for development, an offline pilot, and a controlled single-machine demo. They are not approved for a high-traffic public launch. Before public deployment, use Supabase Auth or another managed identity provider, finish the Supabase repository adapter, configure a strong `SESSION_SECRET`, add shared rate limiting and malware scanning, and complete the deployment checklist in `docs/LAUNCH_READINESS.md`.

@@ -1,0 +1,141 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { createClient } from '@supabase/supabase-js';
+
+const MIME_CONFIG={
+  'image/jpeg':{extension:'.jpg',matches:(bytes)=>bytes.length>=3&&bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff},
+  'image/png':{extension:'.png',matches:(bytes)=>bytes.length>=8&&bytes.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))},
+  'image/webp':{extension:'.webp',matches:(bytes)=>bytes.length>=12&&bytes.subarray(0,4).toString('ascii')==='RIFF'&&bytes.subarray(8,12).toString('ascii')==='WEBP'},
+  'application/pdf':{extension:'.pdf',matches:(bytes)=>bytes.length>=5&&bytes.subarray(0,5).toString('ascii')==='%PDF-'}
+};
+
+const PURPOSE_BUCKET={
+  capacity:'capacity-photo',
+  verification:'verification',
+  payment:'payment-proof',
+  proof:'shipment-proof',
+  'tracking-proof':'shipment-proof',
+  'load-proof':'shipment-proof',
+  file:'shipment-proof'
+};
+
+function storageBackend(environment=process.env){
+  const backend=String(environment.PRIVATE_STORAGE_BACKEND||'local').toLowerCase();
+  if(!['local','supabase'].includes(backend))throw new Error('INVALID_PRIVATE_STORAGE_BACKEND');
+  return backend;
+}
+
+function uploadRoot(){
+  return path.resolve(process.cwd(),process.env.PRIVATE_UPLOAD_DIR||'data/uploads');
+}
+
+function supabaseClient(){
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(!url||!serviceKey)throw new Error('SUPABASE_NOT_CONFIGURED');
+  return createClient(url,serviceKey,{
+    auth:{persistSession:false,autoRefreshToken:false},
+    global:{headers:{'X-Client-Info':'loadgistic-private-storage'}}
+  });
+}
+
+function validatePurpose(purpose){
+  if(!PURPOSE_BUCKET[purpose])throw new Error('INVALID_UPLOAD_PURPOSE');
+  return purpose;
+}
+
+function cleanOriginalName(value){
+  const cleaned=path.basename(String(value||'upload')).replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,160);
+  return cleaned||'upload';
+}
+
+function localPathForReference(reference){
+  const root=uploadRoot();
+  const relative=reference.startsWith('local://')?reference.slice('local://'.length):path.relative(root,path.resolve(reference));
+  const resolved=path.resolve(root,relative);
+  if(resolved!==root&&!resolved.startsWith(`${root}${path.sep}`))throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+  return resolved;
+}
+
+function supabaseParts(reference){
+  const match=/^supabase:\/\/([^/]+)\/(.+)$/.exec(reference);
+  if(!match)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+  return {bucket:match[1],objectPath:match[2]};
+}
+
+export function privateStorageStatus(environment=process.env){
+  const backend=storageBackend(environment);
+  return {
+    backend,
+    durable:backend==='supabase',
+    configured:backend==='local'||Boolean(environment.NEXT_PUBLIC_SUPABASE_URL&&environment.SUPABASE_SERVICE_ROLE_KEY)
+  };
+}
+
+export async function storePrivateUpload(file,purpose='file'){
+  if(!file||typeof file.arrayBuffer!=='function'||!file.size)return null;
+  validatePurpose(purpose);
+  const maxMb=Math.max(1,Number(process.env.FILE_MAX_MB||10));
+  if(file.size>maxMb*1024*1024)throw new Error('FILE_TOO_LARGE');
+  const mimeType=String(file.type||'').toLowerCase();
+  const config=MIME_CONFIG[mimeType];
+  if(!config)throw new Error('UNSUPPORTED_FILE_TYPE');
+  const bytes=Buffer.from(await file.arrayBuffer());
+  if(bytes.length!==file.size||!config.matches(bytes))throw new Error('FILE_CONTENT_MISMATCH');
+
+  const date=new Date().toISOString().slice(0,10);
+  const objectPath=`${purpose}/${date}/${crypto.randomUUID()}${config.extension}`;
+  const backend=storageBackend();
+  let reference;
+  if(backend==='supabase'){
+    const bucket=PURPOSE_BUCKET[purpose];
+    const {error}=await supabaseClient().storage.from(bucket).upload(objectPath,bytes,{
+      contentType:mimeType,
+      cacheControl:'0',
+      upsert:false
+    });
+    if(error)throw new Error('PRIVATE_STORAGE_WRITE_FAILED');
+    reference=`supabase://${bucket}/${objectPath}`;
+  }else{
+    const target=localPathForReference(`local://${objectPath}`);
+    await fs.mkdir(path.dirname(target),{recursive:true});
+    await fs.writeFile(target,bytes,{flag:'wx'});
+    reference=`local://${objectPath}`;
+  }
+  return {path:reference,name:path.basename(objectPath),originalName:cleanOriginalName(file.name),mimeType,size:bytes.length};
+}
+
+export async function readPrivateUpload(reference){
+  if(!reference)return null;
+  if(String(reference).startsWith('supabase://')){
+    const {bucket,objectPath}=supabaseParts(String(reference));
+    const {data,error}=await supabaseClient().storage.from(bucket).download(objectPath);
+    if(error){
+      if(String(error.statusCode||'')==='404')return null;
+      throw new Error('PRIVATE_STORAGE_READ_FAILED');
+    }
+    return Buffer.from(await data.arrayBuffer());
+  }
+  try{
+    return await fs.readFile(localPathForReference(String(reference)));
+  }catch(error){
+    if(error&&typeof error==='object'&&error.code==='ENOENT')return null;
+    throw error;
+  }
+}
+
+export async function removePrivateUpload(reference){
+  if(!reference)return;
+  if(String(reference).startsWith('supabase://')){
+    const {bucket,objectPath}=supabaseParts(String(reference));
+    const {error}=await supabaseClient().storage.from(bucket).remove([objectPath]);
+    if(error)throw new Error('PRIVATE_STORAGE_DELETE_FAILED');
+    return;
+  }
+  try{
+    await fs.unlink(localPathForReference(String(reference)));
+  }catch(error){
+    if(!error||typeof error!=='object'||error.code!=='ENOENT')throw error;
+  }
+}

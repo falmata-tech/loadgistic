@@ -1,6 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { getDb } from './db.js';
+import { removePrivateUpload, storePrivateUpload } from './private-storage.js';
 import {
   USER_ROLES,
   SERVICE_MODES,
@@ -387,14 +386,14 @@ export function getDashboard(user) {
       { href: '/app/providers', label: 'Open directory', description: 'Confirm Businesses, fleet transporters, and self-managed drivers.' },
       { href: '/app/capacity', label: 'Open Truck Board', description: 'See fresh truck availability on active routes.' }
     ];
-    data.recent = listVisibleShipments(user).slice(0,6);
+    data.recent = listVisibleShipments(user,6);
     return data;
   }
 
   const scope = providerScope(user);
   if (!scope) return data;
   data.counts = {
-    'Available Shipments': listLoads(user).length,
+    'Available Shipments': countLoads(user),
     'Active Shipments': db.prepare(`SELECT COUNT(*) AS n FROM shipments WHERE ${scope.column}=? AND operational_status NOT IN ('COMPLETED','CANCELLED')`).get(scope.id).n,
     'On-duty Trucks': db.prepare(`SELECT COUNT(*) AS n FROM capacities c WHERE c.${scope.column}=?
       AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
@@ -406,12 +405,12 @@ export function getDashboard(user) {
     { href: user.role === USER_ROLES.TRANSPORTER ? '/app/fleet' : '/app/home', label: 'Update capacity', description: 'Publish Empty or Partial truck availability.' },
     { href: '/app/company-page', label: 'Update Public Profile', description: 'Keep Preferred Routes and contact details current.' }
   ];
-  data.recent = listVisibleShipments(user).slice(0, 6);
-  data.capacities = listCapacity(user).filter(item => item.isOwn).slice(0, 3);
+  data.recent = listVisibleShipments(user,6);
+  data.capacities = listOwnCapacity(user,null,3);
   return data;
 }
 
-export function listVisibleShipments(user) {
+export function listVisibleShipments(user,limit=null) {
   assertWorkspaceAccess(user);
   if(user.role===USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
   const db = getDb();
@@ -436,6 +435,10 @@ export function listVisibleShipments(user) {
   } else {
     sql += ' AND s.provider_profile_id=? ORDER BY s.updated_at DESC';
     args.push(user.provider_profile_id);
+  }
+  if(limit!=null){
+    sql+=' LIMIT ?';
+    args.push(Math.max(1,Math.min(100,Number(limit)||6)));
   }
   return db.prepare(sql).all(...args).map(shipment=>({
     ...shipment,
@@ -508,6 +511,103 @@ export function listMyShipments(user) {
     .map(shipment=>({...shipment,workspace_stage:shipmentWorkspaceStage(shipment,false),board_deadline_state:loadBoardDeadlineState(shipment.delivery_date,todayInEthiopia())}));
 }
 
+export function listMyShipmentsPage(user,filters={},options={}){
+  assertWorkspaceAccess(user);
+  if(user.role===USER_ROLES.ADMIN){
+    const rows=listMyShipments(user)
+      .filter(row=>!filters.view||filters.view==='ALL'||row.workspace_stage===filters.view)
+      .filter(row=>!filters.status||filters.status==='ALL'||row.operational_status===filters.status)
+      .filter(row=>!filters.q||[row.code,row.title,row.shipper_name,row.receiver_name,row.cargo_description].some(value=>String(value||'').toLowerCase().includes(String(filters.q).toLowerCase())));
+    return paginateResults(rows,options);
+  }
+  const db=getDb();
+  const isBusiness=[USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role);
+  let baseSql;
+  let args;
+  if(isBusiness){
+    baseSql=`SELECT owned.*,
+      CASE
+        WHEN operational_status IN ('COMPLETED','CANCELLED') THEN 'HISTORY'
+        WHEN operational_status IN ('AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED') THEN 'TRACKING'
+        ELSE 'POSTED'
+      END AS workspace_stage
+      FROM (SELECT s.*,
+        COALESCE(s.external_shipper_name,shipper.name) AS shipper_name,
+        COALESCE(s.external_receiver_name,receiver.name) AS receiver_name,
+        owner.name AS load_owner_name,
+        (SELECT COUNT(*) FROM shipment_interests interest WHERE interest.shipment_id=s.id) AS interest_count
+        FROM shipments s
+        JOIN organizations owner ON owner.id=COALESCE(s.load_owner_organization_id,s.shipper_organization_id)
+        LEFT JOIN organizations shipper ON shipper.id=s.shipper_organization_id
+        LEFT JOIN organizations receiver ON receiver.id=s.receiver_organization_id
+        WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=?) owned`;
+    args=[user.organization_id];
+  }else{
+    const scope=providerScope(user);
+    if(!scope)return paginateResults([],options);
+    const companyDriver=isCompanyDriver(user);
+    const interestCondition=companyDriver
+      ? `interest.created_by=?`
+      : scope.organizationId?`interest.provider_organization_id=?`:`interest.provider_profile_id=?`;
+    const interestArg=companyDriver?user.id:scope.id;
+    const providerColumn=scope.organizationId?'provider_organization_id':'provider_profile_id';
+    let providerWhere=`(s.${providerColumn}=? OR EXISTS(SELECT 1 FROM shipment_interests interest WHERE interest.shipment_id=s.id AND ${interestCondition}))`;
+    const providerArgs=[scope.id,interestArg];
+    if(companyDriver&&!canBrowseLoads(user)){
+      providerWhere=`s.provider_organization_id=? AND s.operational_status IN ('AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED','COMPLETED')`;
+      providerArgs.splice(0,providerArgs.length,scope.id);
+    }
+    baseSql=`SELECT provider.*,
+      CASE
+        WHEN operational_status IN ('COMPLETED','CANCELLED') THEN 'HISTORY'
+        WHEN operational_status IN ('AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED') THEN 'TRACKING'
+        WHEN direct_request=1 THEN 'DIRECT'
+        ELSE 'INTERESTED'
+      END AS workspace_stage
+      FROM (SELECT s.*,
+        COALESCE(s.external_shipper_name,shipper.name) AS shipper_name,
+        COALESCE(s.external_receiver_name,receiver.name) AS receiver_name,
+        owner.name AS load_owner_name,
+        EXISTS(SELECT 1 FROM shipment_interests own_interest WHERE own_interest.shipment_id=s.id AND ${companyDriver?'own_interest.created_by=?':scope.organizationId?'own_interest.provider_organization_id=?':'own_interest.provider_profile_id=?'}) AS interested,
+        CASE WHEN s.${providerColumn}=? AND s.operational_status IN ('POSTED','SENT','CONTACTED') THEN 1 ELSE 0 END AS direct_request,
+        (SELECT COUNT(*) FROM shipment_interests all_interest WHERE all_interest.shipment_id=s.id) AS interest_count
+        FROM shipments s
+        JOIN organizations owner ON owner.id=COALESCE(s.load_owner_organization_id,s.shipper_organization_id)
+        LEFT JOIN organizations shipper ON shipper.id=s.shipper_organization_id
+        LEFT JOIN organizations receiver ON receiver.id=s.receiver_organization_id
+        WHERE ${providerWhere}) provider`;
+    args=[interestArg,scope.id,...providerArgs];
+  }
+  const where=[];
+  if(filters.view&&filters.view!=='ALL'){where.push('workspace_stage=?');args.push(filters.view);}
+  if(filters.status&&filters.status!=='ALL'){where.push('operational_status=?');args.push(filters.status);}
+  const search=String(filters.q||'').trim().toLowerCase();
+  if(search){
+    where.push(`lower(COALESCE(code,'') || ' ' || COALESCE(title,'') || ' ' || COALESCE(shipper_name,'') || ' ' || COALESCE(receiver_name,'') || ' ' || COALESCE(cargo_description,'')) LIKE ?`);
+    args.push(`%${search}%`);
+  }
+  const filteredSql=`SELECT * FROM (${baseSql}) my_shipments${where.length?` WHERE ${where.join(' AND ')}`:''}`;
+  const result=paginateQuery(db,filteredSql,args,'updated_at DESC,id',options);
+  result.items=result.items.map(shipment=>({...shipment,board_deadline_state:loadBoardDeadlineState(shipment.delivery_date,todayInEthiopia())}));
+  return result;
+}
+
+export function getOwnedShipmentDeadlineSummary(user){
+  if(![USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role)||!user.organization_id)return {needsReview:0,hidden:0};
+  const today=todayInEthiopia();
+  const cutoff=new Date(`${today}T00:00:00.000Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate()-LOAD_BOARD_GRACE_DAYS);
+  const expiredBefore=cutoff.toISOString().slice(0,10);
+  const row=getDb().prepare(`SELECT
+      SUM(CASE WHEN delivery_date<? THEN 1 ELSE 0 END) AS needs_review,
+      SUM(CASE WHEN delivery_date<? THEN 1 ELSE 0 END) AS hidden
+    FROM shipments
+    WHERE COALESCE(load_owner_organization_id,shipper_organization_id)=?
+      AND operational_status IN ('POSTED','SENT','CONTACTED')
+      AND delivery_date IS NOT NULL`).get(today,expiredBefore,user.organization_id);
+  return {needsReview:Number(row.needs_review||0),hidden:Number(row.hidden||0)};
+}
+
 export function getShipmentForUser(user, idOrCode) {
   assertWorkspaceAccess(user);
   const db = getDb();
@@ -552,7 +652,6 @@ export function getShipmentForUser(user, idOrCode) {
       LEFT JOIN users actor ON actor.id=i.created_by
       LEFT JOIN load_proof_requests r ON r.interest_id=i.id WHERE i.shipment_id=? ORDER BY i.created_at DESC`).all(shipment.id);
     shipment.proofs = db.prepare(`SELECT p.*, u.name AS uploaded_by_name FROM proof_files p JOIN users u ON u.id=p.uploaded_by WHERE p.shipment_id=? ORDER BY p.created_at DESC`).all(shipment.id);
-    shipment.notes = db.prepare(`SELECT n.*,u.name AS author_name FROM shipment_notes n JOIN users u ON u.id=n.author_user_id WHERE n.shipment_id=? ORDER BY n.created_at DESC`).all(shipment.id);
     const reviewVisibility = user.role === USER_ROLES.ADMIN
       ? 'r.shipment_id=?'
       : user.organization_id
@@ -576,7 +675,6 @@ export function getShipmentForUser(user, idOrCode) {
       LEFT JOIN load_proof_requests r ON r.interest_id=i.id
       WHERE i.shipment_id=? AND (i.provider_organization_id=? OR i.provider_profile_id=?) ORDER BY i.created_at DESC`).all(shipment.id,user.organization_id || '',user.provider_profile_id || '');
     shipment.proofs = [];
-    shipment.notes = [];
     shipment.business_reviews = [];
   }
   const proofScope = ownsLoad ? 'i.shipment_id=?' : 'i.shipment_id=? AND (i.provider_organization_id=? OR i.provider_profile_id=?)';
@@ -735,8 +833,7 @@ export function createShipment(user, input) {
   }
   const id = randomId('shp-');
   const code = randomCode('LGX-F');
-  const trackingMode = input.trackingMode || 'STATUS_ONLY';
-  if (!['STATUS_ONLY','LOCATION_AND_STATUS'].includes(trackingMode)) throw new Error('INVALID_TRACKING_MODE');
+  const trackingMode = 'STATUS_ONLY';
   const trackingCodeHash = hashTrackingAccessCode(trackingAccessCode(id));
   const operationalStatus = distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER ? 'SENT' : 'POSTED';
   const commercialStatus = distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER ? 'SENT' : 'POSTED';
@@ -870,29 +967,36 @@ export function addTrackingUpdate(user, shipmentId, input) {
   if (!assignedProvider || !['ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE'].includes(shipment.operational_status)) throw new Error('FORBIDDEN');
   const note = String(input.note || '').trim();
   const needsLocation = shipment.tracking_mode === 'LOCATION_AND_STATUS';
+  if (!needsLocation) throw new Error('TRACKING_LOCATION_NOT_ENABLED');
   const location = trackingLocation(input,needsLocation,user.role === USER_ROLES.DRIVER,shipment.load_type==='FTL'?20:40);
-  if (!needsLocation && !note) throw new Error('TRACKING_NOTE_REQUIRED');
   const timestamp = nowIso();
-  insertTrackingEvent(db,shipment,user,needsLocation ? 'LOCATION' : 'UPDATE',note,location,timestamp);
+  insertTrackingEvent(db,shipment,user,'LOCATION',note,location,timestamp);
   db.prepare('UPDATE shipments SET updated_at=? WHERE id=?').run(timestamp,shipment.id);
   audit(db,user,'SHIPMENT_TRACKING_UPDATED','shipment',shipment.id,{ trackingMode: shipment.tracking_mode, locationSource: location.source, locationPrecisionKm: location.precisionKm });
 }
 
 export function setTrackingMode(user, shipmentId, trackingMode) {
   assertWorkspaceAccess(user);
-  if (trackingMode !== 'STATUS_ONLY') throw new Error('INVALID_TRACKING_MODE');
+  if (!['STATUS_ONLY','LOCATION_AND_STATUS'].includes(trackingMode)) throw new Error('INVALID_TRACKING_MODE');
   const db = getDb();
   const shipment = db.prepare('SELECT * FROM shipments WHERE id=? OR code=?').get(shipmentId,shipmentId);
-  const isBusinessParty = shipment && (user.role === USER_ROLES.ADMIN
-    || (['SHIPPER','RECEIVER'].includes(user.role) && user.organization_id && [shipment.load_owner_organization_id,shipment.shipper_organization_id,shipment.receiver_organization_id].includes(user.organization_id)));
+  const isAdmin=user.role===USER_ROLES.ADMIN;
+  const ownerOrganizationId=shipment&&(shipment.load_owner_organization_id||shipment.shipper_organization_id);
+  const isOwningBusiness=Boolean(shipment&&['SHIPPER','RECEIVER'].includes(user.role)&&user.organization_id===ownerOrganizationId);
+  const isBusinessParty = shipment && (isAdmin
+    || (['SHIPPER','RECEIVER'].includes(user.role) && user.organization_id && [ownerOrganizationId,shipment.shipper_organization_id,shipment.receiver_organization_id].includes(user.organization_id)));
   if (!isBusinessParty) throw new Error('NOT_FOUND');
   if (shipment.tracking_mode === trackingMode) return;
-  if (shipment.tracking_mode !== 'LOCATION_AND_STATUS') throw new Error('INVALID_TRACKING_MODE_CHANGE');
+  const beforeAssignment=shipment.operational_status==='AGREED'&&!shipment.assigned_vehicle_id&&!shipment.assigned_driver_user_id;
+  const mayChooseBeforeAssignment=beforeAssignment&&(isAdmin||isOwningBusiness);
+  const mayReduceAfterAgreement=trackingMode==='STATUS_ONLY'&&shipment.tracking_mode==='LOCATION_AND_STATUS';
+  if (!mayChooseBeforeAssignment&&!mayReduceAfterAgreement) throw new Error('INVALID_TRACKING_MODE_CHANGE');
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare('UPDATE shipments SET tracking_mode=?,updated_at=? WHERE id=?').run(trackingMode,timestamp,shipment.id);
-    insertTrackingEvent(db,{...shipment,operational_status:shipment.operational_status},user,'TRACKING_MODE','Tracking changed to status timeline by a Business party',trackingLocation(),timestamp);
+    const modeLabel=trackingMode==='LOCATION_AND_STATUS'?'approximate location and status':'status timeline';
+    insertTrackingEvent(db,{...shipment,operational_status:shipment.operational_status},user,'TRACKING_MODE',`Tracking changed to ${modeLabel} by a Business party`,trackingLocation(),timestamp);
     audit(db,user,'SHIPMENT_TRACKING_MODE_CHANGED','shipment',shipment.id,{ from: shipment.tracking_mode, to: trackingMode });
     db.exec('COMMIT');
   } catch (error) {
@@ -950,17 +1054,6 @@ export function setShipmentParties(user, shipmentId, input) {
       ownerPartyRole==='RECEIVER'?externalCounterpartyName:null,ownerPartyRole==='SHIPPER'?externalCounterpartyName:null,
       cleanFirstName,cleanPhone,nowIso(),shipment.id);
   audit(db,user,'SHIPMENT_PARTIES_SET','shipment',shipment.id,{ownerPartyRole,counterpartyType:input.counterpartyType});
-}
-
-export function addShipmentNote(user, shipmentId, note) {
-  assertWorkspaceAccess(user);
-  const shipment = getShipmentParty(user, shipmentId);
-  if (!shipment) throw new Error('NOT_FOUND');
-  if (!note?.trim()) throw new Error('NOTE_REQUIRED');
-  const db = getDb();
-  db.prepare(`INSERT INTO shipment_notes (id,shipment_id,author_user_id,note,created_at) VALUES (?,?,?,?,?)`)
-    .run(randomId('note-'),shipment.id,user.id,note.trim(),nowIso());
-  audit(db,user,'SHIPMENT_NOTE_ADDED','shipment',shipment.id,{});
 }
 
 export function listOrganizationsByType(types = []) {
@@ -2217,6 +2310,12 @@ export function listLoads(user,mode='ALL',filters={}) {
   return rankLoadRows(loadBoardRows(user,mode,filters),selectedRoute);
 }
 
+function countLoads(user,mode='ALL',filters={}) {
+  if(!canBrowseLoads(user)&&user.role!==USER_ROLES.ADMIN)return 0;
+  const query=loadBoardQuery(user,mode,filters);
+  return getDb().prepare(`SELECT COUNT(*) AS n ${query.from} WHERE ${query.where}`).get(...query.args).n;
+}
+
 function sharedLoadCandidates(user,filters={}) {
   assertWorkspaceAccess(user);
   if(!canBrowseLoads(user)&&user.role!==USER_ROLES.ADMIN)return [];
@@ -2319,7 +2418,7 @@ export async function shareLoadProof(user, shipmentId, interestId, file, note = 
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
-    if (fs.existsSync(upload.path)) fs.rmSync(upload.path);
+    await removePrivateUpload(upload.path);
     throw error;
   }
   return id;
@@ -2722,7 +2821,46 @@ export function listAnonymousMarketplacePreview(limit=3) {
     freshness:row.freshness,
     updated_label:publicBoardTime(row.updated_at)
   }));
-  return {shipments,trucks};
+  const sharedCandidates=loadBoardRows(anonymousAdmin,'OPEN',{movementScope:'INTERCITY'},100)
+    .filter(row=>row.operational_status==='POSTED'&&row.origin_place_ref&&row.destination_place_ref)
+    .map(row=>({
+      ...row,
+      origin_coordinate:Number.isFinite(Number(row.origin_lat))?{lat:row.origin_lat,lng:row.origin_lng}:null,
+      destination_coordinate:Number.isFinite(Number(row.destination_lat))?{lat:row.destination_lat,lng:row.destination_lng}:null
+    }));
+  const pool=poolCompatibleLoads(sharedCandidates,{
+    originRadiusKm:Number(process.env.PSTL_ORIGIN_RADIUS_KM||40),
+    destinationRadiusKm:Number(process.env.PSTL_DESTINATION_RADIUS_KM||40),
+    deadlineWindowDays:Number(process.env.PSTL_DEADLINE_WINDOW_DAYS||3)
+  })[0];
+  const along=buildAlongRouteChains(sharedCandidates,{
+    handoffRadiusKm:Number(process.env.ALONG_ROUTE_HANDOFF_RADIUS_KM||60),
+    maxBearingDifferenceDegrees:Number(process.env.ALONG_ROUTE_MAX_BEARING_DEGREES||90),
+    maxLegs:Number(process.env.ALONG_ROUTE_MAX_LEGS||8)
+  })[0];
+  const shared={
+    pool:pool?{
+      member_count:pool.member_count,
+      origin:publicPlaceLabel(pool.origin,pool.members[0]?.origin_place_ref),
+      destination:publicPlaceLabel(pool.destination,pool.members[0]?.destination_place_ref),
+      origin_spread_km:pool.origin_spread_km,
+      destination_spread_km:pool.destination_spread_km,
+      earliest_pickup:publicBoardTime(pool.earliest_pickup),
+      latest_delivery:publicBoardTime(pool.latest_delivery)
+    }:null,
+    along:along?{
+      member_count:along.member_count,
+      origin:publicPlaceLabel(along.origin,along.members[0]?.origin_place_ref),
+      destination:publicPlaceLabel(along.destination,along.members.at(-1)?.destination_place_ref),
+      loaded_distance_km:along.loaded_distance_km,
+      connector_distance_km:along.connector_distance_km,
+      stops:along.members.slice(0,5).map(member=>({
+        origin:publicPlaceLabel(member.origin,member.origin_place_ref),
+        destination:publicPlaceLabel(member.destination,member.destination_place_ref)
+      }))
+    }:null
+  };
+  return {shipments,trucks,shared};
 }
 
 export function listPublicCapacity(ownerColumn=null,ownerId=null) {
@@ -2735,7 +2873,7 @@ export function listPublicCapacity(ownerColumn=null,ownerId=null) {
   return rows.map(row=>marketCapacityRow(row,Number(process.env.CAPACITY_FRESH_HOURS||12)));
 }
 
-export function listOwnCapacity(user, capacityId = null) {
+export function listOwnCapacity(user, capacityId = null, limit = null) {
   assertWorkspaceAccess(user);
   if (!roleCanPublishCapacity(user.role) || user.role === USER_ROLES.ADMIN) return [];
   const db = getDb();
@@ -2748,6 +2886,7 @@ export function listOwnCapacity(user, capacityId = null) {
   const idCondition=capacityId?' AND c.id=?':'';
   const args = isCompanyDriver(user) ? [scope.id,user.id] : [scope.id];
   if(capacityId)args.push(capacityId);
+  const boundedLimit=limit==null?null:Math.max(1,Math.min(100,Number(limit)||3));
   return db.prepare(`SELECT c.*,v.label AS vehicle_label,v.category AS vehicle_category,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,v.cargo_configuration,o.name AS organization_name,o.handle AS organization_handle,
     p.business_name AS provider_name,p.handle AS provider_handle,u.name AS updated_by_name
     FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id LEFT JOIN organizations o ON o.id=c.provider_organization_id
@@ -2755,7 +2894,7 @@ export function listOwnCapacity(user, capacityId = null) {
     WHERE v.active=1
       AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
       AND c.${scope.column}=?${assignmentCondition}${idCondition}
-    ORDER BY c.updated_at DESC`).all(...args)
+    ORDER BY c.updated_at DESC${boundedLimit==null?'':' LIMIT ?'}`).all(...args,...(boundedLimit==null?[]:[boundedLimit]))
     .map(row => {
       const status=row.market_status||row.status;
       return { ...row, status, proof_available: Boolean(row.photo_path), freshness: capacitySignalFreshness(status,row.updated_at,row.available_again_date,freshHours,todayInEthiopia()), expiry_state:status==='BUSY'&&row.available_again_date<todayInEthiopia()?'EXPIRED':'CURRENT', isOwn: true };
@@ -2809,7 +2948,7 @@ export function listOwnVehicles(user) {
   return [];
 }
 
-export function publishCapacity(user, input, photo = null) {
+export function publishCapacity(user, input, photo = /** @type {null|{path:string,name:string,originalName:string,mimeType:string,size:number}} */ (null)) {
   assertWorkspaceAccess(user);
   if (!roleCanPublishCapacity(user.role)) throw new Error('FORBIDDEN');
   const db = getDb();
@@ -3161,7 +3300,10 @@ export function createSupportConversation(user,input) {
 export function listMemberSupportConversations(user,options={}) {
   if(!SUPPORT_MEMBER_ROLES.has(user?.role))throw new Error('FORBIDDEN');
   const db=getDb();
-  return paginateQuery(db,`${supportConversationBase()} WHERE c.customer_user_id=?`,[user.id],'updated_at DESC,id',options);
+  const status=String(options.status||'ALL').toUpperCase();
+  if(!['ALL','CLOSED'].includes(status))throw new Error('INVALID_SUPPORT_VIEW');
+  const statusClause=status==='CLOSED'?` AND c.status='CLOSED'`:'';
+  return paginateQuery(db,`${supportConversationBase()} WHERE c.customer_user_id=?${statusClause}`,[user.id],'updated_at DESC,id',options);
 }
 
 export function getOpenMemberSupportConversation(user) {
@@ -3298,11 +3440,13 @@ export function claimSupportConversation(user,conversationId) {
 }
 
 export function closeSupportConversation(user,conversationId) {
-  if(![USER_ROLES.SUPPORT,USER_ROLES.ADMIN].includes(user?.role))throw new Error('FORBIDDEN');
-  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
+  if(!user)throw new Error('FORBIDDEN');
+  if(user.role===USER_ROLES.SUPPORT)assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
   const db=getDb();
   const conversation=db.prepare('SELECT * FROM support_conversations WHERE id=?').get(conversationId);
-  if(!conversation||(user.role===USER_ROLES.SUPPORT&&conversation.assigned_agent_user_id!==user.id))throw new Error('NOT_FOUND');
+  const customerOwns=SUPPORT_MEMBER_ROLES.has(user.role)&&conversation?.customer_user_id===user.id;
+  const agentOwns=user.role===USER_ROLES.SUPPORT&&conversation?.assigned_agent_user_id===user.id;
+  if(!conversation||(!customerOwns&&!agentOwns&&user.role!==USER_ROLES.ADMIN))throw new Error('NOT_FOUND');
   if(conversation.status==='CLOSED')throw new Error('SUPPORT_CONVERSATION_CLOSED');
   const timestamp=nowIso();
   db.exec('BEGIN IMMEDIATE');
@@ -3311,7 +3455,11 @@ export function closeSupportConversation(user,conversationId) {
       .run(timestamp,user.id,timestamp,conversation.id);
     supportEvent(db,conversation.id,user.id,'CLOSED',{});
     audit(db,user,'SUPPORT_CONVERSATION_CLOSED','support_conversation',conversation.id,{});
-    notify(db,conversation.customer_user_id,'Support conversation closed','You can start a new support conversation whenever you need help.');
+    if(customerOwns&&conversation.assigned_agent_user_id){
+      notify(db,conversation.assigned_agent_user_id,'Customer ended support chat','The conversation is closed and one queue slot is available.');
+    }else{
+      notify(db,conversation.customer_user_id,'Support conversation closed','You can start a new support conversation whenever you need help.');
+    }
     assignWaitingSupportConversations(db,1);
     db.exec('COMMIT');
   } catch(error) {
@@ -3692,20 +3840,7 @@ export function listAudit(user) {
 }
 
 export function saveUpload(file, prefix = 'file') {
-  if (!file || typeof file.arrayBuffer !== 'function' || !file.size) return null;
-  const maxMb = Number(process.env.FILE_MAX_MB || 10);
-  if (file.size > maxMb * 1024 * 1024) throw new Error('FILE_TOO_LARGE');
-  const allowed = new Set(['image/jpeg','image/png','image/webp','application/pdf']);
-  if (!allowed.has(file.type)) throw new Error('UNSUPPORTED_FILE_TYPE');
-  const extensionMap = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'application/pdf': '.pdf' };
-  const name = `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}${extensionMap[file.type]}`;
-  const dir = path.resolve(process.cwd(),'data/uploads');
-  fs.mkdirSync(dir,{ recursive: true });
-  const filePath = path.join(dir,name);
-  return file.arrayBuffer().then(buffer => {
-    fs.writeFileSync(filePath,Buffer.from(buffer));
-    return { path: filePath, name, originalName: file.name, mimeType: file.type };
-  });
+  return storePrivateUpload(file,prefix);
 }
 
 export function addProof(user, shipmentId, proofType, upload, note = '') {
@@ -3828,7 +3963,7 @@ export function getBillingSummary(user) {
   return { subscription, proofs, access };
 }
 
-export function submitPaymentProof(user, amountEtb, reference, upload = null) {
+export function submitPaymentProof(user, amountEtb, reference, upload = /** @type {null|{path:string,name:string,originalName:string,mimeType:string,size:number}} */ (null)) {
   const db = getDb();
   const summary = getBillingSummary(user);
   if (!summary.subscription) throw new Error('SUBSCRIPTION_NOT_FOUND');
@@ -3839,8 +3974,8 @@ export function submitPaymentProof(user, amountEtb, reference, upload = null) {
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
-    db.prepare(`INSERT INTO payment_proofs (id,subscription_id,amount_minor,reference,file_path,status,submitted_at,reviewed_at) VALUES (?,?,?,?,?,'PENDING',?,NULL)`)
-      .run(id,summary.subscription.id,Math.round(amountMinor*100),reference || null,upload?.path || null,timestamp);
+    db.prepare(`INSERT INTO payment_proofs (id,subscription_id,amount_minor,reference,file_path,original_name,mime_type,status,submitted_at,reviewed_at) VALUES (?,?,?,?,?,?,?,'PENDING',?,NULL)`)
+      .run(id,summary.subscription.id,Math.round(amountMinor*100),reference || null,upload?.path || null,upload?.originalName||null,upload?.mimeType||null,timestamp);
     if (!summary.access.granted) {
       db.prepare(`UPDATE subscriptions SET status='PAYMENT_UNDER_REVIEW',updated_at=? WHERE id=?`)
         .run(timestamp,summary.subscription.id);
@@ -3873,6 +4008,17 @@ export function listPaymentProofs(user, options = /** @type {any} */ (null)) {
     args.push(`%${search}%`);
   }
   return paginateQuery(db,`${baseSelect} WHERE ${where}`,args,'submitted_at DESC',options);
+}
+
+export function getPaymentProofFile(user,proofId){
+  const db=getDb();
+  const proof=db.prepare(`SELECT pp.*,s.organization_id,s.provider_profile_id
+    FROM payment_proofs pp JOIN subscriptions s ON s.id=pp.subscription_id WHERE pp.id=?`).get(proofId);
+  if(!proof||!proof.file_path)return null;
+  if(hasPlatformPermission(user,PLATFORM_PERMISSIONS.BILLING))return proof;
+  const ownsOrganization=Boolean(user.organization_id&&proof.organization_id===user.organization_id);
+  const ownsProfile=Boolean(user.provider_profile_id&&proof.provider_profile_id===user.provider_profile_id);
+  return ownsOrganization||ownsProfile?proof:null;
 }
 
 export function reviewPaymentProof(user, proofId, status) {

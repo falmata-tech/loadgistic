@@ -16,7 +16,7 @@
 - Shared Shipments workspace with pairwise-compatible PTL pooling and forward, deadline-aware Along the route sequences
 - Road-freight workflows
 - Shipment discovery and provider interest
-- Seven-decision Self-managed Driver capacity Home with compact truck identity, visible Empty/Partial/Busy status details, FTL/PTL and stop choices, linked current route, automatic obscured location, and one final publish action
+- Six-decision Self-managed Driver capacity Home with compact truck identity, Empty/Partial/Busy/Off Duty status, Partial percentage and live route inside status, FTL/PTL and stop choices, automatic obscured location, and one final publish action
 - Persistent stale Empty/Partial Truck Board signals with explicit relative-age warnings, plus Busy available-again signals that leave discovery after their ready date until refreshed
 - Single-city Local and Both capacity input, where the local city is also the truck's current general area
 - Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
@@ -39,7 +39,7 @@
 - Connected-network route coverage using structured intercity routes and local service-area circles without exposing exact shipment pins
 - Short Ethiopian road-freight purpose banner followed by live Shipment Board and Truck Board previews
 - Anonymous server projection that shows structured route, timing, price, truck, capacity, flexibility, proof, and freshness facts while excluding identities, contacts, handles, raw IDs, coordinates, files, and free text
-- Enforceable Status timeline or Approximate location + status tracking, four plain manual field actions, optional proof beside each action, and real in-between events
+- Status timeline by default at posting, Business-selected stronger tracking after agreement and before assignment, four plain manual field actions, optional proof beside each action, and real location events when enabled
 - Secret-code customer tracking for account or non-account shipper/receiver parties with a five-minute idle lock
 - Party-only Tracking separated from Shipment Board discovery
 - Rich icon-led Post Shipment composer with operational deadline labels
@@ -57,9 +57,9 @@
 - Optional local pickup/drop-off map points excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
 - Tracking and proof kept as separate contracts
 - Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
-- PWA and responsive UI
+- Installable PWA with PNG normal/maskable icons and responsive app-like UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `008`, including PostGIS geography/GiST matching, native Support isolation, and RLS target
+- Supabase migrations `001` through `009`, including PostGIS geography/GiST matching, native Support isolation, private payment media, Busy capacity, place indexes, and RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -83,10 +83,10 @@
 - Unified admin Review Center for documents, low ratings, and payments, with server-side queue filtering and pagination
 - Board trust strips for shipment-owner identity, Business license, published reviews, company or owner-operator identity, truck authority, and assigned-driver license evidence
 - Server-owned pagination for Boards, Directory, My Shipments/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
-- Native authenticated member Support with one-open-thread enforcement, immediate sent-message rendering, direct active-chat lookup, paginated conversation previews, selectable closed history, six visual topics, text-only bounded messages, least-loaded assignment, waiting queue, agent availability/capacity, permissioned platform-team responsibilities, admin supervision, and safe agent requeue
+- Native authenticated member Support with persistent New chat, Continue chat, and Past chats states; member-owned End chat and immediate restart; immediate sent-message rendering; direct active-chat lookup; paginated closed history; six visual topics; text-only bounded messages; least-loaded assignment; waiting queue; agent availability/capacity; permissioned platform-team responsibilities; filtered admin triage; and safe agent requeue
 - Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 214 desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow errors
-- Local Node evidence: 83 tests passed, including provider-safe Truck Board aggregation, live undated Partial routes, optional tracking-action proof, canonical network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
+- Reusable all-role visual audit with 226 desktop/mobile screenshots and zero layout or accessibility-label flags; one development-server hydration warning did not reproduce across eight fresh mobile transporter sessions or the production browser suite
+- Local Node evidence: 86 tests passed, including provider-safe Truck Board aggregation, live undated Partial routes, optional tracking-action proof, canonical network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing/member closure, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
 - Local Playwright E2E evidence: 43 passing scenarios and five expected viewport skips across desktop and mobile, including anonymous per-truck provider discovery, loop-free Back navigation, immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
@@ -94,9 +94,12 @@
 - Turbopack development evidence on the stress database: ready in 2.2 seconds, first homepage compilation/request 5.09 seconds, repeated homepage 0.27 seconds, and repeated login 0.23 seconds; direct repository measurements were 23 ms for Shipment Board and 14 ms for Truck Board
 - Production and development npm dependency audit: zero vulnerabilities
 
-## Requires an internet-enabled environment
+## Public-production work still required
 
-- Apply Supabase migrations `001` through `008` through Supabase CLI
+- Apply Supabase migrations `001` through `009` through Supabase CLI.
+- Implement and parity-test the Supabase business repository and managed identity adapter.
+- Add shared rate limiting plus uploaded-file malware scanning and quarantine.
+- Complete backup, restore, monitoring, and production rollback evidence.
 
 ## Repository administration still required
 

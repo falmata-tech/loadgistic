@@ -14,10 +14,9 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Express load interest or request load proof | Transporter or self-managed Driver allowed to browse; company Driver additionally requires negotiation and Business contact permission | `NOT_FOUND` or `FORBIDDEN`; no interest, request, notification, or audit |
 | Accept direct freight | The specifically addressed Transporter or self-managed Driver while the request is `SENT`; company Driver additionally requires negotiation and Business contact permission for the addressed organization | `FORBIDDEN`, `NOT_FOUND`, or `DIRECT_REQUEST_NOT_PENDING`; no state change |
 | Transition shipment | Admin or the assigned Transporter/Driver; Approximate location + status requires a general area | `FORBIDDEN`, `NOT_FOUND`, or `TRACKING_LOCATION_REQUIRED`; no status event |
-| Add tracking update | Admin or assigned Transporter/Driver after assignment; note required for Status timeline, area required for Approximate location + status; only a Driver may use device-assisted location | `FORBIDDEN`, `TRACKING_NOTE_REQUIRED`, `TRACKING_LOCATION_REQUIRED`, or `DEVICE_LOCATION_DRIVER_ONLY`; no event |
+| Add in-between location update | Admin or assigned Transporter/Driver after assignment when Approximate location + status is active; area required; only a Driver may use device-assisted location | `FORBIDDEN`, `TRACKING_LOCATION_NOT_ENABLED`, `TRACKING_LOCATION_REQUIRED`, or `DEVICE_LOCATION_DRIVER_ONLY`; no event |
 | Reduce tracking mode | Shipper Business, receiver Business, or Admin; only Approximate location + status to Status timeline | `NOT_FOUND` or invalid mode; no mode change |
 | Unlock customer tracking | Authenticated shipper or receiver Business on that load, using its secret code; grant is user/load bound and expires after five idle minutes | `TRACKING_ACCESS_DENIED`; no summary, party, or event disclosure |
-| Add shipment note | Admin or an actual shipment party | `NOT_FOUND`; no note |
 | Upload/download proof | Admin or an actual shipment party; file read reauthorizes each request | Upload throws `NOT_FOUND`; download returns no record or bytes |
 | Request load-size proof | Transporter or Driver with its own recorded interest in that visible Freight load | `NOT_FOUND`; no request or notification |
 | Share temporary load-size proof | Business that owns the load, to one selected recorded interest | `NOT_FOUND` or `INVALID_INTEREST`; no file grant |
@@ -44,7 +43,7 @@ This matrix defines the application-service boundary. Route handlers authenticat
 | Start support conversation | Active Shipper, Receiver, Transporter, or Driver for their own user account; one open conversation maximum | `FORBIDDEN` or `SUPPORT_CONVERSATION_ALREADY_OPEN`; no conversation or assignment |
 | Read/send support conversation | Owning member, assigned SUPPORT agent, or Admin; messages only while open and at most 50 returned per read | `NOT_FOUND`, `SUPPORT_CONVERSATION_CLOSED`, or rate/validation denial; no message |
 | Claim waiting support conversation | Available active SUPPORT agent below configured open limit; oldest waiting record only | `FORBIDDEN`, `SUPPORT_AGENT_UNAVAILABLE`, `SUPPORT_AGENT_AT_CAPACITY`, or `SUPPORT_CONVERSATION_NOT_WAITING`; no assignment |
-| Close support conversation | Assigned SUPPORT agent or Admin | `NOT_FOUND` or `SUPPORT_CONVERSATION_CLOSED`; no lifecycle change |
+| Close support conversation | Owning member, assigned SUPPORT agent, or Admin | `NOT_FOUND` or `SUPPORT_CONVERSATION_CLOSED`; no lifecycle change |
 | Manage support agents | Admin only; SUPPORT role, availability, capacity, and active state; disabling safely requeues assigned work | `FORBIDDEN` or validation denial; no account, profile, or queue change |
 | Suspend/restore user | Admin only; reversible; administrator cannot suspend their own account | `FORBIDDEN`, `NOT_FOUND`, or `ADMIN_SELF_SUSPENSION`; no status change |
 | Deactivate/reactivate truck | Admin only; reversible; inactive trucks are excluded from marketplace capacity and active fleet counts | `FORBIDDEN` or `NOT_FOUND`; no status change |

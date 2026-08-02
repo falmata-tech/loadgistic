@@ -17,3 +17,11 @@ export function SupportRefresh({ enabled=true }: { enabled?:boolean }) {
 
   return null;
 }
+
+export function SupportAutoScroll({containerId,lastMessageId}:{containerId:string;lastMessageId?:string}) {
+  React.useLayoutEffect(()=>{
+    const container=document.getElementById(containerId);
+    if(container)container.scrollTop=container.scrollHeight;
+  },[containerId,lastMessageId]);
+  return null;
+}

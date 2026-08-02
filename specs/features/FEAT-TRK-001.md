@@ -1,10 +1,10 @@
 ---
 id: FEAT-TRK-001
-title: Tracking, proof, and shipment notes
+title: Tracking and proof
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001]
 problem: Shipment parties need enforceable, understandable tracking and controlled operational evidence without exposing precise movement or private files.
-behavior: A Business chooses Status timeline or Approximate location + status for a load; after assignment the provider must satisfy that mode on operational updates, while only a Business party may reduce it to status-only. Shipper and receiver parties, including an external party, may unlock customer-safe tracking with the secret code and inactivity expiry; assigned providers use their internal shipment timeline instead.
-contracts: [TrackingMode, TrackingObligation, TrackingAccessCode, BrowserTrackingGrant, TrackingIdleTimeout, CustomerSafeTrackingView, LoadTypeTrackingPrecision, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant, ShipmentNote]
+behavior: A newly posted Shipment starts with the low-friction Status timeline. After agreement and before truck assignment, its Business owner may retain that mode or require Approximate location + status; after assignment the provider must satisfy the chosen mode and only a Business party may reduce it to status-only. Shipper and receiver parties, including an external party, may unlock customer-safe tracking with the secret code and inactivity expiry; assigned providers use their shipment timeline instead of a separate internal-notes channel.
+contracts: [TrackingMode, TrackingObligation, TrackingAccessCode, BrowserTrackingGrant, TrackingIdleTimeout, CustomerSafeTrackingView, LoadTypeTrackingPrecision, ObscuredTrackingLocation, ProofFilePort, ProofAuthorizationPolicy, TemporaryLoadProofGrant]
 observability: [tracking_mode_audit, tracking_update, tracking_location_source, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, proof_audit, load_proof_request, load_proof_share, load_proof_expiry, file_access_denial]
 rollout: Require private storage, MIME and size validation, malware scanning, and access-denial monitoring before production.
 ---
@@ -51,12 +51,20 @@ Given a temporary load-proof link exists\
 When an unrelated provider, an expired recipient, or an anonymous visitor opens it\
 Then no file metadata or bytes are disclosed.
 
-### Scenario: Business chooses the tracking obligation
+### Scenario: posting defaults to the simple tracking obligation
 
-Given a Business creates a freight load\
-When it chooses Status timeline or Approximate location + status\
-Then that mode is stored on the load and shown to the assigned provider\
-And tracking proof is not implied by either mode.
+Given a Business creates a freight Shipment\
+When it posts the Shipment\
+Then Status timeline is stored without asking for a tracking decision in the posting form\
+And tracking proof is not implied.
+
+### Scenario: Business chooses stronger tracking after agreement
+
+Given a freight Shipment is Agreed and has not been assigned to a truck\
+When its owning Business retains Status timeline or chooses Approximate location + status\
+Then that mode is stored and shown to the assigned provider\
+And the provider cannot assign the truck in the same request as an unreviewed mode change\
+And tracking proof remains separate from either mode.
 
 ### Scenario: assigned provider must follow location tracking
 
@@ -67,13 +75,14 @@ And an FTL device coordinate is obscured to a 20 km privacy zone before submissi
 And a PTL device coordinate is obscured to a 40 km privacy zone before submission\
 And the precise coordinate is never submitted, stored, logged, or displayed.
 
-### Scenario: assigned provider sends an in-between tracking update
+### Scenario: assigned provider sends an in-between location update
 
-Given a freight load is assigned and not terminal\
+Given a freight load is assigned, not terminal, and requires Approximate location + status\
 When its assigned provider sends a tracking update\
 Then a real timestamped event is added without inventing a status transition\
-And location is required for Approximate location + status\
-And a note is required for Status timeline.
+And a fresh general-area location is required\
+And its note is optional\
+And Status timeline uses the governed operational status actions instead of a separate note-only composer.
 
 ### Scenario: manual tracking uses four clear field actions
 
@@ -85,7 +94,7 @@ And each action offers one optional proof file beside its note\
 And omitting proof never blocks an otherwise valid update\
 And an attached proof is privately authorized against the same shipment and action.
 
-### Scenario: only a Business may reduce tracking
+### Scenario: only a Business may reduce tracking after assignment
 
 Given an assigned load requires Approximate location + status\
 When the shipper or receiver Business changes it to Status timeline\
@@ -119,6 +128,6 @@ And a later tracking read requires the secret code again.
 
 ## Contract ownership
 
-- Inbound adapters: tracking page and shipment proof/note/file handlers
+- Inbound adapters: tracking page and shipment proof/file handlers
 - Application services: `setTrackingMode`, `addTrackingUpdate`, `transitionShipment`, `unlockBusinessTracking`, `getBusinessTracking`, `addProof`, `getProofFile`
 - Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`

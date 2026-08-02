@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   description: 'B2B road freight connecting businesses looking for capacity with fleet transporters and self-managed drivers looking for demand.',
   manifest: '/manifest.webmanifest',
   applicationName: 'Loadgistic',
+  icons: {
+    icon: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }]
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

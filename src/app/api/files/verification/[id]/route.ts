@@ -1,7 +1,7 @@
-import fs from 'node:fs';
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { getVerificationFile } from '@/lib/repository.js';
+import { readPrivateUpload } from '@/lib/private-storage.js';
 
 export const runtime='nodejs';
 
@@ -10,6 +10,8 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});
   const {id}=await params;
   const file=getVerificationFile(user,id);
-  if(!file||!fs.existsSync(file.file_path))return NextResponse.json({error:'Not found'},{status:404});
-  return new NextResponse(fs.readFileSync(file.file_path),{headers:{'Content-Type':file.mime_type,'Content-Disposition':`inline; filename="${String(file.original_name).replaceAll('"','')}"`,'Cache-Control':'private, no-store'}});
+  if(!file)return NextResponse.json({error:'Not found'},{status:404});
+  const bytes=await readPrivateUpload(file.file_path);
+  if(!bytes)return NextResponse.json({error:'Not found'},{status:404});
+  return new NextResponse(bytes,{headers:{'Content-Type':file.mime_type,'Content-Disposition':`inline; filename="${String(file.original_name).replaceAll('"','')}"`,'Cache-Control':'private, no-store'}});
 }
