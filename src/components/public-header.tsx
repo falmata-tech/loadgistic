@@ -10,8 +10,8 @@ export async function PublicHeader() {
       <div className="container public-nav">
         <Logo />
         <nav className="public-links" aria-label="Public navigation">
-          <Link href="/#marketplace-preview-title"><Boxes aria-hidden="true"/>Shipment Board</Link>
-          <Link href="/#marketplace-preview-title"><Truck aria-hidden="true"/>Truck Board</Link>
+          <Link href="/?board=SHIPMENTS#marketplace-preview-title"><Boxes aria-hidden="true"/>Shipment Board</Link>
+          <Link href="/?board=TRUCKS#marketplace-preview-title"><Truck aria-hidden="true"/>Truck Board</Link>
           <Link href="/about"><Info aria-hidden="true"/>About</Link>
           {user
             ? <Link className="button" href="/app/home"><LayoutDashboard aria-hidden="true"/>Workspace</Link>

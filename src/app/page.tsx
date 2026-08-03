@@ -6,7 +6,9 @@ import { listAnonymousMarketplacePreview } from '@/lib/repository.js';
 
 export const dynamic='force-dynamic';
 
-export default function HomePage() {
+export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
+  const query=await searchParams;
+  const selectedBoard=query.board==='TRUCKS'?'TRUCKS':'SHIPMENTS';
   const preview=listAnonymousMarketplacePreview(3);
   return <>
     <PublicHeader/>
@@ -14,13 +16,13 @@ export default function HomePage() {
       <section className="marketplace-intro">
         <div className="marketplace-intro-shade"/>
         <div className="container marketplace-intro-content">
-          <span>Local products <ArrowRight aria-hidden="true"/> Ethiopian trucks</span>
-          <h1>Ethiopia's road-freight marketplace.</h1>
-          <p>Growing businesses find road capacity. Transporters find useful demand.</p>
+          <span>Welcome to Loadgistic</span>
+          <h1>Road freight, connected across Ethiopia.</h1>
+          <p>Loadgistic brings growing producers and established businesses together with owner-operators, drivers, and transport companies, making shipment demand and available truck capacity easier to find.</p>
         </div>
       </section>
 
-      <PublicBoardPreview shipments={preview.shipments} trucks={preview.trucks} shared={preview.shared}/>
+      <PublicBoardPreview initialBoard={selectedBoard} shipments={preview.shipments} trucks={preview.trucks} shared={preview.shared}/>
 
       <section className="public-purpose-band">
         <div className="container public-purpose-grid">

@@ -2853,8 +2853,6 @@ export function listAnonymousMarketplacePreview(limit=3) {
     destination:publicPlaceLabel(row.destination,row.destination_place_ref),
     travel_date:row.travel_date,
     planned_space_status:row.planned_space_status,
-    vehicle_make:row.vehicle_make,
-    vehicle_model:row.vehicle_model,
     cargo_configuration:row.cargo_configuration||row.vehicle_category,
     accepts_full_load:Boolean(row.accepts_full_load),
     accepts_partial_load:Boolean(row.accepts_partial_load),

@@ -40,7 +40,7 @@ test('anonymous marketplace preview is live and limited to an identity-safe whit
  assert.ok(preview.shared.pool?.member_count>=2);
  assert.ok(preview.shared.along?.member_count>=2);
  const shipmentKeys=['delivery_label','destination','distribution_mode','load_type','local_place_label','movement_scope','origin','pickup_label','posted_label','price_minor','price_mode','vehicle_category'];
- const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_again_place_label','available_percent','cargo_configuration','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
+ const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_again_place_label','available_percent','cargo_configuration','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label'];
  assert.deepEqual(Object.keys(preview.shipments[0]).sort(),shipmentKeys.sort());
  assert.deepEqual(Object.keys(preview.trucks[0]).sort(),truckKeys.sort());
  const serialized=JSON.stringify(preview);

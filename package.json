@@ -24,6 +24,7 @@
     "test:e2e:server": "node scripts/e2e-server.mjs",
     "test:e2e:browserbase": "node scripts/browserbase-smoke.mjs",
     "marketing:videos": "node scripts/capture-marketing-videos.mjs",
+    "brand:icons": "node scripts/generate-brand-icons.mjs",
     "check:source": "node scripts/check-source.mjs",
     "check:specs": "node scripts/check-specs.mjs",
     "check": "npm run check:specs && npm run check:source",

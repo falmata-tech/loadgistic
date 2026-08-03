@@ -24,8 +24,17 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   const manifest = await manifestResponse.json();
   expect(manifest.display).toBe('standalone');
   expect(manifest.start_url).toBe('/app/home');
+  expect(manifest.theme_color).toBe('#0c2a43');
+  expect(manifest.icons).toEqual(expect.arrayContaining([
+    expect.objectContaining({ src: '/icon-192.png', purpose: 'any' }),
+    expect.objectContaining({ src: '/icon-maskable-512.png', purpose: 'maskable' })
+  ]));
+  for (const asset of ['/icon.svg','/favicon-32.png','/icon-192.png','/icon-512.png','/icon-maskable-512.png','/apple-touch-icon.png']) {
+    expect((await request.get(asset)).ok()).toBeTruthy();
+  }
   const workerSource = await (await request.get('/sw.js')).text();
-  expect(workerSource).toContain("loadgistic-static-v4");
+  expect(workerSource).toContain("loadgistic-static-v5");
+  expect(workerSource).toContain("/favicon-32.png");
   expect(workerSource).not.toContain("startsWith('/_next/static/')");
   await page.goto('/login');
   await page.getByLabel('Email').fill('pwa-install-probe@example.test');
@@ -46,7 +55,8 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   expect(executableChunkResult.body).not.toBe('stale-runtime');
   await page.getByRole('link', { name: 'Loadgistic home' }).click();
   await expect(page).toHaveURL('/');
-  await expect(page.getByRole('heading', { name: "Ethiopia's road-freight marketplace." })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road freight, connected across Ethiopia.' })).toBeVisible();
+  await expect(page.getByRole('link',{name:'Loadgistic home'}).locator('img')).toHaveAttribute('src','/icon.svg');
 });
 
 test('anonymous users cannot browse Business or transporter profiles', async ({ page, request }: { page: any; request: any }) => {
@@ -270,18 +280,22 @@ test('self-service signup creates an immediately usable seven-day trial', async 
 
 test('homepage previews live structured Board facts without exposing member identity', async ({ page }: { page: any }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: "Ethiopia's road-freight marketplace." })).toBeVisible();
-  await expect(page.getByText('Growing businesses find road capacity. Transporters find useful demand.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road freight, connected across Ethiopia.' })).toBeVisible();
+  await expect(page.getByText(/growing producers and established businesses/)).toBeVisible();
   await expect(page.getByRole('tab',{name:'Shipment Board'})).toHaveAttribute('aria-selected','true');
-  expect(await page.getByText('Shown after login').count()).toBeGreaterThan(0);
+  await expect(page.getByText('Real routes and matching signals. Member identity and contact stay protected.')).toHaveCount(0);
+  await expect(page.getByText('Names and contacts require login')).toHaveCount(0);
+  await expect(page.getByText('Shown after login')).toHaveCount(0);
   expect(await page.getByText('Pick up before').count()).toBeGreaterThan(0);
   expect(await page.getByText('Price').count()).toBeGreaterThan(0);
   await expect(page.getByText('BlueLine Transport PLC')).toHaveCount(0);
   await expect(page.getByText('Beverage shipment to Dire Dawa')).toHaveCount(0);
   await page.getByRole('tab',{name:'Truck Board'}).click();
   await expect(page.getByRole('tab',{name:'Truck Board'})).toHaveAttribute('aria-selected','true');
-  expect(await page.getByText('Cargo configuration').count()).toBeGreaterThan(0);
-  expect(await page.getByText('Accepting').count()).toBeGreaterThan(0);
+  expect(await page.locator('.truck-preview-main img').count()).toBeGreaterThan(0);
+  await expect(page.locator('.truck-preview-main img').first()).toHaveAttribute('src',/vehicle-configurations/);
+  expect(await page.getByText('Shipment size').count()).toBeGreaterThan(0);
+  expect(await page.getByText('Stops').count()).toBeGreaterThan(0);
   await expect(page.getByText('BlueLine Transport PLC')).toHaveCount(0);
   await page.getByRole('link',{name:'Contact'}).first().click();
   await expect(page).toHaveURL('/login');
@@ -297,6 +311,19 @@ test('homepage previews live structured Board facts without exposing member iden
   await expect(logIn).toHaveClass(/button/);
   await expect(signUp.locator('svg')).toHaveCount(1);
   await expect(logIn.locator('svg')).toHaveCount(1);
+});
+
+test('desktop public navigation opens the selected marketplace Board', async ({ page }: { page:any }, testInfo:{project:{name:string}}) => {
+  test.skip(testInfo.project.name==='mobile-chromium','The compact mobile header uses the Board tabs in the page.');
+  await page.goto('/');
+  await page.locator('.public-header').getByRole('link',{name:'Truck Board'}).click();
+  await expect(page).toHaveURL(/\?board=TRUCKS#marketplace-preview-title$/);
+  await expect(page.getByRole('tab',{name:'Truck Board'})).toHaveAttribute('aria-selected','true');
+  await page.locator('.public-header').getByRole('link',{name:'Shipment Board'}).click();
+  await expect(page).toHaveURL(/\?board=SHIPMENTS#marketplace-preview-title$/);
+  await expect(page.getByRole('tab',{name:'Shipment Board'})).toHaveAttribute('aria-selected','true');
+  await page.goBack();
+  await expect(page.getByRole('tab',{name:'Truck Board'})).toHaveAttribute('aria-selected','true');
 });
 
 test('fleet transporter lands on a management dashboard and updates capacity in My Fleet', async ({ page }: { page: any }) => {

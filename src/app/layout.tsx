@@ -9,7 +9,8 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   applicationName: 'Loadgistic',
   icons: {
-    icon: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+    icon: [{ url: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }, { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' }, { url: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { url: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+    shortcut: [{ url: '/favicon-32.png', sizes: '32x32', type: 'image/png' }],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }]
   },
   appleWebApp: {
@@ -24,7 +25,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#1769e0'
+  themeColor: '#0c2a43'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

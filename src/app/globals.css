@@ -30,12 +30,12 @@ img { max-width: 100%; }
 .container { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
 .public-header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid rgba(229,234,242,.9); background: rgba(255,255,255,.94); backdrop-filter: blur(14px); }
 .public-nav { height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.logo { display: inline-flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: 850; color: var(--blue-dark); }
-.logo-mark { width: 36px; height: 36px; border-radius: 8px; display:grid; place-items:center; color:white; background:#10243f; box-shadow:0 7px 16px rgba(16,36,63,.2); }
-.logo-mark svg { width:32px; height:32px; overflow:visible; }
-.logo-mark .logo-route { fill:none; stroke:#50b7a6; stroke-width:5; stroke-linecap:round; }
-.logo-mark circle { fill:#f2c14e; }
-.logo-mark .logo-cargo { fill:#10243f; stroke:white; stroke-width:2.5; stroke-linejoin:round; }
+.logo { display:inline-flex; align-items:center; gap:10px; color:#0c2a43; }
+.logo-mark { width:40px; height:40px; display:grid; place-items:center; flex:0 0 auto; filter:drop-shadow(0 6px 10px rgba(12,42,67,.18)); }
+.logo-mark img { width:40px; height:40px; display:block; }
+.logo-wordmark { display:inline-flex; align-items:baseline; font-size:1.2rem; letter-spacing:0; line-height:1; }
+.logo-wordmark strong { font-weight:850; }
+.logo-wordmark > span { color:#1769e0; font-weight:760; }
 .public-links { display: flex; align-items: center; gap: 22px; color: #3f4a5f; font-size: .93rem; }
 .public-nav .public-session-compact { display:none; }
 .public-session-compact { align-items:center; gap:7px; }
@@ -57,7 +57,7 @@ img { max-width: 100%; }
 .marketplace-intro p { margin:0; color:#eef4f1; font-size:1.08rem; }
 .public-board-section { padding:32px 0 48px; background:#eef3f8; }
 .public-board-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:16px; }
-.public-board-heading h2 { margin:9px 0 0; font-size:1.8rem; }
+.public-board-heading h2 { scroll-margin-top:92px; margin:9px 0 0; font-size:1.8rem; }
 .public-board-heading p { margin:0; color:var(--muted); }
 .public-board-shell { overflow:hidden; border:1px solid #ccd8e6; border-radius:8px; background:white; box-shadow:0 14px 34px rgba(28,49,88,.08); }
 .public-board-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #d8e1ec; background:#f7f9fc; }
@@ -65,10 +65,6 @@ img { max-width: 100%; }
 .public-board-tabs button:last-child { border-right:0; }
 .public-board-tabs button.active { color:var(--blue-dark); background:white; box-shadow:inset 0 -3px 0 var(--blue); }
 .public-board-tabs svg { width:21px; height:21px; }
-.public-board-toolbar { min-height:56px; display:flex; justify-content:space-between; align-items:center; gap:16px; padding:10px 18px; border-bottom:1px solid var(--line); }
-.public-board-toolbar strong,.public-board-toolbar span { display:inline-flex; align-items:center; gap:8px; }
-.public-board-toolbar svg { width:18px; height:18px; }
-.public-board-toolbar span { color:var(--muted); font-size:.8rem; font-weight:750; }
 .public-board-list { display:grid; gap:10px; padding:12px; }
 .public-shared-matches { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .public-shared-matches article { display:grid; grid-template-columns:40px minmax(0,1fr) auto; align-items:center; gap:12px; padding:14px; border:1px solid #cfdbe8; border-radius:7px; background:#f8fbff; }
@@ -95,14 +91,10 @@ img { max-width: 100%; }
 .preview-card-main { grid-area:main; min-width:0; }
 .preview-card-title { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .preview-card-title h3 { margin:0; font-size:.98rem; }
+.truck-preview-main { display:grid; grid-template-columns:96px minmax(0,1fr); gap:12px; align-items:start; }
+.truck-preview-main .truck-thumbnail.large { width:96px; height:76px; }
 .preview-route { display:flex; align-items:flex-start; gap:7px; margin:9px 0; font-weight:800; line-height:1.35; }
 .preview-route svg { width:18px; height:18px; flex:0 0 auto; color:var(--blue); }
-.preview-identity { display:flex; align-items:center; gap:7px; color:var(--muted); }
-.preview-identity > svg { width:17px; height:17px; }
-.preview-identity > svg:last-child { margin-left:auto; color:var(--green); }
-.preview-identity span,.preview-identity small,.preview-identity strong { display:block; }
-.preview-identity small { font-size:.68rem; }
-.preview-identity strong { color:var(--ink); font-size:.76rem; }
 .rich-preview-card .locked-card-facts { grid-area:facts; grid-template-columns:repeat(2,minmax(0,1fr)); }
 .preview-tags { grid-area:tags; display:flex; flex-wrap:wrap; gap:6px; }
 .preview-tags span { padding:5px 8px; border:1px solid #d9e2ec; border-radius:999px; background:#f7f9fc; color:#536176; font-size:.68rem; font-weight:750; }
@@ -1241,7 +1233,6 @@ legend { font-weight:800; padding:0 7px; }
   .public-board-heading { display:grid; align-items:start; }
   .public-board-heading h2 { font-size:1.5rem; }
   .public-board-tabs button { min-height:54px; font-size:.84rem; }
-  .public-board-toolbar { padding:9px 12px; }
   .public-board-list { padding:8px; }
   .public-shared-matches { grid-template-columns:1fr; }
   .public-shared-matches article { grid-template-columns:36px minmax(0,1fr); }
