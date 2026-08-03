@@ -641,7 +641,11 @@ function migrate(db) {
     ['current_destination_place_ref','TEXT'],['current_destination_lat','REAL'],['current_destination_lng','REAL'],
     ['location_place_ref','TEXT'],
     ['market_status','TEXT'],
-    ['available_again_date','TEXT']
+    ['available_again_date','TEXT'],
+    ['available_again_place_ref','TEXT'],
+    ['available_again_place_label','TEXT'],
+    ['available_again_lat','REAL'],
+    ['available_again_lng','REAL']
   ];
   for (const [name, definition] of additiveCapacityColumns) {
     if (!capacityColumns.has(name)) db.exec(`ALTER TABLE capacities ADD COLUMN ${name} ${definition}`);

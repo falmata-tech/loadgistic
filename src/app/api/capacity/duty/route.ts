@@ -10,7 +10,13 @@ export async function POST(request:NextRequest) {
   const form=await request.formData();
   try {
     const onDuty=checked(form,'onDuty');
-    setAssignedVehicleDuty(user,text(form,'vehicleId'),onDuty);
+    setAssignedVehicleDuty(user,text(form,'vehicleId'),onDuty,{
+      locationArea:text(form,'locationArea'),
+      approximateLat:text(form,'approximateLat'),
+      approximateLng:text(form,'approximateLng'),
+      locationPrecisionKm:text(form,'locationPrecisionKm'),
+      locationSource:text(form,'locationSource')
+    });
     return redirectWith(request,'/app/home','success',onDuty?'Truck is On Duty.':'Truck is Off Duty.');
   } catch(error) {
     return redirectWith(request,'/app/home','error',errorMessage(error));

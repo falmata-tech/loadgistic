@@ -1,21 +1,49 @@
+"use client";
+
+import React from 'react';
 import { PageHeader } from './page-header';
 import { Flash } from './flash';
 import { CapacityForm } from './capacity-form';
 import { StatusPill } from './status-pill';
 import { capacityLabel } from '@/lib/domain.js';
 import { relativeTime } from '@/lib/ui';
-import { Gauge, Power, PowerOff, ShieldCheck } from 'lucide-react';
+import { Gauge, LocateFixed, Power, PowerOff, RefreshCw, ShieldCheck } from 'lucide-react';
+import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
+import { obscureCoordinate } from '@/lib/location-privacy.js';
 
 function RestrictedAvailability({vehicles,latestByVehicle}:{vehicles:any[];latestByVehicle:Map<string,any>}){
+  const [locationState,setLocationState]=React.useState('requesting' as 'requesting'|'captured'|'denied'|'error');
+  const [location,setLocation]=React.useState(null as {lat:number;lng:number;area:string}|null);
+  const [attempt,setAttempt]=React.useState(0);
+
+  React.useEffect(()=>{
+    if(!navigator.geolocation){setLocationState('error');return;}
+    let active=true;
+    setLocation(null);
+    setLocationState('requesting');
+    const watcher=navigator.geolocation.watchPosition(position=>{
+      if(!active)return;
+      const approximate=obscureCoordinate(position.coords.latitude,position.coords.longitude,35);
+      const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
+      setLocation({lat:approximate.lat,lng:approximate.lng,area:nearest?`Around ${nearest.name}, Ethiopia`:'Around current device area'});
+      setLocationState('captured');
+    },error=>{
+      if(!active)return;
+      setLocationState(error.code===error.PERMISSION_DENIED?'denied':'error');
+    },{enableHighAccuracy:false,timeout:12000,maximumAge:300000});
+    return()=>{active=false;navigator.geolocation.clearWatch(watcher);};
+  },[attempt]);
+
   return <section className="restricted-duty-panel">
     <div className="permission-note"><ShieldCheck aria-hidden="true"/><div><strong>Fleet-managed capacity</strong><span>Your dispatcher manages route, cargo space, visibility, and shipment preferences. Your availability change is visible to the fleet owner.</span></div></div>
+    <div className={`automatic-location ${locationState}`}><LocateFixed aria-hidden="true"/><span><strong>{locationState==='captured'?'Truck area ready':locationState==='requesting'?'Finding truck location...':locationState==='denied'?'Location permission is off':'Device location unavailable'}</strong><small>{location?`${location.area} · 40 km privacy area`:'Allow browser location before setting Available.'}</small></span>{['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>
     <div className="duty-truck-list">{vehicles.map(vehicle=>{
       const latest=latestByVehicle.get(vehicle.id);
       const available=latest&&latest.status!=='OFF_DUTY';
       return <article className="duty-truck" key={vehicle.id}>
         <div><strong>{vehicle.make} · {vehicle.model}</strong><span>{vehicle.platform_number} · {vehicle.cargo_configuration||vehicle.category}</span><small>Last updated by {latest?.updated_by_name||'fleet owner'} {latest?.updated_at?relativeTime(latest.updated_at):''}</small></div>
         <StatusPill status={available?(latest.status||'AVAILABLE'):'OFF_DUTY'}/>
-        <form action="/api/capacity/duty" method="post"><input type="hidden" name="vehicleId" value={vehicle.id}/>{!available?<input type="hidden" name="onDuty" value="on"/>:null}<button className={`button icon-button-label ${available?'danger':'success'}`}>{available?<><PowerOff aria-hidden="true"/>Off Duty</>:<><Power aria-hidden="true"/>Available</>}</button></form>
+        <form action="/api/capacity/duty" method="post"><input type="hidden" name="vehicleId" value={vehicle.id}/>{!available?<><input type="hidden" name="onDuty" value="on"/><input type="hidden" name="locationArea" value={location?.area||''}/><input type="hidden" name="approximateLat" value={location?.lat??''}/><input type="hidden" name="approximateLng" value={location?.lng??''}/><input type="hidden" name="locationPrecisionKm" value={location?'40':''}/><input type="hidden" name="locationSource" value={location?'DEVICE_OBSCURED':''}/></>:null}<button className={`button icon-button-label ${available?'danger':'success'}`} disabled={!available&&!location}>{available?<><PowerOff aria-hidden="true"/>Off Duty</>:<><Power aria-hidden="true"/>Available</>}</button></form>
       </article>;
     })}</div>
     {!vehicles.length?<div className="empty-state">No truck is assigned to your driver account. Ask your fleet owner to assign one.</div>:null}

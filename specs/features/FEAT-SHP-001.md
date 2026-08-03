@@ -281,6 +281,14 @@ When that actor opens Tracking\
 Then only Agreed, Assigned, In Transit, On Hold, Issue, Delivered, or Completed loads are listed\
 And Posted, Sent, Contacted, and merely saved or interested shipments remain in their Shipment Board or negotiation context.
 
+### Scenario: involved parties converge on canonical shipment status
+
+Given one shipment party changes an involved shipment from In Transit through Unloading to Completed\
+When another Business, transporter, or assigned Driver still has My Shipments or shipment detail open\
+Then the visible page refreshes its canonical server projection while active\
+And Completed is shown from `operational_status` rather than inferred from an older timeline event or commercial status\
+And the shipment moves from Tracking to History without requiring logout or a database reset.
+
 ### Scenario: invalid transition
 
 Given a shipment in a known state\

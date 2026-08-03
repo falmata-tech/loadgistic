@@ -119,10 +119,17 @@ export function validateCapacity(status, availablePercent) {
 
 export function validateAcceptedLoads(status, acceptedLoads) {
   if ([CAPACITY_STATUSES.BUSY,CAPACITY_STATUSES.OFF_DUTY].includes(status)) return { acceptsFullLoad: false, acceptsPartialLoad: false };
+  if (status === CAPACITY_STATUSES.PARTIAL) return { acceptsFullLoad: false, acceptsPartialLoad: true };
   if (acceptedLoads === 'FTL') return { acceptsFullLoad: true, acceptsPartialLoad: false };
   if (acceptedLoads === 'PTL') return { acceptsFullLoad: false, acceptsPartialLoad: true };
   if (acceptedLoads === 'BOTH') return { acceptsFullLoad: true, acceptsPartialLoad: true };
   throw new Error('ACCEPTED_LOADS_REQUIRED');
+}
+
+export function validateCapacityServiceRadius(value) {
+  const radius=Number(value);
+  if (!Number.isInteger(radius) || radius < 10 || radius > 50) throw new Error('INVALID_CAPACITY_RADIUS');
+  return radius;
 }
 
 export function validateFreightLoadType(serviceMode, loadType) {

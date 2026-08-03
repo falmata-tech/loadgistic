@@ -545,7 +545,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         historicalStatus,historicalPercent,origin,destination,`${origin} ↔ ${destination}`,
         dateOnly(days(now,-3)),'Historical capacity','OPEN',null,vehicle.ownerUserId,
         days(now,-4).toISOString(),days(now,-3).toISOString(),`Around ${origin}`,
-        days(now,-4).toISOString(),latitude,longitude,40,'DEVICE_OBSCURED',1,
+        days(now,-4).toISOString(),latitude,longitude,40,'DEVICE_OBSCURED',historicalStatus === 'PARTIAL' ? 0 : 1,
         historicalStatus === 'PARTIAL' ? 1 : 0,vehicle.index % 3 === 0 ? 1 : 0,
         vehicle.index % 4 === 0 ? 1 : 0,null,
         historicalStatus === 'PARTIAL' ? origin : null,historicalStatus === 'PARTIAL' ? destination : null,
@@ -558,7 +558,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
       const visibility = ['OPEN','SAVED_PARTNERS','PRIVATE','DIRECT_TO_SELECTED_BUSINESS'][vehicle.index % 4];
       const updatedAt = vehicle.index % 11 === 0 ? hours(now,-18).toISOString() : hours(now,-(vehicle.index % 6)).toISOString();
       const expiresAt = vehicle.index % 13 === 0 ? hours(now,-1).toISOString() : hours(now,24 - (vehicle.index % 8)).toISOString();
-      const hasDeviceLocation = vehicle.ownerUserId === vehicle.driverUserId && latestStatus !== 'OFF_DUTY';
+      const hasDeviceLocation = latestStatus !== 'OFF_DUTY';
       capacityInsert.run(
         `stress-capacity-latest-${pad(vehicle.index,4)}`,vehicle.organizationId,vehicle.providerProfileId,vehicle.id,
         latestStatus,latestPercent,
@@ -571,7 +571,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
         latestStatus === 'OFF_DUTY' ? null : updatedAt,
         hasDeviceLocation ? latitude : null,hasDeviceLocation ? longitude : null,
         hasDeviceLocation ? 40 : null,hasDeviceLocation ? 'DEVICE_OBSCURED' : latestStatus === 'OFF_DUTY' ? null : 'MANUAL_GENERAL_AREA',
-        latestStatus === 'OFF_DUTY' ? 0 : 1,latestStatus === 'PARTIAL' || vehicle.index % 4 === 0 ? 1 : 0,
+        latestStatus === 'OFF_DUTY' || latestStatus === 'PARTIAL' ? 0 : 1,latestStatus === 'PARTIAL' || vehicle.index % 4 === 0 ? 1 : 0,
         vehicle.index % 3 === 0 ? 1 : 0,vehicle.index % 4 === 0 || vehicle.index % 5 === 0 ? 1 : 0,
         vehicle.index % 9 === 0 ? updatedAt : null,
         latestStatus === 'PARTIAL' ? origin : null,latestStatus === 'PARTIAL' ? destination : null,
@@ -582,16 +582,13 @@ export function populateStressData(db, { scale = 1 } = {}) {
       if(latestStatus!=='OFF_DUTY'&&vehicle.index%3!==2){
         const movementScope=vehicle.index%3===0?'LOCAL':'BOTH';
         const capacityId=`stress-capacity-latest-${pad(vehicle.index,4)}`;
-        if(movementScope==='LOCAL'){
-          db.prepare(`UPDATE capacities SET status='EMPTY',available_percent=100,
-            origin=NULL,destination=NULL,corridor=NULL,travel_date=NULL,planned_space_status=NULL,
-            current_route_origin=NULL,current_route_destination=NULL,current_route_date=NULL,
-            location_lat=NULL,location_lng=NULL,location_precision_km=NULL,location_source='MANUAL_GENERAL_AREA'
-            WHERE id=?`).run(capacityId);
-        }
+        if(movementScope==='LOCAL')db.prepare(`UPDATE capacities SET
+          status=CASE WHEN status='PARTIAL' THEN 'EMPTY' ELSE status END,
+          market_status=CASE WHEN COALESCE(market_status,status)='PARTIAL' THEN 'PARTIAL' ELSE COALESCE(market_status,status) END
+          WHERE id=?`).run(capacityId);
         db.prepare(`UPDATE capacities SET movement_scope=?,local_place_ref=?,local_place_label=?,
           local_center_lat=?,local_center_lng=?,local_radius_km=? WHERE id=?`)
-          .run(movementScope,`stress-place-${pad((vehicle.index-1)%LOCATIONS.length+1)}`,origin,latitude,longitude,[10,25,40,60][vehicle.index%4],capacityId);
+          .run(movementScope,`stress-place-${pad((vehicle.index-1)%LOCATIONS.length+1)}`,origin,latitude,longitude,[10,20,30,40,50][vehicle.index%5],capacityId);
       }
     }
 

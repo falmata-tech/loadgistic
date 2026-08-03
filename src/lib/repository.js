@@ -9,6 +9,7 @@ import {
   validatePriceMode,
   validateCapacity,
   validateAcceptedLoads,
+  validateCapacityServiceRadius,
   validateFreightLoadType,
   validateMovementScope,
   validateServiceRadius,
@@ -229,6 +230,38 @@ function resolvePlaceReference(placeRef, label) {
     ? `${place.name}, ${place.parent_name}, ${place.country_name}`
     : `${place.name}, ${place.country_name}`;
   return {place_ref:place.id,place_label:qualified,center_lat:place.latitude,center_lng:place.longitude};
+}
+
+function nearestCapacityPlace(lat,lng) {
+  const db=getDb();
+  const imported=db.prepare(`SELECT id,name,parent_name,country_name,latitude,longitude
+    FROM place_catalog
+    WHERE latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?
+    ORDER BY ((latitude-?)*(latitude-?))+((longitude-?)*(longitude-?)),population DESC
+    LIMIT 1`).get(lat-1.5,lat+1.5,lng-1.5,lng+1.5,lat,lat,lng,lng);
+  if(imported){
+    const qualified=imported.parent_name&&normalizePlace(imported.parent_name)!==normalizePlace(imported.name)
+      ? `${imported.name}, ${imported.parent_name}, ${imported.country_name}`
+      : `${imported.name}, ${imported.country_name}`;
+    return {place_ref:imported.id,place_label:qualified,center_lat:imported.latitude,center_lng:imported.longitude};
+  }
+  const builtIn=ETHIOPIA_PLACES.map(place=>({
+    ...place,
+    distance:((place.lat-lat)*(place.lat-lat))+((place.lng-lng)*(place.lng-lng))
+  })).sort((a,b)=>a.distance-b.distance)[0];
+  if(!builtIn)throw new Error('CAPACITY_DRIVER_LOCATION_REQUIRED');
+  return {place_ref:`builtin:${normalizePlace(builtIn.name)}`,place_label:placeLabel(builtIn.name),center_lat:builtIn.lat,center_lng:builtIn.lng};
+}
+
+function capacityDeviceLocation(input) {
+  if(input.locationSource!=='DEVICE_OBSCURED')throw new Error('CAPACITY_DRIVER_LOCATION_REQUIRED');
+  const lat=Number(input.approximateLat);
+  const lng=Number(input.approximateLng);
+  const precisionKm=Number(input.locationPrecisionKm);
+  if(!Number.isFinite(lat)||lat<3||lat>15||!Number.isFinite(lng)||lng<32||lng>49||precisionKm!==40){
+    throw new Error('INVALID_APPROXIMATE_LOCATION');
+  }
+  return {lat,lng,precisionKm,place:nearestCapacityPlace(lat,lng),updatedAt:nowIso()};
 }
 
 function optionalCoordinatePair(latValue,lngValue) {
@@ -1465,7 +1498,7 @@ function hasTrackedExecution(db, shipmentId) {
 
 function capacityRouteCandidates(capacity, { requireCurrentDate = false } = {}) {
   const routes = [];
-  if (capacity.status==='BUSY'||capacity.movement_scope===MOVEMENT_SCOPES.LOCAL) return routes;
+  if (capacity.status==='BUSY') return routes;
   const today = todayInEthiopia();
   if (
     capacity.status === 'PARTIAL'
@@ -1551,7 +1584,7 @@ function listProfileRoutesWithEvidence(db, page) {
           capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,travel_date,current_route_origin,current_route_destination,
             current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,current_route_date
-            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_organization_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id)
+            FROM capacities WHERE provider_organization_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id)
             .map(capacity=>({...capacity,status:capacity.market_status||capacity.status})),
           shipments:db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,
@@ -1562,7 +1595,7 @@ function listProfileRoutesWithEvidence(db, page) {
           capacity:db.prepare(`SELECT id,vehicle_id,status,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,travel_date,current_route_origin,current_route_destination,
             current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,current_route_date
-            FROM capacities WHERE movement_scope IN ('INTERCITY','BOTH') AND provider_profile_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id)
+            FROM capacities WHERE provider_profile_id=? AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')`).all(owner.id)
             .map(capacity=>({...capacity,status:capacity.market_status||capacity.status})),
           shipments:db.prepare(`SELECT id,origin,destination,origin_place_ref,origin_lat,origin_lng,
             destination_place_ref,destination_lat,destination_lng,
@@ -2475,7 +2508,7 @@ export function acceptDirectedShipment(user, shipmentId) {
 }
 
 const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile_id,c.vehicle_id,c.status,c.available_percent,
-  COALESCE(c.market_status,c.status) AS market_status,c.available_again_date,
+  COALESCE(c.market_status,c.status) AS market_status,c.available_again_date,c.available_again_place_ref,c.available_again_place_label,c.available_again_lat,c.available_again_lng,
   c.origin,c.destination,c.origin_place_ref,c.origin_lat,c.origin_lng,c.destination_place_ref,c.destination_lat,c.destination_lng,
   c.corridor,c.travel_date,c.next_available,c.visibility,c.updated_by,c.updated_at,c.expires_at,
   c.location_area,c.location_place_ref,c.location_updated_at,c.location_precision_km,c.location_source,c.accepts_full_load,c.accepts_partial_load,
@@ -2742,7 +2775,7 @@ export function listProviderCapacityBoardPage(user,filters={},options={}) {
   const areaProjection=query.currentAreaMatchExpression?`,${query.currentAreaMatchExpression} AS current_area_match`:'';
   const areaOrder=query.currentAreaMatchExpression&&safeFilters.currentAreaMode==='PREFER'?'current_area_match DESC,':'';
   const rows=getDb().prepare(`SELECT
-      COALESCE(c.market_status,c.status) AS status,c.available_percent,c.available_again_date,
+      COALESCE(c.market_status,c.status) AS status,c.available_percent,c.available_again_date,c.available_again_place_label,
       c.origin,c.destination,c.travel_date,c.updated_at,c.location_area,c.location_updated_at,
       c.accepts_full_load,c.accepts_partial_load,c.open_to_contract_lanes,c.proof_recorded_at,
       c.current_route_origin,c.current_route_destination,c.planned_space_status,
@@ -2808,6 +2841,7 @@ export function listAnonymousMarketplacePreview(limit=3) {
     status:row.status,
     available_percent:row.available_percent,
     available_again_date:row.available_again_date,
+    available_again_place_label:publicPlaceLabel(row.available_again_place_label,row.available_again_place_ref),
     movement_scope:row.movement_scope,
     local_place_label:publicPlaceLabel(row.local_place_label,row.local_place_ref),
     local_radius_km:row.local_radius_km,
@@ -2951,11 +2985,12 @@ function attachCapacityPreferredRoutes(capacity) {
 export function listOwnVehicles(user) {
   assertWorkspaceAccess(user);
   const db = getDb();
-  if (isSelfManagedDriver(user)) return db.prepare('SELECT * FROM vehicles WHERE provider_profile_id=? AND active=1').all(user.provider_profile_id);
-  if (isCompanyDriver(user)) return db.prepare(`SELECT v.* FROM vehicles v JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id
+  let rows=[];
+  if (isSelfManagedDriver(user)) rows=db.prepare('SELECT * FROM vehicles WHERE provider_profile_id=? AND active=1').all(user.provider_profile_id);
+  else if (isCompanyDriver(user)) rows=db.prepare(`SELECT v.* FROM vehicles v JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id
     WHERE a.driver_user_id=? AND a.active=1 AND v.organization_id=? AND v.active=1 ORDER BY v.label`).all(user.id,user.organization_id);
-  if (user.role === USER_ROLES.TRANSPORTER) return db.prepare('SELECT * FROM vehicles WHERE organization_id=? AND active=1').all(user.organization_id);
-  return [];
+  else if (user.role === USER_ROLES.TRANSPORTER) rows=db.prepare('SELECT * FROM vehicles WHERE organization_id=? AND active=1').all(user.organization_id);
+  return rows.map(row=>({...row}));
 }
 
 export function publishCapacity(user, input, photo = /** @type {null|{path:string,name:string,originalName:string,mimeType:string,size:number}} */ (null)) {
@@ -2972,27 +3007,31 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   const vehicle = db.prepare(`SELECT * FROM vehicles WHERE id=? AND ${scope.column === 'provider_profile_id' ? 'provider_profile_id' : 'organization_id'}=? AND active=1${assignmentJoin}`)
     .get(...vehicleArgs);
   if (!vehicle) throw new Error('INVALID_VEHICLE');
-  if (vehicle.organization_id && input.status !== 'OFF_DUTY') {
-    const assignedDriver=db.prepare(`SELECT 1 FROM driver_vehicle_assignments WHERE vehicle_id=? AND active=1`).get(vehicle.id);
-    if(!assignedDriver)throw new Error('DRIVER_REQUIRED_FOR_CAPACITY');
-  }
+  const activeAssignment=vehicle.organization_id
+    ? db.prepare(`SELECT driver_user_id FROM driver_vehicle_assignments WHERE vehicle_id=? AND active=1`).get(vehicle.id)
+    : null;
+  if(vehicle.organization_id&&input.status!=='OFF_DUTY'&&!activeAssignment)throw new Error('DRIVER_REQUIRED_FOR_CAPACITY');
+  const assignedDriverId=vehicle.provider_profile_id?user.id:activeAssignment?.driver_user_id;
   const percent = validateCapacity(input.status,input.availablePercent);
   const acceptedLoads = validateAcceptedLoads(input.status,input.acceptedLoads);
   const movementScope=validateMovementScope(input.movementScope||MOVEMENT_SCOPES.INTERCITY,{allowBoth:true});
-  if(movementScope===MOVEMENT_SCOPES.LOCAL&&input.status==='PARTIAL')throw new Error('LOCAL_CAPACITY_MUST_BE_EMPTY');
   const availableAgainDate=input.status==='BUSY'?String(input.availableAgainDate||'').trim():null;
   if(input.status==='BUSY'&&!availableAgainDate)throw new Error('BUSY_AVAILABLE_DATE_REQUIRED');
   if(availableAgainDate&&availableAgainDate<todayInEthiopia())throw new Error('INVALID_BUSY_AVAILABLE_DATE');
-  const localPlace=input.status!=='OFF_DUTY'&&[MOVEMENT_SCOPES.LOCAL,MOVEMENT_SCOPES.BOTH].includes(movementScope)
-    ? {...resolvePlaceReference(input.localPlaceRef,input.localPlaceLabel),radius_km:validateServiceRadius(input.localRadiusKm)}
+  if(input.status==='BUSY'&&!String(input.availableAgainPlaceRef||'').trim())throw new Error('BUSY_AVAILABLE_PLACE_REQUIRED');
+  const availableAgainPlace=input.status==='BUSY'
+    ? resolvePlaceReference(input.availableAgainPlaceRef,input.availableAgainPlaceLabel)
     : null;
-  const acceptsIntercity=movementScope!==MOVEMENT_SCOPES.LOCAL;
   const acceptsMultiPick=Boolean(input.acceptsMultiPick||input.acceptsMultiStop);
   const acceptsMultiDrop=Boolean(input.acceptsMultiDrop||input.acceptsMultiStop);
-  if(acceptsIntercity&&input.status==='PARTIAL'&&(!input.currentRouteOrigin||!input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
-  if(acceptsIntercity&&Boolean(input.origin)!==Boolean(input.destination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
-  const hasCurrentRoute=acceptsIntercity&&input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin&&input.currentRouteDestination);
-  const hasPlannedRoute=acceptsIntercity&&!['BUSY','OFF_DUTY'].includes(input.status)&&Boolean(input.origin&&input.destination);
+  if(input.status==='PARTIAL'&&(!input.currentRouteOrigin||!input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
+  const routeIntent=input.status==='EMPTY'
+    ? String(input.routeIntent||((input.origin||input.destination)?'SPECIFIC':'ANYWHERE')).toUpperCase()
+    : null;
+  if(routeIntent&&!['ANYWHERE','SPECIFIC'].includes(routeIntent))throw new Error('INVALID_ROUTE_INTENT');
+  if(routeIntent==='SPECIFIC'&&(!input.origin||!input.destination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
+  const hasCurrentRoute=input.status==='PARTIAL'&&Boolean(input.currentRouteOrigin&&input.currentRouteDestination);
+  const hasPlannedRoute=input.status==='EMPTY'&&routeIntent==='SPECIFIC';
   const currentOriginPlace=hasCurrentRoute?resolvePlaceReference(input.currentOriginPlaceRef,input.currentRouteOrigin):null;
   const currentDestinationPlace=hasCurrentRoute?resolvePlaceReference(input.currentDestinationPlaceRef,input.currentRouteDestination):null;
   const plannedOriginPlace=hasPlannedRoute?resolvePlaceReference(input.originPlaceRef,input.origin):null;
@@ -3001,20 +3040,25 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   if(hasPlannedRoute&&plannedOriginPlace.place_ref===plannedDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   if(hasPlannedRoute&&!input.travelDate)throw new Error('PLANNED_ROUTE_DATE_REQUIRED');
   if(hasPlannedRoute&&input.travelDate<todayInEthiopia())throw new Error('INVALID_ROUTE_DATE');
-  if(hasPlannedRoute&&!['FULL','PARTIAL'].includes(input.plannedSpaceStatus))throw new Error('PLANNED_SPACE_STATUS_REQUIRED');
   const visibility = input.visibility || 'OPEN';
   if (!['OPEN','SAVED_PARTNERS'].includes(visibility)) throw new Error('INVALID_CAPACITY_VISIBILITY');
-  if (input.status !== 'OFF_DUTY' && !input.locationArea?.trim() && !localPlace) throw new Error('CAPACITY_AREA_REQUIRED');
-  const hasDeviceArea = input.status !== 'OFF_DUTY' && input.locationSource === 'DEVICE_OBSCURED';
-  if (user.role === USER_ROLES.TRANSPORTER && hasDeviceArea) throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
-  const locationLat = hasDeviceArea ? Number(input.approximateLat) : null;
-  const locationLng = hasDeviceArea ? Number(input.approximateLng) : null;
-  const locationPrecisionKm = hasDeviceArea ? Number(input.locationPrecisionKm) : null;
-  if (hasDeviceArea && (!Number.isFinite(locationLat) || locationLat < -90 || locationLat > 90 || !Number.isFinite(locationLng) || locationLng < -180 || locationLng > 180 || locationPrecisionKm !== 40)) {
-    throw new Error('INVALID_APPROXIMATE_LOCATION');
+  if(user.role===USER_ROLES.TRANSPORTER&&input.locationSource==='DEVICE_OBSCURED')throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
+  let driverLocation=null;
+  if(input.status!=='OFF_DUTY'){
+    if(user.role===USER_ROLES.DRIVER){
+      if(assignedDriverId!==user.id)throw new Error('FORBIDDEN');
+      driverLocation=capacityDeviceLocation(input);
+    }else{
+      const source=db.prepare(`SELECT location_lat,location_lng,location_precision_km,location_updated_at
+        FROM capacities WHERE vehicle_id=? AND updated_by=? AND location_source='DEVICE_OBSCURED'
+          AND location_lat IS NOT NULL AND location_lng IS NOT NULL
+        ORDER BY COALESCE(location_updated_at,updated_at) DESC,id DESC LIMIT 1`).get(vehicle.id,assignedDriverId||'');
+      if(!source)throw new Error('CAPACITY_DRIVER_LOCATION_REQUIRED');
+      driverLocation={lat:Number(source.location_lat),lng:Number(source.location_lng),precisionKm:Number(source.location_precision_km),place:nearestCapacityPlace(Number(source.location_lat),Number(source.location_lng)),updatedAt:source.location_updated_at};
+    }
   }
-  const manualLocationPlace=input.status!=='OFF_DUTY'&&acceptsIntercity&&!localPlace&&!hasDeviceArea
-    ? resolvePlaceReference(input.locationPlaceRef,input.locationArea)
+  const localPlace=input.status!=='OFF_DUTY'&&[MOVEMENT_SCOPES.LOCAL,MOVEMENT_SCOPES.BOTH].includes(movementScope)
+    ? {...driverLocation.place,radius_km:validateCapacityServiceRadius(input.localRadiusKm)}
     : null;
   const expiresHours = Number(process.env.CAPACITY_EXPIRES_HOURS || 24);
   const timestamp = nowIso();
@@ -3024,12 +3068,12 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   const destination=plannedDestinationPlace?.place_label||null;
   const currentRouteOrigin=currentOriginPlace?.place_label||null;
   const currentRouteDestination=currentDestinationPlace?.place_label||null;
-  const legacyStatus=input.status==='BUSY'?'OFF_DUTY':input.status;
-  const locationArea=input.status==='OFF_DUTY'?null:localPlace
-    ? `Around ${localPlace.place_label}`
-    : manualLocationPlace
-      ? `Around ${manualLocationPlace.place_label}`
-      : qualifyAreaLabel(input.locationArea);
+  const legacyStatus=input.status==='BUSY'
+    ? 'OFF_DUTY'
+    : input.status==='PARTIAL'&&movementScope===MOVEMENT_SCOPES.LOCAL
+      ? 'EMPTY'
+      : input.status;
+  const locationArea=input.status==='OFF_DUTY'?null:`Around ${driverLocation.place.place_label}`;
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE capacities SET expires_at=? WHERE vehicle_id=? AND expires_at>?`).run(timestamp,vehicle.id,timestamp);
@@ -3039,15 +3083,17 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref,
       market_status,available_again_date)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicle.id,legacyStatus,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,input.nextAvailable || null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : timestamp,
-        hasDeviceArea?locationLat:manualLocationPlace?.center_lat??null,hasDeviceArea?locationLng:manualLocationPlace?.center_lng??null,hasDeviceArea?locationPrecisionKm:manualLocationPlace?40:null,
-        input.status==='OFF_DUTY'?null:hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,null,hasPlannedRoute?input.plannedSpaceStatus:null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
+      .run(id,scope.organizationId,scope.profileId,vehicle.id,legacyStatus,percent,origin,destination,origin&&destination?`${origin} → ${destination}`:null,hasPlannedRoute?input.travelDate:null,null,visibility,photo?.path || null,user.id,timestamp,expiresAt,locationArea,input.status === 'OFF_DUTY' ? null : driverLocation.updatedAt,
+        driverLocation?.lat??null,driverLocation?.lng??null,driverLocation?.precisionKm??null,
+        input.status==='OFF_DUTY'?null:'DEVICE_OBSCURED',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,input.openToContractLanes ? 1 : 0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,null,hasPlannedRoute?'FULL':null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
         plannedOriginPlace?.place_ref||null,plannedOriginPlace?.center_lat??null,plannedOriginPlace?.center_lng??null,
         plannedDestinationPlace?.place_ref||null,plannedDestinationPlace?.center_lat??null,plannedDestinationPlace?.center_lng??null,
         currentOriginPlace?.place_ref||null,currentOriginPlace?.center_lat??null,currentOriginPlace?.center_lng??null,
         currentDestinationPlace?.place_ref||null,currentDestinationPlace?.center_lat??null,currentDestinationPlace?.center_lng??null,
-        localPlace?.place_ref||manualLocationPlace?.place_ref||null,input.status,availableAgainDate);
-    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, movementScope, localPlaceRef:localPlace?.place_ref||null, localRadiusKm:localPlace?.radius_km||null, locationArea, locationSource: hasDeviceArea ? 'DEVICE_OBSCURED' : 'MANUAL_GENERAL_AREA', locationPrecisionKm, acceptedLoads: input.status === 'OFF_DUTY' ? null : input.acceptedLoads, currentRouteLive:hasCurrentRoute,plannedRouteDate:hasPlannedRoute?input.travelDate:null,plannedSpaceStatus:hasPlannedRoute?input.plannedSpaceStatus:null, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
+        driverLocation?.place.place_ref||null,input.status,availableAgainDate);
+    if(availableAgainPlace)db.prepare(`UPDATE capacities SET available_again_place_ref=?,available_again_place_label=?,available_again_lat=?,available_again_lng=? WHERE id=?`)
+      .run(availableAgainPlace.place_ref,availableAgainPlace.place_label,availableAgainPlace.center_lat,availableAgainPlace.center_lng,id);
+    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, movementScope, localPlaceRef:localPlace?.place_ref||null, localRadiusKm:localPlace?.radius_km||null, locationArea, locationSource:driverLocation?'DEVICE_OBSCURED':null, locationPrecisionKm:driverLocation?.precisionKm||null, acceptedLoads:input.status==='PARTIAL'?'PTL':input.status==='EMPTY'?input.acceptedLoads:null, routeIntent, currentRouteLive:hasCurrentRoute,plannedRouteDate:hasPlannedRoute?input.travelDate:null,plannedSpaceStatus:hasPlannedRoute?'FULL':null, openToContractLanes: Boolean(input.openToContractLanes), acceptsMultiPick, acceptsMultiDrop, proofRecorded: Boolean(photo?.path) });
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -3056,7 +3102,7 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   return id;
 }
 
-export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
+export function setAssignedVehicleDuty(user, vehicleId, onDuty, input={}) {
   assertWorkspaceAccess(user);
   if (![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)) throw new Error('FORBIDDEN');
   const db = getDb();
@@ -3069,7 +3115,7 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
   if (!assignment) throw new Error('INVALID_VEHICLE');
   const source = onDuty
     ? db.prepare(`SELECT c.* FROM capacities c JOIN users u ON u.id=c.updated_by
-      WHERE c.vehicle_id=? AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') AND (?=0 OR u.role='TRANSPORTER')
+      WHERE c.vehicle_id=? AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL','BUSY') AND (?=0 OR u.role='TRANSPORTER')
       ORDER BY c.updated_at DESC LIMIT 1`).get(vehicleId,isCompanyDriver(user) ? 1 : 0)
     : db.prepare('SELECT * FROM capacities WHERE vehicle_id=? ORDER BY updated_at DESC LIMIT 1').get(vehicleId);
   if (onDuty && !source) throw new Error('CAPACITY_CONFIGURATION_REQUIRED');
@@ -3077,8 +3123,25 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
   const expiresAt = hoursFromNow(Number(process.env.CAPACITY_EXPIRES_HOURS || 24));
   const id = randomId('cap-');
   const status = onDuty ? (source.market_status||source.status) : 'OFF_DUTY';
-  const legacyStatus=status==='BUSY'?'OFF_DUTY':status;
+  const legacyStatus=status==='BUSY'?'OFF_DUTY':status==='PARTIAL'&&source?.movement_scope==='LOCAL'?'EMPTY':status;
   const percent = onDuty ? source.available_percent : 0;
+  let driverLocation=null;
+  if(onDuty){
+    if(user.role===USER_ROLES.DRIVER){
+      driverLocation=capacityDeviceLocation(input);
+    }else{
+      const assigned=db.prepare(`SELECT driver_user_id FROM driver_vehicle_assignments WHERE vehicle_id=? AND active=1`).get(vehicleId);
+      const latest=assigned?db.prepare(`SELECT location_lat,location_lng,location_precision_km,location_updated_at
+        FROM capacities WHERE vehicle_id=? AND updated_by=? AND location_source='DEVICE_OBSCURED'
+          AND location_lat IS NOT NULL AND location_lng IS NOT NULL
+        ORDER BY COALESCE(location_updated_at,updated_at) DESC,id DESC LIMIT 1`).get(vehicleId,assigned.driver_user_id):null;
+      if(!latest)throw new Error('CAPACITY_DRIVER_LOCATION_REQUIRED');
+      driverLocation={lat:Number(latest.location_lat),lng:Number(latest.location_lng),precisionKm:Number(latest.location_precision_km),place:nearestCapacityPlace(Number(latest.location_lat),Number(latest.location_lng)),updatedAt:latest.location_updated_at};
+    }
+  }
+  const localPlace=onDuty&&['LOCAL','BOTH'].includes(source.movement_scope)
+    ? {...driverLocation.place,radius_km:validateCapacityServiceRadius(source.local_radius_km)}
+    : null;
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE capacities SET expires_at=? WHERE vehicle_id=? AND expires_at>?`).run(timestamp,vehicleId,timestamp);
@@ -3088,13 +3151,15 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty) {
       current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,location_place_ref,
       market_status,available_again_date)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id,scope.organizationId,scope.profileId,vehicleId,legacyStatus,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? source.location_area : null,onDuty ? timestamp : null,onDuty ? source.location_lat : null,onDuty ? source.location_lng : null,onDuty ? source.location_precision_km : null,onDuty ? source.location_source : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',onDuty?source.local_place_ref:null,onDuty?source.local_place_label:null,onDuty?source.local_center_lat:null,onDuty?source.local_center_lng:null,onDuty?source.local_radius_km:null,
+      .run(id,scope.organizationId,scope.profileId,vehicleId,legacyStatus,percent,source?.origin || null,source?.destination || null,source?.corridor || null,source?.travel_date || null,source?.next_available || null,source?.visibility || 'OPEN',null,user.id,timestamp,expiresAt,onDuty ? `Around ${driverLocation.place.place_label}` : null,onDuty ? driverLocation.updatedAt : null,onDuty ? driverLocation.lat : null,onDuty ? driverLocation.lng : null,onDuty ? driverLocation.precisionKm : null,onDuty ? 'DEVICE_OBSCURED' : null,onDuty ? source.accepts_full_load : 0,onDuty ? source.accepts_partial_load : 0,onDuty ? source.open_to_contract_lanes : 0,onDuty ? source.accepts_multi_stop : 0,null,onDuty?source.current_route_origin:null,onDuty?source.current_route_destination:null,null,onDuty?source.planned_space_status:null,onDuty?source.accepts_multi_pick:0,onDuty?source.accepts_multi_drop:0,onDuty?source.movement_scope||'INTERCITY':'INTERCITY',localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
         onDuty?source.origin_place_ref:null,onDuty?source.origin_lat:null,onDuty?source.origin_lng:null,
         onDuty?source.destination_place_ref:null,onDuty?source.destination_lat:null,onDuty?source.destination_lng:null,
         onDuty?source.current_origin_place_ref:null,onDuty?source.current_origin_lat:null,onDuty?source.current_origin_lng:null,
         onDuty?source.current_destination_place_ref:null,onDuty?source.current_destination_lat:null,onDuty?source.current_destination_lng:null,
-        onDuty?source.location_place_ref:null,status,onDuty?source.available_again_date:null);
-    audit(db,user,onDuty ? 'VEHICLE_SET_ON_DUTY' : 'VEHICLE_SET_OFF_DUTY','vehicle',vehicleId,{restoredCapacityId:onDuty ? source.id : null});
+        onDuty?driverLocation.place.place_ref:null,status,onDuty?source.available_again_date:null);
+    if(onDuty&&status==='BUSY')db.prepare(`UPDATE capacities SET available_again_place_ref=?,available_again_place_label=?,available_again_lat=?,available_again_lng=? WHERE id=?`)
+      .run(source.available_again_place_ref,source.available_again_place_label,source.available_again_lat,source.available_again_lng,id);
+    audit(db,user,onDuty ? 'VEHICLE_SET_ON_DUTY' : 'VEHICLE_SET_OFF_DUTY','vehicle',vehicleId,{restoredCapacityId:onDuty ? source.id : null,locationSource:onDuty?'DEVICE_OBSCURED':null});
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');

@@ -11,6 +11,7 @@ import {
   PackageCheck,
   PackageOpen,
   PackageSearch,
+  RefreshCw,
   TriangleAlert,
   Upload
 } from 'lucide-react';
@@ -37,6 +38,7 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
   const firstAvailable=trackingActions.find(action=>availableStatuses.has(action.status))?.status||'';
   const [selectedStatus,setSelectedStatus]=React.useState(firstAvailable);
   const [locationState,setLocationState]=React.useState('idle' as LocationState);
+  const [locationAttempt,setLocationAttempt]=React.useState(0);
   const requiresLocation=trackingMode==='LOCATION_AND_STATUS';
   const privacyRadius=loadType==='FTL'?20:40;
   const canPublishAutomaticLocation=requiresLocation&&allowDeviceLocation&&automaticStatuses.has(operationalStatus);
@@ -94,7 +96,7 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
       active=false;
       navigator.geolocation.clearWatch(watcher);
     };
-  },[canPublishAutomaticLocation,privacyRadius,shipmentId]);
+  },[canPublishAutomaticLocation,privacyRadius,shipmentId,locationAttempt]);
 
   const locationTitle=locationState==='saved'
     ? 'Automatic location on'
@@ -111,7 +113,7 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
   return <section className="card tracking-control-panel">
     <div className="control-panel-title"><div className="panel-title-copy"><PackageSearch aria-hidden="true"/><div><h2>Shipment update</h2><p>Choose one available action</p></div></div></div>
 
-    {requiresLocation?<div className={`automatic-location ${locationFinished?'saved':allowDeviceLocation?locationState:'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{locationFinished?'Location finished':allowDeviceLocation?locationTitle:'Driver location'}</strong><small>{locationFinished?'Stopped after Unloading.':allowDeviceLocation?`${privacyRadius} km privacy area · automatic while this screen is open`:'The assigned Driver sends this automatically from their phone.'}</small></span></div>:null}
+    {requiresLocation?<div className={`automatic-location ${locationFinished?'saved':allowDeviceLocation?locationState:'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{locationFinished?'Location finished':allowDeviceLocation?locationTitle:'Driver location'}</strong><small>{locationFinished?'Stopped after Unloading.':allowDeviceLocation?`${privacyRadius} km privacy area · automatic while this screen is open`:'The assigned Driver sends this automatically from their phone.'}</small></span>{allowDeviceLocation&&!locationFinished&&['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setLocationAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>:null}
 
     <form action={`/api/shipments/${shipmentId}/status`} method="post" encType="multipart/form-data" className="tracking-action-form">
       <fieldset className="form-group tracking-action-fieldset"><legend><Check aria-hidden="true"/>Shipment actions</legend><div className="tracking-action-grid">{trackingActions.map(action=>{

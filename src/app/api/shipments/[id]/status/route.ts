@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { saveUpload, transitionShipment } from '@/lib/repository.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text } from '@/lib/redirects';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -16,6 +17,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if(proofFile&&typeof proofFile!=='string'&&proofFile.size&&!proofTypeByStatus[nextStatus])throw new Error('INVALID_PROOF_TYPE');
     const upload=await saveUpload(proofFile,'tracking-proof');
     transitionShipment(user,id,nextStatus,text(form,'note'),upload?{upload,proofType:proofTypeByStatus[nextStatus]}:null);
+    revalidatePath('/app/shipments');
+    revalidatePath(`/app/shipments/${id}`);
     return redirectWith(request,`/app/shipments/${id}`,'success','Shipment status updated.');
   } catch (error) {
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));

@@ -76,6 +76,14 @@ And a PTL device coordinate is obscured to a 40 km privacy zone before submissio
 And the precise coordinate is never submitted, stored, logged, or displayed\
 And a fleet owner, administrator, or unassigned Driver cannot publish a manual substitute location.
 
+### Scenario: assigned Driver can retry automatic location
+
+Given automatic location is required and the assigned Driver denied, missed, or did not receive the first browser location result\
+When the Driver opens the shipment action panel\
+Then a visible Retry location action requests geolocation again\
+And status actions remain independent from location success\
+And the screen never offers a manual current-area substitute.
+
 ### Scenario: status-only tracking has no location workflow
 
 Given a freight load uses Status timeline\

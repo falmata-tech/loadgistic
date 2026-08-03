@@ -4,7 +4,7 @@ title: Comprehensive local development dataset
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-NET-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
 problem: The minimal deterministic fixture keeps automated tests fast but does not provide enough related records to evaluate dense boards, long fleets, administrative queues, filtering, or responsive layouts.
 behavior: An explicit development-only command resets the configured local SQLite database and adds deterministic, relationally valid records across every table and material workflow state while preserving the documented demo logins and a named cross-market network cohort.
-contracts: [StressDatasetProfile, StressDatasetGenerator, StressDatasetIntegrityReport, NetworkTestCohort, DevelopmentDatabaseReset]
+contracts: [StressDatasetProfile, StressDatasetGenerator, StressDatasetIntegrityReport, NetworkTestCohort, TrackingScenarioAugmenter, DevelopmentDatabaseReset]
 observability: [stress_seed_summary, stress_seed_integrity_failure]
 rollout: The comprehensive dataset is opt-in and local-only; normal reset and test fixtures remain small, and rollback is another normal database reset.
 ---
@@ -70,6 +70,15 @@ When normal `db:reset`, unit tests, or isolated Playwright setup runs\
 Then only the existing minimal fixture is created\
 And comprehensive data does not alter normal test ordering or runtime.
 
+### Scenario: developer adds tracking scenarios without resetting local work
+
+Given a non-Production local database contains the documented Business, transporter, and Driver accounts\
+When the tracking-scenario command runs\
+Then it adds only missing deterministic Assigned, In Transit, Issue, Unloading, and Completed examples\
+And those examples connect the documented accounts, trucks, parties, status events, and tracking modes\
+And existing shipments, current statuses, support chats, network records, and user-created data are not deleted or rewritten\
+And rerunning the command is idempotent.
+
 ### Scenario: production execution is rejected
 
 Given `NODE_ENV` is Production\
@@ -89,5 +98,5 @@ And authorization remains unchanged.
 
 - Generator: `scripts/lib/stress-data.mjs`
 - Command adapter: `scripts/seed-stress-db.mjs`
-- Commands: `npm run db:stress`, optional `STRESS_SCALE=1..5`
+- Commands: `npm run db:stress`, `npm run db:fixtures:tracking`, optional `STRESS_SCALE=1..5`
 - Tests: `tests/stress-data.test.mjs`, `scripts/stress-ui-audit.mjs`

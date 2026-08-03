@@ -16,7 +16,14 @@ const currentRouteRefs=(origin='Addis Ababa',destination='Adama')=>({
  currentOriginPlaceRef:`builtin:${origin.toLowerCase()}`,
  currentDestinationPlaceRef:`builtin:${destination.toLowerCase()}`
 });
-const locationRef=(place='Addis Ababa')=>({locationPlaceRef:`builtin:${place.toLowerCase()}`});
+const locationRef=(place='Addis Ababa')=>({
+ locationPlaceRef:`builtin:${place.toLowerCase()}`,
+ locationArea:`Around ${place}, Ethiopia`,
+ locationSource:'DEVICE_OBSCURED',
+ approximateLat:'9',
+ approximateLng:'38.5',
+ locationPrecisionKm:'40'
+});
 
 test('seeded users and role workspaces exist',()=>{
  const shipper=repo.findUserByEmail('shipper@loadgistic.local');
@@ -33,7 +40,7 @@ test('anonymous marketplace preview is live and limited to an identity-safe whit
  assert.ok(preview.shared.pool?.member_count>=2);
  assert.ok(preview.shared.along?.member_count>=2);
  const shipmentKeys=['delivery_label','destination','distribution_mode','load_type','local_place_label','movement_scope','origin','pickup_label','posted_label','price_minor','price_mode','vehicle_category'];
- const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
+ const truckKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_again_place_label','available_percent','cargo_configuration','current_route_destination','current_route_origin','freshness','local_place_label','local_radius_km','location_area','location_precision_km','movement_scope','open_to_contract_lanes','origin','destination','planned_space_status','proof_available','status','travel_date','updated_label','vehicle_make','vehicle_model'];
  assert.deepEqual(Object.keys(preview.shipments[0]).sort(),shipmentKeys.sort());
  assert.deepEqual(Object.keys(preview.trucks[0]).sort(),truckKeys.sort());
  const serialized=JSON.stringify(preview);
@@ -414,12 +421,16 @@ test('Busy requires future availability and leaves the Board after its ready dat
   localPlaceRef:'builtin:addis ababa',
   localPlaceLabel:'Addis Ababa, Ethiopia',
   localRadiusKm:'25',
+  ...locationRef(),
   availableAgainDate:tomorrow.toISOString().slice(0,10),
+  availableAgainPlaceRef:'builtin:adama',
+  availableAgainPlaceLabel:'Adama, Ethiopia',
   visibility:'OPEN'
  });
  const busy=repo.listMarketCapacity(shipper).find(capacity=>capacity.id===id);
  assert.equal(busy.status,'BUSY');
  assert.equal(busy.available_percent,0);
+ assert.equal(busy.available_again_place_label,'Adama, Ethiopia');
  assert.ok(Array.isArray(busy.preferred_routes));
  db.prepare('UPDATE capacities SET available_again_date=? WHERE id=?').run('2020-01-01',id);
  assert.equal(repo.listMarketCapacity(shipper).some(capacity=>capacity.id===id),false);
@@ -546,13 +557,13 @@ test('capacity update enforces partial percentage and expires old vehicle record
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'}),/CAPACITY_PERCENT_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'FULL',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'}),/INVALID_CAPACITY_STATUS/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/ACCEPTED_LOADS_REQUIRED/);
- assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'',visibility:'OPEN'}),/CAPACITY_AREA_REQUIRED/);
+ assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'MANUAL_GENERAL_AREA',visibility:'OPEN'}),/CAPACITY_DRIVER_LOCATION_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'5'}),/INVALID_APPROXIMATE_LOCATION/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',...locationRef(),visibility:'OPEN'}),/ROUTE_ENDPOINTS_REQUIRED/);
  assert.throws(()=>repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',...locationRef(),origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),visibility:'OPEN'}),/PLANNED_ROUTE_DATE_REQUIRED/);
  const id=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'PARTIAL',availablePercent:'55',acceptedLoads:'BOTH',locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',locationSource:'DEVICE_OBSCURED',currentRouteOrigin:'Addis Ababa',currentRouteDestination:'Adama',...currentRouteRefs(),origin:'Addis Ababa',destination:'Hawassa',...routeRefs(),travelDate:routeDate,plannedSpaceStatus:'PARTIAL',visibility:'OPEN',openToContractLanes:true,acceptsMultiStop:true});
  const rows=repo.listCapacity(user);
- assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===1&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.current_route_date===null&&r.planned_space_status==='PARTIAL'&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
+ assert.ok(rows.some(r=>r.id===id&&r.available_percent===55&&r.accepts_full_load===0&&r.accepts_partial_load===1&&r.location_area==='Around Addis Ababa, Ethiopia'&&r.location_source==='DEVICE_OBSCURED'&&r.location_precision_km===40&&r.current_route_date===null&&r.planned_space_status===null&&r.open_to_contract_lanes===1&&r.accepts_multi_pick===1&&r.accepts_multi_drop===1));
  const audit=dbModule.getDb().prepare(`SELECT details FROM audit_logs WHERE entity_id=?`).get(id);
  assert.equal(audit.details.includes('38.5'),false);
  const offDutyId=repo.publishCapacity(user,{vehicleId:'veh-driver-1',status:'OFF_DUTY',origin:'Addis Ababa',destination:'Hawassa',visibility:'OPEN'});
@@ -560,7 +571,7 @@ test('capacity update enforces partial percentage and expires old vehicle record
  assert.equal(publicRows.some(r=>r.id===offDutyId),false);
 });
 
-test('local capacity can publish without an intercity route and is filterable by locality',()=>{
+test('Local Empty and Local Partial use Driver location and are filterable by locality',()=>{
  const driver=repo.getUserById('user-driver');
  const shipper=repo.getUserById('user-shipper');
  assert.throws(()=>repo.publishCapacity(driver,{
@@ -569,19 +580,37 @@ test('local capacity can publish without an intercity route and is filterable by
   availablePercent:'50',
   acceptedLoads:'BOTH',
   movementScope:'LOCAL',
-  localPlaceRef:'builtin:addis ababa',
-  localPlaceLabel:'Addis Ababa, Ethiopia',
   localRadiusKm:'25',
+  ...locationRef(),
   visibility:'OPEN'
- }),/LOCAL_CAPACITY_MUST_BE_EMPTY/);
+ }),/ROUTE_ENDPOINTS_REQUIRED/);
+ const partialId=repo.publishCapacity(driver,{
+  vehicleId:'veh-driver-1',
+  status:'PARTIAL',
+  availablePercent:'50',
+  acceptedLoads:'BOTH',
+  movementScope:'LOCAL',
+  localRadiusKm:'25',
+  currentRouteOrigin:'Addis Ababa',
+  currentRouteDestination:'Bishoftu',
+  ...currentRouteRefs('Addis Ababa','Bishoftu'),
+  ...locationRef(),
+  visibility:'OPEN'
+ });
+ const partial=repo.getCapacityForUser(driver,partialId);
+ assert.equal(partial.status,'PARTIAL');
+ assert.equal(partial.available_percent,50);
+ assert.equal(partial.accepts_full_load,0);
+ assert.equal(partial.accepts_partial_load,1);
+ const partialPage=repo.listMarketCapacityPage(shipper,{movementScope:'LOCAL',localPlaceRef:'builtin:addis ababa'},{page:1,pageSize:10});
+ assert.ok(partialPage.items.some(capacity=>capacity.id===partialId&&capacity.status==='PARTIAL'&&capacity.current_route_origin==='Addis Ababa, Ethiopia'));
  const id=repo.publishCapacity(driver,{
   vehicleId:'veh-driver-1',
   status:'EMPTY',
   acceptedLoads:'BOTH',
   movementScope:'LOCAL',
-  localPlaceRef:'builtin:addis ababa',
-  localPlaceLabel:'Addis Ababa, Ethiopia',
   localRadiusKm:'25',
+  ...locationRef(),
   visibility:'OPEN'
  });
  const own=repo.getCapacityForUser(driver,id);
@@ -591,7 +620,7 @@ test('local capacity can publish without an intercity route and is filterable by
  const localPage=repo.listMarketCapacityPage(shipper,{movementScope:'LOCAL',localPlaceRef:'builtin:addis ababa'},{page:1,pageSize:10});
  assert.ok(localPage.items.some(capacity=>capacity.id===id));
  assert.ok(localPage.items.every(capacity=>['LOCAL','BOTH'].includes(capacity.movement_scope)));
- assert.ok(localPage.items.filter(capacity=>capacity.movement_scope==='LOCAL').every(capacity=>capacity.status==='EMPTY'&&capacity.available_percent===100));
+ assert.ok(localPage.items.filter(capacity=>capacity.movement_scope==='LOCAL').every(capacity=>['EMPTY','PARTIAL'].includes(capacity.status)));
 });
 
 test('admin operations inventory is bounded and omits sensitive fields',()=>{
@@ -636,7 +665,7 @@ test('provider Truck Board returns one identity-safe operational card per compet
  const driver=repo.getUserById('user-driver');
  const result=repo.listProviderCapacityBoardPage(driver,{},{page:1,pageSize:12});
  assert.ok(result.total>0);
- const safeKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_percent','cargo_configuration','current_route_destination','current_route_origin','destination','freshness','local_place_label','local_radius_km','location_area','location_updated_at','movement_scope','open_to_contract_lanes','origin','planned_space_status','preferred_routes_label','proof_available','proof_recorded_at','status','travel_date','updated_at'];
+ const safeKeys=['accepts_full_load','accepts_multi_drop','accepts_multi_pick','accepts_partial_load','available_again_date','available_again_place_label','available_percent','cargo_configuration','current_route_destination','current_route_origin','destination','freshness','local_place_label','local_radius_km','location_area','location_updated_at','movement_scope','open_to_contract_lanes','origin','planned_space_status','preferred_routes_label','proof_available','proof_recorded_at','status','travel_date','updated_at'];
  assert.ok(result.items.every(row=>Object.keys(row).every(key=>safeKeys.includes(key))));
  assert.ok(result.items.every(row=>row.cargo_configuration&&row.status));
  const serialized=JSON.stringify(result);

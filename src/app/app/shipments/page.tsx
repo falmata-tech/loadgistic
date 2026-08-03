@@ -7,6 +7,7 @@ import { Flash } from '@/components/flash';
 import { priceDisplay } from '@/lib/ui';
 import { CalendarClock, CirclePlus, ClipboardList, ClockAlert, Handshake, History, ListChecks, MapPin, PackageSearch, Search, Send, X } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
+import { ShipmentProjectionRefresh } from '@/components/shipment-projection-refresh';
 
 export default async function ShipmentsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser();
@@ -22,7 +23,7 @@ export default async function ShipmentsPage({searchParams}:{searchParams:Promise
   const result:any=listMyShipmentsPage(user,{view,status,q:search},{page:query.page,pageSize:12});
   const deadlineSummary=isBusiness?getOwnedShipmentDeadlineSummary(user):{needsReview:0,hidden:0};
   const visibleStatuses=['POSTED','SENT','CONTACTED','AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED','COMPLETED','CANCELLED'];
-  return <div className="page">
+  return <div className="page"><ShipmentProjectionRefresh/>
     <PageHeader icon={ClipboardList} title="My Shipments" subtitle={isBusiness?'Posted work, Tracking, and history.':'Interests, direct requests, Tracking, and history.'} action={isBusiness?<Link href="/app/shipments/new" className="button icon-button-label"><CirclePlus aria-hidden="true"/>Post shipment</Link>:undefined}/>
     <Flash error={query.error} success={query.success}/>
     {deadlineSummary.needsReview?<div className="permission-note warning"><ClockAlert aria-hidden="true"/><div><strong>{deadlineSummary.needsReview} {deadlineSummary.needsReview===1?'shipment needs':'shipments need'} review</strong><span>{deadlineSummary.hidden?`${deadlineSummary.hidden} ${deadlineSummary.hidden===1?'is':'are'} now off the Shipment Board. `:''}Past-due requests stay on the Board for two full grace days, then remain only in My Shipments.</span></div></div>:null}

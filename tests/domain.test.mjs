@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
@@ -24,7 +24,11 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
  assert.deepEqual(validateAcceptedLoads('EMPTY','BOTH'),{acceptsFullLoad:true,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('OFF_DUTY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
  assert.deepEqual(validateAcceptedLoads('BUSY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
- assert.throws(()=>validateAcceptedLoads('PARTIAL',''),/ACCEPTED_LOADS_REQUIRED/);
+ assert.deepEqual(validateAcceptedLoads('PARTIAL',''),{acceptsFullLoad:false,acceptsPartialLoad:true});
+ assert.deepEqual(validateAcceptedLoads('PARTIAL','BOTH'),{acceptsFullLoad:false,acceptsPartialLoad:true});
+ assert.equal(validateCapacityServiceRadius('10'),10);
+ assert.equal(validateCapacityServiceRadius('50'),50);
+ assert.throws(()=>validateCapacityServiceRadius('60'),/INVALID_CAPACITY_RADIUS/);
 });
 
 test('PSTL pooling is deterministic and distance bounded',()=>{

@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Truck-first Truck Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each update records general current area, accepted work, live Partial movement, dated planned movement, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards while drivers and transporters receive one anonymized, read-only card per visible truck. Freshness is explicit rather than silently removing stale Empty or Partial signals.
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each active update uses the assigned Driver's current obscured device area, records status-appropriate accepted work, live Partial movement, optional Empty route intent, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards while drivers and transporters receive one anonymized, read-only card per visible truck. Freshness is explicit rather than silently removing stale Empty or Partial signals.
 contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
 rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
@@ -124,13 +124,15 @@ Given an authorized transporter, driver, or administrator owns the vehicle\
 When Empty capacity is submitted\
 Then the update records its planned route when supplied, actor, time, and 100 percent availability.
 
-### Scenario: Local-only capacity is fully available
+### Scenario: Local capacity uses the current Driver area
 
 Given an authorized driver or fleet owner chooses Local-only work for one truck\
 When capacity is published\
-Then the cargo-space state must be Empty with 100 percent available\
-And Partial is rejected because it has no current intercity route on which to locate the remaining space\
-And Both may still use Partial when its required live current intercity route is recorded.
+Then the local service circle is centered on the locality resolved from the assigned Driver's current obscured device area\
+And a member cannot manually claim a different current city or town\
+And the radius choice is between 10 and 50 km\
+And Empty publishes 100 percent available\
+And Partial remains available when its required live current route is recorded.
 
 ### Scenario: route cities are entered separately
 
@@ -147,6 +149,23 @@ Then the driver explicitly chooses FTL, PTL, or Both\
 And Direct is always accepted\
 And the driver independently chooses whether to accept Multi Pick and Multi Drop\
 And both acceptance policies are displayed independently from cargo-space status.
+
+### Scenario: partial capacity has one implied shipment size
+
+Given a Driver marks a truck Partial\
+When the capacity editor and command are evaluated\
+Then no Full Truckload, Partial Truckload, or Both selector is shown\
+And the saved signal accepts Partial Truckload only\
+And a submitted Full Truckload or Both value cannot override that invariant.
+
+### Scenario: Empty route intent is explicit
+
+Given a Driver marks a truck Empty\
+When current capacity is published\
+Then the Driver chooses Willing to go anywhere or Specific route\
+And Willing to go anywhere stores no planned route and is labeled plainly on the Truck Board\
+And Specific route requires both structured endpoints and a non-past travel date\
+And no route choice changes the separate FTL, PTL, or Both shipment-size decision.
 
 ### Scenario: capacity route meanings remain distinct
 
@@ -175,8 +194,7 @@ And Empty, Partial, Busy, and Off Duty are the first availability choice\
 And the selected truck is a compact identity header rather than a separate form section\
 And choosing Partial reveals current available space and its current partial-capacity route inside the Truck status step\
 And choosing anything other than Partial removes those controls from the rendered form\
-And the current route is required only for Partial intercity or Both work\
-And Local-only work keeps Partial unavailable\
+And the current route is required for every Partial update, including Local work\
 And Busy reveals its available-again date inside Truck status and uses the structured area in Work area\
 And FTL, PTL, Both, Direct, Multi Pick, Multi Drop, contract-route interest, and visibility are not hidden inside an additional-options disclosure\
 And only optional evidence and an unused future trip may use compact secondary presentation\
@@ -190,14 +208,31 @@ Then Off Duty ends the workflow after the status choice and publishes a hidden s
 And Busy asks for ready date, expected area, future-work preference, and visibility without asking for current FTL, PTL, Multi Pick, or Multi Drop availability\
 And every visible step keeps a stable increasing number so the next required action is unambiguous.
 
-### Scenario: Both reuses the Local city as current area
+### Scenario: Local and Both reuse the device-resolved city
 
 Given a truck is available for both Local and Long-distance route work\
-When its driver selects the structured Local city or town\
+When the assigned Driver's device location resolves to a structured Local city or town\
 Then that place is also the truck's declared current general area\
-And the driver is not asked for a second current-area city\
-And device-assisted location may update that same structured place and obscured area\
+And the driver is not asked to type or select a current-area city\
+And retrying location replaces the in-session device reading without creating a manual fallback\
 And Local radius and intercity route controls remain independently available.
+
+### Scenario: fleet owner cannot claim the truck location
+
+Given a fleet owner edits capacity for a truck assigned to a company Driver\
+When the owner publishes Empty, Partial, or Busy\
+Then the server preserves the latest obscured location recorded by that assigned Driver\
+And it preserves the original location timestamp rather than presenting the owner's save time as movement\
+And publication is rejected when no assigned-Driver device location exists\
+And the owner has no manual city, coordinate, or phone-location control.
+
+### Scenario: Driver can retry device location
+
+Given a Driver denied, missed, or did not receive the initial browser location result\
+When the capacity screen remains open\
+Then a visible Retry location action requests device location again\
+And active capacity cannot be published until that Driver session has a valid obscured reading\
+And browser denial is explained without offering manual current-area entry.
 
 ### Scenario: fleet transporter Home remains a management dashboard
 

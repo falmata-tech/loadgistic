@@ -29,7 +29,14 @@ const currentRouteRefs=(origin='Addis Ababa',destination='Adama')=>({
   currentOriginPlaceRef:`builtin:${origin.toLowerCase()}`,
   currentDestinationPlaceRef:`builtin:${destination.toLowerCase()}`
 });
-const locationRef=(place='Addis Ababa')=>({locationPlaceRef:`builtin:${place.toLowerCase()}`});
+const locationRef=(place='Addis Ababa')=>({
+  locationPlaceRef:`builtin:${place.toLowerCase()}`,
+  locationArea:`Around ${place}, Ethiopia`,
+  locationSource:'DEVICE_OBSCURED',
+  approximateLat:'9',
+  approximateLng:'38.5',
+  locationPrecisionKm:'40'
+});
 
 function createFreight(distributionMode = 'OPEN_MARKET', providerRef = undefined) {
   return repo.createShipment(users.shipper, {
@@ -186,6 +193,9 @@ test('unloading ends the Problem branch and enables completion',()=>{
   repo.transitionShipment(users.driver,shipment.id,'COMPLETED');
   const completed=repo.getShipmentForUser(users.shipper,shipment.id);
   assert.equal(completed.operational_status,'COMPLETED');
+  assert.equal(repo.getShipmentForUser(users.driver,shipment.id).operational_status,'COMPLETED');
+  assert.equal(repo.listMyShipmentsPage(users.shipper,{view:'HISTORY'},{page:1,pageSize:20}).items.find(item=>item.id===shipment.id).workspace_stage,'HISTORY');
+  assert.equal(repo.listMyShipmentsPage(users.driver,{view:'HISTORY'},{page:1,pageSize:20}).items.find(item=>item.id===shipment.id).workspace_stage,'HISTORY');
   assert.ok(completed.proofs.some(proof=>proof.proof_type==='UNLOADING'));
 });
 
@@ -272,6 +282,12 @@ test('fleet owner controls company driver load and capacity authority without re
   assert.equal(dbModule.getDb().prepare('SELECT updated_by FROM capacities WHERE id=?').get(driverCapacityId).updated_by,users.companyDriver.id);
   assert.throws(()=>repo.publishCapacity(users.companyDriver,{vehicleId:'veh-trans-2',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',visibility:'OPEN'}),/INVALID_VEHICLE/);
   assert.throws(()=>repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',locationArea:'Around Addis Ababa',locationSource:'DEVICE_OBSCURED',approximateLat:'9',approximateLng:'38.5',locationPrecisionKm:'40',visibility:'OPEN'}),/DEVICE_LOCATION_DRIVER_ONLY/);
+  const driverLocationTime=dbModule.getDb().prepare('SELECT location_updated_at FROM capacities WHERE id=?').get(driverCapacityId).location_updated_at;
+  const ownerCapacityId=repo.publishCapacity(users.transporter,{vehicleId:'veh-trans-1',status:'EMPTY',acceptedLoads:'FTL',movementScope:'INTERCITY',routeIntent:'ANYWHERE',visibility:'OPEN'});
+  const ownerCapacity=dbModule.getDb().prepare('SELECT location_source,location_updated_at,updated_by FROM capacities WHERE id=?').get(ownerCapacityId);
+  assert.equal(ownerCapacity.location_source,'DEVICE_OBSCURED');
+  assert.equal(ownerCapacity.location_updated_at,driverLocationTime);
+  assert.equal(ownerCapacity.updated_by,users.transporter.id);
 
   repo.updateFleetDriverPermissions(users.transporter,users.companyDriver.id,{
     canBrowseLoadBoard:false,
@@ -291,7 +307,7 @@ test('fleet owner controls company driver load and capacity authority without re
 
   const offDutyId=repo.setAssignedVehicleDuty(restricted,'veh-trans-1',false);
   assert.equal(db.prepare('SELECT status FROM capacities WHERE id=?').get(offDutyId).status,'OFF_DUTY');
-  const onDutyId=repo.setAssignedVehicleDuty(restricted,'veh-trans-1',true);
+  const onDutyId=repo.setAssignedVehicleDuty(restricted,'veh-trans-1',true,locationRef());
   assert.equal(db.prepare('SELECT status FROM capacities WHERE id=?').get(onDutyId).status,'EMPTY');
   assert.throws(()=>repo.setAssignedVehicleDuty(restricted,'veh-trans-2',false),/INVALID_VEHICLE/);
   assert.ok(repo.listLoads(users.driver).length>0);
