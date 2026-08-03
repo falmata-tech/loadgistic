@@ -23,7 +23,7 @@ This positioning is informed by Ethiopia's manufacturing policy and enterprise-d
 
 - The **Shipment Board** contains Full Truckload (FTL) and Partial Truckload (PTL) Business demand.
 - **Shared Shipments** is one Shipment Board workspace with two distinct read-only modes. **Pool together** suggests pairwise-compatible Posted PTL shipments with nearby origins, nearby destinations, and compatible deadline windows. **Along the route** suggests an ordered sequence of Posted Long-distance route shipments where each next pickup is near the previous drop-off, travel continues broadly forward, and recorded deadlines appear compatible. Both are negotiation aids only: they never combine ownership, agreements, assignments, prices, tracking, or source records, and they never claim that physical cargo fit or timing is confirmed.
-- The **Truck Board** contains fresh Empty or Partial capacity.
+- The **Truck Board** contains Empty, Partial, and future-ready Busy truck signals, with freshness shown explicitly.
 - Every Truck Board card represents one real truck, not a transporter-level aggregate.
 - Other transporters and drivers may browse capacity read-only to understand supply.
 - Off Duty trucks never appear on the Truck Board.
@@ -63,26 +63,25 @@ The rich truck capacity control panel controls:
 
 - Empty, Partial, Busy, or Off Duty status; the first three imply On Duty
 - available percentage for Partial capacity
-- accepted shipment policy: FTL, PTL, or Both
+- accepted shipment policy for Empty: FTL, PTL, or Both; Partial implies PTL and has no redundant selector
 - stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
-- current general area and freshness
-- optional privacy-obscured device location
+- the assigned Driver's current privacy-obscured device area and freshness
 - a live, undated current partial-capacity route when Partial
-- a separate future planned travel route with date and Full or Partial planned cargo space
+- an explicit Empty intent: willing to go anywhere or a dated specific route
 - contract-route interest
-- Local, Long-distance routes, or Both operating scope, with a reviewed locality and 5–100 km radius for Local service
+- Local, Long-distance routes, or Both operating scope, with a 10–50 km Local radius centered on the device-resolved locality
 - Public or Partners visibility
 - optional timestamped cargo-space proof
 
-Local-only capacity is always published as Empty with 100 percent of the truck available. Partial capacity requires Long-distance routes or Both scope plus a live current route, because remaining space can be matched only when the truck's movement is known. Its freshness comes from the capacity update timestamp rather than a separately entered route date.
+Local capacity may be Empty or Partial. Empty is 100 percent available and records whether the Driver is willing to go anywhere or has a specific intended route. Partial always accepts PTL only and requires a live current route, including for Local work, because remaining space can be matched only when the truck's movement is known. Its freshness comes from the Driver's location/capacity update rather than a separately entered route date.
 
-The capacity editor uses visible numbered decisions in operational order: truck status, work area, accepted shipment size, stop flexibility, future work, then visibility and publish. Truck identity is compact. Choosing Partial reveals its available-space control and required current route directly inside Truck status; those controls are absent for every other status. Busy reveals its ready date in Truck status and uses Work area for its expected city. FTL/PTL, Multi Pick/Multi Drop, recurring-work interest, and visibility are never hidden under Additional options. Busy skips current shipment-size and stop choices; Off Duty ends after the status choice. One final publish row replaces a duplicate review card.
+The capacity editor uses visible numbered decisions in operational order: truck status, device-confirmed work area, status-appropriate shipment size, stop flexibility, future work, then visibility and publish. Truck identity is compact. Choosing Partial reveals its available-space control and required live route directly inside Truck status; those controls are absent for every other status and PTL acceptance is implied. Choosing Empty reveals FTL/PTL/Both and Anywhere/Specific route decisions. Busy reveals its ready date in Truck status and uses the Driver-confirmed work area as its starting context. FTL/PTL, Multi Pick/Multi Drop, recurring-work interest, and visibility are never hidden under Additional options. Busy skips current shipment-size and stop choices; Off Duty ends after the status choice. One final publish row replaces a duplicate review card.
 
 Fleet owners manage each company Driver in one ordered control: confirm the Driver, assign one current active company truck or leave the Driver unassigned, choose allowed work, then save. A Driver and truck can each have only one active assignment; reassignment ends conflicting active assignments while retaining assignment history and audit evidence.
 
 An active fleet truck without a current Driver stays in My Fleet but cannot publish Empty, Partial, or Busy capacity and never appears on the Truck Board. Off Duty remains available so the owner can explicitly hide its old signal. Self-managed trucks are driven by their owner-operator and do not require a separate company-Driver assignment.
 
-When an assigned or self-managed Driver opens capacity or location-required Tracking controls, the browser requests and refreshes device location automatically while that screen remains mounted. Capacity keeps structured general-area fallback. Tracking has no manual-location input or save action: only the assigned Driver's obscured device point may publish its throttled automatic events. A denial or unavailable device is shown plainly and does not repeatedly prompt in the same screen lifecycle. The browser may briefly access an exact device coordinate, but it obscures that point before application state or submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server.
+When an assigned or self-managed Driver opens capacity or location-required Tracking controls, the browser requests and refreshes device location automatically while that screen remains mounted. Neither workflow offers a manual current-location fallback: only the assigned Driver's obscured device point may publish truck location or throttled tracking events. A denial or unavailable device is shown plainly with a Retry location action and guidance to enable browser permission. The browser may briefly access an exact device coordinate, but it obscures that point before application state or submission. Capacity and PTL tracking use a 40 km privacy area; FTL tracking uses a 20 km privacy area. Only the obscured point, permitted radius, source, and human general-area label reach the server. A fleet owner may update non-location capacity facts while preserving the latest assigned-Driver location and its original timestamp, but cannot substitute the owner's phone or a typed city for the truck.
 
 ## Shipments And Relationships
 
@@ -92,7 +91,7 @@ My Network separates a private Favorite from a mutual operating relationship. Ei
 
 The posting Business declares whether it is shipper or receiver while remaining the shipment owner and provider-facing decision maker. The opposite party may be another account Business or an external party. After agreement and before assignment, receiver first name and phone are required. The provider must then bind one active in-scope truck and its current Driver to the Shipment; a fleet truck without an active Driver cannot be assigned, and the Shipment cannot move to Assigned without that pair.
 
-The Shipment Board is provider discovery. Every member role receives one My Shipments navigation entry and Tracking is a category inside it. Businesses see Posted, Tracking, and History plus the Post shipment action. Transport providers see Interested, Direct requests, Tracking, and History. Tracking contains only Agreed through Delivered execution records involving the viewer, while Completed and Cancelled records move to History. A recorded interest remains visible to its provider without becoming an agreement or appearing in the Business owner's execution stages.
+The Shipment Board is provider discovery. Every member role receives one My Shipments navigation entry and Tracking is a category inside it. Businesses see Posted, Tracking, and History plus the Post shipment action. Transport providers see Interested, Direct requests, Tracking, and History. Tracking contains only Agreed through Delivered execution records involving the viewer, while Completed and Cancelled records move to History. A recorded interest remains visible to its provider without becoming an agreement or appearing in the Business owner's execution stages. Open My Shipments and shipment-detail screens refresh their canonical server projection while visible so a completion by one involved party moves every other involved party from Tracking to History without requiring logout.
 
 Shipment dates are shown as Pick up before and Drop off before. Road freight is the only service and is not repeated as a selectable service label.
 

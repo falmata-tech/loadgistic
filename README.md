@@ -22,7 +22,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 - My Network with private Favorites, connection requests, and mutual Connected relationships
 - Fixed ETB, target ETB, and Quote Requested pricing
 - Simple freight status workflow
-- Empty and Partial truck capacity, with full or unavailable trucks kept off duty
+- Empty, Partial, Busy, and Off Duty truck signals, with no public Full status
 - Partial capacity percentage and live route tied directly to truck status, plus update attribution, freshness, expiry, and optional photo
 - Provider interest and direct-request acceptance
 - Enforced Status timeline or Approximate location + status tracking
@@ -41,7 +41,7 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 
 ## Requirements
 
-- Node.js **22.5 or newer**. The local data adapter uses Node's built-in `node:sqlite` module.
+- Node.js **22.x**. The local data adapter uses Node's built-in `node:sqlite` module.
 - npm 10 or newer
 
 ## Run locally
@@ -59,6 +59,23 @@ Open `http://127.0.0.1:3000`.
 The database is created at `data/loadgistic.db` and seeded automatically. Reset imports the bundled OpenStreetMap-derived catalog of 3,575 Ethiopian cities, towns, villages, hamlets, suburbs, and neighbourhoods. `npm run places:setup` is optional and refreshes that catalog from Overpass when the service is available. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
 After the first setup, the only command needed to start the app is `npm run dev`.
 This command explicitly uses Turbopack. In development, the first visit to a route compiles that route and is expected to be slower; repeat visits should be fast. Use `npm run build && npm start` when measuring production behavior.
+
+To add five Assigned-through-Completed tracking scenarios without resetting any
+current local data:
+
+```bash
+npm run db:fixtures:tracking
+```
+
+To validate the standalone image locally, keep a strong local `SESSION_SECRET`
+in `.env.local` and run:
+
+```bash
+docker compose up --build
+```
+
+The container is a reproducible local/demo artifact. It does not remove the
+public-production blockers in `docs/LAUNCH_READINESS.md`.
 
 ## Comprehensive local data
 
@@ -120,9 +137,15 @@ supabase/migrations/006_local_geography_and_board_indexes.sql
 supabase/migrations/007_coordinate_route_matching.sql
 supabase/migrations/008_native_support.sql
 supabase/migrations/009_launch_storage_places_and_capacity.sql
+supabase/migrations/010_driver_capacity_authority.sql
 ```
 
-The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`. Private files can already use Supabase Storage, but the business repository and identity adapters are not yet Supabase-backed. `npm run launch:check` therefore refuses to approve the current runtime for public production traffic. See `docs/LAUNCH_READINESS.md`.
+The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`, and the
+credential-free Vercel/Supabase setup sequence is in `docs/CLOUD_HANDOFF.md`.
+Private files can already use Supabase Storage, but the business repository and
+identity adapters are not yet Supabase-backed. `npm run launch:check` therefore
+refuses to approve the current runtime for public production traffic. See
+`docs/LAUNCH_READINESS.md`.
 
 ## Important security note
 

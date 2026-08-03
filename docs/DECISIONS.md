@@ -6,7 +6,7 @@ The application uses Next.js App Router on Node.js. This corrects the prior bare
 
 ## ADR-002 — Local SQLite adapter
 
-Use Node's built-in SQLite for deterministic offline persistence. Keep all persistence behind repository functions and include a Supabase PostgreSQL/RLS target.
+Use Node's built-in SQLite for deterministic offline persistence. Keep all persistence behind repository functions and include a Supabase PostgreSQL/RLS target. SQLite remains a local and test adapter; public production remains blocked until repository and identity parity are proven against Supabase.
 
 ## ADR-003 — One canonical shipment
 
@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: duty state, Empty or Partial cargo space, FTL/PTL/Both acceptance, Direct plus independent Multi Pick and Multi Drop acceptance, general current area and freshness, a live undated Partial route, dated Full-or-Partial planned travel, contract-route interest, Public/Partners visibility, and expiry. The capacity update time is the current Partial route's clock. Local-only work can publish only Empty/100-percent availability because Partial requires a live long-distance route; Both and Long-distance routes retain Partial. A full or unavailable truck is treated as Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: Empty, Partial, Busy, or Off Duty; Empty-only FTL/PTL/Both acceptance; Direct plus independent Multi Pick and Multi Drop acceptance; assigned-Driver device area and freshness; an undated live Partial route; an Empty Anywhere or dated Specific-route intent; contract-route interest; Public/Partners visibility; and expiry. Partial implies PTL and requires a live route even for Local work. Local uses a 10–50 km circle centered on the device-resolved locality. A full or unavailable truck is Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -78,7 +78,7 @@ The public homepage centers Ethiopian makers, growers, processors, producers, an
 
 A `DRIVER` may be either self-managed through a provider profile or employed through one transporter organization. Self-managed drivers retain full provider authority. Company drivers receive owner-controlled Shipment Board, Business contact, negotiation, and rich capacity permissions, with every command enforced in repository services and attributed to the acting driver.
 
-Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty or Partial signal. If no prior active configuration exists, an owner must configure the truck first. Fleet owners retain organization-wide visibility and authority.
+Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty, Partial, or Busy facts only after the assigned Driver supplies a fresh obscured device location. If no prior active configuration exists, an owner must configure the truck first. The duty command never stamps old coordinates as newly refreshed. Fleet owners retain organization-wide visibility and non-location authority.
 
 ## ADR-017 — Mutual network and code-gated customer tracking
 
@@ -86,7 +86,7 @@ Model Business-provider relationships as three distinct meanings: a private Favo
 
 Customer tracking is an additional customer-safe view, not a bearer link. Its human-entered code is derived with the server secret, stored only as a keyed digest, and omitted from URLs. An account or non-account shipper or receiver who receives the code from the load owner may unlock a five-minute HTTP-only grant bound to the browser and load. Browser activity may refresh the grant; five minutes without activity clears it. Assigned providers continue to see the same real tracking events in their internal Tracking workspace and cannot unlock the customer view.
 
-Fleet owners edit capacity on one truck-specific Fleet page. They may declare a general area but cannot submit device-assisted location, because the owner's phone does not establish the truck's position. Only an authorized assigned company driver or self-managed driver may submit an already obscured device area. Ethiopian place suggestions and nearest-city labels use the reviewed local place catalog, keeping exact coordinates and third-party API keys out of the request path.
+Fleet owners edit capacity on one truck-specific Fleet page. They cannot declare or refresh the truck's current area, because the owner's phone or typed city does not establish the truck's position. An owner save preserves the latest assigned-Driver obscured area and its timestamp; no active signal may publish before that Driver has recorded one. Only an authorized assigned company Driver or self-managed Driver may submit an already obscured device area. Ethiopian nearest-city labels use the reviewed local place catalog, keeping exact coordinates and third-party API keys out of the request path.
 
 ## ADR-018 — Authenticated profiles stay inside the workspace shell
 
@@ -229,8 +229,10 @@ Dated current and planned routes still expire independently. Busy means the
 truck has no cargo space now but remains open to calls, requires an
 available-again date and structured city, displays Preferred Routes instead of a
 current capacity route, and leaves discovery after that date unless refreshed.
-For Both movement, the Local place is also the current general-area place so a
-driver enters the city once.
+For Local or Both movement, the assigned Driver's device-derived place is the
+service-area center; the Driver chooses only a bounded 10–50 km radius. Busy's
+future city is a separate planning statement and never relabels current GPS as
+the expected future position.
 
 Implement a deliberately bounded native support inbox instead of buying a
 per-agent service or operating a second chat platform. Durable conversations,
@@ -283,14 +285,16 @@ view. Every record action goes to sign in; Login also offers Sign up. This
 demonstrates a changing real marketplace without exposing the authenticated
 detail or contact surface.
 
-Capacity publication follows the order in which a driver works: truck status,
-work area, status-specific details, accepted shipment size, stop flexibility,
-future work, then visibility and publish. Keep a current Partial route attached
-to Partial space. FTL/PTL, Multi Pick/Multi Drop, contract-route interest, and
-visibility remain visible numbered decisions; only optional evidence and an
-unused planned trip are secondary. Use one final publish row and never a second
-review card. Fleet owners use the same editor on a truck-specific page but
-remain unable to claim their office device as the truck location.
+Capacity publication follows the order in which a Driver works: truck status,
+device-confirmed work area, status-specific details, accepted shipment size,
+stop flexibility, future work, then visibility and publish. Keep a live route
+attached to Partial space and imply PTL acceptance without a redundant selector.
+Empty alone chooses FTL, PTL, or Both and Anywhere or Specific route. Multi Pick,
+Multi Drop, contract-route interest, and visibility remain visible numbered
+decisions; only optional evidence is secondary. Use one final publish row and
+never a second review card. Fleet owners use the same editor on a truck-specific
+page but preserve the assigned Driver location and timestamp rather than claiming
+their office device or a manual place as the truck location.
 
 Fleet driver management follows identity, current truck, then allowed work.
 Each company driver and each truck has at most one active assignment. A
@@ -302,12 +306,32 @@ the driver requirement through their owning Driver profile.
 
 An eligible Driver screen starts a throttled browser geolocation watcher when
 capacity or location-required Tracking mounts and clears it on unmount. Exact
-coordinates are obscured before application state. Capacity retains its general-
-area fallback. Tracking does not: only the assigned Driver's obscured device
-position may create automatic location events, and denial or device failure is
-shown plainly without exposing a manual substitute control.
+coordinates are obscured before application state. Neither capacity nor Tracking
+has a manual current-location fallback: only the assigned Driver's obscured device
+position may update the truck or create automatic tracking events. Denial or
+device failure is shown plainly with Retry location and browser-permission guidance.
 
 Run local development explicitly with Next 15's stable Turbopack bundler.
 Measure route compilation separately from repository latency and production
 response time: first development visits compile on demand, while warm Board
 queries remain bounded SQLite work.
+
+## ADR-028 — Launch artifact and cloud boundary
+
+Keep Node 22 and the security-patched Next.js 15 Maintenance LTS line during
+launch stabilization. Defer Next.js 16, React, TypeScript, Zod, and Lucide major
+upgrades to explicit migration work with their own UI and compatibility
+evidence. Pin launch dependencies in the lockfile and reject high-severity npm
+advisories.
+
+Build a multi-stage Next.js standalone container as a reproducible local/demo
+artifact. Run it as a non-root user, mount SQLite and uploads outside the image,
+and treat `/api/health` HTTP 200 as liveness only. GitHub validates the same
+container definition in a read-only `container` job in addition to quality,
+build, and Playwright checks.
+
+Do not claim that Vercel environment values or Supabase migrations implement a
+cloud data adapter. Public production remains blocked until the PostgreSQL
+repository, managed identity, shared rate limiting, malware scanning, backup,
+restore, and monitoring contracts pass. The credential-free handoff names the
+required variables and operator steps without storing their values.

@@ -23,10 +23,10 @@ jobs:
       DATABASE_PATH: /tmp/loadgistic-ci.db
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -59,10 +59,10 @@ jobs:
       DATABASE_PATH: /tmp/loadgistic-e2e.db
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -75,3 +75,14 @@ jobs:
 
       - name: Run desktop and mobile browser workflows
         run: npm run test:e2e
+
+  container:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build standalone container
+        run: docker build --tag loadgistic:${{ github.sha }} .

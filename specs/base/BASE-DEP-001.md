@@ -4,7 +4,7 @@ title: Deployment, delivery, and operations base
 related_ids: [BASE-FE-001, BASE-BE-001]
 problem: Changes need reproducible validation, controlled secrets, observable health, and a reversible release path.
 behavior: CI validates specs, source, tests, types, and production build before deployment artifacts are accepted.
-contracts: [BuildArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, LaunchReadiness]
+contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, LaunchReadiness, CloudHandoff]
 observability: [ci_status, health_endpoint, deployment_log, migration_log, storage_backend, readiness_blocker]
 rollout: Promote immutable artifacts only after required checks; roll back application before destructive data changes.
 ---
@@ -64,9 +64,34 @@ Then Next.js uses its stable Turbopack development bundler explicitly\
 And development compilation time is distinguished from repository query time\
 And production performance claims are verified against a production build rather than inferred from first-visit development compilation.
 
+### Scenario: standalone container is reproducible
+
+Given the lockfile and supported Node runtime\
+When the production Docker image is built\
+Then a multi-stage build produces the Next.js standalone artifact\
+And the runtime image runs as a non-root user with only required production files\
+And `/api/health` is the container health check\
+And local persistent data or upload directories are mounted explicitly rather than baked into the image.
+
+### Scenario: cloud handoff is explicit
+
+Given the owner is preparing Vercel and Supabase\
+When project credentials become available\
+Then documentation names every required non-secret variable, migration command, private bucket, callback URL, CI check, backup, and smoke test\
+And secret values are entered in the deployment platforms rather than committed\
+And Vercel or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and upload scanning contracts pass.
+
+### Scenario: dependency posture is current and deliberate
+
+Given a supported framework line receives security updates\
+When launch dependencies are reviewed\
+Then the lockfile has no high-severity advisories\
+And Next.js runs on an Active or Maintenance LTS line\
+And major framework upgrades are not mixed into launch stabilization without their own migration evidence.
+
 ## Contract details
 
-`BuildArtifact` is produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable SQLite fixture and a non-development port. `PrivateStoragePort` stores, reads, and removes opaque private references. `LaunchReadiness` distinguishes a locally runnable build from a publicly deployable production stack.
+`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable SQLite fixture and a non-development port. `PrivateStoragePort` stores, reads, and removes opaque private references. `LaunchReadiness` distinguishes a locally runnable build from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
 
 ## Required verification
 

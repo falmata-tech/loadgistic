@@ -158,7 +158,7 @@ try {
   for (const viewport of viewports) {
     const publicContext = await browser.newContext({ viewport });
     const publicPage = await publicContext.newPage();
-    for (const route of ['/', '/login', '/apply']) {
+    for (const route of ['/', '/about', '/login', '/apply']) {
       const result = await inspectPage(
         publicPage,
         route,

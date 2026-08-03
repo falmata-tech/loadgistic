@@ -19,6 +19,12 @@ that distinction and must remain red until the blockers below are implemented.
 - Server pagination on the main marketplace, Directory, My Shipments, billing,
   verification, support, fleet, network, and administration surfaces.
 - Installable PWA shell and deterministic launch/test fixtures.
+- Driver-authoritative truck location with retry controls, owner timestamp
+  preservation, and Local Partial route support.
+- Reproducible Node 22 standalone Docker image, non-root runtime, persistent
+  local-data volume, and liveness health check.
+- Credential-free Vercel and Supabase setup checklist in
+  `docs/CLOUD_HANDOFF.md`.
 
 ## Public-production blockers
 
@@ -35,6 +41,10 @@ that distinction and must remain red until the blockers below are implemented.
 
 The service-role key is server-only. No browser bundle or `NEXT_PUBLIC_*`
 variable may contain it.
+
+`/api/health` returning HTTP 200 proves only that the process and configured
+database are reachable. Its `readyForPublicProduction` field remains false
+while the blockers above exist; `npm run launch:check` is the release gate.
 
 ## Deployment gates
 

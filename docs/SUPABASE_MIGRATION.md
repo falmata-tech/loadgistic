@@ -1,6 +1,6 @@
 # Supabase Migration
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in migrations `001` through `009`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, coordinate-authoritative route matching, native support with row-level participant isolation, private payment media, Busy capacity, and indexed place search.
+The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in ordered migrations beginning with `001`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, coordinate-authoritative route matching, native support with row-level participant isolation, private payment media, Busy capacity, indexed place search, and device-authoritative capacity rules.
 
 `src/lib/private-storage.js` is a working private-file adapter for local disk or Supabase Storage. `DATA_BACKEND=supabase` is not implemented yet: setting that environment value does not move business data or authentication to Supabase, and production readiness intentionally remains blocked.
 
@@ -53,10 +53,10 @@ join that table.
 Migration `007` enables PostGIS, adds catalog references and coordinate-backed
 geography points to profile bases, declared routes, shipments, and current or
 planned capacity routes, and creates GiST indexes for `ST_DWithin` proximity
-queries. It also normalizes Local-only truck capacity to Empty/100 percent and
-adds a database constraint that rejects Local Partial rows. Labels remain
-presentation data; production route and Directory matching must use the
-geography columns.
+queries. Its original Local-only constraint is superseded by the later device-
+authoritative capacity migration so Local Partial may publish with a live route.
+Labels remain presentation data; production route and Directory matching must
+use the geography columns.
 
 Migration `008` adds the SUPPORT role, bounded agent profiles, one-open-thread
 member conversations, text messages, lifecycle events, queue/message indexes,
@@ -69,3 +69,10 @@ availability, payment-proof metadata and its private bucket, plus prefix and
 trigram indexes for the Ethiopia place catalog. Import the bundled place data
 with `npm run places:import:supabase` only after the schema and production
 credentials are configured.
+
+Migration `010` retires active manual truck areas, permits Local Partial with a
+structured live route, narrows truck Local radius to 10–50 km, makes Partial
+PTL-only, and requires a 40 km obscured Driver location for every active truck
+signal. The production capacity RPC must additionally prove that a fresh device
+reading was submitted by the active assigned Driver or that an owner edit
+preserved that Driver reading and timestamp.

@@ -6,7 +6,8 @@ export async function GET(){
   const readiness=launchReadiness();
   const row=getDb().prepare('SELECT COUNT(*) AS users FROM users').get();
   return NextResponse.json({
-    ok:readiness.ok,
+    ok:true,
+    readyForPublicProduction:readiness.ok,
     service:'loadgistic',
     runtime:readiness.runtime,
     database:'sqlite-local',
@@ -15,5 +16,5 @@ export async function GET(){
     warnings:readiness.warnings,
     users:row.users,
     time:new Date().toISOString()
-  },{status:readiness.ok?200:503});
+  });
 }

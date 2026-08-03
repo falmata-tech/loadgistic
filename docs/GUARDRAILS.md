@@ -21,7 +21,7 @@ These controls apply to every major action: authentication or authorization chan
 
 ## Required gates
 
-`npm run quality` enforces specification links, required source, domain/repository tests, and TypeScript checks. GitHub CI additionally performs a clean install, production build, and desktop/mobile Playwright suite. Changed user workflows require Playwright coverage; sensitive authorization changes require negative repository tests.
+`npm run quality` enforces specification links, required source, domain/repository tests, and TypeScript checks. GitHub CI additionally performs a clean install, production build, standalone Docker build, and desktop/mobile Playwright suite. Changed user workflows require Playwright coverage; sensitive authorization changes require negative repository tests.
 
 No contributor may bypass a failing required check by weakening the check, deleting the scenario, or broadening permissions without a linked spec and architecture decision.
 
