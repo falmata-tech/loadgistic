@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Boxes, Truck, UserRound } from 'lucide-react';
+import { ArrowRight, Boxes, Factory, Gauge, Truck, UserRound } from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 import { PublicBoardPreview } from '@/components/public-board-preview';
 import { listAnonymousMarketplacePreview } from '@/lib/repository.js';
@@ -22,6 +22,13 @@ export default function HomePage() {
 
       <PublicBoardPreview shipments={preview.shipments} trucks={preview.trucks} shared={preview.shared}/>
 
+      <section className="public-purpose-band">
+        <div className="container public-purpose-grid">
+          <div><Factory aria-hidden="true"/><span><small>For Businesses</small><strong>One place to find road capacity</strong><p>Producers, growers, artisans, and enterprises can publish freight and organize transport without owning a distribution fleet.</p></span></div>
+          <div><Gauge aria-hidden="true"/><span><small>For Transporters</small><strong>Turn available space into useful work</strong><p>Owner-operators, Drivers, and fleets can make empty or partial space visible to verified Business demand.</p></span></div>
+        </div>
+      </section>
+
       <section className="public-entry-band">
         <div className="container public-entry-grid">
           <div><Boxes aria-hidden="true"/><span><strong>Need a truck?</strong><small>Move locally made goods without owning a distribution fleet.</small></span><Link className="button" href="/apply?type=ENTERPRISE_SHIPPER">Business sign up<ArrowRight aria-hidden="true"/></Link></div>
@@ -29,6 +36,6 @@ export default function HomePage() {
         </div>
       </section>
     </main>
-    <footer className="footer"><div className="container footer-grid"><strong>Loadgistic</strong><span>Shipments <ArrowRight aria-hidden="true"/> Trucks</span><Link href="/login" className="button"><UserRound aria-hidden="true"/>Log in</Link></div></footer>
+    <footer className="footer"><div className="container footer-grid"><strong>Loadgistic</strong><span>Shipments <ArrowRight aria-hidden="true"/> Trucks</span><Link href="/about">About</Link><Link href="/login" className="button"><UserRound aria-hidden="true"/>Log in</Link></div></footer>
   </>;
 }

@@ -3,8 +3,8 @@ id: FEAT-MKT-001
 title: Ethiopia producer and transporter market positioning
 related_ids: [BASE-FE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001]
 problem: Small Ethiopian manufacturers, artisans, growers, processors, and transport operators need to recognize their real work and economic constraints immediately, without making the authenticated workspace feel limited to only small firms.
-behavior: The public homepage introduces Loadgistic in one short statement and immediately shows real-time, identity-safe Shipment Board and Truck Board projections, then routes visitors through consistent sign-up and sign-in actions.
-contracts: [PublicMarketPositioning, PublicExampleBoundary, AnonymousBoardPreview, AnonymousSharedMatchPreview, AudienceCallToAction]
+behavior: The public homepage introduces Loadgistic in one short statement and immediately shows real-time, identity-safe Shipment Board and Truck Board projections, then routes visitors through consistent sign-up and sign-in actions. A concise About page and distinctive freight-route mark explain the platform's purpose without making unverified economic claims.
+contracts: [PublicMarketPositioning, PublicExampleBoundary, AnonymousBoardPreview, AnonymousSharedMatchPreview, AudienceCallToAction, PublicAboutPage, BrandMark]
 observability: [application_source, anonymous_board_projection]
 rollout: Monitor the anonymous projection whitelist whenever authenticated Board fields change; no raw marketplace row may cross the public boundary.
 ---
@@ -69,6 +69,15 @@ Then Sign up and Log in are both visible\
 And both actions receive the same primary visual importance\
 And the Login page includes a visible Sign up action\
 And Apply and Join are not presented as separate account actions.
+
+### Scenario: public purpose is professional and evidence-safe
+
+Given a visitor opens the homepage or About page\
+When Loadgistic describes its purpose\
+Then it explains reducing empty and partial capacity waste, improving truck utilization, and lowering avoidable middle-mile coordination cost\
+And it presents Ethiopian producers, growing Businesses, owner-operators, Drivers, and fleet transporters as professional economic participants\
+And it does not publish invented savings, utilization percentages, government endorsement, or guaranteed outcomes\
+And the same distinctive route-and-cargo mark appears in public navigation and installable application icons.
 
 ## Contract ownership
 
