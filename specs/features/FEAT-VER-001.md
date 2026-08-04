@@ -54,7 +54,8 @@ Then the category badge is neutral gray and states Not verified.
 
 Given an administrator approves the category\
 When an authenticated user opens the directory profile, Shipment Board, Truck Board, or truck roster\
-Then that category badge uses its stable category color and states Verified\
+Then that category badge uses a vivid, high-contrast category treatment designed to draw attention and states Verified\
+And identity, license, address, Driver, truck, and reputation categories use distinct bright colors such as blue, orange, green, violet, cyan, and gold\
 And color is paired with an icon and visible text rather than carrying meaning alone\
 And its details explain the reviewed category, subject, status, review date, and expiry when applicable\
 And no member-facing badge opens the submitted private document.

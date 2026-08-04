@@ -113,12 +113,24 @@ test('temporary load proof is limited to one interested provider and expires', a
   if(fs.existsSync(recipientProof.file_path))fs.rmSync(recipientProof.file_path);
 });
 
-test('direct shipment acceptance is restricted to the addressed provider and sent state', () => {
+test('direct shipment acceptance is restricted to the addressed provider and pending state', () => {
   const shipment = createFreight('DIRECT_TO_PROVIDER', 'profile:provider-driver');
   assert.throws(() => repo.acceptDirectedShipment(users.transporter, shipment.id), /NOT_FOUND|FORBIDDEN/);
   repo.acceptDirectedShipment(users.driver, shipment.id);
   assert.equal(repo.getShipmentForUser(users.driver, shipment.id).operational_status, 'AGREED');
   assert.throws(() => repo.acceptDirectedShipment(users.driver, shipment.id), /DIRECT_REQUEST_NOT_PENDING/);
+});
+
+test('LGX-F2009 accepts once from commercial Sent and operational Posted', () => {
+  const before=repo.getShipmentForUser(users.driver,'shp-driver-direct');
+  assert.equal(before.code,'LGX-F2009');
+  assert.equal(before.commercial_status,'SENT');
+  assert.equal(before.operational_status,'POSTED');
+  repo.acceptDirectedShipment(users.driver,before.id);
+  const accepted=repo.getShipmentForUser(users.driver,before.id);
+  assert.equal(accepted.commercial_status,'AGREED');
+  assert.equal(accepted.operational_status,'AGREED');
+  assert.throws(()=>repo.acceptDirectedShipment(users.driver,before.id),/DIRECT_REQUEST_NOT_PENDING/);
 });
 
 test('receiver contact is private and required between agreement and assignment', () => {

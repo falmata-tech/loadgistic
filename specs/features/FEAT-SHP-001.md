@@ -320,10 +320,12 @@ Then only transporters with a mutual Connected relationship to the Business owne
 
 ### Scenario: direct acceptance is single-use
 
-Given the addressed provider has a direct request in Sent state\
+Given the addressed provider has a direct request with commercial status Sent\
+And its pre-agreement operational status is Posted or legacy Sent\
 When it accepts the request once\
 Then the request becomes Agreed\
-And any later acceptance attempt is rejected without changing state.
+And any later acceptance attempt is rejected without changing state\
+And the load board and shipment detail show Accept only while that same pending-request rule is true.
 
 ### Scenario: shipper and receiver review each other
 

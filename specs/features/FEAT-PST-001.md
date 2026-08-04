@@ -24,6 +24,7 @@ And the card identifies the endpoint spread and advises separate confirmation.
 Given an authorized provider opens a pooled-shipment detail\
 When the group is recalculated\
 Then every still-permitted member shipment is displayed with its own owner, deadlines, pricing, and interest action\
+And every member reuses the standard Shipment Board card with the same route or Local facts, cargo description, vehicle requirement, posted time, owner verification, reputation, Business and phone actions, and current provider action state\
 And the provider negotiates with each owner independently\
 And the projection cannot be accepted or assigned as one canonical shipment.
 
@@ -33,6 +34,7 @@ Given discoverable Posted Between-cities shipments connect through nearby drop-o
 When an authorized provider selects Along the route\
 Then forward, deadline-compatible legs are displayed in travel order\
 And connector distance, FTL/PTL type, deadlines, and independent prices remain visible\
+And each ordered leg reuses the standard Shipment Board card with the same facts, trust signals, and available actions as its source shipment\
 And the provider must negotiate each shipment independently.
 
 ### Scenario: incompatible or hidden shipments do not pool

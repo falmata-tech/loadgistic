@@ -226,11 +226,13 @@ And it preserves the original location timestamp rather than presenting the owne
 And publication is rejected when no assigned-Driver device location exists\
 And the owner has no manual city, coordinate, or phone-location control.
 
-### Scenario: Driver can retry device location
+### Scenario: Driver can manually refresh device location
 
-Given a Driver denied, missed, or did not receive the initial browser location result\
+Given a Driver is viewing capacity controls with location permission granted, denied, or not yet decided\
 When the capacity screen remains open\
-Then a visible Retry location action requests device location again\
+Then one visible location action remains available beside the current location state\
+And it states Request location before a valid reading and Refresh location after a valid reading\
+And activating it starts a new browser geolocation request even when automatic watching has not produced a newer reading\
 And active capacity cannot be published until that Driver session has a valid obscured reading\
 And browser denial is explained without offering manual current-area entry.
 

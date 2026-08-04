@@ -45,6 +45,12 @@ export const DISTRIBUTION_MODES = Object.freeze({
   OPEN_MARKET: 'OPEN_MARKET'
 });
 
+export function isPendingDirectRequest({ distributionMode, commercialStatus, operationalStatus }) {
+  return distributionMode === DISTRIBUTION_MODES.DIRECT_TO_PROVIDER
+    && commercialStatus === 'SENT'
+    && ['POSTED', 'SENT'].includes(operationalStatus);
+}
+
 export const PRICE_MODES = Object.freeze({
   FIXED_PRICE: 'FIXED_PRICE',
   QUOTE_REQUESTED: 'QUOTE_REQUESTED',

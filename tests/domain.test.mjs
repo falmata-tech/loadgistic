@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
@@ -16,6 +16,15 @@ test('capacity rules are simple and strict',()=>{
  assert.throws(()=>validateCapacity('FULL',''),/INVALID_CAPACITY_STATUS/);
  assert.throws(()=>validateCapacity('PARTIAL','0'),/CAPACITY_PERCENT_REQUIRED/);
  assert.throws(()=>validateCapacity('PARTIAL','100'),/CAPACITY_PERCENT_REQUIRED/);
+});
+
+test('direct requests accept both current and legacy pending operational states',()=>{
+ const pending={distributionMode:'DIRECT_TO_PROVIDER',commercialStatus:'SENT'};
+ assert.equal(isPendingDirectRequest({...pending,operationalStatus:'POSTED'}),true);
+ assert.equal(isPendingDirectRequest({...pending,operationalStatus:'SENT'}),true);
+ assert.equal(isPendingDirectRequest({...pending,operationalStatus:'AGREED'}),false);
+ assert.equal(isPendingDirectRequest({...pending,commercialStatus:'AGREED',operationalStatus:'POSTED'}),false);
+ assert.equal(isPendingDirectRequest({...pending,distributionMode:'OPEN_MARKET',operationalStatus:'POSTED'}),false);
 });
 
 test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{

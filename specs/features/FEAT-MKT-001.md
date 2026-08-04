@@ -81,6 +81,7 @@ Given a visitor opens the homepage or About page\
 When Loadgistic describes its purpose\
 Then it explains reducing empty and partial capacity waste, improving truck utilization, and lowering avoidable middle-mile coordination cost\
 And it presents Ethiopian producers, growing Businesses, owner-operators, Drivers, and fleet transporters as professional economic participants\
+And its headlines and supporting copy use concise professional B2B language rather than slogan-led or overly sentimental phrasing\
 And it does not publish invented savings, utilization percentages, government endorsement, or guaranteed outcomes\
 And the story centers the people who make, grow, process, repair, and move goods rather than presenting freight software as the hero\
 And it explains that existing Partial capacity, shared space, and recurring truck routes may create more practical transport options\

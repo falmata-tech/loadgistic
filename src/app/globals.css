@@ -1087,11 +1087,13 @@ legend { font-weight:800; padding:0 7px; }
 .verification-badge svg { grid-row:1/3; width:18px; height:18px; }
 .verification-badge span { font-size:.76rem; font-weight:800; }
 .verification-badge small { font-size:.66rem; }
-.verification-badge.verified { border-color:#84b9ff; background:linear-gradient(145deg,#eef7ff,#dcecff); color:#084b9c; }
-.verification-badge.verified.badge-business-license { border-color:#e8b55e; background:linear-gradient(145deg,#fff8df,#ffedb4); color:#805200; }
-.verification-badge.verified.badge-business-address { border-color:#65c8a1; background:linear-gradient(145deg,#ecfff7,#c9f3e2); color:#086044; }
-.verification-badge.verified.badge-driver-identity { border-color:#9d8cf0; background:linear-gradient(145deg,#f5f1ff,#e3dcff); color:#4c3299; }
-.verification-badge.verified.badge-truck-authorization { border-color:#ed8b78; background:linear-gradient(145deg,#fff2ee,#ffdcd4); color:#8b321f; }
+.verification-badge.verified { border-color:#005fff; background:linear-gradient(135deg,#075fff,#20b7ff); color:#fff; box-shadow:0 7px 18px rgba(0,101,255,.3); }
+.verification-badge.verified.badge-identity { border-color:#006cff; background:linear-gradient(135deg,#0868ff,#30c5ff); }
+.verification-badge.verified.badge-business-license { border-color:#e96b00; background:linear-gradient(135deg,#f47700,#ffb000); box-shadow:0 7px 18px rgba(244,119,0,.3); }
+.verification-badge.verified.badge-business-address { border-color:#008f5c; background:linear-gradient(135deg,#009a63,#20ce83); box-shadow:0 7px 18px rgba(0,154,99,.28); }
+.verification-badge.verified.badge-driver-identity { border-color:#6335e5; background:linear-gradient(135deg,#6940e8,#a34fff); box-shadow:0 7px 18px rgba(105,64,232,.28); }
+.verification-badge.verified.badge-truck-authorization,.verification-badge.verified.badge-vehicle-authority,.verification-badge.verified.badge-vehicle-ownership { border-color:#008eae; background:linear-gradient(135deg,#0099bd,#00cbb4); box-shadow:0 7px 18px rgba(0,153,189,.28); }
+.verification-badge.verified summary small { color:rgba(255,255,255,.88); }
 .verification-badge.expired { border-color:#ef9a9a; background:#fff1f1; color:#9b1c1c; }
 .verification-badge-details { position:absolute; z-index:40; top:calc(100% + 6px); left:0; display:grid; gap:5px; width:250px; padding:11px; border:1px solid #cfd7e4; border-radius:9px; background:#fff; color:#263247; box-shadow:0 16px 34px rgba(20,35,60,.2); }
 .verification-badge-details svg { grid-row:auto; width:14px; height:14px; vertical-align:middle; }
@@ -1101,6 +1103,7 @@ legend { font-weight:800; padding:0 7px; }
 .verification-group { min-width:0; }
 .verification-group-label { display:block; margin-top:10px; color:var(--ink); font-size:.72rem; }
 .verification-group .verification-badges { margin-top:5px; }
+.verification-badge.reputation { border-color:#e6a100; background:linear-gradient(135deg,#f2ad00,#ffd34d); color:#543700; box-shadow:0 7px 18px rgba(242,173,0,.26); }
 .verification-badge.reputation svg { fill:currentColor; }
 .trust-safety-notice { display:flex; gap:12px; max-width:1180px; margin:14px auto 0; padding:13px 16px; border:1px solid #e7bd71; border-radius:10px; background:#fff9e9; color:#5f430f; }
 .trust-safety-notice > svg { flex:0 0 auto; width:22px; height:22px; }

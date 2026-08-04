@@ -55,7 +55,7 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   expect(executableChunkResult.body).not.toBe('stale-runtime');
   await page.getByRole('link', { name: 'Loadgistic home' }).click();
   await expect(page).toHaveURL('/');
-  await expect(page.getByRole('heading', { name: 'Let the next truck carry your growth—not hold it back.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Move goods farther with capacity already on the road.' })).toBeVisible();
   await expect(page.getByRole('link',{name:'Loadgistic home'}).locator('img')).toHaveAttribute('src','/icon.svg');
 });
 
@@ -281,8 +281,8 @@ test('self-service signup creates an immediately usable seven-day trial', async 
 
 test('homepage previews live structured Board facts without exposing member identity', async ({ page }: { page: any }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Let the next truck carry your growth—not hold it back.' })).toBeVisible();
-  await expect(page.getByText(/Small manufacturers, workshops, growers, and producers/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Move goods farther with capacity already on the road.' })).toBeVisible();
+  await expect(page.getByText(/brings shipment demand and available trucks into one B2B marketplace/)).toBeVisible();
   await expect(page.getByRole('tab',{name:'Shipment Board'})).toHaveAttribute('aria-selected','true');
   await expect(page.getByText('Real routes and matching signals. Member identity and contact stay protected.')).toHaveCount(0);
   await expect(page.getByText('Names and contacts require login')).toHaveCount(0);
@@ -312,6 +312,9 @@ test('homepage previews live structured Board facts without exposing member iden
   await expect(logIn).toHaveClass(/button/);
   await expect(signUp.locator('svg')).toHaveCount(1);
   await expect(logIn.locator('svg')).toHaveCount(1);
+  await page.goto('/about');
+  await expect(page.getByRole('heading',{name:'A more connected freight market for businesses that make and move goods.'})).toBeVisible();
+  await expect(page.getByText(/makes both sides visible in one governed B2B workflow/)).toBeVisible();
 });
 
 test('desktop public navigation opens the selected marketplace Board', async ({ page }: { page:any }, testInfo:{project:{name:string}}) => {
@@ -426,8 +429,11 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
   await expect(page.locator('.task-heading-icon')).toBeVisible();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await expect(page.locator('.automatic-location')).toBeVisible();
-  await expect(page.getByText('Truck area ready')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Use phone|Refresh/ })).toHaveCount(0);
+  await expect(page.getByText('Current truck area ready')).toBeVisible();
+  const refreshLocation=page.getByRole('button',{name:'Refresh location'});
+  await expect(refreshLocation).toBeVisible();
+  await refreshLocation.click();
+  await expect(page.getByText('Current truck area ready')).toBeVisible();
   await expect(page.getByLabel('City or town')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Live route'})).toBeVisible();
   await expect(page.getByText(/Partial Truckload \(PTL\).*selected automatically/)).toBeVisible();
@@ -517,7 +523,7 @@ test('member verification center and admin review queue are available', async ({
   await page.goto('/app/verification');
   await expect(page.getByRole('heading',{name:'Verification',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Submit verification'})).toBeVisible();
-  await expect(page.getByText('Verify before you agree.')).toBeVisible();
+  await expect(page.getByText('Review documents before agreement.')).toBeVisible();
   await expect(page.getByRole('option',{name:'Business license'})).toHaveCount(1);
   await page.context().clearCookies();
   await login(page,'admin@loadgistic.local');
@@ -634,6 +640,45 @@ test('provider interest stays marked on the Board and appears under My Shipments
   await expect(page.getByText('Beverage shipment to Dire Dawa')).toBeVisible();
   await page.getByRole('link',{name:'Tracking',exact:true}).click();
   await expect(page.getByText('Beverage shipment to Dire Dawa')).toHaveCount(0);
+});
+
+test('pooled and along-route members use complete Shipment Board cards',async({page}:{page:any})=>{
+  await login(page,'driver@loadgistic.local');
+  await page.goto('/app/loads?board=SHARED');
+  const poolLink=page.locator('a[href^="/app/loads/pstl/"]').first();
+  await expect(poolLink).toBeVisible();
+  await poolLink.click();
+  await expect(page.getByRole('heading',{name:'Pool together'})).toBeVisible();
+  const pooledCards=page.getByTestId('load-board-card');
+  expect(await pooledCards.count()).toBeGreaterThan(1);
+  await expect(pooledCards.first().getByText('Pool member')).toBeVisible();
+  await expect(pooledCards.first().getByText('Pick up before',{exact:false})).toBeVisible();
+  await expect(pooledCards.first().getByRole('link',{name:'Business'})).toBeVisible();
+  expect(await pooledCards.getByRole('button',{name:/Accept|Express interest/}).count()).toBeGreaterThan(0);
+
+  await page.goto('/app/loads?board=SHARED&sharedMode=ROUTE');
+  const routeLink=page.locator('a[href^="/app/loads/route/"]').first();
+  await expect(routeLink).toBeVisible();
+  await routeLink.click();
+  await expect(page.getByRole('heading',{name:'Along the route'})).toBeVisible();
+  const routeCards=page.getByTestId('load-board-card');
+  expect(await routeCards.count()).toBeGreaterThan(1);
+  await expect(routeCards.first().getByText('Route leg 1')).toBeVisible();
+  await expect(routeCards.first().getByText('Pick up before',{exact:false})).toBeVisible();
+  await expect(routeCards.first().getByRole('link',{name:'Business'})).toBeVisible();
+  expect(await routeCards.getByRole('button',{name:/Accept|Express interest/}).count()).toBeGreaterThan(0);
+});
+
+test('LGX-F2009 can be accepted once from its pending direct-request state',async({page}:{page:any})=>{
+  test.skip((page.viewportSize()?.width||0)<980,'Stateful direct acceptance runs once; mobile cards use the same shared component.');
+  await login(page,'driver@loadgistic.local');
+  await page.goto('/app/shipments/shp-driver-direct');
+  await expect(page.getByRole('heading',{name:/LGX-F2009/})).toBeVisible();
+  await page.getByRole('button',{name:'Accept request'}).click();
+  await expect(page.getByText('Direct request accepted.')).toBeVisible();
+  await expect(page.getByText('Agreed',{exact:true}).first()).toBeVisible();
+  await expect(page.getByRole('button',{name:'Accept request'})).toHaveCount(0);
+  await expect(page.getByText('This direct request has already been handled.')).toHaveCount(0);
 });
 
 test('connected provider sees Partners demand without receiving party controls', async ({ page }: { page: any }) => {

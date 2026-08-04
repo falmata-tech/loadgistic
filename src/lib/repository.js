@@ -22,6 +22,7 @@ import {
   capacitySignalFreshness,
   loadBoardDeadlineState,
   LOAD_BOARD_GRACE_DAYS,
+  isPendingDirectRequest,
   roleCanCreateShipment,
   roleCanPublishCapacity,
   roleCanBrowseLoads
@@ -2533,7 +2534,11 @@ export function acceptDirectedShipment(user, shipmentId) {
   const scope = providerScope(user);
   const matches = Boolean(scope && ((scope.organizationId && shipment.provider_organization_id === scope.organizationId) || (scope.profileId && shipment.provider_profile_id === scope.profileId)));
   if (!matches) throw new Error('FORBIDDEN');
-  if (shipment.operational_status !== 'SENT' || shipment.commercial_status !== 'SENT') throw new Error('DIRECT_REQUEST_NOT_PENDING');
+  if (!isPendingDirectRequest({
+    distributionMode:shipment.distribution_mode,
+    commercialStatus:shipment.commercial_status,
+    operationalStatus:shipment.operational_status
+  })) throw new Error('DIRECT_REQUEST_NOT_PENDING');
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE shipments SET commercial_status='AGREED', operational_status='AGREED', updated_at=? WHERE id=?`).run(nowIso(),shipment.id);
