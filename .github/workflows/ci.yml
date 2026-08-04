@@ -23,7 +23,7 @@ jobs:
       DATABASE_PATH: /tmp/loadgistic-ci.db
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -59,7 +59,7 @@ jobs:
       DATABASE_PATH: /tmp/loadgistic-e2e.db
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -82,7 +82,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build standalone container
         run: docker build --tag loadgistic:${{ github.sha }} .
