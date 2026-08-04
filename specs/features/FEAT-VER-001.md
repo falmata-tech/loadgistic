@@ -3,8 +3,8 @@ id: FEAT-VER-001
 title: Entity and truck verification
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-CAP-001]
 problem: Marketplace participants need visible, evidence-based trust signals for people, Businesses, transporters, drivers, and trucks without treating a workspace approval as document verification.
-behavior: Authorized users submit private verification documents for an owned entity, administrators review each request, and profiles, Shipment Board cards, or Truck Board cards derive trust badges only from approved requests while unverified accounts retain normal trial or paid access.
-contracts: [VerificationSubject, VerificationTypePolicy, VerificationSubmission, VerificationReview, VerificationBadgeSummary, VerificationFileAuthorization]
+behavior: Authorized users submit private verification documents for an owned entity or Driver-truck pairing, administrators review each request and its expiry, and profiles or Boards derive colorful category-specific trust badges only from current approvals while every marketplace surface reminds members to perform their own checks.
+contracts: [VerificationSubject, VerificationTypePolicy, VerificationSubmission, VerificationReview, VerificationExpiry, DriverTruckAuthorization, VerificationBadgeSummary, VerificationBadgeMeaning, VerificationRiskNotice, VerificationFileAuthorization]
 observability: [verification_submitted_audit, verification_reviewed_audit, verification_denied_outcome]
 rollout: Document names remain extensible; keep files private, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history.
 ---
@@ -21,7 +21,7 @@ And every matching request remains reachable without exposing private documents 
 ### Scenario: owner submits supported evidence
 
 Given an authenticated Business, fleet transporter, or self-managed driver\
-When they choose an owned profile or truck, a supported verification type, and a valid private document\
+When they choose an owned profile or Driver-truck pairing, a supported verification type, and a valid private document\
 Then one Pending verification request is created\
 And only the owner and an administrator may read its metadata.
 
@@ -50,11 +50,29 @@ And the request and badge state remain unchanged.
 
 Given an entity has a required verification category\
 When no approved request exists\
-Then the category badge is gray and states Not verified.
+Then the category badge is neutral gray and states Not verified.
 
 Given an administrator approves the category\
 When an authenticated user opens the directory profile, Shipment Board, Truck Board, or truck roster\
-Then that category badge is blue and states Verified.
+Then that category badge uses its stable category color and states Verified\
+And color is paired with an icon and visible text rather than carrying meaning alone\
+And its details explain the reviewed category, subject, status, review date, and expiry when applicable\
+And no member-facing badge opens the submitted private document.
+
+### Scenario: expired evidence is not current verification
+
+Given an approved verification request has an expiry date\
+When that date has passed in Ethiopia\
+Then its marketplace badge states Expired and is not counted as Verified\
+And the owner may submit replacement evidence without deleting review history.
+
+### Scenario: truck authorization belongs to one Driver and truck
+
+Given a company Driver or self-managed Driver submits proof of authority for a truck\
+When the request is created\
+Then it identifies that Driver, that owned or assigned truck, and a required expiry date\
+And approval produces Truck authorization only for that pairing\
+And reassignment or expiry cannot verify a different Driver-truck pairing.
 
 ### Scenario: marketplace cards explain entity trust
 
@@ -75,6 +93,13 @@ When its trial or paid access is current\
 Then its authorized user can use the workspace and marketplace\
 And gray Not verified badges encourage evidence submission without blocking access.
 
+### Scenario: marketplace trust warning remains visible
+
+Given a member opens the Directory, a member profile, Shipment Board, Truck Board, or an agreement action\
+When trust evidence is displayed\
+Then a concise notice tells the member to confirm current identity, authority, truck, Driver, and documents before agreeing\
+And explains that badges describe reviewed evidence rather than guaranteeing payment, performance, cargo safety, or continuing legal authority.
+
 ### Scenario: verification document remains private
 
 Given a verification request has a stored document\
@@ -82,13 +107,13 @@ When an unrelated authenticated user or anonymous visitor requests the file\
 Then access is denied\
 And only the submitting owner or an administrator can read it.
 
-## Supported initial categories
+## Supported categories
 
-- Business organization: Identity and Business license
-- Fleet transporter organization: Identity and Business license
-- Self-managed driver: Identity and Driver identity
-- Fleet driver: Driver identity
-- Truck: Vehicle ownership or Owner authorization
+- Business organization: National ID, Business license, and Business address
+- Fleet transporter organization: National ID, Business license, and Business address
+- Self-managed driver: National ID, Driver license, and pairing-specific Truck authorization
+- Fleet driver: National ID, Driver license, and pairing-specific Truck authorization
+- Truck: legacy Vehicle ownership or Owner authorization evidence remains historical; current Driver-facing authority is pairing-specific
 
 The catalog may add country- or actor-specific document names in a later accepted update without changing approved historical records.
 

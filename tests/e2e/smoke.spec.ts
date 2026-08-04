@@ -55,7 +55,7 @@ test('PWA manifest and service worker are active', async ({ page, request }: { p
   expect(executableChunkResult.body).not.toBe('stale-runtime');
   await page.getByRole('link', { name: 'Loadgistic home' }).click();
   await expect(page).toHaveURL('/');
-  await expect(page.getByRole('heading', { name: 'Road freight, connected across Ethiopia.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Let the next truck carry your growth—not hold it back.' })).toBeVisible();
   await expect(page.getByRole('link',{name:'Loadgistic home'}).locator('img')).toHaveAttribute('src','/icon.svg');
 });
 
@@ -85,6 +85,7 @@ test('authenticated directory browsing preserves the session and selected partic
   await page.getByRole('link', { name: 'Request' }).click();
   await expect(page).toHaveURL(/\/app\/shipments\/new\?provider=/);
   await expect(page.getByRole('combobox', { name: 'Selected transporter' })).not.toHaveValue('');
+  await expect(page.getByText(/Exactly one transporter or self-managed Driver selected/)).toBeVisible();
   await page.goto('/app/providers?type=DRIVER&q=Abebe');
   await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).click();
   await page.getByRole('link', { name: 'Request' }).click();
@@ -280,8 +281,8 @@ test('self-service signup creates an immediately usable seven-day trial', async 
 
 test('homepage previews live structured Board facts without exposing member identity', async ({ page }: { page: any }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Road freight, connected across Ethiopia.' })).toBeVisible();
-  await expect(page.getByText(/growing producers and established businesses/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Let the next truck carry your growth—not hold it back.' })).toBeVisible();
+  await expect(page.getByText(/Small manufacturers, workshops, growers, and producers/)).toBeVisible();
   await expect(page.getByRole('tab',{name:'Shipment Board'})).toHaveAttribute('aria-selected','true');
   await expect(page.getByText('Real routes and matching signals. Member identity and contact stay protected.')).toHaveCount(0);
   await expect(page.getByText('Names and contacts require login')).toHaveCount(0);
@@ -435,6 +436,7 @@ test('self-managed driver keeps the rich capacity control panel as Home', async 
   await page.getByRole('group',{name:'Truck availability'}).getByRole('button',{name:/Empty/}).click();
   await expect(page.getByRole('heading',{name:'Live route'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Shipment size',exact:true})).toBeVisible();
+  await expect(page.getByText('Included',{exact:true})).toBeVisible();
   await page.getByRole('group',{name:'Work area'}).getByRole('button',{name:'Local'}).click();
   await expect(page.getByRole('group',{name:'Work area'}).getByRole('button',{name:'Local'})).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('.capacity-status-choices').getByRole('button',{name:/Partial/})).toBeEnabled();
@@ -483,6 +485,20 @@ test('Business sees complete Truck Board cards and opens the owner profile direc
   await expect(page.getByTitle('Truck authority: Verified')).toBeVisible();
 });
 
+test('Business Near me search keeps exact position client-side and shows truck privacy areas', async ({ page }: { page: any }) => {
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({latitude:9.03,longitude:38.74});
+  await login(page,'shipper@loadgistic.local');
+  await page.goto('/app/capacity');
+  await page.getByRole('button',{name:'Use my location'}).click();
+  await expect(page).toHaveURL(/nearLat=.*nearLng=.*nearRadiusKm=10/);
+  expect(page.url()).not.toContain('nearLat=9.03&nearLng=38.74');
+  await expect(page.getByText(/possible matches because both sides use privacy areas/i)).toBeVisible();
+  await expect(page.getByText(/Possibly \d+–\d+ km away/).first()).toBeVisible();
+  await expect(page.locator('.nearby-truck-map .leaflet-container')).toBeVisible();
+  await expect(page.getByText('You · private')).toBeVisible();
+});
+
 test('Business profile editor uses paired Freight Route inputs', async ({ page }: { page: any }) => {
   await login(page,'shipper@loadgistic.local');
   await page.goto('/app/company-page');
@@ -501,6 +517,7 @@ test('member verification center and admin review queue are available', async ({
   await page.goto('/app/verification');
   await expect(page.getByRole('heading',{name:'Verification',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Submit verification'})).toBeVisible();
+  await expect(page.getByText('Verify before you agree.')).toBeVisible();
   await expect(page.getByRole('option',{name:'Business license'})).toHaveCount(1);
   await page.context().clearCookies();
   await login(page,'admin@loadgistic.local');

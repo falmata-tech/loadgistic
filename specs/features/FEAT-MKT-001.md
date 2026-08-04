@@ -2,8 +2,8 @@
 id: FEAT-MKT-001
 title: Ethiopia producer and transporter market positioning
 related_ids: [BASE-FE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001]
-problem: Small Ethiopian manufacturers, artisans, growers, processors, and transport operators need to recognize their real work and economic constraints immediately, without making the authenticated workspace feel limited to only small firms.
-behavior: The public homepage introduces Loadgistic in one short statement and immediately shows real-time, identity-safe Shipment Board and Truck Board projections, then routes visitors through consistent sign-up and sign-in actions. A concise About page and distinctive freight-route mark explain the platform's purpose without making unverified economic claims.
+problem: Local workshops, growers, producers, small-scale manufacturers, owner-operators, self-managed Drivers, and small fleets take material business risks while fragmented and expensive logistics limits the markets they can practically reach.
+behavior: The public homepage and About page tell a credible producer-to-market story, explain how existing empty or Partial capacity, shared cargo space, and recurring routes can widen practical market access, immediately demonstrate identity-safe Shipment and Truck Boards, and use a distinctive cargo-link brand system without promising savings, income, or outcomes.
 contracts: [PublicMarketPositioning, PublicExampleBoundary, AnonymousBoardPreview, AnonymousSharedMatchPreview, AudienceCallToAction, PublicAboutPage, BrandMark]
 observability: [application_source, anonymous_board_projection]
 rollout: Monitor the anonymous projection whitelist whenever authenticated Board fields change; no raw marketplace row may cross the public boundary.
@@ -82,7 +82,11 @@ When Loadgistic describes its purpose\
 Then it explains reducing empty and partial capacity waste, improving truck utilization, and lowering avoidable middle-mile coordination cost\
 And it presents Ethiopian producers, growing Businesses, owner-operators, Drivers, and fleet transporters as professional economic participants\
 And it does not publish invented savings, utilization percentages, government endorsement, or guaranteed outcomes\
-And the same distinctive Loadgistic route-and-destination mark and wordmark appear across public and authenticated navigation.
+And the story centers the people who make, grow, process, repair, and move goods rather than presenting freight software as the hero\
+And it explains that existing Partial capacity, shared space, and recurring truck routes may create more practical transport options\
+And it recognizes owner-operators, authorized self-managed Drivers, and small fleets as businesses that also carry risk\
+And it does not promise lower prices, guaranteed income, guaranteed matches, or regional market access\
+And the same distinctive Loadgistic cargo-link mark and wordmark appear across public and authenticated navigation, browser icons, and installable assets.
 
 ## Contract ownership
 

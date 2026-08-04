@@ -3,8 +3,8 @@ id: FEAT-CAP-001
 title: Truck-first Truck Board and publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
 problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each active update uses the assigned Driver's current obscured device area, records status-appropriate accepted work, live Partial movement, optional Empty route intent, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards while drivers and transporters receive one anonymized, read-only card per visible truck. Freshness is explicit rather than silently removing stale Empty or Partial signals.
-contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
+behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each active update uses the assigned Driver's current device area obscured to a bounded Driver-chosen privacy radius, records status-appropriate accepted work, live Partial movement, optional Empty route intent, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards and privacy-aware Near me discovery while drivers and transporters receive one anonymized, read-only card per visible truck. Freshness is explicit rather than silently removing stale Empty or Partial signals.
+contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, DriverLocationPrivacyChoice, BusinessNearMeSearch, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
 observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
 rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
 ---
@@ -285,11 +285,21 @@ And no precise coordinate is required or exposed.
 
 ### Scenario: device location is obscured before submission
 
-Given a driver chooses to use the phone or device location\
-When the browser grants location permission\
-Then the precise coordinate is snapped in the browser to a half-degree grid before submission\
-And only the obscured point, a 40 km privacy radius, and the declared general-area label reach the server\
+Given a Driver uses the phone or device location\
+When the browser grants location permission and the Driver chooses an allowed privacy area\
+Then the precise coordinate is displaced in the browser before submission\
+And Local, Long-distance, or Both work may use a 1, 3, 5, 10, 20, or 40 km privacy area\
+And only the displaced point, chosen privacy radius, and declared general-area label reach the server\
 And the precise coordinate is not submitted, stored, logged, or displayed.
+
+### Scenario: Driver controls current location precision
+
+Given a Driver has an Empty, Partial, or Busy truck signal\
+When the Driver changes the privacy-area choice and publishes the next capacity update\
+Then the new authorized Board projection uses that privacy area\
+And the interface warns that a smaller area gives Businesses a more precise estimate\
+And a long-distance Partial signal below 20 km shows a prominent precision and safety warning without overriding the Driver's choice\
+And an older, more precise projection is not returned as current marketplace data.
 
 ### Scenario: driver location acquisition starts automatically
 
@@ -320,8 +330,19 @@ And an authorized assigned company driver may still use its own device location 
 
 Given capacity includes an obscured device area\
 When an authorized user views its Truck Board card or detail\
-Then the interface identifies it as an approximate device-assisted area with a 40 km privacy zone\
-And neither the obscured coordinate nor an exact map pin is displayed.
+Then the interface identifies it as an approximate device-assisted area with the Driver's chosen privacy radius\
+And Businesses may see that privacy circle and an estimated distance range relative to their own location\
+And neither the displaced center nor an exact map pin is presented as the truck's position.
+
+### Scenario: Business finds Local trucks near its device
+
+Given an authenticated Business opens the Truck Board and grants one-time browser location access\
+When it chooses Near me and a search distance\
+Then the browser keeps the exact Business coordinate in memory for the current view\
+And sends only a one-kilometer-displaced search point to the bounded Board query\
+And permitted Local-capable truck privacy areas that overlap the search distance are returned and ranked\
+And the result explains distance as a range rather than an exact truck distance\
+And neither the Business search point nor exact device coordinate is persisted or audited.
 
 ### Scenario: capacity proof carries context
 

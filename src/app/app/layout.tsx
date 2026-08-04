@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/auth';
 import { AppShell } from '@/components/app-shell';
 import { getWorkspaceAccess } from '@/lib/repository.js';
 import { redirect } from 'next/navigation';
+import { TrustSafetyNotice } from '@/components/trust-safety-notice';
 
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser(undefined,{allowLimited:true});
@@ -21,5 +22,5 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     billing_limited:!access.granted,
     billing_status:access.status
   };
-  return <AppShell user={safeUser}>{children}</AppShell>;
+  return <AppShell user={safeUser}><TrustSafetyNotice/>{children}</AppShell>;
 }

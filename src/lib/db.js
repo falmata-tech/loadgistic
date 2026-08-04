@@ -431,7 +431,9 @@ function migrate(db) {
       id TEXT PRIMARY KEY,
       subject_type TEXT NOT NULL CHECK(subject_type IN ('ORGANIZATION','PROVIDER_PROFILE','DRIVER','VEHICLE')),
       subject_id TEXT NOT NULL,
-      verification_type TEXT NOT NULL CHECK(verification_type IN ('IDENTITY','BUSINESS_LICENSE','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION')),
+      verification_type TEXT NOT NULL CHECK(verification_type IN ('IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION')),
+      related_vehicle_id TEXT REFERENCES vehicles(id),
+      expires_on TEXT,
       document_name TEXT NOT NULL,
       file_path TEXT NOT NULL,
       original_name TEXT NOT NULL,
@@ -559,6 +561,7 @@ function migrate(db) {
     );
   `);
   ensureSupportRoleSchema(db);
+  ensureVerificationTrustSchema(db);
   const supportConversationColumns=new Set(db.prepare('PRAGMA table_info(support_conversations)').all().map(column=>column.name));
   if(!supportConversationColumns.has('customer_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN customer_last_read_at TEXT');
   if(!supportConversationColumns.has('agent_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN agent_last_read_at TEXT');
@@ -830,6 +833,56 @@ function migrate(db) {
       }
     }
   }
+}
+
+function ensureVerificationTrustSchema(db) {
+  const definition=String(db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='verification_requests'`).get()?.sql||'');
+  const columns=new Set(db.prepare('PRAGMA table_info(verification_requests)').all().map(column=>column.name));
+  if(definition.includes("'BUSINESS_ADDRESS'")&&columns.has('related_vehicle_id')&&columns.has('expires_on'))return;
+  db.exec('PRAGMA foreign_keys=OFF; PRAGMA legacy_alter_table=ON;');
+  try {
+    db.exec(`
+      BEGIN IMMEDIATE;
+      ALTER TABLE verification_requests RENAME TO verification_requests_before_trust_badges;
+      CREATE TABLE verification_requests (
+        id TEXT PRIMARY KEY,
+        subject_type TEXT NOT NULL CHECK(subject_type IN ('ORGANIZATION','PROVIDER_PROFILE','DRIVER','VEHICLE')),
+        subject_id TEXT NOT NULL,
+        verification_type TEXT NOT NULL CHECK(verification_type IN ('IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION')),
+        related_vehicle_id TEXT REFERENCES vehicles(id),
+        expires_on TEXT,
+        document_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        original_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('PENDING','APPROVED','MORE_INFO','REJECTED')),
+        submitted_by TEXT NOT NULL REFERENCES users(id),
+        reviewed_by TEXT REFERENCES users(id),
+        review_note TEXT,
+        submitted_at TEXT NOT NULL,
+        reviewed_at TEXT
+      );
+      INSERT INTO verification_requests
+        (id,subject_type,subject_id,verification_type,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+        SELECT id,subject_type,subject_id,verification_type,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at
+        FROM verification_requests_before_trust_badges;
+      UPDATE verification_requests
+      SET subject_id=(SELECT d.user_id FROM drivers d WHERE d.id=verification_requests.subject_id)
+      WHERE subject_type='DRIVER'
+        AND EXISTS(SELECT 1 FROM drivers d WHERE d.id=verification_requests.subject_id AND d.user_id IS NOT NULL);
+      DROP TABLE verification_requests_before_trust_badges;
+      CREATE INDEX idx_verification_subject ON verification_requests(subject_type,subject_id,verification_type,status);
+      CREATE INDEX idx_verification_vehicle_pair ON verification_requests(subject_type,subject_id,related_vehicle_id,verification_type,status,expires_on);
+      COMMIT;
+    `);
+  } catch(error) {
+    try { db.exec('ROLLBACK'); } catch {}
+    throw error;
+  } finally {
+    db.exec('PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;');
+  }
+  const violations=db.prepare('PRAGMA foreign_key_check').all();
+  if(violations.length)throw new Error('VERIFICATION_TRUST_MIGRATION_FOREIGN_KEY_FAILURE');
 }
 
 function ensureSupportRoleSchema(db) {
@@ -1258,11 +1311,14 @@ function seed(db) {
   const seededVerifications = [
     ['verification-business-id','ORGANIZATION',orgs.shipper.id,'IDENTITY','Owner national identity','user-shipper'],
     ['verification-business-license','ORGANIZATION',orgs.shipper.id,'BUSINESS_LICENSE','Business license','user-shipper'],
+    ['verification-business-address','ORGANIZATION',orgs.shipper.id,'BUSINESS_ADDRESS','Business address proof','user-shipper'],
     ['verification-receiver-id','ORGANIZATION',orgs.receiver.id,'IDENTITY','Owner national identity','user-receiver'],
     ['verification-transporter-id','ORGANIZATION',orgs.transporter.id,'IDENTITY','Owner national identity','user-transporter'],
     ['verification-transporter-license','ORGANIZATION',orgs.transporter.id,'BUSINESS_LICENSE','Transport business license','user-transporter'],
+    ['verification-transporter-address','ORGANIZATION',orgs.transporter.id,'BUSINESS_ADDRESS','Transport business address proof','user-transporter'],
     ['verification-driver-id','PROVIDER_PROFILE','provider-driver','IDENTITY','National identity','user-driver'],
     ['verification-driver-license','PROVIDER_PROFILE','provider-driver','DRIVER_IDENTITY','Driver license','user-driver'],
+    ['verification-company-driver-id','DRIVER','user-company-driver','IDENTITY','Driver national identity','user-transporter'],
     ['verification-company-driver-license','DRIVER','user-company-driver','DRIVER_IDENTITY','Driver license','user-transporter'],
     ['verification-truck-1','VEHICLE','veh-trans-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-transporter'],
     ['verification-truck-driver','VEHICLE','veh-driver-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-driver']
@@ -1270,6 +1326,15 @@ function seed(db) {
   for (const item of seededVerifications) {
     verificationInsert.run(item[0],item[1],item[2],item[3],item[4],demoDocument,'Demo verification record.jpg','image/jpeg','APPROVED',item[5],'user-admin','Approved demo fixture',iso,iso);
   }
+  const authorizationExpiry=new Date(now.getTime()+365*86_400_000).toISOString().slice(0,10);
+  db.prepare(`INSERT INTO verification_requests
+    (id,subject_type,subject_id,verification_type,related_vehicle_id,expires_on,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,'APPROVED',?,?,?, ?,?)`)
+    .run('verification-company-driver-truck','DRIVER','user-company-driver','VEHICLE_AUTHORIZATION','veh-trans-1',authorizationExpiry,'Truck authorization',demoDocument,'Demo verification record.jpg','image/jpeg','user-transporter','user-admin','Approved demo fixture',iso,iso);
+  db.prepare(`INSERT INTO verification_requests
+    (id,subject_type,subject_id,verification_type,related_vehicle_id,expires_on,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,'APPROVED',?,?,?, ?,?)`)
+    .run('verification-owner-driver-truck','PROVIDER_PROFILE','provider-driver','VEHICLE_AUTHORIZATION','veh-driver-1',authorizationExpiry,'Truck authorization',demoDocument,'Demo verification record.jpg','image/jpeg','user-driver','user-admin','Approved demo fixture',iso,iso);
 
   const planInsert = db.prepare('INSERT INTO plans (id,code,name,audience,active) VALUES (?,?,?,?,1)');
   planInsert.run('plan-business','BUSINESS_CAPACITY','Business Capacity','BUSINESS');

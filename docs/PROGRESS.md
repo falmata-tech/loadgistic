@@ -44,9 +44,10 @@
 - Party-only Tracking separated from Shipment Board discovery
 - Rich icon-led Post Shipment composer with operational deadline labels
 - Completed-shipment shipper/receiver Business reviews with immediate four- and five-star publication, private low-rating moderation, and published-only profile summaries
-- Entity and truck verification submissions, private documents, admin review, and evidence-derived badges
+- Evidence-specific National ID, Business License, Business Address, Driver License, and expiring Driver-truck authorization submissions; private documents; admin review; colorful expandable badges; and a persistent member due-diligence warning
 - Separate private account and explicit Public Profile phone/email fields
-- Browser-obscured device areas with 40 km capacity/PTL and 20 km FTL privacy zones
+- Driver-selected 1, 3, 5, 10, 20, or 40 km capacity privacy areas for every movement scope, with a stronger warning for precise long-distance Partial signals; Tracking remains fixed at 40 km PTL and 20 km FTL
+- Business Local Near me truck discovery using a browser-displaced 1 km search point, overlap-aware matching, possible distance ranges, and a client-only exact Business map point against truck privacy circles
 - Automatic Driver-only device location while capacity or required Tracking controls are open; neither capacity nor Tracking accepts a manual current-location substitute, and fleet-owner edits preserve the assigned Driver's location and timestamp
 - Local OpenStreetMap Ethiopia settlement catalog with 3,575 imported records, including Addis Ababa sub-city localities
 - Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
@@ -54,12 +55,12 @@
 - Local, Long-distance routes, and Both movement scopes across shipment posting, capacity publishing, Boards, profiles, and route comparison
 - Empty capacity may be Local, Long-distance, or Both and may accept Full Truckload, Partial Truckload, or both; Partial capacity is always Partial Truckload and requires a live route in every movement scope
 - Repeatable profile service areas with 5–100 km coverage radii and mixed circle/route comparison evidence
-- Optional local pickup/drop-off map points excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
+- Optional local pickup/drop-off map points, including a Use my location convenience, excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
 - Tracking and proof kept as separate contracts
 - Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
 - Installable PWA with PNG normal/maskable icons and responsive app-like UI
 - Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `009`, including PostGIS geography/GiST matching, native Support isolation, private payment media, Busy capacity, place indexes, and RLS target
+- Supabase migrations `001` through `011`, including PostGIS geography/GiST matching, native Support isolation, private payment media, Busy capacity, place indexes, Driver-controlled capacity privacy, expiring pairing evidence, and the RLS target
 - Unit and repository tests
 - Playwright workflow definitions
 - Browserbase configuration boundary
@@ -81,13 +82,13 @@
 - Reversible deep-detail Back controls with safe direct-link fallbacks
 - Searchable, tabbed admin Operations inventory spanning clients, users, trucks, driver authority, shipments, capacity, network, routes/service areas, and plans, with audited management controls
 - Unified admin Review Center for documents, low ratings, and payments, with server-side queue filtering and pagination
-- Board trust strips for shipment-owner identity, Business license, published reviews, company or owner-operator identity, truck authority, and assigned-driver license evidence
+- Board trust strips for National ID, Business License, Business Address, published reviews, Driver License, and current pairing-specific truck authorization evidence
 - Server-owned pagination for Boards, Directory, My Shipments/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
 - Native authenticated member Support with persistent New chat, Continue chat, and Past chats states; member-owned End chat and immediate restart; immediate sent-message rendering; direct active-chat lookup; paginated closed history; six visual topics; text-only bounded messages; least-loaded assignment; waiting queue; agent availability/capacity; permissioned platform-team responsibilities; filtered admin triage; and safe agent requeue
 - Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 226 automated desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow flags, plus direct desktop/mobile review of the new About page
-- Local Node evidence: 88 tests passed, including canonical cross-user completion, additive and idempotent tracking scenarios, Driver-only capacity and shipment location, owner location preservation, Local Partial routes, Empty route/load choices, provider-safe Truck Board aggregation, optional tracking-action proof, network/direct fixtures, immediate self-service signup, Board trust projection, the anonymous live-Board whitelist, Support isolation/routing/member closure, Busy/stale capacity behavior, shared-shipment matching, coordinate/radius matching, geography privacy, bounded-list behavior, subscription access, comprehensive-data integrity, and Production-denial coverage
-- Local Playwright E2E evidence: 43 passing scenarios and five expected viewport skips across desktop and mobile, including anonymous per-truck provider discovery, loop-free Back navigation, immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
+- Reusable all-role visual audit with 228 automated desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow flags, including the producer-focused homepage and About page
+- Local Node evidence: 90 tests passed, including pairing-specific expiry, Driver-selected capacity privacy, Local Near me uncertainty matching, canonical cross-user completion, additive and idempotent tracking scenarios, Driver-only capacity and shipment location, owner location preservation, Local Partial routes, provider-safe Truck Board aggregation, immediate self-service signup, Board trust projection, Support isolation/routing/member closure, shared-shipment matching, bounded-list behavior, and Production-denial coverage
+- Local Playwright E2E evidence: 46 passing scenarios and six expected viewport skips across desktop and mobile, including privacy-aware Business Near me discovery, anonymous per-truck provider discovery, loop-free Back navigation, immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
 - Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
 - Optimized Next.js production build passed
 - Stress-dataset warm-query evidence: Directory 5.19 ms median, Shipment Board 1.33 ms, Truck Board 1.42 ms, direct capacity detail 0.63 ms, and PSTL grouping 3.58 ms
@@ -96,7 +97,7 @@
 
 ## Public-production work still required
 
-- Apply Supabase migrations `001` through `010` through Supabase CLI.
+- Apply Supabase migrations `001` through `011` through Supabase CLI.
 - Implement and parity-test the Supabase business repository and managed identity adapter.
 - Add shared rate limiting plus uploaded-file malware scanning and quarantine.
 - Complete backup, restore, monitoring, and production rollback evidence.

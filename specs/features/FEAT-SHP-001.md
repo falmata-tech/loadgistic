@@ -35,6 +35,15 @@ And those decisions are presented as visible numbered sections for shipment fact
 And selecting the shipper, receiver, and private receiver contact is deferred until provider agreement and assignment preparation\
 And the posting Business remains the load owner throughout that later execution setup.
 
+### Scenario: Direct visibility selects one provider
+
+Given a Business chooses Direct while posting a shipment\
+When the provider control appears\
+Then the Business may search fleet transporters and self-managed Drivers after two characters\
+And may select exactly one result before submission\
+And the chosen member remains visibly selected with a clear change action\
+And submitting Direct without a selected provider is rejected.
+
 ### Scenario: shipment form is freight only
 
 Given an authenticated Business user opens shipment creation\

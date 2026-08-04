@@ -21,12 +21,12 @@ import {
 } from 'lucide-react';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
-import { obscureCoordinate } from '@/lib/location-privacy.js';
+import { capacityPrivacyRadii, obscureCoordinate } from '@/lib/location-privacy.js';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 type CapacitySnapshot = {
   status?:string; available_percent?:number; accepts_full_load?:number; accepts_partial_load?:number;
-  location_area?:string; location_lat?:number; location_lng?:number; location_source?:string; location_updated_at?:string;
+  location_area?:string; location_lat?:number; location_lng?:number; location_precision_km?:number; location_source?:string; location_updated_at?:string;
   origin?:string; destination?:string; travel_date?:string; visibility?:string;
   open_to_contract_lanes?:number; accepts_multi_pick?:number; accepts_multi_drop?:number;
   current_route_origin?:string; current_route_destination?:string;
@@ -59,6 +59,10 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
   const [percent,setPercent]=React.useState(current?.available_percent||50);
   const [movementScope,setMovementScope]=React.useState(current?.movement_scope||'INTERCITY');
+  const [locationPrivacyKm,setLocationPrivacyKm]=React.useState(()=>{
+    const currentRadius=Number(current?.location_precision_km);
+    return capacityPrivacyRadii(current?.movement_scope||'INTERCITY').includes(currentRadius)?currentRadius:40;
+  });
   const [acceptedLoads,setAcceptedLoads]=React.useState(acceptedLoadValue(current));
   const [routeIntent,setRouteIntent]=React.useState(current?.origin&&current?.destination?'SPECIFIC':'ANYWHERE');
   const [availableAgainDate,setAvailableAgainDate]=React.useState(current?.available_again_date||'');
@@ -84,7 +88,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
       const now=Date.now();
       if(lastLocationUpdate.current&&now-lastLocationUpdate.current<60000)return;
       lastLocationUpdate.current=now;
-      setApproximateLocation(obscureCoordinate(position.coords.latitude,position.coords.longitude,35));
+      setApproximateLocation(obscureCoordinate(position.coords.latitude,position.coords.longitude,locationPrivacyKm));
       const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
       setLocationArea(nearest?`Around ${nearest.name}, Ethiopia`:'Around current device area');
       setLocationState('captured');
@@ -94,7 +98,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
       setLocationState(error.code===error.PERMISSION_DENIED?'denied':'error');
     },{enableHighAccuracy:false,timeout:12000,maximumAge:300000});
     return()=>{active=false;navigator.geolocation.clearWatch(watcher);};
-  },[allowDeviceLocation,locationAttempt,vehicleId]);
+  },[allowDeviceLocation,locationAttempt,vehicleId,locationPrivacyKm]);
 
   function retryLocation(){
     lastLocationUpdate.current=0;
@@ -107,6 +111,8 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     setStatus(next?.status||'EMPTY');
     setPercent(next?.available_percent||50);
     setMovementScope(next?.movement_scope||'INTERCITY');
+    const nextRadius=Number(next?.location_precision_km);
+    setLocationPrivacyKm(capacityPrivacyRadii(next?.movement_scope||'INTERCITY').includes(nextRadius)?nextRadius:40);
     setAcceptedLoads(acceptedLoadValue(next));
     setRouteIntent(next?.origin&&next?.destination?'SPECIFIC':'ANYWHERE');
     setAvailableAgainDate(next?.available_again_date||'');
@@ -129,7 +135,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     <input type="hidden" name="locationArea" value={locationArea}/>
     <input type="hidden" name="approximateLat" value={allowDeviceLocation?approximateLocation?.lat??'':''}/>
     <input type="hidden" name="approximateLng" value={allowDeviceLocation?approximateLocation?.lng??'':''}/>
-    <input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&approximateLocation?'40':''}/>
+    <input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&approximateLocation?locationPrivacyKm:''}/>
     <input type="hidden" name="locationSource" value={allowDeviceLocation&&approximateLocation?'DEVICE_OBSCURED':'PRESERVE_DRIVER'}/>
 
     <section className="capacity-truck-bar">
@@ -169,17 +175,17 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
         <div className="capacity-step-title"><span>2</span><MapPinned aria-hidden="true"/><div><h2>Work area</h2><p>Device location sets the current area.</p></div></div>
         <input type="hidden" name="movementScope" value={movementScope}/>
         <div className="segmented-control movement-scope-control visual-scope-control" role="group" aria-label="Work area">
-          <button type="button" aria-pressed={movementScope==='LOCAL'} disabled={!interactive} onClick={()=>setMovementScope('LOCAL')}><MapPin aria-hidden="true"/>Local</button>
+          <button type="button" aria-pressed={movementScope==='LOCAL'} disabled={!interactive} onClick={()=>{setMovementScope('LOCAL');setLocationPrivacyKm((currentRadius:number)=>capacityPrivacyRadii('LOCAL').includes(currentRadius)?currentRadius:20);}}><MapPin aria-hidden="true"/>Local</button>
           <button type="button" aria-pressed={movementScope==='INTERCITY'} disabled={!interactive} onClick={()=>setMovementScope('INTERCITY')}><Route aria-hidden="true"/>Long-distance</button>
           <button type="button" aria-pressed={movementScope==='BOTH'} disabled={!interactive} onClick={()=>setMovementScope('BOTH')}><MapPinned aria-hidden="true"/>Both</button>
         </div>
-        {allowDeviceLocation?<div className={`automatic-location ${locationState}`}><LocateFixed aria-hidden="true"/><span><strong>{locationMessage}</strong><small>{locationState==='captured'?`${locationArea} · shared as a 40 km privacy area`:'Allow location in the browser. No exact point is sent.'}</small></span>{['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={retryLocation}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>:<div className={`automatic-location ${current?.location_source==='DEVICE_OBSCURED'?'saved':'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{current?.location_source==='DEVICE_OBSCURED'?'Driver location recorded':'Waiting for Driver location'}</strong><small>{current?.location_area||'The assigned Driver must open capacity on their phone first.'}</small></span></div>}
+        {allowDeviceLocation?<><div className={`automatic-location ${locationState}`}><LocateFixed aria-hidden="true"/><span><strong>{locationMessage}</strong><small>{locationState==='captured'?`${locationArea} · shared as a ${locationPrivacyKm} km privacy area`:'Allow location in the browser. No exact point is sent.'}</small></span>{['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={retryLocation}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div><div className="form-group location-privacy-control"><label htmlFor="capacity-location-privacy"><Eye aria-hidden="true"/>Location privacy</label><select id="capacity-location-privacy" value={locationPrivacyKm} onChange={event=>setLocationPrivacyKm(Number(event.target.value))}>{capacityPrivacyRadii(movementScope).map(radius=><option value={radius} key={radius}>{radius} km area</option>)}</select><small>{locationPrivacyKm<20&&movementScope!=='LOCAL'&&status==='PARTIAL'?'Safety warning: this precise area can reveal more of your position during a long-distance Partial trip. Increase it whenever you want.':locationPrivacyKm<20?'A smaller area helps nearby Businesses find you, but reveals a more precise area. Increase it whenever you want.':'Your exact position is never published. You can change this area whenever you want.'}</small></div></>:<div className={`automatic-location ${current?.location_source==='DEVICE_OBSCURED'?'saved':'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{current?.location_source==='DEVICE_OBSCURED'?'Driver location recorded':'Waiting for Driver location'}</strong><small>{current?.location_area||'The assigned Driver must open capacity on their phone first.'}</small></span></div>}
         {movementScope!=='INTERCITY'?<div className="form-group local-radius-only"><label htmlFor="capacity-local-radius"><CircleDotDashed aria-hidden="true"/>Local radius</label><select id="capacity-local-radius" name="localRadiusKm" defaultValue={String(current?.local_radius_km&&current.local_radius_km>=10&&current.local_radius_km<=50?current.local_radius_km:25)}>{[10,20,30,40,50].map(radius=><option value={radius} key={radius}>{radius} km</option>)}</select></div>:null}
       </section>
 
       {status==='EMPTY'?<section className="control-panel capacity-decision"><div className="capacity-step-title"><span>{sizeStep}</span><Boxes aria-hidden="true"/><div><h2>Shipment size</h2><p>What can this empty truck accept?</p></div><strong>{acceptedLoadLabel(acceptedLoads)}</strong></div><div className="segmented-control load-policy-control">{['FTL','PTL','BOTH'].map(value=><label key={value}><input value={value} type="radio" checked={value===acceptedLoads} onChange={()=>setAcceptedLoads(value)}/><span>{value==='FTL'?'Full Truckload':value==='PTL'?'Partial Truckload':'Both'}</span></label>)}</div><div className="capacity-term-hint"><Truck aria-hidden="true"/><span><strong>Full Truckload</strong> uses the whole truck · <strong>Partial Truckload</strong> shares space.</span></div></section>:null}
 
-      {stopStep?<section className="control-panel capacity-decision"><div className="capacity-step-title"><span>{stopStep}</span><Route aria-hidden="true"/><div><h2>Stops accepted</h2><p>Direct is always included.</p></div></div><div className="multi-stop-toggles"><div className="direct-route-choice"><Route aria-hidden="true"/><span><strong>Direct</strong><small>One pickup and one drop-off</small></span></div><label className="rich-toggle"><input name="acceptsMultiPick" type="checkbox" defaultChecked={Boolean(current?.accepts_multi_pick)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Multi Pick</strong><small>More than one pickup</small></span></label><label className="rich-toggle"><input name="acceptsMultiDrop" type="checkbox" defaultChecked={Boolean(current?.accepts_multi_drop)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Multi Drop</strong><small>More than one drop-off</small></span></label></div></section>:null}
+      {stopStep?<section className="control-panel capacity-decision"><div className="capacity-step-title"><span>{stopStep}</span><Route aria-hidden="true"/><div><h2>Stops accepted</h2><p>Direct is always included.</p></div></div><div className="multi-stop-toggles"><div className="direct-route-choice"><Route aria-hidden="true"/><span><strong>Direct <em>Included</em></strong><small>One pickup and one drop-off</small></span></div><label className="rich-toggle"><input name="acceptsMultiPick" type="checkbox" defaultChecked={Boolean(current?.accepts_multi_pick)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Multi Pick</strong><small>More than one pickup</small></span></label><label className="rich-toggle"><input name="acceptsMultiDrop" type="checkbox" defaultChecked={Boolean(current?.accepts_multi_drop)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Multi Drop</strong><small>More than one drop-off</small></span></label></div></section>:null}
 
       <section className="control-panel capacity-decision"><div className="capacity-step-title"><span>{futureStep}</span><Route aria-hidden="true"/><div><h2>Regular work</h2><p>Open to recurring routes?</p></div></div><label className="rich-toggle"><input name="openToContractLanes" type="checkbox" defaultChecked={Boolean(current?.open_to_contract_lanes)}/><span className="toggle-track" aria-hidden="true"/><span><strong>Contract routes</strong><small>Open to regular work</small></span></label></section>
 

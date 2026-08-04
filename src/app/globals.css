@@ -750,6 +750,9 @@ legend { font-weight:800; padding:0 7px; }
 .capacity-term-hint > svg { color:var(--blue); }
 .direct-route-choice { border-color:#cbdcf1; background:#f4f8fd; }
 .direct-route-choice > svg { color:var(--blue); }
+.direct-route-choice em { margin-left:5px; padding:2px 6px; border-radius:999px; background:#dff6e8; color:#146c43; font-size:.66rem; font-style:normal; letter-spacing:.03em; text-transform:uppercase; }
+.location-privacy-control { margin-top:12px; }
+.location-privacy-control small { color:var(--muted); line-height:1.45; }
 .future-trip-fields { display:grid; gap:14px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
 .future-trip-fields h3 { display:flex; align-items:center; gap:7px; margin:0; font-size:.92rem; }
 .future-trip-fields h3 svg { width:18px; height:18px; color:var(--blue); }
@@ -1078,17 +1081,46 @@ legend { font-weight:800; padding:0 7px; }
 .rating-summary span { color:var(--muted); font-size:.85rem; }
 
 .verification-badges { display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
-.verification-badge { display:grid; grid-template-columns:18px auto; align-items:center; column-gap:6px; min-width:142px; padding:8px 9px; border:1px solid #d6dde7; border-radius:7px; background:#f6f7f9; color:#667085; }
+.verification-badge { position:relative; min-width:142px; border:1px solid #d6dde7; border-radius:10px; background:linear-gradient(145deg,#fff,#f1f3f6); color:#667085; box-shadow:0 3px 10px rgba(31,42,68,.08); }
+.verification-badge summary { display:grid; grid-template-columns:18px auto; align-items:center; column-gap:6px; padding:8px 9px; cursor:pointer; list-style:none; }
+.verification-badge summary::-webkit-details-marker { display:none; }
 .verification-badge svg { grid-row:1/3; width:18px; height:18px; }
 .verification-badge span { font-size:.76rem; font-weight:800; }
 .verification-badge small { font-size:.66rem; }
-.verification-badge.verified { border-color:#b8d3fa; background:var(--blue-soft); color:var(--blue-dark); }
+.verification-badge.verified { border-color:#84b9ff; background:linear-gradient(145deg,#eef7ff,#dcecff); color:#084b9c; }
+.verification-badge.verified.badge-business-license { border-color:#e8b55e; background:linear-gradient(145deg,#fff8df,#ffedb4); color:#805200; }
+.verification-badge.verified.badge-business-address { border-color:#65c8a1; background:linear-gradient(145deg,#ecfff7,#c9f3e2); color:#086044; }
+.verification-badge.verified.badge-driver-identity { border-color:#9d8cf0; background:linear-gradient(145deg,#f5f1ff,#e3dcff); color:#4c3299; }
+.verification-badge.verified.badge-truck-authorization { border-color:#ed8b78; background:linear-gradient(145deg,#fff2ee,#ffdcd4); color:#8b321f; }
+.verification-badge.expired { border-color:#ef9a9a; background:#fff1f1; color:#9b1c1c; }
+.verification-badge-details { position:absolute; z-index:40; top:calc(100% + 6px); left:0; display:grid; gap:5px; width:250px; padding:11px; border:1px solid #cfd7e4; border-radius:9px; background:#fff; color:#263247; box-shadow:0 16px 34px rgba(20,35,60,.2); }
+.verification-badge-details svg { grid-row:auto; width:14px; height:14px; vertical-align:middle; }
 .verification-badges.compact .verification-badge { min-width:0; padding:6px 7px; }
+.verification-badges.compact .verification-badge summary { padding:0; }
 .verification-badges.compact .verification-badge small { display:none; }
 .verification-group { min-width:0; }
 .verification-group-label { display:block; margin-top:10px; color:var(--ink); font-size:.72rem; }
 .verification-group .verification-badges { margin-top:5px; }
 .verification-badge.reputation svg { fill:currentColor; }
+.trust-safety-notice { display:flex; gap:12px; max-width:1180px; margin:14px auto 0; padding:13px 16px; border:1px solid #e7bd71; border-radius:10px; background:#fff9e9; color:#5f430f; }
+.trust-safety-notice > svg { flex:0 0 auto; width:22px; height:22px; }
+.trust-safety-notice div { display:grid; gap:3px; }
+.trust-safety-notice span { font-size:.78rem; line-height:1.45; }
+.nearby-truck-search { display:grid; gap:12px; margin:16px 0; padding:18px; border:1px solid #b9d5f7; border-radius:12px; background:linear-gradient(135deg,#f8fbff,#eef6ff); }
+.nearby-truck-search-copy { display:flex; gap:12px; }
+.nearby-truck-search-copy > svg { flex:0 0 auto; color:var(--blue); }
+.nearby-truck-search-copy h2,.nearby-truck-search-copy p { margin:0; }
+.nearby-truck-search-copy p { margin-top:4px; color:var(--muted); font-size:.86rem; line-height:1.5; }
+.nearby-truck-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.nearby-truck-actions label { display:flex; align-items:center; gap:7px; font-weight:800; }
+.nearby-truck-actions select { width:auto; min-width:100px; }
+.nearby-distance-note { margin:0; color:#274e78; font-size:.82rem; font-weight:700; }
+.nearby-truck-map { height:360px; overflow:hidden; border:1px solid #b9cce4; border-radius:10px; }
+.nearby-truck-map .leaflet-container { height:100%; }
+.member-search-selected { display:grid; grid-template-columns:22px 1fr auto; align-items:center; gap:9px; margin-top:8px; padding:10px; border:1px solid #9bd9bd; border-radius:8px; background:#effbf5; color:#12633f; }
+.member-search-selected > svg { width:20px; height:20px; }
+.member-search-selected span,.member-search-selected small { display:block; }
+.member-search-selected small { margin-top:2px; color:#47705d; }
 .market-trust-strip { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
 .market-trust-strip .verification-group-label { margin-top:0; }
 .verification-subject-list { display:grid; margin-top:16px; border-top:1px solid var(--line); }

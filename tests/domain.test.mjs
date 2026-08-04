@@ -6,7 +6,7 @@ import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncerta
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
-import { obscureCoordinate } from '../src/lib/location-privacy.js';
+import { capacityPrivacyRadii, obscureCoordinate, possibleDistanceRange, validateCapacityPrivacyRadius } from '../src/lib/location-privacy.js';
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
@@ -112,6 +112,15 @@ test('device capacity location is displaced into the promised privacy area',()=>
  assert.ok(distance>=34.9&&distance<=35.1);
  assert.notDeepEqual(obscured,exact);
  assert.deepEqual(obscureCoordinate(exact.lat,exact.lng,35),obscured);
+});
+
+test('Driver controls capacity privacy across every movement scope',()=>{
+ assert.deepEqual(capacityPrivacyRadii('LOCAL'),[1,3,5,10,20,40]);
+ assert.deepEqual(capacityPrivacyRadii('INTERCITY'),[1,3,5,10,20,40]);
+ assert.deepEqual(capacityPrivacyRadii('BOTH'),[1,3,5,10,20,40]);
+ assert.equal(validateCapacityPrivacyRadius('INTERCITY',1),1);
+ assert.throws(()=>validateCapacityPrivacyRadius('LOCAL',2),/INVALID_LOCATION_PRIVACY/);
+ assert.deepEqual(possibleDistanceRange(12.4,5,1),{minKm:6,maxKm:18});
 });
 
 test('ETB price modes support fixed, target, and quote',()=>{

@@ -98,6 +98,13 @@ Then one short explanation remains adjacent to that choice\
 And decorative, repetitive, or feature-marketing prose is removed from the operating workspace\
 And freight abbreviations retain a compact first-use explanation where misunderstanding could change the load.
 
+### Scenario: fixed rules do not look selectable
+
+Given Direct pickup-to-drop-off work is always accepted by an available truck\
+When stop flexibility is displayed\
+Then Direct is labeled Included as a fixed baseline fact\
+And only Multi Pick and Multi Drop render as selectable controls.
+
 ## Contract ownership
 
 - Shared UI: `PageHeader`, `AppShell`, common action and choice styles

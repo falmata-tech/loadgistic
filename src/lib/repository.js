@@ -35,6 +35,7 @@ import {
 } from './security.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace } from './route-matching.js';
 import { ETHIOPIA_PLACES, getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
+import { BUSINESS_SEARCH_PRIVACY_KM, possibleDistanceRange, validateCapacityPrivacyRadius } from './location-privacy.js';
 import { buildAlongRouteChains, poolCompatibleLoads } from './pstl.js';
 import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel } from './place-labels.js';
 import { accessPeriodEnd, PAID_ACCESS_DAYS, subscriptionAccess, TRIAL_DAYS } from './subscription-access.js';
@@ -253,14 +254,16 @@ function nearestCapacityPlace(lat,lng) {
   return {place_ref:`builtin:${normalizePlace(builtIn.name)}`,place_label:placeLabel(builtIn.name),center_lat:builtIn.lat,center_lng:builtIn.lng};
 }
 
-function capacityDeviceLocation(input) {
+function capacityDeviceLocation(input,movementScope) {
   if(input.locationSource!=='DEVICE_OBSCURED')throw new Error('CAPACITY_DRIVER_LOCATION_REQUIRED');
   const lat=Number(input.approximateLat);
   const lng=Number(input.approximateLng);
   const precisionKm=Number(input.locationPrecisionKm);
-  if(!Number.isFinite(lat)||lat<3||lat>15||!Number.isFinite(lng)||lng<32||lng>49||precisionKm!==40){
+  if(!Number.isFinite(lat)||lat<3||lat>15||!Number.isFinite(lng)||lng<32||lng>49){
     throw new Error('INVALID_APPROXIMATE_LOCATION');
   }
+  try { validateCapacityPrivacyRadius(movementScope,precisionKm); }
+  catch { throw new Error('INVALID_APPROXIMATE_LOCATION'); }
   return {lat,lng,precisionKm,place:nearestCapacityPlace(lat,lng),updatedAt:nowIso()};
 }
 
@@ -1312,21 +1315,32 @@ export function listNetwork(user) {
 }
 
 function verificationBadges(db, subjectType, subjectId) {
-  const approved = new Set(db.prepare(`SELECT verification_type FROM verification_requests
-    WHERE subject_type=? AND subject_id=? AND status='APPROVED'`).all(subjectType,subjectId).map(row => row.verification_type));
-  return verificationBadgesFromApproved(subjectType,approved);
+  const records=db.prepare(`SELECT verification_type,reviewed_at,expires_on FROM verification_requests
+    WHERE subject_type=? AND subject_id=? AND status='APPROVED' ORDER BY reviewed_at DESC,submitted_at DESC`).all(subjectType,subjectId);
+  return verificationBadgesFromApproved(subjectType,records);
 }
 
-function verificationBadgesFromApproved(subjectType,approved) {
+function verificationBadgesFromApproved(subjectType,records) {
+  const normalized=records instanceof Set
+    ? [...records].map(verification_type=>({verification_type,reviewed_at:null,expires_on:null}))
+    : records;
+  const latestByType=new Map();
+  for(const record of normalized||[])if(!latestByType.has(record.verification_type))latestByType.set(record.verification_type,record);
   if (subjectType === 'VEHICLE') {
-    return [{type:'VEHICLE_AUTHORITY',verified:approved.has('VEHICLE_OWNERSHIP')||approved.has('VEHICLE_AUTHORIZATION')}];
+    const record=latestByType.get('VEHICLE_AUTHORIZATION')||latestByType.get('VEHICLE_OWNERSHIP');
+    const expired=Boolean(record?.expires_on&&record.expires_on<todayInEthiopia());
+    return [{type:'VEHICLE_AUTHORITY',verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null}];
   }
   const required = subjectType === 'ORGANIZATION'
-    ? ['IDENTITY','BUSINESS_LICENSE']
+    ? ['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']
     : subjectType === 'PROVIDER_PROFILE'
       ? ['IDENTITY','DRIVER_IDENTITY']
-      : ['DRIVER_IDENTITY'];
-  return required.map(type => ({ type, verified: approved.has(type) }));
+      : ['IDENTITY','DRIVER_IDENTITY'];
+  return required.map(type => {
+    const record=latestByType.get(type);
+    const expired=Boolean(record?.expires_on&&record.expires_on<todayInEthiopia());
+    return {type,verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null};
+  });
 }
 
 function verificationBadgesBySubject(db,subjects) {
@@ -1334,16 +1348,25 @@ function verificationBadgesBySubject(db,subjects) {
   const where=subjects.map(()=>'(subject_type=? AND subject_id=?)').join(' OR ');
   const args=subjects.flatMap(subject=>[subject.type,subject.id]);
   const approvedBySubject=new Map();
-  for(const row of db.prepare(`SELECT subject_type,subject_id,verification_type FROM verification_requests
-    WHERE status='APPROVED' AND (${where})`).all(...args)){
+  for(const row of db.prepare(`SELECT subject_type,subject_id,verification_type,reviewed_at,expires_on FROM verification_requests
+    WHERE status='APPROVED' AND (${where}) ORDER BY reviewed_at DESC,submitted_at DESC`).all(...args)){
     const key=`${row.subject_type}:${row.subject_id}`;
-    if(!approvedBySubject.has(key))approvedBySubject.set(key,new Set());
-    approvedBySubject.get(key).add(row.verification_type);
+    if(!approvedBySubject.has(key))approvedBySubject.set(key,[]);
+    approvedBySubject.get(key).push(row);
   }
   return new Map(subjects.map(subject=>{
     const key=`${subject.type}:${subject.id}`;
-    return [key,verificationBadgesFromApproved(subject.type,approvedBySubject.get(key)||new Set())];
+    return [key,verificationBadgesFromApproved(subject.type,approvedBySubject.get(key)||[])];
   }));
+}
+
+function truckAuthorizationBadge(db,subjectType,subjectId,vehicleId,vehicleLabel) {
+  const record=db.prepare(`SELECT reviewed_at,expires_on FROM verification_requests
+    WHERE subject_type=? AND subject_id=? AND verification_type='VEHICLE_AUTHORIZATION'
+      AND related_vehicle_id=? AND status='APPROVED'
+    ORDER BY reviewed_at DESC,submitted_at DESC LIMIT 1`).get(subjectType,subjectId,vehicleId);
+  const expired=Boolean(record?.expires_on&&record.expires_on<todayInEthiopia());
+  return {type:'TRUCK_AUTHORIZATION',verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null,vehicleId,vehicleLabel};
 }
 
 function ratingSummary(db, organizationId) {
@@ -1921,10 +1944,10 @@ export function getFleetNetworkCoverage(user) {
 }
 
 const VERIFICATION_TYPES = Object.freeze({
-  ORGANIZATION: ['IDENTITY','BUSINESS_LICENSE'],
-  PROVIDER_PROFILE: ['IDENTITY','DRIVER_IDENTITY'],
-  DRIVER: ['DRIVER_IDENTITY'],
-  VEHICLE: ['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION']
+  ORGANIZATION: ['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS'],
+  PROVIDER_PROFILE: ['IDENTITY','DRIVER_IDENTITY','VEHICLE_AUTHORIZATION'],
+  DRIVER: ['IDENTITY','DRIVER_IDENTITY','VEHICLE_AUTHORIZATION'],
+  VEHICLE: ['VEHICLE_OWNERSHIP']
 });
 
 function ownsVerificationSubject(db,user,subjectType,subjectId) {
@@ -1933,8 +1956,8 @@ function ownsVerificationSubject(db,user,subjectType,subjectId) {
   if (subjectType === 'PROVIDER_PROFILE') return Boolean(user.provider_profile_id && user.provider_profile_id === subjectId);
   if (subjectType === 'DRIVER') return Boolean(
     isCompanyDriver(user)
-      ? db.prepare('SELECT 1 FROM drivers WHERE id=? AND user_id=? AND active=1').get(subjectId,user.id)
-      : user.organization_id && db.prepare('SELECT 1 FROM drivers WHERE id=? AND organization_id=?').get(subjectId,user.organization_id)
+      ? subjectId===user.id&&db.prepare('SELECT 1 FROM drivers WHERE user_id=? AND active=1').get(user.id)
+      : user.organization_id && db.prepare('SELECT 1 FROM drivers WHERE user_id=? AND organization_id=?').get(subjectId,user.organization_id)
   );
   if (subjectType === 'VEHICLE') {
     if (isCompanyDriver(user)) return false;
@@ -1950,19 +1973,24 @@ export function getVerificationCenter(user) {
   const db = getDb();
   const subjects = [];
   if (isCompanyDriver(user)) {
-    const driver=db.prepare('SELECT id,name FROM drivers WHERE user_id=? AND organization_id=? AND active=1').get(user.id,user.organization_id);
-    if(driver)subjects.push({subject_type:'DRIVER',subject_id:driver.id,name:driver.name,type:'Driver'});
+    const driver=db.prepare('SELECT user_id,name FROM drivers WHERE user_id=? AND organization_id=? AND active=1').get(user.id,user.organization_id);
+    const vehicles=db.prepare(`SELECT v.id,v.make || ' ' || v.model || ' · ' || v.platform_number AS label
+      FROM driver_vehicle_assignments a JOIN vehicles v ON v.id=a.vehicle_id
+      WHERE a.driver_user_id=? AND a.active=1 AND v.active=1 ORDER BY v.label`).all(user.id).map(vehicle=>({...vehicle}));
+    if(driver)subjects.push({subject_type:'DRIVER',subject_id:driver.user_id,name:driver.name,type:'Driver',vehicles});
   } else if (user.organization_id) {
     subjects.push({subject_type:'ORGANIZATION',subject_id:user.organization_id,name:user.organization_name,type:'Workspace'});
-    subjects.push(...db.prepare(`SELECT 'VEHICLE' AS subject_type,id AS subject_id,make || ' ' || model AS name,'Truck' AS type
-      FROM vehicles WHERE organization_id=? AND active=1 ORDER BY label`).all(user.organization_id));
-    subjects.push(...db.prepare(`SELECT 'DRIVER' AS subject_type,id AS subject_id,name,'Driver' AS type
-      FROM drivers WHERE organization_id=? AND active=1 ORDER BY name`).all(user.organization_id));
+    const drivers=db.prepare(`SELECT 'DRIVER' AS subject_type,d.user_id AS subject_id,d.name,'Driver' AS type
+      FROM drivers d WHERE d.organization_id=? AND d.active=1 AND d.user_id IS NOT NULL ORDER BY d.name`).all(user.organization_id);
+    for(const driver of drivers)driver.vehicles=db.prepare(`SELECT v.id,v.make || ' ' || v.model || ' · ' || v.platform_number AS label
+      FROM driver_vehicle_assignments a JOIN vehicles v ON v.id=a.vehicle_id
+      WHERE a.driver_user_id=? AND a.active=1 AND v.active=1 ORDER BY v.label`).all(driver.subject_id).map(vehicle=>({...vehicle}));
+    subjects.push(...drivers);
   }
   if (user.provider_profile_id) {
-    subjects.push({subject_type:'PROVIDER_PROFILE',subject_id:user.provider_profile_id,name:user.provider_business_name,type:'Self-managed driver'});
-    subjects.push(...db.prepare(`SELECT 'VEHICLE' AS subject_type,id AS subject_id,make || ' ' || model AS name,'Truck' AS type
-      FROM vehicles WHERE provider_profile_id=? AND active=1 ORDER BY label`).all(user.provider_profile_id));
+    const vehicles=db.prepare(`SELECT id,make || ' ' || model || ' · ' || platform_number AS label
+      FROM vehicles WHERE provider_profile_id=? AND active=1 ORDER BY label`).all(user.provider_profile_id).map(vehicle=>({...vehicle}));
+    subjects.push({subject_type:'PROVIDER_PROFILE',subject_id:user.provider_profile_id,name:user.provider_business_name,type:'Self-managed driver',vehicles});
   }
   const requests = db.prepare(`SELECT vr.*,reviewer.name AS reviewer_name FROM verification_requests vr
     LEFT JOIN users reviewer ON reviewer.id=vr.reviewed_by WHERE submitted_by=? ORDER BY submitted_at DESC`).all(user.id);
@@ -1971,10 +1999,11 @@ export function getVerificationCenter(user) {
     subjects: subjects.map(subject => {
       const badges=badgesBySubject.get(`${subject.subject_type}:${subject.subject_id}`)||[];
       const verifiedTypes=new Set(badges.filter(badge=>badge.verified).map(badge=>badge.type));
-      const allowedTypes=subject.subject_type==='VEHICLE'
-        ? badges.some(badge=>badge.verified)?[]:VERIFICATION_TYPES.VEHICLE
-        : VERIFICATION_TYPES[subject.subject_type].filter(type=>!verifiedTypes.has(type));
-      return {...subject,allowed_types:allowedTypes,badges};
+      const pairingBadges=(subject.vehicles||[]).map(vehicle=>truckAuthorizationBadge(db,subject.subject_type,subject.subject_id,vehicle.id,vehicle.label));
+      const allowedTypes=VERIFICATION_TYPES[subject.subject_type].filter(type=>type==='VEHICLE_AUTHORIZATION'
+        ? pairingBadges.some(badge=>!badge.verified)
+        : !verifiedTypes.has(type));
+      return {...subject,allowed_types:allowedTypes,badges:[...badges,...pairingBadges]};
     }),
     requests
   };
@@ -1987,18 +2016,29 @@ export function submitVerification(user,input,upload) {
   const subjectId = String(input.subjectId || '');
   const verificationType = String(input.verificationType || '');
   const documentName = String(input.documentName || '').trim();
+  const relatedVehicleId=String(input.relatedVehicleId||'').trim();
+  const expiresOn=String(input.expiresOn||'').trim();
   if (!VERIFICATION_TYPES[subjectType]?.includes(verificationType)) throw new Error('INVALID_VERIFICATION_TYPE');
   if (!ownsVerificationSubject(db,user,subjectType,subjectId)) throw new Error('FORBIDDEN');
   if (!documentName || !upload) throw new Error('VERIFICATION_DOCUMENT_REQUIRED');
+  if(verificationType==='VEHICLE_AUTHORIZATION'){
+    if(!relatedVehicleId||!/^\d{4}-\d{2}-\d{2}$/.test(expiresOn)||expiresOn<=todayInEthiopia())throw new Error('TRUCK_AUTHORIZATION_DETAILS_REQUIRED');
+    const ownsPair=subjectType==='PROVIDER_PROFILE'
+      ? db.prepare('SELECT 1 FROM vehicles WHERE id=? AND provider_profile_id=? AND active=1').get(relatedVehicleId,subjectId)
+      : db.prepare(`SELECT 1 FROM driver_vehicle_assignments a JOIN vehicles v ON v.id=a.vehicle_id
+          WHERE a.driver_user_id=? AND a.vehicle_id=? AND a.active=1 AND v.active=1`).get(subjectId,relatedVehicleId);
+    if(!ownsPair)throw new Error('FORBIDDEN');
+  }
   const existing = db.prepare(`SELECT 1 FROM verification_requests WHERE subject_type=? AND subject_id=? AND verification_type=?
-    AND status IN ('PENDING','APPROVED')`).get(subjectType,subjectId,verificationType);
+    AND COALESCE(related_vehicle_id,'')=? AND status IN ('PENDING','APPROVED')
+    AND (expires_on IS NULL OR expires_on>=?)`).get(subjectType,subjectId,verificationType,relatedVehicleId,todayInEthiopia());
   if (existing) throw new Error('VERIFICATION_ALREADY_SUBMITTED');
   const id = randomId('verification-');
   db.prepare(`INSERT INTO verification_requests
-    (id,subject_type,subject_id,verification_type,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
-    VALUES (?,?,?,?,?,?,?,?, 'PENDING',?,NULL,NULL,?,NULL)`)
-    .run(id,subjectType,subjectId,verificationType,documentName,upload.path,upload.originalName,upload.mimeType,user.id,nowIso());
-  audit(db,user,'VERIFICATION_SUBMITTED','verification_request',id,{subjectType,subjectId,verificationType});
+    (id,subject_type,subject_id,verification_type,related_vehicle_id,expires_on,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,'PENDING',?,NULL,NULL,?,NULL)`)
+    .run(id,subjectType,subjectId,verificationType,relatedVehicleId||null,expiresOn||null,documentName,upload.path,upload.originalName,upload.mimeType,user.id,nowIso());
+  audit(db,user,'VERIFICATION_SUBMITTED','verification_request',id,{subjectType,subjectId,verificationType,relatedVehicleId:relatedVehicleId||null,expiresOn:expiresOn||null});
   return id;
 }
 
@@ -2637,19 +2677,30 @@ function capacityBoardQuery(user,filters={}) {
     ? `geo_distance_km(${Number(currentAreaPlace.center_lat)},${Number(currentAreaPlace.center_lng)},c.location_lat,c.location_lng)<=${currentAreaRadius}+COALESCE(c.location_precision_km,40)`
     : null;
   if(currentAreaMatchExpression&&filters.currentAreaMode==='REQUIRE')where+=` AND ${currentAreaMatchExpression}`;
+  const nearLat=Number(filters.nearLat);
+  const nearLng=Number(filters.nearLng);
+  const nearRadiusKm=[3,5,10,20,50].includes(Number(filters.nearRadiusKm))?Number(filters.nearRadiusKm):10;
+  const canUseNear=[USER_ROLES.SHIPPER,USER_ROLES.RECEIVER].includes(user.role);
+  const hasNear=canUseNear&&Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
+  const nearDistanceExpression=hasNear?`geo_distance_km(${nearLat},${nearLng},c.location_lat,c.location_lng)`:null;
+  if(nearDistanceExpression){
+    where+=` AND c.movement_scope IN ('LOCAL','BOTH') AND c.location_lat IS NOT NULL AND c.location_lng IS NOT NULL
+      AND ${nearDistanceExpression}<=${nearRadiusKm}+COALESCE(c.location_precision_km,40)+${BUSINESS_SEARCH_PRIVACY_KM}`;
+  }
   const from=`FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
     LEFT JOIN organizations o ON o.id=c.provider_organization_id
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
     LEFT JOIN company_pages cp ON cp.organization_id=c.provider_organization_id OR cp.provider_profile_id=c.provider_profile_id
     JOIN users u ON u.id=c.updated_by`;
-  return {where,args,from,currentAreaMatchExpression};
+  return {where,args,from,currentAreaMatchExpression,nearDistanceExpression};
 }
 
 function capacityBoardRows(user,filters={},limit=null,offset=0) {
   const query=capacityBoardQuery(user,filters);
   const areaProjection=query.currentAreaMatchExpression?`,${query.currentAreaMatchExpression} AS current_area_match`:'';
-  const areaOrder=query.currentAreaMatchExpression&&filters.currentAreaMode==='PREFER'?'current_area_match DESC,':'';
-  const rows=getDb().prepare(`SELECT ${CAPACITY_BOARD_COLUMNS}${areaProjection} ${query.from} WHERE ${query.where}
+  const nearProjection=query.nearDistanceExpression?`,${query.nearDistanceExpression} AS near_center_distance_km,c.location_lat AS shared_location_lat,c.location_lng AS shared_location_lng`:'';
+  const areaOrder=query.nearDistanceExpression?'near_center_distance_km ASC,':query.currentAreaMatchExpression&&filters.currentAreaMode==='PREFER'?'current_area_match DESC,':'';
+  const rows=getDb().prepare(`SELECT ${CAPACITY_BOARD_COLUMNS}${areaProjection}${nearProjection} ${query.from} WHERE ${query.where}
     ORDER BY ${areaOrder}CASE WHEN c.updated_at>=? THEN 0 ELSE 1 END,c.updated_at DESC${limit==null?'':' LIMIT ? OFFSET ?'}`)
     .all(...query.args,hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)),...(limit==null?[]:[limit,offset]));
   const organizationIds=[...new Set(rows.map(row=>row.provider_organization_id).filter(Boolean))];
@@ -2668,7 +2719,6 @@ function capacityBoardRows(user,filters={},limit=null,offset=0) {
     routesByOwner.get(key).push({...route,source_label:'Preferred Route',route_kind:'PROFILE'});
   }
   const ownerSubjects=[];
-  const vehicleSubjects=rows.map(row=>({type:'VEHICLE',id:row.vehicle_id}));
   for(const row of rows)ownerSubjects.push(row.provider_organization_id
     ? {type:'ORGANIZATION',id:row.provider_organization_id}
     : {type:'PROVIDER_PROFILE',id:row.provider_profile_id});
@@ -2678,18 +2728,23 @@ function capacityBoardRows(user,filters={},limit=null,offset=0) {
     WHERE a.active=1 AND a.vehicle_id IN (${vehicleIds.map(()=>'?').join(',')})`).all(...vehicleIds):[];
   const assignmentByVehicle=new Map(assignments.map(assignment=>[assignment.vehicle_id,assignment]));
   const driverSubjects=assignments.map(assignment=>({type:'DRIVER',id:assignment.driver_user_id}));
-  const trustBadges=verificationBadgesBySubject(getDb(),[...ownerSubjects,...vehicleSubjects,...driverSubjects]);
+  const trustBadges=verificationBadgesBySubject(getDb(),[...ownerSubjects,...driverSubjects]);
   return rows.map(row=>{
     const ownerKey=row.provider_organization_id?`org:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`;
     const ownerSubject=row.provider_organization_id?`ORGANIZATION:${row.provider_organization_id}`:`PROVIDER_PROFILE:${row.provider_profile_id}`;
     const assignment=assignmentByVehicle.get(row.vehicle_id);
+    const distanceRange=query.nearDistanceExpression
+      ? possibleDistanceRange(row.near_center_distance_km,row.location_precision_km,BUSINESS_SEARCH_PRIVACY_KM)
+      : null;
     return marketCapacityRow(row,Number(process.env.CAPACITY_FRESH_HOURS||12),{
       relationshipVisible:row.visibility==='SAVED_PARTNERS',
       preferred_routes:routesByOwner.get(ownerKey)||[],
       owner_verification_badges:trustBadges.get(ownerSubject)||[],
-      vehicle_verification_badges:trustBadges.get(`VEHICLE:${row.vehicle_id}`)||[],
+      vehicle_verification_badges:[truckAuthorizationBadge(getDb(),assignment?'DRIVER':'PROVIDER_PROFILE',assignment?.driver_user_id||row.provider_profile_id,row.vehicle_id,row.platform_number)],
       assigned_driver_name:assignment?.driver_name||null,
-      driver_verification_badges:assignment?trustBadges.get(`DRIVER:${assignment.driver_user_id}`)||[]:[]
+      driver_verification_badges:assignment?trustBadges.get(`DRIVER:${assignment.driver_user_id}`)||[]:[],
+      possible_distance_min_km:distanceRange?.minKm??null,
+      possible_distance_max_km:distanceRange?.maxKm??null
     });
   });
 }
@@ -3045,7 +3100,7 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   if(input.status!=='OFF_DUTY'){
     if(user.role===USER_ROLES.DRIVER){
       if(assignedDriverId!==user.id)throw new Error('FORBIDDEN');
-      driverLocation=capacityDeviceLocation(input);
+      driverLocation=capacityDeviceLocation(input,movementScope);
     }else{
       const source=db.prepare(`SELECT location_lat,location_lng,location_precision_km,location_updated_at
         FROM capacities WHERE vehicle_id=? AND updated_by=? AND location_source='DEVICE_OBSCURED'

@@ -3,8 +3,8 @@ id: FEAT-GEO-001
 title: Local service areas and mixed freight geography
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001, FEAT-MAT-001]
 problem: City-radius freight is forced into intercity route fields even when a Business or truck serves only one locality, producing misleading map lines and weak discovery.
-behavior: Loads, truck capacity, and authenticated profiles distinguish Local service areas from Long-distance routes; local discovery uses structured Ethiopian places and bounded radii while exact load pins remain private to authorized shipment parties.
-contracts: [MovementScope, ServiceArea, LocalLoadLocation, LocalCapacityArea, CoverageProjection, CoverageComparison, GeographicMatch, PrivateLoadPoint]
+behavior: Loads, truck capacity, and authenticated profiles distinguish Local service areas from Long-distance routes; Local truck discovery may compare a Business's browser-only position with Driver-chosen privacy circles, while exact optional load pins remain private to authorized shipment parties.
+contracts: [MovementScope, ServiceArea, LocalLoadLocation, LocalCapacityArea, LocalNearMeSearch, TruckPrivacyCircle, CoverageProjection, CoverageComparison, GeographicMatch, PrivateLoadPoint]
 observability: [service_area_update_audit, movement_scope_filter, geographic_match_kind, bounded_geography_query]
 rollout: Additive columns default existing records to the internal intercity scope, existing profile routes remain authoritative, member-entered operating-region text is not silently converted, and local controls can be hidden without deleting stored geography.
 ---
@@ -53,6 +53,23 @@ Then exact coordinates are absent\
 And only the locality and member-entered safe area labels may be displayed\
 And the load owner may review the exact points it entered\
 And other authorized shipment parties may read the exact points only after agreement.
+
+### Scenario: local load pin may use the owner's current position
+
+Given a Business is creating a Local load and has selected Pickup or Drop-off\
+When it grants browser location and chooses Use my location\
+Then the current coordinate is placed into that optional private shipment point\
+And the Business may move or clear the pin before submission\
+And no exact load point appears in Board discovery or becomes transporter-visible before agreement.
+
+### Scenario: Near me compares uncertainty areas rather than exact trucks
+
+Given a Business has requested Local truck results relative to its device\
+When a truck has a Driver-published displaced point and privacy radius\
+Then filtering tests whether the search area and truck privacy area overlap\
+And ordering and cards use a bounded possible-distance range\
+And the map renders the Business's browser-held position separately from the truck's privacy circle\
+And no exact truck coordinate is inferred or claimed.
 
 ### Scenario: local truck publishes simple availability
 

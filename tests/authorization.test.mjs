@@ -359,10 +359,11 @@ test('self-service signup is immediately active and sponsorship remains admin-on
 
 test('verification submission enforces ownership and admin-only review', () => {
   const upload={path:'/tmp/verification-test.pdf',originalName:'license.pdf',mimeType:'application/pdf'};
-  assert.throws(()=>repo.submitVerification(users.driver,{subjectType:'VEHICLE',subjectId:'veh-trans-2',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Owner authority'},upload),/FORBIDDEN/);
+  const expiresOn=new Date(Date.now()+30*86_400_000).toISOString().slice(0,10);
+  assert.throws(()=>repo.submitVerification(users.driver,{subjectType:'PROVIDER_PROFILE',subjectId:users.driver.provider_profile_id,verificationType:'VEHICLE_AUTHORIZATION',relatedVehicleId:'veh-trans-2',expiresOn,documentName:'Owner authority'},upload),/FORBIDDEN/);
   assert.throws(()=>repo.submitVerification(users.companyDriver,{subjectType:'ORGANIZATION',subjectId:users.transporter.organization_id,verificationType:'BUSINESS_LICENSE',documentName:'Fleet license'},upload),/FORBIDDEN/);
-  assert.throws(()=>repo.submitVerification(users.companyDriver,{subjectType:'VEHICLE',subjectId:'veh-trans-1',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Vehicle authority'},upload),/FORBIDDEN/);
-  const requestId=repo.submitVerification(users.transporter,{subjectType:'VEHICLE',subjectId:'veh-trans-2',verificationType:'VEHICLE_AUTHORIZATION',documentName:'Owner authority'},upload);
+  assert.throws(()=>repo.submitVerification(users.companyDriver,{subjectType:'DRIVER',subjectId:users.companyDriver.id,verificationType:'VEHICLE_AUTHORIZATION',relatedVehicleId:'veh-trans-2',expiresOn,documentName:'Vehicle authority'},upload),/FORBIDDEN/);
+  const requestId=repo.submitVerification(users.transporter,{subjectType:'DRIVER',subjectId:'user-company-driver-2',verificationType:'VEHICLE_AUTHORIZATION',relatedVehicleId:'veh-trans-2',expiresOn,documentName:'Owner authority'},upload);
   assert.equal(repo.getVerificationFile(users.driver,requestId),null);
   assert.equal(repo.getVerificationFile(users.transporter,requestId).id,requestId);
   assert.throws(()=>repo.reviewVerification(users.shipper,requestId,'APPROVED'),/FORBIDDEN/);

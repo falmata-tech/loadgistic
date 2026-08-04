@@ -335,3 +335,27 @@ cloud data adapter. Public production remains blocked until the PostgreSQL
 repository, managed identity, shared rate limiting, malware scanning, backup,
 restore, and monitoring contracts pass. The credential-free handoff names the
 required variables and operator steps without storing their values.
+
+## ADR-029 — User-controlled capacity privacy and scoped trust evidence
+
+Keep exact Driver coordinates out of application state, requests, storage, logs,
+and marketplace projections. The Driver chooses a bounded privacy radius before
+the browser displaces the device coordinate. Local, Long-distance, and Both
+capacity may use 1, 3, 5, 10, 20, or 40 km. A long-distance Partial signal below
+20 km carries a stronger safety warning without overriding the Driver. Only the
+latest authorized capacity projection is discoverable. A Business Near me query
+keeps its exact coordinate in browser memory, sends a separately displaced
+one-kilometer search point, and compares that search area with truck uncertainty
+circles. Results state possible-distance ranges and maps render circles rather
+than truck pins. Optional exact Local shipment pins remain a different,
+party-authorized execution record visible to the owner and, after agreement, the
+assigned parties.
+
+Verification badges describe narrow evidence rather than general trust.
+Organizations require National ID, Business license, and Business address;
+Drivers require National ID and Driver license. Truck authorization attaches to
+one Driver-truck pairing and requires an expiry. An expired approval is not a
+current Verified badge. Category color makes the evidence inviting to inspect,
+but every badge retains text, icon, scope, status, review date, and expiry.
+Private documents remain owner/admin-only, and marketplace notices require
+members to perform their own current checks before an agreement.
