@@ -29,10 +29,10 @@ The current functional modules are valid implementations. SOLID means responsibi
 
 ## DDD boundaries
 
-- Aggregates: Shipment, Capacity Update, Business Application, Subscription Payment Proof.
-- Entities: User, Organization, Provider Profile, Vehicle, Location, Route.
-- Value objects: ETB Amount, Shipment Code, Capacity Percentage, Tracking Token, Expiry.
-- Domain services: transition validation, visibility policy, pricing validation, capacity freshness.
+- Aggregates: Provider Shipment, Current Capacity, Next Trip, Recurring Corridor, Provider Microsite, Subscription Payment Proof.
+- Entities: User, Provider Organization, Provider Profile, Vehicle, Driver, Party Tracking Grant, Provider Review, Email Delivery.
+- Value objects: ETB Amount, Public Provider Handle, Capacity Percentage, Tracking Code Digest, Review Authorization, Visibility Policy, Expiry.
+- Domain services: transition validation, public-projection policy, geographic matching, capacity freshness, guest retention, review eligibility, and idempotent email-delivery policy.
 
 ## Base scenarios
 

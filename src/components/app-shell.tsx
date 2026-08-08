@@ -9,14 +9,9 @@ import {
   Database,
   Headphones,
   Home,
-  LayoutList,
   Menu,
   MoreHorizontal,
-  PackageSearch,
-  Search,
   Truck,
-  Users,
-  Network,
   UserRound
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -24,39 +19,15 @@ import { LogoutButton } from './logout-button';
 import { WorkspaceBackButton } from './workspace-back-button';
 
 const navigation: Record<string, Array<{ href: string; label: string; icon: LucideIcon }>> = {
-  SHIPPER: [
-    { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
-    { href: '/app/providers', label: 'Directory', icon: Search },
-    { href: '/app/network', label: 'My Network', icon: Network },
-    { href: '/app/capacity', label: 'Truck Board', icon: LayoutList },
-    { href: '/app/more', label: 'More', icon: MoreHorizontal }
-  ],
-  RECEIVER: [
-    { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
-    { href: '/app/providers', label: 'Directory', icon: Search },
-    { href: '/app/network', label: 'My Network', icon: Network },
-    { href: '/app/capacity', label: 'Truck Board', icon: LayoutList },
-    { href: '/app/more', label: 'More', icon: MoreHorizontal }
-  ],
   TRANSPORTER: [
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/app/fleet', label: 'Fleet', icon: Truck },
-    { href: '/app/loads', label: 'Shipment Board', icon: LayoutList },
-    { href: '/app/capacity', label: 'Truck Board', icon: PackageSearch },
-    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
-    { href: '/app/providers', label: 'Directory', icon: Users },
-    { href: '/app/network', label: 'My Network', icon: Network },
+    { href: '/app/provider-shipments', label: 'Customer Shipments', icon: ClipboardCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/loads', label: 'Shipment Board', icon: LayoutList },
-    { href: '/app/capacity', label: 'Truck Board', icon: PackageSearch },
-    { href: '/app/shipments', label: 'My Shipments', icon: ClipboardCheck },
-    { href: '/app/providers', label: 'Directory', icon: Users },
-    { href: '/app/network', label: 'My Network', icon: Network },
+    { href: '/app/provider-shipments', label: 'Customer Shipments', icon: ClipboardCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   ADMIN: [
@@ -64,8 +35,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/operations', label: 'Operations', icon: Database },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
-    { href: '/app/shipments', label: 'Shipments', icon: PackageSearch },
-    { href: '/app/providers', label: 'Directory', icon: Users },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   SUPPORT: [
@@ -74,10 +43,10 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
 };
 
 const mobileNavigation: Record<string, string[]> = {
-  SHIPPER: ['/app/home', '/app/shipments', '/app/providers', '/app/capacity', '/app/more'],
-  RECEIVER: ['/app/home', '/app/shipments', '/app/providers', '/app/capacity', '/app/more'],
-  TRANSPORTER: ['/app/home', '/app/fleet', '/app/loads', '/app/shipments', '/app/more'],
-  DRIVER: ['/app/home', '/app/loads', '/app/shipments', '/app/providers', '/app/more'],
+  SHIPPER: ['/app/home', '/app/more'],
+  RECEIVER: ['/app/home', '/app/more'],
+  TRANSPORTER: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/more'],
+  DRIVER: ['/app/home', '/app/provider-shipments', '/app/more'],
   ADMIN: ['/app/home', '/admin/operations', '/admin/reviews', '/admin/support', '/app/more'],
   SUPPORT: ['/support']
 };
@@ -93,8 +62,7 @@ const roleLabels: Record<string, string> = {
 
 const mobileLabels: Record<string, string> = {
   '/app/company-page': 'Profile',
-  '/app/loads': 'Shipments',
-  '/app/capacity': 'Capacity',
+  '/app/provider-shipments': 'Shipments',
   '/admin/reviews': 'Reviews',
   '/admin/operations': 'Operations',
   '/admin/ratings': 'Rating Reviews',
@@ -113,7 +81,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     if(user.can_manage_trust||user.can_manage_billing)items.push({href:'/admin/reviews',label:'Review Center',icon:ClipboardCheck});
   }
   if (user.driver_kind === 'COMPANY') {
-    items = items.filter(item => item.href !== '/app/company-page' && (item.href !== '/app/loads' || Boolean(user.can_browse_load_board)));
+    items = items.filter(item => item.href !== '/app/company-page');
   }
   if (user.billing_limited) {
     items = items

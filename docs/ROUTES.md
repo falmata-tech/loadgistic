@@ -1,64 +1,39 @@
-# Application Routes
+# Application routes
 
 ## Public
 
-- `/` — producer- and transporter-focused Ethiopia B2B road-freight homepage
-- `/apply` — business/provider application
-- `/login` — direct login
-- `/companies` — authenticated compatibility redirect to the workspace Directory
-- `/companies/[handle]` — authenticated compatibility redirect to the workspace Public Profile
-- `/track` — Business-party secret tracking-code unlock
-- `/track/[id]` — user/load-bound customer tracking after unlock
+- `/` — supply-led homepage with live capacity preview.
+- `/capacity` — account-free Capacity Board, filters, cursor feed, and shared map.
+- `/providers` — published transport-provider Directory.
+- `/@handle` — canonical branded provider microsite.
+- `/providers/[handle]` — compatibility route to the canonical handle.
+- `/track` — shipper or receiver code unlock.
+- `/track/[id]` — party-scoped guest tracking after unlock.
+- `/about` — product purpose and safety model.
+- `/apply` — fleet or self-managed provider signup.
+- `/login` — provider/platform-team login.
 
-## Workspace
+## Provider workspace
 
-- `/app/home`
-- `/app/shipments` — party-only Tracking
-- `/app/shipments/new` — rich Post Shipment workflow
-- `/app/shipments/[id]`
-- `/app/providers` — Business and Transporter Directory
-- `/app/providers/[handle]` — Business or Transporter Public Profile inside the workspace shell
-- `/app/network` — Connected relationships, requests, and private Favorites
-- `/app/loads` — searchable Shipment Board with optional owned-truck route ranking
-- `/app/capacity` — searchable Truck Board with optional owned-shipment route ranking
-- `/app/fleet` — fleet roster for Fleet Transporters
-- `/app/fleet/[id]` — one truck's detail and capacity controls
-- `/app/company-page` — Public Profile editor
-- `/app/verification` — owned entity and truck verification
-- `/app/support` — the signed-in member's support conversation and history
-- `/app/more`
+- `/app/home` — role-appropriate provider or Driver summary.
+- `/app/fleet` and `/app/fleet/[id]` — fleet roster, truck detail, and capacity planning.
+- `/app/provider-shipments` — bounded provider-owned shipment history.
+- `/app/provider-shipments/new` — create tracking after offline agreement.
+- `/app/provider-shipments/[id]` — provider timeline and governed actions.
+- `/app/company-page` — provider microsite editor.
+- `/app/verification` — owned evidence requests.
+- `/app/support` — member Support.
+- `/app/more` — account, billing, and secondary navigation.
 
-Growing collections use server-owned query parameters. A single-list route uses
-`page`; routes with independent lists use descriptive keys such as
-`truckPage`, `driverPage`, `eventPage`, or `paymentPage`. Search and filter
-submissions omit the page key and therefore restart at page one. Pagination
-links retain the active view and filters.
+Former `/app/loads`, `/app/shipments`, `/app/network`, `/app/providers`, `/app/capacity`, and `/companies` surfaces redirect to a current safe destination. Mutating legacy shipment/network endpoints return `410 Gone`.
 
-An expired, unpaid, or lapsed payment-under-review workspace can open only
-`/app/home` and `/app/more`. Other workspace pages redirect to the
-billing-focused Home; their repository commands independently reject access.
-Administrators and sponsored workspaces are not time limited.
+## Platform team
 
-## Administration
-
-- `/admin/operations`
-- `/admin/reviews`
-- `/admin/support` — support queue supervision and support-agent management
-
-Administrative queues use `page`. `/admin/operations` uses one selected `view`
-for Clients, Users, Trucks, Loads, or Capacity. `/admin/reviews` uses one
-selected `tab` for Applications, Documents, Ratings, or Payments. Legacy queue
-URLs redirect to the matching Review Center tab.
-
-## Support Team
-
-- `/support` — assigned and waiting conversation queue
-- `/support/[id]` — one assigned support conversation
-
-SUPPORT users are not workspace members or administrators. They are routed to
-`/support` after login and cannot open marketplace, Tracking, billing, review,
-verification, Operations, or client-mutation routes.
+- `/admin/operations` — bounded provider, truck, capacity, shipment, delivery, and cleanup oversight.
+- `/admin/reviews` — documents, provider-rating disputes, and payments.
+- `/admin/support` — Support supervision.
+- `/support` and `/support/[id]` — assigned Support-agent queue and conversation.
 
 ## System
 
-- `/api/health`
+- `/api/health` — process/database health only; it does not assert public-production readiness.

@@ -1,90 +1,42 @@
-# Domain Model
+# Domain model
 
-## Demand
+## Provider
 
-- Business looking for capacity
-- Business acting as a shipper or receiver for a specific load
-- Shipment demand
-- Direct request, Connected Partners, or open market
+A provider is either a transport company/fleet or a self-managed Driver/owner-operator. It owns trucks, capacity signals, a public microsite, shipment execution records, reviews, verification evidence, support, and billing state.
 
-## Supply
+Company Drivers belong to one fleet, may be assigned to trucks, and act only through owner-granted capacity or tracking permissions. A self-managed Driver is treated as the provider owner for its own truck.
 
-- Fleet Transporter
-- Self-managed Driver / Owner-Operator
-- Preferred Routes and dated truck capacity routes
-- Explainable load-to-truck route match
+## Public capacity signal
 
-## Shared execution
+Each truck has one latest current state:
 
-- Canonical Shipment
-- Shipment Parties
-- Provider Interest
-- Status Events
-- Secret Tracking Access Code stored as a keyed digest
-- Five-minute browser/load-bound customer Tracking Grant
-- Tracking obligation: Status only or Automatic location + status
-- Customer-safe tracking event with optional privacy-obscured general area
-- Proof Files
-- Temporary Load Proof Request and recipient grant
-- Party-only receiver first name and phone, recorded after agreement and before assignment
-- Business Review tied to one Completed load, one reviewing Business, and the other Business participant
-- Business Review publication state: Pending, Published, or Dismissed
-- Terminal Rating Moderation Decision with administrator, investigation note, and review time
-- Tracking workspace projection that contains only records involving the signed-in workspace
+- `EMPTY`, `PARTIAL`, or `OFF_DUTY`.
+- Empty accepts Full, Partial, or both and may publish radius or route geography; Partial accepts Partial only and is always route-based.
+- `RADIUS` means availability within a provider-selected working radius around an obscured current point.
+- `ROUTE` means immediate one-direction capacity between two structured places and has no date.
+- Location privacy accuracy is independent of working radius and may be changed whenever the authorized Driver refreshes location.
+- Off Duty, expired, unpublished, and superseded signals are excluded from public discovery.
 
-## Capacity
+A truck may also have one optional next trip, with an optional weekday/date. Its provider may publish multiple undated recurring directional routes and permanent 5–500 km working-radius areas. These are market signals and require direct confirmation.
 
-- Vehicle with permanent Loadgistic platform number, make, model, private plate, and standardized visual cargo configuration
-- Status: Empty, Partial, Off Duty
-- Available percentage
-- Accepted load policy: FTL, PTL, or Both
-- Stop policy: Direct is always accepted, with independent Multi Pick and Multi Drop choices
-- General current area and location update time
-- Optional half-degree device area with a 40 km privacy radius
-- Current partial-capacity route with separate city endpoints and date
-- Planned route with separate city endpoints, date, and Full or Partial cargo-space intent
-- Visibility: Public or Partners
-- Contract-route interest
-- Update actor and time
-- Optional timestamped capacity photo
-- Expiry
+## Provider microsite
 
-## Member network
+Every published provider owns a unique handle and may configure headline, description, services, theme colors, introductory YouTube video, and independent visibility for phone, WhatsApp, email, and website. Public pages show fleet, capacity, recurring routes or permanent working areas, reviewed evidence badges, and verified-shipment reviews through a safe projection.
 
-- Business operating regions or cities declared on its authenticated Public Profile
-- Business Freight Routes and provider Preferred Routes declared as endpoint names
-- Private Favorite, directional Pending request, and mutual Connected Business-provider relationship
-- Fleet network coverage projection: matching declared Business places against Preferred Routes and fresh truck-route endpoints
-- No inferred facility coordinate, live Business location, distance, or service guarantee
+## Provider shipment
 
-## Trust
+A provider shipment is an execution record created only after provider and customer agree offline. It contains one owned truck/Driver, structured origin and destination, bounded cargo summary, optional expected dates, tracking mode, shipper email, and receiver email. It never becomes public demand.
 
-- Business Application
-- Verification Request for an owned organization, provider profile, driver, or vehicle
-- Evidence-derived gray or blue verification badge
-- Authenticated Business and Transporter Public Profile
-- Separate private account and explicit public contact fields
-- Business-designated load phone with explicit marketplace opt in
-- Audit Log
-- Private administrator Rating Reviews queue with published-only reputation projection
-- Subscription and Payment Proof
+The lifecycle is explicit: `CREATED → LOADING → IN_TRANSIT → UNLOADING → COMPLETED`, with governed `ISSUE` transitions. Proof is accepted only for Loading, Unloading, and Issue events.
 
-## Subscription access
+## Guest tracking grant
 
-- Workspace-owned subscription: Business and Fleet Transporter subscriptions belong to an organization; a Self-managed Driver subscription belongs to its provider profile
-- Company Drivers inherit their Fleet Transporter's subscription
-- Seven-day Trial created on successful signup
-- Business-only Sponsored access granted by an administrator from Operations
-- Positive amount actually paid and optional private Payment Proof
-- Thirty-day Active period created when an administrator marks payment paid
-- Expired or under-review operating restriction with retained Home, account, billing, and logout access
-- No public standard plan price
+Creation issues separate high-entropy shipper and receiver codes. Only digests are stored. A successful unlock creates a party-scoped browser session; neither party receives the other party's secret. Completion queues an idempotent email record for each party. Guest access and customer emails are removed 30 days after completion, while provider history remains.
 
-## Bounded result pages
+## Provider review
 
-- Server-owned filters and deterministic ordering
-- Result envelope: items, total, current page, page size, and page count
-- Useful first page for marketplace discovery without mandatory search
-- Search-before-results for potentially large entity selection controls
-- Independent page keys for screens containing more than one growing list
-- SQLite MVP may assemble authorized projections before slicing; the production database adapter must apply equivalent filtering and `LIMIT`/cursor bounds in the database
+The emailed shipper party may submit one rating after completion. Every score publishes and counts. The provider may dispute a one-, two-, or three-star rating; a pending dispute remains visible and counted until a platform reviewer decides it.
+
+## Retired demand model
+
+Shipment-demand posts, interests, Direct requests, pooled/along-route groups, Business accounts/profiles, and member-network relationships are not part of the active model. Local development migrations delete their fake fixtures; current routes block or redirect their former surfaces.

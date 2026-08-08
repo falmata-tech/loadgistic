@@ -1,53 +1,32 @@
 # Architecture
 
-## Runtime
-
-Loadgistic is a Next.js App Router application running on the Node.js runtime. Pages are server-rendered by default. Mutations use Route Handlers and HTML forms, keeping client JavaScript small.
+Loadgistic is a Next.js App Router application on the Node runtime. Server-rendered pages and Route Handlers adapt HTTP to explicit repository/domain commands.
 
 ## Layers
 
-1. **UI and routing** — `src/app` and `src/components`
-2. **Authentication boundary** — `src/lib/auth.ts` and signed HTTP-only cookies
-3. **Domain rules** — `src/lib/domain.js`
-4. **Application services and authorization** — `src/lib/repository.js`
-5. **Local data adapter** — `src/lib/db.js` using Node SQLite
-6. **Cloud target** — Supabase PostgreSQL, Auth, Storage, and RLS
+1. UI/routing — `src/app`, `src/components`.
+2. Authentication and guest-grant boundary — `src/lib/auth.ts`.
+3. Pure state/validation rules — `src/lib/domain.js`, `src/lib/security.js`.
+4. Application services, authorization, and projections — `src/lib/repository.js`.
+5. Local persistence — `src/lib/db.js` using Node SQLite.
+6. External adapters — private storage and `src/lib/email-delivery.ts`.
+7. Cloud target — ordered Supabase PostgreSQL/RLS migrations; runtime adapter not yet implemented.
 
-## Hexagonal interpretation
+Dependency direction is HTTP/UI → application authorization/services → domain rules → outbound adapters. `repository.js` remains an MVP seam; introduce explicit ports while implementing the second persistence adapter rather than coupling UI to Supabase.
 
-The dependency direction is UI/HTTP adapters → application services and authorization → pure domain rules → outbound ports and adapters. The current `repository.js` combines application services with the local repository facade; it is an intentional MVP seam, not a target for further coupling. Extract a port when a second adapter is introduced or a contract needs isolated testing.
+## Active entities and invariants
 
-DDD vocabulary is used where it clarifies invariants: Shipment, Capacity Update, Network Relationship, Business Application, and Payment Proof are aggregates; ETB Amount, Capacity Percentage, Shipment Code, Tracking Access Code, and Expiry are value objects. Implementations may remain pure functions and modules. Classes are not an architectural requirement.
+- Provider organization or self-managed provider profile.
+- Vehicle and exclusive active Driver assignment.
+- Latest current capacity, one next trip per truck, and repeatable provider routes or permanent working areas.
+- Published provider microsite with safe theme/contact projection.
+- Provider shipment and immutable execution events.
+- Separate party-code grants and private email-delivery attempts.
+- Provider review and low-rating dispute.
+- Verification request, subscription/payment proof, Support conversation, notification, and audit log.
 
-Behavioral and adapter contracts are governed by the linked specifications under `specs/`. See `docs/SPEC_DRIVEN_DEVELOPMENT.md`.
-
-## Why local SQLite exists
-
-The environment used to build this artifact cannot reach npm or cloud registries and does not provide Supabase CLI/Docker. Node's built-in SQLite allows the Next.js source to include a deterministic, persistent local adapter without adding a native database dependency.
-
-This is an adapter choice, not a second product model. The Supabase migration mirrors the core entities and constraints.
-
-## Core entities
-
-- User
-- Organization or independent provider profile
-- Company Page
-- Privacy-obscured capacity and shipment-tracking location
-- Vehicle and driver
-- Shipment and immutable events
-- Provider interest
-- Capacity update
-- Business tracking grant and proof
-- Application
-- Plan, subscription, and payment proof
-- Notification and audit log
+Identity-bearing records enforce one provider owner scope. Current routes and transitions are explicit. Public projections are separate from persistence rows. No active domain aggregate represents public shipment demand, interests, Business profiles, or member networks.
 
 ## Deployment path
 
-1. Create a Supabase project.
-2. Apply the ordered files under `supabase/migrations/`.
-3. Configure Supabase Auth and private buckets.
-4. Replace the local repository adapter with Supabase queries/RPCs.
-5. Move local files to private Storage paths.
-6. Run authorization and RLS tests.
-7. Deploy the Next.js standalone output to a Node-compatible host.
+Apply `supabase/migrations/001` through `013` to staging, implement managed identity/repository adapters, run parity and RLS tests, move proofs to scanned private storage, configure managed email/cleanup/rate limiting/monitoring, rehearse backup and rollback, then deploy the standalone Next.js artifact. SQLite is not a public-production datastore.

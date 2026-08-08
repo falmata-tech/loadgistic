@@ -1,387 +1,114 @@
 ---
 id: FEAT-CAP-001
-title: Truck-first Truck Board and publication
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-GEO-001, FEAT-MAT-001]
-problem: Business shippers need simple, current truck availability while drivers need a fast operational home for keeping that signal trustworthy.
-behavior: Self-managed drivers use a truck-level Home control panel while fleet transporters manage truck capacity inside Fleet; selecting Empty, Partial, or Busy places a truck On Duty while Off Duty is the only separate unavailable state. Each active update uses the assigned Driver's current device area obscured to a bounded Driver-chosen privacy radius, records status-appropriate accepted work, live Partial movement, optional Empty route intent, Preferred Routes, visibility, and optional timestamped proof. Businesses receive independently actionable truck cards and privacy-aware Near me discovery while drivers and transporters receive one anonymized, read-only card per visible truck. Freshness is explicit rather than silently removing stale Empty or Partial signals.
-contracts: [CapacityUpdate, CapacityStatus, DutyState, CapacityPercentage, BusyAvailability, AcceptedLoadPolicy, StopPolicy, CurrentPartialRoute, PlannedTravelRoute, PreferredRoute, TruckPlatformNumber, GeneralAreaFreshness, ObscuredDeviceArea, DriverLocationPrivacyChoice, BusinessNearMeSearch, CapacityVisibilityPolicy, RelationshipVisibilityPolicy, CapacityProof, CapacityDetail, FleetRoster, CapacityRouteMatch, DriverCapacityPermission, DutyCommand]
-observability: [capacity_audit, update_actor, updated_at, location_updated_at, proof_recorded_at, available_again_date, freshness]
-rollout: Add Busy additively, backfill existing status into the new availability projection, retain stale Empty and Partial signals, and preserve Off Duty privacy.
+title: Public truck-capacity signals and provider publication
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001]
+problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need simple and honest ways to publish current, future, and recurring availability.
+behavior: Authorized providers publish one current Empty signal as radius or route, or one Partial signal as an undated route; at most one next trip per truck; and multiple provider-level undated recurring routes or permanent working-radius areas. Anyone may browse bounded public projections without an account; exact truck and visitor coordinates remain private.
+contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, NextTrip, RecurringServiceSignal, CapacityFreshness, PublicCapacityProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
+observability: [capacity_audit, next_trip_audit, corridor_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
+rollout: Add signal fields and next-trip storage additively, translate compatible provider capacity rows, retire demand and relationship filters, and monitor public-projection fields and query volume.
 ---
 
-# Capacity publication
-
-### Scenario: Truck Board remains bounded
-
-Given more visible trucks match than one Truck Board page\
-When a member opens, filters, route-ranks, or changes page\
-Then the server renders one bounded page containing one card per visible truck\
-And Business cards are actionable while provider cards are anonymized and read only\
-And page navigation preserves every active capacity filter\
-And no search is required to see the first page\
-And fresh signals rank ahead of stale signals when all stronger filters and route scores are equal.
-
-### Scenario: partial capacity is published for one truck
-
-Given an authorized transporter, driver, or administrator owns the vehicle\
-When Partial capacity with an integer from 1 through 99 is submitted\
-Then the update records actor and time\
-And the public record displays the declared percentage.
-
-### Scenario: stale cargo-space capacity remains explicit
-
-Given a truck has an Empty or Partial capacity signal and remains On Duty\
-When its capacity or location update becomes old\
-Then it remains on the Truck Board during the early-market rollout\
-And its card shows the relative last capacity and location update times\
-And a strong stale warning tells the viewer to confirm availability\
-And stale signals rank below equivalent fresh signals\
-And a current Partial route stops matching when its capacity signal is stale\
-And planned routes still stop matching after their own route dates.
-
-### Scenario: Busy advertises future availability
-
-Given an authorized driver or fleet owner is carrying work but remains open to calls\
-When Busy is selected\
-Then the truck remains On Duty\
-And an available-again date and one structured current or expected city are required\
-And the Truck Board labels the truck Busy and open to contact\
-And it displays Preferred Routes but no current cargo-space percentage or current partial-capacity route\
-And Empty or Partial load-size and stop preferences are not represented as currently available capacity.
-
-### Scenario: unrefreshed Busy leaves discovery after its ready date
-
-Given a truck publishes Busy with an available-again date\
-When that local calendar date passes without a newer Empty, Partial, or Busy update\
-Then the truck is absent from the Truck Board and route matching\
-And its latest owner and driver control indicates that a fresh availability decision is required\
-And the persisted historical update remains available to its owner and administrators.
-
-### Scenario: availability selection controls duty
-
-Given a truck has a latest availability state\
-When Empty, Partial, or Busy is selected\
-Then the truck is On Duty\
-And when Off Duty is selected it is hidden from Truck Board discovery\
-And the editor presents Empty, Partial, Busy, and Off Duty together without a separate On Duty control\
-And freshness never changes the persisted duty choice by itself\
-And an expired Busy signal is treated as undiscoverable until refreshed rather than silently rewritten as a user-authored Off Duty command.
-
-### Scenario: capacity belongs to an identifiable real truck
-
-Given a fleet or self-managed driver selects a truck\
-When capacity or fleet information is displayed\
-Then the truck is identified by make, model, cargo configuration, and plate\
-And Loadgistic assigns one permanent unique platform number when the truck is first created\
-And member-facing Capacity and Public Profile views use the platform number instead of exposing the plate\
-And the cargo configuration uses the standardized visual truck catalog\
-And generic tonnage labels are not used as the truck identity.
-
-### Scenario: every visible truck stands alone for a Business
-
-Given a fleet transporter has multiple discoverable Empty, Partial, or Busy trucks\
-When an authenticated Business opens the Truck Board\
-Then each truck is a separate capacity contributor and card\
-And no provider-level summary collapses those trucks into one signal.
-
-### Scenario: providers see anonymized trucks standing alone
-
-Given a driver or fleet transporter opens the Truck Board to gauge competing supply\
-When Public truck capacity is rendered\
-Then each visible truck remains one separate card rather than becoming an aggregate count\
-And the card shows its standardized cargo-configuration image and name, availability, approximate area, active route or service area, accepted work, timing, and freshness\
-And it does not expose the company, owner, driver, make, model, platform number, plate, contact, verification subjects, raw capacity identifier, proof file, profile link, or interaction action\
-And provider Board search and filtering use only displayed operational capacity fields so hidden identity cannot be inferred through a query oracle\
-And the provider's own trucks remain excluded from this market-discovery view.
-
-### Scenario: Truck Board card is complete for discovery
-
-Given a Business may view a truck's Public or Partners capacity\
-When its Truck Board card is rendered\
-Then the card shows the truck, cargo configuration, availability, area, active routes, accepted load policy, freshness, and trust signals\
-And no truck-detail step is required before the user can call or open the owning fleet or owner-operator Public Profile\
-And all Board and profile reads reapply the same visibility authorization.
-
-### Scenario: fleet roster count is authoritative
-
-Given a fleet transporter owns active truck records\
-When its Public Profile or Fleet page is displayed\
-Then its truck count equals the active vehicle rows\
-And every active truck appears in the roster as Empty, Partial, Busy, Off Duty, or Not updated\
-And Off Duty trucks remain absent from the Truck Board.
-
-### Scenario: fleet capacity requires a current driver
-
-Given an active fleet truck has no current company Driver assignment\
-When a fleet owner attempts to publish Empty, Partial, or Busy capacity\
-Then the command is rejected before a capacity record is created\
-And any legacy on-duty signal for an unassigned fleet truck is excluded from Truck Board discovery\
-And the truck remains active and visible in My Fleet so an owner can assign a Driver or set it Off Duty.
-
-### Scenario: empty capacity is published
-
-Given an authorized transporter, driver, or administrator owns the vehicle\
-When Empty capacity is submitted\
-Then the update records its planned route when supplied, actor, time, and 100 percent availability.
-
-### Scenario: Local capacity uses the current Driver area
-
-Given an authorized driver or fleet owner chooses Local-only work for one truck\
-When capacity is published\
-Then the local service circle is centered on the locality resolved from the assigned Driver's current obscured device area\
-And a member cannot manually claim a different current city or town\
-And the radius choice is between 10 and 50 km\
-And Empty publishes 100 percent available\
-And Partial remains available when its required live current route is recorded.
-
-### Scenario: route cities are entered separately
-
-Given a driver updates planned movement\
-When they enter the route\
-Then the origin and destination are separate city inputs joined by a clear route cue\
-And the driver is not asked to repeat both cities inside one free-text route field.
-
-### Scenario: an empty driver declares accepted load sizes
-
-Given a company or self-managed driver marks a truck Empty\
-When the driver publishes the update\
-Then the driver explicitly chooses FTL, PTL, or Both\
-And Direct is always accepted\
-And the driver independently chooses whether to accept Multi Pick and Multi Drop\
-And both acceptance policies are displayed independently from cargo-space status.
-
-### Scenario: partial capacity has one implied shipment size
-
-Given a Driver marks a truck Partial\
-When the capacity editor and command are evaluated\
-Then no Full Truckload, Partial Truckload, or Both selector is shown\
-And the saved signal accepts Partial Truckload only\
-And a submitted Full Truckload or Both value cannot override that invariant.
-
-### Scenario: Empty route intent is explicit
-
-Given a Driver marks a truck Empty\
-When current capacity is published\
-Then the Driver chooses Willing to go anywhere or Specific route\
-And Willing to go anywhere stores no planned route and is labeled plainly on the Truck Board\
-And Specific route requires both structured endpoints and a non-past travel date\
-And no route choice changes the separate FTL, PTL, or Both shipment-size decision.
-
-### Scenario: capacity route meanings remain distinct
-
-Given a truck has Partial cargo space\
-When its driver publishes capacity\
-Then it must declare the exact live current travel route on which that partial space exists\
-And that route describes the truck's current direction rather than requiring the final destination of cargo already aboard\
-And the driver is not asked for a date because the capacity update time is the route's clock\
-And any on-duty truck may separately declare one future planned travel route, date, and Full or Partial planned cargo-space label\
-And regular Preferred Routes remain a multiple-value Public Profile setting controlled by the fleet company admin or self-managed owner\
-And stale current Partial capacity and past planned-route dates are excluded from live matching.
-
-### Scenario: self-managed driver Home prioritizes live capacity controls
-
-Given a self-managed driver signs in or opens Home\
-When the workspace loads\
-Then their truck capacity control panel is the first operational view\
-And they do not have to open a general dashboard before updating their truck.
-
-### Scenario: capacity publication follows visible ordered decisions
-
-Given a driver or fleet owner updates a truck\
-When the capacity editor opens\
-Then the primary flow visibly numbers truck status, work area, accepted shipment size, route flexibility, future-work preferences, and visibility in that logical order\
-And Empty, Partial, Busy, and Off Duty are the first availability choice\
-And the selected truck is a compact identity header rather than a separate form section\
-And choosing Partial reveals current available space and its current partial-capacity route inside the Truck status step\
-And choosing anything other than Partial removes those controls from the rendered form\
-And the current route is required for every Partial update, including Local work\
-And Busy reveals its available-again date inside Truck status and uses the structured area in Work area\
-And FTL, PTL, Both, Direct, Multi Pick, Multi Drop, contract-route interest, and visibility are not hidden inside an additional-options disclosure\
-And only optional evidence and an unused future trip may use compact secondary presentation\
-And publication uses one persistent primary action without a duplicate review panel.
-
-### Scenario: irrelevant capacity steps disappear without obscuring the task
-
-Given a driver chooses Busy or Off Duty\
-When the remaining capacity controls render\
-Then Off Duty ends the workflow after the status choice and publishes a hidden state\
-And Busy asks for ready date, expected area, future-work preference, and visibility without asking for current FTL, PTL, Multi Pick, or Multi Drop availability\
-And every visible step keeps a stable increasing number so the next required action is unambiguous.
-
-### Scenario: Local and Both reuse the device-resolved city
-
-Given a truck is available for both Local and Long-distance route work\
-When the assigned Driver's device location resolves to a structured Local city or town\
-Then that place is also the truck's declared current general area\
-And the driver is not asked to type or select a current-area city\
-And retrying location replaces the in-session device reading without creating a manual fallback\
-And Local radius and intercity route controls remain independently available.
-
-### Scenario: fleet owner cannot claim the truck location
-
-Given a fleet owner edits capacity for a truck assigned to a company Driver\
-When the owner publishes Empty, Partial, or Busy\
-Then the server preserves the latest obscured location recorded by that assigned Driver\
-And it preserves the original location timestamp rather than presenting the owner's save time as movement\
-And publication is rejected when no assigned-Driver device location exists\
-And the owner has no manual city, coordinate, or phone-location control.
-
-### Scenario: Driver can manually refresh device location
-
-Given a Driver is viewing capacity controls with location permission granted, denied, or not yet decided\
-When the capacity screen remains open\
-Then one visible location action remains available beside the current location state\
-And it states Request location before a valid reading and Refresh location after a valid reading\
-And activating it starts a new browser geolocation request even when automatic watching has not produced a newer reading\
-And active capacity cannot be published until that Driver session has a valid obscured reading\
-And browser denial is explained without offering manual current-area entry.
-
-### Scenario: fleet transporter Home remains a management dashboard
-
-Given a fleet transporter manages multiple active vehicles\
-When they sign in or open Home\
-Then they see company-wide load, capacity, fleet, and workflow summaries\
-And truck capacity controls remain inside Fleet\
-And selecting a truck in Fleet opens a truck-specific detail and update page without another truck selector.
-
-### Scenario: company driver capacity follows owner controls
-
-Given a company driver is assigned to a fleet truck\
-When the driver opens Home\
-Then the truck's current duty state and latest capacity actor are visible\
-And rich capacity controls appear only when the fleet owner permits capacity management\
-And assigned-truck availability or Off Duty remains available when rich controls are disabled without exposing route, visibility, or shipment-preference controls.
-
-### Scenario: Truck Board supports route-aware discovery
-
-Given an authenticated member opens the Truck Board\
-When they filter by text, route cities, cargo configuration, capacity status, accepted load type, minimum available space, route date, visibility, freshness, stop flexibility, contract-route openness, or proof availability\
-Then only trucks satisfying every supplied filter are displayed\
-And clearing the filters restores all capacity permitted by visibility policy.
-
-Given Local, Long-distance route, and Both truck signals coexist\
-When a member filters movement scope or Local locality\
-Then each truck remains one independently authorized result\
-And Local matching uses its structured locality and radius\
-And route fields remain optional for Local-only capacity.
-
-Given a Business chooses one of its own open load routes\
-When Truck Board results are displayed\
-Then every eligible live current Partial route and dated planned route is compared by endpoint distance\
-And trucks satisfying both adjustable endpoint radii rank by their strongest route\
-And each result explains endpoint distances, direction, and route source without claiming dispatch suitability or availability beyond the recorded capacity.
-
-Given a provider compares routes or ranks the Shipment Board\
-When eligible truck route records exist\
-Then every owned truck contributes its current unexpired partial route and eligible planned route independently\
-And the best match across selected or all active truck routes is used\
-And each option identifies the truck platform number, route source, signal freshness or planned date, and planned Full or Partial cargo-space label.
-
-### Scenario: a general location update protects precise movement
-
-Given a driver updates the truck location\
-When the capacity signal is published\
-Then a driver-declared general area such as "Around Addis Ababa" is stored for marketplace display\
-And the location update time is displayed separately from capacity expiry\
-And no precise coordinate is required or exposed.
-
-### Scenario: device location is obscured before submission
-
-Given a Driver uses the phone or device location\
-When the browser grants location permission and the Driver chooses an allowed privacy area\
-Then the precise coordinate is displaced in the browser before submission\
-And Local, Long-distance, or Both work may use a 1, 3, 5, 10, 20, or 40 km privacy area\
-And only the displaced point, chosen privacy radius, and declared general-area label reach the server\
-And the precise coordinate is not submitted, stored, logged, or displayed.
-
-### Scenario: Driver controls current location precision
-
-Given a Driver has an Empty, Partial, or Busy truck signal\
-When the Driver changes the privacy-area choice and publishes the next capacity update\
-Then the new authorized Board projection uses that privacy area\
-And the interface warns that a smaller area gives Businesses a more precise estimate\
-And a long-distance Partial signal below 20 km shows a prominent precision and safety warning without overriding the Driver's choice\
-And an older, more precise projection is not returned as current marketplace data.
-
-### Scenario: driver location acquisition starts automatically
-
-Given an assigned or self-managed driver opens capacity controls on a geolocation-capable device\
-When the controls hydrate\
-Then the browser requests device location without requiring a separate location button\
-And while the screen remains open it may refresh the device reading within a bounded interval\
-And only the obscured coordinate is retained for submission\
-And the interface communicates locating, ready, denied, or unavailable state without blocking the capacity choices.
-
-### Scenario: device location failure keeps a manual fallback
-
-Given a driver declines location permission or the device cannot determine a position\
-When automatic acquisition fails\
-Then the general-area field remains available\
-And the capacity update can be published without a coordinate\
-And no repeated permission prompt is triggered during the same mounted editor.
-
-### Scenario: only the assigned driver may use device location
-
-Given a fleet owner edits capacity for one company truck\
-When the owner opens the truck-specific capacity page or submits a device-assisted coordinate\
-Then the interface offers only a manually declared general area\
-And the service rejects device-assisted location because the owner's device does not establish the truck's location\
-And an authorized assigned company driver may still use its own device location for that truck.
-
-### Scenario: marketplace location remains intentionally approximate
-
-Given capacity includes an obscured device area\
-When an authorized user views its Truck Board card or detail\
-Then the interface identifies it as an approximate device-assisted area with the Driver's chosen privacy radius\
-And Businesses may see that privacy circle and an estimated distance range relative to their own location\
-And neither the displaced center nor an exact map pin is presented as the truck's position.
-
-### Scenario: Business finds Local trucks near its device
-
-Given an authenticated Business opens the Truck Board and grants one-time browser location access\
-When it chooses Near me and a search distance\
-Then the browser keeps the exact Business coordinate in memory for the current view\
-And sends only a one-kilometer-displaced search point to the bounded Board query\
-And permitted Local-capable truck privacy areas that overlap the search distance are returned and ranked\
-And the result explains distance as a range rather than an exact truck distance\
-And neither the Business search point nor exact device coordinate is persisted or audited.
-
-### Scenario: capacity proof carries context
-
-Given a driver optionally attaches a current cargo-space photo\
-When the capacity signal is published\
-Then the private upload record is associated with the declared general area and update timestamp\
-And marketplace users see that proof was recently recorded without receiving a direct file path.
-
-### Scenario: contract-route interest is independent of capacity
-
-Given a driver is open to recurring work on Preferred Routes\
-When the driver enables contract-route interest\
-Then the Truck Board displays that signal without changing Empty, Partial, or Off Duty status.
-
-### Scenario: off-duty capacity is private
-
-Given a truck is unavailable and does not want calls\
-When the owner marks it Off Duty or stops publishing capacity\
-Then that truck is absent from public and relationship-scoped capacity discovery.
-
-### Scenario: relationship capacity is scoped
-
-Given a transporter publishes capacity to Connected business relationships\
-When businesses browse capacity\
-Then only businesses with a mutual Connected relationship to that transporter can see it.
-
-### Scenario: provider cards cannot disclose hidden identity
-
-Given a transporter or driver views capacity belonging to other providers\
-When the Truck Board loads\
-Then visible current signals remain separate anonymized cards\
-And no raw capacity or vehicle identifier, platform number, make, model, owner, company, driver, contact, badge, proof file, or profile link is returned or rendered\
-And no contact or interest action is available\
-And filtering uses only visible operational fields without disclosing hidden identity.
+# Public truck-capacity signals
+
+### Scenario: current availability uses radius or route
+
+Given an authorized fleet owner or Driver publishes current capacity for one truck\
+When the current signal is saved\
+Then Empty requires exactly one availability geometry: radius or specific route\
+And Partial requires a specific route and cannot publish a current radius\
+And radius uses the Driver's browser-obscured current point plus a selected work radius\
+And route uses structured origin and destination points\
+And neither current geometry asks for or stores a travel date\
+And Empty records 100 percent while Partial records an integer from 1 through 99.
+
+### Scenario: current signals use distinct map treatments
+
+Given a public current-capacity projection is selected on the map\
+When its Driver location is available\
+Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
+And when its geometry is radius a separate labeled green work circle is shown around the obscured center\
+And when its geometry is route a labeled yellow line and endpoints are shown\
+And color is reinforced by text and shape rather than being the only meaning\
+And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
+
+### Scenario: next trip is separate and optionally dated
+
+Given a truck may have a future journey\
+When its provider publishes the next trip\
+Then the record requires one structured route and may include one future calendar date\
+And it records Empty or Partial capacity independently from the current signal\
+And each truck has at most one active next trip\
+And replacing it is audited\
+And the public card and map show weekday plus date when supplied\
+And a dated trip stops appearing after its travel date.
+
+### Scenario: recurring service signals are multiple and undated
+
+Given a provider regularly serves one or more routes or areas\
+When its owner maintains recurring service signals\
+Then each signal independently chooses a structured directional route or a permanent working radius around one structured place\
+And a working radius accepts 5 through 500 kilometres\
+And no recurring signal asks for a date or claims that a truck is currently available\
+And public cards state Confirm availability\
+And the shared map uses a labeled blue dashed line for a recurring route and a labeled cyan dotted/fill circle for a recurring working area.
+
+### Scenario: Off Duty removes current availability
+
+Given a truck has current capacity\
+When an authorized actor selects Off Duty\
+Then its current signal is absent from public discovery\
+And its next trip and provider recurring signals remain separate records governed by their own state\
+And Busy is rejected.
+
+### Scenario: public Board is cursor bounded
+
+Given public capacity contains more results than one response\
+When any visitor opens or scrolls the Board\
+Then the server returns a stable cursor page of 12 through 16 independently actionable cards\
+And approaching the end fetches the next page\
+And a Load more capacity fallback remains keyboard accessible\
+And filters, loaded cursor state, and scroll position survive a profile/detail round trip\
+And the end of results is stated plainly.
+
+### Scenario: public projection is deliberately safe
+
+Given a visitor has no Loadgistic account\
+When current capacity, a next trip, or a corridor is returned\
+Then the projection may include provider public identity, public handle, provider-controlled contact availability, verification summaries, truck presentation, obscured area or structured route, capacity facts, and freshness\
+And it excludes plate, private account contacts, raw exact coordinates, proof paths, tracking secrets, and administrative data\
+And the card links to a public signal detail and the provider microsite.
+
+### Scenario: visitor location remains private
+
+Given a visitor chooses Show capacity near me\
+When the browser grants geolocation\
+Then the exact point remains in browser memory\
+And only a displaced query point and bounded radius reach the server\
+And results show a possible distance range rather than an exact truck distance\
+And denial leaves the full public Board usable.
+
+### Scenario: one shared map is loaded on demand
+
+Given a visitor is browsing capacity cards\
+When no map action has been selected\
+Then cards use a lightweight map-like action rather than one live tile map per card\
+And choosing Map view or View on map loads one shared interactive map\
+And the map focuses the selected signal, shows the visitor's browser-only You marker when permitted, and clusters crowded signals that separate as the visitor zooms\
+And list and map selection remain synchronized.
+
+### Scenario: provider editor collapses to the published summary
+
+Given a truck has saved capacity facts\
+When its authorized provider opens the editor\
+Then a map-centered summary appears before the full editor\
+And Status, availability geometry, location privacy, next trip, and accepted-work facts each open only their relevant editor\
+And Edit all opens the complete workflow\
+And focused saves preserve unopened values.
 
 ## Contract ownership
 
-- Domain rules: `validateCapacity`, `capacityFreshness`
-- Application services: `publishCapacity`, `listPublicCapacity`
-- Tests: `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Public pages: `/capacity`, `/capacity/[id]`
+- Provider editors: Driver Home and truck-specific Fleet page
+- Application services: current-capacity, next-trip, corridor, public projection, cursor and proximity functions
+- Tests: domain, repository, authorization, E2E, visual audit

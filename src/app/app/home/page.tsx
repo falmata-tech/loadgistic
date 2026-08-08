@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getDashboard, getDriverAccess, getFleetNetworkCoverage, getWorkspaceAccess, listOwnCapacity, listOwnVehicles } from '@/lib/repository.js';
+import { getBillingSummary, getDashboard, getDriverAccess, getWorkspaceAccess, listOwnCapacity, listOwnNextTrips, listOwnRecurringCorridors, listOwnVehicles } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
 import { DriverCapacityHome } from '@/components/driver-capacity-home';
-import { NetworkCoverage } from '@/components/network-coverage';
 import {
   ArrowRight,
   BadgeCheck,
@@ -63,15 +62,16 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
       </div>
     </div>;
   }
-  if(user.role==='DRIVER') return <DriverCapacityHome vehicles={listOwnVehicles(user)} capacities={listOwnCapacity(user)} access={getDriverAccess(user)} query={query}/>;
+  if(user.role==='DRIVER') {
+    const plain=(value:any)=>JSON.parse(JSON.stringify(value));
+    return <DriverCapacityHome vehicles={plain(listOwnVehicles(user))} capacities={plain(listOwnCapacity(user))} nextTrips={plain(listOwnNextTrips(user))} corridors={plain(listOwnRecurringCorridors(user))} access={plain(getDriverAccess(user))} query={query}/>;
+  }
   const data:any=getDashboard(user);
-  const coverage=user.role==='TRANSPORTER'?getFleetNetworkCoverage(user):null;
   const greeting=user.organization_name||user.provider_business_name||user.name;
   return <div className="page"><PageHeader icon={LayoutDashboard} title={greeting} subtitle="Choose your next task."/><Flash error={query.error} success={query.success}/>
     <section className="action-grid">{data.actions.map((a:any)=>{const Icon=actionIcon(a.href);return <Link href={a.href} className="action-card" key={a.href}><span className="action-card-icon"><Icon aria-hidden="true"/></span><div><h3>{a.label}</h3><div className="meta">{a.description}</div></div><ArrowRight aria-hidden="true"/></Link>})}</section>
     <section className="stats">{Object.entries(data.counts).map(([label,value])=><div className="stat" key={label}><span className="meta">{label}</span><strong>{String(value)}</strong></div>)}</section>
-    {coverage?<NetworkCoverage coverage={coverage}/>:null}
-    <div className="two-col"><section className="card"><div className="page-header" style={{marginBottom:12}}><div><h2 className="panel-heading"><MapPin aria-hidden="true"/>Recent shipments</h2><p className="page-subtitle">Tracking-stage work involving this workspace.</p></div><Link href="/app/shipments?view=TRACKING" className="button secondary small"><Eye aria-hidden="true"/>View Tracking</Link></div>{data.recent.length?<div className="list">{data.recent.map((item:any)=><Link href={`/app/shipments/${item.id||item.code}`} className="list-row compact" key={item.id||item.code}><div><strong>{item.code}</strong><div className="meta">{item.title}</div></div><div className="route">{item.origin}<span>→</span>{item.destination}</div><StatusPill status={item.operational_status}/></Link>)}</div>:<div className="empty-state">No Tracking-stage shipments yet.</div>}</section>
-    <aside className="stack"><section className="card"><h3><ListChecks aria-hidden="true"/>Focus</h3><p className="muted">{user.role==='TRANSPORTER'||user.role==='DRIVER'?'Find shipments. Keep capacity fresh.':user.role==='ADMIN'?'Review platform work.':'Post shipments. Find trucks.'}</p></section>{data.notifications?.length?<section className="card"><h3><BadgeCheck aria-hidden="true"/>Notifications</h3><div className="stack">{data.notifications.slice(0,4).map((n:any)=><div key={n.id}><strong>{n.title}</strong><div className="meta">{n.body}</div></div>)}</div></section>:null}</aside></div>
+    <div className="two-col"><section className="card"><div className="page-header" style={{marginBottom:12}}><div><h2 className="panel-heading"><MapPin aria-hidden="true"/>Recent customer shipments</h2><p className="page-subtitle">Tracking records created by this provider.</p></div><Link href="/app/provider-shipments" className="button secondary small"><Eye aria-hidden="true"/>View shipments</Link></div>{data.recent.length?<div className="list">{data.recent.map((item:any)=><Link href={`/app/provider-shipments/${item.id}`} className="list-row compact" key={item.id}><div><strong>{item.code}</strong><div className="meta">{item.cargo_summary||item.title}</div></div><div className="route">{item.origin}<span>→</span>{item.destination}</div><StatusPill status={item.operational_status}/></Link>)}</div>:<div className="empty-state">No customer shipment records yet.</div>}</section>
+    <aside className="stack"><section className="card"><h3><ListChecks aria-hidden="true"/>Focus</h3><p className="muted">{user.role==='TRANSPORTER'||user.role==='DRIVER'?'Keep capacity current. Represent your service clearly. Track agreed work.':user.role==='ADMIN'?'Review platform work.':'Use public capacity without an account.'}</p></section>{data.notifications?.length?<section className="card"><h3><BadgeCheck aria-hidden="true"/>Notifications</h3><div className="stack">{data.notifications.slice(0,4).map((n:any)=><div key={n.id}><strong>{n.title}</strong><div className="meta">{n.body}</div></div>)}</div></section>:null}</aside></div>
   </div>;
 }

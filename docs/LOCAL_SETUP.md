@@ -1,11 +1,6 @@
-# Local Setup
+# Local setup
 
-## Requirements
-
-- Node.js 22.5+
-- npm 10+
-
-## Steps
+## Requirements and start
 
 ```bash
 nvm use
@@ -15,105 +10,44 @@ npm run db:reset
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds use `.next`. SQLite and private uploads live under ignored `data/` paths.
 
-The app creates `data/loadgistic.db` and local upload files under `data/uploads/`. Reset automatically imports the bundled 3,575-place Ethiopia OpenStreetMap settlement catalog. `npm run places:setup` is only needed to attempt a network refresh.
+`npm run db:reset` is destructive only to the configured local SQLite database and is denied in Production. It imports the bundled Ethiopia place catalog, purges obsolete fake demand fixtures, and creates a supply-first market with:
 
-Development writes generated Next.js files to `.next-dev`, while `npm run build` writes to `.next`. This keeps an always-on local dev server healthy while a production build runs.
+- 30 published provider pages;
+- nine fleet companies and 21 self-managed provider profiles;
+- 47 active current-capacity signals;
+- 44 published next trips, 61 recurring routes, and 30 permanent recurring working areas in the standard fixture;
+- no Business/capacity-seeker accounts, shipment-demand rows, network relationships, or Business reviews.
 
-## Local fixture accounts
+## Base provider fixtures
 
-The deterministic development and test database includes the following active accounts. These credentials are developer fixtures only and are intentionally not shown in the public application UI.
-
-All accounts use the local password `Loadgistic123!`.
+Credentials are local-only and never rendered in the public application.
 
 | Workspace | Email |
 |---|---|
-| Business looking for capacity | `shipper@loadgistic.local` |
-| Business receiving shipments | `receiver@loadgistic.local` |
-| Fleet Transporter | `transporter@loadgistic.local` |
+| Fleet owner | `transporter@loadgistic.local` |
 | Fleet company Driver | `company-driver@loadgistic.local` |
-| Self-managed Driver / Owner-Operator | `driver@loadgistic.local` |
-| Expired Business trial (billing-limit fixture) | `expired@loadgistic.local` |
-| Customer Support agent | `support@loadgistic.local` |
-| Platform Administrator | `admin@loadgistic.local` |
+| Self-managed Driver / owner-operator | `driver@loadgistic.local` |
+| Support agent | `support@loadgistic.local` |
+| Platform administrator | `admin@loadgistic.local` |
 
-## Reset
+Use the development password stored in the local seed-credentials file. Generated public-market provider accounts use deterministic `@providers.loadgistic.test` addresses and are fixtures, not customer data.
 
-```bash
-npm run db:reset
-```
-
-After this first setup, start the app with the single command:
+## Useful checks
 
 ```bash
-npm run dev
+npm run quality
+npm run build
+npm run test:e2e
 ```
 
-## Comprehensive UI and workflow data
-
-`npm run db:stress` replaces the configured local database with a deterministic
-dataset containing more than 8,000 related rows. It covers all 34 application
-tables and material states, including 80 Businesses, 20 six-truck fleets, their
-company Drivers, 40 self-managed Drivers, applicant accounts, loads, tracking
-events, capacity history, relationships, verification requests, billing
-evidence, sponsored/trial/paid/under-review/expired subscription states,
-ratings, support conversations, notifications, audit records, local service
-areas, and Local/Between
-cities/Both freight records.
-
-Generated accounts use the same development-only password documented above.
-Representative emails include:
-
-| Workspace | Email |
-|---|---|
-| Generated Business | `business-001@stress.loadgistic.local` |
-| Generated Fleet Transporter | `fleet-001@stress.loadgistic.local` |
-| Generated company Driver | `fleet-001-driver-1@stress.loadgistic.local` |
-| Generated Self-managed Driver | `driver-001@stress.loadgistic.local` |
-| Generated Administrator | `admin-01@stress.loadgistic.local` |
-
-### Network test cohort
-
-The following generated accounts are intentionally connected so visibility can
-be tested without first creating relationships by hand:
-
-| Actor | Relationship to Business 001 |
-|---|---|
-| Fleet 001 | Connected |
-| Driver 001 | Connected |
-| Fleet 002 | Pending request sent by Business 001 |
-| Driver 002 | Favorite only |
-
-Fleet 001 is also Connected to Business 002. Its Requests view includes an
-incoming request from Business 003 and an outgoing request to Business 006.
-Business 007 has a Declined relationship with Fleet 001.
-
-The cohort includes clearly titled records:
-
-- `LGX-NET-PARTNERS` is visible only to Connected transport partners.
-- `LGX-NET-DIRECT-FLEET` is addressed only to Fleet 001.
-- `LGX-NET-DIRECT-DRIVER` is addressed only to Driver 001.
-- `LG-TRK-S00101` publishes Partners capacity from Fleet 001.
-- `LG-TRK-S00102` has hidden capacity and must not appear on any member Board.
-- `LG-TRK-S00104` publishes Public capacity for comparison.
-
-The small `npm run db:reset` fixture connects Business
-`shipper@loadgistic.local` with both `transporter@loadgistic.local` and
-`driver@loadgistic.local`. It includes Public and Partners capacity, a
-Partners-only shipment, provider-specific Direct shipments, saved interests,
-one pending network request, and active tracking examples across those original
-accounts.
-
-The command is destructive to the configured local database and refuses to run
-with `NODE_ENV=production`. Set `STRESS_SCALE` from 1 through 5 to increase the
-profile, for example `STRESS_SCALE=2 npm run db:stress`. Run `npm run db:reset`
-to restore the small fixture.
+Run `npm run test:ui-audit` only after explicit approval and while the development server is running.
 
 ## Troubleshooting
 
-- `node:sqlite` missing: update Node.js to 22.5 or newer.
-- Session errors: set a long random `SESSION_SECRET` in `.env.local`.
-- No company data: run `npm run db:reset`.
-- Few place suggestions: run `npm run places:setup`.
-- Browserbase missing: leave `BROWSERBASE_ENABLED=false` for normal local development.
+- Missing `node:sqlite`: use the Node version in `.nvmrc`.
+- Session failures: set a long random `SESSION_SECRET` in `.env.local`.
+- Empty/stale local market: run `npm run db:reset` only if replacing the local database is intended.
+- Map remains blank: confirm the response CSP allows both `tile.openstreetmap.org` and its subdomains, and inspect browser console tile errors.
+- Completion email remains queued: configure `LOADGISTIC_EMAIL_WEBHOOK_URL`; an unconfigured adapter does not pretend delivery succeeded.

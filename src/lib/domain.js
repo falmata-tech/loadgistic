@@ -60,7 +60,6 @@ export const PRICE_MODES = Object.freeze({
 export const CAPACITY_STATUSES = Object.freeze({
   EMPTY: 'EMPTY',
   PARTIAL: 'PARTIAL',
-  BUSY: 'BUSY',
   OFF_DUTY: 'OFF_DUTY'
 });
 
@@ -115,7 +114,7 @@ export function validatePriceMode({ priceMode, priceEtb, targetPriceEtb }) {
 export function validateCapacity(status, availablePercent) {
   if (!Object.values(CAPACITY_STATUSES).includes(status)) throw new Error('INVALID_CAPACITY_STATUS');
   if (status === CAPACITY_STATUSES.EMPTY) return 100;
-  if ([CAPACITY_STATUSES.BUSY,CAPACITY_STATUSES.OFF_DUTY].includes(status)) return 0;
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return 0;
   const percentage = Number(availablePercent);
   if (!Number.isInteger(percentage) || percentage < 1 || percentage > 99) {
     throw new Error('CAPACITY_PERCENT_REQUIRED');
@@ -124,7 +123,7 @@ export function validateCapacity(status, availablePercent) {
 }
 
 export function validateAcceptedLoads(status, acceptedLoads) {
-  if ([CAPACITY_STATUSES.BUSY,CAPACITY_STATUSES.OFF_DUTY].includes(status)) return { acceptsFullLoad: false, acceptsPartialLoad: false };
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return { acceptsFullLoad: false, acceptsPartialLoad: false };
   if (status === CAPACITY_STATUSES.PARTIAL) return { acceptsFullLoad: false, acceptsPartialLoad: true };
   if (acceptedLoads === 'FTL') return { acceptsFullLoad: true, acceptsPartialLoad: false };
   if (acceptedLoads === 'PTL') return { acceptsFullLoad: false, acceptsPartialLoad: true };
@@ -217,8 +216,6 @@ export function capacityFreshness(updatedAt, expiresAt, freshHours = 12) {
 }
 
 export function capacitySignalFreshness(status, updatedAt, availableAgainDate, freshHours = 12, todayDate = null) {
-  const today = todayDate || new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  if (status === CAPACITY_STATUSES.BUSY && (!availableAgainDate || availableAgainDate < today)) return 'EXPIRED';
   return capacityFreshness(updatedAt,null,freshHours);
 }
 
@@ -244,7 +241,6 @@ export function loadBoardDeadlineState(deliveryDate, todayDate, graceDays = LOAD
 
 export function capacityLabel(status, percent) {
   if (status === CAPACITY_STATUSES.EMPTY) return 'Empty · 100% available';
-  if (status === CAPACITY_STATUSES.BUSY) return 'Busy · Available soon';
   if (status === CAPACITY_STATUSES.OFF_DUTY) return 'Off duty · Not shown';
   return `Partial · ${percent}% available`;
 }

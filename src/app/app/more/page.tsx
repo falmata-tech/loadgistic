@@ -24,9 +24,8 @@ import type { LucideIcon } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 
 function planDescription(user:any){
- if(user.role==='TRANSPORTER')return 'For fleet transporters receiving business demand and publishing truck capacity.';
- if(user.role==='DRIVER')return 'For self-managed drivers and owner-operators receiving demand and publishing their own truck capacity.';
- if(user.role==='SHIPPER'||user.role==='RECEIVER')return 'For businesses posting freight shipments and finding public or partner truck capacity.';
+ if(user.role==='TRANSPORTER')return 'For fleet transporters publishing capacity and managing customer tracking records.';
+ if(user.role==='DRIVER')return 'For self-managed drivers and owner-operators publishing their truck and next trip.';
  return 'For platform administration.';
 }
 
@@ -42,8 +41,8 @@ function accessLabel(status:string){
 }
 
 function workspaceLinks(role:string){
- if(role==='SHIPPER'||role==='RECEIVER'||role==='TRANSPORTER'||role==='DRIVER')return [['/app/company-page','Public Profile'],['/app/verification','Verification']];
- return [['/admin/operations','Operations'],['/admin/reviews','Review Center'],['/app/shipments','Shipments'],['/app/providers','Directory']];
+ if(role==='TRANSPORTER'||role==='DRIVER')return [['/app/company-page','Public page'],['/app/verification','Verification'],['/app/provider-shipments','Customer shipments']];
+ return [['/admin/operations','Operations'],['/admin/reviews','Review Center'],['/providers','Provider directory']];
 }
 
 function workspaceLinkIcon(href:string):LucideIcon {

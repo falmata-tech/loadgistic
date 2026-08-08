@@ -1,39 +1,26 @@
-# Vercel And Supabase Handoff
+# Vercel and Supabase handoff
 
-This is the credential-free handoff for the owner. Do not place real values in
-this file, commits, issue comments, screenshots, or chat logs.
+This is a credential-free owner handoff. Never put real secrets, customer data, tracking codes, or private files in this document, commits, screenshots, or chat logs.
 
-## Current release boundary
+## Release boundary
 
-The standalone Docker image is suitable for local validation and a controlled
-single-machine demonstration. Vercel public production remains blocked until
-the Supabase repository, Supabase Auth, shared rate-limit adapter, and upload
-malware scanning pass the parity and security tests named in
-`docs/LAUNCH_READINESS.md`. Setting `DATA_BACKEND=supabase` does not implement
-those adapters.
+The standalone application is suitable for local validation and a controlled single-machine demonstration. Public production remains blocked until the managed identity/repository, email, rate-limit, upload-scanning, tile-service, backup, and monitoring gates in `docs/LAUNCH_READINESS.md` pass. `DATA_BACKEND=supabase` is not implemented.
 
-## Supabase project
+## Supabase staging
 
-1. Create one Supabase project in the intended region.
-2. Apply `supabase/migrations/001_loadgistic_schema.sql` through
-   `010_driver_capacity_authority.sql` in numeric order.
-3. Import the reviewed Ethiopia place catalog with
-   `npm run places:import:supabase` only from a trusted operator machine.
-4. Confirm private buckets named `proof`, `capacity`, `verification`, and
-   `payment-proof`. Keep Public bucket access disabled.
-5. Configure allowed Auth site and redirect URLs for Preview and Production.
-6. Record backup retention, perform one restore drill, and keep its date and
-   result in the private operations log.
+1. Create a project in the intended region and verify backup/restore first.
+2. Apply `supabase/migrations/001_loadgistic_schema.sql` through `013_public_capacity_provider_execution.sql` in numeric order.
+3. Run SQL lint and review every RLS policy/default-deny private table.
+4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
+5. Confirm private proof, verification, capacity, and payment buckets; add malware scanning/quarantine before serving uploads.
+6. Implement and parity-test the Supabase repository/managed Auth adapters.
+7. Inventory any old cloud demand data. Purge only after explicit approval and a verified backup; record exact before/after counts privately.
 
-The service-role key is server-only. It must never use a `NEXT_PUBLIC_` name or
-appear in a browser bundle. Private file reads must use an authorized server
-download or short-lived signed URL; the browser never receives a service-role
-credential.
+The service-role key is server-only and never uses a `NEXT_PUBLIC_` name. Browser code receives only explicit safe projections or authorized short-lived file access.
 
-## Vercel project
+## Hosting configuration
 
-Import the GitHub repository as a Next.js project and keep Node.js on the 22.x
-line. Configure these separately for Preview and Production:
+Use Node 22.x and configure Preview/Production independently:
 
 ```text
 APP_URL
@@ -47,21 +34,13 @@ SUPABASE_PROOF_BUCKET
 SUPABASE_CAPACITY_BUCKET
 SUPABASE_VERIFICATION_BUCKET
 SUPABASE_PAYMENT_BUCKET
+LOADGISTIC_EMAIL_WEBHOOK_URL
+LOADGISTIC_EMAIL_WEBHOOK_TOKEN
 ```
 
-`DATABASE_PATH` and `PRIVATE_UPLOAD_DIR` belong only to the local/Docker SQLite
-adapter. Do not treat Vercel's filesystem as durable storage.
-
-## GitHub controls
-
-Protect `main`, require pull requests, prevent force pushes, and require the
-`validate`, `e2e`, and `container` CI jobs. Keep workflow permissions read-only
-unless a narrowly scoped deployment job is added later. Dependabot remains
-limited to npm and GitHub Actions updates.
+`DATABASE_PATH` and `PRIVATE_UPLOAD_DIR` are local/Docker-only. Do not use a serverless filesystem for durable data. Configure a production map tile URL/provider in the deployment adapter before public traffic; community OSM tiles are not an SLA.
 
 ## Release verification
-
-Before traffic is enabled:
 
 ```bash
 npm ci
@@ -72,14 +51,8 @@ npm audit --audit-level=high
 NODE_ENV=production npm run launch:check
 ```
 
-Then verify `/api/health`, signup, login/logout, one shipment post, one Driver
-capacity update with browser location, one agreement/assignment, one tracking
-transition, one private-file read, and one denied cross-tenant read. The health
-response reports liveness separately from `readyForPublicProduction`.
+Then verify health, provider signup/login, capacity radius/route publication, public list/map and proximity, provider microsite contacts, provider shipment creation, both party codes, every valid transition, completion emails/retries, expiry cleanup, review/dispute, private proof authorization, and denied cross-provider access.
 
-## Rollback
+## Repository and rollback controls
 
-Promote immutable commits/images. Roll back the application artifact first.
-Do not reverse a data migration until its backup and tested down-migration or
-forward repair are approved. Suspend private-file downloads immediately if an
-authorization or storage-policy regression is detected.
+Protect `main`, require review, prevent force pushes, and require validate/E2E/container checks. Promote immutable commits/images. Roll back the application artifact first. Any data rollback or legacy-demand purge requires the verified backup and explicit approval; never delete new provider shipment, party grant, email, review, or audit history merely to restore an old UI.

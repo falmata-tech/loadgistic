@@ -14,7 +14,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: Empty, Partial, Busy, or Off Duty; Empty-only FTL/PTL/Both acceptance; Direct plus independent Multi Pick and Multi Drop acceptance; assigned-Driver device area and freshness; an undated live Partial route; an Empty Anywhere or dated Specific-route intent; contract-route interest; Public/Partners visibility; and expiry. Partial implies PTL and requires a live route even for Local work. Local uses a 10–50 km circle centered on the device-resolved locality. A full or unavailable truck is Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: Empty, Partial, or Off Duty; Empty-only FTL/PTL/Both acceptance; optional Multi Pick and Multi Drop; assigned-Driver device area and freshness; an undated live Partial route; an Empty Anywhere or Specific-route intent with an optional upcoming weekday/date; Public/Partners visibility; and expiry. Direct service is implicit and recurring-contract capacity is outside this model. Partial implies PTL and requires a live route even for Local work. Local uses a 10–50 km circle centered on the device-resolved locality. A full or unavailable truck is Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -78,7 +78,7 @@ The public homepage centers Ethiopian makers, growers, processors, producers, an
 
 A `DRIVER` may be either self-managed through a provider profile or employed through one transporter organization. Self-managed drivers retain full provider authority. Company drivers receive owner-controlled Shipment Board, Business contact, negotiation, and rich capacity permissions, with every command enforced in repository services and attributed to the acting driver.
 
-Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty, Partial, or Busy facts only after the assigned Driver supplies a fresh obscured device location. If no prior active configuration exists, an owner must configure the truck first. The duty command never stamps old coordinates as newly refreshed. Fleet owners retain organization-wide visibility and non-location authority.
+Company drivers operate only assigned organization vehicles. Duty On and Off is a narrow command that remains available even when rich capacity control is disabled: Off Duty hides the truck, while On Duty restores the most recent owner-configured Empty or Partial facts only after the assigned Driver supplies a fresh obscured device location. If no prior active configuration exists, an owner must configure the truck first. The duty command never stamps old coordinates as newly refreshed. Fleet owners retain organization-wide visibility and non-location authority.
 
 ## ADR-017 — Mutual network and code-gated customer tracking
 
@@ -221,18 +221,17 @@ execute indexed geographic predicates before pagination.
 ## ADR-026 — Availability freshness and native customer support
 
 Model truck duty, cargo-space availability, and signal freshness independently.
-Empty, Partial, and Busy are On Duty; Off Duty is the explicit hidden state.
+Empty and Partial are On Duty; Off Duty is the explicit hidden state.
 Empty and Partial remain visible during the early-market rollout when their
 updates become old, but their relative update times and stale warning are
 prominent and stale records rank below otherwise equivalent fresh records.
-Dated current and planned routes still expire independently. Busy means the
-truck has no cargo space now but remains open to calls, requires an
-available-again date and structured city, displays Preferred Routes instead of a
-current capacity route, and leaves discovery after that date unless refreshed.
-For Local or Both movement, the assigned Driver's device-derived place is the
-service-area center; the Driver chooses only a bounded 10–50 km radius. Busy's
-future city is a separate planning statement and never relabels current GPS as
-the expected future position.
+Partial live routes are undated signals whose freshness follows the capacity
+update. Empty Specific routes may carry an optional upcoming travel date; dated
+routes stop matching after that day, while undated routes follow signal freshness.
+For Local or Both movement, the assigned
+Driver's device-derived place is the service-area center; the Driver chooses only
+a bounded 10–50 km radius. Pre-deployment Busy fixtures are converted to Off
+Duty rather than inferred into a new capacity state.
 
 Implement a deliberately bounded native support inbox instead of buying a
 per-agent service or operating a second chat platform. Durable conversations,
@@ -285,16 +284,18 @@ view. Every record action goes to sign in; Login also offers Sign up. This
 demonstrates a changing real marketplace without exposing the authenticated
 detail or contact surface.
 
-Capacity publication follows the order in which a Driver works: truck status,
-device-confirmed work area, status-specific details, accepted shipment size,
-stop flexibility, future work, then visibility and publish. Keep a live route
+Capacity publication follows the order in which a Driver works: Status & work
+area, Visibility, Location & privacy, Route & loads, then Publish. Empty,
+Partial, and Off Duty sit with Local, Long-distance, or Both in the first step;
+Local or Both keeps its Local work-radius selector there. The location step
+controls only current-location privacy accuracy and Request or Refresh. Keep a live route
 attached to Partial space and imply PTL acceptance without a redundant selector.
-Empty alone chooses FTL, PTL, or Both and Anywhere or Specific route. Multi Pick,
-Multi Drop, contract-route interest, and visibility remain visible numbered
-decisions; only optional evidence is secondary. Use one final publish row and
-never a second review card. Fleet owners use the same editor on a truck-specific
-page but preserve the assigned Driver location and timestamp rather than claiming
-their office device or a manual place as the truck location.
+Empty alone chooses FTL, PTL, or Both and Anywhere or a Specific route with an optional travel weekday/date.
+Multi Pick and Multi Drop are optional; Direct and recurring-contract controls
+are absent. The location map remains visible in the collapsed post-save summary
+beside all saved capacity facts. Fleet owners use the same editor on a truck-
+specific page but preserve the assigned Driver location and timestamp rather
+than claiming their office device or a manual place as the truck location.
 
 Fleet driver management follows identity, current truck, then allowed work.
 Each company driver and each truck has at most one active assignment. A
@@ -359,3 +360,73 @@ current Verified badge. Category color makes the evidence inviting to inspect,
 but every badge retains text, icon, scope, status, review date, and expiry.
 Private documents remain owner/admin-only, and marketplace notices require
 members to perform their own current checks before an agreement.
+
+## ADR-030 — Public capacity marketplace and provider-owned guest execution
+
+Replace the authenticated two-sided demand marketplace with a public supply
+marketplace. Capacity seekers do not create accounts or post shipment demand.
+They browse an explicit public Capacity Board projection, optionally compare it
+with a browser-held location, inspect published provider microsites, and contact
+providers using only the contact methods each provider has made public. Fake
+Business accounts, demand records, interests, network relationships, and shared-
+load projections are purged from the local product dataset; no current
+navigation, public projection, or mutation depends on them. This supersedes the
+demand-side and Partners/public portions of ADR-003, ADR-004, ADR-011, ADR-012,
+ADR-013, ADR-015, ADR-017, ADR-018, ADR-019, ADR-020, ADR-021, ADR-024,
+ADR-025, ADR-027, and ADR-029 where they conflict; their historical records and
+unrelated privacy, audit, fleet, and bounded-query decisions remain valid.
+
+Represent supply with four deliberately distinct signals. Each truck has at
+most one current Empty or Partial record and chooses exactly one undated
+geometry: Empty may use a green Driver-obscured current radius or a yellow
+structured current route, while Partial is route-only. A separate violet circle
+always shows the Driver-selected location privacy accuracy. Each truck may also
+have one orange next trip with an optional future date. Each provider may
+publish multiple undated blue dashed recurring routes and cyan dotted permanent
+working-radius areas, explicitly labeled as market signals requiring confirmation. Off
+Duty hides only the current signal. Compatibility logic maps resolvable legacy
+fields to the closest current provider-capacity concept without inventing
+coordinates. Unresolvable route geometry becomes radius availability.
+
+Public discovery uses deterministic opaque cursor pages of 12 through 16 items,
+infinite append, and an accessible Load more control. Cards stay lightweight.
+List and Map are peer views, but only one shared map client and tile layer load
+on demand; a card action selects that record on the shared map. Exact visitor
+coordinates remain in browser memory and the server receives only a separately
+displaced search point. Exact Driver coordinates are displaced in the browser
+before submission. Public projections expose uncertainty circles and structured
+route evidence, not truck pins. Community OpenStreetMap tiles are development
+only; production map readiness requires a named provider or self-hosted tile
+service with attribution, capacity, caching, privacy, failure behavior, and
+monitoring reviewed against its terms.
+
+Only transport providers receive public profiles. A validated unique `/@handle`
+resolves to a published microsite with bounded theme colors, public fleet and
+capacity projections, provider-controlled phone, WhatsApp, email, and website,
+and an optional allowlisted YouTube identifier that loads a player only after
+visitor intent. Hidden contacts are absent from HTML and public APIs. Arbitrary
+CSS, HTML, scripts, and external embeds are never accepted.
+
+After an agreement made outside Loadgistic, the owning provider creates the
+shipment execution record using its own truck and Driver. Separate high-entropy
+shipper and receiver codes are stored only as digests and unlock short-lived,
+party-scoped guest tracking. Completion atomically queues one idempotent email
+per party; delivery failure never rolls back completion. Guest codes and access
+expire 30 days after completion while provider history remains. Production
+guest tracking stays disabled until managed email, private storage, scanning,
+rate limiting, cleanup, and monitoring adapters pass their release gates.
+
+The emailed shipper may submit one completed-shipment review of the provider;
+the provider never rates either guest. Every one- through five-star review
+publishes and counts immediately. A provider may dispute only a one-, two-, or
+three-star review. The disputed review remains public and counted during review;
+only an audited administrator Remove decision excludes it. This supersedes the
+private-low-rating publication rule in ADR-021 while preserving its audit and
+separation-from-account-enforcement principles.
+
+Rollout adds the provider-capacity and provider-execution schema first, proves
+public projections, then switches navigation and writes. The local fake-demand
+purge is intentionally destructive because none of those rows are customer
+data. Any equivalent cloud purge requires a verified backup and explicit
+operator approval. Rollback restores that backup and the previous application;
+it must not discard new provider shipment, grant, email, or review history.

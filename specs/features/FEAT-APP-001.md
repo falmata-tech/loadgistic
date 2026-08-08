@@ -1,9 +1,9 @@
 ---
 id: FEAT-APP-001
-title: Immediate account signup
+title: Immediate transport-provider signup
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001]
-problem: Businesses looking for logistics capacity and transporters looking for shipment demand need low-friction accounts without confusing account access with document verification.
-behavior: A public user signs up for either a Business account or a Transporter category; the active account, correct workspace, and seven-day trial are provisioned atomically; authenticity remains unverified until evidence is approved.
+problem: Transport providers need low-friction operating accounts while capacity seekers should browse and track without being forced to register.
+behavior: A public user signs up as a Fleet Transporter or Self-managed Driver / Owner-Operator; the active provider workspace and seven-day trial are provisioned atomically. Capacity-seeker signup is absent, and signup never implies document verification.
 contracts: [SignupCommand, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
 observability: [signup_audit, workspace_provisioned, trial_provisioned, rate_limit_outcome]
 rollout: Monitor failed signups and transactional provisioning errors; retain immutable signup records without an administrator application queue.
@@ -15,24 +15,23 @@ rollout: Monitor failed signups and transactional provisioning errors; retain im
 
 Given a unique email, supported account type, and password of at least ten characters\
 When the public signup form is submitted\
-Then an active user, the correct workspace, a draft Public Profile Info record, and seven-day trial are created atomically\
+Then an active user, the correct provider workspace, a draft provider microsite record, and seven-day trial are created atomically\
 And an approved signup record is retained for audit history\
 And the user can log in immediately.
 
-### Scenario: application choices use demand and transporter language
+### Scenario: signup offers only provider accounts
 
 Given an applicant opens the application form\
 When they choose an account type\
-Then demand-side companies are presented as Businesses looking for capacity\
-And supply-side applicants are presented as Fleet Transporter or Self-managed Driver / Owner-Operator\
-And no additional provider category is available.
+Then Fleet Transporter and Self-managed Driver / Owner-Operator are the only account choices\
+And a capacity seeker is directed to browse capacity or track a shipment without an account\
+And no Business or additional provider category is available.
 
 ### Scenario: signup provisions the right workspace
 
-Given a supported account type\
+Given a supported provider account type\
 When signup succeeds\
-Then a Business receives an organization workspace\
-And a Fleet Transporter receives a transporter organization workspace\
+Then a Fleet Transporter receives a transporter organization workspace\
 And a Self-managed Driver receives an independent provider profile\
 And no identity, license, driver, or truck verification is inferred from signup.
 
@@ -46,5 +45,5 @@ And no partially usable account or orphan signup record remains.
 ## Contract ownership
 
 - Inbound adapter: `/apply` and its signup route handler
-- Application service: `createBusinessApplication`
+- Application service: provider signup command
 - Tests: `tests/repository.test.mjs`

@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 
 export const metadata: Metadata = {
   title: { default: 'Loadgistic', template: '%s | Loadgistic' },
-  description: 'B2B road freight connecting businesses looking for capacity with fleet transporters and self-managed drivers looking for demand.',
+  description: 'Public road-freight capacity discovery connecting Ethiopian producers and businesses with transport providers already operating trucks and routes.',
   manifest: '/manifest.webmanifest',
   applicationName: 'Loadgistic',
   icons: {

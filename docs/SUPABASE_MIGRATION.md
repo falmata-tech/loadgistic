@@ -1,78 +1,43 @@
-# Supabase Migration
+# Supabase migration target
 
-The local Next.js MVP uses `src/lib/repository.js` and Node SQLite. The Supabase target is modeled in ordered migrations beginning with `001`: base schema, fleet-driver routes, network/tracking/truck detail, private low-rating moderation, time-bounded subscription access, mixed local/intercity geography, coordinate-authoritative route matching, native support with row-level participant isolation, private payment media, Busy capacity, indexed place search, and device-authoritative capacity rules.
+The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite. Ordered SQL migrations `001` through `013` model the PostgreSQL/RLS target, but `DATA_BACKEND=supabase` is not implemented. Setting that variable does not move authentication or business data. Production readiness therefore remains blocked.
 
-`src/lib/private-storage.js` is a working private-file adapter for local disk or Supabase Storage. `DATA_BACKEND=supabase` is not implemented yet: setting that environment value does not move business data or authentication to Supabase, and production readiness intentionally remains blocked.
+## Current migration coverage
 
-## Replacement boundary
+- `001`–`005`: base identity, provider/workspace, legacy shipment, fleet, verification, billing, and initial RLS contracts.
+- `006`–`008`: Ethiopia place data, structured geography, fleet routes, and native Support isolation.
+- `009`–`011`: launch storage/indexes, Driver-authoritative location, privacy choices, and evidence-specific verification.
+- `012`: converts Busy to Off Duty, removes dates from immediate capacity, adds radius-or-route geometry/work radius, maps compatible provider route fields, clears contract/available-again state, and narrows current market status.
+- `013`: adds provider microsite controls, next trips, recurring working areas, provider-owned shipments/events, separate party-code digests, private email retry records, and provider reviews. New execution tables have RLS enabled with no browser policy; the future server adapter must authorize commands and return explicit safe projections.
 
-Keep UI and domain commands stable:
+The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent cloud purge is intentionally not automatic: it is destructive and must be executed only after a verified backup, exact row-count review, and explicit rollout approval.
 
-- `createShipment`
-- `transitionShipment`
-- `expressInterest`
-- `publishCapacity`
-- `updateCompanyPage`
-- `addProof`
-- `reviewApplication`
-- `reviewPaymentProof`
-- `submitBusinessReview`
-- `listRatingModerationQueue`
-- `reviewBusinessRating`
-- `createSupportConversation`
-- `sendSupportMessage`
-- `claimSupportConversation`
-- `closeSupportConversation`
+## Required adapter work
 
-Replace their data operations with Supabase RPCs or RLS-protected queries.
+Keep these active contracts stable while replacing SQLite operations:
 
-## Recommended sequence
+- Public capacity cursor/detail and public provider projections.
+- Provider capacity, next-trip, recurring route/working-area, profile, fleet, and verification commands.
+- Provider shipment creation, assignment, transitions, proof authorization, and bounded history.
+- Shipper/receiver code verification and party-scoped guest sessions.
+- Completion-email queue/retry and 30-day retention cleanup.
+- Provider review submission, low-rating dispute, and audited review decision.
+- Provider billing, Support, and platform Operations commands.
 
-1. Apply PostgreSQL types, tables, constraints, indexes, and RLS.
-2. Create Auth trigger to populate `profiles`.
-3. Create private buckets for proof, capacity photos, and verification.
-4. Migrate seed reference data.
-5. Implement a Supabase repository with the same return shapes.
-6. Feature-flag `DATA_BACKEND=sqlite|supabase` during migration.
-7. Run parity tests against both adapters.
-8. Disable the local adapter in production.
+Use RLS-protected queries or transactional RPCs. Never place a service-role key in browser code, never return raw private-table rows to anonymous clients, and keep access-code verification on the server.
 
-Never use the service-role key in browser code.
+## Rollout sequence
 
-Migration `005` models the seven-day trial, 30-day manually approved period,
-Business-only sponsorship, private payment proof, and restrictive operating-data
-policy. Billing and account records remain readable after expiry; operating
-tables require `has_workspace_access()`.
+1. Back up the target database and prove restore into an isolated environment.
+2. Apply `001` through `013` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+3. Import the bundled place catalog with `npm run places:import:supabase`.
+4. Implement the managed identity and repository adapters behind `DATA_BACKEND=sqlite|supabase`.
+5. Run the same domain, authorization, cursor, guest-tracking, retention, and E2E suites against both adapters.
+6. Configure private proof storage, malware scanning/quarantine, email delivery, rate limiting, monitoring, and cleanup jobs.
+7. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
+8. Deploy the managed backend to a non-production environment, run `npm run launch:check`, and rehearse application and data rollback.
+9. Disable SQLite in production only after parity and operational gates pass.
 
-Migration `006` adds the indexed Ethiopia place catalog, repeatable profile
-service areas, movement-scope fields, Board query indexes, and private local-load
-points. Exact pickup and drop-off coordinates live in a separate table with
-participant-only RLS; marketplace and administrative summary queries do not
-join that table.
+## Rollback
 
-Migration `007` enables PostGIS, adds catalog references and coordinate-backed
-geography points to profile bases, declared routes, shipments, and current or
-planned capacity routes, and creates GiST indexes for `ST_DWithin` proximity
-queries. Its original Local-only constraint is superseded by the later device-
-authoritative capacity migration so Local Partial may publish with a live route.
-Labels remain presentation data; production route and Directory matching must
-use the geography columns.
-
-Migration `008` adds the SUPPORT role, bounded agent profiles, one-open-thread
-member conversations, text messages, lifecycle events, queue/message indexes,
-and participant/admin RLS. Assignment, claiming, closure, availability, and
-rate limits remain transactional server operations; the browser never receives
-a service-role credential.
-
-Migration `009` aligns the target with the launch candidate. It adds Busy truck
-availability, payment-proof metadata and its private bucket, plus prefix and
-trigram indexes for the Ethiopia place catalog. Import the bundled place data
-with `npm run places:import:supabase` only after the schema and production
-credentials are configured.
-
-Migration `010` retires active manual truck areas, permits Local Partial with a
-structured live route, narrows truck Local radius to 10–50 km, makes Partial
-PTL-only, and requires a 40 km obscured Driver location for every active truck
-signal. The production capacity RPC must additionally prove that a fresh device
-reading was submitted by the active assigned Driver or that an owner edit
-preserved that Driver reading and timestamp.
+Roll back the application artifact first. Schema/data rollback requires the reviewed backup because the approved demand purge is destructive. Never reverse the product by deleting newly created provider shipments, party grants, email attempts, reviews, or audit evidence.

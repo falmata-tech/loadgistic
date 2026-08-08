@@ -2,10 +2,10 @@
 id: FEAT-BIL-001
 title: Time-bounded workspace subscription access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-APP-001, FEAT-TRK-001]
-problem: Business, self-managed driver, and fleet transporter workspaces need a useful trial, manually confirmed monthly access, a reviewed free-access path for qualifying starting Businesses, and predictable limits after access expires.
-behavior: Successful signup starts a seven-day workspace trial; an administrator may separately grant sponsored Business access; a manually approved payment grants 30 days; expired or unpaid workspaces retain login, Home, Account, and billing access while operating screens and commands are denied.
-contracts: [WorkspaceSubscription, SubscriptionAccessPolicy, TrialPeriod, PaidPeriod, SponsoredBusinessAccess, PaymentProofAggregate, EtbAmount, BillingReviewPolicy, BillingFilePort]
-observability: [billing_audit, subscription_access_denial, trial_provisioned, sponsored_access_granted, paid_period_started, submission_outcome, review_outcome]
+problem: Self-managed Driver and fleet transporter workspaces need a useful trial, manually confirmed monthly access, and predictable limits after access expires.
+behavior: Successful provider signup starts a seven-day workspace trial; a manually approved payment grants 30 days; expired or unpaid providers retain login, Home, Account, and billing access while provider operating commands are denied. Public capacity discovery and guest tracking never depend on a seeker subscription.
+contracts: [WorkspaceSubscription, SubscriptionAccessPolicy, TrialPeriod, PaidPeriod, PaymentProofAggregate, EtbAmount, BillingReviewPolicy, BillingFilePort]
+observability: [billing_audit, subscription_access_denial, trial_provisioned, paid_period_started, submission_outcome, review_outcome]
 rollout: Keep review manual and plan prices undisclosed until a separately specified payment integration and commercial price schedule are approved; monitor expiry denials and renewal-review time.
 ---
 
@@ -24,7 +24,7 @@ And the submitting workspace and an authorized billing administrator may open an
 
 Given an authenticated user opens More and billing information\
 When their workspace has an assigned subscription\
-Then Business, Self-managed Driver / Owner-Operator, and Fleet Transporter plans use distinct labels and descriptions appropriate to that workspace\
+Then Self-managed Driver / Owner-Operator and Fleet Transporter plans use distinct labels and descriptions appropriate to that workspace\
 And no standard plan price is displayed.
 
 ### Scenario: payment history remains bounded
@@ -37,18 +37,10 @@ And every proof remains reachable without exposing another workspace's proof.
 
 ### Scenario: new workspace receives a trial
 
-Given a Business, Fleet Transporter, or Self-managed Driver completes signup\
+Given a Fleet Transporter or Self-managed Driver completes signup\
 When the workspace and subscription are provisioned\
 Then access begins immediately as a seven-day trial\
 And company Drivers use their Fleet Transporter's workspace access rather than receiving separate subscriptions.
-
-### Scenario: administrator supports a qualifying starting Business
-
-Given an existing Business workspace\
-When the administrator grants sponsored free access from platform operations\
-Then the Business receives continuing platform access without a payment deadline\
-And the sponsorship decision is persisted and audited\
-And the same option is rejected for Fleet Transporter or Self-managed Driver workspaces.
 
 ### Scenario: administrator confirms a monthly payment
 
@@ -64,8 +56,15 @@ Given a non-sponsored workspace has no unexpired trial or paid period\
 When one of its members signs in or requests an operating page\
 Then sign-in succeeds and Home shows the expired or unpaid plan state\
 And Account and payment-proof submission remain available\
-And marketplace, fleet, load, capacity, network, profile, verification, and tracking workspace pages are denied\
+And fleet, provider shipment, capacity, profile, verification, and tracking-operation workspace pages are denied\
 And protected commands are denied even if called without using the interface.
+
+### Scenario: public users do not inherit provider billing gates
+
+Given a visitor browses public capacity, a provider microsite, or valid guest tracking\
+When the related provider subscription is evaluated\
+Then public access is governed by publication, assignment, and guest-retention policy rather than a visitor account\
+And no visitor plan or payment screen is required.
 
 ### Scenario: payment waits for review after expiry
 

@@ -10,7 +10,7 @@ import { capacityPrivacyRadii, obscureCoordinate, possibleDistanceRange, validat
 
 test('capacity rules are simple and strict',()=>{
  assert.equal(validateCapacity('EMPTY',''),100);
- assert.equal(validateCapacity('BUSY',''),0);
+ assert.throws(()=>validateCapacity('BUSY',''),/INVALID_CAPACITY_STATUS/);
  assert.equal(validateCapacity('OFF_DUTY',''),0);
  assert.equal(validateCapacity('PARTIAL','40'),40);
  assert.throws(()=>validateCapacity('FULL',''),/INVALID_CAPACITY_STATUS/);
@@ -32,7 +32,7 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
  assert.deepEqual(validateAcceptedLoads('EMPTY','PTL'),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('EMPTY','BOTH'),{acceptsFullLoad:true,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('OFF_DUTY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
- assert.deepEqual(validateAcceptedLoads('BUSY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
+ assert.throws(()=>validateAcceptedLoads('BUSY',''),/ACCEPTED_LOADS_REQUIRED/);
  assert.deepEqual(validateAcceptedLoads('PARTIAL',''),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('PARTIAL','BOTH'),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.equal(validateCapacityServiceRadius('10'),10);
@@ -163,10 +163,9 @@ test('capacity freshness labels expired data honestly',()=>{
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now-1).toISOString(),12),'EXPIRED');
 });
 
-test('cargo-space freshness stays visible while Busy expires by ready date',()=>{
+test('cargo-space freshness is based on the current signal update',()=>{
  assert.equal(capacitySignalFreshness('EMPTY','2026-07-28T09:00:00.000Z',null,12,'2026-07-30'),'UPDATE_NEEDED');
- assert.equal(capacitySignalFreshness('BUSY',new Date().toISOString(),'2026-07-30',12,'2026-07-30'),'FRESH');
- assert.equal(capacitySignalFreshness('BUSY','2026-07-30T09:00:00.000Z','2026-07-29',12,'2026-07-30'),'EXPIRED');
+ assert.equal(capacitySignalFreshness('PARTIAL',new Date().toISOString(),null,12),'FRESH');
 });
 
 test('legacy capacity expiry utility remains deterministic for historical records',()=>{

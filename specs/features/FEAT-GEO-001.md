@@ -1,123 +1,97 @@
 ---
 id: FEAT-GEO-001
-title: Local service areas and mixed freight geography
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001, FEAT-MAT-001]
-problem: City-radius freight is forced into intercity route fields even when a Business or truck serves only one locality, producing misleading map lines and weak discovery.
-behavior: Loads, truck capacity, and authenticated profiles distinguish Local service areas from Long-distance routes; Local truck discovery may compare a Business's browser-only position with Driver-chosen privacy circles, while exact optional load pins remain private to authorized shipment parties.
-contracts: [MovementScope, ServiceArea, LocalLoadLocation, LocalCapacityArea, LocalNearMeSearch, TruckPrivacyCircle, CoverageProjection, CoverageComparison, GeographicMatch, PrivateLoadPoint]
-observability: [service_area_update_audit, movement_scope_filter, geographic_match_kind, bounded_geography_query]
-rollout: Additive columns default existing records to the internal intercity scope, existing profile routes remain authoritative, member-entered operating-region text is not silently converted, and local controls can be hidden without deleting stored geography.
+title: Privacy-aware public capacity geography
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001, FEAT-MAT-001]
+problem: Capacity seekers need to understand nearby and route-based truck availability without exposing an exact Driver or visitor position.
+behavior: Empty truck capacity uses radius or route while Partial is route-only. Drivers obscure device location before publication, the selected signal always shows a separate privacy circle sized by the Driver's accuracy, and recurring provider service may be a route or permanent working radius.
+contracts: [AvailabilityGeometry, CurrentRadiusArea, CurrentRoute, RecurringRoute, RecurringWorkingArea, VisitorSearchArea, TruckPrivacyCircle, PublicCapacityGeography, GeographicMatch]
+observability: [geographic_match_kind, visitor_location_consent_outcome, bounded_geography_query, public_map_open]
+rollout: Reuse structured place references and additive capacity fields, preserve legacy route and local-area data for rollback, and keep location-based ranking disabled until projection and privacy tests pass.
 ---
 
-# Local and intercity freight geography
+# Public capacity geography
 
-### Scenario: member declares a local service area
+### Scenario: current availability chooses one geography
 
-Given a Business, fleet transporter, or self-managed driver edits its Public Profile\
-When it selects a reviewed Ethiopian city or town and a radius from 5 through 100 kilometers\
-Then a structured Local Service Area is stored for that profile\
-And its center is a catalog settlement coordinate rather than a facility or live-device location\
-And multiple cities are represented as separate service areas rather than one invented corridor.
+Given an authorized Driver publishes current capacity\
+When availability geography is selected\
+Then Empty chooses Available in a radius or Available on a specific route\
+And Partial is always Available on a specific route\
+And the choice is independent from current-location privacy controls\
+And immediate radius and route signals do not require a date.
 
-### Scenario: local profile coverage uses circles
+### Scenario: current radius uses a Driver-obscured position
 
-Given an authenticated member opens a profile with Local Service Areas\
-When the Coverage map renders\
-Then each area is shown as a translucent city-centered radius circle\
-And the city or town label remains visible\
-And no route line, facility pin, or current vehicle position is invented.
+Given the assigned Driver chooses a supported privacy radius and grants browser location\
+When current radius availability is refreshed\
+Then the exact device coordinate is displaced in the browser before submission\
+And only the displaced center, chosen privacy radius, safe general-area label, and timestamp are stored\
+And the public map always shows a violet privacy circle sized by that chosen accuracy\
+And radius availability adds a separate green working circle\
+And Fleet owners may preserve but cannot replace that Driver location with their own device position.
 
-### Scenario: mixed profile coverage comparison remains explainable
+### Scenario: current route uses structured endpoints
 
-Given a member compares its coverage with another profile\
-When either side has Local Service Areas, declared routes, or fresh truck geography\
-Then viewed-profile coverage uses the existing solid blue ownership treatment\
-And viewer-owned coverage uses the existing high-contrast warm-brown dashed ownership treatment above it\
-And local-to-local overlap, route-to-route endpoint alignment, and route-to-local endpoint alignment are labeled separately\
-And no overlap percentage, service guarantee, or trust score is produced.
+Given the Driver selects specific-route availability\
+When origin and destination are saved\
+Then both are selected from the reviewed place catalog\
+And the public map shows a yellow route relationship with direction\
+And no travel date is requested or inferred.
 
-### Scenario: Business posts a local load
+### Scenario: next trip remains distinct
 
-Given an authenticated Business creates a freight load\
-When it chooses Local movement\
-Then one reviewed city or town is required\
-And pickup and drop-off labels are optional before agreement\
-And optional map points may be recorded for later execution\
-And origin and destination route cities are not required.
+Given a provider records the one next trip for a truck\
+When the trip is published\
+Then it has structured origin, destination, and an optional future travel date\
+And the weekday and calendar date are displayed together when a date exists\
+And it appears in orange and is labeled Next trip rather than current capacity\
+And an undated next trip never claims a specific departure day.
 
-### Scenario: local load points remain private
+### Scenario: recurring routes and working areas are market signals
 
-Given a Local load includes pickup or drop-off coordinates\
-When a marketplace, pooled-load, directory, profile, or administrative summary projection is returned\
-Then exact coordinates are absent\
-And only the locality and member-entered safe area labels may be displayed\
-And the load owner may review the exact points it entered\
-And other authorized shipment parties may read the exact points only after agreement.
+Given a provider records one or more recurring service signals\
+When they are published on the Capacity Board or microsite\
+Then a structured directional route appears as an undated blue dashed relationship\
+And a permanent working radius appears as a cyan dotted/fill circle centered on a structured place\
+And the label states Recurring route or Recurring working area plus Confirm availability\
+And it is not represented as a currently located truck.
 
-### Scenario: local load pin may use the owner's current position
+### Scenario: visitor location is optional and client-private
 
-Given a Business is creating a Local load and has selected Pickup or Drop-off\
-When it grants browser location and chooses Use my location\
-Then the current coordinate is placed into that optional private shipment point\
-And the Business may move or clear the pin before submission\
-And no exact load point appears in Board discovery or becomes transporter-visible before agreement.
+Given a visitor opens public capacity discovery\
+When the visitor grants location permission\
+Then the exact coordinate stays in browser memory\
+And a separately displaced search point and bounded search radius are sent for ranking\
+And the shared map may show a browser-rendered You marker relative to public uncertainty areas.
 
-### Scenario: Near me compares uncertainty areas rather than exact trucks
+Given the visitor denies or dismisses permission\
+When the Board continues\
+Then all public capacity remains browsable\
+And manual place and route filters remain available\
+And no repeated permission prompt blocks the page.
 
-Given a Business has requested Local truck results relative to its device\
-When a truck has a Driver-published displaced point and privacy radius\
-Then filtering tests whether the search area and truck privacy area overlap\
-And ordering and cards use a bounded possible-distance range\
-And the map renders the Business's browser-held position separately from the truck's privacy circle\
-And no exact truck coordinate is inferred or claimed.
+### Scenario: public map does not multiply map clients
 
-### Scenario: local truck publishes simple availability
+Given a cursor page contains many capacity cards\
+When the list view renders\
+Then cards use lightweight geographic summaries and a prominent View on map action\
+And no live tile map is instantiated inside each card.
 
-Given an authorized driver or fleet owner publishes capacity for one truck\
-When Local or Both service scope is chosen\
-Then a reviewed current city or town and a radius from 5 through 100 kilometers are required\
-And the fresh capacity may be published without current or planned intercity routes\
-And Local-only capacity must be Empty with 100 percent available\
-And Both may use Partial only with the required live current intercity route\
-And normal duty, accepted-load, stop, visibility, proof, and expiry rules still apply.
+When the visitor opens Map view or a card map action\
+Then one shared map is loaded on demand and synchronized with the current filtered feed\
+And violet privacy, green current radius, yellow current route, orange next trip, blue dashed recurring route, and cyan recurring working area use shape, line style, icon, and text in addition to color.
 
-### Scenario: local capacity does not claim device location
+### Scenario: legacy geography is migrated honestly
 
-Given a driver publishes Local capacity from a selected locality\
-When no device location is submitted\
-Then the settlement center and service radius describe declared operating coverage\
-And they are not labeled as a current GPS position\
-And location freshness refers to the capacity declaration time.
-
-### Scenario: Local and Long-distance route Board filters
-
-Given an authenticated member opens the Shipment Board or Truck Board\
-When it selects All, Local, or Long-distance routes\
-Then only authorized records in that movement scope are considered\
-And Local results may be narrowed by a bounded searchable locality\
-And Long-distance route results retain separate origin and destination filters\
-And all other compatible Board filters remain available.
-
-### Scenario: geographic matches state their evidence
-
-Given a Local load or capacity is compared with recorded coverage\
-When structured coordinates are available\
-Then point-in-radius or circle-overlap rules may produce an exact geographic alignment label\
-And a locality-only record may produce only a locality alignment label\
-And free-text landmarks never become verified geographic matches.
-
-### Scenario: legacy records remain intercity
-
-Given a load or capacity existed before mixed freight geography\
-When the additive migration runs\
-Then its movement scope becomes Long-distance routes\
-And its existing route endpoints and matching behavior remain unchanged\
-And no operating-region text is assigned an arbitrary radius.
+Given older capacity has Local, Long-distance, Both, dated Empty route, or preferred-route fields\
+When compatibility projection runs\
+Then resolvable active data maps to the closest current radius, current route, next-trip, or recurring-corridor concept\
+And obsolete Board fields are hidden\
+And unresolved data stays preserved for rollback without inventing coordinates or publication.
 
 ## Contract ownership
 
-- Domain rules: movement scope, radius validation, distance, overlap, and geographic match helpers in `src/lib/domain.js`
-- Persistence: service-area and additive load/capacity geography in `src/lib/db.js` and the cloud migration
-- Application services: profile, load, capacity, and comparison projections in `src/lib/repository.js`
-- Frontend: load and capacity composers, Boards, and Coverage map
-- Tests: `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Domain: radius, route, direction, displacement, overlap, and expiry rules
+- Persistence: current capacity, next-trip, recurring-route, recurring-working-area, and structured location fields
+- Frontend: provider editor, public Capacity Board filters, cards, and one shared map
+- Tests: domain, repository, authorization, E2E, and visual audit

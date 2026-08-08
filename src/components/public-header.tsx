@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Boxes, CirclePlus, Info, LayoutDashboard, LogIn, Truck } from 'lucide-react';
+import { Building2, CirclePlus, Gauge, Info, LayoutDashboard, LogIn, Route } from 'lucide-react';
 import { Logo } from './logo';
 import { getCurrentUser } from '@/lib/auth';
 
@@ -10,17 +10,18 @@ export async function PublicHeader() {
       <div className="container public-nav">
         <Logo />
         <nav className="public-links" aria-label="Public navigation">
-          <Link href="/?board=SHIPMENTS#marketplace-preview-title"><Boxes aria-hidden="true"/>Shipment Board</Link>
-          <Link href="/?board=TRUCKS#marketplace-preview-title"><Truck aria-hidden="true"/>Truck Board</Link>
+          <Link href="/capacity"><Gauge aria-hidden="true"/>Capacity</Link>
+          <Link href="/providers"><Building2 aria-hidden="true"/>Providers</Link>
+          <Link href="/track"><Route aria-hidden="true"/>Track</Link>
           <Link href="/about"><Info aria-hidden="true"/>About</Link>
           {user
             ? <Link className="button" href="/app/home"><LayoutDashboard aria-hidden="true"/>Workspace</Link>
-            : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Sign up</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Log in</Link></>}
+            : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Provider sign up</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Provider login</Link></>}
         </nav>
         <div className="public-session-compact" data-testid="public-session-action">
           {user
             ? <Link className="button" href="/app/home"><LayoutDashboard aria-hidden="true"/>Workspace</Link>
-            : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Sign up</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Log in</Link></>}
+            : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Provider sign up</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Provider login</Link></>}
         </div>
       </div>
     </header>

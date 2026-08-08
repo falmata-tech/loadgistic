@@ -2,8 +2,8 @@
 id: FEAT-IAM-001
 title: Local identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
-problem: Signed-up businesses and transporters need secure workspace access while suspended, anonymous, or unauthorized accounts remain blocked from private marketplace information.
-behavior: Valid active users receive a signed HTTP-only session, are routed to role-scoped pages on the current browser origin, and must be authenticated before reading company, provider, capacity, shipment-marketplace, or support information. Support staff use a support-only role that grants no marketplace or administration authority.
+problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
+behavior: Valid active provider users receive a signed HTTP-only session and role-scoped workspace access. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
 contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Keep local auth demo-only; migrate to managed identity before public production launch.
@@ -50,16 +50,17 @@ And an explicitly cross-site request remains denied.
 ### Scenario: authenticated public navigation preserves session context
 
 Given an active user has an authenticated workspace session\
-When they open an authenticated company page or revisit the login route\
+When they open a public provider page or revisit the login route\
 Then the public navigation offers a return to their workspace\
 And the login route redirects them to `/app/home` without requesting credentials again.
 
-### Scenario: anonymous marketplace information is denied
+### Scenario: anonymous access is projection-bound
 
 Given no valid session exists\
-When a visitor requests provider directory, company page, capacity marketplace, or load information\
-Then the visitor is redirected to login\
-And no company, route, capacity, or marketplace record is rendered.
+When a visitor requests the public Capacity Board, provider Directory, published microsite, or code-entry Track page\
+Then the explicit public projection is returned without login\
+And private workspace rows, hidden contacts, exact coordinates, party emails, assignments, code digests, and proof files are absent\
+And requesting any provider operating page still redirects safely to login.
 
 ### Scenario: local fixture credentials are not publicly presented
 
@@ -87,7 +88,7 @@ And the service worker does not cache Next.js executable chunks, preventing a fr
 
 ## Contract ownership
 
-- Inbound adapters: `src/app/login/page.tsx`, `src/app/companies/*`, workspace pages, `src/app/api/auth/*`
+- Inbound adapters: `src/app/login/page.tsx`, public capacity/provider/track pages, workspace pages, `src/app/api/auth/*`
 - Application boundary: `src/lib/auth.ts`, repository user lookups
 - Outbound adapter: signed cookie and SQLite user store
 - Tests: `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`

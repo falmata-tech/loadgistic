@@ -22,7 +22,7 @@ type LocationState='idle'|'requesting'|'saving'|'saved'|'denied'|'error';
 
 const trackingActions=[
   {status:'ASSIGNED',label:'Loading',hint:'Truck is being loaded',Icon:PackageCheck,acceptsProof:true},
-  {status:'IN_TRANSIT',label:'En route',hint:'Shipment is moving',Icon:Navigation,acceptsProof:true},
+  {status:'IN_TRANSIT',label:'En route',hint:'Shipment is moving',Icon:Navigation,acceptsProof:false},
   {status:'DELIVERED',label:'Unloading',hint:'Shipment reached delivery',Icon:PackageOpen,acceptsProof:true},
   {status:'COMPLETED',label:'Complete',hint:'Shipment is finished',Icon:CircleCheckBig,acceptsProof:false},
   {status:'ISSUE',label:'Problem',hint:'Report before unloading',Icon:TriangleAlert,acceptsProof:true}

@@ -113,7 +113,7 @@ try{
     await scroll(page,360,'Matching is a discovery aid. Each original shipment remains independent.',3500);
     await open(page,'/app/fleet','4. Fleet owners manage trucks and Drivers from My Fleet.',4000);
     await open(page,'/app/fleet/veh-trans-1','Each truck gets its own clear capacity workflow.',4000);
-    await scroll(page,520,'Empty, Partial, Busy, and Off Duty are direct operational choices.',3500);
+    await scroll(page,520,'Empty, Partial, and Off Duty are direct operational choices.',3500);
   });
 
   const driver=await record(browser,'long-driver',driverState,async page=>{

@@ -1,80 +1,38 @@
-# Launch Readiness
+# Launch readiness
 
 ## Current verdict
 
-The repository is ready for local development, browser testing, a controlled
-single-machine demonstration, and continued product validation. It is not yet
-approved for high-traffic public production. `npm run launch:check` enforces
-that distinction and must remain red until the blockers below are implemented.
+The repository supports local development, browser testing, controlled demonstrations, and continued product validation. It is not approved for public production. `npm run launch:check` must remain red until the managed-runtime blockers below are resolved.
 
-## Working now
+## Verified locally
 
-- Production compilation, TypeScript, specifications, repository tests, and
-  desktop/mobile Playwright workflows.
-- Private JPEG, PNG, WebP, and PDF validation with opaque file references.
-- Local private storage and a Supabase private-storage backend.
-- Secret-code tracking, five-minute idle lock, approximate location privacy,
-  status actions, and optional shipment-action proof.
-- Bundled searchable Ethiopia place data and bounded server/client queries.
-- Server pagination on the main marketplace, Directory, My Shipments, billing,
-  verification, support, fleet, network, and administration surfaces.
-- Installable PWA shell and deterministic launch/test fixtures.
-- Driver-authoritative truck location with retry controls, owner timestamp
-  preservation, and Local Partial route support.
-- Reproducible Node 22 standalone Docker image, non-root runtime, persistent
-  local-data volume, and liveness health check.
-- Credential-free Vercel and Supabase setup checklist in
-  `docs/CLOUD_HANDOFF.md`.
+- Public account-free capacity list/map with real tile rendering, clustering, provider details, and safe proximity behavior.
+- Busy supply-only fixture across fleet companies and self-managed owner-operators, with no local demand data.
+- Provider capacity/profile/fleet workflows and provider-owned shipment tracking.
+- Separate party codes, governed transitions, 30-day guest expiry, completion-email retry records, and provider reviews/disputes.
+- Specification/source checks, Node tests, TypeScript, production build, desktop/mobile E2E, and approved visual audit evidence as recorded in `docs/PROGRESS.md`.
+- Standalone Node build, private local storage adapter, PWA shell, and health endpoint.
 
 ## Public-production blockers
 
-1. Implement the Supabase/PostgreSQL repository and parity tests for every
-   domain command currently backed by synchronous SQLite.
-2. Replace local account authentication with Supabase Auth or another managed
-   identity adapter, preserving role and workspace authorization.
-3. Move rate limits from process memory to a shared store so multiple server
-   instances enforce one policy.
-4. Add malware scanning and quarantine before uploaded documents become
-   downloadable, including private Supabase objects.
-5. Configure a unique 32-character-or-longer `SESSION_SECRET`, private buckets,
-   backups, monitoring, retention, and restore/rollback drills.
-
-The service-role key is server-only. No browser bundle or `NEXT_PUBLIC_*`
-variable may contain it.
-
-`/api/health` returning HTTP 200 proves only that the process and configured
-database are reachable. Its `readyForPublicProduction` field remains false
-while the blockers above exist; `npm run launch:check` is the release gate.
+1. Implement and parity-test the Supabase/PostgreSQL repository and managed identity adapter. SQLite is not the public-production datastore.
+2. Apply/lint migrations `001`–`013` in staging, verify RLS/RPC behavior, import place data, and rehearse backup/restore.
+3. Inventory and purge any cloud legacy demand data only after a verified backup and explicit approval.
+4. Configure managed private storage plus malware scanning/quarantine.
+5. Configure `LOADGISTIC_EMAIL_WEBHOOK_URL`, webhook authentication, delivery/retry monitoring, and scheduled guest-retention cleanup.
+6. Add shared rate limiting and bot protection for public discovery, login, tracking unlock, reviews, and signup.
+7. Choose a production tile service/self-hosted source with reviewed attribution, privacy, capacity, caching, failure, and monitoring terms.
+8. Configure strong production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
 
 ## Deployment gates
 
 ```bash
 npm ci
-npm run check
-npm test
-npm run typecheck
+npm run quality
 npm run build
 npm run test:e2e
 npm audit --audit-level=high
 npm run launch:check
 ```
 
-The final command must pass in the selected production environment. A passing
-build by itself is not evidence that the persistence and security architecture
-can handle public traffic.
-
-## Product simplification guidance
-
-- Keep Status timeline as the default. Offer approximate location only after
-  agreement, when the Business and provider know who must operate it.
-- Keep exact local pickup/drop-off pins optional and private; city, town, and
-  locally recognized area text should remain enough to post.
-- Keep route comparison under Public Profiles and Network. It is useful during
-  partner selection but too advanced for Driver Home.
-- Keep temporary shipment-size proof contextual to an interested provider.
-  Avoid a permanent documents workspace for routine shipment negotiation.
-- Keep ratings after completed shipments and verification badges visible on
-  Boards. Early users are more likely to understand trust evidence than a
-  separate reputation-management workflow.
-- Keep native text Support. Avoid attachments, typing indicators, and complex
-  omnichannel routing until actual support volume proves they are needed.
+Run the approved visual audit for a release candidate after the same immutable artifact and backing services are configured. `/api/health` returning HTTP 200 proves process/database reachability only; it does not assert public-production readiness.

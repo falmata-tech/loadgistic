@@ -1,49 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Boxes, Factory, Gauge, Route, ShieldCheck, Truck, UserRound } from 'lucide-react';
+import { ArrowRight, Boxes, Factory, Gauge, Route, ShieldCheck, Truck } from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 
-export const metadata:Metadata={
-  title:'About',
-  description:'How Loadgistic helps Ethiopian Businesses and transport providers coordinate road freight and use truck capacity more effectively.'
-};
+export const metadata:Metadata={title:'About',description:'Why Loadgistic makes existing Ethiopian road-freight capacity easier for local producers and businesses to discover.'};
 
-export default function AboutPage(){
-  return <>
-    <PublicHeader/>
-    <main>
-      <section className="about-hero">
-        <div className="about-hero-shade"/>
-        <div className="container about-hero-copy"><span>Road freight coordination for Ethiopia</span><h1>A more connected freight market for businesses that make and move goods.</h1><p>Loadgistic connects structured shipment demand with current truck capacity across local, regional, and interregional routes.</p></div>
-      </section>
-
-      <section className="about-purpose-band">
-        <div className="container about-purpose-layout">
-          <div><span className="section-kicker">Why it exists</span><h2>Logistics should expand a producer&apos;s market—not define its limits.</h2></div>
-          <p>Manufacturers, workshops, growers, processors, and producers often depend on third-party road transport to reach suppliers and customers. At the same time, owner-operators and small fleets may have empty trucks, Partial capacity, or established routes that are difficult for businesses to discover. Loadgistic makes both sides visible in one governed B2B workflow, from discovery and agreement through truck assignment and tracking.</p>
-        </div>
-      </section>
-
-      <section className="about-work-band">
-        <div className="container about-work-grid">
-          <div><Factory aria-hidden="true"/><span><strong>Businesses publish freight requirements</strong><p>Structured routes, deadlines, shipment size, and visibility make demand comparable.</p></span></div>
-          <ArrowRight className="about-flow-arrow" aria-hidden="true"/>
-          <div><Truck aria-hidden="true"/><span><strong>Transport providers publish capacity</strong><p>Current area, cargo space, route, freshness, and work preferences describe availability.</p></span></div>
-          <ArrowRight className="about-flow-arrow" aria-hidden="true"/>
-          <div><Route aria-hidden="true"/><span><strong>Both sides assess operational fit</strong><p>Route and Local-area matching support a direct commercial and operational discussion.</p></span></div>
-        </div>
-      </section>
-
-      <section className="about-principles-band">
-        <div className="container about-principles-grid">
-          <div><Gauge aria-hidden="true"/><strong>Use existing capacity efficiently</strong><p>Consider Empty and Partial capacity before arranging a separate dedicated movement.</p></div>
-          <div><Boxes aria-hidden="true"/><strong>Keep every shipment accountable</strong><p>Each shipment retains its own agreement, assignment, and tracking history even when cargo space is shared.</p></div>
-          <div><ShieldCheck aria-hidden="true"/><strong>Use evidence with independent judgment</strong><p>Badges identify reviewed document categories. Each party must still confirm identity, authority, cargo fit, and terms.</p></div>
-        </div>
-      </section>
-
-      <section className="about-cta-band"><div className="container"><div><strong>Need road capacity?</strong><span>Publish a shipment for your Business.</span><Link className="button" href="/apply?type=ENTERPRISE_SHIPPER">Business sign up<ArrowRight aria-hidden="true"/></Link></div><div><strong>Have truck capacity?</strong><span>Connect your truck or fleet with demand.</span><Link className="button" href="/apply?type=TRANSPORT_COMPANY">Transporter sign up<ArrowRight aria-hidden="true"/></Link></div></div></section>
-    </main>
-    <footer className="footer"><div className="container footer-grid"><strong>Loadgistic</strong><span>B2B road-freight discovery, agreement, and tracking for Ethiopia.</span><Link className="button" href="/login"><UserRound aria-hidden="true"/>Log in</Link></div></footer>
-  </>;
-}
+export default function AboutPage(){return <><PublicHeader/><main><section className="about-hero"><div className="about-hero-shade"/><div className="container about-hero-copy"><span>More trade from the trucks already on the road</span><h1>Freight should connect productive people—not keep them trapped inside one market.</h1><p>Loadgistic exists for the manufacturers, workshops, growers, processors, and small producers whose logistics costs can decide whether a local or regional sale is possible at all.</p></div></section><section className="about-purpose-band"><div className="container about-purpose-layout"><div><span className="section-kicker">The problem worth solving</span><h2>The smallest producers often carry the largest practical risk.</h2></div><p>They buy inputs before revenue arrives, depend on uncertain transport, and lose opportunities when a dedicated truck costs more than the trade can support. Meanwhile owner-operators and small fleets travel with empty returns, partial space, and recurring lanes that are difficult for new customers to discover. Loadgistic makes those supply signals visible without forcing the capacity seeker into an account or a public demand post.</p></div></section><section className="about-work-band"><div className="container about-work-grid"><div><Truck aria-hidden="true"/><span><strong>Providers publish real supply signals</strong><p>Current radius, current route, next trip, recurring route, and permanent working area each say something different.</p></span></div><ArrowRight className="about-flow-arrow" aria-hidden="true"/><div><Factory aria-hidden="true"/><span><strong>Capacity seekers compare freely</strong><p>They can use filters, relative location, maps, reviews, evidence badges, and provider pages without signing up.</p></span></div><ArrowRight className="about-flow-arrow" aria-hidden="true"/><div><Route aria-hidden="true"/><span><strong>The parties agree directly</strong><p>They confirm cargo fit, documents, authority, timing, and price offline; the provider then creates tracking.</p></span></div></div></section><section className="about-principles-band"><div className="container about-principles-grid"><div><Gauge aria-hidden="true"/><strong>Make unused space discoverable</strong><p>An empty return or partial load can become a revenue opportunity and a lower-cost shipping option.</p></div><div><Boxes aria-hidden="true"/><strong>Keep execution accountable</strong><p>Once terms are agreed, provider-owned tracking gives the shipper and receiver separate private access and an emailed record.</p></div><div><ShieldCheck aria-hidden="true"/><strong>Use evidence with judgment</strong><p>Verification and completed-shipment reviews improve context. Every party must still confirm current originals and operating terms.</p></div></div></section><section className="about-cta-band"><div className="container"><div><strong>Looking for capacity?</strong><span>Start on the public Board. No account needed.</span><Link className="button" href="/capacity">Browse capacity<ArrowRight aria-hidden="true"/></Link></div><div><strong>Operate a truck or fleet?</strong><span>Show the market where you can serve it.</span><Link className="button" href="/apply?type=TRANSPORT_COMPANY">Provider sign up<ArrowRight aria-hidden="true"/></Link></div></div></section></main></>}

@@ -1,196 +1,68 @@
 ---
 id: FEAT-PRV-001
-title: Authenticated Business and Transporter Directory
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-TRK-001, FEAT-NET-001, FEAT-GEO-001]
-problem: Signed-in members need one trustworthy directory for confirming Businesses, fleet transporters, and self-managed drivers without exposing account credentials or marketplace data anonymously.
-behavior: Authenticated Public Profiles expose permitted organization identity, explicit public contact information, declared Local Service Areas and route pairs, verification state, and participant ratings; Businesses call durable route declarations Freight Routes while providers call them Preferred Routes. Coverage maps and comparisons combine city-radius areas with stable and fresh route geography without converting temporary truck signals into permanent profile coverage.
-contracts: [AuthenticatedCompanyView, CompanyPageCommand, PublicContactBoundary, OperatingRegion, LocalServiceArea, EthiopiaPlaceSuggestion, ProfileRoute, LiveTruckRoute, RouteEvidenceProjection, CoverageMapProjection, ProfileCoverageComparison, DesignatedLoadPhoneVisibility, FleetRoster, MarketplaceVisibilityPolicy, RelationshipVisibilityPolicy, NetworkCoverageProjection, ProfileRatingSummary]
-observability: [company_update_audit, route_update_audit, profile_route_comparison, request_outcome]
-rollout: Review every newly public field for authorization, accuracy, and privacy before release.
+title: Public transport-provider Directory and branded microsites
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001]
+problem: Transport providers need to be represented as credible businesses, while visitors need rich public context before making contact.
+behavior: Only fleet transporters and self-managed providers receive public Directory entries and canonical `/@handle` microsites. Owners manage bounded brand colors, public contacts, business content, fleet presentation, corridors, capacity, and an optional click-to-load YouTube introduction.
+contracts: [PublicProviderDirectory, ProviderMicrosite, PublicProviderHandle, ProviderTheme, PublicContactPolicy, YouTubeVideoReference, ProviderPageCommand, PublicFleetProjection]
+observability: [provider_page_view, provider_profile_update, public_contact_click, video_open, handle_resolution]
+rollout: Add profile presentation fields additively, reserve and validate handles, keep legacy provider URLs as redirects, and exclude all capacity-seeking Business profiles from public projections.
 ---
 
-# Business and transporter discovery
+# Transport-provider public presence
 
-### Scenario: authenticated directory discovery
+### Scenario: only providers enter the public Directory
 
-Given a Business, fleet transporter, or self-managed driver has a published profile\
-When any logged-in user browses the directory or opens its profile\
-Then the account can be found by its correct account-type filter\
-And only allowed profile and verified operational facts are returned\
-And the directory and profile remain inside the role-aware workspace shell.
+Given public and legacy profile records coexist\
+When anyone browses `/providers`\
+Then only published fleet transporter and self-managed provider profiles appear\
+And capacity-seeking Businesses never receive a public Directory card or microsite\
+And account email, account phone, private plate, exact coordinates, and private evidence remain excluded.
 
-### Scenario: dense directory remains bounded
+### Scenario: canonical provider handle is public
 
-Given the authenticated directory contains many Business and provider profiles\
-When a member searches, filters, or changes result pages\
-Then the server returns one bounded page of matching profiles\
-And the interface preserves the selected account type and search text\
-And the member can reach every matching profile without rendering the entire directory at once.
+Given a published provider owns a unique validated handle\
+When `/@handle` is requested\
+Then the request resolves to that provider's public microsite\
+And old provider profile URLs redirect to the canonical handle\
+And unknown, reserved, malformed, or unpublished handles reveal no profile.
 
-### Scenario: directory starts as a focused search surface
+### Scenario: microsite represents the provider fully
 
-Given an authenticated member opens the directory without filters\
-When the first page is rendered\
-Then no profile results or profile count are returned\
-And a prominent search control invites a query before any member data is read\
-And typing a name, public phone, owner name, or company name returns only matching profiles\
-And account login phones and other private contacts are never searchable.
+Given a provider maintains its page\
+When a visitor opens the microsite\
+Then it may show logo or hero media, headline, about text, services, verification badges, verified-shipment review summary, active fleet presentation, current capacity, the next trip, recurring routes or permanent working areas, and provider-selected public contacts\
+And each claim is based on owner input or current records rather than invented metrics\
+And a low rating that is awaiting review remains visible and included in the public count and average\
+And the page remains usable on mobile and without playing media.
 
-### Scenario: directory result pages remain small and server bounded
+### Scenario: provider controls bounded branding
 
-Given a meaningful directory query matches more than seven profiles\
-When the member searches or changes pages\
-Then the server returns at most seven matching profiles for that page\
-And page navigation preserves the query, account type, and location filters\
-And desktop cards follow left-to-right, top-to-bottom reading order\
-And mobile shows one card per row.
+Given a provider edits presentation settings\
+When it chooses colors\
+Then it selects validated primary and accent theme values with enforced contrast\
+And arbitrary CSS, scripts, HTML, external styles, or layout replacement are rejected\
+And the Loadgistic safety notice, attribution, navigation, and contact semantics cannot be hidden.
 
-### Scenario: directory supports cross-market network actions
+### Scenario: public contacts are independently controlled
 
-Given a Business views a transport provider or an authorized transport provider views a Business\
-When the authenticated directory card or Public Profile is rendered\
-Then the member may Favorite or request a network connection from that context\
-And the action reflects the current Favorite, Pending, or Connected state.
+Given a provider has public phone, WhatsApp, email, and website values\
+When the owner changes visibility\
+Then each method is independently public or hidden\
+And hidden values are absent from HTML and public API projections\
+And private account contacts are never used as fallbacks.
 
-### Scenario: anonymous directory access is denied
+### Scenario: YouTube introduction loads after intent
 
-Given no valid session exists\
-When the provider directory or company page is requested\
-Then the request redirects to login\
-And no provider, branch, route, or capacity information is rendered.
-
-### Scenario: owner updates company page
-
-Given an authenticated fleet transporter or self-managed driver\
-When they update their company page\
-Then only their own profile changes and an audit record is created.
-
-### Scenario: Business profile supports identity confirmation
-
-Given an authenticated Business account has a basic company profile\
-When another logged-in user browses the directory or selects that Business as a load participant\
-Then its Public Profile can be opened to confirm the Business\
-And its declared city and operating regions are shown to help transporters assess route relevance\
-And transporter-only fleet and capacity sections are absent.
-
-### Scenario: Business maintains declared operating regions
-
-Given an authenticated Business edits its Public Profile\
-When it saves one or more operating regions or cities\
-Then those member-entered locations are shown on its authenticated profile and directory card\
-And no exact facility coordinate or inferred live location is created.
-
-### Scenario: member records route endpoints
-
-Given a Business, fleet transporter, or self-managed driver edits its Public Profile\
-When it saves a coverage route\
-Then origin and destination are separate required city inputs\
-And the route belongs only to that organization or provider profile\
-And the route is labeled Freight Route for a Business and Preferred Route for a provider\
-And Corridor Route is not presented as a second route concept\
-And removing or replacing a declared route does not delete shipment, tracking, or capacity history.
-
-### Scenario: Ethiopia-first place suggestions
-
-Given a member enters a route, load endpoint, capacity route, current general area, or board filter\
-When the member types a place\
-Then the interface suggests reviewed Ethiopian cities first\
-And free text remains possible for places outside the reviewed catalog\
-And no external geocoding key is exposed to the browser.
-
-### Scenario: Public Profile separates declaration from evidence
-
-Given a member has one or more declared coverage routes\
-When another authenticated user opens its Public Profile\
-Then an approximate route map and route list show those declarations\
-And each Business route shows the count of loads posted and the subset that reached tracked execution\
-And each transport-provider route shows the count of capacity reports and the subset of provider shipments that reached tracked execution\
-And a route with no supporting record is labeled Declared only rather than active, verified, or false.
-
-### Scenario: route evidence is derived without exposing exact locations
-
-Given shipment, tracking, or capacity records support a declared route\
-When profile evidence is calculated\
-Then endpoint matching is normalized and order independent\
-And counts come only from persisted records belonging to that profile\
-And exact device coordinates, receiver contacts, private files, and unrelated shipment facts are not returned.
-
-### Scenario: members compare profile coverage fit
-
-Given an authenticated member has declared routes or Local Service Areas and opens another member's Public Profile\
-When the member chooses Compare coverage\
-Then the system compares structured routes using coordinate distance and explicit endpoint radii\
-And it compares Local Service Areas using point-in-radius and circle-overlap rules\
-And a provider's side also includes every fresh owned-truck current-partial and eligible planned route\
-And a visual analysis identifies shared endpoints, area overlap, and strongest matching pairs\
-And the result states whether it uses tracked evidence, reported activity only, or declarations only\
-And it does not claim availability, serviceability, trustworthiness, price, or dispatch suitability.
-
-### Scenario: comparison coverage remains visually distinguishable
-
-Given a member compares its coverage with another profile\
-When service areas, Preferred or Freight Routes, and fresh truck geography are projected\
-Then every line and circle owned by the viewer is grouped as Your coverage\
-And every line and circle owned by the viewed profile is grouped as Profile coverage\
-And Profile coverage uses one solid blue treatment regardless of source\
-And Your coverage uses one high-contrast warm-brown dashed treatment regardless of source\
-And Your coverage is drawn above overlapping Profile coverage\
-And the comparison legend contains only Profile coverage and Your coverage.
-
-### Scenario: unmapped member-entered place remains honest
-
-Given a route contains a place outside the map reference catalog\
-When the profile map renders\
-Then the route remains visible in the evidence list and comparison\
-And the interface states that map placement is unavailable for that member-entered place\
-And no coordinate is invented.
-
-### Scenario: fleet dashboard compares network coverage
-
-Given a fleet transporter has Connected Business relationships and declared Preferred Routes\
-When the transporter opens Home\
-Then a visual coverage panel lists the related Businesses and their declared operating regions\
-And it identifies exact endpoint, route-area, or no recorded match from normalized member-entered place names\
-And its approximate map does not render an exact facility pin or imply that an unmatched Business cannot be served.
-
-### Scenario: Business controls load-phone visibility
-
-Given a Business maintains its Public Profile contact settings\
-When it saves a designated load phone without enabling marketplace visibility\
-Then the phone remains private to the Business workspace\
-And enabling visibility exposes that phone only with permitted loads to authenticated transporters.
-
-### Scenario: account and public contacts are separate
-
-Given a user has a private account email or account phone\
-When their Public Profile is rendered\
-Then neither account contact is used as a fallback\
-And only the separately entered public email and public phone may be displayed.
-
-### Scenario: transporter profile shows its complete active fleet
-
-Given a fleet transporter owns multiple active truck records\
-When an authenticated user opens its Public Profile\
-Then every active truck is listed once with make, model, cargo configuration, permanent Loadgistic platform number, and latest duty state\
-And the displayed fleet count is derived from those records.
-
-### Scenario: authenticated directory request keeps workspace context
-
-Given an authenticated Business user browses the transporter directory\
-When they open an authenticated company page and choose to send a business request\
-Then their session remains active\
-And the profile URL, desktop sidebar, and mobile navigation remain in the workspace\
-And the new-shipment form opens with that provider selected.
-
-### Scenario: Business profile shows participant reputation
-
-Given a Business has reviews from completed loads\
-When a logged-in user opens its Public Profile\
-Then the profile shows its average rating and review count\
-And no private receiver contact from any load is exposed.
+Given a provider has saved one valid allowlisted YouTube video identifier\
+When the microsite first renders\
+Then a lightweight thumbnail and Play action appear without loading the player iframe\
+And pressing Play loads the privacy-aware embed\
+And arbitrary embed HTML or non-allowlisted hosts are rejected.
 
 ## Contract ownership
 
-- Pages: `/app/providers`, `/app/providers/[handle]`; `/companies` and `/companies/[handle]` are compatibility redirects
-- Application services: provider, company, vehicle, and capacity functions in `src/lib/repository.js`
-- Tests: `tests/repository.test.mjs`
+- Pages: `/providers`, canonical `/@handle`, provider Account settings
+- Compatibility: legacy profile URLs redirect to canonical provider handles
+- Application services: public provider projection and owner-scoped page update
+- Tests: repository, authorization, E2E, visual audit

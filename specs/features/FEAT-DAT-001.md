@@ -1,102 +1,60 @@
 ---
 id: FEAT-DAT-001
-title: Comprehensive local development dataset
-related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-NET-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
-problem: The minimal deterministic fixture keeps automated tests fast but does not provide enough related records to evaluate dense boards, long fleets, administrative queues, filtering, or responsive layouts.
-behavior: An explicit development-only command resets the configured local SQLite database and adds deterministic, relationally valid records across every table and material workflow state while preserving the documented demo logins and a named cross-market network cohort.
-contracts: [StressDatasetProfile, StressDatasetGenerator, StressDatasetIntegrityReport, NetworkTestCohort, TrackingScenarioAugmenter, DevelopmentDatabaseReset]
-observability: [stress_seed_summary, stress_seed_integrity_failure]
-rollout: The comprehensive dataset is opt-in and local-only; normal reset and test fixtures remain small, and rollback is another normal database reset.
+title: Supply-first local development dataset
+related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
+problem: Public capacity discovery needs enough realistic provider and truck variation to test cursor loading, clustering, provider pages, and responsive layouts without retaining obsolete demand fixtures.
+behavior: Every non-Production local database receives a deterministic supply-only market with fleet providers, self-managed owner-operators, varied current capacity, next trips, recurring routes, and permanent working areas; legacy demand, Business accounts, and relationship fixtures are purged.
+contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge]
+observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure]
+rollout: The dataset is deterministic and local-only; production execution of reset or fixture commands remains denied. Rollback restores a pre-migration database backup, not retired demand fixtures.
 ---
 
-# Comprehensive local development dataset
+# Supply-first local development dataset
 
-### Scenario: developer creates the standard dataset
+### Scenario: normal reset creates a busy capacity market
 
 Given the process is not running in Production\
-When the developer runs the comprehensive database command\
-Then only the configured local SQLite database is reset\
-And the documented demo accounts retain their existing credentials\
-And deterministic users, workspaces, trucks, capacity, loads, events, interests, relationships, reviews, verification, billing, notifications, and audit records are created\
-And every application table contains representative data\
-And a per-table count and integrity summary is printed without credentials, tracking codes, private phone numbers, or file contents.
+When a fresh local database is initialized or reset\
+Then it contains 30 published provider pages across nine fleet companies and 21 self-managed provider profiles\
+And it contains 47 active current-capacity signals with Empty, Partial, radius, and route variation\
+And it contains at least 30 published next trips, at least 40 recurring routes, and 30 permanent recurring working areas\
+And Partial current capacity is route-only while Empty includes both radius and route examples\
+And every current route has both labels and coordinate pairs\
+And the reset summary contains counts but no credentials, access codes, private messages, or file contents.
 
-### Scenario: generated records preserve domain relationships
+### Scenario: public cursors reach every signal once
 
-Given comprehensive data has been generated\
-When integrity checks run\
-Then foreign-key validation returns no violations\
-And every generated organization or provider has an eligible owner\
-And every truck belongs to exactly one provider scope\
-And every company driver belongs to and is assigned within its fleet\
-And every capacity row belongs to its truck owner\
-And every rated load is Completed with two distinct Business parties\
-And Pending or Dismissed low ratings do not contribute to published reputation.
+Given the deterministic capacity cohort\
+When anonymous discovery follows cursor pages to the end\
+Then all 47 eligible capacity signals are returned exactly once\
+And fleet and owner-operator profiles, current radius, current route, next trip, recurring route, and recurring working-area signals are represented\
+And expired, Off Duty, and unpublished signals remain excluded.
 
-### Scenario: workflow and queue states are represented
+### Scenario: demand fixtures are removed
 
-Given the standard dataset\
-When its state coverage is inspected\
-Then all freight transition terminal and active states are represented\
-And all price, distribution, load, capacity, network, verification, application, payment, and rating-moderation states are represented\
-And fresh, stale, expired, Public, Partners, private, Empty, Partial, and Off Duty capacity records exist\
-And provider-owned and Business-owned screens each have enough authorized records for search and layout testing.
+Given a local database created by an older Loadgistic version\
+When the supply-first data migration runs\
+Then legacy shipment-demand rows, Business organizations and users, network relationships, favorites, and Business reviews are deleted\
+And provider organizations, provider profiles, fleet records, verification evidence, and provider-owned shipment records remain\
+And the migration is idempotent.
 
-### Scenario: representative accounts form a testable network
+### Scenario: public projection remains safe
 
-Given the standard dataset has been generated\
-When a developer signs in as the documented Business 001, Fleet 001, Fleet 002, Driver 001, or Driver 002 account\
-Then Business 001 has Connected relationships with Fleet 001 and Driver 001\
-And Business 001 has an outgoing Pending request to Fleet 002\
-And Business 001 has a Favorite-only relationship with Driver 002\
-And Fleet 001 has another Connected Business plus incoming and outgoing Pending examples\
-And every relationship view is backed by persisted relationship rows rather than display-only fixture labels.
+Given the busy seed contains provider contacts and obscured truck locations\
+When an anonymous visitor browses capacity or opens a provider page\
+Then only provider-selected contact channels are returned\
+And party email, access-code digest, password, proof file, and exact visitor location data are absent\
+And provider location points remain the provider-selected privacy representation.
 
-### Scenario: cohort visibility records prove authorization
-
-Given the named network cohort\
-When its members browse the Shipment Board and Truck Board\
-Then Fleet 001 and Driver 001 can see Business 001's Partners-only load\
-And Fleet 002 cannot see that load merely because it has a Pending request\
-And only the addressed provider can see each Direct load\
-And Business 001 and another Connected Business can see Fleet 001's Partners capacity\
-And a Pending, Favorite-only, or unrelated Business cannot see that Partners capacity\
-And deliberately hidden capacity remains absent from every member marketplace.
-
-### Scenario: normal automated fixtures stay fast
-
-Given comprehensive seeding is opt-in\
-When normal `db:reset`, unit tests, or isolated Playwright setup runs\
-Then only the existing minimal fixture is created\
-And comprehensive data does not alter normal test ordering or runtime.
-
-### Scenario: developer adds tracking scenarios without resetting local work
-
-Given a non-Production local database contains the documented Business, transporter, and Driver accounts\
-When the tracking-scenario command runs\
-Then it adds only missing deterministic Assigned, In Transit, Issue, Unloading, and Completed examples\
-And those examples connect the documented accounts, trucks, parties, status events, and tracking modes\
-And existing shipments, current statuses, support chats, network records, and user-created data are not deleted or rewritten\
-And rerunning the command is idempotent.
-
-### Scenario: production execution is rejected
+### Scenario: production reset is rejected
 
 Given `NODE_ENV` is Production\
-When comprehensive seeding is requested\
-Then the command fails before deleting or writing a database\
-And no database record changes.
-
-### Scenario: dense navigation reaches later result pages
-
-Given the standard dataset contains more records than the configured page size\
-When the dense UI audit opens first and second pages of Boards, Directory, and administrator Operations\
-Then the requested page number is visibly confirmed\
-And the page renders without browser errors or horizontal overflow\
-And authorization remains unchanged.
+When a reset or local fixture command is requested\
+Then it fails before deleting or writing data.
 
 ## Contract ownership
 
-- Generator: `scripts/lib/stress-data.mjs`
-- Command adapter: `scripts/seed-stress-db.mjs`
-- Commands: `npm run db:stress`, `npm run db:fixtures:tracking`, optional `STRESS_SCALE=1..5`
-- Tests: `tests/stress-data.test.mjs`, `scripts/stress-ui-audit.mjs`
+- Schema, purge, and deterministic seed: `src/lib/db.js`
+- Reset adapter: `scripts/reset-db.mjs`
+- Public cursor: `listPublicCapacityCursor` in `src/lib/repository.js`
+- Tests: `tests/capacity-market.test.mjs`, `tests/e2e/smoke.spec.ts`

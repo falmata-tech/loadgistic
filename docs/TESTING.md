@@ -1,84 +1,52 @@
 # Testing
 
-## Pure domain and repository tests
-
-```bash
-npm test
-```
-
-These tests use Node's test runner and an isolated SQLite file.
-
-`tests/authorization.test.mjs` is the negative contract suite for role, tenant, record-party, Connected-partner, tracking-code, proof-file, terminal-review, and expired-subscription boundaries. Add denial coverage there whenever a protected service changes.
-
-## Type and source checks
-
-```bash
-npm run check:specs
-npm run check:source
-npm run typecheck
-```
-
-Run the standard local gate with:
+## Standard gate
 
 ```bash
 npm run quality
+npm run build
+npm run test:e2e
 ```
 
-The specification check validates required front matter, stable unique IDs, linked related IDs, base linkage, contracts, observability, and Given/When/Then coverage.
+`npm run quality` validates linked specifications and source constraints, runs the Node test suite against isolated SQLite databases, and typechecks the application. The production build uses an isolated Next.js output directory.
 
-`tsconfig.offline.json` is used only in the artifact build environment where npm dependencies are unavailable. Normal development uses `tsconfig.json` and installed framework types.
+Focused Node coverage includes:
 
-## Browser tests
+- explicit provider-shipment transitions and proof restrictions;
+- provider ownership and assigned-Driver scope;
+- separate shipper/receiver code digests and guest grants;
+- completion email idempotency and 30-day cleanup;
+- all-score review publication and low-rating disputes;
+- supply-only deterministic reset, full 47-signal cursor traversal, route/radius integrity, public contact controls, and optional proximity privacy;
+- remaining pure domain rules used by the active provider workflows.
+
+## Browser workflows
 
 ```bash
 npm run test:e2e
 ```
 
-Playwright resets `data/test-e2e.db`, writes generated Next.js artifacts to `.next-e2e`, and starts a dedicated application server on port `3100`. Normal development and production builds retain the standard `.next` path, and the parent E2E runner restores Next's generated TypeScript metadata after Playwright exits. Browser scenarios therefore cannot mutate developer business records or remove generated files from the live application. Fixture credentials stay in the test source and local setup documentation; they are not rendered by the public login page.
+Playwright resets `data/test-e2e.db`, uses `.next-e2e`, and runs a dedicated server on port `3100`, so it does not mutate the developer database or live development build. Current workflows cover:
 
-Covered workflows:
+- public capacity list, filters, cursor loading, map clusters, selected card, and provider details;
+- provider Directory and canonical `/@handle` microsites;
+- provider-only signup and retired demand-route redirects;
+- fleet and self-managed capacity editing, manual location refresh/privacy, collapsed map summary, focused edits, next trip, and recurring routes/working areas;
+- provider shipment creation, one-time party codes, guest unlock, timeline transitions, completion, and review behavior;
+- verification warnings/badges, Support, administration, and desktop/mobile navigation.
 
-- Public homepage switches between live Shipment Board and Truck Board projections, exposes useful structured facts, and withholds member identity and contact fields
-- Business opens the rich Post Shipment workflow
-- Fleet Transporter lands on a management dashboard and updates an individual truck inside My Fleet
-- Self-managed Driver uses the simplified capacity Home and receives automatic obscured device location with manual fallback
-- Provider searches marketplace demand by truck route but sees only involved loads in Tracking
-- Business ranks Truck Board trucks against an owned open shipment
-- Signed-in members browse Business and transporter profiles with declared regions but without private account contacts
-- Members and administrators open their role-specific verification workflows
-- Assigned-provider tracking enforces the load's selected mode
-- Transporter opens loads and capacity
-- Authenticated public-company navigation retains its session and preselects the requested provider
-- Expired workspaces retain Home and Plan & billing while operating navigation and deep links are denied
-- Self-service signup creates an active unverified workspace with a seven-day trial, Business-only sponsorship remains admin-controlled, and payment approval creates a 30-day period
-- Public login does not expose local fixture credentials
-- A Fleet Transporter starts one private support conversation, immediately sees
-  its sent message and conversation preview, reads the assigned SUPPORT agent's
-  reply from selectable closed history, and an Administrator supervises the team
+## Visual audit
 
-Add tests for every permission or state-transition change.
-
-## Comprehensive data and dense UI audit
+With the development server running:
 
 ```bash
-npm run db:stress
-npm run dev
-npm run test:ui-stress
+npm run test:ui-audit
 ```
 
-The stress generator validates all 34 application tables, foreign keys, entity
-ownership, fleet assignments, rating eligibility, Local/Long-distance/Both
-movement coverage, support queues, and material workflow-state coverage.
-`tests/stress-data.test.mjs` runs the same generator against an isolated
-database and proves that Production execution is rejected before any database
-change.
+The audit captures current logged-out, fleet-provider, self-managed Driver, company Driver, Support, and administrator screens at desktop and mobile sizes. It waits for real Leaflet containers and truck/cluster markers before map capture, then checks response status, browser errors, horizontal overflow, touch targets, unlabeled fields, empty actions, and icon coverage. Evidence is written to ignored `artifacts/ui-audit/` files.
 
-The dense UI audit signs in as Business, Fleet Transporter, generated fleet
-owner, generated Self-managed Driver, expired Business, and Administrator
-personas. It captures 74 desktop/mobile screens, including Connected, Requests,
-Favorites, Partners and Direct visibility, second-page Board, Directory, and
-Operations results, route comparison, and the limited billing experience. It
-checks expected cohort content, response
-status, browser errors, horizontal overflow, render time, DOM size, and card
-density. Local evidence is written to the ignored `artifacts/stress-ui/`
-directory.
+Run visual inspection only when the user has approved it. Inspect at least the public homepage, public capacity list/map, a provider microsite, the collapsed provider capacity summary, and provider shipment creation.
+
+## Production boundary
+
+Tests use local SQLite and local fixtures. They do not establish Supabase adapter parity, managed email delivery, malware scanning, production tile capacity, backup/restore, or a production rollout. Those remain launch gates in `docs/PROGRESS.md` and `docs/SUPABASE_MIGRATION.md`.

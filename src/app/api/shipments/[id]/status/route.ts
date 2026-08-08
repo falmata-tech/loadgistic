@@ -12,7 +12,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const form = await request.formData();
   try {
     const nextStatus=text(form,'nextStatus');
-    const proofTypeByStatus:Record<string,string>={ASSIGNED:'LOADING',IN_TRANSIT:'TRANSIT',DELIVERED:'UNLOADING',ISSUE:'ISSUE'};
+    const proofTypeByStatus:Record<string,string>={ASSIGNED:'LOADING',DELIVERED:'UNLOADING',ISSUE:'ISSUE'};
     const proofFile=form.get('proof');
     if(proofFile&&typeof proofFile!=='string'&&proofFile.size&&!proofTypeByStatus[nextStatus])throw new Error('INVALID_PROOF_TYPE');
     const upload=await saveUpload(proofFile,'tracking-proof');

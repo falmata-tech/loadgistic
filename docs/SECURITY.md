@@ -1,35 +1,24 @@
-# Security Model
+# Security model
 
 ## Implemented locally
 
-- HTTP-only, SameSite=Lax signed session cookies
-- Scrypt password hashes for local demo accounts
-- Server-side role and record-scope checks
-- Explicit shipment state-transition validation
-- File size and MIME validation
-- Private proof download route with shipment authorization
-- No sensitive file placed under `public/`
-- Keyed-digest tracking codes that never appear in URLs
-- Five-minute HTTP-only tracking grants bound to one Business user and load
-- Security headers and Content Security Policy
-- Capacity expiry and visibility filtering
-- Anonymous visitors cannot access company pages, transporter directory, full marketplace records, participant activity, proof, other-provider interest, or receiver details
-- Audit records for sensitive mutations
-- Explicit authorization contracts in `docs/AUTHORIZATION_MATRIX.md`
-- Browse-only load visibility cannot grant status, internal-note, or private-proof access
-- Partners loads and capacity require a mutual Connected relationship
-- Terminal application and payment-proof decisions cannot be overwritten
+- HTTP-only SameSite signed provider sessions and scrypt password hashes for local fixtures.
+- Server-side provider, fleet, Driver-assignment, record-owner, platform-permission, and state-transition checks.
+- Public capacity/provider projections that exclude password/code digests, party emails, private proof paths, hidden contacts, exact visitor location, and private plates.
+- Provider-selected obscured truck coordinates; exact visitor location remains browser-only.
+- Separate high-entropy shipper and receiver codes stored only as keyed digests and never placed in URLs.
+- Party-scoped guest sessions, 30-day post-completion expiry, email scrubbing, and durable provider history.
+- Proof accepted only for Loading, Unloading, and Issue; file size/MIME checks and private authorized reads.
+- Idempotent completion-email records with bounded retry state and no false success when the adapter is unconfigured.
+- Evidence-specific reviewed badges with private documents and a persistent due-diligence warning.
+- CSP, no-sniff, frame denial, strict referrer policy, and self-only geolocation permission. OSM tile hosts are explicitly allowlisted.
+- Audited sensitive mutations and default denial for retired demand/network endpoints.
 
-## Required before public launch
+## Required before public production
 
-- Supabase Auth or another managed identity provider
-- Production session-key rotation
-- PostgreSQL RLS verification
-- Rate limiting backed by a shared store
-- Bot protection on public application endpoints
-- Malware scanning for uploads
-- Managed secret storage
-- HTTPS-only deployment
-- Central logging and alerting
-- Database backups and recovery exercises
-- Security review of every authenticated company-page field before it is exposed beyond the owning workspace
+- Managed identity and PostgreSQL/Supabase repository parity with reviewed RLS/RPC authorization.
+- Shared rate limiting and bot protection for public queries, login, code unlock, review submission, and provider signup.
+- Malware scanning/quarantine and production private-object authorization.
+- Managed email delivery, webhook authentication, retry monitoring, and retention cleanup scheduling.
+- Production tile service terms/capacity/privacy review.
+- HTTPS, managed secrets, key rotation, central logging/alerts, backups, restore drills, and a reviewed destructive-demand-purge procedure.

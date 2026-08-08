@@ -8,39 +8,29 @@ const password = 'Loadgistic123!';
 
 const personas = [
   {
-    name: 'business-shipper',
-    email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-tracking-setup', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/support?new=1', '/app/more']
-  },
-  {
-    name: 'business-receiver',
-    email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/support?conversation=support-demo-open', '/app/more']
-  },
-  {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/provider-shipments', '/app/provider-shipments/new', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'self-managed-driver',
     email: 'driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/provider-shipments', '/app/provider-shipments/new', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'company-driver',
     email: 'company-driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/capacity', '/app/shipments', '/app/providers', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/provider-shipments', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=DRIVERS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/operations?view=NETWORK', '/admin/operations?view=ROUTES', '/admin/operations?view=SUBSCRIPTIONS', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/admin/support?view=WAITING', '/admin/support?view=CLOSED', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/operations?view=TRUCKS', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/support', '/app/more']
   },
   {
     name:'support-agent',
     email:'support@loadgistic.local',
-    routes:['/support','/support?view=WAITING','/support?view=CLOSED','/support/support-demo-open']
+    routes:['/support','/support?view=WAITING','/support?view=CLOSED']
   }
 ];
 
@@ -100,7 +90,7 @@ async function inspectPage(page, route, screenshotPath) {
 }
 
 async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
-  if (await page.getByText('Loading route map...').count()) {
+  if (await page.getByText(/Loading (?:route|capacity|location) map/).count()) {
     await page.locator('.leaflet-container').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
   }
   let metrics;
@@ -158,13 +148,20 @@ try {
   for (const viewport of viewports) {
     const publicContext = await browser.newContext({ viewport });
     const publicPage = await publicContext.newPage();
-    for (const route of ['/', '/about', '/login', '/apply']) {
+    for (const route of ['/', '/about', '/capacity', '/providers', '/providers/blueline-transport', '/track', '/login', '/apply']) {
       const result = await inspectPage(
         publicPage,
         route,
         path.join(outputDir, `${viewport.name}-logged-out-${fileName(route)}.png`)
       );
       report.results.push({ viewport: viewport.name, persona: 'logged-out', ...result });
+      if(route==='/capacity'){
+        await publicPage.getByRole('button',{name:'Map',exact:true}).click();
+        await publicPage.locator('.leaflet-container').waitFor({state:'visible',timeout:10_000});
+        await publicPage.locator('.capacity-truck-map-marker,.capacity-map-cluster').first().waitFor({state:'visible',timeout:10_000});
+        const mapResult=await inspectCurrentPage(publicPage,'/capacity#map',path.join(outputDir,`${viewport.name}-logged-out-capacity-map.png`));
+        report.results.push({viewport:viewport.name,persona:'logged-out',...mapResult});
+      }
     }
     await publicContext.close();
 
@@ -188,81 +185,6 @@ try {
           report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
         }
 
-        if (['business-shipper', 'business-receiver'].includes(persona.name)) {
-          await gotoReady(page, '/app/providers?q=Blue');
-          const companyHref = await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().getAttribute('href');
-          if (companyHref) {
-            const result = await inspectPage(
-              page,
-              companyHref,
-              path.join(outputDir, `${viewport.name}-${persona.name}-company-detail.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-            const comparisonHref = persona.name === 'business-shipper' ? '/app/providers/blueline-transport?compare=coverage' : '/app/providers/blue-nile-trading?compare=coverage';
-            const comparisonResult = await inspectPage(
-              page,
-              comparisonHref,
-              path.join(outputDir, `${viewport.name}-${persona.name}-company-route-comparison.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...comparisonResult });
-          }
-          const result = await inspectPage(
-            page,
-            '/app/capacity/cap-empty',
-            path.join(outputDir, `${viewport.name}-${persona.name}-capacity-detail.png`)
-          );
-          report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-        }
-
-        await gotoReady(page, '/app/shipments');
-        const trackingRows = page.locator('a[href^="/app/shipments/"]:not([href="/app/shipments/new"])');
-        const shipmentHref = ['business-shipper', 'business-receiver'].includes(persona.name)
-          ? '/app/shipments/shp-freight-active'
-          : await trackingRows.count() ? await trackingRows.first().getAttribute('href') : null;
-        if (shipmentHref) {
-          const result = await inspectPage(
-            page,
-            shipmentHref,
-            path.join(outputDir, `${viewport.name}-${persona.name}-shipment-detail.png`)
-          );
-          report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-          const trackingCode = await page.locator('.tracking-secret strong').textContent().catch(() => null);
-          if (trackingCode) {
-            await gotoReady(page,'/track');
-            await page.getByLabel('Secret shipment code').fill(trackingCode.trim());
-            await page.getByRole('button',{name:'Open tracking'}).click();
-            await page.waitForLoadState('domcontentloaded');
-            const trackingResult = await inspectCurrentPage(
-              page,
-              '/track/[unlocked]',
-              path.join(outputDir, `${viewport.name}-${persona.name}-tracking-view.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...trackingResult });
-          }
-        }
-
-        if (persona.name === 'fleet-transporter') {
-          await gotoReady(page, '/app/shipments/shp-freight-active');
-          const activeResult = await inspectCurrentPage(
-            page,
-            '/app/shipments/shp-freight-active#assigned-tracking',
-            path.join(outputDir, `${viewport.name}-${persona.name}-assigned-tracking-controls.png`)
-          );
-          report.results.push({ viewport: viewport.name, persona: persona.name, ...activeResult });
-        }
-
-        if (['fleet-transporter','self-managed-driver'].includes(persona.name)) {
-          await gotoReady(page,'/app/loads?board=POOLED');
-          const poolHref=await page.locator('a[href^="/app/loads/pstl/"]').first().getAttribute('href').catch(()=>null);
-          if(poolHref){
-            const poolResult=await inspectPage(
-              page,
-              poolHref,
-              path.join(outputDir,`${viewport.name}-${persona.name}-pooled-load-detail.png`)
-            );
-            report.results.push({viewport:viewport.name,persona:persona.name,...poolResult});
-          }
-        }
       } catch (error) {
         report.errors.push({ viewport: viewport.name, persona: persona.name, error: error.message });
       }
@@ -282,7 +204,7 @@ await writeFile(path.join(outputDir, 'report.json'), `${JSON.stringify(report, n
 
 const failures = report.results.filter((result) =>
   result.status >= 400 || result.horizontalOverflow || result.emptyButtons || result.unlabeledInputs ||
-  (result.persona !== 'admin' && (result.smallActionTargets || result.textActionsWithoutIcon || result.labelsWithoutIcon))
+  (result.persona !== 'admin' && (result.smallActionTargets || result.textActionsWithoutIcon))
 );
 
 console.log(`UI audit captured ${report.results.length} screens in ${outputDir}`);

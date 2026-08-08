@@ -2,7 +2,7 @@
 
 ## Product invariant
 
-Loadgistic connects businesses looking for road-freight capacity with fleet transporters and self-managed drivers looking for reviewed B2B demand.
+Loadgistic gives account-free capacity seekers a public view of road-freight supply from fleets, owner-operators, and self-managed Drivers. Providers publish current capacity and own shipment tracking after the parties agree offline; Loadgistic does not publish demand or handle transactions.
 
 Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
 

@@ -1,113 +1,86 @@
 ---
 id: FEAT-UIX-001
-title: Icon-first low-language member experience
-related_ids: [BASE-FE-001, FEAT-APP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-FLT-001, FEAT-NET-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-BIL-001]
-problem: Members with limited English or limited experience using business software must be able to recognize the next action without reading long instructions or hunting through inconsistent layouts.
-behavior: Every workflow uses a consistent icon-first visual language, short action labels, task-shaped grouping, visible ordered steps where decisions are sequential, touch-sized controls, visible state, and reversible navigation while retaining essential safety, privacy, and freight terminology.
-contracts: [IconAction, TaskHeader, OrderedTaskStep, VisualChoice, TouchTarget, FactBlock, ReversibleDetail, EssentialHelpText]
-observability: [ui_audit_unlabeled_control_count, ui_audit_overflow_count, browser_flow_error_count]
-rollout: Apply shared primitives before page-specific simplification; retain required privacy and business-rule explanations; validate all member personas at desktop and mobile sizes and roll back presentation without changing domain state.
+title: Low-friction public discovery and provider operations
+related_ids: [BASE-FE-001, FEAT-APP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-FLT-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-BIL-001, FEAT-LST-001]
+problem: Capacity seekers need immediate, understandable discovery while transport providers need simple mobile-first controls that represent their work professionally.
+behavior: Public and provider workflows use a consistent icon-first visual language, short labels, strong task hierarchy, touch-sized controls, explicit safety text, reversible navigation, and list/map continuity without requiring seeker registration.
+contracts: [IconAction, TaskHeader, OrderedTaskStep, VisualChoice, TouchTarget, FactBlock, ReversibleDetail, EssentialHelpText, DiscoveryViewState]
+observability: [ui_audit_unlabeled_control_count, ui_audit_overflow_count, browser_flow_error_count, public_discovery_action]
+rollout: Apply shared primitives before page-specific simplification; retain privacy and verification explanations; validate public, provider, Driver, support, and admin views at desktop and mobile sizes.
 ---
 
-# Icon-first low-language member experience
+# Low-friction interface
+
+### Scenario: public value is usable immediately
+
+Given a capacity seeker opens Loadgistic\
+When the homepage renders\
+Then real public capacity is the dominant useful content\
+And Capacity, Providers, Track, About, provider Login, and provider Sign up are easy to find\
+And no account prompt blocks browsing, filtering, map view, provider details, or contact methods the provider made public.
 
 ### Scenario: actions are recognizable before their words are read
 
-Given a member opens any non-admin workspace page\
-When a navigation item, primary command, secondary command, or state-changing control renders\
-Then it uses a familiar Lucide icon with a short visible label\
-And destructive or unfamiliar icon-only controls retain an accessible name and hover title\
+Given any supported visitor or member screen\
+When navigation or a command renders\
+Then it uses a familiar icon with a short visible label\
+And destructive or unfamiliar icon-only controls retain an accessible name and title\
 And the same command uses the same icon and label across pages.
 
 ### Scenario: each page exposes one obvious task hierarchy
 
-Given a member opens a Board, list, editor, composer, or detail\
+Given a visitor or provider opens a feed, map, editor, composer, or detail\
 When the page renders\
-Then the title is paired with a task icon\
-And the primary action is visually strongest\
-And related choices are grouped in the order the member needs them\
-And supporting prose is omitted unless it explains a material rule, privacy boundary, or consequence.
+Then the title and primary action are visually clear\
+And related choices follow the order needed\
+And supporting prose remains only when it explains a material rule, privacy boundary, or consequence.
 
-### Scenario: operational editors ask only current decisions first
+### Scenario: capacity editor collapses into a useful summary
 
-Given a member opens a frequently used operational editor\
-When its first screen renders\
-Then identity and current state are summarized compactly\
-And required decisions appear in the order the member naturally makes them\
-And uncommon policy, evidence, and future-planning controls share one clearly labeled optional area\
-And a second summary card does not repeat values already visible beside the controls.
+Given a provider successfully saves capacity\
+When the save completes\
+Then the editor collapses after a visible success message\
+And one summary shows how the truck appears publicly together with the same current radius or route map\
+And each summary section has a focused Edit action that opens only that section\
+And Edit all opens the full ordered workflow.
 
-### Scenario: numbered steps represent a real sequence
+### Scenario: discovery controls do not crowd results
 
-Given a member, fleet owner, administrator, or support team member performs a multi-decision task\
-When the editor, filter sheet, assignment control, or review action renders\
-Then numbered headings follow the order in which the decisions must be made\
-And required or commonly changed choices are never hidden inside Additional options\
-And optional evidence may remain compact only after the operational decisions it supports\
-And independent lists, tabs, and status summaries are not numbered as if they were a sequence.
-
-### Scenario: primary navigation contains daily work
-
-Given a Business, fleet transporter, or driver opens the workspace\
-When primary navigation renders\
-Then it prioritizes daily freight, fleet, Directory, and network destinations\
-And occasional profile, verification, plan, and account controls are grouped under More\
-And the same destination is not repeated in both the primary navigation and the More page.
-
-### Scenario: discovery controls do not crowd the results
-
-Given a member opens the Shipment Board, Truck Board, or Directory\
+Given a visitor opens the Capacity Board or provider Directory\
 When discovery controls render\
-Then the result list remains the dominant page content\
-And advanced search and matching choices open in one consistent dismissible filter sheet\
-And the sheet groups geography or matching first, operational requirements second, and refinements last\
-And applying choices closes the sheet and shows a compact summary of active values\
-And the member can reopen, change, or clear those choices without losing the current Board context.
-
-### Scenario: forms favor visual choices
-
-Given a member chooses an account type, load type, movement scope, visibility, duty state, or truck configuration\
-When the available choices render\
-Then each choice is shown as a stable visual option with an icon or representative image\
-And the selected state is visible without relying on English text alone\
-And long option lists remain searchable rather than fully rendered.
+Then the feed remains dominant\
+And advanced choices open in one dismissible filter sheet\
+And applying a filter closes the sheet and shows compact active values\
+And List and Map are prominent peer views without creating a map in every card.
 
 ### Scenario: mobile controls remain easy to touch
 
-Given a member uses a supported narrow viewport\
-When navigation, choices, fields, and commands render\
+Given a supported narrow viewport\
+When navigation, choices, fields, cards, and commands render\
 Then primary interactive targets are at least 44 CSS pixels in both dimensions\
-And fixed navigation does not cover form actions\
-And labels wrap without overlapping icons, values, or adjacent controls\
+And fixed navigation does not cover actions\
+And labels do not overlap icons or values\
 And no horizontal page scrolling is required.
 
-### Scenario: drill-down navigation is reversible
+### Scenario: detail navigation is reversible
 
-Given a member opens a profile, load, truck, capacity, pooled load, tracking detail, or creation composer\
+Given a visitor or member opens a provider, capacity, truck, shipment, tracking, or creation detail\
 When the page renders\
-Then a visually consistent Back control appears near the task title\
-And it returns to the recorded previous workspace page when safe\
-And returning pops the existing history entry instead of adding a second entry that loops between the two pages\
-And a direct deep link falls back to the correct parent list or Board.
+Then a consistent Back control returns to safe browser history when available\
+And a direct deep link falls back to the correct parent\
+And returning to public discovery restores filters, appended results, view mode, and scroll position when possible.
 
 ### Scenario: essential text remains available
 
-Given a workflow involves location privacy, visibility, payment limitation, verification evidence, tracking obligations, or agreement consequences\
+Given a workflow involves location privacy, public contact visibility, verification evidence, tracking access, review disputes, or agreement consequences\
 When the relevant choice renders\
-Then one short explanation remains adjacent to that choice\
-And decorative, repetitive, or feature-marketing prose is removed from the operating workspace\
-And freight abbreviations retain a compact first-use explanation where misunderstanding could change the load.
-
-### Scenario: fixed rules do not look selectable
-
-Given Direct pickup-to-drop-off work is always accepted by an available truck\
-When stop flexibility is displayed\
-Then Direct is labeled Included as a fixed baseline fact\
-And only Multi Pick and Multi Drop render as selectable controls.
+Then one short explanation remains adjacent\
+And decorative repetition is removed\
+And public warnings tell users to check current documents and authority themselves.
 
 ## Contract ownership
 
-- Shared UI: `PageHeader`, `AppShell`, common action and choice styles
-- Member pages: `/app/**` excluding `/admin/**`
-- Public entry: `/login`, `/apply`, and secret-code tracking
-- Tests: `tests/e2e/smoke.spec.ts` and `scripts/ui-audit.mjs`
+- Shared UI: public header, provider shell, page headers, actions, choices, cards, filters, and map state
+- Public pages: homepage, Capacity, Providers, Track, About, Login, and provider Sign up
+- Provider pages: `/app/**` excluding `/admin/**`
+- Tests: E2E and visual audit

@@ -66,3 +66,8 @@ export function randomCode(prefix = 'LGX') {
   const part = crypto.randomBytes(4).toString('hex').toUpperCase();
   return `${prefix}-${part}`;
 }
+
+export function trackingPartyCode(role='PARTY') {
+  const entropy=crypto.randomBytes(16).toString('base64url').toUpperCase();
+  return `LG-${String(role).slice(0,1).toUpperCase()}-${entropy.slice(0,6)}-${entropy.slice(6,12)}-${entropy.slice(12,18)}`;
+}

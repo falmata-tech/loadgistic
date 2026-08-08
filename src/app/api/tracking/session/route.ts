@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { hasTrackingGrant, TRACKING_GRANT_COOKIE, TRACKING_IDLE_SECONDS } from '@/lib/auth';
-import { getBusinessTracking } from '@/lib/repository.js';
+import { getProviderTrackingGrant, TRACKING_GRANT_COOKIE, TRACKING_IDLE_SECONDS } from '@/lib/auth';
+import { getProviderGuestTracking } from '@/lib/repository.js';
 import { createSessionToken } from '@/lib/security.js';
 import { text } from '@/lib/redirects';
 
 export async function POST(request:NextRequest) {
   const form=await request.formData();
   const shipmentId=text(form,'shipmentId');
-  if(!getBusinessTracking(null,shipmentId)||!await hasTrackingGrant(shipmentId))return NextResponse.json({ok:false},{status:403});
+  const grant=await getProviderTrackingGrant(shipmentId);
+  if(!grant||!getProviderGuestTracking(shipmentId,grant.partyRole))return NextResponse.json({ok:false},{status:403});
   const response=NextResponse.json({ok:true});
-  response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`tracking:${shipmentId}`,TRACKING_IDLE_SECONDS),{
+  response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipmentId}:${grant.partyRole}`,TRACKING_IDLE_SECONDS),{
     httpOnly:true,
     sameSite:'lax',
     secure:process.env.NODE_ENV==='production',

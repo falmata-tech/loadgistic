@@ -28,6 +28,11 @@ export function getDb() {
   runDataMigrationOnce(database,'structured-route-geography-v1',backfillStructuredGeography);
   runDataMigrationOnce(database,'local-capacity-empty-v1',normalizeLocalCapacity);
   runDataMigrationOnce(database,'tracking-proof-types-v1',expandTrackingProofTypes);
+  runDataMigrationOnce(database,'retire-busy-dated-contract-capacity-v1',retireLegacyCapacityModes);
+  runDataMigrationOnce(database,'normalize-capacity-geometry-v1',normalizeCapacityGeometry);
+  runDataMigrationOnce(database,'purge-legacy-demand-fixtures-v1',purgeLegacyDemandFixtures);
+  runDataMigrationOnce(database,'seed-public-capacity-market-v1',seedPublicCapacityMarket);
+  runDataMigrationOnce(database,'partial-route-recurring-areas-v1',enforcePartialRoutesAndSeedRecurringAreas);
   return database;
 }
 
@@ -286,6 +291,47 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_capacity_expires ON capacities(expires_at);
     CREATE INDEX IF NOT EXISTS idx_capacity_visibility ON capacities(visibility, expires_at);
 
+    CREATE TABLE IF NOT EXISTS next_trips (
+      id TEXT PRIMARY KEY,
+      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      vehicle_id TEXT NOT NULL UNIQUE REFERENCES vehicles(id) ON DELETE CASCADE,
+      origin TEXT NOT NULL,
+      origin_place_ref TEXT NOT NULL,
+      origin_lat REAL NOT NULL,
+      origin_lng REAL NOT NULL,
+      destination TEXT NOT NULL,
+      destination_place_ref TEXT NOT NULL,
+      destination_lat REAL NOT NULL,
+      destination_lng REAL NOT NULL,
+      travel_date TEXT,
+      space_status TEXT NOT NULL CHECK(space_status IN ('EMPTY','PARTIAL')),
+      available_percent INTEGER NOT NULL CHECK(available_percent BETWEEN 5 AND 100),
+      published INTEGER NOT NULL DEFAULT 1,
+      updated_by TEXT NOT NULL REFERENCES users(id),
+      updated_at TEXT NOT NULL,
+      CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_next_trips_public ON next_trips(published,travel_date,updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS recurring_service_areas (
+      id TEXT PRIMARY KEY,
+      organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      place_ref TEXT NOT NULL,
+      place_label TEXT NOT NULL,
+      center_lat REAL NOT NULL,
+      center_lng REAL NOT NULL,
+      radius_km INTEGER NOT NULL CHECK(radius_km BETWEEN 5 AND 500),
+      created_by TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CHECK ((organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_recurring_service_areas_organization ON recurring_service_areas(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_recurring_service_areas_provider ON recurring_service_areas(provider_profile_id);
+
     CREATE TABLE IF NOT EXISTS shipments (
       id TEXT PRIMARY KEY,
       code TEXT NOT NULL UNIQUE,
@@ -426,6 +472,105 @@ function migrate(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_business_reviews_status ON business_reviews(status, created_at);
+
+    CREATE TABLE IF NOT EXISTS provider_shipments (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      assigned_vehicle_id TEXT NOT NULL REFERENCES vehicles(id),
+      assigned_driver_user_id TEXT NOT NULL REFERENCES users(id),
+      origin TEXT NOT NULL,
+      origin_place_ref TEXT NOT NULL,
+      origin_lat REAL NOT NULL,
+      origin_lng REAL NOT NULL,
+      destination TEXT NOT NULL,
+      destination_place_ref TEXT NOT NULL,
+      destination_lat REAL NOT NULL,
+      destination_lng REAL NOT NULL,
+      cargo_summary TEXT NOT NULL,
+      shipper_email TEXT NOT NULL,
+      receiver_email TEXT NOT NULL,
+      expected_pickup_date TEXT,
+      expected_delivery_date TEXT,
+      tracking_mode TEXT NOT NULL CHECK(tracking_mode IN ('STATUS_ONLY','LOCATION_AND_STATUS')),
+      operational_status TEXT NOT NULL CHECK(operational_status IN ('CREATED','LOADING','IN_TRANSIT','UNLOADING','COMPLETED','ISSUE')),
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      completed_at TEXT,
+      guest_expires_at TEXT,
+      CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_shipments_owner ON provider_shipments(provider_organization_id,provider_profile_id,updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_provider_shipments_guest_expiry ON provider_shipments(guest_expires_at,operational_status);
+
+    CREATE TABLE IF NOT EXISTS provider_shipment_events (
+      id TEXT PRIMARY KEY,
+      shipment_id TEXT NOT NULL REFERENCES provider_shipments(id) ON DELETE CASCADE,
+      status TEXT NOT NULL,
+      note TEXT,
+      proof_path TEXT,
+      proof_original_name TEXT,
+      proof_mime_type TEXT,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_shipment_events_order ON provider_shipment_events(shipment_id,created_at,id);
+
+    CREATE TABLE IF NOT EXISTS shipment_party_grants (
+      id TEXT PRIMARY KEY,
+      shipment_id TEXT NOT NULL REFERENCES provider_shipments(id) ON DELETE CASCADE,
+      party_role TEXT NOT NULL CHECK(party_role IN ('SHIPPER','RECEIVER')),
+      code_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT,
+      revoked_at TEXT,
+      created_at TEXT NOT NULL,
+      UNIQUE(shipment_id,party_role)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_shipment_party_grants_expiry ON shipment_party_grants(expires_at,revoked_at);
+
+    CREATE TABLE IF NOT EXISTS email_deliveries (
+      id TEXT PRIMARY KEY,
+      shipment_id TEXT NOT NULL REFERENCES provider_shipments(id) ON DELETE CASCADE,
+      party_role TEXT NOT NULL CHECK(party_role IN ('SHIPPER','RECEIVER')),
+      delivery_kind TEXT NOT NULL CHECK(delivery_kind IN ('TRACKING_ACCESS','COMPLETION')),
+      recipient_email TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL CHECK(status IN ('PENDING','SENT','FAILED')),
+      attempts INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      next_attempt_at TEXT,
+      sent_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_email_deliveries_retry ON email_deliveries(status,next_attempt_at,created_at);
+
+    CREATE TABLE IF NOT EXISTS provider_reviews (
+      id TEXT PRIMARY KEY,
+      shipment_id TEXT NOT NULL UNIQUE REFERENCES provider_shipments(id) ON DELETE CASCADE,
+      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'PUBLISHED' CHECK(status IN ('PUBLISHED','REMOVED')),
+      dispute_status TEXT NOT NULL DEFAULT 'NONE' CHECK(dispute_status IN ('NONE','PENDING','UPHELD','REMOVED')),
+      dispute_reason TEXT,
+      disputed_at TEXT,
+      reviewed_by TEXT REFERENCES users(id),
+      review_note TEXT,
+      reviewed_at TEXT,
+      created_at TEXT NOT NULL,
+      CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_reviews_public ON provider_reviews(provider_organization_id,provider_profile_id,status,created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_provider_reviews_dispute ON provider_reviews(dispute_status,created_at);
 
     CREATE TABLE IF NOT EXISTS verification_requests (
       id TEXT PRIMARY KEY,
@@ -615,6 +760,8 @@ function migrate(db) {
 
   const capacityColumns = new Set(db.prepare('PRAGMA table_info(capacities)').all().map(column => column.name));
   const additiveCapacityColumns = [
+    ['availability_geometry','TEXT'],
+    ['work_radius_km','INTEGER'],
     ['location_area', 'TEXT'],
     ['location_updated_at', 'TEXT'],
     ['location_lat', 'REAL'],
@@ -655,6 +802,10 @@ function migrate(db) {
   }
   db.exec(`UPDATE capacities SET
     market_status=COALESCE(market_status,status),
+    availability_geometry=COALESCE(availability_geometry,CASE
+      WHEN COALESCE(current_route_origin,origin) IS NOT NULL AND COALESCE(current_route_destination,destination) IS NOT NULL THEN 'ROUTE'
+      WHEN COALESCE(market_status,status) IN ('EMPTY','PARTIAL') THEN 'RADIUS'
+      ELSE NULL END),
     accepts_multi_pick=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_pick END,
     accepts_multi_drop=CASE WHEN accepts_multi_stop=1 THEN 1 ELSE accepts_multi_drop END`);
   db.exec(`
@@ -699,6 +850,17 @@ function migrate(db) {
   if (!companyPageColumns.has('show_contact_phone_on_loads')) {
     db.exec('ALTER TABLE company_pages ADD COLUMN show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0');
   }
+  for (const [name,definition] of [
+    ['theme_primary',"TEXT NOT NULL DEFAULT '#075985'"],
+    ['theme_accent',"TEXT NOT NULL DEFAULT '#f97316'"],
+    ['contact_whatsapp','TEXT'],
+    ['contact_website','TEXT'],
+    ['show_contact_phone','INTEGER NOT NULL DEFAULT 0'],
+    ['show_contact_whatsapp','INTEGER NOT NULL DEFAULT 0'],
+    ['show_contact_email','INTEGER NOT NULL DEFAULT 0'],
+    ['show_contact_website','INTEGER NOT NULL DEFAULT 0'],
+    ['youtube_video_id','TEXT']
+  ]) if(!companyPageColumns.has(name))db.exec(`ALTER TABLE company_pages ADD COLUMN ${name} ${definition}`);
   const applicationColumns = new Set(db.prepare('PRAGMA table_info(applications)').all().map(column => column.name));
   if (!applicationColumns.has('sponsored_free')) {
     db.exec('ALTER TABLE applications ADD COLUMN sponsored_free INTEGER NOT NULL DEFAULT 0');
@@ -1035,6 +1197,253 @@ function normalizeLocalCapacity(db) {
     WHERE movement_scope='LOCAL'`).run();
 }
 
+function retireLegacyCapacityModes(db) {
+  db.prepare(`UPDATE capacities SET
+    status=CASE WHEN status='BUSY' THEN 'OFF_DUTY' ELSE status END,
+    market_status=CASE WHEN market_status='BUSY' THEN 'OFF_DUTY' ELSE market_status END,
+    available_percent=CASE WHEN status='BUSY' OR market_status='BUSY' THEN 0 ELSE available_percent END,
+    accepts_full_load=CASE WHEN status='BUSY' OR market_status='BUSY' THEN 0 ELSE accepts_full_load END,
+    accepts_partial_load=CASE WHEN status='BUSY' OR market_status='BUSY' THEN 0 ELSE accepts_partial_load END,
+    accepts_multi_pick=CASE WHEN status='BUSY' OR market_status='BUSY' THEN 0 ELSE accepts_multi_pick END,
+    accepts_multi_drop=CASE WHEN status='BUSY' OR market_status='BUSY' THEN 0 ELSE accepts_multi_drop END,
+    accepts_multi_stop=CASE WHEN status='BUSY' OR market_status='BUSY' THEN 0 ELSE accepts_multi_stop END,
+    origin=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE origin END,
+    destination=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE destination END,
+    corridor=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE corridor END,
+    origin_place_ref=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE origin_place_ref END,
+    origin_lat=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE origin_lat END,
+    origin_lng=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE origin_lng END,
+    destination_place_ref=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE destination_place_ref END,
+    destination_lat=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE destination_lat END,
+    destination_lng=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE destination_lng END,
+    current_route_origin=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE current_route_origin END,
+    current_route_destination=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE current_route_destination END,
+    location_area=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE location_area END,
+    location_updated_at=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE location_updated_at END,
+    location_lat=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE location_lat END,
+    location_lng=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE location_lng END,
+    location_precision_km=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE location_precision_km END,
+    location_source=CASE WHEN status='BUSY' OR market_status='BUSY' THEN NULL ELSE location_source END,
+    travel_date=CASE WHEN COALESCE(market_status,status)='EMPTY' THEN travel_date ELSE NULL END,open_to_contract_lanes=0,
+    available_again_date=NULL,available_again_place_ref=NULL,available_again_place_label=NULL,
+    available_again_lat=NULL,available_again_lng=NULL`).run();
+}
+
+function normalizeCapacityGeometry(db) {
+  db.prepare(`UPDATE capacities SET
+    current_route_origin=COALESCE(current_route_origin,origin),
+    current_route_destination=COALESCE(current_route_destination,destination),
+    current_origin_place_ref=COALESCE(current_origin_place_ref,origin_place_ref),
+    current_origin_lat=COALESCE(current_origin_lat,origin_lat),
+    current_origin_lng=COALESCE(current_origin_lng,origin_lng),
+    current_destination_place_ref=COALESCE(current_destination_place_ref,destination_place_ref),
+    current_destination_lat=COALESCE(current_destination_lat,destination_lat),
+    current_destination_lng=COALESCE(current_destination_lng,destination_lng),
+    travel_date=NULL
+    WHERE availability_geometry='ROUTE'
+      AND COALESCE(market_status,status) IN ('EMPTY','PARTIAL')
+      AND origin IS NOT NULL AND destination IS NOT NULL`).run();
+  db.prepare(`UPDATE capacities SET availability_geometry='RADIUS'
+    WHERE availability_geometry='ROUTE' AND (
+      current_route_origin IS NULL OR current_route_destination IS NULL OR
+      current_origin_lat IS NULL OR current_origin_lng IS NULL OR
+      current_destination_lat IS NULL OR current_destination_lng IS NULL
+    )`).run();
+}
+
+function purgeLegacyDemandFixtures(db) {
+  db.exec(`
+    BEGIN IMMEDIATE;
+    DELETE FROM shipments;
+    DELETE FROM partner_relationships;
+    DELETE FROM member_favorites;
+    DELETE FROM business_reviews;
+
+    DELETE FROM payment_proofs WHERE subscription_id IN (
+      SELECT s.id FROM subscriptions s JOIN organizations o ON o.id=s.organization_id
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM subscriptions WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM support_conversations WHERE customer_user_id IN (
+      SELECT u.id FROM users u JOIN organizations o ON o.id=u.organization_id
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM verification_requests WHERE subject_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    ) OR submitted_by IN (
+      SELECT u.id FROM users u JOIN organizations o ON o.id=u.organization_id
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM applications WHERE user_id IN (
+      SELECT u.id FROM users u JOIN organizations o ON o.id=u.organization_id
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM notifications WHERE user_id IN (
+      SELECT u.id FROM users u JOIN organizations o ON o.id=u.organization_id
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM audit_logs WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    ) OR actor_user_id IN (
+      SELECT u.id FROM users u JOIN organizations o ON o.id=u.organization_id
+      WHERE o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM service_areas WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM profile_routes WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM company_pages WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM memberships WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM users WHERE organization_id IN (
+      SELECT id FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER')
+    );
+    DELETE FROM organizations WHERE type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER');
+    COMMIT;
+  `);
+}
+
+function seedPublicCapacityMarket(db) {
+  const now=new Date();
+  const iso=now.toISOString();
+  const expiresAt=new Date(now.getTime()+7*86_400_000).toISOString();
+  const subscriptionEnd=new Date(now.getTime()+30*86_400_000).toISOString();
+  const passwordHash=hashPassword('Loadgistic123!');
+  const places=[
+    {name:'Addis Ababa, Ethiopia',ref:'builtin:addis ababa',lat:9.03,lng:38.74},
+    {name:'Adama, Ethiopia',ref:'builtin:adama',lat:8.54,lng:39.27},
+    {name:'Hawassa, Ethiopia',ref:'builtin:hawassa',lat:7.05,lng:38.47},
+    {name:'Dire Dawa, Ethiopia',ref:'builtin:dire dawa',lat:9.60,lng:41.85},
+    {name:'Bahir Dar, Ethiopia',ref:'builtin:bahir dar',lat:11.59,lng:37.39},
+    {name:'Mekelle, Ethiopia',ref:'builtin:mekelle',lat:13.50,lng:39.47},
+    {name:'Jimma, Ethiopia',ref:'builtin:jimma',lat:7.67,lng:36.83},
+    {name:'Gondar, Ethiopia',ref:'builtin:gondar',lat:12.60,lng:37.47},
+    {name:'Dessie, Ethiopia',ref:'builtin:dessie',lat:11.13,lng:39.63},
+    {name:'Shashamane, Ethiopia',ref:'builtin:shashamane',lat:7.20,lng:38.60},
+    {name:'Debre Birhan, Ethiopia',ref:'builtin:debre birhan',lat:9.68,lng:39.53},
+    {name:'Kombolcha, Ethiopia',ref:'builtin:kombolcha',lat:11.08,lng:39.74}
+  ];
+  const themes=[['#075985','#f97316'],['#166534','#f59e0b'],['#6d28d9','#22d3ee'],['#9f1239','#fbbf24'],['#0f766e','#fb7185'],['#1d4ed8','#f97316'],['#7c2d12','#38bdf8'],['#4338ca','#facc15']];
+  const trucks=[['Isuzu','FSR','Medium Box Truck'],['Sinotruk','HOWO TX','Heavy Rigid Stake Body Truck'],['Isuzu','NPR','Light Stake Body Truck'],['Fuso','FJ','Medium Stake Body Truck'],['Hino','500','Heavy Box Truck'],['FAW','J6L','Curtain Side Truck']];
+  const companyNames=['Sheger Freight Network','Rift Valley Haulage','Abyssinia Road Cargo','Awash Fleet Services','Highland Transit Ethiopia','Blue River Logistics','Walia Freight Lines','Merkato Cargo Fleet'];
+  const ownerNames=['Abel Tesfaye','Bethlehem Bekele','Dawit Mekonnen','Eden Alemu','Fikru Desta','Genet Tadesse','Henok Girma','Iman Mohammed','Kalkidan Assefa','Liya Kebede','Mulugeta Solomon','Nebiyu Haile','Rahel Worku','Samuel Getachew','Tigist Abebe','Yared Demissie','Zelalem Tesema','Saron Yohannes','Mustefa Ali','Biruk Amare'];
+
+  const insertUser=db.prepare(`INSERT OR IGNORE INTO users (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at) VALUES (?,?,?,?,?,?,?,?,1,?)`);
+  const insertOrg=db.prepare(`INSERT OR IGNORE INTO organizations (id,name,handle,type,verified,industry,description,phone,email,city,public_visibility,created_at,city_place_ref,city_lat,city_lng) VALUES (?,?,?,'TRANSPORT_COMPANY',0,'Road freight',?,?,?,?,'PUBLIC',?,?,?,?)`);
+  const insertMember=db.prepare(`INSERT OR IGNORE INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,?)`);
+  const insertProfile=db.prepare(`INSERT OR IGNORE INTO provider_profiles (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at,city_place_ref,city_lat,city_lng) VALUES (?,?,?,?,0,0,0,?,?,?,?,?,'PUBLIC',?,?,?,?)`);
+  const insertPage=db.prepare(`INSERT OR IGNORE INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at,theme_primary,theme_accent,contact_whatsapp,contact_website,show_contact_phone,show_contact_whatsapp,show_contact_email,show_contact_website,youtube_video_id) VALUES (?,?,?,?,?,?,?,?,?,0,?,1,?,?,?,?,?,1,1,1,1,NULL)`);
+  const insertVehicle=db.prepare(`INSERT OR IGNORE INTO vehicles (id,organization_id,provider_profile_id,platform_number,label,category,plate,active,make,model,cargo_configuration) VALUES (?,?,?,?,?,?,?,1,?,?,?)`);
+  const insertDriver=db.prepare(`INSERT OR IGNORE INTO drivers (id,organization_id,user_id,name,phone,license_verified,active) VALUES (?,?,?,?,?,0,1)`);
+  const insertPermission=db.prepare(`INSERT OR IGNORE INTO driver_permissions (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at) VALUES (?,0,0,0,1,?,?)`);
+  const insertAssignment=db.prepare(`INSERT OR IGNORE INTO driver_vehicle_assignments (id,driver_user_id,vehicle_id,assigned_by,assigned_at,active) VALUES (?,?,?,?,?,1)`);
+  const insertSubscription=db.prepare(`INSERT OR IGNORE INTO subscriptions (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at) VALUES (?,?,?,?,'ACTIVE','FLAT_MONTHLY',?,?,?)`);
+  const insertRoute=db.prepare(`INSERT OR IGNORE INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at,origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const insertCapacity=db.prepare(`INSERT OR IGNORE INTO capacities
+    (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,location_lat,location_lng,location_precision_km,location_source,updated_by,updated_at,expires_at,movement_scope,location_area,location_place_ref,location_updated_at,accepts_full_load,accepts_partial_load,accepts_multi_pick,accepts_multi_drop,current_route_origin,current_route_destination,current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,market_status,availability_geometry)
+    VALUES (?,?,?,?,?,?,?,?,NULL,NULL,NULL,'OPEN',NULL,?,?,?,'DEVICE_OBSCURED',?,?,?,'BOTH',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const insertTrip=db.prepare(`INSERT OR IGNORE INTO next_trips (id,provider_organization_id,provider_profile_id,vehicle_id,origin,origin_place_ref,origin_lat,origin_lng,destination,destination_place_ref,destination_lat,destination_lng,travel_date,space_status,available_percent,published,updated_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)`);
+
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`UPDATE company_pages SET show_contact_phone=CASE WHEN trim(COALESCE(contact_phone,''))<>'' THEN 1 ELSE 0 END,
+      show_contact_email=CASE WHEN trim(COALESCE(contact_email,''))<>'' THEN 1 ELSE 0 END,
+      contact_whatsapp=COALESCE(contact_whatsapp,contact_phone),show_contact_whatsapp=CASE WHEN trim(COALESCE(contact_phone,''))<>'' THEN 1 ELSE 0 END,
+      theme_primary=COALESCE(theme_primary,'#075985'),theme_accent=COALESCE(theme_accent,'#f97316')
+      WHERE organization_id IN (SELECT id FROM organizations WHERE type='TRANSPORT_COMPANY') OR provider_profile_id IS NOT NULL`).run();
+    let capacityNumber=100;
+    const addSignals=(owner,userId,vehicleId,index)=>{
+      const home=places[index%places.length];
+      const destination=places[(index*3+3)%places.length];
+      const status=index%4===0?'EMPTY':'PARTIAL';
+      const geometry=status==='PARTIAL'?'ROUTE':index%8===0?'RADIUS':'ROUTE';
+      const percent=status==='EMPTY'?100:[25,40,55,70,85][index%5];
+      const privacy=[3,5,10,20,40][index%5];
+      const offset=((index%7)-3)*0.012;
+      const routeOrigin=geometry==='ROUTE'?home:null;
+      const routeDestination=geometry==='ROUTE'?destination:null;
+      const capId=`cap-public-${capacityNumber++}`;
+      insertCapacity.run(capId,owner.organizationId,owner.profileId,vehicleId,status,percent,null,null,home.lat+offset,home.lng-offset,privacy,userId,iso,expiresAt,`Around ${home.name}`,home.ref,iso,status==='EMPTY'?1:0,status==='PARTIAL'?1:0,index%3===1?1:0,index%4===1?1:0,routeOrigin?.name||null,routeDestination?.name||null,routeOrigin?.ref||null,routeOrigin?.lat||null,routeOrigin?.lng||null,routeDestination?.ref||null,routeDestination?.lat||null,routeDestination?.lng||null,status,geometry);
+      db.prepare('UPDATE capacities SET work_radius_km=? WHERE id=?').run([15,25,40,60,100,150,250][index%7],capId);
+      const tripOrigin=places[(index+1)%places.length],tripDestination=places[(index+5)%places.length];
+      const travelDate=index%3===0?null:new Date(now.getTime()+((index%7)+1)*86_400_000).toISOString().slice(0,10);
+      insertTrip.run(`trip-public-${vehicleId}`,owner.organizationId,owner.profileId,vehicleId,tripOrigin.name,tripOrigin.ref,tripOrigin.lat,tripOrigin.lng,tripDestination.name,tripDestination.ref,tripDestination.lat,tripDestination.lng,travelDate,index%2?'PARTIAL':'EMPTY',index%2?50:100,userId,iso);
+    };
+
+    companyNames.forEach((name,index)=>{
+      const suffix=String(index+1).padStart(2,'0');const orgId=`org-public-fleet-${suffix}`,ownerId=`user-public-fleet-${suffix}`,driverId=`user-public-fleet-driver-${suffix}`,handle=`${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${suffix}`,home=places[index%places.length],theme=themes[index%themes.length];
+      insertOrg.run(orgId,name,handle,`${name} publishes current truck capacity and operates provider-owned shipment tracking.`,`+2519117${suffix}000`,`dispatch@${handle}.local`,home.name,iso,home.ref,home.lat,home.lng);
+      insertUser.run(ownerId,`owner-${suffix}@providers.loadgistic.test`,`+2519117${suffix}001`,passwordHash,`${name} Owner`,'TRANSPORTER',orgId,null,iso);
+      insertUser.run(driverId,`driver-${suffix}@providers.loadgistic.test`,`+2519117${suffix}002`,passwordHash,`${name} Driver`,'DRIVER',orgId,null,iso);
+      insertMember.run(`mem-public-owner-${suffix}`,ownerId,orgId,'OWNER');insertMember.run(`mem-public-driver-${suffix}`,driverId,orgId,'DRIVER');
+      insertPage.run(`page-public-fleet-${suffix}`,orgId,null,'Reliable freight capacity for growing Ethiopian trade',`${name} is a demo fleet profile showing how transport companies can present current capacity, planned trips, and recurring corridors.`,`Full truckload; partial cargo space; regional road freight`,'',home.name,`+2519117${suffix}000`,`dispatch@${handle}.local`,iso,theme[0],theme[1],`+2519117${suffix}000`,`https://example.com/${handle}`);
+      insertDriver.run(`driver-public-${suffix}`,orgId,driverId,`${name} Driver`,`+2519117${suffix}002`);insertPermission.run(driverId,ownerId,iso);
+      insertSubscription.run(`sub-public-fleet-${suffix}`,orgId,null,'plan-transport',iso,subscriptionEnd,iso);
+      for(let truckIndex=0;truckIndex<3;truckIndex++){
+        const vehicle=trucks[(index+truckIndex)%trucks.length],vehicleId=`veh-public-fleet-${suffix}-${truckIndex+1}`,platform=`LG-TRK-F${suffix}${truckIndex+1}`;
+        insertVehicle.run(vehicleId,orgId,null,platform,`Truck ${truckIndex+1}`,vehicle[2],`DEMO-F${suffix}-${truckIndex+1}`,vehicle[0],vehicle[1],vehicle[2]);
+        insertAssignment.run(`assign-public-${suffix}-${truckIndex+1}`,driverId,vehicleId,ownerId,iso);
+        addSignals({organizationId:orgId,profileId:null},driverId,vehicleId,index*3+truckIndex);
+      }
+      for(let routeIndex=0;routeIndex<2;routeIndex++){const origin=places[(index+routeIndex)%places.length],destination=places[(index+routeIndex+4)%places.length];insertRoute.run(`route-public-fleet-${suffix}-${routeIndex}`,orgId,null,origin.name,destination.name,ownerId,iso,origin.ref,origin.lat,origin.lng,destination.ref,destination.lat,destination.lng);}
+    });
+
+    ownerNames.forEach((person,index)=>{
+      const suffix=String(index+1).padStart(2,'0'),profileId=`profile-public-owner-${suffix}`,userId=`user-public-owner-${suffix}`,handle=`${person.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-transport`,home=places[index%places.length],theme=themes[(index+3)%themes.length],vehicle=trucks[(index+2)%trucks.length],vehicleId=`veh-public-owner-${suffix}`;
+      insertUser.run(userId,`owner-operator-${suffix}@providers.loadgistic.test`,`+2519228${suffix}000`,passwordHash,person,'DRIVER',null,profileId,iso);
+      insertProfile.run(profileId,userId,`${person} Owner-Operator`,handle,vehicle[2],'',`+2519228${suffix}000`,home.name,`${person} is a demo self-managed owner-operator profile serving producers and businesses with directly managed truck capacity.`,iso,home.ref,home.lat,home.lng);
+      insertPage.run(`page-public-owner-${suffix}`,null,profileId,'Owner-operated capacity with direct accountability',`${person} operates and manages this truck directly, publishes current availability, and keeps provider-side shipment history.`,`Owner-operated road freight; partial cargo space; regional routes`,'',home.name,`+2519228${suffix}000`,`contact@${handle}.local`,iso,theme[0],theme[1],`+2519228${suffix}000`,`https://example.com/${handle}`);
+      insertVehicle.run(vehicleId,null,profileId,`LG-TRK-O${suffix}`,`${person.split(' ')[0]}'s truck`,vehicle[2],`DEMO-O${suffix}`,vehicle[0],vehicle[1],vehicle[2]);
+      insertSubscription.run(`sub-public-owner-${suffix}`,null,profileId,'plan-solo',iso,subscriptionEnd,iso);
+      addSignals({organizationId:null,profileId},userId,vehicleId,index+24);
+      for(let routeIndex=0;routeIndex<2;routeIndex++){const origin=places[(index+routeIndex+2)%places.length],destination=places[(index+routeIndex+7)%places.length];insertRoute.run(`route-public-owner-${suffix}-${routeIndex}`,null,profileId,origin.name,destination.name,userId,iso,origin.ref,origin.lat,origin.lng,destination.ref,destination.lat,destination.lng);}
+    });
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
+
+function enforcePartialRoutesAndSeedRecurringAreas(db) {
+  db.exec(`
+    UPDATE capacities SET
+      availability_geometry='ROUTE',work_radius_km=NULL,
+      current_route_origin=(SELECT t.origin FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_origin_place_ref=(SELECT t.origin_place_ref FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_origin_lat=(SELECT t.origin_lat FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_origin_lng=(SELECT t.origin_lng FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_route_destination=(SELECT t.destination FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_destination_place_ref=(SELECT t.destination_place_ref FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_destination_lat=(SELECT t.destination_lat FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
+      current_destination_lng=(SELECT t.destination_lng FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id)
+    WHERE COALESCE(market_status,status)='PARTIAL' AND availability_geometry='RADIUS'
+      AND EXISTS (SELECT 1 FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id);
+
+    UPDATE capacities SET status='OFF_DUTY',market_status='OFF_DUTY',available_percent=0,
+      availability_geometry=NULL,work_radius_km=NULL
+    WHERE COALESCE(market_status,status)='PARTIAL' AND availability_geometry<>'ROUTE';
+  `);
+  const providers=db.prepare(`SELECT cp.id,cp.organization_id,cp.provider_profile_id,
+      COALESCE(o.city_place_ref,p.city_place_ref) place_ref,
+      COALESCE(o.city,p.city) place_label,COALESCE(o.city_lat,p.city_lat) center_lat,
+      COALESCE(o.city_lng,p.city_lng) center_lng,
+      COALESCE((SELECT m.user_id FROM memberships m WHERE m.organization_id=o.id AND m.membership_role='OWNER' LIMIT 1),p.user_id) created_by
+    FROM company_pages cp LEFT JOIN organizations o ON o.id=cp.organization_id
+    LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
+    WHERE cp.published=1 AND COALESCE(o.city_place_ref,p.city_place_ref) IS NOT NULL`).all();
+  const insert=db.prepare(`INSERT OR IGNORE INTO recurring_service_areas
+    (id,organization_id,provider_profile_id,place_ref,place_label,center_lat,center_lng,radius_km,created_by,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)`);
+  const radii=[25,40,60,100,150,250,500];
+  const createdAt=new Date().toISOString();
+  providers.forEach((provider,index)=>insert.run(`recurring-area-${provider.id}`,provider.organization_id,provider.provider_profile_id,provider.place_ref,placeLabel(provider.place_label),provider.center_lat,provider.center_lng,radii[index%radii.length],provider.created_by,createdAt));
+}
+
 function qualifyExistingEthiopiaData(db) {
   const qualifySimpleColumns = [
     ['organizations','city'],
@@ -1226,8 +1635,8 @@ function seed(db) {
     (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,updated_by,updated_at,expires_at,location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   capacityInsert.run('cap-empty',orgs.transporter.id,null,'veh-trans-1','EMPTY',100,'Addis Ababa','Dire Dawa','Addis Ababa ↔ Dire Dawa',tomorrow,'Today 16:00','OPEN',null,'user-transporter',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
-  capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',dayAfter,'Ready now','OPEN',null,'user-driver',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
-  capacityInsert.run('cap-partner-partial',orgs.transporter.id,null,'veh-trans-2','PARTIAL',25,'Mekelle','Addis Ababa','Mekelle ↔ Addis Ababa',dayAfter,'After current delivery','SAVED_PARTNERS',null,'user-transporter',iso,expiresFresh,'Around Mekelle',iso,13.5,39.5,40,'DEVICE_OBSCURED');
+  capacityInsert.run('cap-partial',null,'provider-driver','veh-driver-1','PARTIAL',40,'Addis Ababa','Hawassa','Addis Ababa ↔ Hawassa',null,'Ready now','OPEN',null,'user-driver',iso,expiresFresh,'Around Addis Ababa',iso,9,38.5,40,'DEVICE_OBSCURED');
+  capacityInsert.run('cap-partner-partial',orgs.transporter.id,null,'veh-trans-2','PARTIAL',25,'Mekelle','Addis Ababa','Mekelle ↔ Addis Ababa',null,'After current delivery','SAVED_PARTNERS',null,'user-transporter',iso,expiresFresh,'Around Mekelle',iso,13.5,39.5,40,'DEVICE_OBSCURED');
   db.prepare(`UPDATE capacities SET movement_scope='BOTH',local_place_ref='builtin:addis ababa',
     local_place_label='Addis Ababa, Ethiopia',local_center_lat=9.03,local_center_lng=38.74,local_radius_km=40
     WHERE id='cap-partial'`).run();

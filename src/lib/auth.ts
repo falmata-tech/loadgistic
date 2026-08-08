@@ -47,3 +47,11 @@ export async function hasTrackingGrant(shipmentId: string) {
   const payload = verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
   return payload?.sub === `tracking:${shipmentId}`;
 }
+
+export async function getProviderTrackingGrant(shipmentId?:string) {
+  const store=await cookies();
+  const payload=verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
+  const match=String(payload?.sub||'').match(/^provider-tracking:([^:]+):(SHIPPER|RECEIVER)$/);
+  if(!match||shipmentId&&match[1]!==shipmentId)return null;
+  return {shipmentId:match[1],partyRole:match[2] as 'SHIPPER'|'RECEIVER'};
+}

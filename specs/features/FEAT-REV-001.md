@@ -1,73 +1,59 @@
 ---
 id: FEAT-REV-001
-title: Business rating publication and moderation
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-PRV-001, FEAT-ADM-001]
-problem: Completed-load Business ratings need useful public reputation without allowing an uninvestigated low rating or fraud allegation to damage a member profile.
-behavior: Four- and five-star participant reviews publish immediately; one- through three-star reviews require an explanatory note, enter a private administrator queue, and affect public reputation only after an administrator publishes them.
-contracts: [BusinessReviewSubmission, BusinessReviewPublicationPolicy, RatingModerationQueue, RatingModerationDecision, ProfileRatingSummary, AdminAudit]
-observability: [business_review_submitted, low_rating_notification, rating_moderation_decision]
-rollout: Existing reviews migrate as Published; low-rating moderation is additive and terminal decisions preserve the original review and investigation record.
+title: Verified guest reviews for transport providers
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-SHP-001, FEAT-TRK-001, FEAT-PRV-001]
+problem: A capacity seeker without an account still needs a trustworthy way to review the provider after a real completed shipment, without letting low ratings be hidden during moderation.
+behavior: The emailed shipper party may submit one verified review of the transport provider after completion. The provider never rates the guest. Every rating publishes and counts immediately. A provider may dispute a one-, two-, or three-star rating, but the rating stays public and counted while that dispute is pending.
+contracts: [VerifiedProviderReview, ReviewAuthorizationGrant, ProviderReviewSummary, LowRatingReviewRequest]
+observability: [provider_review_submitted, low_rating_review_requested, low_rating_review_resolved, provider_review_denial]
+rollout: Add provider-review ownership and guest authorization additively, purge fake local Business-to-Business reviews, and switch public reputation only after the new projection and authorization tests pass.
 ---
 
-# Business rating moderation
+# Verified provider reviews
 
-### Scenario: rating review history remains bounded
+### Scenario: emailed shipment owner submits one review
 
-Given a rating-review status contains more than one page\
-When an administrator changes page\
-Then the server renders one bounded page and preserves the selected status\
-And terminal records remain reachable without active review commands.
+Given a provider-owned shipment is Complete and the shipper party received its completion email\
+When that party follows an unexpired, shipment-bound review authorization and submits a rating\
+Then exactly one review of the owning provider is accepted for that shipment and party\
+And the review is marked as arising from a completed shipment\
+And no capacity-seeker account or public Business profile is created.
 
-### Scenario: positive completed-load review publishes immediately
+### Scenario: every valid rating publishes and counts
 
-Given a shipper or receiver Business may review the other Business after a Completed load\
-When it submits four or five stars\
-Then the review is Published immediately\
-And it contributes to the subject Business rating count and average.
+Given the verified shipment owner submits any rating from one through five stars\
+When the review command commits\
+Then the review publishes immediately\
+And it appears in the provider's public review count and average\
+And Loadgistic does not delay, suppress, or exclude it because of its score.
 
-### Scenario: low rating enters private review
+### Scenario: provider may dispute a one- to three-star rating without hiding it
 
-Given an eligible Business submits one, two, or three stars\
-When it includes the required explanatory note\
-Then the review is stored as Pending\
-And it does not contribute to the subject Business public count or average\
-And active administrators receive a notification that identifies the load and review queue without exposing the allegation publicly\
-And the reviewed Business cannot read the Pending rating or note.
+Given a published provider review has a rating of one, two, or three stars\
+When the reviewed provider submits one bounded dispute with a reason\
+Then the dispute enters Pending review\
+And the original rating and note remain public and continue to count\
+And opening a dispute does not suspend the guest or provider\
+And an administrator may record a terminal Uphold or Remove decision with an audit note\
+And only a terminal Remove decision excludes the review from the public summary.
 
-### Scenario: unexplained low rating is rejected
+### Scenario: provider cannot rate a guest or dispute higher ratings
 
-Given an eligible Business selects one, two, or three stars\
-When it submits no explanatory note\
-Then the command is rejected\
-And no review, notification, or success audit is created.
+Given a provider owns a completed shipment or has a published four- or five-star review\
+When the provider attempts to rate either guest party or dispute the higher rating\
+Then the command is denied\
+And no review, dispute, or public summary changes.
 
-### Scenario: administrator investigates a pending rating
+### Scenario: review authorization is narrow
 
-Given an authenticated administrator opens Rating Reviews\
-When Pending low ratings are listed\
-Then each item shows the load, reviewer Business, subject Business, rating, submitted note, and timestamps\
-And the administrator may open the load context or the Operations search for the subject\
-And credentials, tracking codes, receiver contact, proof paths, and exact coordinates are absent.
-
-### Scenario: administrator publishes or dismisses a low rating
-
-Given a low rating remains Pending\
-When an administrator records an investigation note and chooses Publish or Dismiss\
-Then the terminal decision, administrator, note, and time are recorded and audited\
-And Publish adds the review to the public rating summary\
-And Dismiss preserves it for accountability but never publishes it\
-And a later decision attempt changes nothing.
-
-### Scenario: non-administrator cannot moderate ratings
-
-Given an authenticated non-administrator\
-When it reads the moderation queue or submits a moderation decision\
-Then access is denied\
-And no review state, notification, or audit is changed.
+Given a receiver code, unrelated code, expired guest grant, incomplete shipment, duplicate reviewer, provider member, or anonymous visitor attempts to review\
+When authorization is evaluated\
+Then no review is created or changed\
+And the response reveals no private shipment or party data.
 
 ## Contract ownership
 
-- Application services: `submitBusinessReview`, `listRatingModerationQueue`, `reviewBusinessRating`
-- Pages: completed shipment review and `/admin/ratings`
-- Inbound adapters: `/api/shipments/[id]/business-review`, `/api/admin/ratings/[id]`
-- Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Public flow: completion-email review action and guest review form
+- Public projection: provider microsite review summary and verified-shipment label
+- Administration: bounded one- to three-star dispute queue and audited terminal decision
+- Tests: repository, authorization, E2E
