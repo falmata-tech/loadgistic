@@ -1,10 +1,13 @@
 import { listPendingEmailDeliveries, recordEmailDeliveryAttempt } from './repository.js';
+import { reviewAccessCode, trackingAccessCode } from './security.js';
 
 type PendingDelivery={
   id:string;
+  shipment_id:string;
   idempotency_key:string;
   recipient_email:string;
   party_role:'SHIPPER'|'RECEIVER';
+  delivery_kind:'TRACKING_ACCESS'|'COMPLETION';
   code:string;
   provider_name:string;
   origin:string;
@@ -15,6 +18,10 @@ type PendingDelivery={
 
 export function emailDeliveryConfigured(){
   return Boolean(process.env.LOADGISTIC_EMAIL_WEBHOOK_URL);
+}
+
+function publicUrl(path:string){
+  return new URL(path,process.env.APP_URL||'http://127.0.0.1:3000').toString();
 }
 
 export async function deliverPendingShipmentEmails(limit=10){
@@ -32,9 +39,11 @@ export async function deliverPendingShipmentEmails(limit=10){
           ...(process.env.LOADGISTIC_EMAIL_WEBHOOK_TOKEN?{authorization:`Bearer ${process.env.LOADGISTIC_EMAIL_WEBHOOK_TOKEN}`}:{})
         },
         body:JSON.stringify({
-          template:'shipment-completed',
+          template:delivery.delivery_kind==='TRACKING_ACCESS'?'tracking-started':'tracking-completed',
           to:delivery.recipient_email,
-          partyRole:delivery.party_role,
+          customerRole:'OWNER',
+          tracking:delivery.delivery_kind==='TRACKING_ACCESS'?{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)}:undefined,
+          review:delivery.delivery_kind==='COMPLETION'?{url:publicUrl('/track'),code:reviewAccessCode(delivery.shipment_id)}:undefined,
           shipment:{code:delivery.code,providerName:delivery.provider_name,origin:delivery.origin,destination:delivery.destination,cargoSummary:delivery.cargo_summary,completedAt:delivery.completed_at}
         }),
         signal:AbortSignal.timeout(8000)

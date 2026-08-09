@@ -8,7 +8,8 @@ const CapacityLocationMapLeaflet=dynamic(
 );
 
 type Point={lat:number;lng:number};
+type Corridor={id:string;origin:string;destination:string;origin_lat:number;origin_lng:number;destination_lat:number;destination_lng:number};
 
-export function CapacityLocationMap({center,radiusKm,workRadiusKm,route}:{center:Point;radiusKm:number;workRadiusKm?:number|null;route?:{origin:Point;destination:Point}|null}){
-  return <CapacityLocationMapLeaflet center={center} radiusKm={radiusKm} workRadiusKm={workRadiusKm} route={route}/>;
+export function CapacityLocationMap({center,radiusKm,workRadiusKm,route,corridors=[]}:{center:Point;radiusKm:number;workRadiusKm?:number|null;route?:{origin:Point;destination:Point}|null;corridors?:Corridor[]}){
+  return <CapacityLocationMapLeaflet center={center} radiusKm={radiusKm} workRadiusKm={workRadiusKm} route={route} corridors={corridors}/>;
 }

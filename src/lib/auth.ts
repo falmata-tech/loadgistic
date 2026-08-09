@@ -5,6 +5,7 @@ import { getUserById, getWorkspaceAccess } from './repository.js';
 
 export const SESSION_COOKIE = 'lg_session';
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
+export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
 export const TRACKING_IDLE_SECONDS = 5 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
@@ -54,4 +55,10 @@ export async function getProviderTrackingGrant(shipmentId?:string) {
   const match=String(payload?.sub||'').match(/^provider-tracking:([^:]+):(SHIPPER|RECEIVER)$/);
   if(!match||shipmentId&&match[1]!==shipmentId)return null;
   return {shipmentId:match[1],partyRole:match[2] as 'SHIPPER'|'RECEIVER'};
+}
+
+export async function hasProviderReviewGrant(shipmentId:string) {
+  const store=await cookies();
+  const payload=verifySessionToken(store.get(REVIEW_GRANT_COOKIE)?.value);
+  return payload?.sub===`provider-review:${shipmentId}`;
 }

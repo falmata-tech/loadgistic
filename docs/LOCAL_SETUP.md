@@ -17,7 +17,7 @@ Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds us
 - 30 published provider pages;
 - nine fleet companies and 21 self-managed provider profiles;
 - 47 active current-capacity signals;
-- 44 published next trips, 61 recurring routes, and 30 permanent recurring working areas in the standard fixture;
+- exactly two regular corridors for each of the 30 published providers in the standard fixture;
 - no Business/capacity-seeker accounts, shipment-demand rows, network relationships, or Business reviews.
 
 ## Base provider fixtures

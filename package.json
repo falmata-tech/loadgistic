@@ -19,6 +19,7 @@
     "places:setup": "npm run places:download && npm run places:import",
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
+    "test:e2e:critical": "node scripts/run-e2e.mjs --grep \"public entry|map clusters|visitor location|capacity summary|provider starts Tracking|provider edits business facts\"",
     "test:ui-audit": "node scripts/ui-audit.mjs",
     "test:ui-stress": "node scripts/stress-ui-audit.mjs",
     "test:e2e:server": "node scripts/e2e-server.mjs",

@@ -32,6 +32,17 @@ export function trackingAccessCode(shipmentId) {
   return `LG-${digest.slice(0,4)}-${digest.slice(4,8)}`;
 }
 
+export function reviewAccessCode(shipmentId) {
+  const digest = crypto.createHmac('sha256', secret()).update(`review:${shipmentId}`).digest('hex').toUpperCase();
+  return `LG-RV-${digest.slice(0,4)}-${digest.slice(4,8)}`;
+}
+
+export function verifyReviewAccessCode(shipmentId,value) {
+  const actual=Buffer.from(hashTrackingAccessCode(value));
+  const expected=Buffer.from(hashTrackingAccessCode(reviewAccessCode(shipmentId)));
+  return actual.length===expected.length&&crypto.timingSafeEqual(actual,expected);
+}
+
 export function hashTrackingAccessCode(value) {
   return sign(`tracking-code:${String(value || '').trim().toUpperCase()}`);
 }
@@ -65,9 +76,4 @@ export function randomId(prefix = '') {
 export function randomCode(prefix = 'LGX') {
   const part = crypto.randomBytes(4).toString('hex').toUpperCase();
   return `${prefix}-${part}`;
-}
-
-export function trackingPartyCode(role='PARTY') {
-  const entropy=crypto.randomBytes(16).toString('base64url').toUpperCase();
-  return `LG-${String(role).slice(0,1).toUpperCase()}-${entropy.slice(0,6)}-${entropy.slice(6,12)}-${entropy.slice(12,18)}`;
 }

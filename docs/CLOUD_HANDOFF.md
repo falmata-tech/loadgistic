@@ -51,7 +51,7 @@ npm audit --audit-level=high
 NODE_ENV=production npm run launch:check
 ```
 
-Then verify health, provider signup/login, capacity radius/route publication, public list/map and proximity, provider microsite contacts, provider shipment creation, both party codes, every valid transition, completion emails/retries, expiry cleanup, review/dispute, private proof authorization, and denied cross-provider access.
+Then verify health, provider signup/login, capacity radius/route publication, public list/map and proximity, platform-managed microsite presentation and provider contacts, Tracking creation, the stable owner code/link, every valid transition, access/completion emails and retries, expiry cleanup, review/dispute, private image authorization, and denied cross-provider access.
 
 ## Repository and rollback controls
 

@@ -148,19 +148,25 @@ try {
   for (const viewport of viewports) {
     const publicContext = await browser.newContext({ viewport });
     const publicPage = await publicContext.newPage();
-    for (const route of ['/', '/about', '/capacity', '/providers', '/providers/blueline-transport', '/track', '/login', '/apply']) {
+    for (const route of ['/', '/about', '/providers', '/providers/blueline-transport', '/track', '/login', '/apply']) {
       const result = await inspectPage(
         publicPage,
         route,
         path.join(outputDir, `${viewport.name}-logged-out-${fileName(route)}.png`)
       );
       report.results.push({ viewport: viewport.name, persona: 'logged-out', ...result });
-      if(route==='/capacity'){
+      if(route==='/'){
         await publicPage.getByRole('button',{name:'Map',exact:true}).click();
         await publicPage.locator('.leaflet-container').waitFor({state:'visible',timeout:10_000});
         await publicPage.locator('.capacity-truck-map-marker,.capacity-map-cluster').first().waitFor({state:'visible',timeout:10_000});
-        const mapResult=await inspectCurrentPage(publicPage,'/capacity#map',path.join(outputDir,`${viewport.name}-logged-out-capacity-map.png`));
+        const mapResult=await inspectCurrentPage(publicPage,'/#map',path.join(outputDir,`${viewport.name}-logged-out-capacity-map.png`));
         report.results.push({viewport:viewport.name,persona:'logged-out',...mapResult});
+        await publicPage.getByRole('button',{name:'List',exact:true}).click();
+        await publicPage.locator('.public-capacity-card').first().getByRole('button',{name:'View on map'}).click();
+        await publicPage.locator('.capacity-truck-map-marker.selected').waitFor({state:'visible',timeout:10_000});
+        if(await publicPage.locator('.capacity-map-cluster,.capacity-truck-map-marker:not(.selected)').count())throw new Error('Selected-truck focus still contains unrelated markers or clusters.');
+        const selectedResult=await inspectCurrentPage(publicPage,'/#selected-truck',path.join(outputDir,`${viewport.name}-logged-out-capacity-selected.png`));
+        report.results.push({viewport:viewport.name,persona:'logged-out',...selectedResult});
       }
     }
     await publicContext.close();

@@ -3,7 +3,7 @@ id: FEAT-DAT-001
 title: Supply-first local development dataset
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
 problem: Public capacity discovery needs enough realistic provider and truck variation to test cursor loading, clustering, provider pages, and responsive layouts without retaining obsolete demand fixtures.
-behavior: Every non-Production local database receives a deterministic supply-only market with fleet providers, self-managed owner-operators, varied current capacity, next trips, recurring routes, and permanent working areas; legacy demand, Business accounts, and relationship fixtures are purged.
+behavior: Every non-Production local database receives a deterministic supply-only market with fleet providers, self-managed owner-operators, varied current radius/corridor capacity, and up to two regular corridors per provider; legacy demand, future-trip, regular-area, Business-account, and relationship fixtures are purged.
 contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge]
 observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure]
 rollout: The dataset is deterministic and local-only; production execution of reset or fixture commands remains denied. Rollback restores a pre-migration database backup, not retired demand fixtures.
@@ -16,10 +16,10 @@ rollout: The dataset is deterministic and local-only; production execution of re
 Given the process is not running in Production\
 When a fresh local database is initialized or reset\
 Then it contains 30 published provider pages across nine fleet companies and 21 self-managed provider profiles\
-And it contains 47 active current-capacity signals with Empty, Partial, radius, and route variation\
-And it contains at least 30 published next trips, at least 40 recurring routes, and 30 permanent recurring working areas\
-And Partial current capacity is route-only while Empty includes both radius and route examples\
-And every current route has both labels and coordinate pairs\
+And it contains 47 active current-capacity signals with Empty, Partial, radius, and corridor variation\
+And each provider has two regular corridors while no provider has more than two\
+And Empty and Partial both include radius and corridor examples\
+And every current corridor has both labels and coordinate pairs\
 And the reset summary contains counts but no credentials, access codes, private messages, or file contents.
 
 ### Scenario: public cursors reach every signal once
@@ -27,7 +27,7 @@ And the reset summary contains counts but no credentials, access codes, private 
 Given the deterministic capacity cohort\
 When anonymous discovery follows cursor pages to the end\
 Then all 47 eligible capacity signals are returned exactly once\
-And fleet and owner-operator profiles, current radius, current route, next trip, recurring route, and recurring working-area signals are represented\
+And fleet and owner-operator profiles, current radius, current corridor, and regular-corridor signals are represented\
 And expired, Off Duty, and unpublished signals remain excluded.
 
 ### Scenario: demand fixtures are removed

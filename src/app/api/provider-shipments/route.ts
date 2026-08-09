@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { createProviderShipment } from '@/lib/repository.js';
+import { deliverPendingShipmentEmails } from '@/lib/email-delivery';
 import { errorMessage } from '@/lib/errors';
 import { text } from '@/lib/redirects';
 
@@ -8,16 +9,17 @@ export const runtime='nodejs';
 
 export async function POST(request:NextRequest){
   const user=await getCurrentUser();
-  if(!user)return NextResponse.json({error:'Log in to create a shipment record.'},{status:401});
+  if(!user)return NextResponse.json({error:'Log in to start Tracking.'},{status:401});
   const form=await request.formData();
   try{
     const created=createProviderShipment(user,{
       vehicleId:text(form,'vehicleId'),
       origin:text(form,'origin'),originPlaceRef:text(form,'originPlaceRef'),
       destination:text(form,'destination'),destinationPlaceRef:text(form,'destinationPlaceRef'),
-      cargoSummary:text(form,'cargoSummary'),shipperEmail:text(form,'shipperEmail'),receiverEmail:text(form,'receiverEmail'),
-      expectedPickupDate:text(form,'expectedPickupDate'),expectedDeliveryDate:text(form,'expectedDeliveryDate'),trackingMode:text(form,'trackingMode')
+      cargoSummary:text(form,'cargoSummary'),customerEmail:text(form,'customerEmail'),
+      expectedPickupDate:text(form,'expectedPickupDate'),expectedDeliveryDate:text(form,'expectedDeliveryDate')
     });
+    await deliverPendingShipmentEmails(10);
     return NextResponse.json(created,{status:201,headers:{'cache-control':'no-store'}});
   }catch(error){return NextResponse.json({error:errorMessage(error)},{status:400,headers:{'cache-control':'no-store'}});}
 }

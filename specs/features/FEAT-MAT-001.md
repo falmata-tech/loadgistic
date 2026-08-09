@@ -13,16 +13,11 @@ rollout: Additive endpoint columns are backfilled from the local place catalog w
 
 ### Scenario: route endpoints retain catalog identity
 
-Given a provider records a current capacity route, next trip, or recurring route\
+Given a provider records a current or regular corridor\
 When an origin and destination are required\
 Then both endpoints must be selected from the bounded place search\
 And each endpoint stores its catalog reference, country-qualified label, latitude, and longitude\
 And a typed label without a selected catalog identity is not accepted as geographic authority.
-
-Given a provider records a recurring working area\
-When its center and radius are saved\
-Then the center keeps one catalog identity and coordinate pair\
-And the radius is stored in kilometres from 5 through 500.
 
 ### Scenario: visitor filters by two endpoint circles
 
@@ -32,12 +27,13 @@ Then a direct candidate matches only when its origin is inside Radius A and its 
 And an Either direction query may also match the reversed endpoint assignment\
 And adjustable radii are evaluated in kilometers from coordinates rather than spelling.
 
-### Scenario: one truck contributes current and future signals
+### Scenario: current and regular corridors remain distinct
 
-Given one truck has a fresh current route and one eligible next trip\
+Given one truck has a fresh current corridor and its provider has a regular corridor\
 When either signal is compared with a manual public Board query\
 Then both signals are evaluated independently and labeled by source\
-And no next trip is presented as current availability\
+And a regular corridor is eligible in either direction while the current corridor retains its published direction\
+And no regular corridor is presented as current availability\
 And the strongest eligible signal supplies the distance explanation and direction.
 
 ### Scenario: endpoint ranking remains explainable

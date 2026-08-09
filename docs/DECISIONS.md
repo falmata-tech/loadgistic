@@ -44,7 +44,7 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 ## ADR-011 — Driver home and temporary load proof
 
-Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Businesses receive actionable truck-level Truck Board records; providers receive one read-only card per competing Public truck with its visual cargo configuration and operational capacity facts, but no truck, driver, owner, company, contact, or profile identity. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
+Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Driver navigation opens the same Map-first, provider-controlled public Capacity market inside the authenticated shell; it never reveals fields hidden from the public projection. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
 
 Tracking is a load-level Business choice: Status timeline or Automatic location + status. The assigned Driver's screen publishes throttled obscured device-location events while it is open; there is no manual tracking-location fallback or save action. One ordered action panel always shows Loading, En route, Unloading, Complete, and Problem, disabling actions that are not yet valid. Unloading and Problem are both valid while En route; after Unloading, Complete is valid and Problem is not. Loading, En route, Unloading, and Problem accept optional inline proof. A Business party may reduce tracking to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
 
@@ -430,3 +430,86 @@ purge is intentionally destructive because none of those rows are customer
 data. Any equivalent cloud purge requires a verified backup and explicit
 operator approval. Rollback restores that backup and the previous application;
 it must not discard new provider shipment, grant, email, or review history.
+
+## ADR-031 — Canonical market home and state-proving browser verification
+
+Make `/` the complete public Capacity Board and retain `/capacity` only as a
+query-preserving compatibility redirect. This removes competing public market
+pages while preserving existing links. The shared Map is the default view and
+List is secondary. On hydration the Board requests browser location; success
+centers a regional view around the visitor while denial preserves the whole
+market and exposes a retry action. The map is bounded to Ethiopia with a closer
+minimum zoom. Unclustered markers use pointed location-pin shapes, reuse the
+existing cargo-configuration artwork, and show green Empty or bright-yellow
+Partial tags plus text. A circular meter surrounding the image is a complete
+green ring at 100 percent available, then shortens and shifts through yellow
+and orange toward red as space falls; route and radius meaning remains in
+geometrically distinct overlays and the legend.
+A selected map signal is a temporary
+focus mode: all unrelated truck markers and clusters are removed, one visually
+distinct selected marker stays above its layers without a redundant permanent
+text label, the adjacent card carries its identity and details, and automatic bounds include only the
+current privacy area plus current radius or route. The selected-card × control
+closes focus and restores the full clustered market. The selected information
+card uses a compact responsive grid without an internal scroll region.
+
+Treat location refresh as a state-changing workflow. Visitor success must show
+the browser-only point and nearby evidence. Driver success must persist the
+obscured point and timestamp through a Driver-authorized command without
+changing capacity facts; a fleet owner cannot substitute an office device.
+Browser tests must assert these resulting states. Use a fast critical-flow suite
+while iterating, the full E2E suite for release workflow regression, and the
+multi-role screenshot audit for broad layout regression rather than as evidence
+of persistence or interaction correctness.
+
+## ADR-032 — One customer-owner Tracking handoff and platform-managed microsite presentation
+
+Supersede ADR-030's dual shipper/receiver guest handoff with one customer-owner
+Tracking code and the public Track link. The provider records one owner email;
+that owner may be the shipper or receiver and may share access with anyone it
+trusts. The code is deterministically derived from the Tracking-session ID and
+the server secret, so the owning provider can display the same active code
+again while persistence stores only its keyed digest. Creation queues one
+idempotent access email; completion queues one idempotent owner record and a
+separate review code. The shareable Tracking code cannot authorize review. The
+existing 30-day post-completion guest expiry and durable
+provider history remain.
+
+Restore the compact ordered Tracking action panel: Loading, En route,
+Unloading, Complete, and Problem remain visible together and invalid actions
+are disabled. Only Loading, Unloading, and Problem show one optional image
+field. Provider workspace navigation calls this capability Tracking rather than
+Customer shipments.
+
+Keep one saved-capacity console as the Driver's primary view. Its map-centered
+summary includes current status and geometry, the truck's next trip,
+provider-level recurring service, and location privacy. Current status,
+geometry, next trip, and recurring service open their own focused editors;
+there is no detached future-planning section. A high-contrast labeled marker
+keeps the privacy-obscured truck area visible above overlapping circles and
+routes. Location refresh and privacy
+accuracy save directly beneath the summary map. Provider microsite colors,
+hero treatment, and optional video are Loadgistic-controlled presentation;
+providers edit business facts, publication, and independently visible contact
+methods without receiving design controls.
+
+## ADR-033 — Current radius/corridor plus two regular corridors
+
+Supersede the future-trip and recurring-working-area portions of ADR-030 and
+ADR-032. Empty and Partial are capacity statuses independent from geography;
+either may publish one current radius or one current structured corridor, and
+neither carries a date. Each provider may separately publish no more than two
+undated regular structured two-way corridors. A regular corridor connects its
+two selected places in both directions, is a market signal, and must say that
+current availability needs confirmation. Reversed duplicates represent the
+same corridor and are rejected.
+
+Remove the next-trip and regular-working-area endpoints, projections, controls,
+seed records, and persistence tables. Existing local and cloud data is pruned
+destructively because it is fixture/pre-launch data: future-trip and regular-area
+rows are deleted, while regular corridors are retained newest-first up to two
+per provider. Application commands and database triggers both reject a third
+regular corridor. The public Board, Driver workspace, map key, selected map
+layers, list cards, and provider microsites all use the same simplified model.
+List cards expose both regular corridors without a disclosure control and use a
+two-card desktop grid that collapses to one card per row on narrow screens.

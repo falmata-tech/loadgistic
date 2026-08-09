@@ -12,8 +12,8 @@ export default async function ProviderShipmentsPage({searchParams}:{searchParams
   if(!['TRANSPORTER','DRIVER'].includes(user.role))redirect('/app/home');
   const query=await searchParams;
   const shipments=listProviderShipments(user,{limit:100});
-  const mayCreate=user.driver_kind!=='COMPANY';
-  return <div className="page"><PageHeader icon={ClipboardList} title="Customer shipments" subtitle="Provider-owned tracking records for work agreed offline." action={mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start tracking</Link>:undefined}/><Flash error={query.error} success={query.success}/>
+  const mayCreate=true;
+  return <div className="page"><PageHeader icon={ClipboardList} title="Tracking" subtitle="Start and update Tracking sessions for transport work agreed offline." action={mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start Tracking</Link>:undefined}/><Flash error={query.error} success={query.success}/>
     <div className="tracking-list provider-shipment-list">{shipments.map((shipment:any)=><Link href={`/app/provider-shipments/${shipment.id}`} className="tracking-row" key={shipment.id}>
       <div className="tracking-row-icon"><PackageCheck aria-hidden="true"/></div>
       <div><strong>{shipment.code}</strong><div className="meta">{shipment.cargo_summary}</div></div>
@@ -21,6 +21,6 @@ export default async function ProviderShipmentsPage({searchParams}:{searchParams
       <div><strong>{shipment.platform_number}</strong><div className="meta">{shipment.driver_name}</div></div>
       <StatusPill status={shipment.operational_status}/><ArrowRight aria-hidden="true"/>
     </Link>)}</div>
-    {!shipments.length?<div className="empty-state"><ClipboardList aria-hidden="true"/><strong>No customer shipment records yet.</strong><span>After agreeing work offline, start tracking and give each party their private code.</span>{mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start the first record</Link>:null}</div>:null}
+    {!shipments.length?<div className="empty-state"><ClipboardList aria-hidden="true"/><strong>No Tracking sessions yet.</strong><span>After agreeing work offline, start Tracking and send the customer owner one private link and code.</span>{mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start Tracking</Link>:null}</div>:null}
   </div>;
 }

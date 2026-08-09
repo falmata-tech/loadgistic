@@ -8,7 +8,7 @@ CREATED → LOADING → IN_TRANSIT → UNLOADING → COMPLETED
                          → IN_TRANSIT or UNLOADING
 ```
 
-Allowed edges are enforced server-side. Loading, Unloading, and Issue may carry optional proof; In Transit and Completed do not. Completed is terminal and queues separate idempotent shipper/receiver emails without rolling back completion on delivery failure.
+Allowed edges are enforced server-side. Loading, Unloading, and Issue may carry one optional image; In Transit and Completed do not. Completed is terminal and queues one idempotent customer-owner completion email without rolling back completion on delivery failure.
 
 ## Guest access
 
@@ -16,7 +16,7 @@ Allowed edges are enforced server-side. Loading, Unloading, and Issue may carry 
 ISSUED → UNLOCKED SESSION → EXPIRES 30 DAYS AFTER COMPLETION → SCRUBBED
 ```
 
-Shipper and receiver grants are independent. Expiry removes grants/delivery rows and customer emails while retaining provider-owned operational history.
+One customer-owner grant may be shared with trusted followers. Expiry removes the grant, delivery rows, and customer email while retaining provider-owned operational history.
 
 ## Provider review
 
@@ -33,7 +33,7 @@ The original rating remains public and counted while pending.
 OFF_DUTY ↔ EMPTY or PARTIAL
 ```
 
-An Empty active signal chooses `RADIUS` or `ROUTE`; a Partial active signal requires `ROUTE`. Immediate signals have no date. One separate next trip may have an optional date; recurring routes and permanent working areas are undated.
+An Empty or Partial active signal chooses `RADIUS` or `ROUTE` (shown to users as Corridor). Current signals have no date. A provider may publish at most two separate undated regular corridors.
 
 ## Provider subscription
 

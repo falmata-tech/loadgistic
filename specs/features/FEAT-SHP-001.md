@@ -1,10 +1,10 @@
 ---
 id: FEAT-SHP-001
-title: Provider-created shipment execution records
+title: Provider-created Tracking sessions
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-TRK-001]
-problem: After an off-platform agreement, a transport provider needs one operational shipment record that can be tracked by external shipper and receiver parties without requiring their accounts.
-behavior: Only an authenticated authorized provider creates a shipment execution record, assigns its own truck and Driver, records shipper and receiver email contacts, and retains the durable provider-side history. No demand post, Shipment Board, provider interest, public price, or capacity-seeker account is created.
-contracts: [ProviderShipmentCommand, ProviderShipmentHistory, ShipmentPartyEmail, ProviderVehicleAssignment, ShipmentExecutionState, GuestAccessExpiry]
+problem: After an off-platform agreement, a transport provider needs one operational Tracking session that the customer owner can share without requiring anyone to create an account.
+behavior: An authenticated provider owner, self-managed Driver, or company Driver assigned to the selected truck starts a Tracking session, records one customer-owner email, and retains the durable provider-side history. No demand post, Shipment Board, provider interest, public price, or capacity-seeker account is created.
+contracts: [ProviderTrackingCommand, ProviderTrackingHistory, CustomerOwnerEmail, ProviderVehicleAssignment, ShipmentExecutionState, GuestAccessExpiry]
 observability: [provider_shipment_created, assignment_audit, state_transition, guest_expiry, provider_history_read]
 rollout: Hide and block demand creation and Shipment Board routes, purge fake local demand rows, preserve provider-owned execution history, and require a backup plus operator approval for any destructive cloud purge.
 ---
@@ -13,11 +13,11 @@ rollout: Hide and block demand creation and Shipment Board routes, purge fake lo
 
 ### Scenario: provider creates tracking after agreement
 
-Given a signed-in fleet transporter or self-managed provider has agreed terms outside Loadgistic\
-When an authorized actor creates a shipment\
+Given a signed-in fleet transporter, self-managed Driver, or assigned company Driver has agreed terms outside Loadgistic\
+When the authorized actor starts Tracking\
 Then the provider is the owning workspace\
-And structured origin, destination, cargo summary, shipper email, receiver email, expected dates, tracking mode, and an owned truck and Driver are recorded\
-And separate shipper and receiver access codes are issued through FEAT-TRK-001\
+And structured origin, destination, cargo summary, one customer-owner email, optional expected dates, the Status timeline, and the assigned truck and Driver are recorded\
+And one stable customer-owner access code and Track link are issued through FEAT-TRK-001\
 And no public demand listing or provider-interest record is created.
 
 ### Scenario: provider ownership is enforced
@@ -43,6 +43,6 @@ And no legacy demand data remains in the normal local dataset.
 
 ## Contract ownership
 
-- Provider pages: My Shipments, New tracking shipment, shipment detail
+- Provider pages: Tracking, Start Tracking, and Tracking detail
 - Application services: provider-owned create, assign, transition and history functions
 - Tests: domain, repository, authorization, E2E

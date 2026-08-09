@@ -6,10 +6,11 @@
 - Server-side provider, fleet, Driver-assignment, record-owner, platform-permission, and state-transition checks.
 - Public capacity/provider projections that exclude password/code digests, party emails, private proof paths, hidden contacts, exact visitor location, and private plates.
 - Provider-selected obscured truck coordinates; exact visitor location remains browser-only.
-- Separate high-entropy shipper and receiver codes stored only as keyed digests and never placed in URLs.
-- Party-scoped guest sessions, 30-day post-completion expiry, email scrubbing, and durable provider history.
+- One stable high-entropy customer-owner code stored only as a keyed digest and never placed in URLs.
+- A separate completion-email review code; shared Tracking access alone cannot publish a review.
+- Short-lived guest sessions, 30-day post-completion expiry, customer-email scrubbing, and durable provider history.
 - Proof accepted only for Loading, Unloading, and Issue; file size/MIME checks and private authorized reads.
-- Idempotent completion-email records with bounded retry state and no false success when the adapter is unconfigured.
+- Idempotent customer-owner access and completion email records with bounded retry state and no false success when the adapter is unconfigured.
 - Evidence-specific reviewed badges with private documents and a persistent due-diligence warning.
 - CSP, no-sniff, frame denial, strict referrer policy, and self-only geolocation permission. OSM tile hosts are explicitly allowlisted.
 - Audited sensitive mutations and default denial for retired demand/network endpoints.

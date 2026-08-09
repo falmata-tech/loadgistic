@@ -9,11 +9,10 @@ const nextConfig = {
   poweredByHeader: false,
   async redirects() {
     return [
-      {source:'/app/loads/:path*',destination:'/capacity',permanent:false},
+      {source:'/app/loads/:path*',destination:'/',permanent:false},
       {source:'/app/shipments/:path*',destination:'/app/provider-shipments',permanent:false},
-      {source:'/app/network',destination:'/capacity',permanent:false},
+      {source:'/app/network',destination:'/',permanent:false},
       {source:'/app/providers/:path*',destination:'/providers',permanent:false},
-      {source:'/app/capacity/:path*',destination:'/capacity',permanent:false},
       {source:'/companies/:path*',destination:'/providers',permanent:false}
     ];
   },

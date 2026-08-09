@@ -23,7 +23,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
     vehicles:(subject.vehicles||[]).map((vehicle:any)=>({id:String(vehicle.id),label:String(vehicle.label)}))
   }));
   return <div className="page">
-    <PageHeader icon={BadgeCheck} title="Verification" subtitle="Specific document signals—not a guarantee about a person, company, truck, or shipment."/>
+    <PageHeader icon={BadgeCheck} title="Verification" subtitle="See which documents Loadgistic has reviewed. Always check current originals before agreeing."/>
     <Flash error={query.error} success={query.success}/>
     <div className="two-col">
       <div className="stack">

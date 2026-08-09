@@ -11,14 +11,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const query = await searchParams;
   return <><PublicHeader/><main className="section"><div className="container auth-shell">
     <section className="form-card">
-      <div className="auth-heading"><span className="task-heading-icon"><LogIn aria-hidden="true"/></span><div><h1 className="page-title">Log in</h1><p className="page-subtitle">Open your workspace.</p></div></div>
+      <div className="auth-heading"><span className="task-heading-icon"><LogIn aria-hidden="true"/></span><div><h1 className="page-title">Provider login</h1><p className="page-subtitle">Manage your trucks, availability, tracking, and public profile.</p></div></div>
       <Flash error={query.error} success={query.success}/>
       <form action="/api/auth/login" method="post" className="stack" data-testid="login-form">
         <div className="form-group"><label htmlFor="email"><Mail aria-hidden="true"/>Email</label><input id="email" name="email" type="email" autoComplete="email" required/></div>
         <div className="form-group"><label htmlFor="password"><LockKeyhole aria-hidden="true"/>Password</label><input id="password" name="password" type="password" autoComplete="current-password" required/></div>
         <button className="button" type="submit"><LogIn aria-hidden="true"/>Log in</button>
       </form>
-      <div className="auth-signup"><span>New to Loadgistic?</span><Link className="button secondary" href="/apply"><CirclePlus aria-hidden="true"/>Sign up</Link></div>
+      <div className="auth-signup"><span>Operate a truck or fleet?</span><Link className="button secondary" href="/apply"><CirclePlus aria-hidden="true"/>Join Loadgistic</Link></div>
     </section>
     <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Home</Link>
   </div></main></>;

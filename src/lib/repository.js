@@ -33,7 +33,7 @@ import {
   randomCode,
   randomId,
   trackingAccessCode,
-  trackingPartyCode
+  verifyReviewAccessCode
 } from './security.js';
 import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace } from './route-matching.js';
 import { ETHIOPIA_PLACES, getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
@@ -428,7 +428,7 @@ export function getDashboard(user) {
     data.actions = [
       { href: '/app/shipments/new', label: 'Post a shipment', description: 'Request quotes or publish a road-freight shipment.' },
       { href: '/app/providers', label: 'Open directory', description: 'Confirm Businesses, fleet transporters, and self-managed drivers.' },
-      { href: '/app/capacity', label: 'Open Truck Board', description: 'See fresh truck availability on active routes.' }
+      { href: '/', label: 'Open Capacity Board', description: 'See fresh truck availability on active routes.' }
     ];
     data.recent = listVisibleShipments(user,6);
     return data;
@@ -439,17 +439,17 @@ export function getDashboard(user) {
   const shipmentDriverClause=isCompanyDriver(user)?' AND assigned_driver_user_id=?':'';
   const shipmentArgs=isCompanyDriver(user)?[scope.id,user.id]:[scope.id];
   data.counts = {
-    'Active Shipments': db.prepare(`SELECT COUNT(*) AS n FROM provider_shipments WHERE ${scope.organizationId?'provider_organization_id':'provider_profile_id'}=?${shipmentDriverClause} AND operational_status<>'COMPLETED'`).get(...shipmentArgs).n,
-    'Completed Shipments': db.prepare(`SELECT COUNT(*) AS n FROM provider_shipments WHERE ${scope.organizationId?'provider_organization_id':'provider_profile_id'}=?${shipmentDriverClause} AND operational_status='COMPLETED'`).get(...shipmentArgs).n,
+    'Active Tracking': db.prepare(`SELECT COUNT(*) AS n FROM provider_shipments WHERE ${scope.organizationId?'provider_organization_id':'provider_profile_id'}=?${shipmentDriverClause} AND operational_status<>'COMPLETED'`).get(...shipmentArgs).n,
+    'Completed Tracking': db.prepare(`SELECT COUNT(*) AS n FROM provider_shipments WHERE ${scope.organizationId?'provider_organization_id':'provider_profile_id'}=?${shipmentDriverClause} AND operational_status='COMPLETED'`).get(...shipmentArgs).n,
     'On-duty Trucks': db.prepare(`SELECT COUNT(*) AS n FROM capacities c WHERE c.${scope.column}=?
       AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
       AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')`).get(scope.id).n,
     'Published Reviews': db.prepare(`SELECT COUNT(*) AS n FROM provider_reviews WHERE ${scope.organizationId?'provider_organization_id':'provider_profile_id'}=? AND status='PUBLISHED'`).get(scope.id).n
   };
   data.actions = [
-    { href: '/app/provider-shipments/new', label: 'Start customer tracking', description: 'Create a provider-owned record after agreeing transport work offline.' },
+    { href: '/app/provider-shipments/new', label: 'Start Tracking', description: 'Create a provider-owned Tracking session after agreeing transport work offline.' },
     { href: user.role === USER_ROLES.TRANSPORTER ? '/app/fleet' : '/app/home', label: 'Update capacity', description: 'Publish Empty or Partial truck availability.' },
-    { href: '/app/company-page', label: 'Update public page', description: 'Keep your brand, services, contact choices, and introduction current.' }
+    { href: '/app/company-page', label: 'Update public page', description: 'Keep your services, business information, and public contact choices current.' }
   ];
   data.recent = listProviderShipments(user,{limit:6});
   data.capacities = listOwnCapacity(user,null,3);
@@ -1763,17 +1763,14 @@ export function updateCompanyPage(user, input) {
     const existingBase=db.prepare(`SELECT city_place_ref FROM ${isProvider?'provider_profiles':'organizations'} WHERE id=?`).get(id);
     if(!existingBase?.city_place_ref)throw new Error('BASE_LOCATION_REQUIRED');
   }
-  const color=value=>{const normalized=String(value||'').trim().toLowerCase();if(!/^#[0-9a-f]{6}$/.test(normalized))throw new Error('INVALID_PROFILE_COLOR');return normalized;};
-  const primary=color(input.themePrimary||'#075985'),accent=color(input.themeAccent||'#f97316');
   const website=String(input.contactWebsite||'').trim();if(website&&!/^https:\/\//i.test(website))throw new Error('INVALID_WEBSITE_URL');
-  const video=String(input.youtubeVideoId||'').trim();if(video&&!/^[A-Za-z0-9_-]{11}$/.test(video))throw new Error('INVALID_YOUTUBE_VIDEO');
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
     db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,contact_phone=?,contact_whatsapp=?,contact_email=?,contact_website=?,
-      show_contact_phone=?,show_contact_whatsapp=?,show_contact_email=?,show_contact_website=?,theme_primary=?,theme_accent=?,youtube_video_id=?,published=?,updated_at=? WHERE ${condition}`)
+      show_contact_phone=?,show_contact_whatsapp=?,show_contact_email=?,show_contact_website=?,published=?,updated_at=? WHERE ${condition}`)
       .run(input.headline || '',input.about || '',input.services || '',input.contactPhone||'',input.contactWhatsapp||'',input.contactEmail||'',website,
-        input.showContactPhone?1:0,input.showContactWhatsapp?1:0,input.showContactEmail?1:0,input.showContactWebsite?1:0,primary,accent,video||null,published,timestamp,id);
+        input.showContactPhone?1:0,input.showContactWhatsapp?1:0,input.showContactEmail?1:0,input.showContactWebsite?1:0,published,timestamp,id);
     if(basePlace){
       db.prepare(`UPDATE ${isProvider?'provider_profiles':'organizations'}
         SET city=?,city_place_ref=?,city_lat=?,city_lng=? WHERE id=?`)
@@ -2544,7 +2541,7 @@ const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile
   p.business_name AS provider_name,p.handle AS provider_handle,u.name AS updated_by_name,
   cp.contact_phone AS provider_contact_phone,
   CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available,
-  (SELECT GROUP_CONCAT(r.origin || ' → ' || r.destination,' • ') FROM profile_routes r
+  (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,' • ') FROM profile_routes r
     WHERE r.organization_id=c.provider_organization_id OR r.provider_profile_id=c.provider_profile_id) AS preferred_routes_label`;
 
 function marketCapacityRow(row, freshHours, additions = {}) {
@@ -2621,7 +2618,7 @@ function capacityBoardQuery(user,filters={}) {
         clauses.push(`(${parts.join(' AND ')})`);
       }
     }
-    for(const reversed of [false,...(eitherDirection?[true]:[])]){
+    for(const reversed of [false,true]){
       const parts=[`(pr.organization_id=c.provider_organization_id OR pr.provider_profile_id=c.provider_profile_id)`];
       if(originPlace){
         parts.push(`geo_distance_km(?,?,${reversed?'pr.destination_lat':'pr.origin_lat'},${reversed?'pr.destination_lng':'pr.origin_lng'})<=?`);
@@ -2811,7 +2808,7 @@ export function listProviderCapacityBoardPage(user,filters={},options={}) {
       c.accepts_multi_pick,c.accepts_multi_drop,c.movement_scope,c.local_place_label,c.local_radius_km,
       COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
       CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available,
-      (SELECT GROUP_CONCAT(r.origin || ' → ' || r.destination,' • ') FROM profile_routes r
+      (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,' • ') FROM profile_routes r
         WHERE r.organization_id=c.provider_organization_id OR r.provider_profile_id=c.provider_profile_id) AS preferred_routes_label
       ${areaProjection}
     ${query.from} WHERE ${query.where}
@@ -2876,11 +2873,6 @@ function publicOwnerKey(row){return row.provider_organization_id?`org:${row.prov
 function attachPublicCapacitySignals(rows) {
   if(!rows.length)return [];
   const db=getDb();
-  const vehicleIds=[...new Set(rows.map(row=>row.vehicle_id))];
-  const trips=db.prepare(`SELECT * FROM next_trips WHERE published=1
-    AND vehicle_id IN (${vehicleIds.map(()=>'?').join(',')})
-    AND (travel_date IS NULL OR travel_date>=?)`).all(...vehicleIds,todayInEthiopia());
-  const tripByVehicle=new Map(trips.map(trip=>[trip.vehicle_id,{...trip}]));
   const organizationIds=[...new Set(rows.map(row=>row.provider_organization_id).filter(Boolean))];
   const profileIds=[...new Set(rows.map(row=>row.provider_profile_id).filter(Boolean))];
   const clauses=[];const args=[];
@@ -2889,14 +2881,10 @@ function attachPublicCapacitySignals(rows) {
   const corridors=clauses.length?db.prepare(`SELECT id,organization_id,provider_profile_id,origin,destination,
     origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng
     FROM profile_routes WHERE ${clauses.join(' OR ')} ORDER BY created_at DESC,id`).all(...args):[];
-  const recurringAreas=clauses.length?db.prepare(`SELECT id,organization_id,provider_profile_id,place_ref,place_label,
-    center_lat,center_lng,radius_km FROM recurring_service_areas WHERE ${clauses.join(' OR ')} ORDER BY created_at DESC,id`).all(...args):[];
   const corridorsByOwner=new Map();
-  for(const corridor of corridors){const key=corridor.organization_id?`org:${corridor.organization_id}`:`profile:${corridor.provider_profile_id}`;if(!corridorsByOwner.has(key))corridorsByOwner.set(key,[]);corridorsByOwner.get(key).push({...corridor,geometry:'ROUTE'});}
-  for(const area of recurringAreas){const key=area.organization_id?`org:${area.organization_id}`:`profile:${area.provider_profile_id}`;if(!corridorsByOwner.has(key))corridorsByOwner.set(key,[]);corridorsByOwner.get(key).push({...area,geometry:'RADIUS'});}
+  for(const corridor of corridors){const key=corridor.organization_id?`org:${corridor.organization_id}`:`profile:${corridor.provider_profile_id}`;if(!corridorsByOwner.has(key))corridorsByOwner.set(key,[]);if(corridorsByOwner.get(key).length<2)corridorsByOwner.get(key).push({...corridor,geometry:'ROUTE'});}
   return rows.map(row=>({
     ...row,
-    next_trip:tripByVehicle.get(row.vehicle_id)||null,
     recurring_corridors:corridorsByOwner.get(publicOwnerKey(row))||[]
   }));
 }
@@ -2929,6 +2917,7 @@ export function listPublicCapacityCursor(filters={},options={}) {
       COALESCE(c.market_status,c.status) AS status,c.available_percent,
       COALESCE(c.availability_geometry,CASE WHEN c.current_route_origin IS NOT NULL THEN 'ROUTE' ELSE 'RADIUS' END) AS availability_geometry,
       c.updated_at,c.location_area,c.location_lat,c.location_lng,c.location_precision_km,c.work_radius_km,c.location_updated_at,
+      ${hasNear?`geo_distance_km(${nearLat},${nearLng},c.location_lat,c.location_lng)`:'NULL'} AS near_center_distance_km,
       c.current_route_origin,c.current_route_destination,c.current_origin_place_ref,c.current_origin_lat,c.current_origin_lng,
       c.current_destination_place_ref,c.current_destination_lat,c.current_destination_lng,
       c.accepts_full_load,c.accepts_partial_load,c.accepts_multi_pick,c.accepts_multi_drop,
@@ -2946,7 +2935,8 @@ export function listPublicCapacityCursor(filters={},options={}) {
   const hasMore=rows.length>pageSize;
   const selected=rows.slice(0,pageSize).map(row=>{
     const review=publicProviderReviewSummary(db,row.provider_organization_id,row.provider_profile_id);
-    return {...row,...review,accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop),updated_label:publicBoardTime(row.updated_at)};
+    const distance=hasNear?possibleDistanceRange(row.near_center_distance_km,row.location_precision_km,BUSINESS_SEARCH_PRIVACY_KM):null;
+    return {...row,...review,near_center_distance_km:undefined,possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop),updated_label:publicBoardTime(row.updated_at)};
   });
   const items=attachPublicCapacitySignals(selected);
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};
@@ -3170,91 +3160,47 @@ export function listOwnVehicles(user) {
   return rows.map(row=>({...row}));
 }
 
-export function listOwnNextTrips(user) {
-  assertWorkspaceAccess(user);
-  const scope=providerScope(user);if(!scope)return [];
-  const assignment=isCompanyDriver(user)?` AND EXISTS(SELECT 1 FROM driver_vehicle_assignments a WHERE a.vehicle_id=t.vehicle_id AND a.driver_user_id=? AND a.active=1)`:'';
-  const args=isCompanyDriver(user)?[scope.id,user.id]:[scope.id];
-  return getDb().prepare(`SELECT t.*,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model
-    FROM next_trips t JOIN vehicles v ON v.id=t.vehicle_id WHERE t.${scope.column}=?${assignment}
-    ORDER BY COALESCE(t.travel_date,'9999-12-31'),t.updated_at DESC`).all(...args);
-}
-
-export function upsertNextTrip(user,input) {
-  assertWorkspaceAccess(user);
-  if(![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role))throw new Error('FORBIDDEN');
-  if(isCompanyDriver(user)&&!getDriverAccess(user)?.can_manage_capacity)throw new Error('FORBIDDEN');
-  const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');
-  const assignment=isCompanyDriver(user)?` AND EXISTS(SELECT 1 FROM driver_vehicle_assignments a WHERE a.vehicle_id=vehicles.id AND a.driver_user_id=? AND a.active=1)`:'';
-  const vehicleArgs=isCompanyDriver(user)?[input.vehicleId,scope.id,user.id]:[input.vehicleId,scope.id];
-  const vehicle=db.prepare(`SELECT id FROM vehicles WHERE id=? AND ${scope.column==='provider_profile_id'?'provider_profile_id':'organization_id'}=? AND active=1${assignment}`).get(...vehicleArgs);
-  if(!vehicle)throw new Error('INVALID_VEHICLE');
-  const origin=resolvePlaceReference(input.originPlaceRef,input.origin),destination=resolvePlaceReference(input.destinationPlaceRef,input.destination);
-  if(origin.place_ref===destination.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
-  const travelDate=String(input.travelDate||'').trim()||null;if(travelDate&&travelDate<todayInEthiopia())throw new Error('INVALID_ROUTE_DATE');
-  const status=String(input.spaceStatus||'EMPTY').toUpperCase();if(!['EMPTY','PARTIAL'].includes(status))throw new Error('INVALID_CAPACITY_STATUS');
-  const percent=status==='EMPTY'?100:Number(input.availablePercent);if(status==='PARTIAL'&&(!Number.isInteger(percent)||percent<5||percent>95))throw new Error('CAPACITY_PERCENT_REQUIRED');
-  const existing=db.prepare('SELECT id FROM next_trips WHERE vehicle_id=?').get(vehicle.id);const id=existing?.id||randomId('trip-'),timestamp=nowIso();
-  db.prepare(`INSERT INTO next_trips (id,provider_organization_id,provider_profile_id,vehicle_id,origin,origin_place_ref,origin_lat,origin_lng,destination,destination_place_ref,destination_lat,destination_lng,travel_date,space_status,available_percent,published,updated_by,updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(vehicle_id) DO UPDATE SET origin=excluded.origin,origin_place_ref=excluded.origin_place_ref,origin_lat=excluded.origin_lat,origin_lng=excluded.origin_lng,destination=excluded.destination,destination_place_ref=excluded.destination_place_ref,destination_lat=excluded.destination_lat,destination_lng=excluded.destination_lng,travel_date=excluded.travel_date,space_status=excluded.space_status,available_percent=excluded.available_percent,published=1,updated_by=excluded.updated_by,updated_at=excluded.updated_at`)
-    .run(id,scope.organizationId,scope.profileId,vehicle.id,origin.place_label,origin.place_ref,origin.center_lat,origin.center_lng,destination.place_label,destination.place_ref,destination.center_lat,destination.center_lng,travelDate,status,percent,user.id,timestamp);
-  audit(db,user,'NEXT_TRIP_UPSERTED','next_trip',id,{vehicleId:vehicle.id,travelDate,status,percent});return id;
-}
-
-export function removeNextTrip(user,vehicleId) {
-  assertWorkspaceAccess(user);const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');
-  const row=db.prepare(`SELECT * FROM next_trips WHERE vehicle_id=? AND ${scope.column}=?`).get(vehicleId,scope.id);if(!row)throw new Error('NOT_FOUND');
-  if(isCompanyDriver(user)){const assigned=db.prepare('SELECT 1 FROM driver_vehicle_assignments WHERE vehicle_id=? AND driver_user_id=? AND active=1').get(vehicleId,user.id);if(!assigned)throw new Error('FORBIDDEN');}
-  db.prepare('DELETE FROM next_trips WHERE id=?').run(row.id);audit(db,user,'NEXT_TRIP_REMOVED','next_trip',row.id,{vehicleId});
-}
-
 export function listOwnRecurringCorridors(user) {
   assertWorkspaceAccess(user);const scope=providerScope(user);if(!scope)return [];const db=getDb(),ownerColumn=scope.column==='provider_organization_id'?'organization_id':'provider_profile_id';
-  const routes=db.prepare(`SELECT * FROM profile_routes WHERE ${ownerColumn}=? ORDER BY created_at DESC,id`).all(scope.id).map(row=>({...row,geometry:'ROUTE'}));
-  const areas=db.prepare(`SELECT * FROM recurring_service_areas WHERE ${ownerColumn}=? ORDER BY created_at DESC,id`).all(scope.id).map(row=>({...row,geometry:'RADIUS'}));
-  return [...routes,...areas].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))||String(a.id).localeCompare(String(b.id)));
+  return db.prepare(`SELECT * FROM profile_routes WHERE ${ownerColumn}=? ORDER BY created_at DESC,id LIMIT 2`).all(scope.id).map(row=>({...row,geometry:'ROUTE'}));
 }
 
 export function addRecurringCorridor(user,input) {
   assertWorkspaceAccess(user);if(isCompanyDriver(user)||![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role))throw new Error('FORBIDDEN');
-  const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');const geometry=String(input.geometry||'ROUTE').toUpperCase();if(!['ROUTE','RADIUS'].includes(geometry))throw new Error('INVALID_AVAILABILITY_GEOMETRY');
+  const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');
   const ownerColumn=scope.organizationId?'organization_id':'provider_profile_id',ownerId=scope.organizationId||scope.profileId;
-  if(geometry==='RADIUS'){
-    const center=resolvePlaceReference(input.centerPlaceRef,input.center),radius=Number(input.radiusKm);if(!Number.isInteger(radius)||radius<5||radius>500)throw new Error('INVALID_CAPACITY_RADIUS');
-    const duplicate=db.prepare(`SELECT id FROM recurring_service_areas WHERE ${ownerColumn}=? AND place_ref=?`).get(ownerId,center.place_ref);if(duplicate)throw new Error('RECURRING_AREA_ALREADY_EXISTS');
-    const id=randomId('recurring-area-');db.prepare(`INSERT INTO recurring_service_areas (id,organization_id,provider_profile_id,place_ref,place_label,center_lat,center_lng,radius_km,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`).run(id,scope.organizationId,scope.profileId,center.place_ref,center.place_label,center.center_lat,center.center_lng,radius,user.id,nowIso());audit(db,user,'RECURRING_AREA_ADDED','recurring_service_area',id,{radiusKm:radius});return id;
-  }
   const origin=resolvePlaceReference(input.originPlaceRef,input.origin),destination=resolvePlaceReference(input.destinationPlaceRef,input.destination);if(origin.place_ref===destination.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
-  const duplicate=db.prepare(`SELECT id FROM profile_routes WHERE ${ownerColumn}=? AND origin_place_ref=? AND destination_place_ref=?`).get(ownerId,origin.place_ref,destination.place_ref);if(duplicate)throw new Error('CORRIDOR_ALREADY_EXISTS');
+  const duplicate=db.prepare(`SELECT id FROM profile_routes WHERE ${ownerColumn}=? AND ((origin_place_ref=? AND destination_place_ref=?) OR (origin_place_ref=? AND destination_place_ref=?))`).get(ownerId,origin.place_ref,destination.place_ref,destination.place_ref,origin.place_ref);if(duplicate)throw new Error('CORRIDOR_ALREADY_EXISTS');
+  const count=Number(db.prepare(`SELECT COUNT(*) AS n FROM profile_routes WHERE ${ownerColumn}=?`).get(ownerId).n);if(count>=2)throw new Error('REGULAR_CORRIDOR_LIMIT');
   const id=randomId('corridor-');db.prepare(`INSERT INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at,origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id,scope.organizationId,scope.profileId,origin.place_label,destination.place_label,user.id,nowIso(),origin.place_ref,origin.center_lat,origin.center_lng,destination.place_ref,destination.center_lat,destination.center_lng);audit(db,user,'RECURRING_CORRIDOR_ADDED','profile_route',id,{});return id;
 }
 
 export function removeRecurringCorridor(user,id) {
-  assertWorkspaceAccess(user);if(isCompanyDriver(user))throw new Error('FORBIDDEN');const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');const ownerColumn=scope.organizationId?'organization_id':'provider_profile_id',ownerId=scope.organizationId||scope.profileId;const route=db.prepare(`DELETE FROM profile_routes WHERE id=? AND ${ownerColumn}=?`).run(id,ownerId);const area=route.changes?{changes:0}:db.prepare(`DELETE FROM recurring_service_areas WHERE id=? AND ${ownerColumn}=?`).run(id,ownerId);if(!route.changes&&!area.changes)throw new Error('NOT_FOUND');audit(db,user,'RECURRING_SIGNAL_REMOVED',route.changes?'profile_route':'recurring_service_area',id,{});
+  assertWorkspaceAccess(user);if(isCompanyDriver(user))throw new Error('FORBIDDEN');const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');const ownerColumn=scope.organizationId?'organization_id':'provider_profile_id',ownerId=scope.organizationId||scope.profileId;const route=db.prepare(`DELETE FROM profile_routes WHERE id=? AND ${ownerColumn}=?`).run(id,ownerId);if(!route.changes)throw new Error('NOT_FOUND');audit(db,user,'REGULAR_CORRIDOR_REMOVED','profile_route',id,{});
 }
 
 function providerShipmentOwnerClause(scope,alias='s') {return scope.organizationId?`${alias}.provider_organization_id=?`:`${alias}.provider_profile_id=?`;}
 
 export function createProviderShipment(user,input) {
-  assertWorkspaceAccess(user);if(![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role)||isCompanyDriver(user))throw new Error('FORBIDDEN');
+  assertWorkspaceAccess(user);if(![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role))throw new Error('FORBIDDEN');
   const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');
   const vehicle=db.prepare(`SELECT * FROM vehicles WHERE id=? AND ${scope.organizationId?'organization_id':'provider_profile_id'}=? AND active=1`).get(input.vehicleId,scope.id);if(!vehicle)throw new Error('INVALID_VEHICLE');
-  const assignedDriver=scope.organizationId?db.prepare(`SELECT driver_user_id FROM driver_vehicle_assignments WHERE vehicle_id=? AND active=1`).get(vehicle.id)?.driver_user_id:user.id;if(!assignedDriver)throw new Error('DRIVER_REQUIRED_FOR_SHIPMENT');
+  const assignedDriver=scope.organizationId?db.prepare(`SELECT driver_user_id FROM driver_vehicle_assignments WHERE vehicle_id=? AND active=1`).get(vehicle.id)?.driver_user_id:user.id;if(!assignedDriver)throw new Error('DRIVER_REQUIRED_FOR_SHIPMENT');if(isCompanyDriver(user)&&assignedDriver!==user.id)throw new Error('FORBIDDEN');
   const email=value=>{const clean=String(value||'').trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)||clean.length>254)throw new Error('INVALID_EMAIL');return clean;};
-  const shipperEmail=email(input.shipperEmail),receiverEmail=email(input.receiverEmail);if(shipperEmail===receiverEmail)throw new Error('SHIPMENT_PARTY_EMAILS_MUST_DIFFER');
+  const customerEmail=email(input.customerEmail);
   const origin=resolvePlaceReference(input.originPlaceRef,input.origin),destination=resolvePlaceReference(input.destinationPlaceRef,input.destination);if(origin.place_ref===destination.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   const cargo=String(input.cargoSummary||'').trim();if(cargo.length<3||cargo.length>500)throw new Error('INVALID_CARGO_SUMMARY');
-  const trackingMode=String(input.trackingMode||'STATUS_ONLY');if(!['STATUS_ONLY','LOCATION_AND_STATUS'].includes(trackingMode))throw new Error('INVALID_TRACKING_MODE');
+  const trackingMode='STATUS_ONLY';
   const pickup=String(input.expectedPickupDate||'').trim()||null,delivery=String(input.expectedDeliveryDate||'').trim()||null;if(pickup&&delivery&&delivery<pickup)throw new Error('INVALID_DELIVERY_DATE');
-  const id=randomId('pshp-'),code=randomCode('LGX'),shipperCode=trackingPartyCode('SHIPPER'),receiverCode=trackingPartyCode('RECEIVER'),timestamp=nowIso();
+  const id=randomId('pshp-'),code=randomCode('LGX'),trackingCode=trackingAccessCode(id),timestamp=nowIso();
   db.exec('BEGIN IMMEDIATE');try{
-    db.prepare(`INSERT INTO provider_shipments (id,code,provider_organization_id,provider_profile_id,assigned_vehicle_id,assigned_driver_user_id,origin,origin_place_ref,origin_lat,origin_lng,destination,destination_place_ref,destination_lat,destination_lng,cargo_summary,shipper_email,receiver_email,expected_pickup_date,expected_delivery_date,tracking_mode,operational_status,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'CREATED',?,?,?)`).run(id,code,scope.organizationId,scope.profileId,vehicle.id,assignedDriver,origin.place_label,origin.place_ref,origin.center_lat,origin.center_lng,destination.place_label,destination.place_ref,destination.center_lat,destination.center_lng,cargo,shipperEmail,receiverEmail,pickup,delivery,trackingMode,user.id,timestamp,timestamp);
-    db.prepare(`INSERT INTO shipment_party_grants (id,shipment_id,party_role,code_hash,expires_at,revoked_at,created_at) VALUES (?,?,?,?,NULL,NULL,?)`).run(randomId('grant-'),id,'SHIPPER',hashTrackingAccessCode(shipperCode),timestamp);
-    db.prepare(`INSERT INTO shipment_party_grants (id,shipment_id,party_role,code_hash,expires_at,revoked_at,created_at) VALUES (?,?,?,?,NULL,NULL,?)`).run(randomId('grant-'),id,'RECEIVER',hashTrackingAccessCode(receiverCode),timestamp);
-    db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,note,created_by,created_at) VALUES (?,?,?,?,?,?)`).run(randomId('pevt-'),id,'CREATED','Shipment tracking record created',user.id,timestamp);
+    db.prepare(`INSERT INTO provider_shipments (id,code,provider_organization_id,provider_profile_id,assigned_vehicle_id,assigned_driver_user_id,origin,origin_place_ref,origin_lat,origin_lng,destination,destination_place_ref,destination_lat,destination_lng,cargo_summary,shipper_email,receiver_email,expected_pickup_date,expected_delivery_date,tracking_mode,operational_status,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'CREATED',?,?,?)`).run(id,code,scope.organizationId,scope.profileId,vehicle.id,assignedDriver,origin.place_label,origin.place_ref,origin.center_lat,origin.center_lng,destination.place_label,destination.place_ref,destination.center_lat,destination.center_lng,cargo,customerEmail,customerEmail,pickup,delivery,trackingMode,user.id,timestamp,timestamp);
+    db.prepare(`INSERT INTO shipment_party_grants (id,shipment_id,party_role,code_hash,expires_at,revoked_at,created_at) VALUES (?,?,?,?,NULL,NULL,?)`).run(randomId('grant-'),id,'SHIPPER',hashTrackingAccessCode(trackingCode),timestamp);
+    db.prepare(`INSERT INTO email_deliveries (id,shipment_id,party_role,delivery_kind,recipient_email,idempotency_key,status,attempts,last_error,next_attempt_at,sent_at,created_at,updated_at) VALUES (?,?,?,'TRACKING_ACCESS',?,?,'PENDING',0,NULL,?,NULL,?,?)`).run(randomId('email-'),id,'SHIPPER',customerEmail,`tracking-access:${id}`,timestamp,timestamp,timestamp);
+    db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,note,created_by,created_at) VALUES (?,?,?,?,?,?)`).run(randomId('pevt-'),id,'CREATED','Tracking session created',user.id,timestamp);
     audit(db,user,'PROVIDER_SHIPMENT_CREATED','provider_shipment',id,{vehicleId:vehicle.id,assignedDriver,trackingMode});db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
-  return {id,code,shipperCode,receiverCode};
+  return {id,code,trackingCode,trackingPath:'/track'};
 }
 
 export function listProviderShipments(user,options={}) {
@@ -3268,17 +3214,18 @@ export function listProviderShipments(user,options={}) {
 export function getProviderShipment(user,id) {
   assertWorkspaceAccess(user);const db=getDb(),scope=providerScope(user);if(!scope)return null;const driverClause=isCompanyDriver(user)?' AND s.assigned_driver_user_id=?':'';const args=isCompanyDriver(user)?[id,id,scope.id,user.id]:[id,id,scope.id];
   const shipment=db.prepare(`SELECT s.*,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,u.name AS driver_name FROM provider_shipments s JOIN vehicles v ON v.id=s.assigned_vehicle_id JOIN users u ON u.id=s.assigned_driver_user_id WHERE (s.id=? OR s.code=?) AND ${providerShipmentOwnerClause(scope)}${driverClause}`).get(...args);if(!shipment)return null;
-  shipment.events=db.prepare(`SELECT id,status,note,proof_path IS NOT NULL AS has_proof,created_at FROM provider_shipment_events WHERE shipment_id=? ORDER BY created_at,id`).all(shipment.id);shipment.email_deliveries=db.prepare(`SELECT party_role,delivery_kind,status,attempts,last_error,sent_at,updated_at FROM email_deliveries WHERE shipment_id=? ORDER BY created_at`).all(shipment.id);shipment.review=db.prepare(`SELECT * FROM provider_reviews WHERE shipment_id=?`).get(shipment.id)||null;return shipment;
+  shipment.events=db.prepare(`SELECT id,status,note,proof_path IS NOT NULL AS has_proof,created_at FROM provider_shipment_events WHERE shipment_id=? ORDER BY created_at,id`).all(shipment.id);shipment.email_deliveries=db.prepare(`SELECT party_role,delivery_kind,status,attempts,last_error,sent_at,updated_at FROM email_deliveries WHERE shipment_id=? ORDER BY created_at`).all(shipment.id);shipment.review=db.prepare(`SELECT * FROM provider_reviews WHERE shipment_id=?`).get(shipment.id)||null;shipment.tracking_access_code=shipment.guest_expires_at&&shipment.guest_expires_at<=nowIso()?null:trackingAccessCode(shipment.id);shipment.tracking_path='/track';return shipment;
 }
 
 const PROVIDER_SHIPMENT_TRANSITIONS=Object.freeze({CREATED:['LOADING','ISSUE'],LOADING:['IN_TRANSIT','ISSUE'],IN_TRANSIT:['UNLOADING','ISSUE'],UNLOADING:['COMPLETED','ISSUE'],ISSUE:['IN_TRANSIT','UNLOADING']});
 export function updateProviderShipmentStatus(user,id,nextStatus,note='',proof=/** @type {null|{path:string,originalName:string,mimeType:string}} */(null)) {
   const shipment=getProviderShipment(user,id);if(!shipment)throw new Error('NOT_FOUND');const next=String(nextStatus||'').toUpperCase();if(!PROVIDER_SHIPMENT_TRANSITIONS[shipment.operational_status]?.includes(next))throw new Error('INVALID_STATUS_TRANSITION');
   if(proof&&!['LOADING','UNLOADING','ISSUE'].includes(next))throw new Error('PROOF_NOT_ALLOWED_FOR_STATUS');const cleanNote=String(note||'').trim();if(next==='ISSUE'&&!cleanNote)throw new Error('ISSUE_NOTE_REQUIRED');
-  const db=getDb(),timestamp=nowIso(),complete=next==='COMPLETED',guestExpires=complete?new Date(Date.now()+30*86_400_000).toISOString():null;db.exec('BEGIN IMMEDIATE');try{
+  const db=getDb(),lastEventAt=db.prepare(`SELECT MAX(created_at) AS created_at FROM provider_shipment_events WHERE shipment_id=?`).get(shipment.id)?.created_at;
+  const timestamp=new Date(Math.max(Date.now(),lastEventAt?Date.parse(lastEventAt)+1:0)).toISOString(),complete=next==='COMPLETED',guestExpires=complete?new Date(Date.now()+30*86_400_000).toISOString():null;db.exec('BEGIN IMMEDIATE');try{
     db.prepare(`UPDATE provider_shipments SET operational_status=?,updated_at=?,completed_at=CASE WHEN ? THEN ? ELSE completed_at END,guest_expires_at=CASE WHEN ? THEN ? ELSE guest_expires_at END WHERE id=?`).run(next,timestamp,complete?1:0,timestamp,complete?1:0,guestExpires,shipment.id);
     db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,note,proof_path,proof_original_name,proof_mime_type,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)`).run(randomId('pevt-'),shipment.id,next,cleanNote||null,proof?.path||null,proof?.originalName||null,proof?.mimeType||null,user.id,timestamp);
-    if(complete){db.prepare(`UPDATE shipment_party_grants SET expires_at=? WHERE shipment_id=? AND revoked_at IS NULL`).run(guestExpires,shipment.id);for(const role of ['SHIPPER','RECEIVER']){const recipient=role==='SHIPPER'?shipment.shipper_email:shipment.receiver_email;db.prepare(`INSERT OR IGNORE INTO email_deliveries (id,shipment_id,party_role,delivery_kind,recipient_email,idempotency_key,status,attempts,last_error,next_attempt_at,sent_at,created_at,updated_at) VALUES (?,?,?,'COMPLETION',?,?,'PENDING',0,NULL,?,NULL,?,?)`).run(randomId('email-'),shipment.id,role,recipient,`completion:${shipment.id}:${role}`,timestamp,timestamp,timestamp);}}
+    if(complete){db.prepare(`UPDATE shipment_party_grants SET expires_at=? WHERE shipment_id=? AND revoked_at IS NULL`).run(guestExpires,shipment.id);db.prepare(`INSERT OR IGNORE INTO email_deliveries (id,shipment_id,party_role,delivery_kind,recipient_email,idempotency_key,status,attempts,last_error,next_attempt_at,sent_at,created_at,updated_at) VALUES (?,?,?,'COMPLETION',?,?,'PENDING',0,NULL,?,NULL,?,?)`).run(randomId('email-'),shipment.id,'SHIPPER',shipment.shipper_email,`completion:${shipment.id}:OWNER`,timestamp,timestamp,timestamp);}
     audit(db,user,'PROVIDER_SHIPMENT_STATUS_UPDATED','provider_shipment',shipment.id,{from:shipment.operational_status,to:next,hasProof:Boolean(proof)});db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}return {id:shipment.id,status:next,guestExpires};
 }
@@ -3290,6 +3237,13 @@ export function unlockProviderTracking(code) {
   const row=db.prepare(`SELECT s.id AS shipment_id,g.party_role,g.expires_at,g.revoked_at FROM shipment_party_grants g JOIN provider_shipments s ON s.id=g.shipment_id WHERE g.code_hash=?`).get(digest);
   if(!row||row.revoked_at||row.expires_at&&row.expires_at<=now)throw new Error('INVALID_TRACKING_CODE');
   return {id:row.shipment_id,partyRole:row.party_role};
+}
+
+export function unlockProviderReview(shipmentId,code) {
+  const db=getDb();purgeExpiredGuestShipmentData(db);const id=String(shipmentId||'').trim();
+  const shipment=db.prepare(`SELECT id FROM provider_shipments WHERE id=? AND operational_status='COMPLETED' AND guest_expires_at>?`).get(id,nowIso());
+  if(!shipment||!verifyReviewAccessCode(id,code))throw new Error('REVIEW_NOT_ALLOWED');
+  return {id:shipment.id};
 }
 
 export function getProviderGuestTracking(id,partyRole) {
@@ -3374,7 +3328,6 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   const acceptsMultiDrop=Boolean(input.acceptsMultiDrop||input.acceptsMultiStop);
   const availabilityGeometry=input.status==='OFF_DUTY'?null:String(input.availabilityGeometry||'RADIUS').toUpperCase();
   if(availabilityGeometry&&!['RADIUS','ROUTE'].includes(availabilityGeometry))throw new Error('INVALID_AVAILABILITY_GEOMETRY');
-  if(input.status==='PARTIAL'&&availabilityGeometry!=='ROUTE')throw new Error('PARTIAL_CAPACITY_REQUIRES_ROUTE');
   const workRadiusKm=availabilityGeometry==='RADIUS'?Number(input.workRadiusKm):null;
   if(availabilityGeometry==='RADIUS'&&(!Number.isInteger(workRadiusKm)||workRadiusKm<5||workRadiusKm>500))throw new Error('INVALID_CAPACITY_RADIUS');
   if(availabilityGeometry==='ROUTE'&&(!input.currentRouteOrigin||!input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
@@ -3446,6 +3399,31 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
     throw error;
   }
   return id;
+}
+
+export function refreshCapacityLocation(user,input) {
+  assertWorkspaceAccess(user);
+  if(user.role!==USER_ROLES.DRIVER)throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
+  const db=getDb();
+  const scope=providerScope(user);
+  if(!scope)throw new Error('FORBIDDEN');
+  const vehicle=isCompanyDriver(user)
+    ? db.prepare(`SELECT v.* FROM vehicles v JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id
+        WHERE v.id=? AND v.organization_id=? AND v.active=1 AND a.driver_user_id=? AND a.active=1`).get(input.vehicleId,scope.id,user.id)
+    : db.prepare(`SELECT * FROM vehicles WHERE id=? AND provider_profile_id=? AND active=1`).get(input.vehicleId,scope.id);
+  if(!vehicle)throw new Error('INVALID_VEHICLE');
+  const current=db.prepare(`SELECT * FROM capacities WHERE vehicle_id=? ORDER BY updated_at DESC,id DESC LIMIT 1`).get(vehicle.id);
+  if(!current||!['EMPTY','PARTIAL'].includes(current.market_status||current.status))throw new Error('CAPACITY_LOCATION_ACTIVE_REQUIRED');
+  const location=capacityDeviceLocation(input,MOVEMENT_SCOPES.BOTH);
+  const area=`Around ${location.place.place_label}`;
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`UPDATE capacities SET location_area=?,location_place_ref=?,location_updated_at=?,location_lat=?,location_lng=?,location_precision_km=?,location_source=? WHERE id=?`)
+      .run(area,location.place.place_ref,location.updatedAt,location.lat,location.lng,location.precisionKm,'DEVICE_OBSCURED',current.id);
+    audit(db,user,'CAPACITY_LOCATION_REFRESHED','capacity',current.id,{vehicleId:vehicle.id,locationSource:'DEVICE_OBSCURED',locationPrecisionKm:location.precisionKm});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return {capacityId:current.id,vehicleId:vehicle.id,locationArea:area,approximateLat:location.lat,approximateLng:location.lng,locationPrecisionKm:location.precisionKm,locationUpdatedAt:location.updatedAt};
 }
 
 export function setAssignedVehicleDuty(user, vehicleId, onDuty, input={}) {
@@ -4133,7 +4111,7 @@ export function getAdminOperations(user, query = '', options = {}) {
       WHERE v.active=1 AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
         AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')`).get().n,
     network:db.prepare('SELECT (SELECT COUNT(*) FROM partner_relationships)+(SELECT COUNT(*) FROM member_favorites) AS n').get().n,
-    routes:db.prepare('SELECT (SELECT COUNT(*) FROM profile_routes)+(SELECT COUNT(*) FROM recurring_service_areas) AS n').get().n
+    routes:db.prepare('SELECT COUNT(*) AS n FROM profile_routes').get().n
     ,subscriptions:db.prepare('SELECT COUNT(*) AS n FROM subscriptions').get().n
   };
   const pageOptions={page:options.page,pageSize:20};

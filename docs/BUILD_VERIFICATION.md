@@ -1,21 +1,22 @@
 # Build Verification
 
-Verified locally on 2026-08-08 with Node.js v22.16.0.
+Verified locally on 2026-08-09 with Node.js v22.16.0.
 
 ## Release evidence
 
-- `npm run quality`: passed. Specification validation found 24 specs and 21 features with all links resolved; source validation found 167 files and every required route; 37 automated tests passed; TypeScript completed with no errors.
+- `npm run quality`: passed. Specification validation found 24 specs and 21 features with all links resolved; source validation found 169 files and every required route; 39 automated tests passed; TypeScript completed with no errors.
 - `npm run build`: passed. Next.js 15.5.22 produced the optimized application, including all public capacity, provider, tracking, and authenticated provider routes.
-- `npm run test:e2e`: 18 workflows passed across desktop Chromium and mobile Chromium. Coverage includes public capacity discovery, cursor continuation, provider pages, map clustering and selected-signal overlays, manual visitor location refresh, provider shipment codes, collapsed capacity editing, retired demand routes, and credential-safe login.
-- `npm run test:ui-audit`: captured 82 desktop/mobile screens with zero automated layout/accessibility flags and zero browser-flow errors.
-- Focused map inspection: rendered 18 real OpenStreetMap tiles with no browser console/page errors; the selected truck rendered its full capacity panel, Driver-controlled violet privacy circle, current signal, next trip, recurring routes, and cyan recurring working area.
+- `npm run test:e2e`: 22 workflows passed across desktop Chromium and mobile Chromium. Coverage includes Map-first public discovery, automatic visitor location, regional centering, denial/retry behavior, stable close-zoom cluster separation, responsive non-scrolling selected cards, continued loading, the two-card desktop/one-card mobile List, always-visible two-way regular-corridor pairs, provider pages, the unified capacity summary and focused regular-corridor editor, absence of future-trip controls, one stable customer-owner Tracking code, the ordered status panel, Loadgistic-designed provider pages, retired demand routes, and credential-safe login.
+- `npm run test:ui-audit`: 82 desktop/mobile screens captured across logged-out, fleet-owner, self-managed Driver, company Driver, administrator, and support-agent views with zero automated layout/accessibility flags and zero browser-flow errors. The final pass ran against an isolated, stable development server after the audit identified and verified fixes for one undersized search action and one provider CTA without an icon.
+- Automated map workflows and visual capture verified the visible map key, vehicle-image markers, close-zoom separation of overlapping trucks, selected-only approximate-location/current/two-way-regular-corridor layers, responsive detail card, responsive List cards, and restoration of the clustered market after close.
 
 ## Deterministic local market
 
 - 30 published transport providers: nine fleets and 21 self-managed providers.
-- 47 active current-capacity signals, 44 next trips, 61 recurring routes, and 30 permanent recurring working areas.
-- Partial current-capacity signals with non-route geometry: zero.
-- Distinct Driver-selected location-privacy levels represented: five.
+- 47 active current-capacity signals with Empty and Partial examples in both radius and corridor geography.
+- 60 two-way regular corridors: exactly two for each published provider, with application and database rejection of a third and application rejection of a reversed duplicate.
+- Future-trip and regular-area persistence tables: absent after migration.
+- Distinct Driver-selected approximate-location radius levels represented: five.
 - Legacy demand shipments remaining after the local migration: zero.
 
 ## Release boundary

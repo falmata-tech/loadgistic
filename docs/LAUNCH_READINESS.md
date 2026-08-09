@@ -9,7 +9,7 @@ The repository supports local development, browser testing, controlled demonstra
 - Public account-free capacity list/map with real tile rendering, clustering, provider details, and safe proximity behavior.
 - Busy supply-only fixture across fleet companies and self-managed owner-operators, with no local demand data.
 - Provider capacity/profile/fleet workflows and provider-owned shipment tracking.
-- Separate party codes, governed transitions, 30-day guest expiry, completion-email retry records, and provider reviews/disputes.
+- One stable customer-owner code/link, governed transitions, 30-day guest expiry, access/completion email retry records, and provider reviews/disputes.
 - Specification/source checks, Node tests, TypeScript, production build, desktop/mobile E2E, and approved visual audit evidence as recorded in `docs/PROGRESS.md`.
 - Standalone Node build, private local storage adapter, PWA shell, and health endpoint.
 

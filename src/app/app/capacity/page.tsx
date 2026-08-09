@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { requireUser } from '@/lib/auth';
-import { listMarketCapacityPage, listOwnLoadRouteOptions, listProviderCapacityBoardPage } from '@/lib/repository.js';
+import { listMarketCapacityPage, listOwnLoadRouteOptions, listPublicCapacityCursor } from '@/lib/repository.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { capacityLabel } from '@/lib/domain.js';
@@ -14,8 +14,8 @@ import { BoardGeographyFilters } from '@/components/board-geography-filters';
 import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';
 import { BoardFilterSheet } from '@/components/board-filter-sheet';
 import { VerificationBadges } from '@/components/verification-badges';
-import { ProviderTruckMarketBoard } from '@/components/provider-truck-market-gauge';
 import { NearbyTruckSearch } from '@/components/nearby-truck-search';
+import { PublicCapacityFeed } from '@/components/public-capacity-feed';
 
 function acceptedLoads(capacity:any) {
   if (capacity.accepts_full_load && capacity.accepts_partial_load) return 'Full or partial truckload';
@@ -33,8 +33,9 @@ function stopPolicy(capacity:any){
 function travelDay(value?:string|null){return value?new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${value}T12:00:00Z`)):null;}
 
 export default async function CapacityPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
- const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',movementScope:query.movementScope||'',localPlaceRef:query.localPlaceRef||'',locality:query.locality||'',localRadiusKm:query.localRadiusKm||'50',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'50',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'50',directionMode:query.directionMode||'DIRECT',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'50',currentAreaMode:query.currentAreaMode||'PREFER',nearLat:query.nearLat||'',nearLng:query.nearLng||'',nearRadiusKm:query.nearRadiusKm||'10',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',proof:query.proof||''}; const isProvider=['TRANSPORTER','DRIVER'].includes(user.role); const result:any=isProvider?listProviderCapacityBoardPage(user,filters,{page:query.page,pageSize:12}):listMarketCapacityPage(user,filters,{page:query.page,pageSize:12}); const rows:any[]=result.items; const loadRoutes:any[]=isProvider?[]:listOwnLoadRouteOptions(user);
- if(isProvider)return <ProviderTruckMarketBoard filters={filters} result={result}/>;
+ const user=await requireUser(); const query=await searchParams; const filters={q:query.q||'',movementScope:query.movementScope||'',localPlaceRef:query.localPlaceRef||'',locality:query.locality||'',localRadiusKm:query.localRadiusKm||'50',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'50',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'50',directionMode:query.directionMode||'DIRECT',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'50',currentAreaMode:query.currentAreaMode||'PREFER',nearLat:query.nearLat||'',nearLng:query.nearLng||'',nearRadiusKm:query.nearRadiusKm||'10',status:query.status||'',loadType:query.loadType||'',vehicleCategory:query.vehicleCategory||'',matchLoadId:query.matchLoadId||'',minAvailable:query.minAvailable||'',visibility:query.visibility||'',freshness:query.freshness||'',stopOption:query.stopOption||'',proof:query.proof||''}; const isProvider=['TRANSPORTER','DRIVER'].includes(user.role);
+ if(isProvider){const publicQuery={q:query.q||'',status:query.status||'',geometry:query.geometry||''};const initial:any=listPublicCapacityCursor(publicQuery,{pageSize:14});return <div className="page"><PageHeader icon={Truck} title="Capacity market" subtitle="Explore the same live public market without leaving your dashboard."/><div className="alert market-gauge-alert"><Truck aria-hidden="true"/>Public provider profiles and contacts follow each provider&apos;s visibility choices. Confirm current availability directly.</div><PublicCapacityFeed key={`${publicQuery.q}|${publicQuery.status}|${publicQuery.geometry}`} initial={initial} query={publicQuery} searchPath="/app/capacity"/></div>;}
+ const result:any=listMarketCapacityPage(user,filters,{page:query.page,pageSize:12}); const rows:any[]=result.items; const loadRoutes:any[]=listOwnLoadRouteOptions(user);
  const clearFilterHref=(keys:string[])=>{
    const params=new URLSearchParams();
    Object.entries(filters).forEach(([key,value])=>{ if(!keys.includes(key)&&value) params.set(key,value); });

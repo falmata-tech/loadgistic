@@ -18,7 +18,7 @@ export function NearbyTruckMapLeaflet({viewer,trucks}:{viewer:Point;trucks:Truck
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
       <MapCenter point={viewer}/>
       <CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{color:'#8a3ffc',fillColor:'#8a3ffc',fillOpacity:1,weight:3}}><Tooltip permanent direction="top">You · private</Tooltip></CircleMarker>
-      {trucks.map(truck=><Circle key={truck.id} center={[truck.lat,truck.lng]} radius={truck.radiusKm*1000} pathOptions={{color:'#0b65d8',weight:3,fillColor:'#2f80ed',fillOpacity:.14}}><Tooltip direction="center">{truck.label}<br/>{truck.radiusKm} km privacy area</Tooltip></Circle>)}
+      {trucks.map(truck=><Circle key={truck.id} center={[truck.lat,truck.lng]} radius={truck.radiusKm*1000} pathOptions={{color:'#0b65d8',weight:3,fillColor:'#2f80ed',fillOpacity:.14}}><Tooltip direction="center">{truck.label}<br/>Approximate current location · {truck.radiusKm} km radius</Tooltip></Circle>)}
     </MapContainer>
   </div>;
 }

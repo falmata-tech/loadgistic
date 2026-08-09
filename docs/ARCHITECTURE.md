@@ -18,10 +18,10 @@ Dependency direction is HTTP/UI → application authorization/services → domai
 
 - Provider organization or self-managed provider profile.
 - Vehicle and exclusive active Driver assignment.
-- Latest current capacity, one next trip per truck, and repeatable provider routes or permanent working areas.
+- Latest current radius-or-corridor capacity and no more than two provider-level regular corridors.
 - Published provider microsite with safe theme/contact projection.
 - Provider shipment and immutable execution events.
-- Separate party-code grants and private email-delivery attempts.
+- One active customer-owner code grant and private access/completion email-delivery attempts.
 - Provider review and low-rating dispute.
 - Verification request, subscription/payment proof, Support conversation, notification, and audit log.
 

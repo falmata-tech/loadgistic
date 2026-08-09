@@ -38,7 +38,7 @@ export default async function ApplyPage({
     : 'TRANSPORT_COMPANY';
 
   return <><PublicHeader/><main className="section"><div className="container" style={{maxWidth:850}}>
-    <div className="auth-heading"><span className="task-heading-icon"><Building2 aria-hidden="true"/></span><div><h1 className="page-title">Put your capacity on the market</h1><p className="page-subtitle">Create a provider workspace for a fleet or a truck you operate yourself.</p></div></div>
+    <div className="auth-heading"><span className="task-heading-icon"><Building2 aria-hidden="true"/></span><div><h1 className="page-title">Put your trucks in front of more customers</h1><p className="page-subtitle">Create a transport provider profile for your fleet or the truck you operate yourself.</p></div></div>
     <Flash error={query.error} success={query.success}/>
     <form action="/api/applications" method="post" className="form-card stack">
       <fieldset>
@@ -57,7 +57,7 @@ export default async function ApplyPage({
       </fieldset>
       <div className="form-grid">
         <div className="form-group"><label htmlFor="applicant-name"><UserRound aria-hidden="true"/>Your name</label><input id="applicant-name" name="name" autoComplete="name" required/></div>
-        <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Workspace name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
+        <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Transport business name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
         <div className="form-group"><label htmlFor="application-email"><Mail aria-hidden="true"/>Account email</label><input id="application-email" name="email" type="email" autoComplete="email" required/><div className="meta">Private. Used to log in.</div></div>
         <div className="form-group"><label htmlFor="application-phone"><Phone aria-hidden="true"/>Account phone</label><input id="application-phone" name="phone" type="tel" autoComplete="tel" required/><div className="meta">Private. Add a public phone later.</div></div>
         <div className="form-group"><label htmlFor="application-password"><LockKeyhole aria-hidden="true"/>Password</label><input id="application-password" name="password" type="password" autoComplete="new-password" minLength={10} required/></div>

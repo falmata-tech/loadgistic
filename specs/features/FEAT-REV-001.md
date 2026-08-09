@@ -3,7 +3,7 @@ id: FEAT-REV-001
 title: Verified guest reviews for transport providers
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-SHP-001, FEAT-TRK-001, FEAT-PRV-001]
 problem: A capacity seeker without an account still needs a trustworthy way to review the provider after a real completed shipment, without letting low ratings be hidden during moderation.
-behavior: The emailed shipper party may submit one verified review of the transport provider after completion. The provider never rates the guest. Every rating publishes and counts immediately. A provider may dispute a one-, two-, or three-star rating, but the rating stays public and counted while that dispute is pending.
+behavior: The emailed customer owner may submit one verified review of the transport provider after completion. The provider never rates the guest or other people sharing Tracking access. Every rating publishes and counts immediately. A provider may dispute a one-, two-, or three-star rating, but the rating stays public and counted while that dispute is pending.
 contracts: [VerifiedProviderReview, ReviewAuthorizationGrant, ProviderReviewSummary, LowRatingReviewRequest]
 observability: [provider_review_submitted, low_rating_review_requested, low_rating_review_resolved, provider_review_denial]
 rollout: Add provider-review ownership and guest authorization additively, purge fake local Business-to-Business reviews, and switch public reputation only after the new projection and authorization tests pass.
@@ -13,9 +13,10 @@ rollout: Add provider-review ownership and guest authorization additively, purge
 
 ### Scenario: emailed shipment owner submits one review
 
-Given a provider-owned shipment is Complete and the shipper party received its completion email\
+Given provider-owned Tracking is Complete and the customer owner received its completion email\
 When that party follows an unexpired, shipment-bound review authorization and submits a rating\
 Then exactly one review of the owning provider is accepted for that shipment and party\
+And the shared Tracking code alone cannot authorize a review\
 And the review is marked as arising from a completed shipment\
 And no capacity-seeker account or public Business profile is created.
 
@@ -46,7 +47,7 @@ And no review, dispute, or public summary changes.
 
 ### Scenario: review authorization is narrow
 
-Given a receiver code, unrelated code, expired guest grant, incomplete shipment, duplicate reviewer, provider member, or anonymous visitor attempts to review\
+Given only the shared Tracking code, an unrelated review code, expired guest grant, incomplete shipment, duplicate reviewer, provider member, or anonymous visitor attempts to review\
 When authorization is evaluated\
 Then no review is created or changed\
 And the response reveals no private shipment or party data.

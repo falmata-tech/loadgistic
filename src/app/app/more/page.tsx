@@ -25,7 +25,7 @@ import { Pagination } from '@/components/pagination';
 
 function planDescription(user:any){
  if(user.role==='TRANSPORTER')return 'For fleet transporters publishing capacity and managing customer tracking records.';
- if(user.role==='DRIVER')return 'For self-managed drivers and owner-operators publishing their truck and next trip.';
+ if(user.role==='DRIVER')return 'For self-managed drivers and owner-operators publishing current capacity and regular corridors.';
  return 'For platform administration.';
 }
 
@@ -41,7 +41,7 @@ function accessLabel(status:string){
 }
 
 function workspaceLinks(role:string){
- if(role==='TRANSPORTER'||role==='DRIVER')return [['/app/company-page','Public page'],['/app/verification','Verification'],['/app/provider-shipments','Customer shipments']];
+ if(role==='TRANSPORTER'||role==='DRIVER')return [['/app/company-page','Public page'],['/app/verification','Verification'],['/app/provider-shipments','Tracking']];
  return [['/admin/operations','Operations'],['/admin/reviews','Review Center'],['/providers','Provider directory']];
 }
 

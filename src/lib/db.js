@@ -32,7 +32,7 @@ export function getDb() {
   runDataMigrationOnce(database,'normalize-capacity-geometry-v1',normalizeCapacityGeometry);
   runDataMigrationOnce(database,'purge-legacy-demand-fixtures-v1',purgeLegacyDemandFixtures);
   runDataMigrationOnce(database,'seed-public-capacity-market-v1',seedPublicCapacityMarket);
-  runDataMigrationOnce(database,'partial-route-recurring-areas-v1',enforcePartialRoutesAndSeedRecurringAreas);
+  runDataMigrationOnce(database,'simplify-capacity-corridors-v1',simplifyCapacityCorridors);
   return database;
 }
 
@@ -290,47 +290,6 @@ function migrate(db) {
 
     CREATE INDEX IF NOT EXISTS idx_capacity_expires ON capacities(expires_at);
     CREATE INDEX IF NOT EXISTS idx_capacity_visibility ON capacities(visibility, expires_at);
-
-    CREATE TABLE IF NOT EXISTS next_trips (
-      id TEXT PRIMARY KEY,
-      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
-      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
-      vehicle_id TEXT NOT NULL UNIQUE REFERENCES vehicles(id) ON DELETE CASCADE,
-      origin TEXT NOT NULL,
-      origin_place_ref TEXT NOT NULL,
-      origin_lat REAL NOT NULL,
-      origin_lng REAL NOT NULL,
-      destination TEXT NOT NULL,
-      destination_place_ref TEXT NOT NULL,
-      destination_lat REAL NOT NULL,
-      destination_lng REAL NOT NULL,
-      travel_date TEXT,
-      space_status TEXT NOT NULL CHECK(space_status IN ('EMPTY','PARTIAL')),
-      available_percent INTEGER NOT NULL CHECK(available_percent BETWEEN 5 AND 100),
-      published INTEGER NOT NULL DEFAULT 1,
-      updated_by TEXT NOT NULL REFERENCES users(id),
-      updated_at TEXT NOT NULL,
-      CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_next_trips_public ON next_trips(published,travel_date,updated_at DESC);
-
-    CREATE TABLE IF NOT EXISTS recurring_service_areas (
-      id TEXT PRIMARY KEY,
-      organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
-      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
-      place_ref TEXT NOT NULL,
-      place_label TEXT NOT NULL,
-      center_lat REAL NOT NULL,
-      center_lng REAL NOT NULL,
-      radius_km INTEGER NOT NULL CHECK(radius_km BETWEEN 5 AND 500),
-      created_by TEXT REFERENCES users(id),
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CHECK ((organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (organization_id IS NULL AND provider_profile_id IS NOT NULL))
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_recurring_service_areas_organization ON recurring_service_areas(organization_id);
-    CREATE INDEX IF NOT EXISTS idx_recurring_service_areas_provider ON recurring_service_areas(provider_profile_id);
 
     CREATE TABLE IF NOT EXISTS shipments (
       id TEXT PRIMARY KEY,
@@ -821,6 +780,14 @@ function migrate(db) {
     BEGIN
       SELECT RAISE(ABORT,'LOCAL_CAPACITY_MUST_BE_EMPTY');
     END;
+    CREATE TRIGGER IF NOT EXISTS enforce_regular_corridor_limit_insert
+    BEFORE INSERT ON profile_routes
+    WHEN (SELECT COUNT(*) FROM profile_routes
+      WHERE (NEW.organization_id IS NOT NULL AND organization_id=NEW.organization_id)
+         OR (NEW.provider_profile_id IS NOT NULL AND provider_profile_id=NEW.provider_profile_id))>=2
+    BEGIN
+      SELECT RAISE(ABORT,'REGULAR_CORRIDOR_LIMIT');
+    END;
   `);
   const vehicleColumns = new Set(db.prepare('PRAGMA table_info(vehicles)').all().map(column => column.name));
   for (const [name, definition] of [['make','TEXT'],['model','TEXT'],['cargo_configuration','TEXT'],['platform_number','TEXT']]) {
@@ -988,7 +955,7 @@ function migrate(db) {
   const insertRoute = db.prepare(`INSERT INTO profile_routes
     (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,NULL,?)`);
   for (const page of routePages) {
-    for (const label of String(page.corridors).split(/[;\n]/).map(value => value.trim()).filter(Boolean)) {
+    for (const label of String(page.corridors).split(/[;\n]/).map(value => value.trim()).filter(Boolean).slice(0,2)) {
       const endpoints = label.split(/\s*(?:↔|→|<->|->)\s*/).map(value => value.trim()).filter(Boolean);
       if (endpoints.length === 2 && endpoints[0].toLowerCase() !== endpoints[1].toLowerCase()) {
         insertRoute.run(randomId('route-'),page.organization_id,page.provider_profile_id,endpoints[0],endpoints[1],new Date().toISOString());
@@ -1349,7 +1316,6 @@ function seedPublicCapacityMarket(db) {
   const insertCapacity=db.prepare(`INSERT OR IGNORE INTO capacities
     (id,provider_organization_id,provider_profile_id,vehicle_id,status,available_percent,origin,destination,corridor,travel_date,next_available,visibility,photo_path,location_lat,location_lng,location_precision_km,location_source,updated_by,updated_at,expires_at,movement_scope,location_area,location_place_ref,location_updated_at,accepts_full_load,accepts_partial_load,accepts_multi_pick,accepts_multi_drop,current_route_origin,current_route_destination,current_origin_place_ref,current_origin_lat,current_origin_lng,current_destination_place_ref,current_destination_lat,current_destination_lng,market_status,availability_geometry)
     VALUES (?,?,?,?,?,?,?,?,NULL,NULL,NULL,'OPEN',NULL,?,?,?,'DEVICE_OBSCURED',?,?,?,'BOTH',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-  const insertTrip=db.prepare(`INSERT OR IGNORE INTO next_trips (id,provider_organization_id,provider_profile_id,vehicle_id,origin,origin_place_ref,origin_lat,origin_lng,destination,destination_place_ref,destination_lat,destination_lng,travel_date,space_status,available_percent,published,updated_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)`);
 
   db.exec('BEGIN IMMEDIATE');
   try{
@@ -1363,7 +1329,7 @@ function seedPublicCapacityMarket(db) {
       const home=places[index%places.length];
       const destination=places[(index*3+3)%places.length];
       const status=index%4===0?'EMPTY':'PARTIAL';
-      const geometry=status==='PARTIAL'?'ROUTE':index%8===0?'RADIUS':'ROUTE';
+      const geometry=index%3===0?'RADIUS':'ROUTE';
       const percent=status==='EMPTY'?100:[25,40,55,70,85][index%5];
       const privacy=[3,5,10,20,40][index%5];
       const offset=((index%7)-3)*0.012;
@@ -1372,9 +1338,6 @@ function seedPublicCapacityMarket(db) {
       const capId=`cap-public-${capacityNumber++}`;
       insertCapacity.run(capId,owner.organizationId,owner.profileId,vehicleId,status,percent,null,null,home.lat+offset,home.lng-offset,privacy,userId,iso,expiresAt,`Around ${home.name}`,home.ref,iso,status==='EMPTY'?1:0,status==='PARTIAL'?1:0,index%3===1?1:0,index%4===1?1:0,routeOrigin?.name||null,routeDestination?.name||null,routeOrigin?.ref||null,routeOrigin?.lat||null,routeOrigin?.lng||null,routeDestination?.ref||null,routeDestination?.lat||null,routeDestination?.lng||null,status,geometry);
       db.prepare('UPDATE capacities SET work_radius_km=? WHERE id=?').run([15,25,40,60,100,150,250][index%7],capId);
-      const tripOrigin=places[(index+1)%places.length],tripDestination=places[(index+5)%places.length];
-      const travelDate=index%3===0?null:new Date(now.getTime()+((index%7)+1)*86_400_000).toISOString().slice(0,10);
-      insertTrip.run(`trip-public-${vehicleId}`,owner.organizationId,owner.profileId,vehicleId,tripOrigin.name,tripOrigin.ref,tripOrigin.lat,tripOrigin.lng,tripDestination.name,tripDestination.ref,tripDestination.lat,tripDestination.lng,travelDate,index%2?'PARTIAL':'EMPTY',index%2?50:100,userId,iso);
     };
 
     companyNames.forEach((name,index)=>{
@@ -1383,7 +1346,7 @@ function seedPublicCapacityMarket(db) {
       insertUser.run(ownerId,`owner-${suffix}@providers.loadgistic.test`,`+2519117${suffix}001`,passwordHash,`${name} Owner`,'TRANSPORTER',orgId,null,iso);
       insertUser.run(driverId,`driver-${suffix}@providers.loadgistic.test`,`+2519117${suffix}002`,passwordHash,`${name} Driver`,'DRIVER',orgId,null,iso);
       insertMember.run(`mem-public-owner-${suffix}`,ownerId,orgId,'OWNER');insertMember.run(`mem-public-driver-${suffix}`,driverId,orgId,'DRIVER');
-      insertPage.run(`page-public-fleet-${suffix}`,orgId,null,'Reliable freight capacity for growing Ethiopian trade',`${name} is a demo fleet profile showing how transport companies can present current capacity, planned trips, and recurring corridors.`,`Full truckload; partial cargo space; regional road freight`,'',home.name,`+2519117${suffix}000`,`dispatch@${handle}.local`,iso,theme[0],theme[1],`+2519117${suffix}000`,`https://example.com/${handle}`);
+      insertPage.run(`page-public-fleet-${suffix}`,orgId,null,'Reliable freight capacity for growing Ethiopian trade',`${name} is a demo fleet profile showing how transport companies can present current capacity and regular corridors.`,`Full truckload; partial cargo space; regional road freight`,'',home.name,`+2519117${suffix}000`,`dispatch@${handle}.local`,iso,theme[0],theme[1],`+2519117${suffix}000`,`https://example.com/${handle}`);
       insertDriver.run(`driver-public-${suffix}`,orgId,driverId,`${name} Driver`,`+2519117${suffix}002`);insertPermission.run(driverId,ownerId,iso);
       insertSubscription.run(`sub-public-fleet-${suffix}`,orgId,null,'plan-transport',iso,subscriptionEnd,iso);
       for(let truckIndex=0;truckIndex<3;truckIndex++){
@@ -1409,39 +1372,20 @@ function seedPublicCapacityMarket(db) {
   }catch(error){db.exec('ROLLBACK');throw error;}
 }
 
-function enforcePartialRoutesAndSeedRecurringAreas(db) {
+function simplifyCapacityCorridors(db) {
   db.exec(`
-    UPDATE capacities SET
-      availability_geometry='ROUTE',work_radius_km=NULL,
-      current_route_origin=(SELECT t.origin FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_origin_place_ref=(SELECT t.origin_place_ref FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_origin_lat=(SELECT t.origin_lat FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_origin_lng=(SELECT t.origin_lng FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_route_destination=(SELECT t.destination FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_destination_place_ref=(SELECT t.destination_place_ref FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_destination_lat=(SELECT t.destination_lat FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id),
-      current_destination_lng=(SELECT t.destination_lng FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id)
-    WHERE COALESCE(market_status,status)='PARTIAL' AND availability_geometry='RADIUS'
-      AND EXISTS (SELECT 1 FROM next_trips t WHERE t.vehicle_id=capacities.vehicle_id);
-
-    UPDATE capacities SET status='OFF_DUTY',market_status='OFF_DUTY',available_percent=0,
-      availability_geometry=NULL,work_radius_km=NULL
-    WHERE COALESCE(market_status,status)='PARTIAL' AND availability_geometry<>'ROUTE';
+    DELETE FROM profile_routes WHERE id IN (
+      SELECT id FROM (
+        SELECT id,ROW_NUMBER() OVER (
+          PARTITION BY COALESCE('org:' || organization_id,'profile:' || provider_profile_id)
+          ORDER BY created_at DESC,id DESC
+        ) AS position
+        FROM profile_routes
+      ) ranked WHERE position>2
+    );
+    DROP TABLE IF EXISTS next_trips;
+    DROP TABLE IF EXISTS recurring_service_areas;
   `);
-  const providers=db.prepare(`SELECT cp.id,cp.organization_id,cp.provider_profile_id,
-      COALESCE(o.city_place_ref,p.city_place_ref) place_ref,
-      COALESCE(o.city,p.city) place_label,COALESCE(o.city_lat,p.city_lat) center_lat,
-      COALESCE(o.city_lng,p.city_lng) center_lng,
-      COALESCE((SELECT m.user_id FROM memberships m WHERE m.organization_id=o.id AND m.membership_role='OWNER' LIMIT 1),p.user_id) created_by
-    FROM company_pages cp LEFT JOIN organizations o ON o.id=cp.organization_id
-    LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
-    WHERE cp.published=1 AND COALESCE(o.city_place_ref,p.city_place_ref) IS NOT NULL`).all();
-  const insert=db.prepare(`INSERT OR IGNORE INTO recurring_service_areas
-    (id,organization_id,provider_profile_id,place_ref,place_label,center_lat,center_lng,radius_km,created_by,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?)`);
-  const radii=[25,40,60,100,150,250,500];
-  const createdAt=new Date().toISOString();
-  providers.forEach((provider,index)=>insert.run(`recurring-area-${provider.id}`,provider.organization_id,provider.provider_profile_id,provider.place_ref,placeLabel(provider.place_label),provider.center_lat,provider.center_lng,radii[index%radii.length],provider.created_by,createdAt));
 }
 
 function qualifyExistingEthiopiaData(db) {
@@ -1618,7 +1562,6 @@ function seed(db) {
     ['route-receiver-addis',orgs.receiver.id,null,'Hawassa','Addis Ababa','user-receiver'],
     ['route-transporter-dire-dawa',orgs.transporter.id,null,'Addis Ababa','Dire Dawa','user-transporter'],
     ['route-transporter-mekelle',orgs.transporter.id,null,'Addis Ababa','Mekelle','user-transporter'],
-    ['route-transporter-hawassa',orgs.transporter.id,null,'Addis Ababa','Hawassa','user-transporter'],
     ['route-driver-dire-dawa',null,'provider-driver','Addis Ababa','Dire Dawa','user-driver'],
     ['route-driver-hawassa',null,'provider-driver','Addis Ababa','Hawassa','user-driver']
   ];

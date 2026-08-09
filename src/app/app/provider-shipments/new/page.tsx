@@ -8,7 +8,7 @@ import { ProviderShipmentForm } from '@/components/provider-shipment-form';
 
 export default async function NewProviderShipmentPage(){
   const user=await requireUser();
-  if(!['TRANSPORTER','DRIVER'].includes(user.role)||user.driver_kind==='COMPANY')redirect('/app/home?error=Only+provider+owners+can+create+shipment+records.');
+  if(!['TRANSPORTER','DRIVER'].includes(user.role))redirect('/app/home?error=Only+transport+providers+can+start+Tracking.');
   const vehicles=listOwnVehicles(user);
-  return <div className="page"><PageHeader icon={ClipboardPlus} title="Start customer tracking" subtitle="Record an agreed shipment and issue separate private access codes." action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/>Shipments</Link>}/><ProviderShipmentForm vehicles={vehicles}/></div>;
+  return <div className="page"><PageHeader icon={ClipboardPlus} title="Start Tracking" subtitle="After agreeing the work offline, create one Tracking session and send its access to the customer owner." action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/>Tracking</Link>}/><ProviderShipmentForm vehicles={vehicles}/></div>;
 }

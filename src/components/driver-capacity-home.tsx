@@ -4,7 +4,6 @@ import React from 'react';
 import { PageHeader } from './page-header';
 import { Flash } from './flash';
 import { CapacityForm } from './capacity-form';
-import { CapacityMarketPlanning } from './capacity-market-planning';
 import { StatusPill } from './status-pill';
 import { capacityLabel } from '@/lib/domain.js';
 import { relativeTime } from '@/lib/ui';
@@ -37,7 +36,7 @@ function RestrictedAvailability({vehicles,latestByVehicle}:{vehicles:any[];lates
 
   return <section className="restricted-duty-panel">
     <div className="permission-note"><ShieldCheck aria-hidden="true"/><div><strong>Fleet-managed capacity</strong><span>Your dispatcher manages route, cargo space, visibility, and shipment preferences. Your availability change is visible to the fleet owner.</span></div></div>
-    <div className={`automatic-location ${locationState}`}><LocateFixed aria-hidden="true"/><span><strong>{locationState==='captured'?'Truck area ready':locationState==='requesting'?'Finding truck location...':locationState==='denied'?'Location permission is off':'Device location unavailable'}</strong><small>{location?`${location.area} · 40 km privacy area`:'Allow browser location before setting Available.'}</small></span>{['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>
+    <div className={`automatic-location ${locationState}`}><LocateFixed aria-hidden="true"/><span><strong>{locationState==='captured'?'Truck area ready':locationState==='requesting'?'Finding truck location...':locationState==='denied'?'Location permission is off':'Device location unavailable'}</strong><small>{location?`${location.area} · approximate location within 40 km`:'Allow browser location before setting Available.'}</small></span>{['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>
     <div className="duty-truck-list">{vehicles.map(vehicle=>{
       const latest=latestByVehicle.get(vehicle.id);
       const available=latest&&latest.status!=='OFF_DUTY';
@@ -51,7 +50,7 @@ function RestrictedAvailability({vehicles,latestByVehicle}:{vehicles:any[];lates
   </section>;
 }
 
-export function DriverCapacityHome({ vehicles, capacities, nextTrips, corridors, access, query }: { vehicles: any[]; capacities: any[]; nextTrips:any[]; corridors:any[]; access:any; query: Record<string,string|undefined> }) {
+export function DriverCapacityHome({ vehicles, capacities, corridors, access, query }: { vehicles: any[]; capacities: any[]; corridors:any[]; access:any; query: Record<string,string|undefined> }) {
   const latestByVehicle = new Map<string,any>();
   for (const capacity of capacities) if (!latestByVehicle.has(capacity.vehicle_id)) latestByVehicle.set(capacity.vehicle_id,capacity);
   const vehicleOptions = vehicles.map(vehicle => ({ id:String(vehicle.id), label:String(vehicle.label), make:String(vehicle.make||''), model:String(vehicle.model||''), cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''), plate:String(vehicle.plate||''), platformNumber:String(vehicle.platform_number||''), current:latestByVehicle.get(vehicle.id) || null }));
@@ -68,6 +67,6 @@ export function DriverCapacityHome({ vehicles, capacities, nextTrips, corridors,
         <span><small>Freshness</small>{current ? <StatusPill status={current.freshness}/> : <span className="status expired">Not published</span>}</span>
       </div>
     </section>:null}
-    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle}/>:<><CapacityForm vehicles={vehicleOptions}/><CapacityMarketPlanning vehicles={vehicles} nextTrips={nextTrips} corridors={corridors} returnTo="/app/home" allowCorridors={access?.kind==='SELF_MANAGED'}/></>}
+    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle}/>:<CapacityForm vehicles={vehicleOptions} corridors={corridors} returnTo="/app/home" allowCorridors={access?.kind==='SELF_MANAGED'}/>}
   </div>;
 }

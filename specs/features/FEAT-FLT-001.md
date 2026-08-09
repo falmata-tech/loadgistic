@@ -66,7 +66,7 @@ Given a fleet driver is assigned to a company truck and rich capacity control is
 When the driver opens Home\
 Then only assigned-truck duty controls are shown\
 And the driver may set the truck Off Duty or restore its most recent owner-configured Empty or Partial capacity signal\
-And route, percentage, public visibility, next-trip, corridor, proof, and location controls remain unavailable.
+And corridor, percentage, public visibility, regular-corridor, proof, and location controls remain unavailable.
 
 ### Scenario: permitted driver manages assigned-truck capacity
 
@@ -82,6 +82,13 @@ Given a Driver account owns its provider profile and truck\
 When it uses capacity, duty, provider shipment, assignment, or tracking workflows\
 Then it has the full provider authority defined by the related feature specs\
 And no fleet-owner permission record can reduce that authority.
+
+### Scenario: Driver can inspect market capacity from the dashboard
+
+Given an authenticated company or self-managed Driver is inside the workspace\
+When the Driver chooses Capacity market\
+Then the same provider-controlled public Map/List projection opens at `/app/capacity` without exposing any field hidden from the public Capacity Board\
+And Exit dashboard returns to the public Capacity Board without ending the authenticated session.
 
 ## Contract ownership
 

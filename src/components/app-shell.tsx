@@ -7,6 +7,8 @@ import {
   ClipboardCheck,
   CreditCard,
   Database,
+  ExternalLink,
+  Gauge,
   Headphones,
   Home,
   Menu,
@@ -22,12 +24,13 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   TRANSPORTER: [
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/app/fleet', label: 'Fleet', icon: Truck },
-    { href: '/app/provider-shipments', label: 'Customer Shipments', icon: ClipboardCheck },
+    { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/provider-shipments', label: 'Customer Shipments', icon: ClipboardCheck },
+    { href: '/app/capacity', label: 'Capacity market', icon: Gauge },
+    { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
   ],
   ADMIN: [
@@ -46,7 +49,7 @@ const mobileNavigation: Record<string, string[]> = {
   SHIPPER: ['/app/home', '/app/more'],
   RECEIVER: ['/app/home', '/app/more'],
   TRANSPORTER: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/more'],
-  DRIVER: ['/app/home', '/app/provider-shipments', '/app/more'],
+  DRIVER: ['/app/home', '/app/capacity', '/app/provider-shipments', '/app/more'],
   ADMIN: ['/app/home', '/admin/operations', '/admin/reviews', '/admin/support', '/app/more'],
   SUPPORT: ['/support']
 };
@@ -62,7 +65,8 @@ const roleLabels: Record<string, string> = {
 
 const mobileLabels: Record<string, string> = {
   '/app/company-page': 'Profile',
-  '/app/provider-shipments': 'Shipments',
+  '/app/capacity': 'Market',
+  '/app/provider-shipments': 'Tracking',
   '/admin/reviews': 'Reviews',
   '/admin/operations': 'Operations',
   '/admin/ratings': 'Rating Reviews',
@@ -128,13 +132,14 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         <header className="app-topbar">
           <div className="topbar-leading"><WorkspaceBackButton/><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{isSupport?'Customer support workspace':'B2B logistics workspace'}</div></div></div>
           <div className="topbar-actions">
+            {user.role==='DRIVER'?<Link className="button secondary small desktop-account" href="/"><ExternalLink aria-hidden="true"/>Exit dashboard</Link>:null}
             {!isSupport&&!['ADMIN'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/>Help</Link>:null}
             {!isSupport?<Link className="button secondary small desktop-account" href="/app/more"><UserRound aria-hidden="true"/>Account</Link>:null}
           </div>
           <details className="mobile-account-menu">
             <summary><Menu aria-hidden="true"/>Menu</summary>
             <div className="mobile-menu-panel">
-              <nav aria-label="All workspace navigation">{items.map(item => <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href}>{item.label}</Link>)}{!isSupport&&!['ADMIN'].includes(user.role)?<Link href="/app/support">Help</Link>:null}</nav>
+              <nav aria-label="All workspace navigation">{items.map(item => <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href}>{item.label}</Link>)}{user.role==='DRIVER'?<Link href="/">Exit dashboard</Link>:null}{!isSupport&&!['ADMIN'].includes(user.role)?<Link href="/app/support">Help</Link>:null}</nav>
               <LogoutButton compact/>
             </div>
           </details>
