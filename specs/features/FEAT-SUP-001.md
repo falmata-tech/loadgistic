@@ -1,9 +1,9 @@
 ---
 id: FEAT-SUP-001
 title: Native authenticated customer support inbox
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001, FEAT-GST-001]
 problem: Members need simple in-app help while platform owners need bounded assignment, scoped support-agent access, and accountable resolution without per-agent fees or a second operational platform.
-behavior: Loadgistic presents Support as a simple New chat, Continue chat, and Past chats workflow; stores text-only conversations and messages in its authoritative database; lets either participant end an owned chat; routes one open member conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration.
+behavior: Loadgistic presents signed-in Support as a simple New chat, Continue chat, and Past chats workflow; stores authoritative conversations and messages; lets either participant end an owned chat; routes one open conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration. FEAT-GST-001 extends the same queue with clearly labeled account-free Assisted matching conversations and private requested attachments without changing member ownership.
 contracts: [SupportConversation, SupportMessage, SupportCategory, SupportAgentState, SupportQueueAssignment, SupportAccessPolicy, SupportAudit]
 observability: [support_conversation_created, support_message_sent, support_conversation_assigned, support_conversation_claimed, support_conversation_closed, support_agent_availability_changed, support_assignment_capacity_reached, denied_support_access]
 rollout: Additive schema and SUPPORT role. Start with visibility-aware five-second refreshes and bounded message/query windows; durable database records remain authoritative so Realtime or Telegram notifications can be added later without changing ownership.
@@ -97,5 +97,5 @@ And queue and history lists use server pagination and supporting indexes.
 - Pages: `/app/support`, `/support`, `/support/[id]`, `/admin/support`
 - Application services: native support services in `src/lib/repository.js`
 - Inbound adapters: `/api/support/*` and `/api/admin/support-agents`
-- Persistence adapters: additive SQLite schema and Supabase migration `008`
+- Persistence adapter: additive Supabase PostgreSQL migration `008`, replayed in the isolated local stack and managed project
 - Tests: domain, repository authorization/routing, E2E customer/agent flow, and desktop/mobile UI audit

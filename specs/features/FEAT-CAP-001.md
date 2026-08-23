@@ -1,54 +1,58 @@
 ---
 id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Authorized providers publish one current Empty or Partial signal as either a radius or an undated corridor, plus no more than two provider-level undated regular corridors. Anyone may browse bounded public projections without an account; exact truck and visitor coordinates remain private.
-contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, RegularCorridor, CapacityFreshness, PublicCapacityProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
-observability: [capacity_audit, corridor_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
-rollout: Remove future-trip and regular-area records, retain compatible current radius/corridor signals, deterministically limit regular corridors to two per provider, and monitor public-projection fields and query volume.
+behavior: Authorized providers publish one current signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive private details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry, and regular service remains public. A private-current truck remains publicly callable through its categorical status and public regular service without presenting the regular-service marker as a live location. Exact truck and visitor coordinates remain private.
+contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshness, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
+observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
+rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and monitor public-projection fields and query volume.
 ---
 
 # Public truck-capacity signals
 
-### Scenario: current availability uses radius or corridor
+### Scenario: current availability uses a Service area or Capacity route
 
 Given an authorized fleet owner or Driver publishes current capacity for one truck\
 When the current signal is saved\
-Then Empty or Partial requires exactly one availability geometry: radius or corridor\
-And radius uses the Driver's browser-obscured current point plus a selected work radius\
-And route uses structured origin and destination points\
+Then Empty requires exactly one availability geometry: Service area or Capacity route\
+And Partial requires one Capacity route and cannot publish a Service area\
+And a Service area uses one selected center city plus three through five distinct surrounding cities\
+And the surrounding cities form one ordered polygon boundary while the center city remains the searchable area anchor\
+And a Capacity route uses two through five distinct ordered cities joined in sequence\
 And neither current geometry asks for or stores a travel date\
-And Empty records 100 percent while Partial records an integer from 1 through 99.
+And Empty and Partial are categorical market signals rather than remaining-space estimates\
+And the Driver is not asked for a capacity percentage and no percentage is displayed, filtered, or published to visitors.
 
 ### Scenario: current signals use distinct map treatments
 
 Given a public current-capacity projection is selected on the map\
 When its Driver location is available\
 Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
-And when its geometry is radius a separate labeled green work circle is shown around the obscured center\
-And when its geometry is route a labeled yellow line and endpoints are shown\
+And when Empty uses a Service area a separate labeled green hollow polygon joins the selected surrounding cities and identifies the center city\
+And when its geometry is Capacity route a labeled green Empty or yellow Partial polyline joins every selected city in order\
 And color is reinforced by text and shape rather than being the only meaning\
 And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
 
-### Scenario: regular service is limited to two undated corridors
+### Scenario: regular service is one undated Service area or Capacity route
 
-Given a provider regularly serves one or more corridors\
+Given a provider regularly serves an area or route\
 When its owner maintains regular service\
-Then each signal is a structured two-way corridor between two selected places\
-And the provider may retain no more than two regular corridors\
-And a third addition is rejected without changing either saved corridor\
-And no regular corridor asks for a date or claims that a truck is currently available\
-And public List cards expose both saved corridors immediately without a disclosure control\
-And every public surface presents each pair as Place A ↔ Place B and states Confirm availability\
-And the shared map uses the user-facing label Regular corridor for a blue dashed line.
+Then the provider may retain exactly zero or one regular-service signal\
+And that signal is either a structured Service area with one center plus three through five surrounding cities or a structured two-way Capacity route with two through five ordered cities\
+And another addition is rejected without changing the saved signal\
+And regular service asks for no date and never claims that a truck is currently available\
+And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
+And a regular Capacity route joins its cities with ↔ while a regular Service area names its center and boundary cities\
+And both state Confirm availability\
+And the shared map uses a blue dashed polyline for Regular capacity route or a blue outlined polygon for Regular service area.
 
 ### Scenario: Off Duty removes current availability
 
 Given a truck has current capacity\
 When an authorized actor selects Off Duty\
 Then its current signal is absent from public discovery\
-And its provider regular corridors remain separate records governed by their own state\
+And its provider regular-service signal remains a separate record governed by its own state\
 And Busy is rejected.
 
 ### Scenario: public Board is cursor bounded
@@ -56,7 +60,7 @@ And Busy is rejected.
 Given public capacity contains more results than one response\
 When any visitor opens or scrolls the Board\
 Then the server returns a stable cursor page of 12 through 16 independently actionable cards\
-And the List uses two scan-friendly cards per row on wider screens and one card per row on narrow screens\
+And the Market does not duplicate those signals in a ranked truck-list mode\
 And approaching the end fetches the next page\
 And a Load more capacity fallback remains keyboard accessible\
 And filters, loaded cursor state, and scroll position survive a profile/detail round trip\
@@ -65,10 +69,25 @@ And the end of results is stated plainly.
 ### Scenario: public projection is deliberately safe
 
 Given a visitor has no Loadgistic account\
-When current capacity or a regular corridor is returned\
-Then the projection may include provider public identity, public handle, provider-controlled contact availability, verification summaries, truck presentation, obscured area or structured route, capacity facts, and freshness\
-And it excludes plate, private account contacts, raw exact coordinates, proof paths, tracking secrets, and administrative data\
+When current capacity or regular service is returned\
+Then the projection may include provider public identity, public handle, provider-controlled contact availability, the assigned Driver's first name and operating-model label, the Driver's public callback phone, separate Driver and truck verification summaries, truck presentation, obscured Service area or structured Capacity route place sequence, capacity facts, and freshness\
+And a Company driver names the fleet transporter while an Owner-operator or Self-managed driver remains clearly independent\
+And missing, pending, rejected, or expired Driver and truck evidence is shown as not verified rather than hiding the truck\
+And it excludes the Driver's surname, plate, private account contacts, raw exact coordinates, proof paths, tracking secrets, and administrative data\
 And the card links to a public signal detail and the provider microsite.
+
+### Scenario: private current geometry retains a public service marker
+
+Given an active Empty or Partial truck publishes its current geometry and approximate location to Private network\
+And its transporter has one public regular Capacity route or Service area\
+When an anonymous visitor opens or filters the Truck Market\
+Then the truck remains discoverable with its categorical Empty or Partial marker, public Driver and transporter contact, verification summaries, and public regular-service geometry\
+And a route marker is placed at the distance midpoint of the regular polyline while an area marker uses the saved regular-area center\
+And the marker and selected-truck summary state that this is a regular-service placement rather than the truck's current location\
+And the visitor may call directly and ask the Driver to share private capacity with their email\
+And no private current route point, Service-area point, approximate coordinate, precision radius, or current-geometry label is returned\
+And search, route, area, or proximity filters cannot infer those hidden values\
+And an active private truck without public regular service is absent from the anonymous Market.
 
 ### Scenario: visitor location is requested without blocking discovery
 
@@ -77,34 +96,67 @@ When the client becomes interactive\
 Then it immediately asks the browser for location permission\
 And when the browser grants geolocation\
 Then the exact point remains in browser memory\
-And only a displaced query point and bounded radius reach the server\
 And the primary map centers on a useful surrounding area rather than fitting the whole country\
-And list results show a possible distance range rather than an exact truck distance\
+And granting or refreshing permission does not filter, rank, remove, or refetch the current truck results\
+And no visitor coordinate reaches the server until the visitor explicitly enables the nearby-truck filter\
+And an explicitly enabled nearby-truck filter sends only a displaced query point and bounded radius to the server and may show a possible distance range rather than an exact truck distance\
 And denial leaves the full public Board usable with a manual Retry location permission action and site-setting guidance.
+
+### Scenario: demo capacity geography follows plausible Ethiopian roads
+
+Given the public Capacity Board is populated with pre-customer demonstration trucks\
+When demonstration capacity geometry is rebuilt\
+Then every current Capacity route contains two through five distinct cities in a plausible road-travel sequence\
+And the route passes through or immediately beside the truck's approximate current city rather than jumping to an unrelated part of Ethiopia\
+And every Service area uses a center near the truck's approximate current city and a boundary that contains that center\
+And courier motorcycles, courier cars, cargo vans, pickups, and mini trucks expose only current and regular geography within 30 kilometres of their base city or town\
+And every provider regular-service signal begins in, contains, or closely approaches the approximate current location of one of that provider's demonstration trucks\
+And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a nearby center and enclosing boundary\
+And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
 
 ### Scenario: one shared map is the primary capacity view
 
 Given a visitor opens the Capacity Board\
 When no view choice has been made\
 Then one shared interactive map is the default primary view and List is the secondary choice\
-And the map starts at a useful Ethiopia-level zoom, constrains panning to Ethiopia, and never falls back to a world or Africa-wide view\
+And search, filters, and the location action remain available in their established command area above the map\
+And the map starts at a useful Ethiopia-level zoom, permits bounded panning across a practical East Africa envelope, and never falls back to a world or Africa-wide view\
 And cards appear only after choosing List rather than creating one live map per card\
 And before selection the map clusters crowded signals that separate as the visitor zooms\
-And the complete map key remains visible without another action and uses pointed pins for capacity status, circles for areas, and solid, dashed, or dotted lines for route types rather than repeating same-shaped color bars\
+And each cluster contains only Empty trucks or only Partial trucks, names that status, and is visibly offset from an opposite-status cluster occupying the same map cell\
+And the complete map key remains visible without another action and uses pointed pins for capacity status, a polygon for Service area, and solid or dashed polylines for Capacity routes rather than repeating same-shaped color bars\
 And each unclustered truck marker is a pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types without opening a card\
-And the truck artwork is centered and legible inside a proportionate circular head, while the extra-long rigid-truck-with-trailer artwork is excluded from map pins and falls back to the corresponding heavy-rigid truck image\
-And the marker frame and short text tag use green for Empty and bright yellow for Partial, including the available percentage for Partial\
-And a circular meter around the marker image is fully green at 100 percent availability, shortens as available space decreases, and shifts through yellow and orange to red at low availability\
-And status is never communicated by color alone, while route lines, radius circles, and their legend remain geometrically distinct from marker status\
+And the truck artwork is centered and legible inside a true circular head that does not become egg-shaped, while the extra-long rigid-truck-with-trailer artwork is excluded from map pins and falls back to the corresponding heavy-rigid truck image\
+And the marker uses a complete green ring and Empty text for Empty or a complete bright-yellow ring and Partial text for Partial\
+And no percentage or percentage-progress ring appears in a public truck marker\
+And status is never communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
 And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
 And a truck or visitor-location summary appears only on hover or keyboard focus, sits above its marker, and retains a pointer to that marker rather than permanently covering the map\
 And selecting one truck enters an explicit focus state that removes every other truck marker and cluster\
-And the selected truck keeps one visually distinct marker outside the clustering algorithm while its adjacent information card provides the identity and capacity details without a second permanent map label\
-And automatic bounds prioritize that truck's approximate location area and current radius or corridor rather than its regular provider corridors\
-And the selected information card fits within the desktop or mobile map without an internal scrollbar or full-screen takeover\
+And every selected-truck approximate-location circle, Service area outline, current Capacity route, and regular Capacity route has a wide pointer target with one concise styled hover or keyboard-focus summary\
+And that summary names the signal, its distance or endpoints, its capacity meaning, and whether availability must be confirmed without requiring a click or opening a second information card\
+And each summary uses a readable light surface, restrained neutral border, and distinct signal-color accent rather than a thick dark frame or color-on-color text\
+And clicking one signal pins only that signal's summary while selecting another signal replaces it\
+And overlapping current and regular Capacity routes are drawn with small opposite screen-space offsets that preserve their stored cities and make each line independently selectable\
+And Service-area and approximate-location interiors do not intercept route interaction, while their thick outlines remain selectable\
+And the selected truck keeps one visually distinct marker outside the clustering algorithm while its compact adjacent identity dock provides essential actions without a second permanent map label or blocking the signal workspace\
+And automatic bounds prioritize that truck's approximate location area and current Service area or Capacity route rather than its regular provider routes\
+And on wider screens the selected truck information card occupies a dedicated right-hand rail outside the map canvas while the map narrows to remain fully usable\
+And dismissing the selected truck expands the map back to the full available width and the map recalculates its rendered size after either layout change\
+And on narrow screens the selected truck information card follows directly below the full-width map rather than covering it or reducing it to an unusable column\
+And the selected information card has no internal scrollbar or full-screen takeover\
 And an explicit close icon dismisses the selected card and restores the full clustered map\
 And the map shows the visitor's browser-only You marker when permitted\
 And list and map selection remain synchronized.
+
+### Scenario: selected-truck map language is reused safely on provider microsites
+
+Given a provider microsite lists an active truck\
+When that truck has a current public Empty or Partial projection\
+Then its lazily opened microsite map uses the same safe projection and approximate-location, Service area, Capacity route, regular-route, visitor-marker, and map-key semantics as Capacity Market selection\
+And it keeps an Ethiopia-focused initial view while permitting the same bounded East Africa panning as the public Market\
+And a truck without a current public signal has no microsite location map\
+And neither surface exposes plate, assigned Driver, private contact, exact truck coordinate, or proof files.
 
 ### Scenario: a manual Driver refresh is persisted
 
@@ -130,18 +182,46 @@ And the manual Refresh truck location action remains available for permission re
 Given a truck has saved capacity facts\
 When its authorized provider opens the editor\
 Then a map-centered summary appears before the full editor\
-And that one summary includes current capacity, current geometry, up to two provider-level regular corridors, and approximate current location\
-And its map uses a high-contrast labeled marker for the approximate truck area above the distinct current radius or corridor layer\
+And one compact selected-truck control occupies the map's reserved top-left zone without repeating a Capacity title\
+And focused current-capacity, current-coverage, regular-service, and Edit all actions remain in one aligned top-right rail\
+And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
+And the Driver map uses the same Empty green, Partial yellow, Approximate location violet, and Regular service blue signal language and readable hover summaries as the public Market\
+And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
+And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
 And current capacity, current geometry, and regular service facts each open only their relevant editor\
 And no separate future-or-recurring planning section appears below the capacity console\
-And Edit current capacity opens the complete current-capacity workflow while regular corridors retain their own explicit saves\
+And Edit current capacity opens the complete current-capacity workflow while regular service retains its own explicit save\
 And focused saves preserve unopened values\
-And the Driver changes the Approximate location radius and refreshes the truck location directly beneath the summary map without entering an editing workflow\
-And either direct location action persists visibly and returns to the same summary.
+And approximate-location accuracy and Refresh truck location remain directly operable from the combined location dock without entering the capacity editor\
+And automatic refresh succeeds silently while manual success or failure is announced transiently beside that dock\
+And either direct location control persists without replacing or extending the map summary.
+
+### Scenario: Driver capacity is map first on phones
+
+Given an authorized Driver opens Capacity management on a supported phone\
+When published capacity exists\
+Then the map occupies the primary remaining workspace beneath the compact application bars\
+And the current truck selector remains compact in the reserved top-left map zone instead of becoming a page-sized card\
+And a compact top-right rail preserves current capacity, current geometry, regular service, and Edit all actions with recognizable icons and accessible names\
+And the complete map key remains visible at bottom-left while Approximate location radius and Refresh truck location share one bottom-right dock\
+And every floating zone stays aligned, distinct, and clear of the other zones, required attribution, and essential map interaction\
+And a focused edit or Edit all opens an accessible modal over the map rather than extending the page\
+And Save or Cancel closes the editing workspace and returns the Driver to the updated map summary\
+And the editor uses one header containing the truck identity and one Back to summary action\
+And the page does not repeat a visible Capacity title, detached Updating card, separate location summary card, or automatic-refresh notice.
+
+### Scenario: Driver Home keeps operations in one clear order
+
+Given a Driver opens its authenticated Home on a narrow or wide screen\
+When active Tracking and truck capacity are both available\
+Then urgent Tracking updates appear in a compact section before the truck-capacity workspace\
+And the existing capacity summary retains its map, current availability, approximate location, regular service, focused Edit actions, and direct location controls\
+And Tracking does not duplicate, replace, cover, or move the capacity map into another workflow\
+And completing or collapsing a Tracking update returns the Driver to the same Home hierarchy.
 
 ## Contract ownership
 
 - Public pages: `/capacity`, `/capacity/[id]`
 - Provider editors: Driver Home and truck-specific Fleet page
-- Application services: current-capacity, regular-corridor, public projection, cursor and proximity functions
+- Application services: current-capacity, regular-capacity-route, public projection, cursor and proximity functions
 - Tests: domain, repository, authorization, E2E, visual audit

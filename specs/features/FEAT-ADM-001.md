@@ -1,7 +1,7 @@
 ---
 id: FEAT-ADM-001
 title: Focused platform operations and review center
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-FTR-001, FEAT-SPN-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001, FEAT-SHR-001, FEAT-GST-001]
 problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
 behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document, rating, and payment queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust, Billing, and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
 contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, PlatformTeamPermissionPolicy, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
@@ -15,13 +15,13 @@ rollout: Add the inventory without changing tenant-facing visibility; status com
 
 Given an authenticated platform administrator\
 When Operations is opened or searched\
-Then one selected bounded result set shows users, workspaces, trucks, loads, or latest capacity from authoritative records\
-And relationships are identified with workspace, provider, truck platform number, shipment code, and current status\
+Then one selected bounded result set shows users, workspaces, trucks, Drivers, provider-owned Tracking, regular service, plans, or latest capacity from authoritative records\
+And records are identified with transporter, truck platform number, Tracking code, and current status\
 And private proof paths, passwords, session values, tracking secrets, and exact coordinates are absent.
 
 ### Scenario: admin inventory stays connected to user-side entities
 
-Given users can create or change accounts, workspaces, Public Profiles, trucks, drivers, routes, service areas, network relationships, shipments, capacity, verification requests, reviews, payments, subscriptions, or support conversations\
+Given users can create or change accounts, workspaces, Public Profiles, trucks, Drivers, regular service routes or areas, provider-owned Tracking, capacity, verification requests, reviews, payments, subscriptions, or support conversations\
 When an administrator opens the relevant management area\
 Then every current entity can be found from a bounded authoritative list and traced to its owning user or workspace\
 And the administrator receives an appropriate inspect, correct, moderate, activate, suspend, expire, disconnect, or review command\
@@ -55,13 +55,18 @@ And one selected queue is rendered at a time\
 And the legacy application URL redirects to Operations because signup no longer needs approval\
 And the browser Back action and tab links preserve understandable navigation.
 
-### Scenario: administrator grants sponsored Business access
+### Scenario: administrator manages Daily Featured Transporters and sponsorship
 
-Given an existing Business workspace is selected in Operations\
-When an administrator grants sponsored free access\
-Then its subscription becomes Sponsored without an expiry\
-And the action is audited\
-And the command rejects transporter or self-managed driver workspaces.
+Given an administrator opens Daily Featured Transporters management\
+When a date is selected\
+Then its fixed regional group, public presentation fields, variable-length ordered regular roster, automatic or manual two-session livestream schedule, and eligible sponsored roster are managed together\
+And ordinary featured positions and sponsored positions remain distinct\
+And the administrator can add, remove, and reorder featured transporters without managing a fixed grid of empty positions\
+And the administrator sees the complete Ethiopia-time timeline, including every provider interval, transition, Sponsor break, and four-hour midday intermission, before publishing\
+And the automatic schedule shares presentation time equally, shortens low-participation sessions toward late morning and late evening, and may be regenerated after roster or break-setting changes\
+And the administrator may switch to a validated manual schedule without changing featured-roster order\
+And every published field and placement is bounded, validated, and audited\
+And transporters cannot manage Daily Featured Transporters or sponsorship placement from their workspaces.
 
 ### Scenario: administrator suspends or restores an account
 
@@ -94,13 +99,13 @@ Given an administrator configures a platform team member\
 When one or more management responsibilities are enabled\
 Then navigation shows only the matching management areas\
 And every page, query, mutation, file read, and review command independently enforces the same permission server side\
-And Customer permission governs accounts and client profiles, Operations governs trucks, routes, network, shipments, and capacity, Trust governs documents and ratings, Billing governs plans and payment state, and Support governs customer conversations\
+And Customer permission governs accounts and client profiles, Operations governs trucks, Drivers, regular service, Tracking, and capacity, Trust governs documents and ratings, Billing governs plans and payment state, and Support governs customer conversations\
 And only an administrator can create team members, change their permissions, or grant administrator authority\
 And permission changes take effect on the next authorized request and are audited.
 
 ## Contract ownership
 
-- Page: `/admin/operations`
+- Pages: `/admin/operations` and `/admin/featured`
 - Application services: admin inventory and activation functions in `src/lib/repository.js`
 - Inbound adapter: `/api/admin/records/[type]/[id]`
 - Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`

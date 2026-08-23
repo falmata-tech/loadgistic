@@ -32,14 +32,14 @@ When it validates and stores the upload\
 Then the file's actual signature agrees with its permitted MIME type\
 And the database stores an opaque private-storage reference rather than a public URL\
 And every download rechecks domain authorization before reading that reference\
-And production requires a private Supabase Storage backend while local development may use an isolated filesystem directory.
+And every runtime uses a private Supabase Storage bucket, with local development using the isolated local Supabase stack.
 
 ### Scenario: production readiness reports blockers truthfully
 
 Given health traffic reaches a production runtime\
 When durable database, private storage, session secret, or upload-scanning configuration is incomplete\
 Then readiness returns an unhealthy response with non-secret blocker names\
-And it never labels the local SQLite adapter as a scalable Supabase deployment.
+And it never falls back to SQLite or local serverless files when Supabase is unavailable.
 
 ### Scenario: schema rollout
 
@@ -52,7 +52,7 @@ And application compatibility across the rollout window is documented.
 
 Given Playwright starts the application for a browser suite\
 When the suite initializes its runtime\
-Then it resets and uses a dedicated test database on a dedicated port\
+Then it resets and uses a dedicated local Supabase project on dedicated ports\
 And it does not reuse a running development server or its business records\
 And its generated Next.js artifacts are isolated from both the live development server and production build output.
 
@@ -71,15 +71,26 @@ When the production Docker image is built\
 Then a multi-stage build produces the Next.js standalone artifact\
 And the runtime image runs as a non-root user with only required production files\
 And `/api/health` is the container health check\
-And local persistent data or upload directories are mounted explicitly rather than baked into the image.
+And PostgreSQL/Auth/Storage remain external Supabase services rather than files baked into or mounted beneath the application image.
 
 ### Scenario: cloud handoff is explicit
 
-Given the owner is preparing Vercel and Supabase\
+Given the owner is preparing Netlify and Supabase\
 When project credentials become available\
 Then documentation names every required non-secret variable, migration command, private bucket, callback URL, CI check, backup, and smoke test\
+And the public browser credential is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` consistently in source, examples, and Netlify\
 And secret values are entered in the deployment platforms rather than committed\
-And Vercel or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and upload scanning contracts pass.
+And Netlify or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and upload scanning contracts pass.
+
+### Scenario: zero-cost pilot has explicit capacity boundaries
+
+Given the owner has selected the Netlify Free and Supabase Free plans for the first commercial pilot\
+When the release is prepared\
+Then production deploy frequency, bandwidth, web requests, function compute, database size, storage, egress, authentication, Realtime connections, and email delivery are monitored against their hard free-plan limits\
+And Preview deploys carry validation traffic before a bounded Production promotion\
+And the operator maintains encrypted off-platform logical database backups because the Supabase Free plan has no downloadable automatic backups\
+And the application presents a truthful temporary-unavailable state if either provider pauses service rather than falling back to local serverless files or SQLite\
+And the deployment contract remains portable to Vercel Pro or a container host without changing domain behavior.
 
 ### Scenario: dependency posture is current and deliberate
 
@@ -89,9 +100,18 @@ Then the lockfile has no high-severity advisories\
 And Next.js runs on an Active or Maintenance LTS line\
 And major framework upgrades are not mixed into launch stabilization without their own migration evidence.
 
+### Scenario: growth evidence uses disposable supply-only data
+
+Given production is expected to serve thousands of providers and trucks\
+When scale readiness is evaluated\
+Then a disposable non-Production database generates at least five thousand current supply records without restoring retired demand entities\
+And bounded public-query latency and payload size are recorded\
+And a six-times CPU-throttled phone workflow proves the Map does not drain cursor pages in the background\
+And generated identities, capacity, files, and reports are never written to Production or committed as customer data.
+
 ## Contract details
 
-`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable SQLite fixture and a non-development port. `PrivateStoragePort` stores, reads, and removes opaque private references. `LaunchReadiness` distinguishes a locally runnable build from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
+`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable local Supabase project and non-development ports. `PrivateStoragePort` stores, reads, and removes opaque private references. `LaunchReadiness` distinguishes a locally runnable Supabase stack from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
 
 ## Required verification
 
@@ -99,3 +119,4 @@ And major framework upgrades are not mixed into launch stabilization without the
 - `src/app/api/health/route.ts`
 - `npm run quality`
 - `npm run build`
+- `npm run db:stress && npm run test:scale`

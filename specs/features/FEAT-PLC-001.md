@@ -23,9 +23,10 @@ And the source PBF remains an ignored local build input.
 ### Scenario: search a large place catalog
 
 Given the local catalog contains many settlements\
-When a signed-in user enters at least two characters in a route or general-area input\
+When a signed-in user or public Truck Market visitor enters at least two characters in a route or general-area input\
 Then the server returns a bounded relevance-ordered result set\
 And the page does not render the entire catalog in HTML\
+And public Market place suggestions do not require an account\
 And no third-party request or API key is required.
 
 ### Scenario: local search preserves locality hierarchy

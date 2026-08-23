@@ -3,7 +3,7 @@ id: FEAT-DAT-001
 title: Supply-first local development dataset
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
 problem: Public capacity discovery needs enough realistic provider and truck variation to test cursor loading, clustering, provider pages, and responsive layouts without retaining obsolete demand fixtures.
-behavior: Every non-Production local database receives a deterministic supply-only market with fleet providers, self-managed owner-operators, varied current radius/corridor capacity, and up to two regular corridors per provider; legacy demand, future-trip, regular-area, Business-account, and relationship fixtures are purged.
+behavior: Every non-Production local database receives a deterministic supply-only market centered on city and town freight: courier motorcycles, courier cars, cargo vans, conventional pickups, stake-body pickups, and all mini-truck configurations form about 70 percent of active capacity, light-duty trucks are the next-largest group, and only occasional medium or heavy trucks carry longer road corridors. The 70-percent local-delivery cohort stays within 30 kilometres of its base through road-connected town routes or compact multi-place operating polygons. Each provider retains one regular Service area or Capacity route; legacy demand, future-trip, Business-account, and relationship fixtures are purged.
 contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge]
 observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure]
 rollout: The dataset is deterministic and local-only; production execution of reset or fixture commands remains denied. Rollback restores a pre-migration database backup, not retired demand fixtures.
@@ -16,18 +16,51 @@ rollout: The dataset is deterministic and local-only; production execution of re
 Given the process is not running in Production\
 When a fresh local database is initialized or reset\
 Then it contains 30 published provider pages across nine fleet companies and 21 self-managed provider profiles\
-And it contains 47 active current-capacity signals with Empty, Partial, radius, and corridor variation\
-And each provider has two regular corridors while no provider has more than two\
-And Empty and Partial both include radius and corridor examples\
-And every current corridor has both labels and coordinate pairs\
+And it contains 143 active current-capacity signals with Empty, Partial, Service-area, and Capacity-route variation\
+And 100 of those 143 trucks are courier motorcycles, courier cars, cargo vans, conventional pickups, stake-body pickups, or mini trucks, with every local-delivery configuration represented\
+And the remaining cohort contains 28 light-duty trucks, 13 medium trucks, and two heavy trucks\
+And medium and heavy trucks remain occasional rather than visually dominating the Market\
+And independent Owner-operator and Self-managed driver provider records outnumber fleet-transporter provider records\
+And every current truck resolves to one visible Company driver, Owner-operator, or Self-managed driver identity with deterministic public callback and document-category status\
+And each provider has one regular-service signal while no provider has more than one\
+And regular Service areas and regular Capacity routes are both represented\
+And each regular signal is related to the provider's approximate current truck location\
+And every seeded regional base has at least nine current trucks, including multiple local-delivery vehicles and both Empty and Partial capacity\
+And Empty includes both Service-area and Capacity-route examples while Partial appears only on a Capacity route\
+And every current Capacity route has ordered labels and coordinate pairs\
 And the reset summary contains counts but no credentials, access codes, private messages, or file contents.
+
+### Scenario: local-delivery vehicles stay within 30 kilometres
+
+Given the deterministic capacity cohort contains a courier motorcycle, courier car, cargo van, pickup, or mini truck\
+When its current or regular capacity geography is generated\
+Then a Service area is centered on the truck's city or town and uses no more than a 30 kilometre working range\
+And every named boundary city, town, village, or urban edge remains within 30 kilometres of that center, allowing only a small coordinate tolerance\
+And a Capacity route begins in, ends in, or passes immediately beside that truck's approximate current city\
+And the route uses a concise sequence of road-connected nearby cities or towns rather than crossing unrelated regions\
+And the total straight-line distance across its ordered legs does not exceed 30 kilometres.
+
+### Scenario: light-duty trucks serve the wider local network
+
+Given the deterministic capacity cohort contains a light-duty truck\
+When its current or regular capacity geography is generated\
+Then a Service area may use a 20, 50, 70, or 100 kilometre working range\
+And a Capacity route remains a concise road-connected local sequence whose ordered legs total no more than 100 kilometres and contain no leg longer than 80 kilometres.
+
+### Scenario: occasional larger trucks demonstrate regional corridors
+
+Given the deterministic cohort contains a medium or heavy truck\
+When route-based capacity is generated\
+Then the route may use a longer multi-city Ethiopian freight corridor\
+And every city follows a plausible road sequence that begins in, ends in, or passes immediately beside the truck's approximate current city\
+And intermediate cities clarify the road path without manufacturing unnecessary stops.
 
 ### Scenario: public cursors reach every signal once
 
 Given the deterministic capacity cohort\
 When anonymous discovery follows cursor pages to the end\
-Then all 47 eligible capacity signals are returned exactly once\
-And fleet and owner-operator profiles, current radius, current corridor, and regular-corridor signals are represented\
+Then all 143 eligible capacity signals are returned exactly once\
+And fleet and owner-operator profiles, current Service areas, current Capacity routes, and both regular-service geometries are represented\
 And expired, Off Duty, and unpublished signals remain excluded.
 
 ### Scenario: demand fixtures are removed

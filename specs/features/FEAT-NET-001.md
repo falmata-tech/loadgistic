@@ -25,7 +25,17 @@ When the service evaluates it\
 Then no relationship changes\
 And the response directs discovery to public capacity where appropriate.
 
+### Scenario: provider Network remains a separate access-control feature
+
+Given an authorized provider opens `/app/network`\
+When the current page is resolved\
+Then it manages only truck-scoped Private capacity access under `FEAT-SHR-001`\
+And it does not read, restore, or mutate a Favorite, partner relationship,
+request, or demand-side member network.
+
 ## Contract ownership
 
 - Compatibility adapters and authorization tests
-- Tests: capacity-market and E2E redirects
+- Retired compatibility endpoint: `/api/network`
+- Current truck-scoped provider page: `/app/network` under `FEAT-SHR-001`
+- Tests: capacity-market, authorization, and E2E

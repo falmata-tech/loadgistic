@@ -1,21 +1,21 @@
 ---
 id: FEAT-IAM-001
-title: Local identity, sessions, and role access
+title: Identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
 behavior: Valid active provider users receive a signed HTTP-only session and role-scoped workspace access. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
 contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
-rollout: Keep local auth demo-only; migrate to managed identity before public production launch.
+rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
 ---
 
 # Identity and access
 
-### Scenario: active demo user logs in
+### Scenario: active provider logs in
 
-Given an active seeded user and the correct password\
+Given an active seeded local-Supabase user or managed Production user and the correct password\
 When the user submits the login form\
-Then a signed HTTP-only SameSite session cookie is set\
+Then Supabase Auth establishes an SSR-compatible HTTP-only session\
 And the response redirects relatively to `/app/home` on the current origin.
 
 ### Scenario: invalid or inactive account
@@ -24,6 +24,15 @@ Given an unknown email, wrong password, or suspended account\
 When login is attempted\
 Then no session is created\
 And a generic credential error is returned without revealing account state.
+
+### Scenario: managed browser sessions use the SSR boundary
+
+Given any Loadgistic browser runtime\
+When a browser creates, refreshes, or clears an identity session\
+Then the browser and server use the publishable Supabase key through the SSR cookie adapter\
+And request middleware refreshes expiring session cookies without exposing the service-role key\
+And authorization trusts a server-validated `auth.getUser()` result mapped to an active Loadgistic role projection rather than unverified browser metadata\
+And missing configuration or a missing role projection denies workspace access instead of falling back to local authentication.
 
 ### Scenario: role access is denied
 
@@ -54,10 +63,22 @@ When they open a public provider page or revisit the login route\
 Then the public navigation offers a return to their workspace\
 And the login route redirects them to `/app/home` without requesting credentials again.
 
+### Scenario: public account navigation follows session state
+
+Given the shared public navigation is rendered\
+When no valid session exists\
+Then it shows Transporter login and does not show Dashboard or a separate signup destination\
+And the login page offers the transporter-account signup action.
+
+Given the shared public navigation is rendered\
+When a valid provider session exists\
+Then Dashboard replaces Transporter login\
+And neither login nor signup is shown as another public-navigation destination.
+
 ### Scenario: anonymous access is projection-bound
 
 Given no valid session exists\
-When a visitor requests the public Capacity Board, provider Directory, published microsite, or code-entry Track page\
+When a visitor requests the public Truck Market, published provider microsite, or code-entry Track page\
 Then the explicit public projection is returned without login\
 And private workspace rows, hidden contacts, exact coordinates, party emails, assignments, code digests, and proof files are absent\
 And requesting any provider operating page still redirects safely to login.
@@ -76,19 +97,21 @@ When any profile or directory view is rendered\
 Then those values are never used as public contact fallbacks\
 And public contact fields are maintained separately with explicit profile intent.
 
-### Scenario: authenticated workspace is installable
+### Scenario: public and authenticated surfaces are installable
 
-Given a supported mobile browser opens Loadgistic over a secure origin\
+Given a supported mobile browser opens public or authenticated Loadgistic over a secure origin\
 When the browser evaluates the web app manifest and service worker\
-Then the workspace can be installed in standalone display mode\
+Then Loadgistic can be installed in standalone display mode and launches at the public Truck Market workspace\
 And its manifest, browser favicon, Apple touch icon, and installable icons use the current Loadgistic brand mark\
+And manifest shortcuts expose `/`, `/featured`, `/track`, and the transporter workspace as distinct application destinations\
 And authenticated application pages remain network-first rather than being persisted in a shared offline page cache\
 And first installation does not reload a login or application form while the user is entering data\
+And the service-worker script is served with no-store update headers and a self-only script policy\
 And the service worker does not cache Next.js executable chunks, preventing a framework upgrade from combining stale and current runtime modules.
 
 ## Contract ownership
 
 - Inbound adapters: `src/app/login/page.tsx`, public capacity/provider/track pages, workspace pages, `src/app/api/auth/*`
-- Application boundary: `src/lib/auth.ts`, repository user lookups
-- Outbound adapter: signed cookie and SQLite user store
+- Application boundary: `src/lib/auth.ts`, repository user lookups, managed-identity projection
+- Outbound adapters: Supabase SSR browser/server clients and Auth in local development, tests, Preview, and Production
 - Tests: `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`

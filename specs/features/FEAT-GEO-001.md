@@ -3,10 +3,10 @@ id: FEAT-GEO-001
 title: Privacy-aware public capacity geography
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001, FEAT-MAT-001]
 problem: Capacity seekers need to understand nearby and route-based truck availability without exposing an exact Driver or visitor position.
-behavior: Empty or Partial capacity uses either a radius or corridor. Drivers obscure device location before publication, the selected signal always shows a separate approximate-location circle sized by the Driver's accuracy, and each provider may publish up to two regular corridors.
-contracts: [AvailabilityGeometry, CurrentRadiusArea, CurrentCorridor, RegularCorridor, VisitorSearchArea, TruckPrivacyCircle, PublicCapacityGeography, GeographicMatch]
+behavior: Empty capacity uses either a Service area or Capacity route, while Partial capacity uses a Capacity route only. Drivers obscure device location before publication, the selected signal always shows a separate approximate-location circle sized by the Driver's accuracy, and each provider may publish one regular Service area or Capacity route.
+contracts: [AvailabilityGeometry, CurrentRadiusArea, CurrentCorridor, RegularCapacitySignal, VisitorSearchArea, TruckPrivacyCircle, PublicCapacityGeography, GeographicMatch]
 observability: [geographic_match_kind, visitor_location_consent_outcome, bounded_geography_query, public_map_open]
-rollout: Reuse structured place references and current radius/corridor fields, remove future-trip and regular-area storage, prune regular corridors deterministically to two per provider, and keep location-based ranking disabled until projection and privacy tests pass.
+rollout: Reuse structured place references, prune pre-customer regular records deterministically to one per provider, add regular geometry fields, rebuild demo signals near current truck locations, and keep location-based ranking disabled until projection and privacy tests pass.
 ---
 
 # Public capacity geography
@@ -15,9 +15,12 @@ rollout: Reuse structured place references and current radius/corridor fields, r
 
 Given an authorized Driver publishes current capacity\
 When availability geography is selected\
-Then Empty or Partial chooses Available in a radius or Available on a corridor\
+Then Empty chooses Available in a Service area or Available on a Capacity route\
+And Partial chooses Available on a Capacity route only\
 And the choice is independent from the approximate current-location controls\
-And immediate radius and route signals do not require a date.
+And immediate Service-area and Capacity-route signals do not require a date\
+And an Empty current Service area or Capacity route is green while a Partial current Capacity route is yellow\
+And geometry shape, status text, and the map key communicate the same state without relying on color alone.
 
 ### Scenario: current radius uses a Driver-obscured position
 
@@ -27,24 +30,24 @@ Then the exact device coordinate is displaced in the browser before submission\
 And only the displaced center, chosen privacy radius, safe general-area label, and timestamp are stored\
 And the public map always shows a violet privacy circle sized by that chosen accuracy\
 And all user-facing copy names that circle the Approximate current location or Approximate location radius rather than exposing the internal privacy-control term\
-And radius availability adds a separate green working circle\
+And Empty Service-area availability adds a separate green hollow working polygon whose interior does not block route interaction\
 And Fleet owners may preserve but cannot replace that Driver location with their own device position.
 
-### Scenario: current corridor uses structured endpoints
+### Scenario: current Capacity route uses structured points
 
-Given the Driver selects corridor availability\
-When origin and destination are saved\
-Then both are selected from the reviewed place catalog\
-And the public map shows a yellow route relationship with direction\
+Given the Driver selects Capacity-route availability\
+When two to five ordered route points are saved\
+Then every point is selected from the reviewed place catalog\
+And the public map shows a green Empty or yellow Partial route relationship with direction\
 And no travel date is requested or inferred.
 
-### Scenario: regular corridors are clearly labeled and limited
+### Scenario: regular service is clearly labeled and limited
 
-Given a provider records regular service corridors\
+Given a provider records regular service\
 When they are published on the Capacity Board or microsite\
-Then up to two structured two-way corridors appear as undated blue dashed relationships\
-And each relationship is presented as Place A ↔ Place B on cards, summaries, and provider pages\
-And the user-facing label states Regular corridor plus Confirm availability\
+Then no more than one undated regular Service area or structured two-way Capacity route appears\
+And a route is presented as its complete ordered Place A ↔ Place B sequence while an area names its center and surrounding cities\
+And the user-facing label states Regular service area or Regular capacity route plus Confirm availability\
 And it is not represented as a currently located truck.
 
 ### Scenario: visitor location is optional and client-private
@@ -72,21 +75,27 @@ And no live tile map is instantiated inside each card.
 
 When the visitor opens Map view or a card map action\
 Then one shared map is loaded on demand and synchronized with the current filtered feed\
-And violet approximate location, green current radius, yellow current corridor, and blue dashed regular corridor use shape, line style, icon, and text in addition to color\
+And its initial framing remains focused on Ethiopia while public and provider views may be panned only within a practical East Africa envelope\
+And violet approximate location, status-colored current Service area or Capacity route, and blue regular service use shape, line style, icon, and text in addition to color\
 And selecting a truck removes other truck markers and clusters until the selected card is closed\
-And the selected marker remains visually distinct and above its signal layers at every fitted zoom while the adjacent information card carries its label and details.
+And the selected marker remains visually distinct and above its signal layers at every fitted zoom while a compact in-map information window carries its essential truck actions\
+And hovering or focusing one signal shows a temporary readable light-surface explanation with a restrained neutral border and signal-matched accent\
+And clicking or pressing a signal pins the explanation until it is dismissed or another map target is chosen\
+And clicking or pressing one signal pins only that signal's compact explanation until it is dismissed or another signal is chosen\
+And overlapping current and regular Capacity routes use small opposite visual offsets without changing their stored cities so each remains independently selectable\
+And Service-area and approximate-location interiors remain non-interactive while their wide outlines remain available to pointer and keyboard users.
 
 ### Scenario: legacy geography is migrated honestly
 
 Given older capacity has Local, Long-distance, Both, dated Empty route, or preferred-route fields\
 When compatibility projection runs\
-Then resolvable active data maps to the closest current radius, current corridor, or regular-corridor concept\
+Then resolvable active data maps to the closest current Service area, current Capacity route, or regular-service concept\
 And obsolete Board fields are hidden\
 And unresolved data stays preserved for rollback without inventing coordinates or publication.
 
 ## Contract ownership
 
 - Domain: radius, route, direction, displacement, overlap, and expiry rules
-- Persistence: current capacity, up to two regular corridors, and structured location fields
+- Persistence: current capacity, one regular Service area or Capacity route, and structured location fields
 - Frontend: provider editor, public Capacity Board filters, cards, and one shared map
 - Tests: domain, repository, authorization, E2E, and visual audit

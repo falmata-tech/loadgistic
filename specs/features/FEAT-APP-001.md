@@ -3,8 +3,8 @@ id: FEAT-APP-001
 title: Immediate transport-provider signup
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001]
 problem: Transport providers need low-friction operating accounts while capacity seekers should browse and track without being forced to register.
-behavior: A public user signs up as a Fleet Transporter or Self-managed Driver / Owner-Operator; the active provider workspace and seven-day trial are provisioned atomically. Capacity-seeker signup is absent, and signup never implies document verification.
-contracts: [SignupCommand, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
+behavior: A public user signs up as a Fleet transporter, Owner-operator, or Self-managed driver; the selected operating model, active provider workspace, and seven-day trial are provisioned atomically. Capacity-seeker and company-Driver signup are absent, and signup never implies document verification.
+contracts: [SignupCommand, SignupOperatingModel, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
 observability: [signup_audit, workspace_provisioned, trial_provisioned, rate_limit_outcome]
 rollout: Monitor failed signups and transactional provisioning errors; retain immutable signup records without an administrator application queue.
 ---
@@ -23,7 +23,11 @@ And the user can log in immediately.
 
 Given an applicant opens the application form\
 When they choose an account type\
-Then Fleet Transporter and Self-managed Driver / Owner-Operator are the only account choices\
+Then Fleet transporter, Owner-operator, and Self-managed driver are three separate account choices\
+And Fleet transporter describes a transport company or fleet\
+And Owner-operator describes an independent Driver using a truck they own\
+And Self-managed driver describes an independent Driver using another owner's truck with authorization\
+And Company driver is not a public signup choice because the employing fleet creates and identifies that account\
 And a capacity seeker is directed to browse capacity or track a shipment without an account\
 And no Business or additional provider category is available.
 
@@ -32,7 +36,7 @@ And no Business or additional provider category is available.
 Given a supported provider account type\
 When signup succeeds\
 Then a Fleet Transporter receives a transporter organization workspace\
-And a Self-managed Driver receives an independent provider profile\
+And an Owner-operator or Self-managed driver receives an independent provider profile with the selected operating model retained on the signup record\
 And no identity, license, driver, or truck verification is inferred from signup.
 
 ### Scenario: signup is atomic

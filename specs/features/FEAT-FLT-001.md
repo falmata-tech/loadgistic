@@ -43,6 +43,8 @@ When one driver is expanded for management\
 Then the interface presents Driver identity first, current truck assignment second, allowed work third, and one save action last\
 And the truck selector contains only active trucks owned by that transporter\
 And an explicit unassigned choice is available\
+And Allowed work contains only Capacity updates and Tracking updates\
+And retired Shipment Board, Business-contact, and demand-negotiation permissions are neither shown nor accepted as active authority\
 And ownership and active-state checks are repeated at the service boundary.
 
 ### Scenario: permitted company Driver operates assigned work
@@ -52,6 +54,23 @@ When the Driver opens the assignment or records the next permitted tracking even
 Then only the customer-safe shipment facts required for operation are returned\
 And the action is recorded for the provider organization with the Driver as actor\
 And the fleet owner can see the assignment and tracking history.
+
+### Scenario: company Driver identity retains its employer
+
+Given an authenticated Driver belongs to a fleet transporter\
+When workspace navigation, Account, or Verification presents that identity\
+Then the role is labelled Company driver rather than Self-managed driver\
+And the employing fleet transporter name is displayed with the workspace identity.
+
+### Scenario: every fleet Driver owns a verification step
+
+Given a fleet owner adds an active Company driver and assigns one truck\
+When either the owner or that Driver opens Verification\
+Then that Driver has a distinct Driver subject for National ID and Driver license\
+And Truck authorization is submitted for that exact Driver and assigned-truck pairing with an expiry date\
+And the fleet owner can see the Driver's category-level verification status without receiving a public proof-file URL\
+And the Driver may submit their own evidence from their workspace\
+And missing evidence does not hide the assigned truck or prevent the Driver from appearing publicly.
 
 ### Scenario: company driver restrictions are enforced at the service boundary
 
@@ -83,12 +102,13 @@ When it uses capacity, duty, provider shipment, assignment, or tracking workflow
 Then it has the full provider authority defined by the related feature specs\
 And no fleet-owner permission record can reduce that authority.
 
-### Scenario: Driver can inspect market capacity from the dashboard
+### Scenario: Driver can reach the canonical public Truck Market
 
 Given an authenticated company or self-managed Driver is inside the workspace\
-When the Driver chooses Capacity market\
-Then the same provider-controlled public Map/List projection opens at `/app/capacity` without exposing any field hidden from the public Capacity Board\
-And Exit dashboard returns to the public Capacity Board without ending the authenticated session.
+When the Driver chooses Truck Market or follows a retired authenticated Capacity-market address\
+Then the canonical public Truck Map workspace opens at `/` without exposing any field hidden from the public projection\
+And the retired `/app/capacity` routes redirect instead of rendering a duplicate market\
+And Dashboard returns to the authenticated workspace without requiring a new login.
 
 ## Contract ownership
 

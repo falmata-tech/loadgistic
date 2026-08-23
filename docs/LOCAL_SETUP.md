@@ -17,7 +17,7 @@ Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds us
 - 30 published provider pages;
 - nine fleet companies and 21 self-managed provider profiles;
 - 47 active current-capacity signals;
-- exactly two regular corridors for each of the 30 published providers in the standard fixture;
+- exactly one regular Service area or Capacity route for each of the 30 published providers in the standard fixture;
 - no Business/capacity-seeker accounts, shipment-demand rows, network relationships, or Business reviews.
 
 ## Base provider fixtures
@@ -51,3 +51,4 @@ Run `npm run test:ui-audit` only after explicit approval and while the developme
 - Empty/stale local market: run `npm run db:reset` only if replacing the local database is intended.
 - Map remains blank: confirm the response CSP allows both `tile.openstreetmap.org` and its subdomains, and inspect browser console tile errors.
 - Completion email remains queued: configure `LOADGISTIC_EMAIL_WEBHOOK_URL`; an unconfigured adapter does not pretend delivery succeeded.
+- Shared capacity access in local development shows an eligible recipient a clearly labeled local test code when `LOADGISTIC_EMAIL_WEBHOOK_URL` is absent. Production never returns OTP plaintext to the browser. The email must first have an active truck share in the provider Network.

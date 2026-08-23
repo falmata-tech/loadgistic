@@ -8,6 +8,8 @@ The application uses Next.js App Router on Node.js. This corrects the prior bare
 
 Use Node's built-in SQLite for deterministic offline persistence. Keep all persistence behind repository functions and include a Supabase PostgreSQL/RLS target. SQLite remains a local and test adapter; public production remains blocked until repository and identity parity are proven against Supabase.
 
+Superseded by ADR-041. The historical adapter remains only long enough to support the reviewed migration; it is not an accepted application runtime after PostgreSQL cutover.
+
 ## ADR-003 — One canonical shipment
 
 A request, load, and operating shipment use one record. UI terminology changes by workflow stage, but data is not copied into a second entity.
@@ -44,9 +46,9 @@ The browser suite uses one worker because both viewport projects intentionally e
 
 ## ADR-011 — Driver home and temporary load proof
 
-Self-managed drivers land on their truck capacity control panel. Fleet Transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Driver navigation opens the same Map-first, provider-controlled public Capacity market inside the authenticated shell; it never reveals fields hidden from the public projection. Freight shipments use the same FTL/PTL language as capacity. Shipment-size proof is separate from operational shipment proof and is granted to one recorded interest at a time, reauthorized on every read, and expires after a configured temporary window (48 hours by default).
+Self-managed Drivers land on their truck capacity control panel. Fleet transporters land on a company management dashboard and update truck capacity inside My Fleet, where every update remains attached to one real vehicle. Authenticated workspaces do not render a duplicate Capacity Market: Truck Market and Daily Featured Transporters use their canonical public routes while the active session is preserved. Retired `/app/capacity` addresses redirect to `/`. Driver Home remains the provider's map-centered capacity-management workspace.
 
-Tracking is a load-level Business choice: Status timeline or Automatic location + status. The assigned Driver's screen publishes throttled obscured device-location events while it is open; there is no manual tracking-location fallback or save action. One ordered action panel always shows Loading, En route, Unloading, Complete, and Problem, disabling actions that are not yet valid. Unloading and Problem are both valid while En route; after Unloading, Complete is valid and Problem is not. Loading, En route, Unloading, and Problem accept optional inline proof. A Business party may reduce tracking to Status timeline. Exact browser geolocation is obscured before submission: 20 km for FTL and 40 km for PTL.
+Tracking is chosen when the provider creates a session: Status only or Status and approximate location. One ordered action panel shows Going to pickup, Loading, En route, Unloading, Complete, and Problem, disabling invalid actions. Loading, Unloading, and Problem accept one optional image; the travel and completion actions do not. For a location-enabled session, only the assigned Driver may submit a browser-obscured point, only during Going to pickup or En route, and at most once every ten minutes except an explicit retry. The customer map exposes the chosen uncertainty radius and never the exact device coordinate; leaving a travel state immediately removes location from the guest projection.
 
 ## ADR-012 — Visual trucks and staged contact disclosure
 
@@ -154,7 +156,10 @@ uses the subscription attached to its provider profile. Administrators remain
 outside subscription enforcement.
 
 Successful self-service signup atomically creates an active workspace and starts
-a seven-day trial. Verification is not an activation gate. An administrator may
+a seven-day trial. Signup separately records Fleet transporter, Owner-operator,
+or Self-managed driver so the workspace can request Truck ownership or Truck
+authorization correctly. Company drivers are created by their named fleet and
+are not a public signup type. Verification is not an activation gate. An administrator may
 separately grant continuing sponsored access to a qualifying starting Business
 from Operations; transporter categories cannot receive that decision. Standard
 plan prices remain undisclosed until the commercial schedule is accepted. A
@@ -331,8 +336,10 @@ and treat `/api/health` HTTP 200 as liveness only. GitHub validates the same
 container definition in a read-only `container` job in addition to quality,
 build, and Playwright checks.
 
-Do not claim that Vercel environment values or Supabase migrations implement a
-cloud data adapter. Public production remains blocked until the PostgreSQL
+Do not claim that Netlify environment values or Supabase migrations implement a
+cloud data adapter. Netlify Free is the bounded commercial-pilot runtime;
+GitHub CI still produces the standalone Docker image as a reproducibility and
+host-portability artifact. Public production remains blocked until the PostgreSQL
 repository, managed identity, shared rate limiting, malware scanning, backup,
 restore, and monitoring contracts pass. The credential-free handoff names the
 required variables and operator steps without storing their values.
@@ -354,9 +361,10 @@ assigned parties.
 
 Verification badges describe narrow evidence rather than general trust.
 Organizations require National ID, Business license, and Business address;
-Drivers require National ID and Driver license. Truck authorization attaches to
-one Driver-truck pairing and requires an expiry. An expired approval is not a
-current Verified badge. Category color makes the evidence inviting to inspect,
+independent and company Drivers require National ID and Driver license. An
+Owner-operator submits Truck ownership for each owned truck. A Self-managed or
+Company driver's Truck authorization attaches to one Driver-truck pairing and
+requires an expiry. An expired approval is not a current Verified badge. Category color makes the evidence inviting to inspect,
 but every badge retains text, icon, scope, status, review date, and expiry.
 Private documents remain owner/admin-only, and marketplace notices require
 members to perform their own current checks before an agreement.
@@ -388,10 +396,11 @@ Duty hides only the current signal. Compatibility logic maps resolvable legacy
 fields to the closest current provider-capacity concept without inventing
 coordinates. Unresolvable route geometry becomes radius availability.
 
-Public discovery uses deterministic opaque cursor pages of 12 through 16 items,
-infinite append, and an accessible Load more control. Cards stay lightweight.
-List and Map are peer views, but only one shared map client and tile layer load
-on demand; a card action selects that record on the shared map. Exact visitor
+Public discovery uses deterministic opaque cursor pages of 12 through 16 items.
+The secondary List presents one explicit page at a time with accessible Previous
+and Next controls, while the primary Map may progressively append bounded pages.
+Cards stay lightweight. Only one shared map client and tile layer load on demand;
+a card action selects that record on the shared map. Exact visitor
 coordinates remain in browser memory and the server receives only a separately
 displaced search point. Exact Driver coordinates are displaced in the browser
 before submission. Public projections expose uncertainty circles and structured
@@ -438,20 +447,35 @@ query-preserving compatibility redirect. This removes competing public market
 pages while preserving existing links. The shared Map is the default view and
 List is secondary. On hydration the Board requests browser location; success
 centers a regional view around the visitor while denial preserves the whole
-market and exposes a retry action. The map is bounded to Ethiopia with a closer
-minimum zoom. Unclustered markers use pointed location-pin shapes, reuse the
-existing cargo-configuration artwork, and show green Empty or bright-yellow
-Partial tags plus text. A circular meter surrounding the image is a complete
-green ring at 100 percent available, then shortens and shifts through yellow
-and orange toward red as space falls; route and radius meaning remains in
-geometrically distinct overlays and the legend.
+market and exposes a retry action. The map keeps an Ethiopia-focused initial
+view while bounded panning allows practical East Africa context without opening
+Africa or the world. Unclustered markers use pointed location-pin shapes, reuse
+the existing cargo-configuration artwork, and show a complete green Empty ring
+or complete bright-yellow Partial ring plus text. Public markers and filters do
+not display or evaluate remaining-space percentages; route and area meaning
+remains in geometrically distinct overlays and the legend.
 A selected map signal is a temporary
 focus mode: all unrelated truck markers and clusters are removed, one visually
 distinct selected marker stays above its layers without a redundant permanent
 text label, the adjacent card carries its identity and details, and automatic bounds include only the
-current privacy area plus current radius or route. The selected-card × control
-closes focus and restores the full clustered market. The selected information
-card uses a compact responsive grid without an internal scroll region.
+current privacy area plus current radius or route. On wide screens that card uses
+a dedicated right rail and the Leaflet canvas narrows and recalculates its size;
+on narrow screens it follows below the full-width map. The selected-card × control
+closes focus, expands the map, and restores the full clustered market. The selected
+information card uses a compact responsive grid without an internal scroll region.
+Within focus mode, the approximate-location circle, current Service area or Capacity route,
+and the provider's one regular-service signal are interactive map facts. Their visible strokes are
+wide enough to target, their branded summaries open on pointer hover or keyboard
+focus, and each readable light-surface summary uses a restrained neutral border,
+signal-color accent, and complete concise explanation without a thick dark frame.
+Pointer selection does not open a second map card.
+
+The always-available Market search offers current Transporter and Truck
+suggestions after meaningful input. Transporter selection uses the canonical
+handle so similarly named providers cannot mix; truck selection uses the public
+capacity identifier and reopens that exact truck in map focus. Public header
+navigation links directly to Daily Featured Transporters without adding a
+separate provider directory.
 
 Treat location refresh as a state-changing workflow. Visitor success must show
 the browser-only point and nearby evidence. Driver success must persist the
@@ -475,41 +499,301 @@ separate review code. The shareable Tracking code cannot authorize review. The
 existing 30-day post-completion guest expiry and durable
 provider history remain.
 
-Restore the compact ordered Tracking action panel: Loading, En route,
-Unloading, Complete, and Problem remain visible together and invalid actions
-are disabled. Only Loading, Unloading, and Problem show one optional image
-field. Provider workspace navigation calls this capability Tracking rather than
-Customer shipments.
+Use the compact ordered Tracking action panel: Going to pickup, Loading, En
+route, Unloading, Complete, and Problem remain visible together and invalid
+actions are disabled. Only Loading, Unloading, and Problem show one optional
+image field. Provider workspace navigation calls this capability Tracking.
 
-Keep one saved-capacity console as the Driver's primary view. Its map-centered
-summary includes current status and geometry, the truck's next trip,
-provider-level recurring service, and location privacy. Current status,
-geometry, next trip, and recurring service open their own focused editors;
-there is no detached future-planning section. A high-contrast labeled marker
-keeps the privacy-obscured truck area visible above overlapping circles and
-routes. Location refresh and privacy
-accuracy save directly beneath the summary map. Provider microsite colors,
+Keep one saved-capacity console as the Driver's primary view. The map keeps four
+reserved control zones: selected truck at top left, capacity-edit rail at top
+right, the visible map key at bottom left, and approximate-location accuracy
+plus refresh at bottom right. Current capacity, geography, and regular service
+open their own focused editors; there is no detached future-planning section. A
+high-contrast marker and short Truck area label keep the privacy-obscured truck
+area visible above overlapping circles and routes. The map key remains visible,
+while automatic refresh adds no notice. The direct location dock changes the
+radius or manually refreshes without entering the capacity editor, and manual
+feedback clears after a short interval. Provider microsite colors,
 hero treatment, and optional video are Loadgistic-controlled presentation;
 providers edit business facts, publication, and independently visible contact
-methods without receiving design controls.
+methods without receiving design controls. A provider-owned, validated profile
+image is the narrow exception: it represents the provider wherever a compact
+identity image is needed, while Loadgistic still controls page theme, hero
+treatment, and introduction video.
 
-## ADR-033 — Current radius/corridor plus two regular corridors
+## ADR-033 — Current Service area/Capacity route plus one regular-service signal
 
 Supersede the future-trip and recurring-working-area portions of ADR-030 and
 ADR-032. Empty and Partial are capacity statuses independent from geography;
-either may publish one current radius or one current structured corridor, and
-neither carries a date. Each provider may separately publish no more than two
-undated regular structured two-way corridors. A regular corridor connects its
-two selected places in both directions, is a market signal, and must say that
-current availability needs confirmation. Reversed duplicates represent the
-same corridor and are rejected.
+either may publish one current structured Service area or Capacity route, and
+neither carries a date. Each provider may separately publish no more than one
+undated regular-service signal. That signal is either a Service area with a
+center and three through five surrounding cities or a two-way Capacity route
+with two through five ordered cities. It is a market signal and must say that
+current availability needs confirmation.
 
 Remove the next-trip and regular-working-area endpoints, projections, controls,
 seed records, and persistence tables. Existing local and cloud data is pruned
 destructively because it is fixture/pre-launch data: future-trip and regular-area
-rows are deleted, while regular corridors are retained newest-first up to two
-per provider. Application commands and database triggers both reject a third
-regular corridor. The public Board, Driver workspace, map key, selected map
-layers, list cards, and provider microsites all use the same simplified model.
-List cards expose both regular corridors without a disclosure control and use a
-two-card desktop grid that collapses to one card per row on narrow screens.
+rows are deleted, while regular-service records are retained newest-first up to
+one per provider and rebuilt from demo geography near a current truck.
+Application commands and database triggers both reject a second signal. The
+public Board, Driver workspace, map key, selected map layers, list cards, and
+provider microsites all use the same model. List cards expose the complete
+regular signal without a disclosure control and use a two-card desktop grid
+that collapses to one card per row on narrow screens.
+
+## ADR-034 — Seven-day Daily Featured Transporters and one public Truck Market
+
+Represent Daily Featured Transporters as an administrator-curated schedule, not a
+ranking or automatic endorsement algorithm. Ethiopia's current 12 regional
+states and two city administrations fit a stable seven-day programme: Monday
+Addis Ababa; Tuesday Oromia; Wednesday Amhara; Thursday Tigray and Afar; Friday
+Somali, Harari, and Dire Dawa; Saturday Sidama, Central Ethiopia, and South
+Ethiopia; Sunday Benishangul-Gumuz, Gambella, and South West Ethiopia. One
+schedule owns one `Africa/Addis_Ababa` calendar date, its fixed weekday group,
+an optional allowlisted TikTok event URL, a variable-length ordered provider
+roster, and one bounded automatic or manual Ethiopia-time day schedule.
+The rotation is a discovery programme, not a political or service ranking.
+
+Eligibility is recalculated at publication and anonymous read time. A fleet
+provider needs its three current organization evidence categories; a
+self-managed provider needs National ID, Driver License, and either approved
+ownership or an unexpired authorization for at least one active truck. Every
+provider also needs a published microsite, one public contact method, one
+structured base place, and a selected base region in the day's group. Vehicle mix and current capacity may enrich a card
+but do not determine membership. An ineligible slot fails closed without
+substituting another provider or place, leaving a visible administrative gap.
+
+The homepage presents the current schedule below one Truck Market. The Market
+has Map/List views of current trucks only; there is no Provider Market,
+provider map, provider list, or Area Market. `/providers` redirects to the same
+Truck Market, and provider-name search returns only that provider's current
+trucks. Daily Featured Transporters uses an always-visible seven-day
+programme and a large responsive provider board whose spacing and hierarchy
+match the Market. The section-level TikTok action opens the daily event; each
+provider portrait leads with the transporter-owned profile image or the Loadgistic default transporter portrait,
+shows only provider-level summary facts, and links to filtered current trucks
+when available. Provider microsites remain reachable from truck details. Add
+schedule storage and authorization additively. Rollback disables the public
+projection and admin writes while retaining schedules and audit history.
+
+## ADR-035 — Composed public marketplace, featured-transporter board, and sponsorship
+
+Replace the detached regional-provider carousel with one attached Daily Featured Transporters
+workspace: fixed weekly programme and public event context above a realistic
+public-feature billboard, with administrator-ordered provider portraits and a compact
+Sponsors panel beside the billboard. A sponsor is either an eligible Loadgistic
+transporter or a bounded outside advertisement with a public name, description,
+and validated HTTPS website and/or phone. Sponsorship is explicitly labeled Sponsored,
+is limited to five active placements for the selected regional group and date,
+and never changes ordinary Market order, featured-slot order, trust eligibility, or
+public review state. Sponsorship payment and settlement remain offline.
+
+Administrators control the featured-provider headline, short introduction, TikTok link,
+automatic/manual two-session schedule, ordinary variable-length roster/order, sponsor
+catalogue/placement order, inclusive schedule, and active state. Providers receive no
+self-service placement or page-design controls. The billboard is algorithmically
+generated rather than a fixed fifteen-card illustration: its responsive grid adds
+rows and height from the roster while filling the featured workspace width. One
+empty photorealistic display surface with a single restrained perimeter establishes
+the physical billboard treatment while every provider, action, schedule, live
+state, and dimension remains generated from records and semantic HTML. The
+rendered surface contains no baked roster data, logo, card, number, or schedule.
+It has even light without nested frames, decorative borders, directional sunlight,
+or cast-shadow treatment, preserving clear portrait text at every size. Portraits
+remain readable without pan, zoom, fit, or drag controls. On wide screens sponsorship
+uses a bounded solid command-style panel to the right of, and visually separate from,
+the rendered billboard; on narrow screens that panel moves above the roster and exposes
+exactly two deterministic cards at a time. Pairs advance automatically without manual
+carousel controls, hold while keyboard focus is inside, and do not animate for reduced-motion users.
+The automatic schedule works inside an 08:00–22:00 Ethiopia-time envelope. It
+splits the ordered roster between morning and evening sessions, preserves a
+four-hour midday intermission, gives every provider equal presentation time,
+and budgets changeovers and Sponsor breaks separately. Each Sponsor break names
+the next active managed sponsor without changing presentation duration or order. Lower participation
+shortens the active sessions toward late morning and late evening instead of
+padding the day. Administrators may adjust bounded break settings or replace
+the generated suggestion with validated non-overlapping provider intervals.
+The public timeline highlights a provider only during that provider's interval
+and identifies changeovers, Sponsor breaks, and the intermission without a false
+live-provider state. Providers are labeled Fleet transporter, Owner-operator, or
+Self-managed driver from current organization and truck evidence. Loadgistic
+retains control of board geometry, responsive behavior, safety copy, and visual
+tokens so admin content cannot break public usability. Public reads
+re-evaluate eligibility and fail closed without substitution while excluding
+exact coordinates, files, account data, private contacts, payment data, and admin
+notes. Additive persistence and audited commands permit public/admin rollback
+without deleting schedule history.
+
+## ADR-036 — Shared provider template and relative truck maps
+
+Provider microsites remain provider-specific in facts, images, contacts, fleet,
+capacity, evidence badges, video, and reviews, but no longer render stored custom
+colors. Every provider uses the same Loadgistic white-space template and approved
+brand assets. Each active truck receives a safe detailed card. A truck map is
+created only after visitor intent and only for a current public Empty or Partial
+signal; Off Duty trucks never expose an old location. Visitor location remains
+browser-only and reuses the selected Capacity Market map semantics.
+
+Provider-led discovery is intentionally absent. The public Market clusters and
+selects current trucks only; provider-name search narrows those truck results.
+Provider microsites remain canonical but are reached through Provider details
+on a truck card or selected-truck panel. The homepage hero and featured-provider
+introduction remain compact so the Market and featured board are reached quickly. The
+hero image uses subject-aware responsive cropping and white edge fades on phone
+and desktop, while its eyebrow remains plain text without a filled pill.
+Rollback removes microsite truck-map controls while retaining the public truck
+capacity projection.
+
+## ADR-037 — Multi-city capacity geometry replaces demo circles and endpoint pairs
+
+Current Capacity routes and regular Capacity routes store two through five
+ordered catalog places. Service areas store one searchable center and three
+through five surrounding catalog places; the boundary is rendered as a polygon,
+while search evaluates the selected place against the complete polygon boundary
+and its requested proximity tolerance. Capacity-route search evaluates both
+freight endpoints against every ordered route segment and respects direction;
+it does not reduce a multi-city path to its first and last cities. Plain-text
+search also covers every stored current-route, regular-route, and Service-area
+place label. Approximate truck location remains a separate Driver-controlled
+privacy circle.
+
+The product has no customer capacity records, so the local and cloud migrations
+replace every fake endpoint-only route and circular work-area fixture. The
+replacement is keyed to the truck's approximate city or the transporter's base:
+current routes use concise city sequences along plausible Ethiopian road
+corridors and include the truck's area, while each Service-area boundary contains
+its nearby center. Intermediate cities clarify the route and are not filler.
+Public and
+provider projections do not reconstruct retired geometry when the new place
+collections are absent. Rollback restores the preceding application and resets
+the deterministic demo database; it does not require preservation of old fake
+geometry.
+
+Browser geolocation permission has a separate presentation purpose. Success
+adds the visitor marker and recenters the map without refetching, ranking, or
+filtering trucks. Only the explicit nearby-truck filter displaces a browser-held
+point and sends that bounded query to the server.
+
+The Daily Featured Transporters board uses a neutral warm-stone rendered surface
+with one navy perimeter. Its HTML roster remains dynamic and the separate
+Sponsored panel retains its solid teal advertising treatment.
+
+## ADR-038 — Public-first PWA and role-specific mobile application shells
+
+Use one installable Loadgistic application rather than separate visitor and
+provider PWAs. The manifest identity and start URL are `/`, so a first-time
+installer always reaches the account-free Truck Market instead of being sent to
+a protected workspace. Manifest shortcuts expose Truck Market, Daily Featured
+Transporters, guest Track, and the transporter workspace. The service worker
+continues to ignore navigation responses, authenticated routes, and Next.js
+runtime chunks; only stable brand and vehicle artwork is cached.
+
+On narrow public screens, replace the desktop header and footer with a compact
+brand/session app bar and five direct bottom destinations: Market, Featured,
+Track, the session action, and About. The session action is Log in while signed
+out and Dashboard while signed in. Signup remains on the Transporter login page
+rather than taking another Market navigation position.
+Provider workspaces retain their role-specific five direct destinations and a
+branded top bar; no provider or public phone surface depends on a hamburger
+menu. Both shells reserve iOS/standalone safe-area space, keep 44-pixel targets,
+and preserve every existing route and authorization boundary. Desktop keeps the
+full website header/footer or workspace sidebar because those layouts use the
+available space more effectively. Rollback restores responsive headers without
+changing sessions, routes, public projections, or persisted data.
+
+## ADR-039 — Route-level public application workspaces
+
+Retain `/` as the canonical account-free Truck Market, move Daily Featured
+Transporters to `/featured`, and present all public tasks through one persistent
+application shell. Desktop uses a compact floating workspace rail and supported
+phones retain the five-destination bottom navigation. The current route is
+identified visually and with `aria-current="page"`; login changes to Dashboard
+for an authenticated provider without replacing the public destinations.
+The wide-screen rail groups Market, Featured, and Track as primary workspaces;
+the one session action under Account; and About, Privacy, and Terms under
+Loadgistic. Phones retain only the five direct task destinations, with Privacy
+and Terms available through the About family rather than expanding the fixed bar.
+
+The Market and Featured programme remain separate Server Component route trees.
+The Market route does not query or render the featured roster, and the Featured
+route does not query or render public truck capacity. Next.js route splitting,
+prefetched `Link` navigation, and route loading states provide app-like
+transitions without turning Loadgistic into a client-only SPA or hiding state in
+unshareable tabs. `/capacity` and `/providers` remain query-preserving Market
+compatibility redirects. Current internal links move from homepage fragments to
+real routes; a legacy `#featured-providers` visit is forwarded client-side to
+`/featured` during the compatibility window.
+
+Rollback restores the combined homepage rendering and fragment navigation while
+leaving all public projections and stored records unchanged. This decision adds
+no public data, account capability, or mutation.
+
+## ADR-040 — Truck-scoped Private capacity network and Assisted matching chat
+
+Private current capacity is access-controlled per truck rather than modeled as
+a restored demand-side member network. An assigned Driver may grant an email
+access to an assigned truck; the owning provider can inspect and revoke all
+owned-truck grants. One ten-minute single-use email OTP opens a restricted
+rolling visitor session containing every active share for that normalized email
+and receives exactly the Driver-selected approximate
+location radius. A distinct Loadgistic platform audience supports assisted
+matching without inventing an email identity. Regular service remains public.
+Public Market projections exclude Private current geometry and approximate
+location, but may retain the truck's categorical Empty/Partial marker at the
+midpoint of its public regular Capacity route or the center of its public
+regular Service area. That fallback is labeled as regular service—not current
+location—and anonymous search cannot infer the hidden current geometry.
+
+Shared capacity access ends after 30 minutes without deliberate visitor
+interaction. Bounded renewal is initiated only by pointer, keyboard, touch,
+scroll, or map interaction; map reads, polling, rendering, and other background
+network activity do not renew access. A visible Log out command clears the
+restricted cookie immediately. Expiry or logout returns to email verification
+without creating a member account or retaining private truck data in the page.
+
+Account-free visitors may ask Loadgistic for Assisted matching through the
+persistent public-shell chat launcher instead of creating a shipment request or
+account. Required email and callback phone permit private follow-up after a
+disconnect. Conversations
+join the bounded Support assignment pool, choose the least-loaded available
+agent immediately, expose truthful team availability, and refresh the visible
+local thread every two seconds. Requested JPG, PNG, WebP, or PDF files remain
+private and every read reauthorizes the conversation. Minimizing or navigating
+keeps the signed browser session, while guest or team End chat makes the retained
+transcript read-only and permits a distinct new session. Recovery codes are
+deterministic, not stored or logged in plaintext, and use the idempotent managed
+email adapter.
+
+The local Supabase stack and managed deployment use authorized Realtime
+notifications for committed PostgreSQL rows and fall back to bounded polling on
+disconnect; PostgreSQL remains authoritative. Public production stays blocked
+until managed repository and identity parity, shared rate limiting, durable
+scanned private storage, email delivery, and retention operations pass readiness
+gates. Rollback disables new grants and guest conversations while retaining
+audited private records for their approved retention period.
+
+## ADR-041 — One Supabase runtime from development through Production
+
+Supersede the local SQLite and signed-cookie runtime adapters. Loadgistic uses
+Supabase PostgreSQL, Auth, and private Storage in local development, browser
+tests, Preview, and Production. Local work runs an isolated Supabase CLI project
+on Loadgistic-specific ports so it can coexist with other repositories without
+sharing records or credentials. Browser tests reset a distinct local Supabase
+project rather than exercising a second database engine.
+
+Repository, identity, and storage remain explicit server-side ports; this is not
+permission for UI components to query private tables directly or for a service
+role key to enter browser code. Public projections use narrowly granted RLS or
+server-authorized RPC/query adapters, protected commands verify the Supabase Auth
+user and active Loadgistic role projection, and private files are read only after
+record-level authorization. If Supabase is unavailable, health and readiness
+fail closed instead of falling back to SQLite or Netlify's ephemeral filesystem.
+
+The ordered migrations must replay from an empty PostgreSQL database and pass
+RLS/authorization tests before they are pushed remotely. The pre-customer SQLite
+fixture contains no customer data and is replaced by deterministic Supabase seed
+data; it is not dual-written or kept as an operational cache. Rollback restores
+the prior application artifact against the same PostgreSQL schema and reviewed
+backup, not the retired SQLite runtime.

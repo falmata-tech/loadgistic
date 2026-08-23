@@ -22,7 +22,7 @@ Pure domain rule / entity invariant
              ↓
 Repository, file, identity, audit ports
              ↓
-SQLite today; Supabase/Auth/Storage target adapters
+Supabase PostgreSQL, Auth, and private Storage adapters
 ```
 
 The current functional modules are valid implementations. SOLID means responsibilities and dependencies remain separable; it does not require classes where functions provide clearer contracts.
@@ -43,12 +43,14 @@ When an inbound adapter submits a command\
 Then the application service rejects it before persistence\
 And no protected record or file is disclosed.
 
-### Scenario: adapter replacement
+### Scenario: one production-shaped persistence contract
 
-Given a repository port has a tested behavioral contract\
-When SQLite is replaced by a Supabase adapter\
-Then domain and application behavior remains unchanged\
-And Supabase RLS independently enforces tenant scope.
+Given Loadgistic runs locally, in browser tests, in Preview, or in Production\
+When an application command or projection uses durable data\
+Then it uses the Supabase PostgreSQL repository contract rather than a SQLite runtime fallback\
+And Supabase Auth supplies the verified identity projection\
+And Supabase RLS independently enforces tenant scope\
+And tests use an isolated local Supabase project rather than a different persistence engine.
 
 ## Contract details
 

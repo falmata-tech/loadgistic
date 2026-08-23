@@ -25,6 +25,22 @@ When they choose an owned profile or Driver-truck pairing, a supported verificat
 Then one Pending verification request is created\
 And only the owner and an administrator may read its metadata.
 
+### Scenario: independent truck evidence follows operating model
+
+Given an independent provider signed up as an Owner-operator\
+When the provider opens Verification after adding a truck\
+Then that truck offers Truck ownership evidence\
+And Truck authorization is not presented as the Owner-operator&apos;s required truck document.
+
+Given an independent provider signed up as a Self-managed driver\
+When the provider opens Verification after adding a truck\
+Then the Driver-truck pairing offers expiring Truck authorization evidence\
+And Truck ownership is not presented as the Self-managed driver&apos;s required truck document.
+
+Given a Driver belongs to a fleet transporter\
+When account or verification identity is shown\
+Then the role is Company driver and the employing fleet name remains visible.
+
 ### Scenario: subject and type must match
 
 Given a user selects a verification type that does not apply to the selected subject or selects an entity they do not own\
@@ -80,6 +96,8 @@ And reassignment or expiry cannot verify a different Driver-truck pairing.
 Given a visitor opens the public Capacity Board\
 When a truck belongs to a fleet or self-managed driver\
 Then the card separately shows owner or company evidence, truck authority evidence, and the assigned driver's approved driver-license evidence where an assignment exists\
+And the truck detail identifies only the Driver's first name, operating-model label, and public callback phone\
+And every required Driver and truck category remains visible as Verified, Not verified, or Expired\
 And a self-managed owner-operator receives the relevant combined owner and driver evidence without duplicate claims.
 
 ### Scenario: verification does not gate account access
@@ -89,12 +107,13 @@ When its trial or paid access is current\
 Then its authorized user can use the provider workspace and publish capacity\
 And gray Not verified badges encourage evidence submission without blocking access.
 
-### Scenario: marketplace trust warning remains visible
+### Scenario: public marketplace trust warning remains visible
 
-Given a visitor or provider opens the public Directory, provider microsite, Capacity Board, truck detail, or shipment creation action\
+Given an anonymous visitor opens a public transporter microsite, Truck Market card, or selected-truck detail\
 When trust evidence is displayed\
-Then a concise notice tells the member to confirm current identity, authority, truck, Driver, and documents before agreeing\
-And explains that badges describe reviewed evidence rather than guaranteeing payment, performance, cargo safety, or continuing legal authority.
+Then a concise notice tells the visitor to confirm current identity, authority, truck, Driver, and documents before agreeing\
+And explains that badges describe reviewed evidence rather than guaranteeing payment, performance, cargo safety, or continuing legal authority\
+And authenticated Home, capacity management, Tracking, Support, Account, verification-management, and administration pages do not repeat that marketplace warning.
 
 ### Scenario: verification document remains private
 
@@ -106,9 +125,10 @@ And only the submitting owner or an administrator can read it.
 ## Supported categories
 
 - Fleet transporter organization: National ID, Business license, and Business address
+- Owner-operator: National ID, Driver license, and Truck ownership for each owned truck
 - Self-managed driver: National ID, Driver license, and pairing-specific Truck authorization
-- Fleet driver: National ID, Driver license, and pairing-specific Truck authorization
-- Truck: legacy Vehicle ownership or Owner authorization evidence remains historical; current Driver-facing authority is pairing-specific
+- Company driver: National ID, Driver license, and pairing-specific Truck authorization under the named fleet transporter
+- Truck: Truck ownership for an Owner-operator; historical Vehicle ownership or Owner authorization names remain inert record values only
 
 The catalog may add country- or actor-specific document names in a later accepted update without changing approved historical records.
 
