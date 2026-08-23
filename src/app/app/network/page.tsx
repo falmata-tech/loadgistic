@@ -7,7 +7,7 @@ import {Flash} from '@/components/flash';
 export default async function PrivateCapacityNetworkPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['TRANSPORTER','DRIVER']);
   const query=await searchParams;
-  const vehicles:any[]=listPrivateCapacityNetwork(user);
+  const vehicles:any[]=await listPrivateCapacityNetwork(user);
   return <div className="page private-capacity-network">
     <PageHeader icon={Network} title="Network" subtitle="Control who can see each truck’s current capacity and approximate location."/>
     <Flash error={query.error} success={query.success}/>

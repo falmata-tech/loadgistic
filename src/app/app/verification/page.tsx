@@ -20,9 +20,9 @@ const verificationLabels:Record<string,string>={
 export default async function VerificationPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser(['SHIPPER','RECEIVER','TRANSPORTER','DRIVER']);
   const query=await searchParams;
-  const center:any=getVerificationCenter(user);
-  const subjectResult:any=paginateResults(center.subjects,{page:query.subjectPage,pageSize:10});
-  const requestResult:any=paginateResults(center.requests,{page:query.requestPage,pageSize:10});
+  const center:any=await getVerificationCenter(user);
+  const subjectResult:any=await paginateResults(center.subjects,{page:query.subjectPage,pageSize:10});
+  const requestResult:any=await paginateResults(center.requests,{page:query.requestPage,pageSize:10});
   const formSubjects=center.subjects.map((subject:any)=>({
     subject_type:String(subject.subject_type),
     subject_id:String(subject.subject_id),

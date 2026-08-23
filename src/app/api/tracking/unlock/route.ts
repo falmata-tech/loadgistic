@@ -8,7 +8,7 @@ import { redirectUrl, redirectWith, text } from '@/lib/redirects';
 export async function POST(request:NextRequest) {
   const form=await request.formData();
   try {
-    const shipment=unlockProviderTracking(text(form,'trackingCode'));
+    const shipment=await unlockProviderTracking(text(form,'trackingCode'));
     const response=NextResponse.redirect(redirectUrl(request,`/track/${shipment.id}`),303);
     response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipment.id}:${shipment.partyRole}`,TRACKING_IDLE_SECONDS),{
       httpOnly:true,

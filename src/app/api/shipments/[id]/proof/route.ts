@@ -12,7 +12,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   try{
     const upload=await saveUpload(form.get('file'),'proof');
-    addProof(user,id,text(form,'proofType'),upload,text(form,'note'));
+    await addProof(user,id,text(form,'proofType'),upload,text(form,'note'));
     return redirectWith(request,`/app/shipments/${id}`,'success','Proof uploaded.');
   }catch(error){
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const form = await request.formData();
   try {
-    setShipmentParties(user,id,{
+    await setShipmentParties(user,id,{
       ownerPartyRole:text(form,'ownerPartyRole'),counterpartyType:text(form,'counterpartyType'),
       counterpartyRef:text(form,'counterpartyRef'),externalCounterpartyName:text(form,'externalCounterpartyName'),
       receiverFirstName:text(form,'receiverFirstName'),receiverPhone:text(form,'receiverPhone')

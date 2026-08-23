@@ -20,7 +20,7 @@ export default async function SharedCapacityPage({searchParams}:{searchParams:Pr
   return <><PublicHeader/><main className={`public-app-page ${session?'public-market-workspace':'public-information-workspace'}`}>
     <header className="public-workspace-heading container"><div><span className="section-kicker"><Network aria-hidden="true"/>Shared capacity</span><h1>Private capacity shared with you.</h1><p>Verify your email to see current availability and the approximate location each transporter chose to share with trusted contacts.</p></div></header>
     <Flash error={sessionError||query.error} success={sessionSuccess||query.success}/>
-    {session?<SharedCapacitySessionBoundary initialExpiresAt={session.expiresAt}><section className="container home-market-shell public-market-console" aria-label="Privately shared truck capacity"><PublicCapacityFeed initial={listSharedCapacity(session.emailDigest,filters)} query={filters} searchPath="/shared-capacity" apiPath="/api/shared-capacity"/></section></SharedCapacitySessionBoundary>
+    {session?<SharedCapacitySessionBoundary initialExpiresAt={session.expiresAt}><section className="container home-market-shell public-market-console" aria-label="Privately shared truck capacity"><PublicCapacityFeed initial={await listSharedCapacity(session.emailDigest,filters)} query={filters} searchPath="/shared-capacity" apiPath="/api/shared-capacity"/></section></SharedCapacitySessionBoundary>
       :<section className="container shared-capacity-access"><SharedCapacityAccessForm/></section>}
   </main></>;
 }

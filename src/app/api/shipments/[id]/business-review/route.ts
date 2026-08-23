@@ -10,7 +10,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try {
-    const review=submitBusinessReview(user,id,text(form,'rating'),text(form,'note'));
+    const review=await submitBusinessReview(user,id,text(form,'rating'),text(form,'note'));
     const message=review.status==='PENDING'
       ? 'Low rating sent privately to Loadgistic for review.'
       : 'Business review published.';

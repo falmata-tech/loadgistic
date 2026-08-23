@@ -10,7 +10,7 @@ export async function POST(request:NextRequest) {
   const form=await request.formData();
   try {
     const onDuty=checked(form,'onDuty');
-    setAssignedVehicleDuty(user,text(form,'vehicleId'),onDuty,{
+    await setAssignedVehicleDuty(user,text(form,'vehicleId'),onDuty,{
       locationArea:text(form,'locationArea'),
       approximateLat:text(form,'approximateLat'),
       approximateLng:text(form,'approximateLng'),

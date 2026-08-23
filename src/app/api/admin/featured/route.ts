@@ -12,7 +12,7 @@ export async function POST(request:NextRequest) {
   const command=text(form,'command');
   try{
     if(command==='SAVE_SPONSOR'){
-      saveProviderSponsorship(user,{
+      await saveProviderSponsorship(user,{
         featureDate,
         sponsorshipId:text(form,'sponsorshipId'),
         sponsorKind:text(form,'sponsorKind'),
@@ -28,10 +28,10 @@ export async function POST(request:NextRequest) {
       return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success','Sponsored placement saved.');
     }
     if(command==='DISABLE_SPONSOR'){
-      disableProviderSponsorship(user,text(form,'sponsorshipId'));
+      await disableProviderSponsorship(user,text(form,'sponsorshipId'));
       return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success','Sponsored placement disabled.');
     }
-    saveFeaturedProviderDay(user,{
+    await saveFeaturedProviderDay(user,{
       featureDate,
       publicHeadline:text(form,'publicHeadline'),
       publicIntroduction:text(form,'publicIntroduction'),

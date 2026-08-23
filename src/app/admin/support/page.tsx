@@ -12,8 +12,8 @@ export default async function AdminSupportPage({searchParams}:{searchParams:Prom
   const query=await searchParams;
   const requested=String(query.view||'ASSIGNED').toUpperCase();
   const view=['ASSIGNED','WAITING','CLOSED','ALL'].includes(requested)?requested:'ASSIGNED';
-  const agents:any=listSupportAgents(user,{page:query.agentPage,pageSize:10});
-  const queue:any=listSupportInbox(user,view,{page:query.queuePage,pageSize:10});
+  const agents:any=await listSupportAgents(user,{page:query.agentPage,pageSize:10});
+  const queue:any=await listSupportInbox(user,view,{page:query.queuePage,pageSize:10});
   const queueViews=[
     {id:'ASSIGNED',label:'Open',count:queue.counts.assigned,icon:Inbox},
     {id:'WAITING',label:'Waiting',count:queue.counts.waiting,icon:Clock3},

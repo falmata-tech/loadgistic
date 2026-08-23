@@ -11,11 +11,11 @@ export default async function PooledLoadPage({params,searchParams}:{params:Promi
   const user=await requireUser(['TRANSPORTER','DRIVER','ADMIN']);
   const {id}=await params;
   const query=await searchParams;
-  const pool:any=getPooledLoad(user,id);
+  const pool:any=await getPooledLoad(user,id);
   if(!pool)notFound();
-  const access=getDriverAccess(user);
+  const access=await getDriverAccess(user);
   const canNegotiate=access?.can_negotiate_loads!==false&&access?.can_contact_businesses!==false;
-  const memberResult:any=paginateResults(pool.members,{page:query.page,pageSize:12});
+  const memberResult:any=await paginateResults(pool.members,{page:query.page,pageSize:12});
   return <div className="page">
     <PageHeader icon={Layers3} title="Pool together" subtitle={`${pool.member_count} compatible Partial Truckload shipments`} action={<Link className="button secondary icon-button-label" href="/app/loads?board=SHARED"><Layers3 aria-hidden="true"/>Shared Shipments</Link>}/>
     <section className="pstl-explanation"><Route aria-hidden="true"/><div><strong>{pool.origin} area → {pool.destination} area</strong><span>Every origin and destination is close to every other one in this candidate. Confirm cargo fit, timing, price, and each agreement separately.</span></div></section>

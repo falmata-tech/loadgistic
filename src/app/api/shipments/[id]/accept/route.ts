@@ -10,6 +10,6 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   const requestedReturn=String(form.get('returnTo')||'');
   const returnTo=requestedReturn==='/app/loads'?requestedReturn:`/app/shipments/${id}`;
-  try{acceptDirectedShipment(user,id);return redirectWith(request,returnTo,'success','Direct request accepted.');}
+  try{await acceptDirectedShipment(user,id);return redirectWith(request,returnTo,'success','Direct request accepted.');}
   catch(error){return redirectWith(request,returnTo,'error',errorMessage(error));}
 }

@@ -12,7 +12,7 @@ export async function POST(request:NextRequest){
   if(!user)return NextResponse.json({error:'Log in to start Tracking.'},{status:401});
   const form=await request.formData();
   try{
-    const created=createProviderShipment(user,{
+    const created=await createProviderShipment(user,{
       vehicleId:text(form,'vehicleId'),
       origin:text(form,'origin'),originPlaceRef:text(form,'originPlaceRef'),
       destination:text(form,'destination'),destinationPlaceRef:text(form,'destinationPlaceRef'),

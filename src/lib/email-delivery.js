@@ -16,7 +16,7 @@ function publicUrl(path){
 export async function deliverPendingShipmentEmails(limit=10){
   const endpoint=process.env.LOADGISTIC_EMAIL_WEBHOOK_URL;
   if(!endpoint)return {configured:false,attempted:0,sent:0};
-  const deliveries=listPendingEmailDeliveries(limit);
+  const deliveries=await listPendingEmailDeliveries(limit);
   let sent=0;
   for(const delivery of deliveries){
     try{
@@ -38,10 +38,10 @@ export async function deliverPendingShipmentEmails(limit=10){
         signal:AbortSignal.timeout(8000)
       });
       if(!response.ok)throw new Error(`HTTP_${response.status}`);
-      recordEmailDeliveryAttempt(delivery.id,{sent:true});
+      await recordEmailDeliveryAttempt(delivery.id,{sent:true});
       sent+=1;
     }catch(error){
-      recordEmailDeliveryAttempt(delivery.id,{sent:false,error:error instanceof Error?error.message:'DELIVERY_FAILED'});
+      await recordEmailDeliveryAttempt(delivery.id,{sent:false,error:error instanceof Error?error.message:'DELIVERY_FAILED'});
     }
   }
   return {configured:true,attempted:deliveries.length,sent};
@@ -50,7 +50,7 @@ export async function deliverPendingShipmentEmails(limit=10){
 export async function deliverPendingAccessEmails(limit=10){
   const endpoint=process.env.LOADGISTIC_EMAIL_WEBHOOK_URL;
   if(!endpoint)return {configured:false,attempted:0,sent:0};
-  const deliveries=listPendingAccessEmailDeliveries(limit);
+  const deliveries=await listPendingAccessEmailDeliveries(limit);
   let sent=0;
   for(const delivery of deliveries){
     const shared=delivery.delivery_kind==='SHARED_CAPACITY';
@@ -73,10 +73,10 @@ export async function deliverPendingAccessEmails(limit=10){
         signal:AbortSignal.timeout(8000)
       });
       if(!response.ok)throw new Error(`HTTP_${response.status}`);
-      recordAccessEmailDeliveryAttempt(delivery.id,{sent:true});
+      await recordAccessEmailDeliveryAttempt(delivery.id,{sent:true});
       sent+=1;
     }catch(error){
-      recordAccessEmailDeliveryAttempt(delivery.id,{sent:false,error:error instanceof Error?error.message:'DELIVERY_FAILED'});
+      await recordAccessEmailDeliveryAttempt(delivery.id,{sent:false,error:error instanceof Error?error.message:'DELIVERY_FAILED'});
     }
   }
   return {configured:true,attempted:deliveries.length,sent};

@@ -10,7 +10,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try {
-    reviewBusinessRating(user,id,text(form,'status'),text(form,'reviewNote'));
+    await reviewBusinessRating(user,id,text(form,'status'),text(form,'reviewNote'));
     return redirectWith(request,'/admin/reviews?tab=ratings','success','Rating review completed.');
   } catch(error) {
     return redirectWith(request,'/admin/reviews?tab=ratings','error',errorMessage(error));

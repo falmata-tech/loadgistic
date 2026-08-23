@@ -17,7 +17,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!rate.allowed)return redirectWith(request,returnPath(user,id),'error','Too many messages. Wait a minute and try again.');
   const form=await request.formData();
   try {
-    sendSupportMessage(user,id,text(form,'body'));
+    await sendSupportMessage(user,id,text(form,'body'));
     return redirectWith(request,returnPath(user,id),'success','Message sent.');
   } catch(error) {
     return redirectWith(request,returnPath(user,id),'error',errorMessage(error));

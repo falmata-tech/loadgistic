@@ -9,7 +9,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   try {
-    closeSupportConversation(user,id);
+    await closeSupportConversation(user,id);
     const path=user.role==='ADMIN'?'/admin/support':user.role==='SUPPORT'?'/support':'/app/support';
     return redirectWith(request,path,'success',user.role==='SUPPORT'||user.role==='ADMIN'?'Conversation closed.':'Chat ended. You can start a new one.');
   } catch(error) {

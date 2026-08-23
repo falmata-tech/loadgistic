@@ -14,11 +14,11 @@ export async function POST(request:NextRequest){
   try{
     const action=text(form,'action');
     if(action==='GRANT'){
-      grantPrivateCapacityAccess(user,{vehicleId:text(form,'vehicleId'),email:text(form,'email')});
+      await grantPrivateCapacityAccess(user,{vehicleId:text(form,'vehicleId'),email:text(form,'email')});
       await deliverPendingAccessEmails();
     }
-    else if(action==='REVOKE')revokePrivateCapacityAccess(user,text(form,'grantId'));
-    else if(action==='LOADGISTIC')setLoadgisticCapacityAccess(user,text(form,'vehicleId'),text(form,'enabled')==='on');
+    else if(action==='REVOKE')await revokePrivateCapacityAccess(user,text(form,'grantId'));
+    else if(action==='LOADGISTIC')await setLoadgisticCapacityAccess(user,text(form,'vehicleId'),text(form,'enabled')==='on');
     else throw new Error('INVALID_NETWORK_ACTION');
     return redirectWith(request,'/app/network','success',action==='GRANT'?'Capacity access added.':action==='REVOKE'?'Capacity access removed.':'Loadgistic sharing updated.');
   }catch(error){return redirectWith(request,'/app/network','error',errorMessage(error));}

@@ -19,10 +19,10 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   const query=await searchParams;
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const date=query.date||today;
-  const stored=getAdminFeaturedProviderDay(user,date);
+  const stored=await getAdminFeaturedProviderDay(user,date);
   const expo=stored.expo!;
   const expoWeek=regionalExpoWeekForDate(date);
-  const candidates:any[]=listFeaturedProviderCandidates(user,date);
+  const candidates:any[]=await listFeaturedProviderCandidates(user,date);
   const eligible=candidates.filter((item:any)=>item.eligible);
   const selectedProviderKeys=stored.slots.map((slot:any)=>slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`);
   const excluded=candidates.filter((item:any)=>!item.eligible);

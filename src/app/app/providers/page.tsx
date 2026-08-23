@@ -19,9 +19,13 @@ export default async function ProvidersPage({searchParams}:{searchParams:Promise
   const hasSearch=search.length>0;
   const locationFilters={nearPlaceRef:query.nearPlaceRef||'',nearPlace:query.nearPlace||'',nearRadiusKm:query.nearRadiusKm||'50'};
   const directory:any=hasSearch
-    ? listDirectoryProfiles(type,{q:search,...locationFilters,page:query.page,pageSize:7})
+    ? await listDirectoryProfiles(type,{q:search,...locationFilters,page:query.page,pageSize:7})
     : {items:[],total:0,page:1,pageSize:7,pageCount:1};
   const profiles:any[]=directory.items;
+  const profilesWithNetwork=await Promise.all(profiles.map(async (profile:any)=>({
+    profile,
+    networkState:await getNetworkState(user,profile.ref_kind,profile.id)
+  })));
   const preserved={q:search,...locationFilters};
   const typeHref=(value:string)=>`/app/providers?${new URLSearchParams({type:value,...preserved}).toString()}`;
   const returnTo=`/app/providers?${new URLSearchParams({type,...preserved,page:String(directory.page)}).toString()}`;
@@ -49,7 +53,7 @@ export default async function ProvidersPage({searchParams}:{searchParams:Promise
     </BoardFilterSheet>
 
     {!hasSearch?<div className="empty-state directory-search-empty"><Search aria-hidden="true"/><strong>Find a Business or transporter</strong><span>Search by name, company, owner, or public phone.</span></div>:null}
-    <div className="directory-grid">{profiles.map((profile:any)=><article className="card directory-card" key={`${profile.ref_kind}-${profile.id}`}>
+    <div className="directory-grid">{profilesWithNetwork.map(({profile,networkState}:any)=><article className="card directory-card" key={`${profile.ref_kind}-${profile.id}`}>
       <div className="directory-card-top"><span className="status">{profile.is_business?'BUSINESS':profile.type.replaceAll('_',' ')}</span>{profile.verified?<StatusPill status="Approved"/>:null}</div>
       <div className="directory-identity"><div className="company-logo small">{profile.name.split(' ').slice(0,2).map((word:string)=>word[0]).join('')}</div><div><h3>{profile.name}</h3><div className="meta icon-meta"><MapPin aria-hidden="true"/>{profile.city||'Location not added'}{Number.isFinite(profile.location_distance_km)?` · ${Math.round(profile.location_distance_km)} km away`:''}</div></div></div>
       <VerificationBadges badges={profile.verification_badges} compact/>
@@ -57,7 +61,7 @@ export default async function ProvidersPage({searchParams}:{searchParams:Promise
       {profile.operating_regions?<p className="directory-regions"><MapPin aria-hidden="true"/><span><strong>{profile.is_business?'Operating areas':'Service areas'}</strong>{profile.operating_regions}</span></p>:null}
       {profile.is_business?<div className="provider-facts"><div><span><Star aria-hidden="true"/>Rating</span><strong>{profile.review_count?`${profile.average_rating} / 5`:'New'}</strong></div><div><span>Reviews</span><strong>{profile.review_count||0}</strong></div></div>:<><p><strong><MapPin aria-hidden="true"/> Preferred Routes</strong><br/>{profile.preferred_routes_text||'Not added'}</p><div className="provider-facts"><div><span>Trucks</span><strong>{profile.fleet_size}</strong></div><div><span>Available</span><strong>{profile.active_capacity_count}</strong></div></div></>}
       <div className="hero-actions"><Link href={`/app/providers/${profile.handle}`} className="button secondary"><Eye aria-hidden="true"/>Profile</Link>{!profile.is_business&&['SHIPPER','RECEIVER'].includes(user.role)?<Link href={`/app/shipments/new?provider=${profile.ref_kind}:${profile.id}`} className="button"><Send aria-hidden="true"/>Request</Link>:null}</div>
-      <NetworkActions state={getNetworkState(user,profile.ref_kind,profile.id)} targetKind={profile.ref_kind} targetId={profile.id} returnTo={returnTo}/>
+      <NetworkActions state={networkState} targetKind={profile.ref_kind} targetId={profile.id} returnTo={returnTo}/>
     </article>)}</div>
     {hasSearch&&!profiles.length?<div className="empty-state"><Search aria-hidden="true"/><strong>No matches.</strong><span>Change the name, phone, or location.</span></div>:null}
     {hasSearch?<Pagination path="/app/providers" query={{type,...preserved}} page={directory.page} pageCount={directory.pageCount} total={directory.total}/>:null}

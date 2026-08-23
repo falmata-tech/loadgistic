@@ -11,11 +11,11 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
   if(user.role!=='TRANSPORTER')redirect('/app/home');
   const {id}=await params;
   const query=await searchParams;
-  const vehicle:any=listOwnVehicles(user).find((item:any)=>item.id===id);
+  const vehicle:any=(await listOwnVehicles(user)).find((item:any)=>item.id===id);
   if(!vehicle)notFound();
-  const current:any=listOwnCapacity(user).find((item:any)=>item.vehicle_id===vehicle.id);
+  const current:any=(await listOwnCapacity(user)).find((item:any)=>item.vehicle_id===vehicle.id);
   const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),current:current?JSON.parse(JSON.stringify(current)):null};
-  const corridors=JSON.parse(JSON.stringify(listOwnRecurringCorridors(user)));
+  const corridors=JSON.parse(JSON.stringify(await listOwnRecurringCorridors(user)));
   return <div className="page"><PageHeader icon={Truck} title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`}/><Flash error={query.error} success={query.success}/>
     <div className="permission-note"><MapPin aria-hidden="true"/><div><strong>Assigned driver updates location</strong><span>Capacity and public visibility can still be managed here. The latest approximate location and update time stay with this truck.</span></div></div>
     <CapacityForm vehicles={[option]} initialVehicleId={vehicle.id} allowDeviceLocation={false} lockVehicleSelection corridors={corridors} returnTo={`/app/fleet/${vehicle.id}`} allowCorridors/>

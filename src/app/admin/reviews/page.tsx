@@ -24,10 +24,10 @@ export default async function AdminReviewsPage({searchParams}:{searchParams:Prom
   const status=String(query.status||(tab==='ratings'?'PENDING':'ALL')).toUpperCase();
   const options={q:query.q,status,page:query.page,pageSize:12};
   const result:any=tab==='documents'
-      ? listVerificationRequests(user,options)
+      ? await listVerificationRequests(user,options)
       : tab==='payments'
-        ? listPaymentProofs(user,options)
-        : listRatingModerationQueue(user,['PENDING','PUBLISHED','DISMISSED'].includes(status)?status:'PENDING',{page:query.page,pageSize:12});
+        ? await listPaymentProofs(user,options)
+        : await listRatingModerationQueue(user,['PENDING','PUBLISHED','DISMISSED'].includes(status)?status:'PENDING',{page:query.page,pageSize:12});
   const rows:any[]=result.items;
 
   return <div className="page admin-review-center">

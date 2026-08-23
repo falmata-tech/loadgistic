@@ -31,13 +31,13 @@ import {
 } from 'lucide-react';
 
 export default async function ShipmentDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}){
- const user=await requireUser(); const access=getDriverAccess(user); const canNegotiate=access?.can_negotiate_loads!==false&&access?.can_contact_businesses!==false&&access?.can_browse_load_board!==false; const {id}=await params; const query=await searchParams; const shipment:any=getShipmentForUser(user,id); if(!shipment)notFound();
+ const user=await requireUser(); const access=await getDriverAccess(user); const canNegotiate=access?.can_negotiate_loads!==false&&access?.can_contact_businesses!==false&&access?.can_browse_load_board!==false; const {id}=await params; const query=await searchParams; const shipment:any=await getShipmentForUser(user,id); if(!shipment)notFound();
  const next=nextStatuses(shipment.service_mode,shipment.operational_status);
  const ownerOrganizationId=shipment.load_owner_organization_id||shipment.shipper_organization_id;
  const isParty=user.role==='ADMIN'||Boolean(user.organization_id&&[ownerOrganizationId,shipment.shipper_organization_id,shipment.receiver_organization_id,shipment.provider_organization_id].includes(user.organization_id))||Boolean(user.provider_profile_id&&shipment.provider_profile_id===user.provider_profile_id);
  const isAssignedCompanyDriver=user.role==='DRIVER'&&Boolean(user.organization_id)&&shipment.assigned_driver_user_id===user.id;
  const canPrepareAssignment=shipment.operational_status==='AGREED'&&['TRANSPORTER','DRIVER'].includes(user.role)&&access?.can_negotiate_loads!==false;
- const assignmentVehicles=canPrepareAssignment?listShipmentAssignmentVehicles(user,shipment.id):[];
+ const assignmentVehicles=canPrepareAssignment?await listShipmentAssignmentVehicles(user,shipment.id):[];
  const canOperate=isParty&&(user.role==='ADMIN'||user.role==='TRANSPORTER'||(user.role==='DRIVER'&&(!user.organization_id||shipment.operational_status==='AGREED'||isAssignedCompanyDriver)));
  const directMatch=shipment.distribution_mode==='DIRECT_TO_PROVIDER'&&((['TRANSPORTER','DRIVER'].includes(user.role)&&user.organization_id&&shipment.provider_organization_id===user.organization_id)||(user.role==='DRIVER'&&user.provider_profile_id&&shipment.provider_profile_id===user.provider_profile_id));
  const pendingDirectRequest=isPendingDirectRequest({distributionMode:shipment.distribution_mode,commercialStatus:shipment.commercial_status,operationalStatus:shipment.operational_status});
@@ -45,7 +45,7 @@ export default async function ShipmentDetailPage({params,searchParams}:{params:P
  const canManageTracking=user.role==='ADMIN'||Boolean(['SHIPPER','RECEIVER'].includes(user.role)&&user.organization_id&&[ownerOrganizationId,shipment.shipper_organization_id,shipment.receiver_organization_id].includes(user.organization_id));
  const canOpenCustomerTracking=Boolean(['SHIPPER','RECEIVER'].includes(user.role)&&user.organization_id&&ownerOrganizationId===user.organization_id);
  const trackingStarted=['AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED','COMPLETED'].includes(shipment.operational_status);
- const trackingAccessCode=canOpenCustomerTracking?getBusinessTrackingAccessCode(user,shipment.id):null;
+ const trackingAccessCode=canOpenCustomerTracking?await getBusinessTrackingAccessCode(user,shipment.id):null;
  const needsReceiverContact=shipment.service_mode==='FREIGHT'&&shipment.operational_status==='AGREED'&&(!shipment.receiver_first_name||!shipment.receiver_phone);
  const ownInterest=shipment.interests.find((interest:any)=>user.organization_id?interest.provider_organization_id===user.organization_id:interest.provider_profile_id===user.provider_profile_id);
  const activeLoadProof=shipment.load_proof_shares?.find((share:any)=>!share.revoked_at&&new Date(share.expires_at).getTime()>Date.now());
@@ -53,9 +53,9 @@ export default async function ShipmentDetailPage({params,searchParams}:{params:P
  const ownBusinessReview=shipment.business_reviews.find((review:any)=>review.reviewer_organization_id===user.organization_id);
  const canReviewBusiness=shipment.operational_status==='COMPLETED'&&businessParties.length===2&&businessParties.includes(user.organization_id)&&!ownBusinessReview;
  const reviewTarget=user.organization_id===shipment.shipper_organization_id?shipment.receiver_name:shipment.shipper_name;
- const eventResult:any=paginateResults(shipment.events,{page:query.eventPage,pageSize:12});
- const proofResult:any=paginateResults(shipment.proofs,{page:query.proofPage,pageSize:10});
- const shareResult:any=paginateResults(shipment.load_proof_shares||[],{page:query.sharePage,pageSize:10});
+ const eventResult:any=await paginateResults(shipment.events,{page:query.eventPage,pageSize:12});
+ const proofResult:any=await paginateResults(shipment.proofs,{page:query.proofPage,pageSize:10});
+ const shareResult:any=await paginateResults(shipment.load_proof_shares||[],{page:query.sharePage,pageSize:10});
  const detailPages={eventPage:query.eventPage,proofPage:query.proofPage,sharePage:query.sharePage};
  return <div className="page"><ShipmentProjectionRefresh/><PageHeader icon={PackageSearch} title={`${shipment.code} · ${shipment.title}`} subtitle={`${shipment.origin} → ${shipment.destination}`} action={<StatusPill status={shipment.operational_status}/>}/><Flash error={query.error} success={query.success}/>
  <div className="two-col"><div className="stack"><section className="card"><div className="split"><div><span className="meta">Price</span><h3>{priceDisplay(shipment)}</h3></div><div><span className="meta">Shipment owner</span><h3>{shipment.load_owner_name}</h3></div><div><span className="meta">Shipper</span><h3>{shipment.shipper_handle?<Link href={`/app/providers/${shipment.shipper_handle}`}>{shipment.shipper_name}</Link>:shipment.shipper_name||'Not selected'}</h3></div><div><span className="meta">Receiver</span><h3>{shipment.receiver_handle?<Link href={`/app/providers/${shipment.receiver_handle}`}>{shipment.receiver_name}</Link>:shipment.receiver_name||'Not selected'}</h3>{isParty&&shipment.receiver_first_name?<div className="meta">{shipment.receiver_first_name} · {shipment.receiver_phone}</div>:null}</div><div><span className="meta">Provider</span><h3>{shipment.provider_name||shipment.provider_profile_name||'Not assigned'}</h3></div>{shipment.assigned_vehicle_id?<><div><span className="meta">Assigned truck</span><h3>{shipment.assigned_vehicle_platform_number} · {shipment.assigned_vehicle_make} {shipment.assigned_vehicle_model}</h3><div className="meta">{shipment.assigned_vehicle_configuration}</div></div><div><span className="meta">Assigned Driver</span><h3>{shipment.assigned_driver_name}</h3></div></>:null}<div><span className="meta">Pick up before</span><h3>{shipment.pickup_date}</h3></div><div><span className="meta">Drop off before</span><h3>{shipment.delivery_date||'Not set'}</h3></div></div><hr style={{border:0,borderTop:'1px solid var(--line)',margin:'20px 0'}}/><h3><Boxes aria-hidden="true"/>Shipment detail</h3><p>{shipment.cargo_description}</p><div className="meta">{shipment.vehicle_category||'Cargo configuration discussed directly'}{shipment.load_type?` · ${shipment.load_type==='FTL'?'Full Truckload (FTL)':'Partial Truckload (PTL)'}`:''}</div></section>

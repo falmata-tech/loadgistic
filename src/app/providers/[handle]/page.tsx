@@ -11,7 +11,7 @@ export const dynamic='force-dynamic';
 
 export default async function ProviderPage({params}:{params:Promise<{handle:string}>}){
   const {handle}=await params;
-  const provider:any=getPublicProvider(handle);
+  const provider:any=await getPublicProvider(handle);
   if(!provider)notFound();
   const corridors=new Map<string,any>();
   for(const capacity of provider.capacities)for(const corridor of capacity.recurring_corridors||[])corridors.set(corridor.id,corridor);

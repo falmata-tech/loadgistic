@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser(undefined,{allowLimited:true});
   if(user.role==='SUPPORT')redirect('/support');
-  const access = getWorkspaceAccess(user);
+  const access = await getWorkspaceAccess(user);
   const safeUser = {
     id: user.id,
     name: user.name,

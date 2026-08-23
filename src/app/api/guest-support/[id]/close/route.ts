@@ -9,7 +9,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   try{
-    closeGuestSupportConversation(user,id);
+    await closeGuestSupportConversation(user,id);
     return redirectWith(request,'/support/assisted?view=CLOSED','success','Conversation closed.');
   }catch(error){
     return redirectWith(request,`/support/assisted/${id}`,'error',errorMessage(error));

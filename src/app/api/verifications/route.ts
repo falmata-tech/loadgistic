@@ -13,7 +13,7 @@ export async function POST(request:NextRequest) {
   try {
     const file=form.get('file');
     const upload=file&&typeof file!=='string'&&file.size?await saveUpload(file,'verification'):null;
-    submitVerification(user,{subjectType:text(form,'subjectType'),subjectId:text(form,'subjectId'),verificationType:text(form,'verificationType'),relatedVehicleId:text(form,'relatedVehicleId'),expiresOn:text(form,'expiresOn'),documentName:text(form,'documentName')},upload);
+    await submitVerification(user,{subjectType:text(form,'subjectType'),subjectId:text(form,'subjectId'),verificationType:text(form,'verificationType'),relatedVehicleId:text(form,'relatedVehicleId'),expiresOn:text(form,'expiresOn'),documentName:text(form,'documentName')},upload);
     return redirectWith(request,'/app/verification','success','Verification submitted for review.');
   } catch(error) {
     return redirectWith(request,'/app/verification','error',errorMessage(error));

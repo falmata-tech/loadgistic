@@ -6,7 +6,7 @@ import {getDailyFeaturedProviders} from '@/lib/repository.js';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'Daily Featured Transporters',description:'Meet today\'s featured Ethiopian transporters and review the public presentation programme.'};
 
-export default function FeaturedTransportersPage(){
-  const featured=getDailyFeaturedProviders();
+export default async function FeaturedTransportersPage(){
+  const featured=await getDailyFeaturedProviders();
   return <><PublicHeader/><main className="public-app-page featured-workspace-page"><h1 className="sr-only">Daily Featured Transporters</h1><FeaturedProviderSection feature={featured}/></main></>;
 }

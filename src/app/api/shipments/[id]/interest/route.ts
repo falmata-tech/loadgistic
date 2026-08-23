@@ -8,6 +8,6 @@ export async function POST(request: NextRequest,{params}:{params:Promise<{id:str
   const user=await getCurrentUser();
   if(!user) return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
-  try { expressInterest(user,id,''); return redirectWith(request,'/app/loads','success','Interest sent to the business.'); }
+  try { await expressInterest(user,id,''); return redirectWith(request,'/app/loads','success','Interest sent to the business.'); }
   catch(error){ return redirectWith(request,'/app/loads','error',errorMessage(error)); }
 }

@@ -7,7 +7,7 @@ import { BadgeCheck, CreditCard, ExternalLink, Headphones, LayoutGrid, MapPinned
 
 export default async function WorkspaceMenuPage(){
   const user=await requireUser(undefined,{allowLimited:true});
-  const access=getWorkspaceAccess(user);
+  const access=await getWorkspaceAccess(user);
   const provider=['TRANSPORTER','DRIVER'].includes(user.role);
   const ownsProfile=provider&&user.driver_kind!=='COMPANY';
   const links=[

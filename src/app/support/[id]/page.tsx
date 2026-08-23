@@ -10,7 +10,7 @@ export default async function SupportConversationPage({params,searchParams}:{par
   const user=await requireUser(['SUPPORT','ADMIN'],{allowLimited:true});
   const {id}=await params;
   const query=await searchParams;
-  const conversation:any=getSupportConversation(user,id);
+  const conversation:any=await getSupportConversation(user,id);
   return <div className="page support-page">
     <PageHeader icon={Headphones} title={conversation.customer_name} subtitle={`${conversation.customer_workspace_name} · ${conversation.customer_role.replaceAll('_',' ')}`} action={<Link className="button secondary" href={user.role==='ADMIN'?'/admin/support':'/support'}><ArrowLeft aria-hidden="true"/>Inbox</Link>}/>
     <Flash error={query.error} success={query.success}/>

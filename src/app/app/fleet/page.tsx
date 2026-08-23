@@ -14,7 +14,7 @@ import { Eye, KeyRound, Save, ShieldCheck, Truck, UserRound } from 'lucide-react
 
 export default async function FleetPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
  const user=await requireUser(); if(user.role!=='TRANSPORTER') redirect('/app/home'); const query=await searchParams;
- const data:any=getDashboard(user); const allVehicles:any[]=listOwnVehicles(user); const vehicleResult:any=paginateResults(allVehicles,{page:query.truckPage,pageSize:10}); const vehicles:any[]=vehicleResult.items; const capacities:any[]=listOwnCapacity(user); const driverResult:any=paginateResults(listFleetDrivers(user),{page:query.driverPage,pageSize:10}); const drivers:any[]=driverResult.items; const latest=new Map(); for(const item of capacities)if(!latest.has(item.vehicle_id))latest.set(item.vehicle_id,item);
+ const data:any=await getDashboard(user); const allVehicles:any[]=await listOwnVehicles(user); const vehicleResult:any=await paginateResults(allVehicles,{page:query.truckPage,pageSize:10}); const vehicles:any[]=vehicleResult.items; const capacities:any[]=await listOwnCapacity(user); const driverResult:any=await paginateResults(await listFleetDrivers(user),{page:query.driverPage,pageSize:10}); const drivers:any[]=driverResult.items; const latest=new Map(); for(const item of capacities)if(!latest.has(item.vehicle_id))latest.set(item.vehicle_id,item);
  return <div className="page"><PageHeader icon={Truck} title="My Fleet" subtitle="Trucks and driver access."/>
  <Flash error={query.error} success={query.success}/>
  <section className="stats">{Object.entries(data.counts).map(([label,value])=><div className="stat" key={label}><span className="meta">{label}</span><strong>{String(value)}</strong></div>)}</section>

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const proofFile=form.get('proof');
     if(proofFile&&typeof proofFile!=='string'&&proofFile.size&&!proofTypeByStatus[nextStatus])throw new Error('INVALID_PROOF_TYPE');
     const upload=await saveUpload(proofFile,'tracking-proof');
-    transitionShipment(user,id,nextStatus,text(form,'note'),upload?{upload,proofType:proofTypeByStatus[nextStatus]}:null);
+    await transitionShipment(user,id,nextStatus,text(form,'note'),upload?{upload,proofType:proofTypeByStatus[nextStatus]}:null);
     revalidatePath('/app/shipments');
     revalidatePath(`/app/shipments/${id}`);
     return redirectWith(request,`/app/shipments/${id}`,'success','Shipment status updated.');

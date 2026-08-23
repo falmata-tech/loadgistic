@@ -10,7 +10,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   const form = await request.formData();
   try {
-    setTrackingMode(user,id,text(form,'trackingMode'));
+    await setTrackingMode(user,id,text(form,'trackingMode'));
     return redirectWith(request,`/app/shipments/${id}`,'success','Tracking preference saved.');
   } catch (error) {
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));

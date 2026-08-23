@@ -12,7 +12,7 @@ export async function POST(request:NextRequest){
   if(!rate.allowed)return json?NextResponse.json({ok:false,error:`Too many attempts. Try again in ${rate.retryAfterSeconds} seconds.`},{status:429}):redirectWith(request,'/shared-capacity','error',`Too many attempts. Try again in ${rate.retryAfterSeconds} seconds.`);
   const form=await request.formData();
   try{
-    const access=verifySharedCapacityAccess(text(form,'email'),text(form,'code'));
+    const access=await verifySharedCapacityAccess(text(form,'email'),text(form,'code'));
     await setSharedCapacitySession(access.emailDigest);
     return json?NextResponse.json({ok:true}):redirectWith(request,'/shared-capacity','success','Shared capacity unlocked on this browser.');
   }catch{

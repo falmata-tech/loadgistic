@@ -4,7 +4,7 @@ import { readPrivateUpload } from '@/lib/private-storage.js';
 
 export async function GET(_:Request,{params}:{params:Promise<{handle:string}>}){
   const {handle}=await params;
-  const image=getPublicProviderProfileImage(handle);
+  const image=await getPublicProviderProfileImage(handle);
   if(!image)return NextResponse.json({error:'Not found'},{status:404});
   const bytes=await readPrivateUpload(image.file_path);
   if(!bytes)return NextResponse.json({error:'Not found'},{status:404});

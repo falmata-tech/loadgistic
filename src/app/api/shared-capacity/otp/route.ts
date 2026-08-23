@@ -16,7 +16,7 @@ export async function POST(request:NextRequest){
     return NextResponse.json({ok:false,error:'Wait a few minutes before requesting another code.'},{status:429,headers:{'Cache-Control':'no-store'}});
   }
   try{
-    const challenge=requestSharedCapacityOtp(email);
+    const challenge=await requestSharedCapacityOtp(email);
     const delivery=await deliverPendingAccessEmails();
     const localTestCode=localAccessCodeForDevelopment(challenge,delivery);
     return NextResponse.json(localTestCode

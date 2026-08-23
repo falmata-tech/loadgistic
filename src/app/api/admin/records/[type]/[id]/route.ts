@@ -11,12 +11,12 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{type:st
   const form=await request.formData();
   try{
     const command=text(form,'command');
-    if(type.toUpperCase()==='DRIVER_PERMISSIONS')updateFleetDriverPermissions(user,id,{
+    if(type.toUpperCase()==='DRIVER_PERMISSIONS')await updateFleetDriverPermissions(user,id,{
       canManageCapacity:checked(form,'canManageCapacity'),
       canManageTracking:checked(form,'canManageTracking')
     });
-    else if(command)moderateAdminRecord(user,type.toUpperCase(),id,command);
-    else setAdminRecordActive(user,type.toUpperCase(),id,checked(form,'active'));
+    else if(command)await moderateAdminRecord(user,type.toUpperCase(),id,command);
+    else await setAdminRecordActive(user,type.toUpperCase(),id,checked(form,'active'));
     const returnTo=text(form,'returnTo');
     const target=returnTo.startsWith('/admin/operations')?returnTo:'/admin/operations';
     return redirectWith(request,target,'success','Platform record updated.');

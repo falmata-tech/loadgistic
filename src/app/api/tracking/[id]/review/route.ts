@@ -12,7 +12,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!await hasProviderReviewGrant(id))return redirectWith(request,`/track/${id}`,'error','Enter the private review code from the customer owner email.');
   const form=await request.formData();
   try{
-    submitProviderReview(id,grant.partyRole,Number(text(form,'rating')),text(form,'note'));
+    await submitProviderReview(id,grant.partyRole,Number(text(form,'rating')),text(form,'note'));
     revalidatePath(`/track/${id}`);
     return redirectWith(request,`/track/${id}`,'success','Your review is published.');
   }catch(error){return redirectWith(request,`/track/${id}`,'error',errorMessage(error));}

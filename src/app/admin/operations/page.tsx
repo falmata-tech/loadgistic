@@ -34,7 +34,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
   if(!allowedViews.length)redirect('/support');
   const requested=String(query.view||'WORKSPACES').toUpperCase();
   const view=allowedViews.some(item=>item.id===requested)?requested:allowedViews[0].id;
-  const data:any=getAdminOperations(user,query.q||'',{...query,view});
+  const data:any=await getAdminOperations(user,query.q||'',{...query,view});
   const records:any[]=data.items;
   const returnTo=`/admin/operations?view=${view}${query.q?`&q=${encodeURIComponent(query.q)}`:''}`;
 

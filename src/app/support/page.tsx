@@ -19,7 +19,7 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
   const query=await searchParams;
   const requested=String(query.view||'ASSIGNED').toUpperCase();
   const view=views.some(item=>item.id===requested)?requested:'ASSIGNED';
-  const result:any=listSupportInbox(user,view,{page:query.page,pageSize:15});
+  const result:any=await listSupportInbox(user,view,{page:query.page,pageSize:15});
   const available=Boolean(result.agent?.available);
 
   return <div className="page support-page">

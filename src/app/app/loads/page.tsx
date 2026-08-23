@@ -12,7 +12,7 @@ import { LoadBoardCard } from '@/components/load-board-card';
 
 export default async function LoadsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['TRANSPORTER','DRIVER','ADMIN']);
-  const access=getDriverAccess(user);
+  const access=await getDriverAccess(user);
   const canBrowse=access?.can_browse_load_board!==false;
   const canNegotiate=access?.can_negotiate_loads!==false&&access?.can_contact_businesses!==false;
   const query=await searchParams;
@@ -42,13 +42,13 @@ export default async function LoadsPage({searchParams}:{searchParams:Promise<Rec
     deliveryBy:query.deliveryBy||'',
     postedWithin:query.postedWithin||''
   };
-  const loadResult:any=board==='LOADS'?listLoadsPage(user,mode,filters,{page:query.page,pageSize:12}):paginateResults([],{page:1,pageSize:12});
-  const poolResult:any=paginateResults(board==='SHARED'&&sharedMode==='POOL'?listPooledLoads(user,filters):[],{page:query.page,pageSize:12});
-  const routeResult:any=paginateResults(board==='SHARED'&&sharedMode==='ROUTE'?listAlongRouteLoads(user,filters):[],{page:query.page,pageSize:12});
+  const loadResult:any=board==='LOADS'?await listLoadsPage(user,mode,filters,{page:query.page,pageSize:12}):await paginateResults([],{page:1,pageSize:12});
+  const poolResult:any=await paginateResults(board==='SHARED'&&sharedMode==='POOL'?await listPooledLoads(user,filters):[],{page:query.page,pageSize:12});
+  const routeResult:any=await paginateResults(board==='SHARED'&&sharedMode==='ROUTE'?await listAlongRouteLoads(user,filters):[],{page:query.page,pageSize:12});
   const loads:any[]=loadResult.items;
   const pools:any[]=poolResult.items;
   const routeChains:any[]=routeResult.items;
-  const truckRoutes:any[]=listOwnTruckRouteOptions(user);
+  const truckRoutes:any[]=await listOwnTruckRouteOptions(user);
   const result=board==='LOADS'?loadResult:sharedMode==='POOL'?poolResult:routeResult;
   const resultCount=result.total;
   const clearFilterHref=(keys:string[])=>{

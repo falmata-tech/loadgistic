@@ -10,7 +10,7 @@ export async function POST(request:NextRequest) {
   const shipmentId=text(form,'shipmentId');
   const returnPath=/^pshp-[0-9a-f-]+$/i.test(shipmentId)?`/track/${shipmentId}`:'/track';
   try{
-    const review=unlockProviderReview(shipmentId,text(form,'reviewCode'));
+    const review=await unlockProviderReview(shipmentId,text(form,'reviewCode'));
     const response=NextResponse.redirect(redirectUrl(request,`/track/${review.id}`),303);
     response.cookies.set(REVIEW_GRANT_COOKIE,createSessionToken(`provider-review:${review.id}`,TRACKING_IDLE_SECONDS),{
       httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:TRACKING_IDLE_SECONDS

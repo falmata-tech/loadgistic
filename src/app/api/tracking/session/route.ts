@@ -8,7 +8,7 @@ export async function POST(request:NextRequest) {
   const form=await request.formData();
   const shipmentId=text(form,'shipmentId');
   const grant=await getProviderTrackingGrant(shipmentId);
-  if(!grant||!getProviderGuestTracking(shipmentId,grant.partyRole))return NextResponse.json({ok:false},{status:403});
+  if(!grant||!await getProviderGuestTracking(shipmentId,grant.partyRole))return NextResponse.json({ok:false},{status:403});
   const response=NextResponse.json({ok:true});
   response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipmentId}:${grant.partyRole}`,TRACKING_IDLE_SECONDS),{
     httpOnly:true,

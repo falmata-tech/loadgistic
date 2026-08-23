@@ -36,9 +36,9 @@ function accessLabel(status:string){
 export default async function AccountPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(undefined,{allowLimited:true});
   const query=await searchParams;
-  const billing:any=getBillingSummary(user);
-  const access=getWorkspaceAccess(user);
-  const proofResult:any=paginateResults(billing.proofs||[],{page:query.paymentPage,pageSize:10});
+  const billing:any=await getBillingSummary(user);
+  const access=await getWorkspaceAccess(user);
+  const proofResult:any=await paginateResults(billing.proofs||[],{page:query.paymentPage,pageSize:10});
 
   return <div className="page account-page"><PageHeader icon={CreditCard} title="Account & plan" subtitle="Private account details and workspace access."/><Flash error={query.error} success={query.success}/><div className="two-col account-layout"><div className="stack account-primary-stack">
     <section className="card account-private-card"><h2 className="panel-heading"><UserRound aria-hidden="true"/>Private account</h2><p><strong>{user.name}</strong></p><p className="meta">{user.email}<br/>{user.phone||'No account phone'}<br/>{accountRoleLabel(user)}</p><p className="meta">Login contacts stay private.</p></section>

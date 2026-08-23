@@ -9,5 +9,5 @@ export async function GET(request:NextRequest){
   if(!user)return NextResponse.json({results:[]},{status:401});
   const query=request.nextUrl.searchParams.get('q')||'';
   const kind=request.nextUrl.searchParams.get('kind')||'ALL';
-  return NextResponse.json({results:searchDirectory(user,query,kind,20)});
+  return NextResponse.json({results:await searchDirectory(user,query,kind,20)});
 }

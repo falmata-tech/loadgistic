@@ -9,7 +9,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   try {
-    claimSupportConversation(user,id);
+    await claimSupportConversation(user,id);
     return redirectWith(request,`/support/${id}`,'success','Conversation assigned to you.');
   } catch(error) {
     return redirectWith(request,'/support?view=WAITING','error',errorMessage(error));

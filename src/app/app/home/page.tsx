@@ -43,9 +43,9 @@ function actionIcon(href:string):LucideIcon {
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(undefined,{allowLimited:true}); const query=await searchParams;
-  const access=getWorkspaceAccess(user);
+  const access=await getWorkspaceAccess(user);
   if(!access.granted){
-    const billing:any=getBillingSummary(user);
+    const billing:any=await getBillingSummary(user);
     const greeting=user.organization_name||user.provider_business_name||user.name;
     return <div className="page billing-limited-home">
       <PageHeader icon={LockKeyhole} title={greeting} subtitle="Restore access to continue managing transport operations."/>
@@ -64,9 +64,9 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   }
   if(user.role==='DRIVER') {
     const plain=(value:any)=>JSON.parse(JSON.stringify(value));
-    return <DriverCapacityHome vehicles={plain(listOwnVehicles(user))} capacities={plain(listOwnCapacity(user))} corridors={plain(listOwnRecurringCorridors(user))} access={plain(getDriverAccess(user))} query={query}/>;
+    return <DriverCapacityHome vehicles={plain(await listOwnVehicles(user))} capacities={plain(await listOwnCapacity(user))} corridors={plain(await listOwnRecurringCorridors(user))} access={plain(await getDriverAccess(user))} query={query}/>;
   }
-  const data:any=getDashboard(user);
+  const data:any=await getDashboard(user);
   const greeting=user.organization_name||user.provider_business_name||user.name;
   return <div className="page"><PageHeader icon={LayoutDashboard} title={greeting} subtitle="Manage today&apos;s transport operations."/><Flash error={query.error} success={query.success}/>
     <section className="action-grid">{data.actions.map((a:any)=>{const Icon=actionIcon(a.href);return <Link href={a.href} className="action-card" key={a.href}><span className="action-card-icon"><Icon aria-hidden="true"/></span><div><h3>{a.label}</h3><div className="meta">{a.description}</div></div><ArrowRight aria-hidden="true"/></Link>})}</section>

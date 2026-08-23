@@ -9,7 +9,7 @@ export async function POST(request:NextRequest) {
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const form=await request.formData();
   try {
-    createSupportAgent(user,{
+    await createSupportAgent(user,{
       name:text(form,'name'),
       email:text(form,'email'),
       password:text(form,'password'),

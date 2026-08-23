@@ -10,7 +10,7 @@ export async function POST(request:NextRequest){
   if(!user)return NextResponse.json({error:'Sign in again to refresh this truck location.'},{status:401});
   try{
     const input=await request.json();
-    return NextResponse.json(refreshCapacityLocation(user,{
+    return NextResponse.json(await refreshCapacityLocation(user,{
       vehicleId:String(input.vehicleId||''),
       approximateLat:input.approximateLat,
       approximateLng:input.approximateLng,

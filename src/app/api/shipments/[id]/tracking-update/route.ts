@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const form = await request.formData();
   const automatic=request.headers.get('x-loadgistic-automatic-location')==='1';
   try {
-    const result=addTrackingUpdate(user,id,{locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')});
+    const result=await addTrackingUpdate(user,id,{locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')});
     if(automatic)return NextResponse.json({ok:true,...result});
     return redirectWith(request,`/app/shipments/${id}`,'success','Tracking update recorded.');
   } catch (error) {

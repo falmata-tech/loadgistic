@@ -10,7 +10,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try{
-    assignShipmentVehicle(user,id,text(form,'vehicleId'));
+    await assignShipmentVehicle(user,id,text(form,'vehicleId'));
     return redirectWith(request,`/app/shipments/${id}`,'success','Truck and driver assigned.');
   }catch(error){
     return redirectWith(request,`/app/shipments/${id}`,'error',errorMessage(error));

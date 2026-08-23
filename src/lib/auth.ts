@@ -16,9 +16,9 @@ export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
   const token = store.get(SESSION_COOKIE)?.value;
   const payload = verifySessionToken(token);
   if (!payload) return null;
-  const user = getUserById(payload.sub);
+  const user = await getUserById(payload.sub);
   if (!user || !user.active) return null;
-  if (!options.allowLimited && !getWorkspaceAccess(user).granted) return null;
+  if (!options.allowLimited && !(await getWorkspaceAccess(user)).granted) return null;
   return user;
 }
 
@@ -26,7 +26,7 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
   const user = await getCurrentUser({allowLimited:true});
   if (!user) redirect('/login?error=Please+log+in');
   if (allowedRoles && !allowedRoles.includes(user.role)) redirect('/app/home?error=You+do+not+have+access+to+that+page');
-  if (!options.allowLimited && !getWorkspaceAccess(user).granted) redirect('/app/home?billing=required');
+  if (!options.allowLimited && !(await getWorkspaceAccess(user)).granted) redirect('/app/home?billing=required');
   return user;
 }
 

@@ -6,5 +6,5 @@ import {redirectWith} from '@/lib/redirects';
 
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}){
   const user=await getCurrentUser({allowLimited:true});if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
-  const {id}=await params;try{claimGuestSupportConversation(user,id);return redirectWith(request,`/support/assisted/${id}`,'success','Conversation assigned.');}catch(error){return redirectWith(request,'/support/assisted?view=WAITING','error',errorMessage(error));}
+  const {id}=await params;try{await claimGuestSupportConversation(user,id);return redirectWith(request,`/support/assisted/${id}`,'success','Conversation assigned.');}catch(error){return redirectWith(request,'/support/assisted?view=WAITING','error',errorMessage(error));}
 }

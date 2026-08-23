@@ -17,9 +17,9 @@ export default async function CompanyPage({ params,searchParams }: { params: Pro
   const { handle } = await params;
   const query=await searchParams;
   const user=await requireUser();
-  const company:any = getPublicCompany(handle);
+  const company:any = await getPublicCompany(handle);
   if (!company) notFound();
-  const comparison=query.compare==='coverage'?getProfileRouteComparison(user,company):null;
+  const comparison=query.compare==='coverage'?await getProfileRouteComparison(user,company):null;
   const isBusiness=Boolean(company.is_business);
   const canSendProviderRequest=!isBusiness&&['SHIPPER','RECEIVER'].includes(user.role);
   const canSelectReceiver=isBusiness&&['SHIPPER','RECEIVER'].includes(user.role)&&company.id!==user.organization_id;
@@ -27,13 +27,13 @@ export default async function CompanyPage({ params,searchParams }: { params: Pro
   const providerRef = `${company.page_kind === 'provider' ? 'profile' : 'org'}:${company.id}`;
   const initials = String(company.name || company.business_name).split(' ').slice(0,2).map((v:string)=>v[0]).join('');
   const hasContact=Boolean(company.contact_phone||company.contact_email);
-  const routeResult:any=paginateResults(company.routes||[],{page:query.routePage,pageSize:10});
-  const areaResult:any=paginateResults(company.service_areas||[],{page:query.areaPage,pageSize:10});
-  const liveRouteResult:any=paginateResults(company.live_routes||[],{page:query.liveRoutePage,pageSize:10});
-  const vehicleResult:any=paginateResults(company.vehicles||[],{page:query.truckPage,pageSize:12});
-  const capacityResult:any=paginateResults(company.capacities||[],{page:query.capacityPage,pageSize:10});
+  const routeResult:any=await paginateResults(company.routes||[],{page:query.routePage,pageSize:10});
+  const areaResult:any=await paginateResults(company.service_areas||[],{page:query.areaPage,pageSize:10});
+  const liveRouteResult:any=await paginateResults(company.live_routes||[],{page:query.liveRoutePage,pageSize:10});
+  const vehicleResult:any=await paginateResults(company.vehicles||[],{page:query.truckPage,pageSize:12});
+  const capacityResult:any=await paginateResults(company.capacities||[],{page:query.capacityPage,pageSize:10});
 
-  const networkState=getNetworkState(user,company.page_kind==='provider'?'profile':'org',company.id);
+  const networkState=await getNetworkState(user,company.page_kind==='provider'?'profile':'org',company.id);
   return <div className="page"><Flash error={query.error} success={query.success}/>
     <div className="company-hero"><div className="company-logo">{initials}</div><div><div className="profile-title-line"><h1 className="page-title">{company.name}</h1>{company.verified?<StatusPill status="Approved"/>:null}</div><p className="page-subtitle">{company.headline}</p><div className="meta icon-meta"><MapPin aria-hidden="true"/>{company.city||'Location not added'} · {isBusiness?'Business':String(company.type).replaceAll('_',' ')}</div><VerificationBadges badges={company.verification_badges}/></div><div className="hero-actions">{canSendProviderRequest?<Link className="button" href={`/app/shipments/new?provider=${providerRef}`}><Send aria-hidden="true"/>Request</Link>:null}{canSelectReceiver?<Link className="button" href={`/app/shipments/new?receiver=${company.id}`}><CirclePlus aria-hidden="true"/>Create shipment</Link>:null}{!isOwnProfile&&(company.map_routes.length||company.map_areas.length)?<Link className="button secondary icon-button-label" href={`/app/providers/${handle}?compare=coverage#route-coverage`}><GitCompareArrows aria-hidden="true"/>Compare routes</Link>:null}<NetworkActions state={networkState} targetKind={company.page_kind==='provider'?'profile':'org'} targetId={company.id} returnTo={`/app/providers/${handle}`}/></div></div>
 

@@ -13,7 +13,7 @@ export default async function TrackPage({params,searchParams}:{params:Promise<{i
   const query=await searchParams;
   const grant=await getProviderTrackingGrant(id);
   if(!grant)redirect('/track?error=Enter+the+private+shipment+code+to+open+tracking.');
-  const shipment:any=getProviderGuestTracking(id,grant.partyRole);
+  const shipment:any=await getProviderGuestTracking(id,grant.partyRole);
   if(!shipment)notFound();
   const reviewAuthorized=await hasProviderReviewGrant(id);
   const canReview=Boolean(shipment.can_review&&reviewAuthorized);

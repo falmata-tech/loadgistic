@@ -25,7 +25,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       upload=await saveUpload(file,'tracking-proof');
     }
     const proof=upload?{path:upload.path,originalName:upload.originalName,mimeType:upload.mimeType}:null;
-    const result=updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{
+    const result=await updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{
       locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),
       locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')
     });

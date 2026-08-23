@@ -10,8 +10,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try {
-    assignFleetDriverVehicle(user,id,String(form.get('vehicleId')||''));
-    updateFleetDriverPermissions(user,id,{
+    await assignFleetDriverVehicle(user,id,String(form.get('vehicleId')||''));
+    await updateFleetDriverPermissions(user,id,{
       canManageCapacity:checked(form,'canManageCapacity'),
       canManageTracking:checked(form,'canManageTracking')
     });

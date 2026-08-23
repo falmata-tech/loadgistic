@@ -17,7 +17,7 @@ export async function POST(request:NextRequest){
     const file=form.get('file');
     if(file&&typeof file!=='string'&&file.size&&process.env.NODE_ENV==='production'&&process.env.PRIVATE_UPLOAD_MALWARE_SCANNED!=='true')throw new Error('GUEST_FILE_SCANNING_REQUIRED');
     const upload=file&&typeof file!=='string'&&file.size?await saveUpload(file,'guest-support'):null;
-    const result=createGuestSupportConversation({email:text(form,'email'),phone:text(form,'phone'),body:text(form,'body')},upload);
+    const result=await createGuestSupportConversation({email:text(form,'email'),phone:text(form,'phone'),body:text(form,'body')},upload);
     await setGuestSupportSession(result.id,result.emailDigest);
     await deliverPendingAccessEmails();
     return json?NextResponse.json({ok:true,conversationId:result.id}):redirectWith(request,`/help/${result.id}`,'success','Conversation started.');

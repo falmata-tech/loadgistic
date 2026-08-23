@@ -20,8 +20,8 @@ export default async function ShipmentsPage({searchParams}:{searchParams:Promise
   const view=availableViews.some(item=>item.id===requestedView)?requestedView:'ALL';
   const search=String(query.q||'').trim().toLowerCase();
   const status=String(query.status||'ALL').toUpperCase();
-  const result:any=listMyShipmentsPage(user,{view,status,q:search},{page:query.page,pageSize:12});
-  const deadlineSummary=isBusiness?getOwnedShipmentDeadlineSummary(user):{needsReview:0,hidden:0};
+  const result:any=await listMyShipmentsPage(user,{view,status,q:search},{page:query.page,pageSize:12});
+  const deadlineSummary=isBusiness?await getOwnedShipmentDeadlineSummary(user):{needsReview:0,hidden:0};
   const visibleStatuses=['POSTED','SENT','CONTACTED','AGREED','ASSIGNED','IN_TRANSIT','ON_HOLD','ISSUE','DELIVERED','COMPLETED','CANCELLED'];
   return <div className="page"><ShipmentProjectionRefresh/>
     <PageHeader icon={ClipboardList} title="My Shipments" subtitle={isBusiness?'Posted work, Tracking, and history.':'Interests, direct requests, Tracking, and history.'} action={isBusiness?<Link href="/app/shipments/new" className="button icon-button-label"><CirclePlus aria-hidden="true"/>Post shipment</Link>:undefined}/>

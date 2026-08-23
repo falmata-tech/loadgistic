@@ -18,5 +18,5 @@ export async function GET(request:NextRequest){
   const session=await getSharedCapacitySession();
   if(!session)return NextResponse.json({error:'Access required.'},{status:401,headers:{'Cache-Control':'no-store'}});
   const params=new URL(request.url).searchParams;
-  return NextResponse.json(listSharedCapacity(session.emailDigest,filters(params)),{headers:{'Cache-Control':'private, no-store'}});
+  return NextResponse.json(await listSharedCapacity(session.emailDigest,filters(params)),{headers:{'Cache-Control':'private, no-store'}});
 }

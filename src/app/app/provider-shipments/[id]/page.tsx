@@ -13,7 +13,7 @@ export default async function ProviderShipmentPage({params,searchParams}:{params
   const user=await requireUser();
   if(!['TRANSPORTER','DRIVER'].includes(user.role))redirect('/app/home');
   const {id}=await params,query=await searchParams;
-  const shipment:any=getProviderShipment(user,id);
+  const shipment:any=await getProviderShipment(user,id);
   if(!shipment)notFound();
   const next=transitions[shipment.operational_status]||[];
   return <div className="page"><PageHeader icon={PackageCheck} title={`Tracking · ${shipment.code}`} subtitle={`${shipment.origin} → ${shipment.destination}`} action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/>Tracking</Link>}/><Flash error={query.error} success={query.success}/>

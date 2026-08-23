@@ -9,9 +9,9 @@ import { LoadBoardCard } from '@/components/load-board-card';
 export default async function AlongRouteLoadPage({params}:{params:Promise<{id:string}>}){
   const user=await requireUser(['TRANSPORTER','DRIVER','ADMIN']);
   const {id}=await params;
-  const chain:any=getAlongRouteLoad(user,id);
+  const chain:any=await getAlongRouteLoad(user,id);
   if(!chain)notFound();
-  const access=getDriverAccess(user);
+  const access=await getDriverAccess(user);
   const canNegotiate=access?.can_negotiate_loads!==false&&access?.can_contact_businesses!==false;
   return <div className="page">
     <PageHeader icon={MapPinned} title="Along the route" subtitle={`${chain.member_count} separate shipments in travel order`} action={<Link className="button secondary icon-button-label" href="/app/loads?board=SHARED&sharedMode=ROUTE"><Route aria-hidden="true"/>Shared Shipments</Link>}/>

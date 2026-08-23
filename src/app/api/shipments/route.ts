@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.redirect(new URL('/login', request.url), 303);
   const form = await request.formData();
   try {
-    const result = createShipment(user, {
+    const result = await createShipment(user, {
       title: text(form,'title'),
       serviceMode: text(form,'serviceMode'),
       distributionMode: text(form,'distributionMode'),
