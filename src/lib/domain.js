@@ -29,6 +29,19 @@ export function validateSupportMessage(body) {
   return value;
 }
 
+export function normalizePrivateContactEmail(value) {
+  const email=String(value||'').trim().toLowerCase();
+  if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('INVALID_PRIVATE_CONTACT_EMAIL');
+  return email;
+}
+
+export function normalizeOptionalCallbackPhone(value) {
+  const phone=String(value||'').trim();
+  if(!phone)return null;
+  if(phone.length>30||!/^\+?[0-9][0-9 ()-]{6,28}$/.test(phone))throw new Error('INVALID_CALLBACK_PHONE');
+  return phone;
+}
+
 export function validateSupportAgentLimit(value) {
   const limit=Number(value);
   if (!Number.isInteger(limit)||limit<1||limit>20) throw new Error('INVALID_SUPPORT_AGENT_LIMIT');
@@ -111,15 +124,14 @@ export function validatePriceMode({ priceMode, priceEtb, targetPriceEtb }) {
   };
 }
 
-export function validateCapacity(status, availablePercent) {
+export function validateCapacity(status) {
   if (!Object.values(CAPACITY_STATUSES).includes(status)) throw new Error('INVALID_CAPACITY_STATUS');
   if (status === CAPACITY_STATUSES.EMPTY) return 100;
   if (status === CAPACITY_STATUSES.OFF_DUTY) return 0;
-  const percentage = Number(availablePercent);
-  if (!Number.isInteger(percentage) || percentage < 1 || percentage > 99) {
-    throw new Error('CAPACITY_PERCENT_REQUIRED');
-  }
-  return percentage;
+  // The current SQLite adapter still has a non-null legacy percentage column.
+  // Partial is a categorical product signal; this private placeholder is never
+  // requested from a Driver or exposed as remaining-space information.
+  return 50;
 }
 
 export function validateAcceptedLoads(status, acceptedLoads) {
@@ -239,10 +251,10 @@ export function loadBoardDeadlineState(deliveryDate, todayDate, graceDays = LOAD
   return today <= deadline + graceDays * 86_400_000 ? 'PAST_DUE' : 'EXPIRED';
 }
 
-export function capacityLabel(status, percent) {
-  if (status === CAPACITY_STATUSES.EMPTY) return 'Empty · 100% available';
+export function capacityLabel(status) {
+  if (status === CAPACITY_STATUSES.EMPTY) return 'Empty';
   if (status === CAPACITY_STATUSES.OFF_DUTY) return 'Off duty · Not shown';
-  return `Partial · ${percent}% available`;
+  return 'Partial';
 }
 
 export function roleCanCreateShipment(role) {
@@ -258,6 +270,12 @@ export function roleCanBrowseLoads(role) {
 }
 
 export function statusLabel(value) {
+  const labels = {
+    TO_PICKUP: 'Going to pickup',
+    IN_TRANSIT: 'En route'
+  };
+  const normalized = String(value || '').toUpperCase();
+  if (labels[normalized]) return labels[normalized];
   return String(value || '')
     .toLowerCase()
     .split('_')

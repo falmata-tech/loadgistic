@@ -17,6 +17,8 @@ const PURPOSE_BUCKET={
   proof:'shipment-proof',
   'tracking-proof':'shipment-proof',
   'load-proof':'shipment-proof',
+  'provider-profile':'provider-profile',
+  'guest-support':'support-attachment',
   file:'shipment-proof'
 };
 

@@ -67,15 +67,25 @@ const LOCATIONS = Object.freeze([
 
 const CARGO_CONFIGURATIONS = Object.freeze([
   'Cargo van',
+  'Cargo van',
+  'Cargo van',
+  'Pickup truck',
+  'Pickup truck',
+  'Pickup stake body',
+  'Pickup stake body',
+  'Mini Open Body Truck',
   'Mini Open Body Truck',
   'Mini Stake Body Truck',
+  'Mini Stake Body Truck',
+  'Mini Box Truck',
   'Mini Box Truck',
   'Light Stake Body Truck',
+  'Light Stake Body Truck',
+  'Light Box Truck',
   'Light Box Truck',
   'Medium Stake Body Truck',
   'Medium Box Truck',
-  'Heavy Rigid Stake Body Truck',
-  'Heavy Rigid Stake Body Truck + Trailer'
+  'Heavy Rigid Stake Body Truck'
 ]);
 
 const MAKES = Object.freeze([
@@ -455,7 +465,7 @@ export function populateStressData(db, { scale = 1 } = {}) {
       const subscriptionId = `stress-sub-driver-${suffix}`;
       const access=subscriptionFixture(driverIndex,'DRIVER',now);
       subscriptionInsert.run(subscriptionId,null,providerId,'plan-solo',access.status,access.billingModel,access.startsAt,access.endsAt,timestamp);
-      subscriptions.push({id:subscriptionId,ownerId:providerId,ownerType:'PROVIDER_PROFILE',plan:'Self-managed Driver Demand'});
+      subscriptions.push({id:subscriptionId,ownerId:providerId,ownerType:'PROVIDER_PROFILE',plan:'Independent Driver'});
       const vehicle = {id:vehicleId,organizationId:null,providerProfileId:providerId,ownerUserId:userId,driverUserId:userId,active:driverIndex % 17 === 0 ? 0 : 1,index:vehicles.length + 1};
       vehicles.push(vehicle);
       selfManaged.push({id:providerId,userId,name,city,vehicle});

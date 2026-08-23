@@ -12,7 +12,7 @@ import { VEHICLE_CONFIGURATIONS, vehicleConfigurationImage } from '@/lib/vehicle
 
 type Filters=Record<string,string>;
 type MarketTruck={
-  status:string; available_percent:number; cargo_configuration:string;
+  status:string; cargo_configuration:string;
   movement_scope:string; local_place_label?:string|null; local_radius_km?:number|null; location_area?:string|null;
   location_updated_at?:string|null; current_route_origin?:string|null; current_route_destination?:string|null;
   origin?:string|null; destination?:string|null; travel_date?:string|null; planned_space_status?:string|null;
@@ -42,7 +42,6 @@ export function ProviderTruckMarketBoard({filters,result}:{filters:Filters;resul
     filters.status?filters.status.toLowerCase():null,
     filters.loadType?`Accepts ${filters.loadType}`:null,
     filters.vehicleCategory||null,
-    filters.minAvailable?`${filters.minAvailable}%+ space`:null,
     filters.freshness?filters.freshness==='FRESH'?'Current':'Update needed':null,
     filters.currentAreaPlaceRef?`Near ${filters.currentArea||'selected area'}`:null
   ].filter(Boolean).map(label=>({label:String(label)}));
@@ -59,7 +58,6 @@ export function ProviderTruckMarketBoard({filters,result}:{filters:Filters;resul
       <section className="board-more-filters">
         <h3><SlidersHorizontal aria-hidden="true"/>More filters</h3>
         <div className="board-filter-grid">
-          <div className="form-group"><label htmlFor="provider-min-space"><Gauge aria-hidden="true"/>Available space</label><select id="provider-min-space" name="minAvailable" defaultValue={filters.minAvailable}><option value="">Any available space</option><option value="25">25% or more</option><option value="50">50% or more</option><option value="75">75% or more</option><option value="100">100% empty</option></select></div>
           <div className="form-group"><label htmlFor="provider-freshness"><CalendarClock aria-hidden="true"/>Freshness</label><select id="provider-freshness" name="freshness" defaultValue={filters.freshness}><option value="">Any update age</option><option value="FRESH">Current</option><option value="UPDATE_NEEDED">Update needed</option></select></div>
           <div className="form-group"><label htmlFor="provider-current-area"><MapPin aria-hidden="true"/>Truck area near</label><EthiopiaPlaceInput id="provider-current-area" name="currentArea" placeRefName="currentAreaPlaceRef" defaultPlaceRef={filters.currentAreaPlaceRef} defaultValue={filters.currentArea} placeholder="Adama, Ethiopia"/></div>
           <div className="form-group"><label htmlFor="provider-current-radius"><CircleDotDashed aria-hidden="true"/>Search radius</label><select id="provider-current-radius" name="currentAreaRadiusKm" defaultValue={filters.currentAreaRadiusKm}><option value="25">25 km</option><option value="50">50 km</option><option value="100">100 km</option><option value="200">200 km</option></select></div>
@@ -68,8 +66,7 @@ export function ProviderTruckMarketBoard({filters,result}:{filters:Filters;resul
       </section>
     </BoardFilterSheet>
     <section className="capacity-market-grid">{result.items.map((truck,index)=><article className="card capacity-market-card provider-market-card" key={`${truck.updated_at}-${truck.cargo_configuration}-${index}`}>
-      <div className="market-card-top"><div className="market-truck-heading"><div className="truck-status-visual"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt={truck.cargo_configuration} width={120} height={120}/><span>{truck.available_percent}%</span></div><div><div className="status-row"><StatusPill status={truck.status}/><StatusPill status={truck.freshness}/></div><h2>{truck.cargo_configuration}</h2><div className="meta">Anonymous truck signal</div></div></div><strong className="market-capacity-value">{capacityLabel(truck.status,truck.available_percent)}</strong></div>
-      <div className="progress"><span style={{width:`${truck.available_percent}%`}}/></div>
+      <div className="market-card-top"><div className="market-truck-heading"><div className="truck-status-visual"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt={truck.cargo_configuration} width={120} height={120}/></div><div><div className="status-row"><StatusPill status={truck.status}/><StatusPill status={truck.freshness}/></div><h2>{truck.cargo_configuration}</h2><div className="meta">Anonymous truck signal</div></div></div><strong className="market-capacity-value">{capacityLabel(truck.status)}</strong></div>
       {truck.freshness==='UPDATE_NEEDED'?<div className="alert warning stale-capacity-alert"><CalendarClock aria-hidden="true"/>Old update. Treat this only as a market signal.</div>:null}
       <div className="market-signal-grid">
         <div><small><MapPin aria-hidden="true"/>Current area</small><strong>{truck.movement_scope!=='INTERCITY'&&truck.local_place_label?`${truck.local_place_label} · ${truck.local_radius_km} km radius`:truck.location_area||truck.origin||'Area not updated'}</strong><span>{truck.location_updated_at?`Location ${relativeTime(truck.location_updated_at)}`:'Location time unavailable'}</span></div>

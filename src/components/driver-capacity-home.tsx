@@ -1,13 +1,11 @@
 "use client";
 
 import React from 'react';
-import { PageHeader } from './page-header';
-import { Flash } from './flash';
 import { CapacityForm } from './capacity-form';
 import { StatusPill } from './status-pill';
 import { capacityLabel } from '@/lib/domain.js';
 import { relativeTime } from '@/lib/ui';
-import { Gauge, LocateFixed, Power, PowerOff, RefreshCw, ShieldCheck } from 'lucide-react';
+import { LocateFixed, Power, PowerOff, RefreshCw, ShieldCheck } from 'lucide-react';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
 import { obscureCoordinate } from '@/lib/location-privacy.js';
 
@@ -57,16 +55,18 @@ export function DriverCapacityHome({ vehicles, capacities, corridors, access, qu
   const current = capacities[0];
   const restricted=access?.kind==='COMPANY'&&!access.can_manage_capacity;
   return <div className="page capacity-home-page">
-    <PageHeader icon={restricted?Power:Gauge} title={restricted?'Availability':'My capacity'} subtitle={restricted?'Available or Off Duty.':'Keep your truck signal current.'}/>
-    <Flash error={query.error} success={query.success}/>
+    <h1 className="sr-only">Capacity management</h1>
+    {query.error?<div className="alert error capacity-home-error" role="alert">{query.error}</div>:null}
+    <section className="driver-home-section driver-capacity-workspace" aria-label="Capacity management">
     {restricted?<section className="capacity-signal-strip" aria-label="Current capacity signal">
-      <div><span className={`live-dot ${current?.status === 'OFF_DUTY' || !current ? 'off' : ''}`} aria-hidden="true"/><span><strong>{current ? capacityLabel(current.status,current.available_percent) : 'No capacity signal yet'}</strong><small>{current?.location_area || 'Add your general area to start'}</small></span></div>
+      <div><span className={`live-dot ${current?.status === 'OFF_DUTY' || !current ? 'off' : ''}`} aria-hidden="true"/><span><strong>{current ? capacityLabel(current.status) : 'No capacity signal yet'}</strong><small>{current?.location_area || 'Add your general area to start'}</small></span></div>
       <div className="signal-facts">
         <span><small>Capacity updated</small><strong>{current ? relativeTime(current.updated_at) : 'Never'}</strong></span>
         <span><small>Location updated</small><strong>{current?.location_updated_at ? relativeTime(current.location_updated_at) : 'Never'}</strong></span>
         <span><small>Freshness</small>{current ? <StatusPill status={current.freshness}/> : <span className="status expired">Not published</span>}</span>
       </div>
     </section>:null}
-    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle}/>:<CapacityForm vehicles={vehicleOptions} corridors={corridors} returnTo="/app/home" allowCorridors={access?.kind==='SELF_MANAGED'}/>}
+    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection={vehicleOptions.length===1} corridors={corridors} returnTo="/app/home" allowCorridors={access?.kind==='SELF_MANAGED'}/>}
+    </section>
   </div>;
 }

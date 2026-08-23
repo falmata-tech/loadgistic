@@ -17,6 +17,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   let upload:null|{path:string;originalName:string;mimeType:string}=null;
   try{
     const nextStatus=text(form,'nextStatus');
+    const returnTo=text(form,'returnTo')==='/app/home'?'/app/home':`/app/provider-shipments/${id}`;
     const file=form.get('proof');
     if(file&&typeof file!=='string'&&file.size){
       if(!['LOADING','UNLOADING','ISSUE'].includes(nextStatus))throw new Error('PROOF_NOT_ALLOWED_FOR_STATUS');
@@ -24,10 +25,14 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       upload=await saveUpload(file,'tracking-proof');
     }
     const proof=upload?{path:upload.path,originalName:upload.originalName,mimeType:upload.mimeType}:null;
-    const result=updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof);
+    const result=updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{
+      locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),
+      locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')
+    });
     if(result.status==='COMPLETED')await deliverPendingShipmentEmails(2);
     revalidatePath('/app/provider-shipments');
     revalidatePath(`/app/provider-shipments/${id}`);
-    return redirectWith(request,`/app/provider-shipments/${id}`,'success',result.status==='COMPLETED'?'Tracking complete. The customer record is queued for email delivery.':'Tracking status updated.');
-  }catch(error){if(upload?.path){try{await removePrivateUpload(upload.path);}catch{}}return redirectWith(request,`/app/provider-shipments/${id}`,'error',errorMessage(error));}
+    revalidatePath('/app/home');
+    return redirectWith(request,returnTo,'success',result.status==='COMPLETED'?'Tracking complete. The customer record is queued for email delivery.':'Tracking status updated.');
+  }catch(error){if(upload?.path){try{await removePrivateUpload(upload.path);}catch{}}const returnTo=text(form,'returnTo')==='/app/home'?'/app/home':`/app/provider-shipments/${id}`;return redirectWith(request,returnTo,'error',errorMessage(error));}
 }

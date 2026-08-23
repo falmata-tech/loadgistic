@@ -1,13 +1,6 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Building2, Gauge, MapPinned, Star, Truck } from 'lucide-react';
-import { PublicHeader } from '@/components/public-header';
-import { listPublicProviders } from '@/lib/repository.js';
+import { redirect } from 'next/navigation';
 
 export const dynamic='force-dynamic';
-export const metadata:Metadata={title:'Transport providers',description:'Explore public transport-provider profiles, fleets, reviews, and available truck capacity.'};
-
-export default function ProvidersPage(){
-  const providers=listPublicProviders({limit:48});
-  return <><PublicHeader/><main className="public-provider-directory"><section className="provider-directory-hero"><div className="container"><span className="hero-kicker"><Building2 aria-hidden="true"/>Transport providers</span><h1>Know who you are trusting with the load.</h1><p>Compare services, active trucks, customer reviews, contact options, and current availability before you call.</p></div></section><section className="container provider-directory-grid">{providers.map((provider:any)=><article className="provider-directory-card" key={provider.id} style={{'--provider-primary':provider.theme_primary,'--provider-accent':provider.theme_accent} as any}><div className="provider-monogram">{provider.name.split(/\s+/).slice(0,2).map((part:string)=>part[0]).join('')}</div><div><h2>{provider.name}</h2><p>{provider.headline||'Road freight capacity and transport service'}</p></div><div className="provider-directory-facts"><span><Truck aria-hidden="true"/><strong>{provider.fleet_size}</strong> active {provider.fleet_size===1?'truck':'trucks'}</span><span><Gauge aria-hidden="true"/><strong>{provider.active_capacity_count}</strong> {provider.active_capacity_count===1?'truck':'trucks'} available now</span><span><Star aria-hidden="true"/><strong>{provider.review_count?provider.average_rating:'New'}</strong> {provider.review_count?`${provider.review_count} verified ${provider.review_count===1?'review':'reviews'}`:'No reviews yet'}</span></div><Link className="button" href={`/@${provider.handle}`}><MapPinned aria-hidden="true"/>View provider</Link></article>)}</section></main></>;
+export default async function ProvidersPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
+  const query=await searchParams;const params=new URLSearchParams();if(query.q)params.set('q',query.q);const suffix=params.size?`?${params.toString()}`:'';redirect(`/${suffix}`);
 }

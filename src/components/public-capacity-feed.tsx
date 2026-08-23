@@ -2,70 +2,73 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Building2, ChevronDown, CircleDotDashed, ExternalLink, List, LocateFixed, Mail, Map, MapPinned, MessageCircle, Phone, RefreshCw, Route, Search, ShieldCheck, SlidersHorizontal, Star, Truck, X } from 'lucide-react';
+import { Building2, ChevronDown, LocateFixed, MapPinned, Phone, RefreshCw, Search, SlidersHorizontal, Truck, UserRound, X } from 'lucide-react';
 import { obscureCoordinate, BUSINESS_SEARCH_PRIVACY_KM } from '@/lib/location-privacy.js';
 import { PublicCapacityMap } from './public-capacity-map';
+import { EthiopiaPlaceInput } from './ethiopia-place-input';
+import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
 
 type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number};
 type Point={lat:number;lng:number};
 type VisitorLocationState='idle'|'locating'|'ready'|'denied'|'timeout'|'unavailable'|'unsupported'|'insecure'|'outside'|'error';
+type SearchSuggestion={key:string;kind:'PROVIDER'|'TRUCK';title:string;detail:string;href:string};
 
-function signalTitle(item:any){return item.availability_geometry==='ROUTE'?`${item.current_route_origin} → ${item.current_route_destination}`:`${item.location_area||'General current area'} · ${item.work_radius_km||50} km working radius`;}
-
-export function PublicCapacityFeed({initial,query,searchPath='/'}:{initial:FeedResult;query:Record<string,string>;searchPath?:string}){
+export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/public/capacity'}:{initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string}){
   const [items,setItems]=React.useState(initial.items);
   const [cursor,setCursor]=React.useState(initial.nextCursor);
   const [hasMore,setHasMore]=React.useState(initial.hasMore);
   const [loading,setLoading]=React.useState(false);
   const [error,setError]=React.useState('');
-  const [view,setView]:['LIST'|'MAP',(value:'LIST'|'MAP')=>void]=React.useState('MAP');
-  const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(null);
+  const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(initial.items.some((item:any)=>item.id===query.truck)?query.truck:null);
   const [viewer,setViewer]:[Point|null,(value:Point|null)=>void]=React.useState(null);
-  const [near,setNear]:[{lat:number;lng:number;radius:number}|null,(value:{lat:number;lng:number;radius:number}|null)=>void]=React.useState(null);
+  const parsedNearLat=Number(query.nearLat),parsedNearLng=Number(query.nearLng);
+  const initialNear=query.nearLat!==''&&query.nearLng!==''&&Number.isFinite(parsedNearLat)&&parsedNearLat>=3&&parsedNearLat<=15&&Number.isFinite(parsedNearLng)&&parsedNearLng>=32&&parsedNearLng<=49?{lat:parsedNearLat,lng:parsedNearLng,radius:Number(query.nearRadiusKm)||20}:null;
+  const [near,setNear]:[{lat:number;lng:number;radius:number}|null,(value:{lat:number;lng:number;radius:number}|null)=>void]=React.useState(initialNear);
+  const [nearFilterEnabled,setNearFilterEnabled]=React.useState(Boolean(initialNear));
   const [locationState,setLocationState]:[VisitorLocationState,(value:VisitorLocationState)=>void]=React.useState('idle');
   const [locationFeedback,setLocationFeedback]=React.useState('');
   const [filterOpen,setFilterOpen]=React.useState(false);
+  const [geometryFilter,setGeometryFilter]=React.useState(query.geometry||'');
+  const [searchTerm,setSearchTerm]=React.useState(query.q||'');
+  const [searchSuggestions,setSearchSuggestions]=React.useState([] as SearchSuggestion[]);
+  const [searchSuggestionsOpen,setSearchSuggestionsOpen]=React.useState(false);
+  const [searchSuggestionsLoading,setSearchSuggestionsLoading]=React.useState(false);
   const filterDialog=React.useRef(null as HTMLDialogElement|null);
-  const sentinel=React.useRef(null as HTMLDivElement|null);
   const initialLocationRequest=React.useRef(false);
 
-  const params=React.useCallback((nextCursor?:string|null,nextNear=near)=>{
+  const params=React.useCallback((nextCursor?:string|null)=>{
     const value=new URLSearchParams(query);
     if(nextCursor)value.set('cursor',nextCursor);else value.delete('cursor');
-    if(nextNear){value.set('nearLat',String(nextNear.lat));value.set('nearLng',String(nextNear.lng));value.set('nearRadiusKm',String(nextNear.radius));}
     return value;
-  },[near,query]);
+  },[query]);
 
   async function loadMore(){
-    if(!cursor||loading)return;
+    if(!cursor||loading)return false;
     setLoading(true);setError('');
     try{
-      const response=await fetch(`/api/public/capacity?${params(cursor).toString()}`);
+      const response=await fetch(`${apiPath}?${params(cursor).toString()}`);
       if(!response.ok)throw new Error('Capacity could not be loaded.');
       const page:FeedResult=await response.json();
-      setItems((current:any[])=>{const seen=new Set(current.map((item:any)=>item.id));return [...current,...page.items.filter((item:any)=>!seen.has(item.id))];});
+      const seen=new Set(items.map((item:any)=>item.id));
+      const nextItems=page.items.filter((item:any)=>!seen.has(item.id));
+      setItems((current:any[])=>{const currentIds=new Set(current.map((item:any)=>item.id));return [...current,...nextItems.filter((item:any)=>!currentIds.has(item.id))];});
       setCursor(page.nextCursor);setHasMore(page.hasMore);
-    }catch(err){setError(err instanceof Error?err.message:'Capacity could not be loaded.');}finally{setLoading(false);}
+      return nextItems.length>0;
+    }catch(err){setError(err instanceof Error?err.message:'Market results could not be loaded.');return false;}finally{setLoading(false);}
   }
-
-  React.useEffect(()=>{
-    const node=sentinel.current;if(!node||!hasMore)return;
-    const observer=new IntersectionObserver(entries=>{if(entries[0]?.isIntersecting)void loadMore();},{rootMargin:'500px'});
-    observer.observe(node);return()=>observer.disconnect();
-  },[cursor,hasMore,loading]);
 
   function useMyLocation(){
     setLocationFeedback('');
     if(!window.isSecureContext){setLocationState('insecure');return;}
     if(!navigator.geolocation){setLocationState('unsupported');return;}
     setLocationState('locating');
-    navigator.geolocation.getCurrentPosition(async position=>{
+    navigator.geolocation.getCurrentPosition(position=>{
       const exact={lat:position.coords.latitude,lng:position.coords.longitude};
-      if(exact.lat<3||exact.lat>15||exact.lng<32||exact.lng>49){setLocationState('outside');setLocationFeedback('Your device location is outside the current Ethiopia market area. The full capacity market remains available.');return;}
+      if(exact.lat<3||exact.lat>15||exact.lng<32||exact.lng>49){setLocationState('outside');setLocationFeedback('Your location is outside the current Ethiopia market area. You can continue browsing all available trucks.');return;}
       const displaced=obscureCoordinate(exact.lat,exact.lng,BUSINESS_SEARCH_PRIVACY_KM);
-      const nextNear={lat:displaced.lat,lng:displaced.lng,radius:20};
-      setViewer(exact);setNear(nextNear);setSelectedId(null);setLoading(true);setError('');
-      try{const response=await fetch(`/api/public/capacity?${params(null,nextNear).toString()}`);if(!response.ok)throw new Error();const page:FeedResult=await response.json();setItems(page.items);setCursor(page.nextCursor);setHasMore(page.hasMore);setView('MAP');setLocationState('ready');setLocationFeedback(`Location updated at ${new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date())}. Showing capacity that may serve the surrounding area.`);}catch{setLocationState('error');setLocationFeedback('Your location was found, but nearby capacity could not be refreshed. Retry or continue with the full market.');}finally{setLoading(false);}
+      const requestedNearRadius=Number(query.nearRadiusKm);
+      const nextNear={lat:displaced.lat,lng:displaced.lng,radius:[5,10,20,50,100].includes(requestedNearRadius)?requestedNearRadius:20};
+      setViewer(exact);setNear(nextNear);setLocationState('ready');setLocationFeedback('Location updated. The map is centered around your area.');
     },event=>setLocationState(event.code===event.PERMISSION_DENIED?'denied':event.code===event.TIMEOUT?'timeout':'unavailable'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
   }
 
@@ -81,40 +84,58 @@ export function PublicCapacityFeed({initial,query,searchPath='/'}:{initial:FeedR
     if(!filterOpen&&dialog.open)dialog.close();
   },[filterOpen]);
 
-  function showOnMap(id:string){setSelectedId(id);setView('MAP');requestAnimationFrame(()=>document.getElementById('capacity-map-view')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+  React.useEffect(()=>{
+    const term=searchTerm.trim();
+    if(term.length<2){setSearchSuggestions([]);setSearchSuggestionsOpen(false);setSearchSuggestionsLoading(false);return;}
+    const controller=new AbortController();
+    const timer=window.setTimeout(async()=>{
+      setSearchSuggestionsLoading(true);
+      try{
+        const response=await fetch(`${apiPath}?q=${encodeURIComponent(term)}`,{signal:controller.signal});
+        if(!response.ok)throw new Error();
+        const result:FeedResult=await response.json();
+        const suggestions:SearchSuggestion[]=[];
+        const providers=new Set<string>();
+        for(const item of result.items){
+          if(!providers.has(item.provider_handle)&&providers.size<4){providers.add(item.provider_handle);const params=new URLSearchParams({q:item.provider_name,provider:item.provider_handle});suggestions.push({key:`provider:${item.provider_handle}`,kind:'PROVIDER',title:item.provider_name,detail:`Transporter · current trucks in the Market`,href:`${searchPath}?${params.toString()}`});}
+        }
+        for(const item of result.items.slice(0,5)){const params=new URLSearchParams({q:item.platform_number||`${item.vehicle_make} ${item.vehicle_model}`,truck:item.id});suggestions.push({key:`truck:${item.id}`,kind:'TRUCK',title:`${item.vehicle_make} ${item.vehicle_model}`,detail:`${item.platform_number} · ${item.cargo_configuration} · ${item.provider_name}`,href:`${searchPath}?${params.toString()}`});}
+        setSearchSuggestions(suggestions);setSearchSuggestionsOpen(true);
+      }catch(error){if((error as Error).name!=='AbortError'){setSearchSuggestions([]);setSearchSuggestionsOpen(true);}}finally{if(!controller.signal.aborted)setSearchSuggestionsLoading(false);}
+    },220);
+    return()=>{window.clearTimeout(timer);controller.abort();};
+  },[apiPath,searchPath,searchTerm]);
+
+  function closeFilters(){
+    if(filterDialog.current?.open)filterDialog.current.close();
+    setFilterOpen(false);
+  }
   const selected=items.find((item:any)=>item.id===selectedId)||null;
   const locationActionLabel=locationState==='locating'?'Finding your location…':locationState==='ready'?'Refresh my location':['denied','timeout','unavailable','outside','error'].includes(locationState)?'Retry location permission':'Use my location';
-  const activeFilterCount=Number(Boolean(query.status))+Number(Boolean(query.geometry));
-  const searchControls=<div className="capacity-search-controls"><form action={searchPath} className="capacity-map-search"><label className="sr-only" htmlFor="capacity-market-search">Search capacity</label><Search aria-hidden="true"/><input id="capacity-market-search" type="search" name="q" defaultValue={query.q} placeholder="Search trucks or providers"/><input type="hidden" name="status" value={query.status}/><input type="hidden" name="geometry" value={query.geometry}/><button type="submit" aria-label="Search capacity"><Search aria-hidden="true"/></button></form><button type="button" className="capacity-filter-trigger" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/>Filters{activeFilterCount?<span>{activeFilterCount}</span>:null}</button></div>;
+  const activeFilterCount=Object.entries(query).filter(([key,value])=>!['q','provider','truck'].includes(key)&&Boolean(value)).length;
+  const clearSearchParams=new URLSearchParams(query);['q','provider','truck','cursor'].forEach(key=>clearSearchParams.delete(key));
+  const clearSearchHref=`${searchPath}${clearSearchParams.size?`?${clearSearchParams.toString()}`:''}`;
+  const hasSearch=Boolean(searchTerm.trim()||query.provider||query.truck);
+  const searchControls=<div className="capacity-search-controls"><div className="capacity-search-combobox" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node))setSearchSuggestionsOpen(false);}}><form action={searchPath} className="capacity-map-search"><label className="sr-only" htmlFor="capacity-market-search">Search available trucks</label><Search aria-hidden="true"/><input id="capacity-market-search" type="search" role="combobox" name="q" value={searchTerm} onChange={event=>setSearchTerm(event.target.value)} onFocus={()=>{if(searchTerm.trim().length>=2)setSearchSuggestionsOpen(true);}} onKeyDown={event=>{if(event.key==='Escape')setSearchSuggestionsOpen(false);}} autoComplete="off" aria-autocomplete="list" aria-controls="capacity-search-suggestions" aria-expanded={searchSuggestionsOpen} placeholder="Search trucks, routes, or transporter name"/>{Object.entries(query).filter(([key,value])=>!['q','provider','truck'].includes(key)&&Boolean(value)).map(([key,value])=><input key={key} type="hidden" name={key} value={value}/>) }{hasSearch?<Link href={clearSearchHref} className="capacity-search-clear" aria-label="Clear truck search" onClick={()=>{setSearchTerm('');setSearchSuggestionsOpen(false);}}><X aria-hidden="true"/></Link>:null}<button type="submit" aria-label="Search available trucks"><Search aria-hidden="true"/></button></form>{searchSuggestionsOpen?<div id="capacity-search-suggestions" className="capacity-search-suggestions" role="listbox" aria-label="Search suggestions">{searchSuggestionsLoading?<span className="capacity-suggestion-state">Finding current trucks…</span>:searchSuggestions.length?searchSuggestions.map((suggestion:SearchSuggestion)=><Link key={suggestion.key} href={suggestion.href} role="option" onClick={()=>setSearchSuggestionsOpen(false)}><span className={`capacity-suggestion-icon ${suggestion.kind.toLowerCase()}`}>{suggestion.kind==='PROVIDER'?<Building2 aria-hidden="true"/>:<Truck aria-hidden="true"/>}</span><span><small>{suggestion.kind==='PROVIDER'?'Transporter':'Truck'}</small><strong>{suggestion.title}</strong><em>{suggestion.detail}</em></span></Link>):<span className="capacity-suggestion-state">No current transporters or trucks match that search.</span>}</div>:null}</div><button type="button" className="capacity-filter-trigger" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/>Filters{activeFilterCount?<span>{activeFilterCount}</span>:null}</button></div>;
 
   return <>
-    <dialog ref={filterDialog} className="capacity-filter-dialog" aria-labelledby="capacity-filter-title" onClose={()=>setFilterOpen(false)}><div className="capacity-filter-dialog-head"><div><small>Refine the map</small><h2 id="capacity-filter-title">Capacity filters</h2></div><button type="button" onClick={()=>setFilterOpen(false)} aria-label="Close filters"><X aria-hidden="true"/></button></div><form action={searchPath}><input type="hidden" name="q" value={query.q}/><label htmlFor="capacity-status-filter"><span>Availability</span><select id="capacity-status-filter" name="status" defaultValue={query.status}><option value="">Empty or Partial</option><option value="EMPTY">Empty</option><option value="PARTIAL">Partial</option></select></label><label htmlFor="capacity-geometry-filter"><span>Available by</span><select id="capacity-geometry-filter" name="geometry" defaultValue={query.geometry}><option value="">Radius or corridor</option><option value="RADIUS">Radius</option><option value="ROUTE">Corridor</option></select></label><div className="capacity-filter-actions"><Link href={searchPath}>Clear all</Link><button className="button" type="submit"><SlidersHorizontal aria-hidden="true"/>Show capacity</button></div></form></dialog>
-    <section className="public-capacity-toolbar" aria-label="Capacity view and location controls">
-      <div className="public-view-toggle"><button type="button" aria-pressed={view==='MAP'} onClick={()=>setView('MAP')}><Map aria-hidden="true"/>Map</button><button type="button" aria-pressed={view==='LIST'} onClick={()=>setView('LIST')}><List aria-hidden="true"/>List</button></div>
+    <dialog ref={filterDialog} className="capacity-filter-dialog" aria-labelledby="capacity-filter-title" onClose={()=>setFilterOpen(false)}><div className="capacity-filter-dialog-head"><div><small>Refine your search</small><h2 id="capacity-filter-title">Truck filters</h2></div><button type="button" onClick={closeFilters} aria-label="Close filters"><X aria-hidden="true"/></button></div><form action={searchPath} onSubmit={closeFilters}><input type="hidden" name="q" value={query.q}/><fieldset className="capacity-route-filter"><legend>Your shipment route</legend><p>Choose the shipment origin, destination, or both. Loadgistic checks every relevant Capacity route and Empty Service area.</p><div className="capacity-geography-filter route"><div className="form-group"><label htmlFor="capacity-route-origin">Shipment origin <small>(optional)</small></label><EthiopiaPlaceInput id="capacity-route-origin" name="origin" placeRefName="originPlaceRef" defaultPlaceRef={query.originPlaceRef||''} defaultValue={query.origin||''} placeholder="Choose origin city or town"/></div><div className="form-group"><label htmlFor="capacity-route-destination">Shipment destination <small>(optional)</small></label><EthiopiaPlaceInput id="capacity-route-destination" name="destination" placeRefName="destinationPlaceRef" defaultPlaceRef={query.destinationPlaceRef||''} defaultValue={query.destination||''} placeholder="Choose destination city or town"/></div><label htmlFor="capacity-origin-radius"><span>Origin tolerance</span><select id="capacity-origin-radius" name="originRadiusKm" defaultValue={query.originRadiusKm||'50'}><option value="10">Within 10 km</option><option value="25">Within 25 km</option><option value="50">Within 50 km</option><option value="100">Within 100 km</option><option value="200">Within 200 km</option></select></label><label htmlFor="capacity-destination-radius"><span>Destination tolerance</span><select id="capacity-destination-radius" name="destinationRadiusKm" defaultValue={query.destinationRadiusKm||'50'}><option value="10">Within 10 km</option><option value="25">Within 25 km</option><option value="50">Within 50 km</option><option value="100">Within 100 km</option><option value="200">Within 200 km</option></select></label><label htmlFor="capacity-route-direction"><span>Travel direction</span><select id="capacity-route-direction" name="directionMode" defaultValue={query.directionMode||'DIRECT'}><option value="DIRECT">Origin to destination</option><option value="EITHER">Either direction</option></select></label></div></fieldset><fieldset><legend>Current capacity</legend><label htmlFor="capacity-status-filter"><span>Availability</span><select id="capacity-status-filter" name="status" defaultValue={query.status}><option value="">Empty or Partial</option><option value="EMPTY">Empty</option><option value="PARTIAL">Partial</option></select></label><label htmlFor="capacity-geometry-filter"><span>Capacity signal type <small>(optional)</small></span><select id="capacity-geometry-filter" name="geometry" value={geometryFilter} onChange={event=>setGeometryFilter(event.target.value)}><option value="">Service area or Capacity route</option><option value="RADIUS">Service area</option><option value="ROUTE">Capacity route</option></select></label>{geometryFilter==='RADIUS'?<div className="capacity-geography-filter"><div className="form-group"><label htmlFor="capacity-area-center">Service area place</label><EthiopiaPlaceInput id="capacity-area-center" name="currentArea" placeRefName="currentAreaPlaceRef" defaultPlaceRef={query.currentAreaPlaceRef||''} defaultValue={query.currentArea||''} placeholder="Choose a city, town, or area"/></div><label htmlFor="capacity-area-radius"><span>Area tolerance</span><select id="capacity-area-radius" name="currentAreaRadiusKm" defaultValue={query.currentAreaRadiusKm||'50'}><option value="10">Within 10 km</option><option value="25">Within 25 km</option><option value="50">Within 50 km</option><option value="100">Within 100 km</option><option value="200">Within 200 km</option><option value="300">Within 300 km</option></select></label><p>Use this only when you want to find a specific published Service area.</p></div>:null}</fieldset><fieldset><legend>Truck details</legend><label htmlFor="capacity-vehicle-filter"><span>Truck configuration</span><select id="capacity-vehicle-filter" name="vehicleCategory" defaultValue={query.vehicleCategory}><option value="">Any configuration</option>{VEHICLE_CONFIGURATIONS.map(configuration=><option value={configuration.name} key={configuration.name}>{configuration.name}</option>)}</select></label><label htmlFor="capacity-load-filter"><span>Load type</span><select id="capacity-load-filter" name="loadType" defaultValue={query.loadType}><option value="">Full or partial freight</option><option value="FTL">Full truckload</option><option value="PTL">Partial truckload</option></select></label><label htmlFor="capacity-stop-filter"><span>Stop options</span><select id="capacity-stop-filter" name="stopOption" defaultValue={query.stopOption}><option value="">Any stop pattern</option><option value="MULTI_PICK">Multiple pickups</option><option value="MULTI_DROP">Multiple drop-offs</option></select></label><label htmlFor="capacity-freshness-filter"><span>Last updated</span><select id="capacity-freshness-filter" name="freshness" defaultValue={query.freshness}><option value="">Any published capacity</option><option value="FRESH">Updated recently</option><option value="UPDATE_NEEDED">Older—confirm availability</option></select></label></fieldset><fieldset><legend>Near your location</legend><label className="checkbox-label" htmlFor="capacity-near-enabled"><input id="capacity-near-enabled" type="checkbox" checked={nearFilterEnabled} disabled={!near} onChange={event=>setNearFilterEnabled(event.target.checked)}/><span>Limit results to trucks near my current area</span></label>{nearFilterEnabled&&near?<><input type="hidden" name="nearLat" value={near.lat}/><input type="hidden" name="nearLng" value={near.lng}/><label htmlFor="capacity-near-radius"><span>Truck location within</span><select id="capacity-near-radius" name="nearRadiusKm" defaultValue={query.nearRadiusKm||'20'}><option value="5">5 km</option><option value="10">10 km</option><option value="20">20 km</option><option value="50">50 km</option><option value="100">100 km</option></select></label></>:null}<p>{near?'Turn this on only when you want to narrow the Market.':'Share your location first to use this filter.'} Your precise location remains on this device.</p></fieldset><div className="capacity-filter-actions"><Link href={searchPath} onClick={closeFilters}>Clear filters</Link><button className="button" type="submit"><SlidersHorizontal aria-hidden="true"/>Apply filters</button></div></form></dialog>
+    <div className="market-workbench market-map-view"><div className="market-command-column">
+    <section className="public-capacity-toolbar" aria-label="Market location controls">
       <button type="button" className="button location-action" onClick={useMyLocation} disabled={locationState==='locating'}><LocateFixed aria-hidden="true"/>{locationActionLabel}</button>
-      <span className="public-location-note">Your exact location stays in this browser.</span>
+      <span className="public-location-note">Your precise location remains on this device.</span>
     </section>
     {locationFeedback?<div className={`alert ${locationState==='ready'?'success':'warning'}`} data-testid="visitor-location-state">{locationFeedback}</div>:null}
     {locationState==='denied'?<div className="alert warning" data-testid="visitor-location-state">Location permission is blocked. Enable location for this site in browser settings, then press Retry location permission.</div>:null}
     {locationState==='timeout'?<div className="alert warning" data-testid="visitor-location-state">The location request timed out. Move somewhere with a clearer signal and retry.</div>:null}
     {locationState==='unavailable'?<div className="alert warning" data-testid="visitor-location-state">The device could not provide a location. Check the device location service and retry.</div>:null}
-    {locationState==='unsupported'?<div className="alert warning" data-testid="visitor-location-state">This browser does not provide device location. The full market remains available.</div>:null}
-    {locationState==='insecure'?<div className="alert warning" data-testid="visitor-location-state">Location requires HTTPS, or localhost during development. Open Loadgistic through a secure address and retry.</div>:null}
-    {locationState==='error'?<div className="alert warning" data-testid="visitor-location-state">A usable location was not available. Try again or continue without it.</div>:null}
-    {view==='MAP'?<section id="capacity-map-view" className="public-map-shell">{selected?null:searchControls}<PublicCapacityMap items={items} viewer={viewer} selectedId={selectedId} onSelect={setSelectedId}/>{selected?<aside className="map-capacity-sheet" role="dialog" aria-modal="false" aria-label={`${selected.provider_name} capacity details`}><button type="button" className="map-focus-exit" onClick={()=>setSelectedId(null)}><Map aria-hidden="true"/>Show all trucks</button><div className="status-row"><span className={`signal-chip ${selected.availability_geometry==='ROUTE'?'route':'radius'}`}>{selected.availability_geometry==='ROUTE'?<Route aria-hidden="true"/>:<CircleDotDashed aria-hidden="true"/>}{selected.availability_geometry==='ROUTE'?'Current corridor':'Current radius'}</span><span className={`status ${selected.status==='PARTIAL'?'yellow':'green'}`}>{selected.status==='PARTIAL'?`${selected.available_percent}% open`:'Empty'}</span></div><h2>{selected.vehicle_make} {selected.vehicle_model}</h2><p>{selected.platform_number} · {selected.cargo_configuration}</p><div className="public-provider-line"><Building2 aria-hidden="true"/><span><strong>{selected.provider_name}</strong><small>{selected.review_count?<><Star aria-hidden="true"/>{selected.average_rating} from {selected.review_count} verified shipment {selected.review_count===1?'review':'reviews'}</>:'New provider profile'}</small></span></div><div className={`current-signal-panel ${selected.availability_geometry==='ROUTE'?'route':'radius'}`}><small>Available now</small><strong>{signalTitle(selected)}</strong><span>{selected.availability_geometry==='ROUTE'?'The yellow line is the available corridor. The violet circle shows the approximate current location.':'The green circle shows where the truck can work. The violet circle shows its approximate current location.'}</span></div><div className="privacy-signal-panel"><CircleDotDashed aria-hidden="true"/><span><small>Approximate current location</small><strong>{selected.location_precision_km||20} km radius</strong></span></div>{selected.recurring_corridors?.length?<div className="map-sheet-corridors"><Route aria-hidden="true"/><span><strong>{selected.recurring_corridors.map((corridor:any)=>`${corridor.origin} ↔ ${corridor.destination}`).join(' · ')}</strong><small>Two-way regular corridors · confirm availability</small></span></div>:null}<div className="verification-reminder"><ShieldCheck aria-hidden="true"/><span>Confirm the provider, Driver, truck permits, documents, cargo fit, and terms.</span></div><div className="public-card-actions"><Link className="button" href={`/@${selected.provider_handle}`}><Building2 aria-hidden="true"/>Provider details</Link>{selected.contact_phone?<a className="button secondary" href={`tel:${selected.contact_phone}`}><Phone aria-hidden="true"/>Call {selected.contact_phone}</a>:null}</div></aside>:null}</section>:null}
-    {view==='LIST'?<>{searchControls}<section className="public-capacity-grid" aria-live="polite">
-      {items.map((item:any)=><article className="public-capacity-card" key={item.id}>
-        <div className="public-capacity-card-head"><div className="truck-symbol"><Truck aria-hidden="true"/></div><div><div className="status-row"><span className={`signal-chip ${item.availability_geometry==='ROUTE'?'route':'radius'}`}>{item.availability_geometry==='ROUTE'?<Route aria-hidden="true"/>:<CircleDotDashed aria-hidden="true"/>}{item.availability_geometry==='ROUTE'?'Current corridor':'Current radius'}</span><span className={`status ${item.status==='PARTIAL'?'yellow':'green'}`}>{item.status==='PARTIAL'?`${item.available_percent}% open`:'Empty'}</span></div><h2>{item.vehicle_make} {item.vehicle_model}</h2><p>{item.platform_number} · {item.cargo_configuration}</p></div></div>
-        <div className="public-provider-line"><Building2 aria-hidden="true"/><span><strong>{item.provider_name}</strong><small>{item.review_count?<><Star aria-hidden="true"/>{item.average_rating} from {item.review_count} verified shipment {item.review_count===1?'review':'reviews'}</>:'New provider profile'}</small></span></div>
-        <div className={`current-signal-panel ${item.availability_geometry==='ROUTE'?'route':'radius'}`}><small>Available now</small><strong>{signalTitle(item)}</strong><span>Updated {item.updated_label} · confirm current fit directly</span>{item.possible_distance_min_km!=null&&item.possible_distance_max_km!=null?<em data-testid="possible-distance">Possibly {item.possible_distance_min_km}–{item.possible_distance_max_km} km from your area</em>:null}</div>
-        {item.recurring_corridors?.length?<section className="corridor-signals" aria-label="Regular corridors" data-testid="visible-regular-corridors"><div className="corridor-signals-title"><Route aria-hidden="true"/><strong>{item.recurring_corridors.length} regular {item.recurring_corridors.length===1?'corridor':'corridors'}</strong></div>{item.recurring_corridors.slice(0,2).map((corridor:any)=><div className="corridor-signal-row" key={corridor.id}><strong>{corridor.origin} ↔ {corridor.destination}</strong><span>Two-way regular corridor · confirm availability</span></div>)}</section>:null}
-        <div className="verification-reminder"><ShieldCheck aria-hidden="true"/><span>Check the provider, Driver, truck permits, and current documents before agreeing.</span></div>
-        <div className="public-card-actions"><button type="button" className="button secondary" onClick={()=>showOnMap(item.id)}><MapPinned aria-hidden="true"/>View on map</button><Link className="button" href={`/@${item.provider_handle}`}><Building2 aria-hidden="true"/>Provider details</Link></div>
-        {item.contact_phone||item.contact_whatsapp||item.contact_email||item.contact_website?<div className="public-contact-row">{item.contact_phone?<a href={`tel:${item.contact_phone}`}><Phone aria-hidden="true"/>Call {item.contact_phone}</a>:null}{item.contact_whatsapp?<a href={`https://wa.me/${String(item.contact_whatsapp).replace(/\D/g,'')}`}><MessageCircle aria-hidden="true"/>WhatsApp</a>:null}{item.contact_email?<a href={`mailto:${item.contact_email}`}><Mail aria-hidden="true"/>Email</a>:null}{item.contact_website?<a href={item.contact_website} rel="noreferrer" target="_blank"><ExternalLink aria-hidden="true"/>Website</a>:null}</div>:null}
-      </article>)}
-    </section></>:null}
-    {!items.length&&!loading?<div className="empty-state">No published capacity matches these filters. Clear a filter or check again soon.</div>:null}
+    {locationState==='unsupported'?<div className="alert warning" data-testid="visitor-location-state">Location is not supported by this browser. You can continue browsing all trucks.</div>:null}
+    {locationState==='insecure'?<div className="alert warning" data-testid="visitor-location-state">Location is available only through a secure connection.</div>:null}
+    {locationState==='error'?<div className="alert warning" data-testid="visitor-location-state">Location could not be updated. Try again or continue browsing.</div>:null}
+    {searchControls}</div>
+    <section id="capacity-map-view" className={`public-map-shell${selected?' has-selected-truck':''}`}><div className="public-map-canvas"><PublicCapacityMap items={items} viewer={viewer} selectedId={selectedId} onSelect={setSelectedId}/>{selected?<aside className="map-capacity-sheet" aria-label={`${selected.provider_name} truck summary`}><button type="button" className="map-focus-exit" onClick={()=>setSelectedId(null)} aria-label="Close truck summary"><X aria-hidden="true"/></button><div className="map-truck-identity"><span className={`status ${selected.status==='PARTIAL'?'yellow':'green'}`}>{selected.status==='PARTIAL'?'Partial':'Empty'}</span><strong>{selected.vehicle_make} {selected.vehicle_model}</strong><small>{selected.provider_name}</small></div>{selected.current_signal_geometry_visible===false?<p className="map-private-signal-note"><MapPinned aria-hidden="true"/><span><strong>Regular service—not current location</strong>Call for current details or ask the Driver to share private capacity with your email.</span></p>:null}<div className="public-truck-driver"><UserRound aria-hidden="true"/><span><strong>{selected.assigned_driver_first_name||'Driver not named'}</strong><small>{selected.driver_kind_label}{selected.assigned_driver_phone?` · ${selected.assigned_driver_phone}`:' · Phone not published'}</small></span></div><div className="public-driver-trust"><span className={selected.driver_verification_badges?.every((badge:any)=>badge.verified)?'verified':'unverified'}>Driver documents {selected.driver_verification_badges?.every((badge:any)=>badge.verified)?'reviewed':'not fully verified'}</span><span className={selected.truck_verification_badges?.every((badge:any)=>badge.verified)?'verified':'unverified'}>Truck documents {selected.truck_verification_badges?.every((badge:any)=>badge.verified)?'reviewed':'not verified'}</span></div><div className="public-card-actions"><Link className="button" href={`/@${selected.provider_handle}`}><Building2 aria-hidden="true"/>Profile</Link>{selected.assigned_driver_phone?<a className="button secondary" href={`tel:${selected.assigned_driver_phone}`}><Phone aria-hidden="true"/>Call driver</a>:selected.contact_phone?<a className="button secondary" href={`tel:${selected.contact_phone}`}><Phone aria-hidden="true"/>Call</a>:null}</div></aside>:null}</div></section>
+    {!items.length&&!loading?<div className="empty-state">No available trucks match these filters. Adjust your search or check again later.</div>:null}
     {error?<div className="alert warning">{error} <button type="button" onClick={()=>void loadMore()}><RefreshCw aria-hidden="true"/>Try again</button></div>:null}
-    <div ref={sentinel} className="public-feed-end">{hasMore?<button type="button" className="button secondary" onClick={()=>void loadMore()} disabled={loading}><ChevronDown aria-hidden="true"/>{loading?'Loading more capacity…':'Load more capacity'}</button>:items.length?<span>You reached the end of current capacity.</span>:null}</div>
+    <div className="public-feed-end">{hasMore?<button type="button" className="button secondary" onClick={()=>void loadMore()} disabled={loading}><ChevronDown aria-hidden="true"/>{loading?'Loading more…':'Load more trucks'}</button>:items.length?<span>All current map results are shown.</span>:null}</div></div>
   </>;
 }

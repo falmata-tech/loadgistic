@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const localBrowserBaseUrl = 'http://127.0.0.1:3100';
+const localBrowserBaseUrl = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 2 : 0,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || localBrowserBaseUrl,
+    baseURL: localBrowserBaseUrl,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },

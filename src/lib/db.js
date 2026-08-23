@@ -5,6 +5,9 @@ import { trackingAccessCode, hashPassword, hashTrackingAccessCode, randomId } fr
 import { distanceBetweenKm } from './domain.js';
 import { getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
 import { placeLabel, placeLocalName, qualifyAreaLabel, qualifyCorridorList, qualifyPlaceList } from './place-labels.js';
+import { inferProviderRegion, regionalExpoGroupForDate } from './provider-regions.js';
+import { capacityRouteAlignmentMatch, capacityRoutePointMatch, corridorAlignmentMatch, serviceAreaGeometryMatch } from './route-matching.js';
+import { demoCurrentRouteForLocation, demoRegularRoutesForBase, demoServiceAreaForLocation } from './demo-capacity-geography.js';
 
 let database;
 
@@ -21,6 +24,22 @@ export function getDb() {
   database.function('geo_distance_km',{deterministic:true},(lat1,lng1,lat2,lng2) =>
     distanceBetweenKm({lat:lat1,lng:lng1},{lat:lat2,lng:lng2})
   );
+  database.function('geo_corridor_match',{deterministic:true},(queryOriginLat,queryOriginLng,queryDestinationLat,queryDestinationLng,candidateOriginLat,candidateOriginLng,candidateDestinationLat,candidateDestinationLng,originRadiusKm,destinationRadiusKm,directionMode) => Number(corridorAlignmentMatch(
+    {origin_lat:queryOriginLat,origin_lng:queryOriginLng,destination_lat:queryDestinationLat,destination_lng:queryDestinationLng},
+    {origin_lat:candidateOriginLat,origin_lng:candidateOriginLng,destination_lat:candidateDestinationLat,destination_lng:candidateDestinationLng},
+    {originRadiusKm,destinationRadiusKm,directionMode}
+  ).matched));
+  database.function('geo_capacity_route_match',{deterministic:true},(queryOriginLat,queryOriginLng,queryDestinationLat,queryDestinationLng,routePointsJson,originRadiusKm,destinationRadiusKm,directionMode) => Number(capacityRouteAlignmentMatch(
+    {origin_lat:queryOriginLat,origin_lng:queryOriginLng,destination_lat:queryDestinationLat,destination_lng:queryDestinationLng},
+    routePointsJson,
+    {originRadiusKm,destinationRadiusKm,directionMode}
+  ).matched));
+  database.function('geo_capacity_route_point_match',{deterministic:true},(queryLat,queryLng,routePointsJson,radiusKm) => Number(capacityRoutePointMatch(
+    {lat:queryLat,lng:queryLng},routePointsJson,{radiusKm}
+  ).matched));
+  database.function('geo_service_area_match',{deterministic:true},(queryLat,queryLng,boundaryJson,searchRadiusKm) => Number(serviceAreaGeometryMatch(
+    {lat:queryLat,lng:queryLng},boundaryJson,{searchRadiusKm}
+  ).matched));
   database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   migrate(database);
   seed(database);
@@ -31,8 +50,19 @@ export function getDb() {
   runDataMigrationOnce(database,'retire-busy-dated-contract-capacity-v1',retireLegacyCapacityModes);
   runDataMigrationOnce(database,'normalize-capacity-geometry-v1',normalizeCapacityGeometry);
   runDataMigrationOnce(database,'purge-legacy-demand-fixtures-v1',purgeLegacyDemandFixtures);
+  runDataMigrationOnce(database,'launch-demo-presentation-v1',normalizeLaunchDemoPresentation);
+  runDataMigrationOnce(database,'launch-demo-presentation-v2',normalizeCurrentProviderPresentation);
   runDataMigrationOnce(database,'seed-public-capacity-market-v1',seedPublicCapacityMarket);
+  runDataMigrationOnce(database,'seed-transporter-profile-portraits-v2',backfillSeedTransporterPortraits);
+  runDataMigrationOnce(database,'provider-base-regions-v1',backfillProviderBaseRegions);
   runDataMigrationOnce(database,'simplify-capacity-corridors-v1',simplifyCapacityCorridors);
+  runDataMigrationOnce(database,'replace-demo-capacity-geometries-v1',replaceDemoCapacityGeometries);
+  runDataMigrationOnce(database,'replace-demo-capacity-geometries-v2',replaceDemoCapacityGeometries);
+  runDataMigrationOnce(database,'partial-capacity-routes-v1',replaceDemoCapacityGeometries);
+  runDataMigrationOnce(database,'regular-capacity-signal-v1',replaceDemoRegularCapacitySignals);
+  runDataMigrationOnce(database,'seed-regional-provider-expo-v3',seedDailyFeaturedProviders);
+  runDataMigrationOnce(database,'unified-sponsor-catalog-v1',migrateProviderSponsorships);
+  runDataMigrationOnce(database,'retire-demand-plan-copy-v1',retireDemandPlanCopy);
   return database;
 }
 
@@ -152,6 +182,7 @@ function migrate(db) {
       contact_phone TEXT,
       show_contact_phone_on_loads INTEGER NOT NULL DEFAULT 0,
       contact_email TEXT,
+      profile_image_preset TEXT,
       published INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CHECK ((organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (organization_id IS NULL AND provider_profile_id IS NOT NULL))
@@ -185,6 +216,7 @@ function migrate(db) {
       can_contact_businesses INTEGER NOT NULL DEFAULT 1,
       can_negotiate_loads INTEGER NOT NULL DEFAULT 1,
       can_manage_capacity INTEGER NOT NULL DEFAULT 1,
+      can_manage_tracking INTEGER NOT NULL DEFAULT 1,
       updated_by TEXT REFERENCES users(id),
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -210,6 +242,12 @@ function migrate(db) {
       provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
       origin TEXT NOT NULL,
       destination TEXT NOT NULL,
+      geometry TEXT NOT NULL DEFAULT 'ROUTE' CHECK(geometry IN ('ROUTE','RADIUS')),
+      area_center_place_ref TEXT,
+      area_center_label TEXT,
+      area_center_lat REAL,
+      area_center_lng REAL,
+      area_boundary_json TEXT NOT NULL DEFAULT '[]',
       created_by TEXT REFERENCES users(id),
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CHECK ((organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (organization_id IS NULL AND provider_profile_id IS NOT NULL))
@@ -453,7 +491,7 @@ function migrate(db) {
       expected_pickup_date TEXT,
       expected_delivery_date TEXT,
       tracking_mode TEXT NOT NULL CHECK(tracking_mode IN ('STATUS_ONLY','LOCATION_AND_STATUS')),
-      operational_status TEXT NOT NULL CHECK(operational_status IN ('CREATED','LOADING','IN_TRANSIT','UNLOADING','COMPLETED','ISSUE')),
+      operational_status TEXT NOT NULL CHECK(operational_status IN ('CREATED','TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING','COMPLETED','ISSUE')),
       created_by TEXT NOT NULL REFERENCES users(id),
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -469,10 +507,16 @@ function migrate(db) {
       id TEXT PRIMARY KEY,
       shipment_id TEXT NOT NULL REFERENCES provider_shipments(id) ON DELETE CASCADE,
       status TEXT NOT NULL,
+      event_type TEXT NOT NULL DEFAULT 'STATUS',
       note TEXT,
       proof_path TEXT,
       proof_original_name TEXT,
       proof_mime_type TEXT,
+      location_area TEXT,
+      location_lat REAL,
+      location_lng REAL,
+      location_precision_km INTEGER,
+      location_source TEXT,
       created_by TEXT NOT NULL REFERENCES users(id),
       created_at TEXT NOT NULL
     );
@@ -551,6 +595,108 @@ function migrate(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_verification_subject ON verification_requests(subject_type, subject_id, verification_type, status);
+
+    CREATE TABLE IF NOT EXISTS featured_provider_days (
+      id TEXT PRIMARY KEY,
+      feature_date TEXT NOT NULL UNIQUE,
+      base_place_ref TEXT NOT NULL,
+      base_place_label TEXT NOT NULL,
+      expo_group_key TEXT,
+      expo_group_label TEXT,
+      expo_region_codes TEXT,
+      public_headline TEXT,
+      public_introduction TEXT,
+      tiktok_url TEXT,
+      broadcast_start_time TEXT NOT NULL DEFAULT '08:00',
+      broadcast_end_time TEXT NOT NULL DEFAULT '22:00',
+      schedule_mode TEXT NOT NULL DEFAULT 'AUTO' CHECK(schedule_mode IN ('AUTO','MANUAL')),
+      schedule_config_json TEXT NOT NULL DEFAULT '{}',
+      manual_schedule_json TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','PUBLISHED')),
+      created_by TEXT NOT NULL REFERENCES users(id),
+      published_by TEXT REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      published_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS featured_provider_slots (
+      id TEXT PRIMARY KEY,
+      day_id TEXT NOT NULL REFERENCES featured_provider_days(id) ON DELETE CASCADE,
+      slot_position INTEGER NOT NULL CHECK(slot_position>=1),
+      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      UNIQUE(day_id,slot_position),
+      CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_featured_slot_day_org
+      ON featured_provider_slots(day_id,provider_organization_id) WHERE provider_organization_id IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_featured_slot_day_profile
+      ON featured_provider_slots(day_id,provider_profile_id) WHERE provider_profile_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_featured_days_public
+      ON featured_provider_days(feature_date,status);
+
+    CREATE TABLE IF NOT EXISTS provider_sponsorships (
+      id TEXT PRIMARY KEY,
+      expo_group_key TEXT NOT NULL,
+      starts_on TEXT NOT NULL,
+      ends_on TEXT NOT NULL,
+      position INTEGER NOT NULL CHECK(position BETWEEN 1 AND 5),
+      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+      created_by TEXT NOT NULL REFERENCES users(id),
+      updated_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      CHECK (starts_on<=ends_on),
+      CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_sponsorships_public
+      ON provider_sponsorships(expo_group_key,active,starts_on,ends_on,position);
+
+    CREATE TABLE IF NOT EXISTS sponsors (
+      id TEXT PRIMARY KEY,
+      sponsor_kind TEXT NOT NULL CHECK(sponsor_kind IN ('TRANSPORTER','ADVERTISER')),
+      provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+      provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+      business_name TEXT,
+      description TEXT,
+      website_url TEXT,
+      phone TEXT,
+      active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+      created_by TEXT NOT NULL REFERENCES users(id),
+      updated_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      CHECK (
+        (sponsor_kind='TRANSPORTER' AND ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL)) AND business_name IS NULL AND description IS NULL)
+        OR
+        (sponsor_kind='ADVERTISER' AND provider_organization_id IS NULL AND provider_profile_id IS NULL AND length(trim(business_name)) BETWEEN 2 AND 100 AND length(trim(description)) BETWEEN 10 AND 240 AND (website_url IS NOT NULL OR phone IS NOT NULL))
+      )
+    );
+
+    CREATE TABLE IF NOT EXISTS sponsor_placements (
+      id TEXT PRIMARY KEY,
+      sponsor_id TEXT NOT NULL REFERENCES sponsors(id) ON DELETE CASCADE,
+      expo_group_key TEXT NOT NULL,
+      starts_on TEXT NOT NULL,
+      ends_on TEXT NOT NULL,
+      position INTEGER NOT NULL CHECK(position BETWEEN 1 AND 5),
+      active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+      created_by TEXT NOT NULL REFERENCES users(id),
+      updated_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      CHECK (starts_on<=ends_on)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sponsor_placements_public
+      ON sponsor_placements(expo_group_key,active,starts_on,ends_on,position);
 
     CREATE TABLE IF NOT EXISTS applications (
       id TEXT PRIMARY KEY,
@@ -666,6 +812,9 @@ function migrate(db) {
   `);
   ensureSupportRoleSchema(db);
   ensureVerificationTrustSchema(db);
+  ensureProviderTrackingLocationSchema(db);
+  ensurePrivateCapacitySharingSchema(db);
+  ensureGuestSupportSchema(db);
   const supportConversationColumns=new Set(db.prepare('PRAGMA table_info(support_conversations)').all().map(column=>column.name));
   if(!supportConversationColumns.has('customer_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN customer_last_read_at TEXT');
   if(!supportConversationColumns.has('agent_last_read_at'))db.exec('ALTER TABLE support_conversations ADD COLUMN agent_last_read_at TEXT');
@@ -693,6 +842,13 @@ function migrate(db) {
     ['destination_place_ref','TEXT'],['destination_lat','REAL'],['destination_lng','REAL']
     ,['assigned_vehicle_id','TEXT REFERENCES vehicles(id)']
     ,['assigned_driver_user_id','TEXT REFERENCES users(id)']
+    ,['route_points_json',"TEXT NOT NULL DEFAULT '[]'"]
+    ,['geometry',"TEXT NOT NULL DEFAULT 'ROUTE'"]
+    ,['area_center_place_ref','TEXT']
+    ,['area_center_label','TEXT']
+    ,['area_center_lat','REAL']
+    ,['area_center_lng','REAL']
+    ,['area_boundary_json',"TEXT NOT NULL DEFAULT '[]'"]
   ]) if(!profileRouteColumns.has(name))db.exec(`ALTER TABLE profile_routes ADD COLUMN ${name} ${definition}`);
   const placeColumns = new Set(db.prepare('PRAGMA table_info(place_catalog)').all().map(column => column.name));
   if (!placeColumns.has('country_name')) db.exec("ALTER TABLE place_catalog ADD COLUMN country_name TEXT NOT NULL DEFAULT 'Ethiopia'");
@@ -701,6 +857,8 @@ function migrate(db) {
   if (!placeColumns.has('parent_name')) db.exec('ALTER TABLE place_catalog ADD COLUMN parent_name TEXT');
   const driverColumns = new Set(db.prepare('PRAGMA table_info(drivers)').all().map(column => column.name));
   if (!driverColumns.has('user_id')) db.exec('ALTER TABLE drivers ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL');
+  const driverPermissionColumns = new Set(db.prepare('PRAGMA table_info(driver_permissions)').all().map(column => column.name));
+  if (!driverPermissionColumns.has('can_manage_tracking')) db.exec('ALTER TABLE driver_permissions ADD COLUMN can_manage_tracking INTEGER NOT NULL DEFAULT 1');
   const relationshipColumns = new Set(db.prepare('PRAGMA table_info(partner_relationships)').all().map(column => column.name));
   for (const [name, definition] of [
     ['requested_by_side','TEXT'],
@@ -755,6 +913,12 @@ function migrate(db) {
     ['available_again_place_label','TEXT'],
     ['available_again_lat','REAL'],
     ['available_again_lng','REAL']
+    ,['current_route_points_json',"TEXT NOT NULL DEFAULT '[]'"]
+    ,['capacity_area_center_place_ref','TEXT']
+    ,['capacity_area_center_label','TEXT']
+    ,['capacity_area_center_lat','REAL']
+    ,['capacity_area_center_lng','REAL']
+    ,['capacity_area_boundary_json',"TEXT NOT NULL DEFAULT '[]'"]
   ];
   for (const [name, definition] of additiveCapacityColumns) {
     if (!capacityColumns.has(name)) db.exec(`ALTER TABLE capacities ADD COLUMN ${name} ${definition}`);
@@ -780,13 +944,14 @@ function migrate(db) {
     BEGIN
       SELECT RAISE(ABORT,'LOCAL_CAPACITY_MUST_BE_EMPTY');
     END;
-    CREATE TRIGGER IF NOT EXISTS enforce_regular_corridor_limit_insert
+    DROP TRIGGER IF EXISTS enforce_regular_corridor_limit_insert;
+    CREATE TRIGGER enforce_regular_corridor_limit_insert
     BEFORE INSERT ON profile_routes
     WHEN (SELECT COUNT(*) FROM profile_routes
       WHERE (NEW.organization_id IS NOT NULL AND organization_id=NEW.organization_id)
-         OR (NEW.provider_profile_id IS NOT NULL AND provider_profile_id=NEW.provider_profile_id))>=2
+         OR (NEW.provider_profile_id IS NOT NULL AND provider_profile_id=NEW.provider_profile_id))>=1
     BEGIN
-      SELECT RAISE(ABORT,'REGULAR_CORRIDOR_LIMIT');
+      SELECT RAISE(ABORT,'REGULAR_CAPACITY_LIMIT');
     END;
   `);
   const vehicleColumns = new Set(db.prepare('PRAGMA table_info(vehicles)').all().map(column => column.name));
@@ -826,8 +991,38 @@ function migrate(db) {
     ['show_contact_whatsapp','INTEGER NOT NULL DEFAULT 0'],
     ['show_contact_email','INTEGER NOT NULL DEFAULT 0'],
     ['show_contact_website','INTEGER NOT NULL DEFAULT 0'],
-    ['youtube_video_id','TEXT']
+    ['youtube_video_id','TEXT'],
+    ['profile_image_path','TEXT'],
+    ['profile_image_mime','TEXT'],
+    ['profile_image_updated_at','TEXT'],
+    ['profile_image_preset','TEXT'],
+    ['base_region_code','TEXT']
   ]) if(!companyPageColumns.has(name))db.exec(`ALTER TABLE company_pages ADD COLUMN ${name} ${definition}`);
+  const featuredDayColumns=new Set(db.prepare('PRAGMA table_info(featured_provider_days)').all().map(column=>column.name));
+  for(const [name,definition] of [['expo_group_key','TEXT'],['expo_group_label','TEXT'],['expo_region_codes','TEXT'],['public_headline','TEXT'],['public_introduction','TEXT'],['broadcast_start_time',"TEXT NOT NULL DEFAULT '08:00'"],['broadcast_end_time',"TEXT NOT NULL DEFAULT '22:00'"],['schedule_mode',"TEXT NOT NULL DEFAULT 'AUTO'"],['schedule_config_json',"TEXT NOT NULL DEFAULT '{}'"],['manual_schedule_json',"TEXT NOT NULL DEFAULT '[]'"]])if(!featuredDayColumns.has(name))db.exec(`ALTER TABLE featured_provider_days ADD COLUMN ${name} ${definition}`);
+  const featuredSlotSql=String(db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='featured_provider_slots'").get()?.sql||'');
+  if(/slot_position\s+BETWEEN\s+1\s+AND\s+15/i.test(featuredSlotSql)){
+    db.exec(`
+      BEGIN IMMEDIATE;
+      CREATE TABLE featured_provider_slots_dynamic (
+        id TEXT PRIMARY KEY,
+        day_id TEXT NOT NULL REFERENCES featured_provider_days(id) ON DELETE CASCADE,
+        slot_position INTEGER NOT NULL CHECK(slot_position>=1),
+        provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+        provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+        created_by TEXT NOT NULL REFERENCES users(id),
+        created_at TEXT NOT NULL,
+        UNIQUE(day_id,slot_position),
+        CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+      );
+      INSERT INTO featured_provider_slots_dynamic SELECT * FROM featured_provider_slots;
+      DROP TABLE featured_provider_slots;
+      ALTER TABLE featured_provider_slots_dynamic RENAME TO featured_provider_slots;
+      CREATE UNIQUE INDEX idx_featured_slot_day_org ON featured_provider_slots(day_id,provider_organization_id) WHERE provider_organization_id IS NOT NULL;
+      CREATE UNIQUE INDEX idx_featured_slot_day_profile ON featured_provider_slots(day_id,provider_profile_id) WHERE provider_profile_id IS NOT NULL;
+      COMMIT;
+    `);
+  }
   const applicationColumns = new Set(db.prepare('PRAGMA table_info(applications)').all().map(column => column.name));
   if (!applicationColumns.has('sponsored_free')) {
     db.exec('ALTER TABLE applications ADD COLUMN sponsored_free INTEGER NOT NULL DEFAULT 0');
@@ -932,9 +1127,9 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_support_events_conversation ON support_events(conversation_id,created_at,id);
   `);
   db.exec(`
-    UPDATE vehicles SET make='Isuzu',model='FSR',cargo_configuration='Medium Box Truck',category='Medium Box Truck' WHERE id='veh-trans-1';
-    UPDATE vehicles SET make='Sinotruk',model='HOWO TX',cargo_configuration='Heavy Rigid Stake Body Truck',category='Heavy Rigid Stake Body Truck' WHERE id='veh-trans-2';
-    UPDATE vehicles SET make='Isuzu',model='NPR',cargo_configuration='Light Stake Body Truck',category='Light Stake Body Truck' WHERE id='veh-driver-1';
+    UPDATE vehicles SET make='Toyota',model='Hiace',cargo_configuration='Cargo van',category='Cargo van' WHERE id='veh-trans-1';
+    UPDATE vehicles SET make='Isuzu',model='FSR',cargo_configuration='Medium Box Truck',category='Medium Box Truck' WHERE id='veh-trans-2';
+    UPDATE vehicles SET make='Hyundai',model='Porter',cargo_configuration='Mini Stake Body Truck',category='Mini Stake Body Truck' WHERE id='veh-driver-1';
     UPDATE shipments SET vehicle_category='Medium Box Truck' WHERE vehicle_category IN ('20 Ton Truck','Dry cargo box');
     UPDATE shipments SET vehicle_category='Heavy Rigid Stake Body Truck' WHERE vehicle_category IN ('10 Ton Truck','High-side cargo body');
     UPDATE provider_profiles SET vehicle_type='Light Stake Body Truck' WHERE vehicle_type IN ('10 Ton Truck','20 Ton Truck','High-side cargo body');
@@ -955,7 +1150,7 @@ function migrate(db) {
   const insertRoute = db.prepare(`INSERT INTO profile_routes
     (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,NULL,?)`);
   for (const page of routePages) {
-    for (const label of String(page.corridors).split(/[;\n]/).map(value => value.trim()).filter(Boolean).slice(0,2)) {
+    for (const label of String(page.corridors).split(/[;\n]/).map(value => value.trim()).filter(Boolean).slice(0,1)) {
       const endpoints = label.split(/\s*(?:↔|→|<->|->)\s*/).map(value => value.trim()).filter(Boolean);
       if (endpoints.length === 2 && endpoints[0].toLowerCase() !== endpoints[1].toLowerCase()) {
         insertRoute.run(randomId('route-'),page.organization_id,page.provider_profile_id,endpoints[0],endpoints[1],new Date().toISOString());
@@ -1014,6 +1209,70 @@ function ensureVerificationTrustSchema(db) {
   if(violations.length)throw new Error('VERIFICATION_TRUST_MIGRATION_FOREIGN_KEY_FAILURE');
 }
 
+function ensureProviderTrackingLocationSchema(db) {
+  const shipmentSchema=String(db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='provider_shipments'`).get()?.sql||'');
+  if(!shipmentSchema.includes("'TO_PICKUP'")){
+    db.exec('PRAGMA foreign_keys=OFF; PRAGMA legacy_alter_table=ON;');
+    try{
+      db.exec(`
+        BEGIN IMMEDIATE;
+        ALTER TABLE provider_shipments RENAME TO provider_shipments_before_travel_location;
+        CREATE TABLE provider_shipments (
+          id TEXT PRIMARY KEY,
+          code TEXT NOT NULL UNIQUE,
+          provider_organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+          provider_profile_id TEXT REFERENCES provider_profiles(id) ON DELETE CASCADE,
+          assigned_vehicle_id TEXT NOT NULL REFERENCES vehicles(id),
+          assigned_driver_user_id TEXT NOT NULL REFERENCES users(id),
+          origin TEXT NOT NULL,
+          origin_place_ref TEXT NOT NULL,
+          origin_lat REAL NOT NULL,
+          origin_lng REAL NOT NULL,
+          destination TEXT NOT NULL,
+          destination_place_ref TEXT NOT NULL,
+          destination_lat REAL NOT NULL,
+          destination_lng REAL NOT NULL,
+          cargo_summary TEXT NOT NULL,
+          shipper_email TEXT NOT NULL,
+          receiver_email TEXT NOT NULL,
+          expected_pickup_date TEXT,
+          expected_delivery_date TEXT,
+          tracking_mode TEXT NOT NULL CHECK(tracking_mode IN ('STATUS_ONLY','LOCATION_AND_STATUS')),
+          operational_status TEXT NOT NULL CHECK(operational_status IN ('CREATED','TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING','COMPLETED','ISSUE')),
+          created_by TEXT NOT NULL REFERENCES users(id),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          completed_at TEXT,
+          guest_expires_at TEXT,
+          CHECK ((provider_organization_id IS NOT NULL AND provider_profile_id IS NULL) OR (provider_organization_id IS NULL AND provider_profile_id IS NOT NULL))
+        );
+        INSERT INTO provider_shipments SELECT * FROM provider_shipments_before_travel_location;
+        DROP TABLE provider_shipments_before_travel_location;
+        CREATE INDEX idx_provider_shipments_owner ON provider_shipments(provider_organization_id,provider_profile_id,updated_at DESC);
+        CREATE INDEX idx_provider_shipments_guest_expiry ON provider_shipments(guest_expires_at,operational_status);
+        COMMIT;
+      `);
+    }catch(error){
+      try{db.exec('ROLLBACK');}catch{}
+      throw error;
+    }finally{
+      db.exec('PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;');
+    }
+  }
+  const eventColumns=new Set(db.prepare('PRAGMA table_info(provider_shipment_events)').all().map(column=>column.name));
+  for(const [name,definition] of [
+    ['event_type',"TEXT NOT NULL DEFAULT 'STATUS'"],
+    ['location_area','TEXT'],
+    ['location_lat','REAL'],
+    ['location_lng','REAL'],
+    ['location_precision_km','INTEGER'],
+    ['location_source','TEXT']
+  ])if(!eventColumns.has(name))db.exec(`ALTER TABLE provider_shipment_events ADD COLUMN ${name} ${definition}`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_provider_shipment_location ON provider_shipment_events(shipment_id,event_type,created_at DESC)`);
+  const violations=db.prepare('PRAGMA foreign_key_check').all();
+  if(violations.length)throw new Error('PROVIDER_TRACKING_LOCATION_MIGRATION_FOREIGN_KEY_FAILURE');
+}
+
 function ensureSupportRoleSchema(db) {
   const schema=String(db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='users'`).get()?.sql||'');
   if(schema.includes("'SUPPORT'"))return;
@@ -1048,6 +1307,114 @@ function ensureSupportRoleSchema(db) {
   }
   const violations=db.prepare('PRAGMA foreign_key_check').all();
   if(violations.length)throw new Error('SUPPORT_ROLE_MIGRATION_FOREIGN_KEY_FAILURE');
+}
+
+function ensurePrivateCapacitySharingSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS capacity_access_grants (
+      id TEXT PRIMARY KEY,
+      vehicle_id TEXT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+      audience_type TEXT NOT NULL CHECK(audience_type IN ('EMAIL','LOADGISTIC')),
+      recipient_email TEXT,
+      recipient_email_digest TEXT NOT NULL,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      expires_at TEXT,
+      revoked_at TEXT,
+      revoked_by TEXT REFERENCES users(id),
+      CHECK((audience_type='EMAIL' AND recipient_email IS NOT NULL) OR (audience_type='LOADGISTIC' AND recipient_email IS NULL))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_capacity_access_active
+      ON capacity_access_grants(vehicle_id,audience_type,recipient_email_digest) WHERE revoked_at IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_capacity_access_email
+      ON capacity_access_grants(recipient_email_digest,revoked_at,expires_at,vehicle_id);
+    CREATE INDEX IF NOT EXISTS idx_capacity_access_vehicle
+      ON capacity_access_grants(vehicle_id,revoked_at,created_at DESC);
+    CREATE TABLE IF NOT EXISTS shared_capacity_email_otps (
+      id TEXT PRIMARY KEY,
+      recipient_email TEXT NOT NULL,
+      recipient_email_digest TEXT NOT NULL,
+      code_digest TEXT NOT NULL,
+      attempt_count INTEGER NOT NULL DEFAULT 0 CHECK(attempt_count BETWEEN 0 AND 5),
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      superseded_at TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_shared_capacity_otp_email
+      ON shared_capacity_email_otps(recipient_email_digest,created_at DESC);
+    CREATE TABLE IF NOT EXISTS access_email_deliveries (
+      id TEXT PRIMARY KEY,
+      delivery_kind TEXT NOT NULL CHECK(delivery_kind IN ('SHARED_CAPACITY','GUEST_SUPPORT')),
+      entity_id TEXT NOT NULL,
+      recipient_email TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'QUEUED' CHECK(status IN ('QUEUED','FAILED','SENT')),
+      attempts INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      next_attempt_at TEXT,
+      sent_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(delivery_kind,entity_id,recipient_email)
+    );
+    CREATE INDEX IF NOT EXISTS idx_access_email_queue ON access_email_deliveries(status,next_attempt_at,created_at);
+  `);
+}
+
+function ensureGuestSupportSchema(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS guest_support_conversations (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      email_digest TEXT NOT NULL,
+      phone TEXT,
+      assigned_agent_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      status TEXT NOT NULL CHECK(status IN ('WAITING','OPEN','CLOSED')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      last_message_at TEXT NOT NULL,
+      assigned_at TEXT,
+      guest_last_read_at TEXT,
+      agent_last_read_at TEXT,
+      closed_at TEXT,
+      closed_by_user_id TEXT REFERENCES users(id)
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_guest_support_email_open
+      ON guest_support_conversations(email_digest) WHERE status IN ('WAITING','OPEN');
+    CREATE INDEX IF NOT EXISTS idx_guest_support_queue
+      ON guest_support_conversations(status,created_at,id);
+    CREATE INDEX IF NOT EXISTS idx_guest_support_agent
+      ON guest_support_conversations(assigned_agent_user_id,status,updated_at DESC);
+    CREATE TABLE IF NOT EXISTS guest_support_messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES guest_support_conversations(id) ON DELETE CASCADE,
+      sender_kind TEXT NOT NULL CHECK(sender_kind IN ('GUEST','TEAM')),
+      sender_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 2000),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_guest_support_messages
+      ON guest_support_messages(conversation_id,created_at DESC,id DESC);
+    CREATE TABLE IF NOT EXISTS guest_support_attachments (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES guest_support_conversations(id) ON DELETE CASCADE,
+      message_id TEXT NOT NULL REFERENCES guest_support_messages(id) ON DELETE CASCADE,
+      file_path TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_guest_support_attachments ON guest_support_attachments(conversation_id,message_id);
+    CREATE TABLE IF NOT EXISTS guest_support_events (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL REFERENCES guest_support_conversations(id) ON DELETE CASCADE,
+      actor_user_id TEXT REFERENCES users(id),
+      event_type TEXT NOT NULL,
+      details TEXT,
+      created_at TEXT NOT NULL
+    );
+  `);
 }
 
 function runDataMigrationOnce(db,key,migration) {
@@ -1277,6 +1644,78 @@ function purgeLegacyDemandFixtures(db) {
   `);
 }
 
+function retireDemandPlanCopy(db) {
+  db.prepare(`UPDATE plans SET name=CASE code
+    WHEN 'BUSINESS_CAPACITY' THEN 'Business access'
+    WHEN 'FLEET_DEMAND' THEN 'Fleet transporter'
+    WHEN 'SELF_MANAGED_DRIVER' THEN 'Independent Driver'
+    ELSE name END
+    WHERE code IN ('BUSINESS_CAPACITY','FLEET_DEMAND','SELF_MANAGED_DRIVER')`).run();
+}
+
+function normalizeLaunchDemoPresentation(db) {
+  db.exec(`
+    BEGIN IMMEDIATE;
+    DELETE FROM notifications
+      WHERE title='New open freight shipment'
+        OR body='A fixed-price shipment is available from Addis Ababa to Dire Dawa.';
+    UPDATE verification_requests
+      SET original_name='Submitted document.jpg',review_note='Document reviewed and approved.'
+      WHERE lower(COALESCE(original_name,'')) LIKE '%demo%'
+        OR lower(COALESCE(review_note,'')) LIKE '%demo%';
+    UPDATE company_pages
+      SET about=(SELECT o.name || ' coordinates current truck capacity and regular road-freight service for producers, distributors, and commercial customers.'
+        FROM organizations o WHERE o.id=company_pages.organization_id),
+        contact_email=CASE WHEN lower(COALESCE(contact_email,'')) LIKE '%.local' THEN '' ELSE contact_email END,
+        contact_website=CASE WHEN lower(COALESCE(contact_website,'')) LIKE '%example.com%' THEN '' ELSE contact_website END,
+        show_contact_email=CASE WHEN lower(COALESCE(contact_email,'')) LIKE '%.local' THEN 0 ELSE show_contact_email END,
+        show_contact_website=CASE WHEN lower(COALESCE(contact_website,'')) LIKE '%example.com%' THEN 0 ELSE show_contact_website END
+      WHERE id LIKE 'page-public-fleet-%';
+    UPDATE provider_profiles
+      SET about=business_name || ' provides directly managed truck capacity for producers, distributors, and other commercial customers.'
+      WHERE id LIKE 'profile-public-owner-%' AND lower(COALESCE(about,'')) LIKE '%demo%';
+    UPDATE company_pages
+      SET contact_email=CASE WHEN lower(COALESCE(contact_email,'')) LIKE '%.local' THEN '' ELSE contact_email END,
+        contact_website=CASE WHEN lower(COALESCE(contact_website,'')) LIKE '%example.com%' THEN '' ELSE contact_website END,
+        show_contact_email=CASE WHEN lower(COALESCE(contact_email,'')) LIKE '%.local' THEN 0 ELSE show_contact_email END,
+        show_contact_website=CASE WHEN lower(COALESCE(contact_website,'')) LIKE '%example.com%' THEN 0 ELSE show_contact_website END
+      WHERE id='page-transporter' OR id='page-driver' OR id LIKE 'page-public-owner-%';
+    UPDATE vehicles
+      SET plate=COALESCE((
+        SELECT CASE COALESCE(o.city_place_ref,p.city_place_ref)
+          WHEN 'builtin:addis ababa' THEN 'AA' WHEN 'builtin:adama' THEN 'OR' WHEN 'builtin:bahir dar' THEN 'AM'
+          WHEN 'builtin:mekelle' THEN 'TG' WHEN 'builtin:semera' THEN 'AF' WHEN 'builtin:jigjiga' THEN 'SM'
+          WHEN 'builtin:harar' THEN 'HR' WHEN 'builtin:dire dawa' THEN 'DD' WHEN 'builtin:hawassa' THEN 'SD'
+          WHEN 'builtin:wolkite' THEN 'CE' WHEN 'builtin:arba minch' THEN 'SE' WHEN 'builtin:assosa' THEN 'BG'
+          WHEN 'builtin:gambella' THEN 'GM' WHEN 'builtin:mizan aman' THEN 'SW' ELSE 'ET' END
+        FROM vehicles source
+        LEFT JOIN organizations o ON o.id=source.organization_id
+        LEFT JOIN provider_profiles p ON p.id=source.provider_profile_id
+        WHERE source.id=vehicles.id
+      ),'ET') || '-3-' || printf('%05d',10000+vehicles.rowid)
+      WHERE plate LIKE 'DEMO-%';
+    COMMIT;
+  `);
+}
+
+function normalizeCurrentProviderPresentation(db) {
+  db.exec(`
+    BEGIN IMMEDIATE;
+    UPDATE company_pages
+      SET show_contact_email=0,contact_email=''
+      WHERE lower(COALESCE(contact_email,'')) LIKE '%.local';
+    UPDATE company_pages
+      SET show_contact_website=0,contact_website=''
+      WHERE lower(COALESCE(contact_website,'')) LIKE '%example.com%';
+    UPDATE driver_permissions
+      SET can_browse_load_board=0,
+        can_contact_businesses=0,
+        can_negotiate_loads=0,
+        can_manage_tracking=1;
+    COMMIT;
+  `);
+}
+
 function seedPublicCapacityMarket(db) {
   const now=new Date();
   const iso=now.toISOString();
@@ -1284,32 +1723,60 @@ function seedPublicCapacityMarket(db) {
   const subscriptionEnd=new Date(now.getTime()+30*86_400_000).toISOString();
   const passwordHash=hashPassword('Loadgistic123!');
   const places=[
-    {name:'Addis Ababa, Ethiopia',ref:'builtin:addis ababa',lat:9.03,lng:38.74},
-    {name:'Adama, Ethiopia',ref:'builtin:adama',lat:8.54,lng:39.27},
-    {name:'Hawassa, Ethiopia',ref:'builtin:hawassa',lat:7.05,lng:38.47},
-    {name:'Dire Dawa, Ethiopia',ref:'builtin:dire dawa',lat:9.60,lng:41.85},
-    {name:'Bahir Dar, Ethiopia',ref:'builtin:bahir dar',lat:11.59,lng:37.39},
-    {name:'Mekelle, Ethiopia',ref:'builtin:mekelle',lat:13.50,lng:39.47},
-    {name:'Jimma, Ethiopia',ref:'builtin:jimma',lat:7.67,lng:36.83},
-    {name:'Gondar, Ethiopia',ref:'builtin:gondar',lat:12.60,lng:37.47},
-    {name:'Dessie, Ethiopia',ref:'builtin:dessie',lat:11.13,lng:39.63},
-    {name:'Shashamane, Ethiopia',ref:'builtin:shashamane',lat:7.20,lng:38.60},
-    {name:'Debre Birhan, Ethiopia',ref:'builtin:debre birhan',lat:9.68,lng:39.53},
-    {name:'Kombolcha, Ethiopia',ref:'builtin:kombolcha',lat:11.08,lng:39.74}
+    {name:'Addis Ababa, Ethiopia',ref:'builtin:addis ababa',lat:9.03,lng:38.74,region:'ADDIS_ABABA'},
+    {name:'Adama, Ethiopia',ref:'builtin:adama',lat:8.54,lng:39.27,region:'OROMIA'},
+    {name:'Bahir Dar, Ethiopia',ref:'builtin:bahir dar',lat:11.59,lng:37.39,region:'AMHARA'},
+    {name:'Mekelle, Ethiopia',ref:'builtin:mekelle',lat:13.50,lng:39.47,region:'TIGRAY'},
+    {name:'Semera, Ethiopia',ref:'builtin:semera',lat:11.79,lng:41.01,region:'AFAR'},
+    {name:'Jigjiga, Ethiopia',ref:'builtin:jigjiga',lat:9.35,lng:42.80,region:'SOMALI'},
+    {name:'Harar, Ethiopia',ref:'builtin:harar',lat:9.31,lng:42.13,region:'HARARI'},
+    {name:'Dire Dawa, Ethiopia',ref:'builtin:dire dawa',lat:9.60,lng:41.85,region:'DIRE_DAWA'},
+    {name:'Hawassa, Ethiopia',ref:'builtin:hawassa',lat:7.05,lng:38.47,region:'SIDAMA'},
+    {name:'Wolkite, Ethiopia',ref:'builtin:wolkite',lat:8.28,lng:37.78,region:'CENTRAL_ETHIOPIA'},
+    {name:'Arba Minch, Ethiopia',ref:'builtin:arba minch',lat:6.04,lng:37.55,region:'SOUTH_ETHIOPIA'},
+    {name:'Assosa, Ethiopia',ref:'builtin:assosa',lat:10.07,lng:34.53,region:'BENISHANGUL_GUMUZ'},
+    {name:'Gambella, Ethiopia',ref:'builtin:gambella',lat:8.25,lng:34.59,region:'GAMBELLA'},
+    {name:'Mizan Aman, Ethiopia',ref:'builtin:mizan aman',lat:7.00,lng:35.58,region:'SOUTH_WEST_ETHIOPIA'},
+    {name:'Moyale, Ethiopia',ref:'builtin:moyale',lat:3.54417,lng:39.05423,region:'OROMIA'}
   ];
   const themes=[['#075985','#f97316'],['#166534','#f59e0b'],['#6d28d9','#22d3ee'],['#9f1239','#fbbf24'],['#0f766e','#fb7185'],['#1d4ed8','#f97316'],['#7c2d12','#38bdf8'],['#4338ca','#facc15']];
-  const trucks=[['Isuzu','FSR','Medium Box Truck'],['Sinotruk','HOWO TX','Heavy Rigid Stake Body Truck'],['Isuzu','NPR','Light Stake Body Truck'],['Fuso','FJ','Medium Stake Body Truck'],['Hino','500','Heavy Box Truck'],['FAW','J6L','Curtain Side Truck']];
+  const plateCodeByRegion={ADDIS_ABABA:'AA',OROMIA:'OR',AMHARA:'AM',TIGRAY:'TG',AFAR:'AF',SOMALI:'SM',HARARI:'HR',DIRE_DAWA:'DD',SIDAMA:'SD',CENTRAL_ETHIOPIA:'CE',SOUTH_ETHIOPIA:'SE',BENISHANGUL_GUMUZ:'BG',GAMBELLA:'GM',SOUTH_WEST_ETHIOPIA:'SW'};
+  // Each of the eight fleet operators places one truck in every seeded regional
+  // market. The 20 owner-operators add another local truck in every market.
+  // Together with three built-in signals, this produces 143 active trucks:
+  // 100 local-delivery, 28 light, 13 medium, and two heavy.
+  const deliveryVehicles=[
+    ['Bajaj','Boxer 150','Courier motorcycle'],['TVS','HLX 150','Courier motorcycle'],
+    ['Toyota','Vitz','Courier car'],['Suzuki','Swift','Courier car'],
+    ['Toyota','Hiace','Cargo van'],['Nissan','Urvan','Cargo van'],
+    ['Toyota','Hilux','Pickup truck'],['Isuzu','D-Max','Pickup stake body'],
+    ['Hyundai','Porter','Mini Open Body Truck'],['Kia','Bongo','Mini Stake Body Truck'],['Foton','Forland','Mini Box Truck']
+  ];
+  const lightVehicles=[
+    ['Isuzu','NPR','Light Stake Body Truck'],['Mitsubishi Fuso','Canter','Light Box Truck']
+  ];
+  const mediumVehicles=[
+    ['Mitsubishi Fuso','FJ','Medium Stake Body Truck'],['Isuzu','FSR','Medium Box Truck']
+  ];
+  const trucks=Array.from({length:140},(_,index)=>{
+    const position=index%10;
+    if(position<7)return deliveryVehicles[index%deliveryVehicles.length];
+    if(position<9)return lightVehicles[index%lightVehicles.length];
+    if(index===69||index===139)return ['Sinotruk','HOWO TX','Heavy Rigid Stake Body Truck'];
+    return mediumVehicles[index%mediumVehicles.length];
+  });
   const companyNames=['Sheger Freight Network','Rift Valley Haulage','Abyssinia Road Cargo','Awash Fleet Services','Highland Transit Ethiopia','Blue River Logistics','Walia Freight Lines','Merkato Cargo Fleet'];
   const ownerNames=['Abel Tesfaye','Bethlehem Bekele','Dawit Mekonnen','Eden Alemu','Fikru Desta','Genet Tadesse','Henok Girma','Iman Mohammed','Kalkidan Assefa','Liya Kebede','Mulugeta Solomon','Nebiyu Haile','Rahel Worku','Samuel Getachew','Tigist Abebe','Yared Demissie','Zelalem Tesema','Saron Yohannes','Mustefa Ali','Biruk Amare'];
+  const companyDriverFirstNames=['Abdi','Abebe','Ahmed','Amanuel','Bereket','Dawit','Elias','Eyob','Fikru','Getachew','Henok','Kebede','Mekonnen','Mohammed','Mulugeta','Nebiyu','Samuel','Solomon','Tesfaye','Yared'];
 
   const insertUser=db.prepare(`INSERT OR IGNORE INTO users (id,email,phone,password_hash,name,role,organization_id,provider_profile_id,active,created_at) VALUES (?,?,?,?,?,?,?,?,1,?)`);
   const insertOrg=db.prepare(`INSERT OR IGNORE INTO organizations (id,name,handle,type,verified,industry,description,phone,email,city,public_visibility,created_at,city_place_ref,city_lat,city_lng) VALUES (?,?,?,'TRANSPORT_COMPANY',0,'Road freight',?,?,?,?,'PUBLIC',?,?,?,?)`);
   const insertMember=db.prepare(`INSERT OR IGNORE INTO memberships (id,user_id,organization_id,membership_role) VALUES (?,?,?,?)`);
   const insertProfile=db.prepare(`INSERT OR IGNORE INTO provider_profiles (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at,city_place_ref,city_lat,city_lng) VALUES (?,?,?,?,0,0,0,?,?,?,?,?,'PUBLIC',?,?,?,?)`);
-  const insertPage=db.prepare(`INSERT OR IGNORE INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at,theme_primary,theme_accent,contact_whatsapp,contact_website,show_contact_phone,show_contact_whatsapp,show_contact_email,show_contact_website,youtube_video_id) VALUES (?,?,?,?,?,?,?,?,?,0,?,1,?,?,?,?,?,1,1,1,1,NULL)`);
+  const insertPage=db.prepare(`INSERT OR IGNORE INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,show_contact_phone_on_loads,contact_email,published,updated_at,theme_primary,theme_accent,contact_whatsapp,contact_website,show_contact_phone,show_contact_whatsapp,show_contact_email,show_contact_website,youtube_video_id,base_region_code) VALUES (?,?,?,?,?,?,?,?,?,0,?,1,?,?,?,?,?,1,1,0,0,NULL,?)`);
   const insertVehicle=db.prepare(`INSERT OR IGNORE INTO vehicles (id,organization_id,provider_profile_id,platform_number,label,category,plate,active,make,model,cargo_configuration) VALUES (?,?,?,?,?,?,?,1,?,?,?)`);
   const insertDriver=db.prepare(`INSERT OR IGNORE INTO drivers (id,organization_id,user_id,name,phone,license_verified,active) VALUES (?,?,?,?,?,0,1)`);
-  const insertPermission=db.prepare(`INSERT OR IGNORE INTO driver_permissions (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at) VALUES (?,0,0,0,1,?,?)`);
+  const insertPermission=db.prepare(`INSERT OR IGNORE INTO driver_permissions (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,can_manage_tracking,updated_by,updated_at) VALUES (?,0,0,0,1,1,?,?)`);
   const insertAssignment=db.prepare(`INSERT OR IGNORE INTO driver_vehicle_assignments (id,driver_user_id,vehicle_id,assigned_by,assigned_at,active) VALUES (?,?,?,?,?,1)`);
   const insertSubscription=db.prepare(`INSERT OR IGNORE INTO subscriptions (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at) VALUES (?,?,?,?,'ACTIVE','FLAT_MONTHLY',?,?,?)`);
   const insertRoute=db.prepare(`INSERT OR IGNORE INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at,origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
@@ -1320,56 +1787,73 @@ function seedPublicCapacityMarket(db) {
   db.exec('BEGIN IMMEDIATE');
   try{
     db.prepare(`UPDATE company_pages SET show_contact_phone=CASE WHEN trim(COALESCE(contact_phone,''))<>'' THEN 1 ELSE 0 END,
-      show_contact_email=CASE WHEN trim(COALESCE(contact_email,''))<>'' THEN 1 ELSE 0 END,
       contact_whatsapp=COALESCE(contact_whatsapp,contact_phone),show_contact_whatsapp=CASE WHEN trim(COALESCE(contact_phone,''))<>'' THEN 1 ELSE 0 END,
       theme_primary=COALESCE(theme_primary,'#075985'),theme_accent=COALESCE(theme_accent,'#f97316')
       WHERE organization_id IN (SELECT id FROM organizations WHERE type='TRANSPORT_COMPANY') OR provider_profile_id IS NOT NULL`).run();
     let capacityNumber=100;
-    const addSignals=(owner,userId,vehicleId,index)=>{
-      const home=places[index%places.length];
-      const destination=places[(index*3+3)%places.length];
+    const addSignals=(owner,userId,vehicleId,index,home)=>{
+      const homeIndex=places.findIndex(place=>place.ref===home.ref);
+      const destination=places[(homeIndex+1)%places.length];
       const status=index%4===0?'EMPTY':'PARTIAL';
-      const geometry=index%3===0?'RADIUS':'ROUTE';
-      const percent=status==='EMPTY'?100:[25,40,55,70,85][index%5];
+      const geometry=status==='PARTIAL'?'ROUTE':(index%12===0||index===8||index===32)?'RADIUS':'ROUTE';
+      const percent=status==='EMPTY'?100:50;
       const privacy=[3,5,10,20,40][index%5];
       const offset=((index%7)-3)*0.012;
       const routeOrigin=geometry==='ROUTE'?home:null;
       const routeDestination=geometry==='ROUTE'?destination:null;
       const capId=`cap-public-${capacityNumber++}`;
-      insertCapacity.run(capId,owner.organizationId,owner.profileId,vehicleId,status,percent,null,null,home.lat+offset,home.lng-offset,privacy,userId,iso,expiresAt,`Around ${home.name}`,home.ref,iso,status==='EMPTY'?1:0,status==='PARTIAL'?1:0,index%3===1?1:0,index%4===1?1:0,routeOrigin?.name||null,routeDestination?.name||null,routeOrigin?.ref||null,routeOrigin?.lat||null,routeOrigin?.lng||null,routeDestination?.ref||null,routeDestination?.lat||null,routeDestination?.lng||null,status,geometry);
+      const configuration=db.prepare('SELECT cargo_configuration FROM vehicles WHERE id=?').get(vehicleId)?.cargo_configuration||'';
+      const priorityMinutes=/courier|cargo van|pickup|mini/i.test(configuration)?0:/light/i.test(configuration)?10:/medium/i.test(configuration)?20:30;
+      const signalUpdatedAt=new Date(now.getTime()-priorityMinutes*60_000-index*1_000).toISOString();
+      insertCapacity.run(capId,owner.organizationId,owner.profileId,vehicleId,status,percent,null,null,home.lat+offset,home.lng-offset,privacy,userId,signalUpdatedAt,expiresAt,`Around ${home.name}`,home.ref,signalUpdatedAt,status==='EMPTY'?1:0,status==='PARTIAL'?1:0,index%3===1?1:0,index%4===1?1:0,routeOrigin?.name||null,routeDestination?.name||null,routeOrigin?.ref||null,routeOrigin?.lat||null,routeOrigin?.lng||null,routeDestination?.ref||null,routeDestination?.lat||null,routeDestination?.lng||null,status,geometry);
       db.prepare('UPDATE capacities SET work_radius_km=? WHERE id=?').run([15,25,40,60,100,150,250][index%7],capId);
     };
 
+    let vehicleSeedIndex=0;
     companyNames.forEach((name,index)=>{
-      const suffix=String(index+1).padStart(2,'0');const orgId=`org-public-fleet-${suffix}`,ownerId=`user-public-fleet-${suffix}`,driverId=`user-public-fleet-driver-${suffix}`,handle=`${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${suffix}`,home=places[index%places.length],theme=themes[index%themes.length];
+      const suffix=String(index+1).padStart(2,'0');const orgId=`org-public-fleet-${suffix}`,ownerId=`user-public-fleet-${suffix}`,handle=`${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${suffix}`,home=places[index%places.length],theme=themes[index%themes.length];
       insertOrg.run(orgId,name,handle,`${name} publishes current truck capacity and operates provider-owned shipment tracking.`,`+2519117${suffix}000`,`dispatch@${handle}.local`,home.name,iso,home.ref,home.lat,home.lng);
       insertUser.run(ownerId,`owner-${suffix}@providers.loadgistic.test`,`+2519117${suffix}001`,passwordHash,`${name} Owner`,'TRANSPORTER',orgId,null,iso);
-      insertUser.run(driverId,`driver-${suffix}@providers.loadgistic.test`,`+2519117${suffix}002`,passwordHash,`${name} Driver`,'DRIVER',orgId,null,iso);
-      insertMember.run(`mem-public-owner-${suffix}`,ownerId,orgId,'OWNER');insertMember.run(`mem-public-driver-${suffix}`,driverId,orgId,'DRIVER');
-      insertPage.run(`page-public-fleet-${suffix}`,orgId,null,'Reliable freight capacity for growing Ethiopian trade',`${name} is a demo fleet profile showing how transport companies can present current capacity and regular corridors.`,`Full truckload; partial cargo space; regional road freight`,'',home.name,`+2519117${suffix}000`,`dispatch@${handle}.local`,iso,theme[0],theme[1],`+2519117${suffix}000`,`https://example.com/${handle}`);
-      insertDriver.run(`driver-public-${suffix}`,orgId,driverId,`${name} Driver`,`+2519117${suffix}002`);insertPermission.run(driverId,ownerId,iso);
+      insertMember.run(`mem-public-owner-${suffix}`,ownerId,orgId,'OWNER');
+      insertPage.run(`page-public-fleet-${suffix}`,orgId,null,'Reliable freight capacity for growing Ethiopian trade',`${name} coordinates current truck capacity and regular road-freight service for producers, distributors, and commercial customers.`,`Full truckload; partial cargo space; regional road freight`,'',home.name,`+2519117${suffix}000`,'',iso,theme[0],theme[1],`+2519117${suffix}000`,'',home.region);
       insertSubscription.run(`sub-public-fleet-${suffix}`,orgId,null,'plan-transport',iso,subscriptionEnd,iso);
-      for(let truckIndex=0;truckIndex<3;truckIndex++){
-        const vehicle=trucks[(index+truckIndex)%trucks.length],vehicleId=`veh-public-fleet-${suffix}-${truckIndex+1}`,platform=`LG-TRK-F${suffix}${truckIndex+1}`;
-        insertVehicle.run(vehicleId,orgId,null,platform,`Truck ${truckIndex+1}`,vehicle[2],`DEMO-F${suffix}-${truckIndex+1}`,vehicle[0],vehicle[1],vehicle[2]);
-        insertAssignment.run(`assign-public-${suffix}-${truckIndex+1}`,driverId,vehicleId,ownerId,iso);
-        addSignals({organizationId:orgId,profileId:null},driverId,vehicleId,index*3+truckIndex);
+      for(let truckIndex=0;truckIndex<places.length;truckIndex++){
+        const driverNumber=index*places.length+truckIndex+1,driverSuffix=String(driverNumber).padStart(3,'0'),driverId=`user-public-fleet-driver-${driverSuffix}`,driverFirstName=companyDriverFirstNames[(driverNumber-1)%companyDriverFirstNames.length],driverName=`${driverFirstName} ${name.split(' ')[0]}`,driverPhone=`+251933${String(driverNumber).padStart(6,'0')}`;
+        const truckHome=places[truckIndex],vehicle=trucks[vehicleSeedIndex++],vehicleId=`veh-public-fleet-${suffix}-${truckIndex+1}`,platform=`LG-TRK-F${suffix}${String(truckIndex+1).padStart(2,'0')}`;
+        insertUser.run(driverId,`driver-${driverSuffix}@providers.loadgistic.test`,driverPhone,passwordHash,driverName,'DRIVER',orgId,null,iso);
+        insertMember.run(`mem-public-driver-${driverSuffix}`,driverId,orgId,'DRIVER');
+        insertDriver.run(`driver-public-${driverSuffix}`,orgId,driverId,driverName,driverPhone);insertPermission.run(driverId,ownerId,iso);
+        insertVehicle.run(vehicleId,orgId,null,platform,`Truck ${truckIndex+1}`,vehicle[2],`${plateCodeByRegion[truckHome.region]||'ET'}-3-${String(10100+index*20+truckIndex).padStart(5,'0')}`,vehicle[0],vehicle[1],vehicle[2]);
+        insertAssignment.run(`assign-public-${driverSuffix}`,driverId,vehicleId,ownerId,iso);
+        addSignals({organizationId:orgId,profileId:null},driverId,vehicleId,index*places.length+truckIndex,truckHome);
       }
-      for(let routeIndex=0;routeIndex<2;routeIndex++){const origin=places[(index+routeIndex)%places.length],destination=places[(index+routeIndex+4)%places.length];insertRoute.run(`route-public-fleet-${suffix}-${routeIndex}`,orgId,null,origin.name,destination.name,ownerId,iso,origin.ref,origin.lat,origin.lng,destination.ref,destination.lat,destination.lng);}
+      {const origin=places[index%places.length],destination=places[(index+4)%places.length];insertRoute.run(`route-public-fleet-${suffix}-0`,orgId,null,origin.name,destination.name,ownerId,iso,origin.ref,origin.lat,origin.lng,destination.ref,destination.lat,destination.lng);}
     });
 
     ownerNames.forEach((person,index)=>{
-      const suffix=String(index+1).padStart(2,'0'),profileId=`profile-public-owner-${suffix}`,userId=`user-public-owner-${suffix}`,handle=`${person.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-transport`,home=places[index%places.length],theme=themes[(index+3)%themes.length],vehicle=trucks[(index+2)%trucks.length],vehicleId=`veh-public-owner-${suffix}`;
+      const suffix=String(index+1).padStart(2,'0'),profileId=`profile-public-owner-${suffix}`,userId=`user-public-owner-${suffix}`,handle=`${person.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-transport`,home=places[index%places.length],theme=themes[(index+3)%themes.length],vehicle=trucks[vehicleSeedIndex++],vehicleId=`veh-public-owner-${suffix}`;
       insertUser.run(userId,`owner-operator-${suffix}@providers.loadgistic.test`,`+2519228${suffix}000`,passwordHash,person,'DRIVER',null,profileId,iso);
-      insertProfile.run(profileId,userId,`${person} Owner-Operator`,handle,vehicle[2],'',`+2519228${suffix}000`,home.name,`${person} is a demo self-managed owner-operator profile serving producers and businesses with directly managed truck capacity.`,iso,home.ref,home.lat,home.lng);
-      insertPage.run(`page-public-owner-${suffix}`,null,profileId,'Owner-operated capacity with direct accountability',`${person} operates and manages this truck directly, publishes current availability, and keeps provider-side shipment history.`,`Owner-operated road freight; partial cargo space; regional routes`,'',home.name,`+2519228${suffix}000`,`contact@${handle}.local`,iso,theme[0],theme[1],`+2519228${suffix}000`,`https://example.com/${handle}`);
-      insertVehicle.run(vehicleId,null,profileId,`LG-TRK-O${suffix}`,`${person.split(' ')[0]}'s truck`,vehicle[2],`DEMO-O${suffix}`,vehicle[0],vehicle[1],vehicle[2]);
+      insertProfile.run(profileId,userId,`${person} Owner-Operator`,handle,vehicle[2],'',`+2519228${suffix}000`,home.name,`${person} provides directly managed truck capacity for producers, distributors, and other commercial customers.`,iso,home.ref,home.lat,home.lng);
+      insertPage.run(`page-public-owner-${suffix}`,null,profileId,'Owner-operated capacity with direct accountability',`${person} operates and manages this truck directly, publishes current availability, and keeps provider-side shipment history.`,`Owner-operated road freight; partial cargo space; regional routes`,'',home.name,`+2519228${suffix}000`,'',iso,theme[0],theme[1],`+2519228${suffix}000`,'',home.region);
+      insertVehicle.run(vehicleId,null,profileId,`LG-TRK-O${suffix}`,`${person.split(' ')[0]}'s truck`,vehicle[2],`${plateCodeByRegion[home.region]||'ET'}-3-${String(20100+index).padStart(5,'0')}`,vehicle[0],vehicle[1],vehicle[2]);
       insertSubscription.run(`sub-public-owner-${suffix}`,null,profileId,'plan-solo',iso,subscriptionEnd,iso);
-      addSignals({organizationId:null,profileId},userId,vehicleId,index+24);
-      for(let routeIndex=0;routeIndex<2;routeIndex++){const origin=places[(index+routeIndex+2)%places.length],destination=places[(index+routeIndex+7)%places.length];insertRoute.run(`route-public-owner-${suffix}-${routeIndex}`,null,profileId,origin.name,destination.name,userId,iso,origin.ref,origin.lat,origin.lng,destination.ref,destination.lat,destination.lng);}
+      addSignals({organizationId:null,profileId},userId,vehicleId,index+24,home);
+      {const origin=places[(index+2)%places.length],destination=places[(index+7)%places.length];insertRoute.run(`route-public-owner-${suffix}-0`,null,profileId,origin.name,destination.name,userId,iso,origin.ref,origin.lat,origin.lng,destination.ref,destination.lat,destination.lng);}
     });
     db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
+}
+
+function backfillSeedTransporterPortraits(db) {
+  db.prepare(`UPDATE company_pages
+    SET profile_image_preset=(SELECT COALESCE(o.handle,p.handle) || '.png'
+      FROM company_pages source
+      LEFT JOIN organizations o ON o.id=source.organization_id
+      LEFT JOIN provider_profiles p ON p.id=source.provider_profile_id
+      WHERE source.id=company_pages.id)
+    WHERE id IN ('page-transporter','page-driver')
+      OR id LIKE 'page-public-fleet-%'
+      OR id LIKE 'page-public-owner-%'`).run();
 }
 
 function simplifyCapacityCorridors(db) {
@@ -1381,11 +1865,235 @@ function simplifyCapacityCorridors(db) {
           ORDER BY created_at DESC,id DESC
         ) AS position
         FROM profile_routes
-      ) ranked WHERE position>2
+      ) ranked WHERE position>1
     );
     DROP TABLE IF EXISTS next_trips;
     DROP TABLE IF EXISTS recurring_service_areas;
   `);
+}
+
+function replaceDemoCapacityGeometries(db) {
+  const rows=db.prepare(`SELECT capacity.id,COALESCE(capacity.market_status,capacity.status) AS market_status,
+      capacity.availability_geometry,capacity.location_place_ref,capacity.location_area,capacity.location_lat,capacity.location_lng,
+      vehicle.cargo_configuration
+    FROM capacities capacity
+    JOIN vehicles vehicle ON vehicle.id=capacity.vehicle_id
+    WHERE capacity.id LIKE 'cap-public-%' OR capacity.id IN ('cap-empty','cap-partial','cap-partner-partial')
+    ORDER BY capacity.id`).all();
+  const update=db.prepare(`UPDATE capacities SET availability_geometry=?,work_radius_km=?,
+    current_route_points_json=?,capacity_area_center_place_ref=?,capacity_area_center_label=?,
+    capacity_area_center_lat=?,capacity_area_center_lng=?,capacity_area_boundary_json=?,
+    current_route_origin=?,current_route_destination=?,current_origin_place_ref=?,current_origin_lat=?,current_origin_lng=?,
+    current_destination_place_ref=?,current_destination_lat=?,current_destination_lng=?,
+    location_place_ref=?,location_area=? WHERE id=?`);
+  rows.forEach((row,index)=>{
+    if(row.market_status==='EMPTY'&&row.availability_geometry==='RADIUS'){
+      const {base,center,boundary,radiusKm}=demoServiceAreaForLocation(row);
+      update.run('RADIUS',radiusKm,'[]',center.place_ref,center.label,center.lat,center.lng,JSON.stringify(boundary),null,null,null,null,null,null,null,null,base.place.place_ref,`Around ${base.place.label}`,row.id);
+    }else{
+      const {base,points}=demoCurrentRouteForLocation(row,index);
+      const first=points[0],last=points.at(-1);
+      update.run('ROUTE',null,JSON.stringify(points),null,null,null,null,'[]',first.label,last.label,first.place_ref,first.lat,first.lng,last.place_ref,last.lat,last.lng,base.place.place_ref,`Around ${base.place.label}`,row.id);
+    }
+  });
+  const routes=db.prepare(`SELECT route.id,route.organization_id,route.provider_profile_id,
+      COALESCE(organization.city_place_ref,profile.city_place_ref) AS city_place_ref,
+      COALESCE(organization.city_lat,profile.city_lat) AS city_lat,
+      COALESCE(organization.city_lng,profile.city_lng) AS city_lng
+    FROM profile_routes route
+    LEFT JOIN organizations organization ON organization.id=route.organization_id
+    LEFT JOIN provider_profiles profile ON profile.id=route.provider_profile_id
+    WHERE route.organization_id IN (SELECT id FROM organizations WHERE type='TRANSPORT_COMPANY')
+      OR route.provider_profile_id IS NOT NULL
+    ORDER BY COALESCE(route.organization_id,route.provider_profile_id),route.id`).all();
+  const updateRoute=db.prepare(`UPDATE profile_routes SET route_points_json=?,origin=?,destination=?,
+    origin_place_ref=?,origin_lat=?,origin_lng=?,destination_place_ref=?,destination_lat=?,destination_lng=? WHERE id=?`);
+  let ownerKey='',ownerRouteIndex=0;
+  routes.forEach(route=>{
+    const nextOwnerKey=route.organization_id||route.provider_profile_id;
+    if(nextOwnerKey!==ownerKey){ownerKey=nextOwnerKey;ownerRouteIndex=0;}
+    const candidates=demoRegularRoutesForBase(route,2);
+    const points=[...candidates[ownerRouteIndex%candidates.length].points];
+    ownerRouteIndex+=1;
+    const first=points[0],last=points.at(-1);
+    updateRoute.run(JSON.stringify(points),first.label,last.label,first.place_ref,first.lat,first.lng,last.place_ref,last.lat,last.lng,route.id);
+  });
+}
+
+function replaceDemoRegularCapacitySignals(db) {
+  db.exec(`DELETE FROM profile_routes WHERE id IN (
+    SELECT id FROM (
+      SELECT id,ROW_NUMBER() OVER (
+        PARTITION BY COALESCE('org:' || organization_id,'profile:' || provider_profile_id)
+        ORDER BY created_at DESC,id DESC
+      ) AS position FROM profile_routes
+    ) ranked WHERE position>1
+  )`);
+  const signals=db.prepare(`SELECT route.id,route.organization_id,route.provider_profile_id,
+      COALESCE((SELECT capacity.location_place_ref FROM capacities capacity
+        WHERE capacity.provider_organization_id=route.organization_id OR capacity.provider_profile_id=route.provider_profile_id
+        ORDER BY capacity.updated_at DESC,capacity.id DESC LIMIT 1),organization.city_place_ref,profile.city_place_ref) AS location_place_ref,
+      COALESCE((SELECT capacity.location_lat FROM capacities capacity
+        WHERE capacity.provider_organization_id=route.organization_id OR capacity.provider_profile_id=route.provider_profile_id
+        ORDER BY capacity.updated_at DESC,capacity.id DESC LIMIT 1),organization.city_lat,profile.city_lat) AS location_lat,
+      COALESCE((SELECT capacity.location_lng FROM capacities capacity
+        WHERE capacity.provider_organization_id=route.organization_id OR capacity.provider_profile_id=route.provider_profile_id
+        ORDER BY capacity.updated_at DESC,capacity.id DESC LIMIT 1),organization.city_lng,profile.city_lng) AS location_lng
+      ,(SELECT vehicle.cargo_configuration FROM capacities capacity
+        JOIN vehicles vehicle ON vehicle.id=capacity.vehicle_id
+        WHERE capacity.provider_organization_id=route.organization_id OR capacity.provider_profile_id=route.provider_profile_id
+        ORDER BY capacity.updated_at DESC,capacity.id DESC LIMIT 1) AS cargo_configuration
+    FROM profile_routes route
+    LEFT JOIN organizations organization ON organization.id=route.organization_id
+    LEFT JOIN provider_profiles profile ON profile.id=route.provider_profile_id
+    WHERE route.organization_id IN (SELECT id FROM organizations WHERE type='TRANSPORT_COMPANY') OR route.provider_profile_id IS NOT NULL
+    ORDER BY COALESCE(route.organization_id,route.provider_profile_id),route.id`).all();
+  const update=db.prepare(`UPDATE profile_routes SET geometry=?,route_points_json=?,origin=?,destination=?,
+    origin_place_ref=?,origin_lat=?,origin_lng=?,destination_place_ref=?,destination_lat=?,destination_lng=?,
+    area_center_place_ref=?,area_center_label=?,area_center_lat=?,area_center_lng=?,area_boundary_json=? WHERE id=?`);
+  signals.forEach((signal,index)=>{
+    const demoLocation=Number.isFinite(Number(signal.location_lat))&&Number.isFinite(Number(signal.location_lng))?{...signal,location_place_ref:null}:signal;
+    if(index%3===1){
+      const {center,boundary}=demoServiceAreaForLocation(demoLocation);
+      update.run('RADIUS','[]',center.label,center.label,center.place_ref,center.lat,center.lng,center.place_ref,center.lat,center.lng,
+        center.place_ref,center.label,center.lat,center.lng,JSON.stringify(boundary),signal.id);
+      return;
+    }
+    const selected=demoRegularRoutesForBase(demoLocation,1)[0];
+    const points=index%2===0?[...selected.points]:[...selected.points].reverse();
+    const first=points[0],last=points.at(-1);
+    update.run('ROUTE',JSON.stringify(points),first.label,last.label,first.place_ref,first.lat,first.lng,last.place_ref,last.lat,last.lng,
+      null,null,null,null,'[]',signal.id);
+  });
+}
+
+function backfillProviderBaseRegions(db) {
+  const pages=db.prepare(`SELECT cp.id,COALESCE(o.city_place_ref,p.city_place_ref) AS place_ref,COALESCE(o.city,p.city) AS place_label
+    FROM company_pages cp LEFT JOIN organizations o ON o.id=cp.organization_id LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
+    WHERE cp.id LIKE 'page-public-fleet-%' OR cp.id LIKE 'page-public-owner-%'
+      OR cp.base_region_code IS NULL OR trim(cp.base_region_code)=''`).all();
+  const update=db.prepare('UPDATE company_pages SET base_region_code=? WHERE id=?');
+  for(const page of pages){const region=inferProviderRegion(page.place_ref,page.place_label);if(region)update.run(region,page.id);}
+}
+
+function seedDailyFeaturedProviders(db,requestedDate) {
+  const now=new Date();
+  const iso=now.toISOString();
+  const featureDate=requestedDate||new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+  if(db.prepare('SELECT 1 FROM featured_provider_days WHERE feature_date=?').get(featureDate))return false;
+  const expo=regionalExpoGroupForDate(featureDate);
+  const basePlaceRef=`expo:${expo.key}`;
+  const basePlaceLabel=expo.title;
+  const demoDocument=path.resolve(process.cwd(),'public/vehicle-configurations/medium-box-truck.jpg');
+  const demoCandidates=db.prepare(`SELECT o.id AS organization_id,p.id AS profile_id,p.user_id AS profile_user_id,cp.base_region_code,
+      COALESCE((SELECT m.user_id FROM memberships m WHERE m.organization_id=o.id AND m.membership_role='OWNER' ORDER BY m.id LIMIT 1),p.user_id) AS owner_user_id
+    FROM company_pages cp
+    LEFT JOIN organizations o ON o.id=cp.organization_id
+    LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
+    WHERE cp.published=1 AND (cp.id LIKE 'page-public-fleet-%' OR cp.id LIKE 'page-public-owner-%')
+      AND (p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')
+      AND EXISTS(SELECT 1 FROM vehicles v WHERE v.active=1 AND (v.organization_id=o.id OR v.provider_profile_id=p.id))
+    ORDER BY COALESCE(o.name,p.business_name)`).all();
+  const candidates=demoCandidates.filter(candidate=>expo.regionCodes.includes(candidate.base_region_code));
+  if(!demoCandidates.length||!candidates.length)return false;
+  const insertVerification=db.prepare(`INSERT OR IGNORE INTO verification_requests
+    (id,subject_type,subject_id,verification_type,related_vehicle_id,expires_on,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
+    VALUES (?,?,?,?,?,?,?,?,?,'image/jpeg','APPROVED',?,?,?, ?,?)`);
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    for(const [candidateIndex,candidate] of demoCandidates.entries()){
+      if(candidate.organization_id){
+        for(const [type,label] of [['IDENTITY','National ID'],['BUSINESS_LICENSE','Business license'],['BUSINESS_ADDRESS','Business address proof']]){
+          insertVerification.run(`featured-demo-${candidate.organization_id}-${type.toLowerCase()}`,'ORGANIZATION',candidate.organization_id,type,null,null,label,demoDocument,'Demo reviewed document.jpg',candidate.owner_user_id,'user-admin','Approved demo provider document',iso,iso);
+        }
+        const drivers=db.prepare(`SELECT driver.user_id,assignment.vehicle_id
+          FROM drivers driver LEFT JOIN driver_vehicle_assignments assignment ON assignment.driver_user_id=driver.user_id AND assignment.active=1
+          WHERE driver.organization_id=? AND driver.active=1 AND driver.user_id IS NOT NULL ORDER BY driver.user_id`).all(candidate.organization_id);
+        for(const [driverIndex,driver] of drivers.entries()){
+          if(driverIndex%3!==2)insertVerification.run(`featured-demo-${driver.user_id}-identity`,'DRIVER',driver.user_id,'IDENTITY',null,null,'National ID',demoDocument,'Demo reviewed document.jpg',driver.user_id,'user-admin','Approved demo Driver document',iso,iso);
+          if(driverIndex%4!==3)insertVerification.run(`featured-demo-${driver.user_id}-license`,'DRIVER',driver.user_id,'DRIVER_IDENTITY',null,null,"Driver's license",demoDocument,'Demo reviewed document.jpg',driver.user_id,'user-admin','Approved demo Driver document',iso,iso);
+          if(driver.vehicle_id&&driverIndex%2===0)insertVerification.run(`featured-demo-${driver.user_id}-${driver.vehicle_id}-authorization`,'DRIVER',driver.user_id,'VEHICLE_AUTHORIZATION',driver.vehicle_id,'2099-12-31','Truck authorization',demoDocument,'Demo reviewed document.jpg',driver.user_id,'user-admin','Approved demo Driver-truck authorization',iso,iso);
+        }
+      }else{
+        for(const [type,label] of [['IDENTITY','National ID'],['DRIVER_IDENTITY',"Driver's license"]]){
+          insertVerification.run(`featured-demo-${candidate.profile_id}-${type.toLowerCase()}`,'PROVIDER_PROFILE',candidate.profile_id,type,null,null,label,demoDocument,'Demo reviewed document.jpg',candidate.owner_user_id,'user-admin','Approved demo provider document',iso,iso);
+        }
+        const vehicle=db.prepare('SELECT id FROM vehicles WHERE provider_profile_id=? AND active=1 ORDER BY id LIMIT 1').get(candidate.profile_id);
+        const selfManaged=candidateIndex%2===1;
+        if(selfManaged){
+          db.prepare("UPDATE provider_profiles SET business_name=replace(business_name,'Owner-Operator','Self-managed Driver') WHERE id=?").run(candidate.profile_id);
+          db.prepare("UPDATE verification_requests SET status='REJECTED' WHERE id=?").run(`featured-demo-${vehicle.id}-ownership`);
+          insertVerification.run(`featured-demo-${vehicle.id}-authorization`,'PROVIDER_PROFILE',candidate.profile_id,'VEHICLE_AUTHORIZATION',vehicle.id,'2099-12-31','Truck authorization',demoDocument,'Demo reviewed document.jpg',candidate.owner_user_id,'user-admin','Approved demo provider authorization',iso,iso);
+        }else{
+          db.prepare("UPDATE provider_profiles SET business_name=replace(business_name,'Self-managed Driver','Owner-Operator') WHERE id=?").run(candidate.profile_id);
+          insertVerification.run(`featured-demo-${vehicle.id}-ownership`,'VEHICLE',vehicle.id,'VEHICLE_OWNERSHIP',null,null,'Truck ownership',demoDocument,'Demo reviewed document.jpg',candidate.owner_user_id,'user-admin','Approved demo provider document',iso,iso);
+        }
+      }
+    }
+    const dayId=`featured-demo-${featureDate}`;
+    db.prepare(`INSERT INTO featured_provider_days
+      (id,feature_date,base_place_ref,base_place_label,expo_group_key,expo_group_label,expo_region_codes,tiktok_url,broadcast_start_time,broadcast_end_time,schedule_mode,schedule_config_json,manual_schedule_json,status,created_by,published_by,created_at,updated_at,published_at)
+      VALUES (?,?,?,?,?,?,?,NULL,'08:00','22:00','AUTO','{}','[]','PUBLISHED','user-admin','user-admin',?,?,?)
+      ON CONFLICT(feature_date) DO UPDATE SET base_place_ref=excluded.base_place_ref,base_place_label=excluded.base_place_label,
+        expo_group_key=excluded.expo_group_key,expo_group_label=excluded.expo_group_label,expo_region_codes=excluded.expo_region_codes,
+        status='PUBLISHED',published_by='user-admin',updated_at=excluded.updated_at,published_at=excluded.published_at`).run(dayId,featureDate,basePlaceRef,basePlaceLabel,expo.key,expo.title,JSON.stringify(expo.regionCodes),iso,iso,iso);
+    const storedDay=db.prepare('SELECT id FROM featured_provider_days WHERE feature_date=?').get(featureDate);
+    db.prepare('DELETE FROM featured_provider_slots WHERE day_id=?').run(storedDay.id);
+    const insertSlot=db.prepare(`INSERT OR IGNORE INTO featured_provider_slots
+      (id,day_id,slot_position,provider_organization_id,provider_profile_id,created_by,created_at)
+      VALUES (?,?,?,?,?,?,?)`);
+    candidates.forEach((candidate,index)=>insertSlot.run(`featured-demo-slot-${featureDate}-${index+1}`,storedDay.id,index+1,candidate.organization_id,candidate.profile_id,'user-admin',iso));
+    const insertSponsor=db.prepare(`INSERT OR IGNORE INTO provider_sponsorships
+      (id,expo_group_key,starts_on,ends_on,position,provider_organization_id,provider_profile_id,active,created_by,updated_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,1,'user-admin','user-admin',?,?)`);
+    const insertCatalogSponsor=db.prepare(`INSERT OR IGNORE INTO sponsors
+      (id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone,active,created_by,updated_by,created_at,updated_at)
+      VALUES (?,'TRANSPORTER',?,?,NULL,NULL,NULL,NULL,1,'user-admin','user-admin',?,?)`);
+    const insertSponsorPlacement=db.prepare(`INSERT OR IGNORE INTO sponsor_placements
+      (id,sponsor_id,expo_group_key,starts_on,ends_on,position,active,created_by,updated_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,1,'user-admin','user-admin',?,?)`);
+    candidates.slice(0,4).forEach((candidate,index)=>{
+      const legacyId=`sponsor-demo-${featureDate}-${index+1}`;
+      const sponsorPosition=[1,3,4,5][index];
+      const sponsorId=candidate.organization_id?`sponsor-organization-${candidate.organization_id}`:`sponsor-profile-${candidate.profile_id}`;
+      insertSponsor.run(legacyId,expo.key,featureDate,featureDate,sponsorPosition,candidate.organization_id,candidate.profile_id,iso,iso);
+      insertCatalogSponsor.run(sponsorId,candidate.organization_id,candidate.profile_id,iso,iso);
+      insertSponsorPlacement.run(`placement-${legacyId}`,sponsorId,expo.key,featureDate,featureDate,sponsorPosition,iso,iso);
+    });
+    const advertiserSponsorId=`sponsor-advertiser-demo-${featureDate}`;
+    db.prepare(`INSERT OR IGNORE INTO sponsors
+      (id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone,active,created_by,updated_by,created_at,updated_at)
+      VALUES (?,'ADVERTISER',NULL,NULL,'Alem Freight Supplies','Tyres, straps, and roadside essentials for commercial vehicles.',NULL,'+251911555019',1,'user-admin','user-admin',?,?)`)
+      .run(advertiserSponsorId,iso,iso);
+    insertSponsorPlacement.run(`placement-${advertiserSponsorId}`,advertiserSponsorId,expo.key,featureDate,featureDate,2,iso,iso);
+    db.exec('COMMIT');
+    return true;
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
+
+function migrateProviderSponsorships(db) {
+  const rows=db.prepare('SELECT * FROM provider_sponsorships ORDER BY created_at,id').all();
+  const insertSponsor=db.prepare(`INSERT OR IGNORE INTO sponsors
+    (id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone,active,created_by,updated_by,created_at,updated_at)
+    VALUES (?,'TRANSPORTER',?,?,NULL,NULL,NULL,NULL,1,?,?,?,?)`);
+  const insertPlacement=db.prepare(`INSERT OR IGNORE INTO sponsor_placements
+    (id,sponsor_id,expo_group_key,starts_on,ends_on,position,active,created_by,updated_by,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    for(const row of rows){
+      const sponsorId=row.provider_organization_id?`sponsor-organization-${row.provider_organization_id}`:`sponsor-profile-${row.provider_profile_id}`;
+      insertSponsor.run(sponsorId,row.provider_organization_id,row.provider_profile_id,row.created_by,row.updated_by,row.created_at,row.updated_at);
+      insertPlacement.run(`placement-${row.id}`,sponsorId,row.expo_group_key,row.starts_on,row.ends_on,row.position,row.active,row.created_by,row.updated_by,row.created_at,row.updated_at);
+    }
+    db.exec('COMMIT');
+    return true;
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
+
+export function ensureSeededDailyFeaturedProviderDay(featureDate) {
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(featureDate||'')))throw new Error('FEATURED_DATE_INVALID');
+  return seedDailyFeaturedProviders(getDb(),featureDate);
 }
 
 function qualifyExistingEthiopiaData(db) {
@@ -1514,7 +2222,7 @@ function seed(db) {
   db.prepare(`INSERT INTO provider_profiles
     (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .run('provider-driver','user-driver','Abebe Owner-Operator','abebe-owner-operator',1,1,1,'Light Stake Body Truck','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','+251 911 234 567','Addis Ababa','Independent owner-operator serving business shippers on major Ethiopian corridors.','PUBLIC',iso);
+    .run('provider-driver','user-driver','Abebe Owner-Operator','abebe-owner-operator',1,1,1,'Mini Stake Body Truck','Addis Ababa ↔ Bishoftu; Addis Ababa ↔ Holeta','+251 911 234 567','Addis Ababa','Independent owner-operator serving business shippers around Addis Ababa and nearby towns.','PUBLIC',iso);
 
   const relationshipInsert=db.prepare(`INSERT INTO partner_relationships
     (id,owner_organization_id,provider_organization_id,provider_profile_id,status,requested_by_side,business_favorite,provider_favorite,created_at,updated_at,responded_at)
@@ -1530,23 +2238,23 @@ function seed(db) {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   insertPage.run('page-shipper',orgs.shipper.id,null,'Locally made goods for regional buyers','Small manufacturer using trusted freight partners for B2B shipping.','Woven home goods; packaged products','Addis Ababa; Dire Dawa; Hawassa','Addis Ababa; Adama; Dire Dawa','+251 911 111 111',1,'logistics@blue-nile.local',1,iso);
   insertPage.run('page-receiver',orgs.receiver.id,null,'Reliable receiving operations','Distribution business receiving goods from enterprise suppliers.','Food distribution; wholesale receiving','Hawassa; Addis Ababa','Hawassa; Shashamane; Addis Ababa','+251 911 222 222',0,'receiving@fresh-foods.local',1,iso);
-  insertPage.run('page-transporter',orgs.transporter.id,null,'Road freight for Ethiopian businesses','Transport company serving business freight on major domestic corridors.','FTL and shared-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Mekelle; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Mekelle; Hawassa','+251 911 444 444',0,'dispatch@blueline.local',1,iso);
-  insertPage.run('page-driver',null,'provider-driver','Independent freight capacity','Owner-operated truck available for direct and open B2B shipments.','FTL and partial-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Hawassa','+251 911 234 567',0,'abebe@owneroperator.local',1,iso);
+  insertPage.run('page-transporter',orgs.transporter.id,null,'Road freight for Ethiopian businesses','Transport company serving business freight on major domestic freight routes.','FTL and shared-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Mekelle; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Mekelle; Hawassa','+251 911 444 444',0,'',1,iso);
+  insertPage.run('page-driver',null,'provider-driver','Independent freight capacity','Owner-operated truck available for direct and open B2B shipments.','FTL and partial-capacity freight','Addis Ababa ↔ Dire Dawa; Addis Ababa ↔ Hawassa','Addis Ababa; Dire Dawa; Hawassa','+251 911 234 567',0,'',1,iso);
 
   const vehicleInsert = db.prepare(`INSERT INTO vehicles (id,organization_id,provider_profile_id,label,category,plate,active,make,model,cargo_configuration) VALUES (?,?,?,?,?,?,?,?,?,?)`);
-  vehicleInsert.run('veh-trans-1',orgs.transporter.id,null,'Truck 01','Medium Box Truck','AA-3-10001',1,'Isuzu','FSR','Medium Box Truck');
-  vehicleInsert.run('veh-trans-2',orgs.transporter.id,null,'Truck 02','Heavy Rigid Stake Body Truck','AA-3-10002',1,'Sinotruk','HOWO TX','Heavy Rigid Stake Body Truck');
-  vehicleInsert.run('veh-driver-1',null,'provider-driver','My truck','Light Stake Body Truck','AA-2-44001',1,'Isuzu','NPR','Light Stake Body Truck');
+  vehicleInsert.run('veh-trans-1',orgs.transporter.id,null,'Truck 01','Cargo van','AA-3-10001',1,'Toyota','Hiace','Cargo van');
+  vehicleInsert.run('veh-trans-2',orgs.transporter.id,null,'Truck 02','Medium Box Truck','AA-3-10002',1,'Isuzu','FSR','Medium Box Truck');
+  vehicleInsert.run('veh-driver-1',null,'provider-driver','My truck','Mini Stake Body Truck','AA-2-44001',1,'Hyundai','Porter','Mini Stake Body Truck');
   db.prepare(`INSERT INTO drivers (id,organization_id,user_id,name,phone,license_verified,active) VALUES (?,?,?,?,?,?,?)`)
     .run('driver-company-1',orgs.transporter.id,'user-company-driver','Yonas Alemu','+251 911 555 001',1,1);
   db.prepare(`INSERT INTO drivers (id,organization_id,user_id,name,phone,license_verified,active) VALUES (?,?,?,?,?,?,?)`)
     .run('driver-company-2',orgs.transporter.id,'user-company-driver-2','Dawit Bekele','+251 911 555 002',1,1);
   db.prepare(`INSERT INTO driver_permissions
-    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at)
-    VALUES (?,?,?,?,?,?,?)`).run('user-company-driver',1,1,1,1,'user-transporter',iso);
+    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,can_manage_tracking,updated_by,updated_at)
+    VALUES (?,?,?,?,?,?,?,?)`).run('user-company-driver',0,0,0,1,1,'user-transporter',iso);
   db.prepare(`INSERT INTO driver_permissions
-    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at)
-    VALUES (?,?,?,?,?,?,?)`).run('user-company-driver-2',1,1,1,1,'user-transporter',iso);
+    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,can_manage_tracking,updated_by,updated_at)
+    VALUES (?,?,?,?,?,?,?,?)`).run('user-company-driver-2',0,0,0,1,1,'user-transporter',iso);
   db.prepare(`INSERT INTO driver_vehicle_assignments
     (id,driver_user_id,vehicle_id,assigned_by,assigned_at,active) VALUES (?,?,?,?,?,1)`)
     .run('driver-vehicle-company-1','user-company-driver','veh-trans-1','user-transporter',iso);
@@ -1558,12 +2266,9 @@ function seed(db) {
     (id,organization_id,provider_profile_id,origin,destination,created_by,created_at) VALUES (?,?,?,?,?,?,?)`);
   const seededRoutes = [
     ['route-shipper-dire-dawa',orgs.shipper.id,null,'Addis Ababa','Dire Dawa','user-shipper'],
-    ['route-shipper-hawassa',orgs.shipper.id,null,'Addis Ababa','Hawassa','user-shipper'],
     ['route-receiver-addis',orgs.receiver.id,null,'Hawassa','Addis Ababa','user-receiver'],
     ['route-transporter-dire-dawa',orgs.transporter.id,null,'Addis Ababa','Dire Dawa','user-transporter'],
-    ['route-transporter-mekelle',orgs.transporter.id,null,'Addis Ababa','Mekelle','user-transporter'],
-    ['route-driver-dire-dawa',null,'provider-driver','Addis Ababa','Dire Dawa','user-driver'],
-    ['route-driver-hawassa',null,'provider-driver','Addis Ababa','Hawassa','user-driver']
+    ['route-driver-dire-dawa',null,'provider-driver','Addis Ababa','Dire Dawa','user-driver']
   ];
   for (const route of seededRoutes) profileRouteInsert.run(...route,iso);
   const serviceAreaInsert=db.prepare(`INSERT INTO service_areas
@@ -1676,22 +2381,22 @@ function seed(db) {
     ['verification-truck-driver','VEHICLE','veh-driver-1','VEHICLE_OWNERSHIP','Vehicle ownership','user-driver']
   ];
   for (const item of seededVerifications) {
-    verificationInsert.run(item[0],item[1],item[2],item[3],item[4],demoDocument,'Demo verification record.jpg','image/jpeg','APPROVED',item[5],'user-admin','Approved demo fixture',iso,iso);
+    verificationInsert.run(item[0],item[1],item[2],item[3],item[4],demoDocument,'Submitted document.jpg','image/jpeg','APPROVED',item[5],'user-admin','Document reviewed and approved.',iso,iso);
   }
   const authorizationExpiry=new Date(now.getTime()+365*86_400_000).toISOString().slice(0,10);
   db.prepare(`INSERT INTO verification_requests
     (id,subject_type,subject_id,verification_type,related_vehicle_id,expires_on,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,'APPROVED',?,?,?, ?,?)`)
-    .run('verification-company-driver-truck','DRIVER','user-company-driver','VEHICLE_AUTHORIZATION','veh-trans-1',authorizationExpiry,'Truck authorization',demoDocument,'Demo verification record.jpg','image/jpeg','user-transporter','user-admin','Approved demo fixture',iso,iso);
+    .run('verification-company-driver-truck','DRIVER','user-company-driver','VEHICLE_AUTHORIZATION','veh-trans-1',authorizationExpiry,'Truck authorization',demoDocument,'Submitted document.jpg','image/jpeg','user-transporter','user-admin','Document reviewed and approved.',iso,iso);
   db.prepare(`INSERT INTO verification_requests
     (id,subject_type,subject_id,verification_type,related_vehicle_id,expires_on,document_name,file_path,original_name,mime_type,status,submitted_by,reviewed_by,review_note,submitted_at,reviewed_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,'APPROVED',?,?,?, ?,?)`)
-    .run('verification-owner-driver-truck','PROVIDER_PROFILE','provider-driver','VEHICLE_AUTHORIZATION','veh-driver-1',authorizationExpiry,'Truck authorization',demoDocument,'Demo verification record.jpg','image/jpeg','user-driver','user-admin','Approved demo fixture',iso,iso);
+    .run('verification-owner-driver-truck','PROVIDER_PROFILE','provider-driver','VEHICLE_AUTHORIZATION','veh-driver-1',authorizationExpiry,'Truck authorization',demoDocument,'Submitted document.jpg','image/jpeg','user-driver','user-admin','Document reviewed and approved.',iso,iso);
 
   const planInsert = db.prepare('INSERT INTO plans (id,code,name,audience,active) VALUES (?,?,?,?,1)');
-  planInsert.run('plan-business','BUSINESS_CAPACITY','Business Capacity','BUSINESS');
-  planInsert.run('plan-transport','FLEET_DEMAND','Fleet Transporter Demand','TRANSPORTER');
-  planInsert.run('plan-solo','SELF_MANAGED_DRIVER','Self-managed Driver Demand','DRIVER');
+  planInsert.run('plan-business','BUSINESS_CAPACITY','Business access','BUSINESS');
+  planInsert.run('plan-transport','FLEET_DEMAND','Fleet transporter','TRANSPORTER');
+  planInsert.run('plan-solo','SELF_MANAGED_DRIVER','Independent Driver','DRIVER');
   const paidEndsAt = new Date(now.getTime() + 30 * 86_400_000).toISOString();
   const expiredAt = new Date(now.getTime() - 86_400_000).toISOString();
   const expiredStartedAt = new Date(now.getTime() - 8 * 86_400_000).toISOString();
@@ -1706,7 +2411,6 @@ function seed(db) {
     .run('app-self-signup','user-applicant','Fresh Foods Distribution PLC','ENTERPRISE_RECEIVER','APPROVED','Workspace created by self-service signup.',iso,iso);
 
   const notify = db.prepare(`INSERT INTO notifications (id,user_id,title,body,read_at,created_at) VALUES (?,?,?,?,?,?)`);
-  notify.run(randomId('ntf-'),'user-transporter','New open freight shipment','A fixed-price shipment is available from Addis Ababa to Dire Dawa.',null,iso);
   notify.run(randomId('ntf-'),'user-admin','Low Business rating needs review','A 2-star rating for Fresh Foods Distribution on LGX-F2007 is waiting in Rating Reviews.',null,iso);
 
   const supportCreatedAt=new Date(now.getTime()-50*60*1000).toISOString();

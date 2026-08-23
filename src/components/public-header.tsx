@@ -1,29 +1,27 @@
 import Link from 'next/link';
-import { Building2, CirclePlus, Gauge, Info, LayoutDashboard, LogIn, Route } from 'lucide-react';
+import { LayoutDashboard, LogIn } from 'lucide-react';
 import { Logo } from './logo';
 import { getCurrentUser } from '@/lib/auth';
+import { PublicMobileNav } from './public-mobile-nav';
+import { PublicAssistedChat } from './public-assisted-chat';
 
 export async function PublicHeader() {
   const user = await getCurrentUser();
   return (
-    <header className="public-header">
-      <div className="container public-nav">
-        <Logo />
-        <nav className="public-links" aria-label="Public navigation">
-          <Link href="/"><Gauge aria-hidden="true"/>Capacity</Link>
-          <Link href="/providers"><Building2 aria-hidden="true"/>Providers</Link>
-          <Link href="/track"><Route aria-hidden="true"/>Track</Link>
-          <Link href="/about"><Info aria-hidden="true"/>About</Link>
-          {user
-            ? <Link className="button" href="/app/home"><LayoutDashboard aria-hidden="true"/>Dashboard</Link>
-            : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Join as a provider</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Provider login</Link></>}
-        </nav>
-        <div className="public-session-compact" data-testid="public-session-action">
-          {user
-            ? <Link className="button" href="/app/home"><LayoutDashboard aria-hidden="true"/>Dashboard</Link>
-            : <><Link className="button" href="/apply"><CirclePlus aria-hidden="true"/>Join as a provider</Link><Link className="button" href="/login"><LogIn aria-hidden="true"/>Provider login</Link></>}
+    <>
+      <header className="public-header">
+        <div className="container public-nav">
+          <Logo />
+          <span className="public-app-context">Truck capacity marketplace</span>
+          <div className="public-session-compact" data-testid="public-session-action">
+            {user
+              ? <Link className="button public-dashboard-action" href="/app/home" aria-label="Dashboard" title="Dashboard"><LayoutDashboard aria-hidden="true"/><span>Dashboard</span></Link>
+              : <Link className="button secondary public-login-action" href="/login" aria-label="Log in" title="Transporter login"><LogIn aria-hidden="true"/><span>Log in</span></Link>}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <PublicMobileNav signedIn={Boolean(user)} />
+      <PublicAssistedChat />
+    </>
   );
 }

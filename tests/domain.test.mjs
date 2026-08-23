@@ -2,20 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
 import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
-import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
+import { bestGeographicRouteMatch, capacityRouteAlignmentMatch, corridorAlignmentMatch, geographicRouteMatch, normalizePlace, serviceAreaGeometryMatch, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
 import { capacityPrivacyRadii, obscureCoordinate, possibleDistanceRange, validateCapacityPrivacyRadius } from '../src/lib/location-privacy.js';
 
 test('capacity rules are simple and strict',()=>{
- assert.equal(validateCapacity('EMPTY',''),100);
- assert.throws(()=>validateCapacity('BUSY',''),/INVALID_CAPACITY_STATUS/);
- assert.equal(validateCapacity('OFF_DUTY',''),0);
- assert.equal(validateCapacity('PARTIAL','40'),40);
- assert.throws(()=>validateCapacity('FULL',''),/INVALID_CAPACITY_STATUS/);
- assert.throws(()=>validateCapacity('PARTIAL','0'),/CAPACITY_PERCENT_REQUIRED/);
- assert.throws(()=>validateCapacity('PARTIAL','100'),/CAPACITY_PERCENT_REQUIRED/);
+ assert.equal(validateCapacity('EMPTY'),100);
+ assert.throws(()=>validateCapacity('BUSY'),/INVALID_CAPACITY_STATUS/);
+ assert.equal(validateCapacity('OFF_DUTY'),0);
+ assert.equal(validateCapacity('PARTIAL'),50);
+ assert.throws(()=>validateCapacity('FULL'),/INVALID_CAPACITY_STATUS/);
 });
 
 test('direct requests accept both current and legacy pending operational states',()=>{
@@ -219,6 +217,47 @@ test('coordinate route matching supports radii, direction, and best truck route'
  const best=bestGeographicRouteMatch(query,[distant,nearby],{originRadiusKm:50,destinationRadiusKm:50});
  assert.equal(best.id,'nearby');
  assert.match(best.label,/Route match/);
+});
+
+test('corridor alignment matches freight points along a longer directional route',()=>{
+ const truck={origin_lat:9.03,origin_lng:38.74,destination_lat:7.06,destination_lng:38.48};
+ const alongRoute={origin_lat:8.60,origin_lng:38.68,destination_lat:7.55,destination_lng:38.54};
+ const reverse={origin_lat:7.55,origin_lng:38.54,destination_lat:8.60,destination_lng:38.68};
+ assert.equal(corridorAlignmentMatch(alongRoute,truck,{originRadiusKm:30,destinationRadiusKm:30}).matched,true);
+ assert.equal(corridorAlignmentMatch(reverse,truck,{originRadiusKm:30,destinationRadiusKm:30}).matched,false);
+ assert.equal(corridorAlignmentMatch(reverse,truck,{originRadiusKm:30,destinationRadiusKm:30,directionMode:'EITHER'}).matched,true);
+});
+
+test('multi-city capacity matching follows every ordered route segment',()=>{
+ const route=[
+  {lat:9.03,lng:38.74,label:'Addis Ababa'},
+  {lat:8.75,lng:38.99,label:'Bishoftu'},
+  {lat:8.54,lng:39.27,label:'Adama'},
+  {lat:8.59,lng:39.12,label:'Mojo'}
+ ];
+ const alongMiddle=capacityRouteAlignmentMatch(
+  {origin_lat:8.75,origin_lng:38.99,destination_lat:8.54,destination_lng:39.27},route,
+  {originRadiusKm:10,destinationRadiusKm:10,directionMode:'DIRECT'}
+ );
+ assert.equal(alongMiddle.matched,true);
+ assert.equal(alongMiddle.origin_segment_index>=0,true);
+ assert.equal(capacityRouteAlignmentMatch(
+  {origin_lat:8.54,origin_lng:39.27,destination_lat:8.75,destination_lng:38.99},route,
+  {originRadiusKm:10,destinationRadiusKm:10,directionMode:'DIRECT'}
+ ).matched,false);
+ assert.equal(capacityRouteAlignmentMatch(
+  {origin_lat:8.54,origin_lng:39.27,destination_lat:8.75,destination_lng:38.99},route,
+  {originRadiusKm:10,destinationRadiusKm:10,directionMode:'EITHER'}
+ ).matched,true);
+});
+
+test('Service area matching uses the polygon interior and boundary tolerance',()=>{
+ const boundary=[
+  {lat:9.15,lng:38.60},{lat:9.15,lng:38.90},{lat:8.90,lng:38.90},{lat:8.90,lng:38.60}
+ ];
+ assert.equal(serviceAreaGeometryMatch({lat:9.03,lng:38.74},boundary,{searchRadiusKm:10}).inside,true);
+ assert.equal(serviceAreaGeometryMatch({lat:9.03,lng:38.96},boundary,{searchRadiusKm:10}).matched,true);
+ assert.equal(serviceAreaGeometryMatch({lat:9.03,lng:39.40},boundary,{searchRadiusKm:10}).matched,false);
 });
 
 test('obscured current areas compare by circle overlap',()=>{

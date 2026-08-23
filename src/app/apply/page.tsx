@@ -16,13 +16,19 @@ const accountTypes = [
   {
     value: 'TRANSPORT_COMPANY',
     title: 'Fleet transporter',
-    hint: 'Publish fleet capacity',
+    hint: 'A transport company or fleet with its own trucks and company Drivers.',
+    icon: Building2
+  },
+  {
+    value: 'OWNER_OPERATOR',
+    title: 'Owner-operator',
+    hint: 'You drive and manage a truck you own.',
     icon: Truck
   },
   {
-    value: 'INDEPENDENT_PROVIDER',
+    value: 'SELF_MANAGED_DRIVER',
     title: 'Self-managed driver',
-    hint: 'Publish your truck',
+    hint: 'You operate another owner’s truck with authorization.',
     icon: UserRound
   }
 ];
@@ -37,8 +43,8 @@ export default async function ApplyPage({
     ? query.type
     : 'TRANSPORT_COMPANY';
 
-  return <><PublicHeader/><main className="section"><div className="container" style={{maxWidth:850}}>
-    <div className="auth-heading"><span className="task-heading-icon"><Building2 aria-hidden="true"/></span><div><h1 className="page-title">Put your trucks in front of more customers</h1><p className="page-subtitle">Create a transport provider profile for your fleet or the truck you operate yourself.</p></div></div>
+  return <><PublicHeader/><main className="public-app-page public-form-workspace"><div className="container public-form-container">
+    <div className="auth-heading"><span className="task-heading-icon"><Building2 aria-hidden="true"/></span><div><h1 className="page-title">Create a transporter account</h1><p className="page-subtitle">Choose how you operate, then publish truck capacity publicly or share it with trusted contacts.</p></div></div>
     <Flash error={query.error} success={query.success}/>
     <form action="/api/applications" method="post" className="form-card stack">
       <fieldset>
@@ -57,14 +63,14 @@ export default async function ApplyPage({
       </fieldset>
       <div className="form-grid">
         <div className="form-group"><label htmlFor="applicant-name"><UserRound aria-hidden="true"/>Your name</label><input id="applicant-name" name="name" autoComplete="name" required/></div>
-        <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Transport business name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
+        <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Transporter name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
         <div className="form-group"><label htmlFor="application-email"><Mail aria-hidden="true"/>Account email</label><input id="application-email" name="email" type="email" autoComplete="email" required/><div className="meta">Private. Used to log in.</div></div>
         <div className="form-group"><label htmlFor="application-phone"><Phone aria-hidden="true"/>Account phone</label><input id="application-phone" name="phone" type="tel" autoComplete="tel" required/><div className="meta">Private. Add a public phone later.</div></div>
         <div className="form-group"><label htmlFor="application-password"><LockKeyhole aria-hidden="true"/>Password</label><input id="application-password" name="password" type="password" autoComplete="new-password" minLength={10} required/></div>
         <div className="form-group full"><label htmlFor="application-note"><Truck aria-hidden="true"/>About your transport work <span className="meta">(optional)</span></label><textarea id="application-note" name="notes"/></div>
       </div>
-      <button className="button"><Send aria-hidden="true"/>Sign up</button>
+      <button className="button"><Send aria-hidden="true"/>Create transporter account</button>
     </form>
-    <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Home</Link>
+    <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Back to Truck Market</Link>
   </div></main></>;
 }

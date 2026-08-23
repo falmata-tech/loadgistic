@@ -26,6 +26,7 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
     <SupportRefresh/>
     <PageHeader icon={Headphones} title="Support Inbox" subtitle="Help one customer at a time." action={<form action="/api/support/availability" method="post">{!available?<input type="hidden" name="available" value="on"/>:null}<button className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/>Pause</>:<><PlayCircle aria-hidden="true"/>Go available</>}</button></form>}/>
     <Flash error={query.error} success={query.success}/>
+    <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/>Assisted matching</Link>
     <section className="support-agent-strip">
       <span className={`live-dot ${available?'':'off'}`} aria-hidden="true"/>
       <div><strong>{available?'Available':'Paused'}</strong><small>{result.agent.open_count} of {result.agent.max_open_conversations} assigned</small></div>

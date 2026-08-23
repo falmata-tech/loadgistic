@@ -3,7 +3,7 @@ const messages: Record<string,string> = {
   FORBIDDEN: 'You do not have permission to perform that action.',
   NOT_FOUND: 'The requested record was not found.',
   INVALID_SERVICE_MODE: 'Loadgistic currently supports Road Freight shipments only.',
-  INVALID_TRACKING_MODE: 'Choose Status only or Automatic location + status.',
+  INVALID_TRACKING_MODE: 'Choose Status only or Status and approximate location.',
   INVALID_TRACKING_CODE: 'That tracking code is invalid or has expired.',
   INVALID_EMAIL: 'Enter a valid customer owner email address.',
   SHIPMENT_PARTY_EMAILS_MUST_DIFFER: 'Use a different email for the shipper and receiver.',
@@ -12,7 +12,8 @@ const messages: Record<string,string> = {
   INVALID_TRACKING_MODE_CHANGE: 'This tracking mode cannot be changed that way.',
   TRACKING_LOCATION_REQUIRED: 'The Driver device location did not resolve to a current area.',
   TRACKING_LOCATION_NOT_ENABLED: 'This shipment uses status updates. Choose the current shipment status instead.',
-  TRACKING_DEVICE_LOCATION_REQUIRED: 'Automatic tracking accepts only the assigned Driver device location.',
+  TRACKING_DEVICE_LOCATION_REQUIRED: 'Approximate tracking location accepts only the assigned Driver device location.',
+  ASSIGNED_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must make this travel update from their workspace.',
   INVALID_APPROXIMATE_LOCATION: 'Refresh the approximate device location and try again.',
   DEVICE_LOCATION_DRIVER_ONLY: 'Only the assigned Driver may update this truck location.',
   TRACKING_ACCESS_DENIED: 'That tracking code is invalid or does not belong to this Business.',
@@ -40,10 +41,12 @@ const messages: Record<string,string> = {
   CAPACITY_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must allow device location before this truck can be published.',
   CAPACITY_LOCATION_ACTIVE_REQUIRED: 'Set this truck to Empty or Partial before refreshing its public location.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
-  CAPACITY_PERCENT_REQUIRED: 'Enter a whole percentage from 1 to 99 for partial capacity.',
   ACCEPTED_LOADS_REQUIRED: 'Choose Full Truckload, Partial Truckload, or Both.',
   CAPACITY_AREA_REQUIRED: 'Allow the Driver device location before publishing this truck.',
-  INVALID_CAPACITY_RADIUS: 'Choose an available-now radius from 5 to 500 km.',
+  INVALID_CAPACITY_RADIUS: 'Choose a valid Service area.',
+  CAPACITY_ROUTE_POINTS_REQUIRED: 'Choose two to five cities for the Capacity route.',
+  CAPACITY_AREA_BOUNDARY_REQUIRED: 'Choose three to five surrounding cities for the Service area.',
+  CAPACITY_PLACE_DUPLICATE: 'Choose each city only once within this route or Service area.',
   INVALID_CAPACITY_VISIBILITY: 'Choose Public or Partners.',
   INVALID_ROUTE_DATE: 'The selected travel day cannot be in the past.',
   PLANNED_SPACE_STATUS_REQUIRED: 'Choose Full or Partial cargo space for the planned route.',
@@ -55,8 +58,9 @@ const messages: Record<string,string> = {
   LOAD_PROOF_ALREADY_REQUESTED: 'Shipment proof has already been requested.',
   INVALID_INTEREST: 'Choose an interested transporter for this proof.',
   ROUTE_LOCATIONS_MUST_DIFFER: 'Origin and destination branches must be different.',
-  CORRIDOR_ALREADY_EXISTS: 'That regular corridor is already saved.',
-  REGULAR_CORRIDOR_LIMIT: 'You can publish up to two regular corridors.',
+  CORRIDOR_ALREADY_EXISTS: 'That regular capacity route is already saved.',
+  CAPACITY_ROUTE_ALREADY_EXISTS: 'That regular capacity route is already saved.',
+  REGULAR_CAPACITY_LIMIT: 'You can publish one regular service signal. Remove it before adding another.',
   INVALID_PROOF_TYPE: 'Choose a valid proof type.',
   FILE_REQUIRED: 'Choose a file to upload.',
   FILE_TOO_LARGE: 'The file is larger than the allowed limit.',
@@ -111,9 +115,53 @@ const messages: Record<string,string> = {
   SUPPORT_AGENT_AT_CAPACITY: 'Close an assigned conversation before taking another.',
   INVALID_SUPPORT_AGENT_LIMIT: 'Choose an agent limit from 1 to 20 open conversations.',
   INVALID_SUPPORT_VIEW: 'Choose Assigned, Waiting, or Closed support conversations.'
+  ,INVALID_PRIVATE_CONTACT_EMAIL: 'Enter a valid email address.'
+  ,INVALID_CALLBACK_PHONE: 'Enter a valid callback phone number, or leave it blank.'
+  ,CALLBACK_PHONE_REQUIRED: 'Enter a callback phone number so our team can reconnect if the chat is interrupted.'
+  ,SHARED_CAPACITY_ACCESS_DENIED: 'That email and one-time code could not be verified.'
+  ,GUEST_CONVERSATION_ALREADY_OPEN: 'A conversation for this email is already open. Use the recovery code to return to it.'
+  ,GUEST_SUPPORT_ACCESS_DENIED: 'That email and recovery code could not be verified.'
+  ,GUEST_FILE_SCANNING_REQUIRED: 'File sharing is temporarily unavailable. Send the written message and our team will follow up.'
+  ,FEATURED_DATE_INVALID: 'Choose a valid feature date.'
+  ,FEATURED_TIKTOK_URL_INVALID: 'Enter a secure TikTok link, or leave it blank.'
+  ,FEATURED_PROVIDER_REQUIRED: 'Choose at least one eligible transporter before publishing.'
+  ,FEATURED_PROVIDER_DUPLICATE: 'Each transporter can appear only once per day.'
+  ,FEATURED_PROVIDER_INVALID: 'One of the selected transporters is no longer based in this city or town.'
+  ,FEATURED_PROVIDER_INELIGIBLE: 'One of the selected transporters no longer meets the review requirements.'
+  ,FEATURED_HEADLINE_INVALID: 'Keep the featured-transporter headline between 3 and 90 characters.'
+  ,FEATURED_INTRODUCTION_INVALID: 'Keep the featured-transporter introduction between 10 and 240 characters.'
+  ,FEATURED_BROADCAST_TIME_INVALID: 'Choose valid livestream start and end times.'
+  ,FEATURED_BROADCAST_WINDOW_INVALID: 'The livestream end time must be later than its start time.'
+  ,FEATURED_SCHEDULE_MODE_INVALID: 'Choose Automatic or Manual scheduling.'
+  ,FEATURED_SCHEDULE_TIME_INVALID: 'Choose valid daily schedule times.'
+  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep both presentation sessions within 08:00–22:00 in the correct order.'
+  ,FEATURED_INTERMISSION_INVALID: 'Keep exactly four hours between the morning and evening sessions.'
+  ,FEATURED_TRANSITION_INVALID: 'Choose a changeover from 5 to 30 minutes.'
+  ,FEATURED_SPONSOR_BREAK_FREQUENCY_INVALID: 'Schedule Sponsor breaks after every 2 to 6 transporters.'
+  ,FEATURED_SPONSOR_BREAK_DURATION_INVALID: 'Choose a Sponsor break from 10 to 45 minutes.'
+  ,FEATURED_PRESENTATION_DURATION_INVALID: 'Choose a target presentation from 15 to 60 minutes.'
+  ,FEATURED_SCHEDULE_CAPACITY_EXCEEDED: 'These presentations and breaks do not fit inside the two daily sessions.'
+  ,FEATURED_MANUAL_SCHEDULE_INVALID: 'Give every selected transporter a valid start and end time.'
+  ,FEATURED_MANUAL_SCHEDULE_INCOMPLETE: 'Give every selected transporter one manual presentation interval.'
+  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Manual presentations must stay entirely inside the morning or evening session.'
+  ,FEATURED_MANUAL_SCHEDULE_OVERLAP: 'Manual presentation intervals cannot overlap or change roster order.'
+  ,SPONSORSHIP_DATE_RANGE_INVALID: 'Choose an inclusive sponsored-placement period of no more than one year.'
+  ,SPONSORSHIP_POSITION_INVALID: 'Choose sponsored position 1 through 5.'
+  ,SPONSORSHIP_KIND_INVALID: 'Choose a Loadgistic transporter or an outside advertiser.'
+  ,SPONSORSHIP_PROVIDER_INVALID: 'Choose an eligible transporter from this regional programme.'
+  ,SPONSORSHIP_PROVIDER_INELIGIBLE: 'That transporter no longer meets the public review requirements.'
+  ,SPONSOR_NAME_INVALID: 'Enter an advertiser name between 2 and 100 characters.'
+  ,SPONSOR_DESCRIPTION_INVALID: 'Enter a clear advertiser description between 10 and 240 characters.'
+  ,SPONSOR_WEBSITE_INVALID: 'Enter a complete HTTPS website address.'
+  ,SPONSOR_CONTACT_REQUIRED: 'Add an HTTPS website or public phone number for this advertiser.'
+  ,SPONSORSHIP_OVERLAP: 'That sponsor or sponsored position is already scheduled during part of this period.'
+  ,SPONSORSHIP_NOT_FOUND: 'That sponsored placement no longer exists.'
+  ,PROVIDER_BASE_REGION_REQUIRED: 'Choose the transporter’s region or city administration.'
+  ,PROFILE_IMAGE_REQUIRED: 'Choose a transporter profile image.'
+  ,PROFILE_IMAGE_TYPE_INVALID: 'Upload a JPG, PNG, or WebP transporter image.'
 };
 
 export function errorMessage(error: unknown) {
   const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-  return messages[code] || 'Something went wrong. Please try again.';
+  return messages[code] || messages[code.split(':')[0]] || 'Something went wrong. Please try again.';
 }

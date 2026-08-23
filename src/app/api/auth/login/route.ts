@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const accountRate = checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`,accountLimit,60_000);
   if (!accountRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${accountRate.retryAfterSeconds} seconds.`);
   const user = findUserByEmail(email);
-  if (!user || !user.active || !verifyPassword(password, user.password_hash)) {
+  if (!user || !user.active || !await verifyPassword(password, user.password_hash)) {
     return redirectWith(request, '/login', 'error', 'The email or password is incorrect.');
   }
   // A relative Location preserves the browser's public origin even when a

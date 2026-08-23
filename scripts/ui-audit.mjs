@@ -25,7 +25,7 @@ const personas = [
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/operations?view=TRUCKS', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/support', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/operations?view=TRUCKS', '/admin/operations?view=DRIVERS', '/admin/operations?view=TRACKING', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/support', '/app/more']
   },
   {
     name:'support-agent',
@@ -93,6 +93,19 @@ async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
   if (await page.getByText(/Loading (?:route|capacity|location) map/).count()) {
     await page.locator('.leaflet-container').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
   }
+  const visibleMaps=await page.locator('.leaflet-container:visible').count();
+  if(visibleMaps){
+    await page.locator('.leaflet-container:visible .leaflet-tile-loaded').first().waitFor({state:'visible',timeout:12_000}).catch(()=>{});
+  }
+  await page.evaluate(async()=>{
+    if(document.fonts?.ready)await document.fonts.ready;
+    const images=[...document.images].filter(image=>image.getBoundingClientRect().width>0&&image.getBoundingClientRect().height>0);
+    await Promise.race([
+      Promise.all(images.map(image=>image.complete?Promise.resolve():new Promise(resolve=>{image.addEventListener('load',resolve,{once:true});image.addEventListener('error',resolve,{once:true});}))),
+      new Promise(resolve=>setTimeout(resolve,5_000))
+    ]);
+  });
+  await page.waitForTimeout(150);
   let metrics;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -116,7 +129,11 @@ async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
           textActionsWithoutIcon: [...document.querySelectorAll('button.button, a.button')]
             .filter((element) => element.textContent?.trim() && !element.querySelector('svg')).length,
           labelsWithoutIcon: [...document.querySelectorAll('label[for]:not(.sr-only)')]
-            .filter((element) => !element.querySelector('svg')).length
+            .filter((element) => !element.querySelector('svg')).length,
+          visibleMapContainers:[...document.querySelectorAll('.leaflet-container')]
+            .filter((element)=>{const box=element.getBoundingClientRect();return box.width>0&&box.height>0;}).length,
+          loadedMapTiles:[...document.querySelectorAll('.leaflet-tile-loaded')]
+            .filter((element)=>{const box=element.getBoundingClientRect();return box.width>0&&box.height>0;}).length
         };
       });
       if (metrics) break;
@@ -148,7 +165,7 @@ try {
   for (const viewport of viewports) {
     const publicContext = await browser.newContext({ viewport });
     const publicPage = await publicContext.newPage();
-    for (const route of ['/', '/about', '/providers', '/providers/blueline-transport', '/track', '/login', '/apply']) {
+    for (const route of ['/', '/featured', '/about', '/providers', '/providers/blueline-transport', '/track', '/login', '/apply']) {
       const result = await inspectPage(
         publicPage,
         route,
@@ -210,6 +227,7 @@ await writeFile(path.join(outputDir, 'report.json'), `${JSON.stringify(report, n
 
 const failures = report.results.filter((result) =>
   result.status >= 400 || result.horizontalOverflow || result.emptyButtons || result.unlabeledInputs ||
+  (result.visibleMapContainers > 0 && result.loadedMapTiles === 0) ||
   (result.persona !== 'admin' && (result.smallActionTargets || result.textActionsWithoutIcon))
 );
 

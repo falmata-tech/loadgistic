@@ -1,4 +1,4 @@
-const CACHE = 'loadgistic-static-v5';
+const CACHE = 'loadgistic-static-v6';
 const STATIC = ['/manifest.webmanifest', '/icon.svg', '/favicon-32.png', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', event => {

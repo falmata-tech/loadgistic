@@ -24,6 +24,7 @@ export default async function AdminSupportPage({searchParams}:{searchParams:Prom
   return <div className="page support-page admin-support-page">
     <PageHeader icon={Headphones} title="Customer Support" subtitle="Queue health and support team."/>
     <Flash error={query.error} success={query.success}/>
+    <Link className="button secondary assisted-matching-link" href="/support/assisted?view=ALL"><Headphones aria-hidden="true"/>Assisted matching</Link>
     <section className="stats compact-admin-stats">
       <div className="stat"><Clock3 aria-hidden="true"/><span className="meta">Waiting</span><strong>{queue.counts.waiting}</strong></div>
       <div className="stat"><Inbox aria-hidden="true"/><span className="meta">Open</span><strong>{queue.counts.assigned}</strong></div>

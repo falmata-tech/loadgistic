@@ -1,5 +1,5 @@
-import { getDb } from './db.js';
-import { removePrivateUpload, storePrivateUpload } from './private-storage.js';
+import { ensureSeededDailyFeaturedProviderDay, getDb } from './db.js';
+import { readPrivateUpload, removePrivateUpload, storePrivateUpload } from './private-storage.js';
 import {
   USER_ROLES,
   SERVICE_MODES,
@@ -16,8 +16,11 @@ import {
   validateSupportAgentLimit,
   validateSupportCategory,
   validateSupportMessage,
+  normalizePrivateContactEmail,
+  normalizeOptionalCallbackPhone,
   pointInServiceArea,
   serviceAreasOverlap,
+  distanceBetweenKm,
   assertTransition,
   capacitySignalFreshness,
   loadBoardDeadlineState,
@@ -33,14 +36,22 @@ import {
   randomCode,
   randomId,
   trackingAccessCode,
-  verifyReviewAccessCode
+  verifyReviewAccessCode,
+  privateContactDigest,
+  sharedCapacityOtpCode,
+  guestSupportAccessCode,
+  verifyPrivateAccessCode
 } from './security.js';
-import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace } from './route-matching.js';
+import { bestGeographicRouteMatch, capacityRouteAlignmentMatch, capacityRoutePointMatch, corridorAlignmentMatch, geographicRouteMatch, normalizePlace, serviceAreaGeometryMatch } from './route-matching.js';
 import { ETHIOPIA_PLACES, getPlaceCoordinate as getBuiltInPlaceCoordinate } from './ethiopia-places.js';
 import { BUSINESS_SEARCH_PRIVACY_KM, possibleDistanceRange, validateCapacityPrivacyRadius } from './location-privacy.js';
 import { buildAlongRouteChains, poolCompatibleLoads } from './pstl.js';
 import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel } from './place-labels.js';
 import { accessPeriodEnd, PAID_ACCESS_DAYS, subscriptionAccess, TRIAL_DAYS } from './subscription-access.js';
+import { providerRegionLabel, regionalExpoGroupForDate, regionalExpoWeekForDate, validateProviderRegionCode } from './provider-regions.js';
+import { buildFeaturedDaySchedule, DEFAULT_FEATURED_SCHEDULE_CONFIG, validateFeaturedScheduleConfig } from './expo-broadcast.js';
+
+const SPONSORED_PROVIDER_LIMIT=5;
 
 function nowIso() {
   return new Date().toISOString();
@@ -154,24 +165,46 @@ function providerScope(user) {
   return null;
 }
 
+function privateNetworkVehicle(db,user,vehicleId) {
+  if(!user||![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role))throw new Error('FORBIDDEN');
+  if(user.role===USER_ROLES.TRANSPORTER){
+    const vehicle=db.prepare(`SELECT * FROM vehicles WHERE id=? AND organization_id=? AND active=1`).get(vehicleId,user.organization_id);
+    if(!vehicle)throw new Error('NOT_FOUND');
+    return vehicle;
+  }
+  if(isSelfManagedDriver(user)){
+    const vehicle=db.prepare(`SELECT * FROM vehicles WHERE id=? AND provider_profile_id=? AND active=1`).get(vehicleId,user.provider_profile_id);
+    if(!vehicle)throw new Error('NOT_FOUND');
+    return vehicle;
+  }
+  if(!getDriverAccess(user)?.can_manage_capacity)throw new Error('FORBIDDEN');
+  const vehicle=db.prepare(`SELECT v.* FROM vehicles v
+    JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id AND a.active=1
+    WHERE v.id=? AND v.organization_id=? AND a.driver_user_id=? AND v.active=1`).get(vehicleId,user.organization_id,user.id);
+  if(!vehicle)throw new Error('NOT_FOUND');
+  return vehicle;
+}
+
 export function getDriverAccess(user) {
   if (isSelfManagedDriver(user)) {
     return {
       kind:'SELF_MANAGED',
-      can_browse_load_board:true,
-      can_contact_businesses:true,
-      can_negotiate_loads:true,
-      can_manage_capacity:true
+      can_browse_load_board:false,
+      can_contact_businesses:false,
+      can_negotiate_loads:false,
+      can_manage_capacity:true,
+      can_manage_tracking:true
     };
   }
   if (!isCompanyDriver(user)) return null;
   const stored = getDb().prepare('SELECT * FROM driver_permissions WHERE user_id=?').get(user.id);
   return {
     kind:'COMPANY',
-    can_browse_load_board:Boolean(stored?.can_browse_load_board ?? 1),
-    can_contact_businesses:Boolean(stored?.can_contact_businesses ?? 1),
-    can_negotiate_loads:Boolean(stored?.can_negotiate_loads ?? 1),
-    can_manage_capacity:Boolean(stored?.can_manage_capacity ?? 1)
+    can_browse_load_board:false,
+    can_contact_businesses:false,
+    can_negotiate_loads:false,
+    can_manage_capacity:Boolean(stored?.can_manage_capacity ?? 1),
+    can_manage_tracking:Boolean(stored?.can_manage_tracking ?? 1)
   };
 }
 
@@ -230,9 +263,27 @@ function resolvePlaceReference(placeRef, label) {
   const fallbackLabel=placeLabel(label);
   if (!reference) throw new Error('LOCALITY_REQUIRED');
   if (reference.startsWith('builtin:')) {
-    const coordinate=getBuiltInPlaceCoordinate(fallbackLabel||reference.slice('builtin:'.length));
-    if (!coordinate) throw new Error('INVALID_LOCALITY');
-    return {place_ref:reference,place_label:placeLabel(coordinate.name),center_lat:coordinate.lat,center_lng:coordinate.lng};
+    const coordinate=getBuiltInPlaceCoordinate(reference.slice('builtin:'.length))
+      || getBuiltInPlaceCoordinate(fallbackLabel);
+    if (coordinate) return {place_ref:reference,place_label:placeLabel(coordinate.name),center_lat:coordinate.lat,center_lng:coordinate.lng};
+    const stored=getDb().prepare(`WITH geometry_documents(document) AS (
+        SELECT current_route_points_json FROM capacities
+        UNION ALL SELECT capacity_area_boundary_json FROM capacities
+        UNION ALL SELECT route_points_json FROM profile_routes
+        UNION ALL SELECT area_boundary_json FROM profile_routes
+      )
+      SELECT json_extract(point.value,'$.label') AS label,
+        json_extract(point.value,'$.lat') AS lat,
+        json_extract(point.value,'$.lng') AS lng
+      FROM geometry_documents,json_each(
+        CASE WHEN json_valid(geometry_documents.document) THEN geometry_documents.document ELSE '[]' END
+      ) AS point
+      WHERE json_extract(point.value,'$.place_ref')=?
+        AND json_type(point.value,'$.lat') IN ('integer','real')
+        AND json_type(point.value,'$.lng') IN ('integer','real')
+      LIMIT 1`).get(reference);
+    if (!stored) throw new Error('INVALID_LOCALITY');
+    return {place_ref:reference,place_label:placeLabel(stored.label||fallbackLabel),center_lat:Number(stored.lat),center_lng:Number(stored.lng)};
   }
   const place=getDb().prepare(`SELECT id,name,parent_name,country_name,latitude,longitude FROM place_catalog WHERE id=?`).get(reference);
   if (!place) throw new Error('INVALID_LOCALITY');
@@ -241,6 +292,25 @@ function resolvePlaceReference(placeRef, label) {
     : `${place.name}, ${place.country_name}`;
   return {place_ref:place.id,place_label:qualified,center_lat:place.latitude,center_lng:place.longitude};
 }
+
+function resolvePlaceSequence(items,min,max,errorCode) {
+  if(!Array.isArray(items)||items.length<min||items.length>max)throw new Error(errorCode);
+  const points=items.map(item=>resolvePlaceReference(item?.placeRef,item?.label)).map(place=>({
+    place_ref:place.place_ref,label:place.place_label,lat:Number(place.center_lat),lng:Number(place.center_lng)
+  }));
+  if(new Set(points.map(point=>point.place_ref)).size!==points.length)throw new Error('CAPACITY_PLACE_DUPLICATE');
+  return points;
+}
+
+function parsePlacePoints(value,min=0,max=5) {
+  try{
+    const points=JSON.parse(String(value||'[]'));
+    if(!Array.isArray(points)||points.length<min||points.length>max)return [];
+    return points.filter(point=>point&&point.place_ref&&point.label&&Number.isFinite(Number(point.lat))&&Number.isFinite(Number(point.lng))).map(point=>({...point,lat:Number(point.lat),lng:Number(point.lng)}));
+  }catch{return [];}
+}
+
+function routePointLabel(points,separator=' → '){return points.map(point=>point.label).join(separator);}
 
 function nearestCapacityPlace(lat,lng) {
   const db=getDb();
@@ -362,15 +432,18 @@ export function setBusinessFavorite(user,targetOrganizationId,isFavorite) {
 }
 
 export function getUserById(id) {
-  return getDb().prepare(`
+  const db=getDb();
+  const user=db.prepare(`
     SELECT u.*, o.name AS organization_name, o.handle AS organization_handle, o.type AS organization_type,
            p.business_name AS provider_business_name, p.handle AS provider_handle,
+           (SELECT a.application_type FROM applications a WHERE a.user_id=u.id ORDER BY a.created_at DESC LIMIT 1) AS application_type,
            CASE WHEN u.role='DRIVER' AND u.provider_profile_id IS NOT NULL THEN 'SELF_MANAGED'
                 WHEN u.role='DRIVER' AND u.organization_id IS NOT NULL THEN 'COMPANY' END AS driver_kind,
            COALESCE(dp.can_browse_load_board,1) AS can_browse_load_board,
            COALESCE(dp.can_contact_businesses,1) AS can_contact_businesses,
            COALESCE(dp.can_negotiate_loads,1) AS can_negotiate_loads,
            COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity,
+           COALESCE(dp.can_manage_tracking,1) AS can_manage_tracking,
            COALESCE(sap.can_manage_customers,0) AS can_manage_customers,
            COALESCE(sap.can_manage_operations,0) AS can_manage_operations,
            COALESCE(sap.can_manage_trust,0) AS can_manage_trust,
@@ -383,6 +456,11 @@ export function getUserById(id) {
     LEFT JOIN support_agent_profiles sap ON sap.user_id=u.id
     WHERE u.id = ?
   `).get(id) || null;
+  if(!user)return null;
+  if(user.role===USER_ROLES.TRANSPORTER)user.provider_operating_model='FLEET_TRANSPORTER';
+  if(user.driver_kind==='COMPANY')user.provider_operating_model='COMPANY_DRIVER';
+  if(user.driver_kind==='SELF_MANAGED')user.provider_operating_model=independentProviderOperatingModel(db,user);
+  return user;
 }
 
 export function findUserByEmail(email) {
@@ -409,9 +487,9 @@ export function getDashboard(user) {
     };
     data.actions = [
       { href: '/admin/operations', label: 'Open platform operations', description: 'Inspect one focused client, truck, shipment, or capacity view.' },
-      { href: '/admin/reviews?tab=ratings', label: 'Review rating disputes', description: 'Investigate provider disputes without hiding published customer ratings.' },
+      { href: '/admin/reviews?tab=ratings', label: 'Review rating disputes', description: 'Investigate transporter disputes without hiding published customer ratings.' },
       { href: '/admin/reviews?tab=documents', label: 'Review trust documents', description: 'Verify identities, licenses, drivers, and trucks.' },
-      { href: '/providers', label: 'View provider directory', description: 'Inspect the public fleet and owner-operator pages.' }
+      { href: '/', label: 'View public Truck Market', description: 'Inspect published capacity and transporter pages as a visitor sees them.' }
     ];
     data.recent = db.prepare(`SELECT id,code,cargo_summary AS title,operational_status,origin,destination,created_at FROM provider_shipments ORDER BY created_at DESC LIMIT 6`).all();
     return data;
@@ -447,7 +525,7 @@ export function getDashboard(user) {
     'Published Reviews': db.prepare(`SELECT COUNT(*) AS n FROM provider_reviews WHERE ${scope.organizationId?'provider_organization_id':'provider_profile_id'}=? AND status='PUBLISHED'`).get(scope.id).n
   };
   data.actions = [
-    { href: '/app/provider-shipments/new', label: 'Start Tracking', description: 'Create a provider-owned Tracking session after agreeing transport work offline.' },
+    { href: '/app/provider-shipments/new', label: 'Start Tracking', description: 'Create a transporter-managed Tracking session after agreeing transport work offline.' },
     { href: user.role === USER_ROLES.TRANSPORTER ? '/app/fleet' : '/app/home', label: 'Update capacity', description: 'Publish Empty or Partial truck availability.' },
     { href: '/app/company-page', label: 'Update public page', description: 'Keep your services, business information, and public contact choices current.' }
   ];
@@ -1339,7 +1417,7 @@ function verificationBadgesFromApproved(subjectType,records) {
   if (subjectType === 'VEHICLE') {
     const record=latestByType.get('VEHICLE_AUTHORIZATION')||latestByType.get('VEHICLE_OWNERSHIP');
     const expired=Boolean(record?.expires_on&&record.expires_on<todayInEthiopia());
-    return [{type:'VEHICLE_AUTHORITY',verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null}];
+    return [{type:record?.verification_type||'VEHICLE_OWNERSHIP',verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null}];
   }
   const required = subjectType === 'ORGANIZATION'
     ? ['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']
@@ -1377,6 +1455,25 @@ function truckAuthorizationBadge(db,subjectType,subjectId,vehicleId,vehicleLabel
     ORDER BY reviewed_at DESC,submitted_at DESC LIMIT 1`).get(subjectType,subjectId,vehicleId);
   const expired=Boolean(record?.expires_on&&record.expires_on<todayInEthiopia());
   return {type:'TRUCK_AUTHORIZATION',verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null,vehicleId,vehicleLabel};
+}
+
+function publicTruckEvidenceBadge(db,row,vehicles,providerKind) {
+  if(row.provider_organization_id||!row.provider_profile_id||!vehicles.length)return null;
+  if(providerKind==='OWNER_OPERATOR'){
+    const candidates=vehicles.map(vehicle=>{
+      const record=db.prepare(`SELECT reviewed_at,expires_on FROM verification_requests
+        WHERE subject_type='VEHICLE' AND subject_id=? AND verification_type='VEHICLE_OWNERSHIP' AND status='APPROVED'
+        ORDER BY reviewed_at DESC,submitted_at DESC LIMIT 1`).get(vehicle.id);
+      const expired=Boolean(record?.expires_on&&record.expires_on<todayInEthiopia());
+      return {type:'VEHICLE_OWNERSHIP',verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null,vehicleLabel:vehicle.platform_number};
+    });
+    return candidates.find(candidate=>candidate.verified)||candidates.find(candidate=>candidate.expired)||candidates[0];
+  }
+  const candidates=vehicles.flatMap(vehicle=>[
+    truckAuthorizationBadge(db,'PROVIDER_PROFILE',row.provider_profile_id,vehicle.id,vehicle.platform_number),
+    ...(row.profile_user_id?[truckAuthorizationBadge(db,'DRIVER',row.profile_user_id,vehicle.id,vehicle.platform_number)]:[])
+  ]);
+  return candidates.find(candidate=>candidate.verified)||candidates.find(candidate=>candidate.expired)||candidates[0];
 }
 
 function ratingSummary(db, organizationId) {
@@ -1437,7 +1534,7 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
       cp.contact_phone,cp.contact_email,
       (SELECT u.name FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=o.id AND m.membership_role='OWNER' AND u.active=1 ORDER BY u.created_at LIMIT 1) AS owner_name,
       0 AS is_business,
-      (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.organization_id=o.id) AS preferred_routes_text,
+      (SELECT GROUP_CONCAT(CASE WHEN r.geometry='RADIUS' THEN r.area_center_label || ' · Service area' ELSE r.origin || ' ↔ ' || r.destination END,'; ') FROM profile_routes r WHERE r.organization_id=o.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
        WHERE v.organization_id=o.id AND v.active=1 AND c.visibility='OPEN'
@@ -1450,7 +1547,7 @@ export function listDirectoryProfiles(kind = 'ALL', options = /** @type {any} */
     selects.push(`SELECT p.id,'profile' AS ref_kind,p.business_name AS name,p.handle,'INDEPENDENT_PROVIDER' AS type,
       p.city,p.city_place_ref,p.city_lat,p.city_lng,cp.headline,p.about,cp.services,cp.operating_regions,
       cp.contact_phone,cp.contact_email,u.name AS owner_name,0 AS is_business,
-      (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,'; ') FROM profile_routes r WHERE r.provider_profile_id=p.id) AS preferred_routes_text,
+      (SELECT GROUP_CONCAT(CASE WHEN r.geometry='RADIUS' THEN r.area_center_label || ' · Service area' ELSE r.origin || ' ↔ ' || r.destination END,'; ') FROM profile_routes r WHERE r.provider_profile_id=p.id) AS preferred_routes_text,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS fleet_size,
       (SELECT COUNT(DISTINCT c.vehicle_id) FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
        WHERE v.provider_profile_id=p.id AND v.active=1 AND c.visibility='OPEN'
@@ -1756,6 +1853,8 @@ export function updateCompanyPage(user, input) {
   const id = isProvider ? user.provider_profile_id : user.organization_id;
   if (!id) throw new Error('FORBIDDEN');
   const published = input.published ? 1 : 0;
+  const existingPage=db.prepare(`SELECT base_region_code FROM company_pages WHERE ${condition}`).get(id);
+  const baseRegionCode=input.baseRegionCode?validateProviderRegionCode(input.baseRegionCode):existingPage?.base_region_code||null;
   const basePlace=input.basePlaceRef||input.basePlaceLabel
     ? resolvePlaceReference(input.basePlaceRef,input.basePlaceLabel)
     : null;
@@ -1763,13 +1862,14 @@ export function updateCompanyPage(user, input) {
     const existingBase=db.prepare(`SELECT city_place_ref FROM ${isProvider?'provider_profiles':'organizations'} WHERE id=?`).get(id);
     if(!existingBase?.city_place_ref)throw new Error('BASE_LOCATION_REQUIRED');
   }
+  if(published&&!baseRegionCode)throw new Error('PROVIDER_BASE_REGION_REQUIRED');
   const website=String(input.contactWebsite||'').trim();if(website&&!/^https:\/\//i.test(website))throw new Error('INVALID_WEBSITE_URL');
   const timestamp = nowIso();
   db.exec('BEGIN IMMEDIATE');
   try {
-    db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,contact_phone=?,contact_whatsapp=?,contact_email=?,contact_website=?,
+    db.prepare(`UPDATE company_pages SET headline=?,about=?,services=?,base_region_code=?,contact_phone=?,contact_whatsapp=?,contact_email=?,contact_website=?,
       show_contact_phone=?,show_contact_whatsapp=?,show_contact_email=?,show_contact_website=?,published=?,updated_at=? WHERE ${condition}`)
-      .run(input.headline || '',input.about || '',input.services || '',input.contactPhone||'',input.contactWhatsapp||'',input.contactEmail||'',website,
+      .run(input.headline || '',input.about || '',input.services || '',baseRegionCode,input.contactPhone||'',input.contactWhatsapp||'',input.contactEmail||'',website,
         input.showContactPhone?1:0,input.showContactWhatsapp?1:0,input.showContactEmail?1:0,input.showContactWebsite?1:0,published,timestamp,id);
     if(basePlace){
       db.prepare(`UPDATE ${isProvider?'provider_profiles':'organizations'}
@@ -1777,7 +1877,7 @@ export function updateCompanyPage(user, input) {
         .run(basePlace.place_label,basePlace.place_ref,basePlace.center_lat,basePlace.center_lng,id);
     }
     audit(db,user,'COMPANY_PAGE_UPDATED','company_page',id,{
-      basePlaceRef:basePlace?.place_ref||null,published,publicContacts:{phone:Boolean(input.showContactPhone),whatsapp:Boolean(input.showContactWhatsapp),email:Boolean(input.showContactEmail),website:Boolean(input.showContactWebsite)}
+      basePlaceRef:basePlace?.place_ref||null,baseRegionCode,published,publicContacts:{phone:Boolean(input.showContactPhone),whatsapp:Boolean(input.showContactWhatsapp),email:Boolean(input.showContactEmail),website:Boolean(input.showContactWebsite)}
     });
     db.exec('COMMIT');
   } catch (error) {
@@ -1786,17 +1886,83 @@ export function updateCompanyPage(user, input) {
   }
 }
 
+function providerPageOwner(user) {
+  if(isCompanyDriver(user)||![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user?.role))throw new Error('FORBIDDEN');
+  if(isSelfManagedDriver(user)&&user.provider_profile_id)return {column:'provider_profile_id',id:user.provider_profile_id};
+  if(user.organization_id)return {column:'organization_id',id:user.organization_id};
+  throw new Error('FORBIDDEN');
+}
+
+export async function updateProviderProfileImage(user,file) {
+  assertWorkspaceAccess(user);
+  const owner=providerPageOwner(user);
+  if(!file||typeof file.arrayBuffer!=='function'||!file.size)throw new Error('PROFILE_IMAGE_REQUIRED');
+  if(!['image/jpeg','image/png','image/webp'].includes(String(file.type||'').toLowerCase()))throw new Error('PROFILE_IMAGE_TYPE_INVALID');
+  const stored=await storePrivateUpload(file,'provider-profile');
+  if(!stored)throw new Error('PROFILE_IMAGE_REQUIRED');
+  const db=getDb();
+  const current=db.prepare(`SELECT id,profile_image_path FROM company_pages WHERE ${owner.column}=?`).get(owner.id);
+  if(!current){await removePrivateUpload(stored.path);throw new Error('NOT_FOUND');}
+  const timestamp=nowIso();
+  try{
+    db.exec('BEGIN IMMEDIATE');
+    db.prepare(`UPDATE company_pages SET profile_image_path=?,profile_image_mime=?,profile_image_updated_at=?,updated_at=? WHERE id=?`)
+      .run(stored.path,stored.mimeType,timestamp,timestamp,current.id);
+    audit(db,user,'PROVIDER_PROFILE_IMAGE_UPDATED','company_page',current.id,{mimeType:stored.mimeType,size:stored.size});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');await removePrivateUpload(stored.path);throw error;}
+  if(current.profile_image_path){try{await removePrivateUpload(current.profile_image_path);}catch{/* orphan cleanup is operationally recoverable */}}
+}
+
+export async function removeProviderProfileImage(user) {
+  assertWorkspaceAccess(user);
+  const owner=providerPageOwner(user);
+  const db=getDb();
+  const current=db.prepare(`SELECT id,profile_image_path FROM company_pages WHERE ${owner.column}=?`).get(owner.id);
+  if(!current)throw new Error('NOT_FOUND');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare('UPDATE company_pages SET profile_image_path=NULL,profile_image_mime=NULL,profile_image_updated_at=?,updated_at=? WHERE id=?').run(timestamp,timestamp,current.id);
+    audit(db,user,'PROVIDER_PROFILE_IMAGE_REMOVED','company_page',current.id,{});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  if(current.profile_image_path){try{await removePrivateUpload(current.profile_image_path);}catch{/* orphan cleanup is operationally recoverable */}}
+}
+
+export function getPublicProviderProfileImage(handle) {
+  return getDb().prepare(`SELECT cp.profile_image_path AS file_path,cp.profile_image_mime AS mime_type,cp.profile_image_updated_at
+    FROM company_pages cp
+    LEFT JOIN organizations o ON o.id=cp.organization_id
+    LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
+    WHERE COALESCE(o.handle,p.handle)=? AND cp.published=1 AND cp.profile_image_path IS NOT NULL
+      AND (p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')`).get(String(handle||''));
+}
+
+function seededTransporterPortraitUrl(filename) {
+  const value=String(filename||'');
+  return /^[a-z0-9-]+\.png$/.test(value)?`/marketing/transporters/${value}`:null;
+}
+
+function publicProviderProfileImageUrl(row) {
+  if(row.profile_image_path)return `/api/public/providers/${encodeURIComponent(row.handle)}/image?v=${encodeURIComponent(row.profile_image_updated_at||'1')}`;
+  return seededTransporterPortraitUrl(row.profile_image_preset);
+}
+
 export function getOwnCompanyPage(user) {
   assertWorkspaceAccess(user);
   const db = getDb();
   if (isCompanyDriver(user)) throw new Error('FORBIDDEN');
   const page = isSelfManagedDriver(user)
-    ? db.prepare(`SELECT cp.*,p.id,p.business_name AS name,p.city,p.city_place_ref,p.city_lat,p.city_lng,
+    ? db.prepare(`SELECT cp.*,p.id,p.handle,p.business_name AS name,p.city,p.city_place_ref,p.city_lat,p.city_lng,
       'provider' AS page_kind,0 AS is_business FROM company_pages cp JOIN provider_profiles p ON p.id=cp.provider_profile_id WHERE cp.provider_profile_id=?`).get(user.provider_profile_id)
-    : db.prepare(`SELECT cp.*,o.id,o.name,o.city,o.city_place_ref,o.city_lat,o.city_lng,'organization' AS page_kind,
+    : db.prepare(`SELECT cp.*,o.id,o.handle,o.name,o.city,o.city_place_ref,o.city_lat,o.city_lng,'organization' AS page_kind,
       CASE WHEN o.type IN ('ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER') THEN 1 ELSE 0 END AS is_business
       FROM company_pages cp JOIN organizations o ON o.id=cp.organization_id WHERE cp.organization_id=?`).get(user.organization_id);
-  return page ? attachProfileCoverage(db,page) : null;
+  if(!page)return null;
+  page.profile_image_url=publicProviderProfileImageUrl(page);
+  page.profile_image_is_custom=Boolean(page.profile_image_path);
+  return attachProfileCoverage(db,page);
 }
 
 export function getProfileRouteComparison(user, company) {
@@ -1925,6 +2091,17 @@ const VERIFICATION_TYPES = Object.freeze({
   VEHICLE: ['VEHICLE_OWNERSHIP']
 });
 
+function independentProviderOperatingModel(db,user) {
+  if(user?.application_type==='OWNER_OPERATOR')return 'OWNER_OPERATOR';
+  if(user?.application_type==='SELF_MANAGED_DRIVER')return 'SELF_MANAGED_DRIVER';
+  if(!user?.provider_profile_id)return 'SELF_MANAGED_DRIVER';
+  const ownsTruck=db.prepare(`SELECT 1 FROM vehicles v JOIN verification_requests vr
+    ON vr.subject_type='VEHICLE' AND vr.subject_id=v.id AND vr.verification_type='VEHICLE_OWNERSHIP' AND vr.status='APPROVED'
+    WHERE v.provider_profile_id=? AND v.active=1 AND (vr.expires_on IS NULL OR vr.expires_on>=?) LIMIT 1`)
+    .get(user.provider_profile_id,todayInEthiopia());
+  return ownsTruck?'OWNER_OPERATOR':'SELF_MANAGED_DRIVER';
+}
+
 function ownsVerificationSubject(db,user,subjectType,subjectId) {
   if (user.role === USER_ROLES.ADMIN) return true;
   if (subjectType === 'ORGANIZATION') return Boolean(user.role !== USER_ROLES.DRIVER && user.organization_id && user.organization_id === subjectId);
@@ -1952,10 +2129,10 @@ export function getVerificationCenter(user) {
     const vehicles=db.prepare(`SELECT v.id,v.make || ' ' || v.model || ' · ' || v.platform_number AS label
       FROM driver_vehicle_assignments a JOIN vehicles v ON v.id=a.vehicle_id
       WHERE a.driver_user_id=? AND a.active=1 AND v.active=1 ORDER BY v.label`).all(user.id).map(vehicle=>({...vehicle}));
-    if(driver)subjects.push({subject_type:'DRIVER',subject_id:driver.user_id,name:driver.name,type:'Driver',vehicles});
+    if(driver)subjects.push({subject_type:'DRIVER',subject_id:driver.user_id,name:driver.name,type:`Company driver · ${user.organization_name}`,vehicles});
   } else if (user.organization_id) {
-    subjects.push({subject_type:'ORGANIZATION',subject_id:user.organization_id,name:user.organization_name,type:'Workspace'});
-    const drivers=db.prepare(`SELECT 'DRIVER' AS subject_type,d.user_id AS subject_id,d.name,'Driver' AS type
+    subjects.push({subject_type:'ORGANIZATION',subject_id:user.organization_id,name:user.organization_name,type:'Fleet transporter'});
+    const drivers=db.prepare(`SELECT 'DRIVER' AS subject_type,d.user_id AS subject_id,d.name,'Company driver' AS type
       FROM drivers d WHERE d.organization_id=? AND d.active=1 AND d.user_id IS NOT NULL ORDER BY d.name`).all(user.organization_id);
     for(const driver of drivers)driver.vehicles=db.prepare(`SELECT v.id,v.make || ' ' || v.model || ' · ' || v.platform_number AS label
       FROM driver_vehicle_assignments a JOIN vehicles v ON v.id=a.vehicle_id
@@ -1965,7 +2142,13 @@ export function getVerificationCenter(user) {
   if (user.provider_profile_id) {
     const vehicles=db.prepare(`SELECT id,make || ' ' || model || ' · ' || platform_number AS label
       FROM vehicles WHERE provider_profile_id=? AND active=1 ORDER BY label`).all(user.provider_profile_id).map(vehicle=>({...vehicle}));
-    subjects.push({subject_type:'PROVIDER_PROFILE',subject_id:user.provider_profile_id,name:user.provider_business_name,type:'Self-managed driver',vehicles});
+    const operatingModel=independentProviderOperatingModel(db,user);
+    if(operatingModel==='OWNER_OPERATOR'){
+      subjects.push({subject_type:'PROVIDER_PROFILE',subject_id:user.provider_profile_id,name:user.provider_business_name,type:'Owner-operator',verification_types:['IDENTITY','DRIVER_IDENTITY'],vehicles});
+      subjects.push(...vehicles.map(vehicle=>({subject_type:'VEHICLE',subject_id:vehicle.id,name:vehicle.label,type:'Truck ownership',verification_types:['VEHICLE_OWNERSHIP'],vehicles:[]})));
+    }else{
+      subjects.push({subject_type:'PROVIDER_PROFILE',subject_id:user.provider_profile_id,name:user.provider_business_name,type:'Self-managed driver',verification_types:['IDENTITY','DRIVER_IDENTITY','VEHICLE_AUTHORIZATION'],vehicles});
+    }
   }
   const requests = db.prepare(`SELECT vr.*,reviewer.name AS reviewer_name FROM verification_requests vr
     LEFT JOIN users reviewer ON reviewer.id=vr.reviewed_by WHERE submitted_by=? ORDER BY submitted_at DESC`).all(user.id);
@@ -1974,8 +2157,10 @@ export function getVerificationCenter(user) {
     subjects: subjects.map(subject => {
       const badges=badgesBySubject.get(`${subject.subject_type}:${subject.subject_id}`)||[];
       const verifiedTypes=new Set(badges.filter(badge=>badge.verified).map(badge=>badge.type));
-      const pairingBadges=(subject.vehicles||[]).map(vehicle=>truckAuthorizationBadge(db,subject.subject_type,subject.subject_id,vehicle.id,vehicle.label));
-      const allowedTypes=VERIFICATION_TYPES[subject.subject_type].filter(type=>type==='VEHICLE_AUTHORIZATION'
+      const pairingBadges=(subject.verification_types||VERIFICATION_TYPES[subject.subject_type]).includes('VEHICLE_AUTHORIZATION')
+        ?(subject.vehicles||[]).map(vehicle=>truckAuthorizationBadge(db,subject.subject_type,subject.subject_id,vehicle.id,vehicle.label))
+        :[];
+      const allowedTypes=(subject.verification_types||VERIFICATION_TYPES[subject.subject_type]).filter(type=>type==='VEHICLE_AUTHORIZATION'
         ? pairingBadges.some(badge=>!badge.verified)
         : !verifiedTypes.has(type));
       return {...subject,allowed_types:allowedTypes,badges:[...badges,...pairingBadges]};
@@ -1995,6 +2180,11 @@ export function submitVerification(user,input,upload) {
   const expiresOn=String(input.expiresOn||'').trim();
   if (!VERIFICATION_TYPES[subjectType]?.includes(verificationType)) throw new Error('INVALID_VERIFICATION_TYPE');
   if (!ownsVerificationSubject(db,user,subjectType,subjectId)) throw new Error('FORBIDDEN');
+  if(user.provider_profile_id){
+    const operatingModel=independentProviderOperatingModel(db,user);
+    if(verificationType==='VEHICLE_OWNERSHIP'&&operatingModel!=='OWNER_OPERATOR')throw new Error('INVALID_VERIFICATION_TYPE');
+    if(verificationType==='VEHICLE_AUTHORIZATION'&&operatingModel==='OWNER_OPERATOR')throw new Error('INVALID_VERIFICATION_TYPE');
+  }
   if (!documentName || !upload) throw new Error('VERIFICATION_DOCUMENT_REQUIRED');
   if(verificationType==='VEHICLE_AUTHORIZATION'){
     if(!relatedVehicleId||!/^\d{4}-\d{2}-\d{2}$/.test(expiresOn)||expiresOn<=todayInEthiopia())throw new Error('TRUCK_AUTHORIZATION_DETAILS_REQUIRED');
@@ -2534,6 +2724,8 @@ const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile
   c.accepts_multi_stop,c.proof_recorded_at,c.current_route_origin,c.current_route_destination,
   c.current_origin_place_ref,c.current_origin_lat,c.current_origin_lng,
   c.current_destination_place_ref,c.current_destination_lat,c.current_destination_lng,
+  c.current_route_points_json,c.capacity_area_center_place_ref,c.capacity_area_center_label,
+  c.capacity_area_center_lat,c.capacity_area_center_lng,c.capacity_area_boundary_json,
   c.current_route_date,c.planned_space_status,c.accepts_multi_pick,c.accepts_multi_drop,c.movement_scope,
   c.local_place_ref,c.local_place_label,c.local_center_lat,c.local_center_lng,c.local_radius_km,
   v.label AS vehicle_label,v.category AS vehicle_category,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,
@@ -2541,7 +2733,7 @@ const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile
   p.business_name AS provider_name,p.handle AS provider_handle,u.name AS updated_by_name,
   cp.contact_phone AS provider_contact_phone,
   CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available,
-  (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,' • ') FROM profile_routes r
+  (SELECT GROUP_CONCAT(CASE WHEN r.geometry='RADIUS' THEN r.area_center_label || ' · Service area' ELSE r.origin || ' ↔ ' || r.destination END,' • ') FROM profile_routes r
     WHERE r.organization_id=c.provider_organization_id OR r.provider_profile_id=c.provider_profile_id) AS preferred_routes_label`;
 
 function marketCapacityRow(row, freshHours, additions = {}) {
@@ -2808,7 +3000,7 @@ export function listProviderCapacityBoardPage(user,filters={},options={}) {
       c.accepts_multi_pick,c.accepts_multi_drop,c.movement_scope,c.local_place_label,c.local_radius_km,
       COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
       CASE WHEN c.photo_path IS NOT NULL AND trim(c.photo_path)<>'' THEN 1 ELSE 0 END AS proof_available,
-      (SELECT GROUP_CONCAT(r.origin || ' ↔ ' || r.destination,' • ') FROM profile_routes r
+      (SELECT GROUP_CONCAT(CASE WHEN r.geometry='RADIUS' THEN r.area_center_label || ' · Service area' ELSE r.origin || ' ↔ ' || r.destination END,' • ') FROM profile_routes r
         WHERE r.organization_id=c.provider_organization_id OR r.provider_profile_id=c.provider_profile_id) AS preferred_routes_label
       ${areaProjection}
     ${query.from} WHERE ${query.where}
@@ -2878,51 +3070,135 @@ function attachPublicCapacitySignals(rows) {
   const clauses=[];const args=[];
   if(organizationIds.length){clauses.push(`organization_id IN (${organizationIds.map(()=>'?').join(',')})`);args.push(...organizationIds);}
   if(profileIds.length){clauses.push(`provider_profile_id IN (${profileIds.map(()=>'?').join(',')})`);args.push(...profileIds);}
-  const corridors=clauses.length?db.prepare(`SELECT id,organization_id,provider_profile_id,origin,destination,
-    origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng
+  const corridors=clauses.length?db.prepare(`SELECT id,organization_id,provider_profile_id,geometry,origin,destination,route_points_json,
+    origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng,
+    area_center_place_ref,area_center_label,area_center_lat,area_center_lng,area_boundary_json
     FROM profile_routes WHERE ${clauses.join(' OR ')} ORDER BY created_at DESC,id`).all(...args):[];
   const corridorsByOwner=new Map();
-  for(const corridor of corridors){const key=corridor.organization_id?`org:${corridor.organization_id}`:`profile:${corridor.provider_profile_id}`;if(!corridorsByOwner.has(key))corridorsByOwner.set(key,[]);if(corridorsByOwner.get(key).length<2)corridorsByOwner.get(key).push({...corridor,geometry:'ROUTE'});}
+  for(const corridor of corridors){const key=corridor.organization_id?`org:${corridor.organization_id}`:`profile:${corridor.provider_profile_id}`;if(!corridorsByOwner.has(key))corridorsByOwner.set(key,[]);if(corridorsByOwner.get(key).length<1)corridorsByOwner.get(key).push({...corridor,geometry:corridor.geometry==='RADIUS'?'RADIUS':'ROUTE',route_points:parsePlacePoints(corridor.route_points_json,corridor.geometry==='RADIUS'?0:2,5),area_boundary:parsePlacePoints(corridor.area_boundary_json,corridor.geometry==='RADIUS'?3:0,5)});}
   return rows.map(row=>({
     ...row,
+    current_route_points:parsePlacePoints(row.current_route_points_json,row.availability_geometry==='ROUTE'?2:0,5),
+    capacity_area_boundary:parsePlacePoints(row.capacity_area_boundary_json,row.availability_geometry==='RADIUS'?3:0,5),
     recurring_corridors:corridorsByOwner.get(publicOwnerKey(row))||[]
   }));
 }
 
 export function listPublicCapacityCursor(filters={},options={}) {
   const db=getDb();
-  const pageSize=Math.max(12,Math.min(16,Number(options.pageSize)||14));
+  const authorizedVehicleIds=Array.isArray(options.authorizedVehicleIds)
+    ? [...new Set(options.authorizedVehicleIds.map(String).filter(Boolean))]
+    : null;
+  const anonymousProjection=authorizedVehicleIds===null;
+  const pageSize=Math.max(12,Math.min(authorizedVehicleIds?100:16,Number(options.pageSize)||14));
   const cursor=decodePublicCursor(options.cursor);
   const where=[`v.active=1`,`cp.published=1`,
     `c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)`,
     `COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')`,
+    `c.expires_at>?`,
     `(p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')`];
-  const args=[];
+  const args=[nowIso()];
+  if(authorizedVehicleIds){
+    if(!authorizedVehicleIds.length)where.push('0=1');
+    else{where.push(`c.vehicle_id IN (${authorizedVehicleIds.map(()=>'?').join(',')})`);args.push(...authorizedVehicleIds);}
+  }else where.push(`(c.visibility='OPEN' OR EXISTS(SELECT 1 FROM profile_routes public_regular
+    WHERE public_regular.organization_id=c.provider_organization_id OR public_regular.provider_profile_id=c.provider_profile_id))`);
   if(cursor){where.push(`(c.updated_at<? OR (c.updated_at=? AND c.id<?))`);args.push(cursor.updatedAt,cursor.updatedAt,cursor.id);}
   if(filters.capacityId){where.push(`c.id=?`);args.push(String(filters.capacityId));}
   if(filters.providerOrganizationId){where.push(`c.provider_organization_id=?`);args.push(String(filters.providerOrganizationId));}
   if(filters.providerProfileId){where.push(`c.provider_profile_id=?`);args.push(String(filters.providerProfileId));}
+  if(filters.provider){where.push(`lower(COALESCE(o.handle,p.handle,''))=?`);args.push(String(filters.provider).trim().toLowerCase());}
   if(filters.status&&['EMPTY','PARTIAL'].includes(String(filters.status))){where.push(`COALESCE(c.market_status,c.status)=?`);args.push(String(filters.status));}
-  if(filters.geometry&&['RADIUS','ROUTE'].includes(String(filters.geometry))){where.push(`COALESCE(c.availability_geometry,'RADIUS')=?`);args.push(String(filters.geometry));}
-  if(filters.q){const pattern=`%${String(filters.q).trim().toLowerCase()}%`;where.push(`(lower(COALESCE(o.name,p.business_name,'')) LIKE ? OR lower(COALESCE(v.make,'')) LIKE ? OR lower(COALESCE(v.model,'')) LIKE ? OR lower(COALESCE(v.cargo_configuration,v.category,'')) LIKE ?)`);args.push(pattern,pattern,pattern,pattern);}
+  if(filters.status==='PARTIAL'&&filters.geometry==='RADIUS')where.push(`0=1`);
+  const hasRouteSearch=Boolean(filters.originPlaceRef||filters.destinationPlaceRef);
+  if(filters.geometry&&['RADIUS','ROUTE'].includes(String(filters.geometry))&&!(filters.geometry==='ROUTE'&&hasRouteSearch)){
+    where.push(`((c.visibility='OPEN' AND c.availability_geometry=?) OR EXISTS(SELECT 1 FROM profile_routes geometry_signal
+      WHERE (geometry_signal.organization_id=c.provider_organization_id OR geometry_signal.provider_profile_id=c.provider_profile_id)
+        AND geometry_signal.geometry=?))`);args.push(String(filters.geometry),String(filters.geometry));
+  }
+  if(filters.vehicleCategory){where.push(`COALESCE(v.cargo_configuration,v.category)=?`);args.push(String(filters.vehicleCategory));}
+  if(filters.loadType==='FTL')where.push(`${anonymousProjection?"c.visibility='OPEN' AND ":''}c.accepts_full_load=1`);
+  if(filters.loadType==='PTL')where.push(`${anonymousProjection?"c.visibility='OPEN' AND ":''}c.accepts_partial_load=1`);
+  if(filters.stopOption==='MULTI_PICK')where.push(`${anonymousProjection?"c.visibility='OPEN' AND ":''}c.accepts_multi_pick=1`);
+  if(filters.stopOption==='MULTI_DROP')where.push(`${anonymousProjection?"c.visibility='OPEN' AND ":''}c.accepts_multi_drop=1`);
+  if(filters.freshness==='FRESH'){where.push(`c.updated_at>=?`);args.push(hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)));}
+  if(filters.freshness==='UPDATE_NEEDED'){where.push(`c.updated_at<?`);args.push(hoursFromNow(-Number(process.env.CAPACITY_FRESH_HOURS||12)));}
+  if(filters.q){
+    const pattern=`%${String(filters.q).trim().toLowerCase()}%`;
+    where.push(`(lower(COALESCE(o.name,p.business_name,'')) LIKE ? OR lower(COALESCE(v.platform_number,'')) LIKE ?
+      OR lower(COALESCE(v.make,'')) LIKE ? OR lower(COALESCE(v.model,'')) LIKE ?
+      OR lower(COALESCE(v.cargo_configuration,v.category,'')) LIKE ? OR (c.visibility='OPEN' AND (lower(COALESCE(c.location_area,'')) LIKE ?
+      OR lower(COALESCE(c.capacity_area_center_label,'')) LIKE ? OR lower(COALESCE(c.current_route_points_json,'')) LIKE ?
+      OR lower(COALESCE(c.capacity_area_boundary_json,'')) LIKE ?))
+      OR EXISTS(SELECT 1 FROM profile_routes search_route
+        WHERE (search_route.organization_id=c.provider_organization_id OR search_route.provider_profile_id=c.provider_profile_id)
+          AND (lower(COALESCE(search_route.route_points_json,'')) LIKE ? OR lower(COALESCE(search_route.area_center_label,'')) LIKE ?
+            OR lower(COALESCE(search_route.area_boundary_json,'')) LIKE ?)))`);
+    args.push(...Array(12).fill(pattern));
+  }
   const originPlace=selectedBoardPlace(filters.originPlaceRef,filters.origin);
   const destinationPlace=selectedBoardPlace(filters.destinationPlaceRef,filters.destination);
-  if(originPlace){where.push(`c.current_origin_lat IS NOT NULL AND geo_distance_km(?,?,c.current_origin_lat,c.current_origin_lng)<=?`);args.push(originPlace.center_lat,originPlace.center_lng,boardFilterRadius(filters.originRadiusKm));}
-  if(destinationPlace){where.push(`c.current_destination_lat IS NOT NULL AND geo_distance_km(?,?,c.current_destination_lat,c.current_destination_lng)<=?`);args.push(destinationPlace.center_lat,destinationPlace.center_lng,boardFilterRadius(filters.destinationRadiusKm));}
+  if(originPlace&&destinationPlace){
+    const originRadius=boardFilterRadius(filters.originRadiusKm);
+    const destinationRadius=boardFilterRadius(filters.destinationRadiusKm);
+    const directionMode=filters.directionMode==='EITHER'?'EITHER':'DIRECT';
+    const matchArgs=[originPlace.center_lat,originPlace.center_lng,destinationPlace.center_lat,destinationPlace.center_lng];
+    where.push(`(
+      (c.visibility='OPEN' AND c.availability_geometry='ROUTE' AND geo_capacity_route_match(?,?,?,?,c.current_route_points_json,?,?,?)=1)
+      OR EXISTS(SELECT 1 FROM profile_routes public_route WHERE (public_route.organization_id=c.provider_organization_id OR public_route.provider_profile_id=c.provider_profile_id)
+        AND public_route.geometry='ROUTE' AND geo_capacity_route_match(?,?,?,?,public_route.route_points_json,?,?,'EITHER')=1)
+      OR (c.visibility='OPEN' AND COALESCE(c.market_status,c.status)='EMPTY' AND c.availability_geometry='RADIUS'
+        AND geo_service_area_match(?,?,c.capacity_area_boundary_json,?)=1
+        AND geo_service_area_match(?,?,c.capacity_area_boundary_json,?)=1)
+      OR (COALESCE(c.market_status,c.status)='EMPTY' AND EXISTS(SELECT 1 FROM profile_routes public_area
+        WHERE (public_area.organization_id=c.provider_organization_id OR public_area.provider_profile_id=c.provider_profile_id)
+          AND public_area.geometry='RADIUS'
+          AND geo_service_area_match(?,?,public_area.area_boundary_json,?)=1
+          AND geo_service_area_match(?,?,public_area.area_boundary_json,?)=1))
+    )`);
+    args.push(...matchArgs,originRadius,destinationRadius,directionMode,...matchArgs,originRadius,destinationRadius,
+      originPlace.center_lat,originPlace.center_lng,originRadius,destinationPlace.center_lat,destinationPlace.center_lng,destinationRadius,
+      originPlace.center_lat,originPlace.center_lng,originRadius,destinationPlace.center_lat,destinationPlace.center_lng,destinationRadius);
+  }else if(originPlace||destinationPlace){
+    const point=originPlace||destinationPlace;
+    const radius=boardFilterRadius(originPlace?filters.originRadiusKm:filters.destinationRadiusKm);
+    where.push(`(
+      (c.visibility='OPEN' AND c.availability_geometry='ROUTE' AND geo_capacity_route_point_match(?,?,c.current_route_points_json,?)=1)
+      OR EXISTS(SELECT 1 FROM profile_routes public_route WHERE (public_route.organization_id=c.provider_organization_id OR public_route.provider_profile_id=c.provider_profile_id)
+        AND public_route.geometry='ROUTE' AND geo_capacity_route_point_match(?,?,public_route.route_points_json,?)=1)
+      OR (c.visibility='OPEN' AND COALESCE(c.market_status,c.status)='EMPTY' AND c.availability_geometry='RADIUS'
+        AND geo_service_area_match(?,?,c.capacity_area_boundary_json,?)=1)
+      OR (COALESCE(c.market_status,c.status)='EMPTY' AND EXISTS(SELECT 1 FROM profile_routes public_area
+        WHERE (public_area.organization_id=c.provider_organization_id OR public_area.provider_profile_id=c.provider_profile_id)
+          AND public_area.geometry='RADIUS' AND geo_service_area_match(?,?,public_area.area_boundary_json,?)=1))
+    )`);
+    args.push(point.center_lat,point.center_lng,radius,point.center_lat,point.center_lng,radius,
+      point.center_lat,point.center_lng,radius,point.center_lat,point.center_lng,radius);
+  }
+  const currentAreaPlace=selectedBoardPlace(filters.currentAreaPlaceRef,filters.currentArea);
+  if(currentAreaPlace){where.push(`(
+    (c.visibility='OPEN' AND c.availability_geometry='RADIUS' AND geo_service_area_match(?,?,c.capacity_area_boundary_json,?)=1)
+    OR EXISTS(SELECT 1 FROM profile_routes public_area WHERE (public_area.organization_id=c.provider_organization_id OR public_area.provider_profile_id=c.provider_profile_id)
+      AND public_area.geometry='RADIUS' AND geo_service_area_match(?,?,public_area.area_boundary_json,?)=1)
+  )`);const radius=boardFilterRadius(filters.currentAreaRadiusKm);args.push(currentAreaPlace.center_lat,currentAreaPlace.center_lng,radius,currentAreaPlace.center_lat,currentAreaPlace.center_lng,radius);}
   const nearLat=Number(filters.nearLat),nearLng=Number(filters.nearLng);
   const hasNear=Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
   const nearRadius=[5,10,20,50,100].includes(Number(filters.nearRadiusKm))?Number(filters.nearRadiusKm):20;
-  if(hasNear){where.push(`c.location_lat IS NOT NULL AND c.location_lng IS NOT NULL AND geo_distance_km(?,?,c.location_lat,c.location_lng)<=?+COALESCE(c.work_radius_km,50)+COALESCE(c.location_precision_km,20)+?`);args.push(nearLat,nearLng,nearRadius,BUSINESS_SEARCH_PRIVACY_KM);}
+  if(hasNear){where.push(`${anonymousProjection?"c.visibility='OPEN' AND ":''}c.location_lat IS NOT NULL AND c.location_lng IS NOT NULL AND geo_distance_km(?,?,c.location_lat,c.location_lng)<=?+COALESCE(c.location_precision_km,20)+?`);args.push(nearLat,nearLng,nearRadius,BUSINESS_SEARCH_PRIVACY_KM);}
   const rows=db.prepare(`SELECT c.id,c.vehicle_id,c.provider_organization_id,c.provider_profile_id,
-      COALESCE(c.market_status,c.status) AS status,c.available_percent,
-      COALESCE(c.availability_geometry,CASE WHEN c.current_route_origin IS NOT NULL THEN 'ROUTE' ELSE 'RADIUS' END) AS availability_geometry,
+      COALESCE(c.market_status,c.status) AS status,c.visibility,
+      c.availability_geometry,
       c.updated_at,c.location_area,c.location_lat,c.location_lng,c.location_precision_km,c.work_radius_km,c.location_updated_at,
       ${hasNear?`geo_distance_km(${nearLat},${nearLng},c.location_lat,c.location_lng)`:'NULL'} AS near_center_distance_km,
       c.current_route_origin,c.current_route_destination,c.current_origin_place_ref,c.current_origin_lat,c.current_origin_lng,
       c.current_destination_place_ref,c.current_destination_lat,c.current_destination_lng,
+      c.current_route_points_json,c.capacity_area_center_place_ref,c.capacity_area_center_label,
+      c.capacity_area_center_lat,c.capacity_area_center_lng,c.capacity_area_boundary_json,
       c.accepts_full_load,c.accepts_partial_load,c.accepts_multi_pick,c.accepts_multi_drop,
       v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
-      COALESCE(o.name,p.business_name) AS provider_name,COALESCE(o.handle,p.handle) AS provider_handle,
+      COALESCE(o.name,p.business_name) AS provider_name,COALESCE(o.handle,p.handle) AS provider_handle,p.user_id AS profile_user_id,
+      assignment.driver_user_id AS assigned_driver_user_id,COALESCE(assigned_driver.name,profile_user.name) AS assigned_driver_name,
+      COALESCE(fleet_driver.phone,CASE WHEN cp.show_contact_phone=1 THEN cp.contact_phone END) AS assigned_driver_phone,
       CASE WHEN cp.show_contact_phone=1 THEN cp.contact_phone END AS contact_phone,
       CASE WHEN cp.show_contact_whatsapp=1 THEN cp.contact_whatsapp END AS contact_whatsapp,
       CASE WHEN cp.show_contact_email=1 THEN cp.contact_email END AS contact_email,
@@ -2930,6 +3206,10 @@ export function listPublicCapacityCursor(filters={},options={}) {
     FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
     LEFT JOIN organizations o ON o.id=c.provider_organization_id
     LEFT JOIN provider_profiles p ON p.id=c.provider_profile_id
+    LEFT JOIN users profile_user ON profile_user.id=p.user_id
+    LEFT JOIN driver_vehicle_assignments assignment ON assignment.vehicle_id=v.id AND assignment.active=1
+    LEFT JOIN users assigned_driver ON assigned_driver.id=assignment.driver_user_id
+    LEFT JOIN drivers fleet_driver ON fleet_driver.user_id=assignment.driver_user_id AND fleet_driver.active=1
     JOIN company_pages cp ON cp.organization_id=c.provider_organization_id OR cp.provider_profile_id=c.provider_profile_id
     WHERE ${where.join(' AND ')} ORDER BY c.updated_at DESC,c.id DESC LIMIT ?`).all(...args,pageSize+1);
   const hasMore=rows.length>pageSize;
@@ -2938,7 +3218,69 @@ export function listPublicCapacityCursor(filters={},options={}) {
     const distance=hasNear?possibleDistanceRange(row.near_center_distance_km,row.location_precision_km,BUSINESS_SEARCH_PRIVACY_KM):null;
     return {...row,...review,near_center_distance_km:undefined,possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop),updated_label:publicBoardTime(row.updated_at)};
   });
-  const items=attachPublicCapacitySignals(selected);
+  const items=attachPublicCapacitySignals(selected).map(baseItem=>{
+    const providerKind=baseItem.provider_organization_id?'FLEET_TRANSPORTER':providerOperatingModel(db,baseItem);
+    const driverSubjectType=baseItem.provider_organization_id?'DRIVER':'PROVIDER_PROFILE';
+    const driverSubjectId=baseItem.provider_organization_id?baseItem.assigned_driver_user_id:baseItem.provider_profile_id;
+    const driverBadges=driverSubjectId?verificationBadges(db,driverSubjectType,driverSubjectId):verificationBadgesFromApproved('DRIVER',new Set());
+    const truckBadges=providerKind==='OWNER_OPERATOR'
+      ? verificationBadges(db,'VEHICLE',baseItem.vehicle_id)
+      : [truckAuthorizationBadge(db,driverSubjectType,driverSubjectId||'',baseItem.vehicle_id,baseItem.platform_number)];
+    const driverFirstName=String(baseItem.assigned_driver_name||'').trim().split(/\s+/)[0]||null;
+    const currentGeometryVisible=baseItem.visibility==='OPEN'||!anonymousProjection;
+    const item={...baseItem,visibility:undefined,assigned_driver_name:undefined,assigned_driver_user_id:undefined,profile_user_id:undefined,
+      assigned_driver_first_name:driverFirstName,assigned_driver_phone:baseItem.assigned_driver_phone||null,
+      driver_kind:providerKind==='FLEET_TRANSPORTER'?'COMPANY_DRIVER':providerKind,
+      driver_kind_label:providerKind==='FLEET_TRANSPORTER'?'Company driver':providerOperatingModelLabel(providerKind),
+      driver_verification_badges:driverBadges,truck_verification_badges:truckBadges,
+      current_signal_visibility:baseItem.visibility==='PRIVATE'?'PRIVATE_NETWORK':'PUBLIC_MARKET',
+      current_signal_geometry_visible:currentGeometryVisible};
+    if(!currentGeometryVisible)Object.assign(item,{
+      availability_geometry:null,
+      location_area:null,location_lat:null,location_lng:null,location_precision_km:null,work_radius_km:null,location_updated_at:null,
+      current_route_origin:null,current_route_destination:null,current_origin_place_ref:null,current_origin_lat:null,current_origin_lng:null,
+      current_destination_place_ref:null,current_destination_lat:null,current_destination_lng:null,current_route_points:[],
+      capacity_area_center_place_ref:null,capacity_area_center_label:null,capacity_area_center_lat:null,capacity_area_center_lng:null,capacity_area_boundary:[],
+      accepts_full_load:false,accepts_partial_load:false,accepts_multi_pick:false,accepts_multi_drop:false
+    });
+    if(originPlace&&destinationPlace){
+      const query={origin_lat:originPlace.center_lat,origin_lng:originPlace.center_lng,destination_lat:destinationPlace.center_lat,destination_lng:destinationPlace.center_lng};
+      const candidates=[];
+      if(item.availability_geometry==='ROUTE')candidates.push({route_points:item.current_route_points,source:'Current capacity route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
+      for(const route of item.recurring_corridors.filter(signal=>signal.geometry==='ROUTE'))candidates.push({route_points:route.route_points,source:'Regular capacity route',directionMode:'EITHER'});
+      const matches=candidates.map(candidate=>({...candidate,...capacityRouteAlignmentMatch(query,candidate.route_points,{originRadiusKm:filters.originRadiusKm,destinationRadiusKm:filters.destinationRadiusKm,directionMode:candidate.directionMode})})).filter(candidate=>candidate.matched).sort((first,second)=>first.origin_distance_km+first.destination_distance_km-(second.origin_distance_km+second.destination_distance_km));
+      const areas=[];
+      if(item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({boundary:item.capacity_area_boundary,source:'Current Service area'});
+      if(item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(signal=>signal.geometry==='RADIUS'))areas.push({boundary:signal.area_boundary,source:'Regular Service area'});
+      const areaMatches=areas.map(area=>{const origin=serviceAreaGeometryMatch({lat:originPlace.center_lat,lng:originPlace.center_lng},area.boundary,{searchRadiusKm:filters.originRadiusKm});const destination=serviceAreaGeometryMatch({lat:destinationPlace.center_lat,lng:destinationPlace.center_lng},area.boundary,{searchRadiusKm:filters.destinationRadiusKm});return {...area,origin,destination,matched:origin.matched&&destination.matched,total_distance_km:Number(origin.distance_km||0)+Number(destination.distance_km||0)};}).filter(area=>area.matched).sort((first,second)=>first.total_distance_km-second.total_distance_km);
+      const routeEvidence=matches[0]?`${matches[0].source} aligns · ${Math.round(matches[0].origin_distance_km)} km / ${Math.round(matches[0].destination_distance_km)} km`:null;
+      const areaEvidence=areaMatches[0]?`${areaMatches[0].source} covers both shipment endpoints`:null;
+      return {...item,geographic_match_label:routeEvidence||areaEvidence};
+    }
+    if(originPlace||destinationPlace){
+      const point=originPlace||destinationPlace;
+      const radiusKm=originPlace?filters.originRadiusKm:filters.destinationRadiusKm;
+      const candidates=[];
+      if(item.availability_geometry==='ROUTE')candidates.push({route_points:item.current_route_points,source:'Current capacity route'});
+      for(const route of item.recurring_corridors.filter(signal=>signal.geometry==='ROUTE'))candidates.push({route_points:route.route_points,source:'Regular capacity route'});
+      const match=candidates.map(candidate=>({...candidate,...capacityRoutePointMatch({lat:point.center_lat,lng:point.center_lng},candidate.route_points,{radiusKm})})).find(candidate=>candidate.matched);
+      const areas=[];
+      if(item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({boundary:item.capacity_area_boundary,source:'Current Service area'});
+      if(item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(signal=>signal.geometry==='RADIUS'))areas.push({boundary:signal.area_boundary,source:'Regular Service area'});
+      const areaMatch=areas.map(area=>({...area,...serviceAreaGeometryMatch({lat:point.center_lat,lng:point.center_lng},area.boundary,{searchRadiusKm:radiusKm})})).filter(area=>area.matched).sort((first,second)=>Number(first.distance_km||0)-Number(second.distance_km||0))[0];
+      const matchLabel=match?`${match.source} passes within ${Math.round(match.distance_km)} km of ${point.place_label}`:areaMatch?`${areaMatch.source} reaches ${point.place_label}${areaMatch.inside?'':' nearby'}`:null;
+      return {...item,geographic_match_label:matchLabel};
+    }
+    if(currentAreaPlace){
+      const areas=[];
+      if(item.availability_geometry==='RADIUS')areas.push({boundary:item.capacity_area_boundary,source:'Current Service area'});
+      for(const signal of item.recurring_corridors.filter(signal=>signal.geometry==='RADIUS'))areas.push({boundary:signal.area_boundary,source:'Regular Service area'});
+      const matches=areas.map(area=>({...area,...serviceAreaGeometryMatch({lat:currentAreaPlace.center_lat,lng:currentAreaPlace.center_lng},area.boundary,{searchRadiusKm:filters.currentAreaRadiusKm})})).filter(match=>match.matched).sort((first,second)=>first.distance_km-second.distance_km);
+      return {...item,geographic_match_label:`${matches[0]?.source||'Service area'} reaches ${currentAreaPlace.place_label||filters.currentArea}${matches[0]?.inside?'':' nearby'}`};
+    }
+    if(hasNear)return {...item,geographic_match_label:'Approximate truck location is within your selected proximity'};
+    return item;
+  });
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};
 }
 
@@ -2946,31 +3288,163 @@ export function getPublicCapacityDetail(id) {
   return listPublicCapacityCursor({capacityId:id},{pageSize:12}).items[0]||null;
 }
 
-export function listPublicProviders(options={}) {
+export function listPrivateCapacityNetwork(user) {
+  assertWorkspaceAccess(user);
   const db=getDb();
-  const limit=Math.max(1,Math.min(48,Number(options.limit)||24));
-  const rows=db.prepare(`SELECT cp.id,COALESCE(o.name,p.business_name) AS name,COALESCE(o.handle,p.handle) AS handle,
-      cp.headline,cp.about,cp.services,cp.theme_primary,cp.theme_accent,
-      CASE WHEN cp.show_contact_phone=1 THEN cp.contact_phone END AS contact_phone,
-      CASE WHEN cp.show_contact_whatsapp=1 THEN cp.contact_whatsapp END AS contact_whatsapp,
-      CASE WHEN cp.show_contact_email=1 THEN cp.contact_email END AS contact_email,
-      CASE WHEN cp.show_contact_website=1 THEN cp.contact_website END AS contact_website,
-      o.id AS provider_organization_id,p.id AS provider_profile_id,
-      (SELECT COUNT(*) FROM vehicles v WHERE v.active=1 AND (v.organization_id=o.id OR v.provider_profile_id=p.id)) AS fleet_size,
-      (SELECT COUNT(*) FROM capacities c JOIN vehicles cv ON cv.id=c.vehicle_id WHERE cv.active=1
-        AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=cv.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
-        AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL') AND (c.provider_organization_id=o.id OR c.provider_profile_id=p.id)) AS active_capacity_count
-    FROM company_pages cp LEFT JOIN organizations o ON o.id=cp.organization_id LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
-    WHERE cp.published=1 AND (p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')
-    ORDER BY active_capacity_count DESC,name LIMIT ?`).all(limit);
-  return rows.map(row=>({...row,...publicProviderReviewSummary(db,row.provider_organization_id,row.provider_profile_id)}));
+  let vehicles=[];
+  if(user.role===USER_ROLES.TRANSPORTER){
+    vehicles=db.prepare(`SELECT v.id,v.platform_number,v.make,v.model,COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
+      a.driver_user_id,u.name AS driver_name
+      FROM vehicles v LEFT JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id AND a.active=1
+      LEFT JOIN users u ON u.id=a.driver_user_id
+      WHERE v.organization_id=? AND v.active=1 ORDER BY v.platform_number`).all(user.organization_id);
+  }else if(isSelfManagedDriver(user)){
+    vehicles=db.prepare(`SELECT v.id,v.platform_number,v.make,v.model,COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
+      ? AS driver_user_id,? AS driver_name FROM vehicles v WHERE v.provider_profile_id=? AND v.active=1 ORDER BY v.platform_number`)
+      .all(user.id,user.name,user.provider_profile_id);
+  }else if(isCompanyDriver(user)){
+    vehicles=db.prepare(`SELECT v.id,v.platform_number,v.make,v.model,COALESCE(v.cargo_configuration,v.category) AS cargo_configuration,
+      a.driver_user_id,? AS driver_name FROM vehicles v JOIN driver_vehicle_assignments a ON a.vehicle_id=v.id AND a.active=1
+      WHERE a.driver_user_id=? AND v.organization_id=? AND v.active=1 ORDER BY v.platform_number`).all(user.name,user.id,user.organization_id);
+  }else throw new Error('FORBIDDEN');
+  const vehicleIds=vehicles.map(vehicle=>vehicle.id);
+  if(!vehicleIds.length)return [];
+  const grants=db.prepare(`SELECT g.*,creator.name AS created_by_name,revoker.name AS revoked_by_name
+    FROM capacity_access_grants g JOIN users creator ON creator.id=g.created_by
+    LEFT JOIN users revoker ON revoker.id=g.revoked_by
+    WHERE g.vehicle_id IN (${vehicleIds.map(()=>'?').join(',')})
+    ORDER BY g.revoked_at IS NOT NULL,g.created_at DESC`).all(...vehicleIds);
+  const byVehicle=new Map();
+  for(const grant of grants){
+    const safe={...grant,recipient_email_digest:undefined};
+    if(!byVehicle.has(grant.vehicle_id))byVehicle.set(grant.vehicle_id,[]);
+    byVehicle.get(grant.vehicle_id).push(safe);
+  }
+  return vehicles.map(vehicle=>({...vehicle,grants:byVehicle.get(vehicle.id)||[]}));
+}
+
+export function grantPrivateCapacityAccess(user,input) {
+  assertWorkspaceAccess(user);
+  const db=getDb();
+  const vehicle=privateNetworkVehicle(db,user,String(input.vehicleId||''));
+  const email=normalizePrivateContactEmail(input.email);
+  const digest=privateContactDigest(email);
+  const existing=db.prepare(`SELECT * FROM capacity_access_grants WHERE vehicle_id=? AND audience_type='EMAIL'
+    AND recipient_email_digest=? AND revoked_at IS NULL`).get(vehicle.id,digest);
+  if(existing)return {...existing,recipient_email_digest:undefined,created:false};
+  const id=randomId('cag-'),timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`INSERT INTO capacity_access_grants
+      (id,vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by,created_at)
+      VALUES (?,?,'EMAIL',?,?,?,?)`).run(id,vehicle.id,email,digest,user.id,timestamp);
+    audit(db,user,'PRIVATE_CAPACITY_GRANTED','capacity_access_grant',id,{vehicleId:vehicle.id,audience:'EMAIL'});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return {id,vehicle_id:vehicle.id,audience_type:'EMAIL',recipient_email:email,created:true};
+}
+
+export function setLoadgisticCapacityAccess(user,vehicleId,enabled) {
+  assertWorkspaceAccess(user);
+  const db=getDb();
+  const vehicle=privateNetworkVehicle(db,user,String(vehicleId||''));
+  const digest=privateContactDigest('loadgistic-platform');
+  const existing=db.prepare(`SELECT * FROM capacity_access_grants WHERE vehicle_id=? AND audience_type='LOADGISTIC'
+    AND recipient_email_digest=? AND revoked_at IS NULL`).get(vehicle.id,digest);
+  if(enabled&&existing)return existing.id;
+  const timestamp=nowIso();
+  if(enabled){
+    const id=randomId('cag-');
+    db.prepare(`INSERT INTO capacity_access_grants
+      (id,vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by,created_at)
+      VALUES (?,?,'LOADGISTIC',NULL,?,?,?)`).run(id,vehicle.id,digest,user.id,timestamp);
+    audit(db,user,'LOADGISTIC_CAPACITY_SHARED','capacity_access_grant',id,{vehicleId:vehicle.id});
+    return id;
+  }
+  if(existing){
+    db.prepare(`UPDATE capacity_access_grants SET revoked_at=?,revoked_by=? WHERE id=?`).run(timestamp,user.id,existing.id);
+    audit(db,user,'PRIVATE_CAPACITY_REVOKED','capacity_access_grant',existing.id,{vehicleId:vehicle.id,audience:'LOADGISTIC'});
+  }
+  return existing?.id||null;
+}
+
+export function revokePrivateCapacityAccess(user,grantId) {
+  assertWorkspaceAccess(user);
+  const db=getDb();
+  const grant=db.prepare(`SELECT * FROM capacity_access_grants WHERE id=?`).get(grantId);
+  if(!grant)throw new Error('NOT_FOUND');
+  privateNetworkVehicle(db,user,grant.vehicle_id);
+  if(grant.revoked_at)return;
+  const timestamp=nowIso();
+  db.prepare(`UPDATE capacity_access_grants SET revoked_at=?,revoked_by=? WHERE id=?`).run(timestamp,user.id,grant.id);
+  audit(db,user,'PRIVATE_CAPACITY_REVOKED','capacity_access_grant',grant.id,{vehicleId:grant.vehicle_id,audience:grant.audience_type});
+}
+
+export function requestSharedCapacityOtp(email) {
+  const normalized=normalizePrivateContactEmail(email),digest=privateContactDigest(normalized);
+  const db=getDb(),timestamp=nowIso();
+  const eligible=db.prepare(`SELECT 1 FROM capacity_access_grants WHERE audience_type='EMAIL' AND recipient_email_digest=?
+    AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?) LIMIT 1`).get(digest,timestamp);
+  if(!eligible)return {accepted:true,deliveryQueued:false};
+  const id=randomId('shared-otp-'),expiresAt=new Date(Date.now()+10*60*1000).toISOString(),code=sharedCapacityOtpCode(id);
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`UPDATE shared_capacity_email_otps SET superseded_at=? WHERE recipient_email_digest=?
+      AND used_at IS NULL AND superseded_at IS NULL AND expires_at>?`).run(timestamp,digest,timestamp);
+    db.prepare(`INSERT INTO shared_capacity_email_otps
+      (id,recipient_email,recipient_email_digest,code_digest,attempt_count,expires_at,created_at)
+      VALUES (?,?,?,?,0,?,?)`).run(id,normalized,digest,hashTrackingAccessCode(code),expiresAt,timestamp);
+    db.prepare(`INSERT INTO access_email_deliveries
+      (id,delivery_kind,entity_id,recipient_email,status,attempts,created_at,updated_at)
+      VALUES (?,'SHARED_CAPACITY',?,?,'QUEUED',0,?,?)`).run(randomId('delivery-'),id,normalized,timestamp,timestamp);
+    audit(db,null,'SHARED_CAPACITY_OTP_REQUESTED','shared_capacity_email_otp',id,{eligible:true});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return {accepted:true,deliveryQueued:true,challengeId:id,accessCode:code};
+}
+
+export function verifySharedCapacityAccess(email,code) {
+  const normalized=normalizePrivateContactEmail(email),digest=privateContactDigest(normalized);
+  const db=getDb(),timestamp=nowIso();
+  const challenge=db.prepare(`SELECT * FROM shared_capacity_email_otps WHERE recipient_email_digest=?
+    AND used_at IS NULL AND superseded_at IS NULL ORDER BY created_at DESC LIMIT 1`).get(digest);
+  const usable=challenge&&challenge.expires_at>timestamp&&Number(challenge.attempt_count)<5;
+  const valid=usable&&challenge.code_digest===hashTrackingAccessCode(String(code||'').trim())
+    &&verifyPrivateAccessCode(sharedCapacityOtpCode(challenge.id),code);
+  if(!valid){
+    if(challenge&&challenge.used_at===null&&challenge.superseded_at===null&&Number(challenge.attempt_count)<5){
+      db.prepare(`UPDATE shared_capacity_email_otps SET attempt_count=MIN(5,attempt_count+1) WHERE id=?`).run(challenge.id);
+    }
+    throw new Error('SHARED_CAPACITY_ACCESS_DENIED');
+  }
+  const active=db.prepare(`SELECT 1 FROM capacity_access_grants WHERE audience_type='EMAIL' AND recipient_email_digest=?
+    AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?) LIMIT 1`).get(digest,timestamp);
+  if(!active)throw new Error('SHARED_CAPACITY_ACCESS_DENIED');
+  db.prepare(`UPDATE shared_capacity_email_otps SET used_at=? WHERE id=? AND used_at IS NULL`).run(timestamp,challenge.id);
+  audit(db,null,'SHARED_CAPACITY_OTP_VERIFIED','shared_capacity_email_otp',challenge.id,{});
+  return {emailDigest:digest};
+}
+
+export function listSharedCapacity(emailDigest,filters={}) {
+  const db=getDb();
+  const rows=db.prepare(`SELECT DISTINCT vehicle_id FROM capacity_access_grants WHERE audience_type='EMAIL'
+    AND recipient_email_digest=? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?)`).all(emailDigest,nowIso());
+  return listPublicCapacityCursor(filters,{authorizedVehicleIds:rows.map(row=>row.vehicle_id),pageSize:100});
+}
+
+export function listLoadgisticSharedCapacity(user,filters={}) {
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.OPERATIONS);
+  const rows=getDb().prepare(`SELECT DISTINCT vehicle_id FROM capacity_access_grants WHERE audience_type='LOADGISTIC'
+    AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?)`).all(nowIso());
+  return listPublicCapacityCursor(filters,{authorizedVehicleIds:rows.map(row=>row.vehicle_id),pageSize:100});
 }
 
 export function getPublicProvider(handle) {
   const db=getDb();
   const row=db.prepare(`SELECT cp.*,COALESCE(o.name,p.business_name) AS name,COALESCE(o.handle,p.handle) AS handle,
-      COALESCE(o.city,p.city) AS city,o.id AS provider_organization_id,p.id AS provider_profile_id
+      COALESCE(o.city,p.city) AS city,o.id AS provider_organization_id,p.id AS provider_profile_id,p.user_id AS profile_user_id,profile_user.name AS profile_user_name
     FROM company_pages cp LEFT JOIN organizations o ON o.id=cp.organization_id LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
+    LEFT JOIN users profile_user ON profile_user.id=p.user_id
     WHERE COALESCE(o.handle,p.handle)=? AND cp.published=1 AND (p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')`).get(handle);
   if(!row)return null;
   const safe={
@@ -2980,16 +3454,462 @@ export function getPublicProvider(handle) {
     contact_whatsapp:row.show_contact_whatsapp?row.contact_whatsapp:null,
     contact_email:row.show_contact_email?row.contact_email:null,
     contact_website:row.show_contact_website?row.contact_website:null,
-    provider_organization_id:row.provider_organization_id,provider_profile_id:row.provider_profile_id
+    provider_organization_id:row.provider_organization_id,provider_profile_id:row.provider_profile_id,
+    profile_image_url:publicProviderProfileImageUrl(row)
   };
   const ownerColumn=row.provider_organization_id?'provider_organization_id':'provider_profile_id';
   const ownerId=row.provider_organization_id||row.provider_profile_id;
-  const all=listPublicCapacityCursor(row.provider_organization_id?{providerOrganizationId:ownerId}:{providerProfileId:ownerId},{pageSize:16}).items;
-  const vehicles=db.prepare(`SELECT platform_number,make,model,COALESCE(cargo_configuration,category) AS cargo_configuration
-    FROM vehicles WHERE active=1 AND ${row.provider_organization_id?'organization_id':'provider_profile_id'}=? ORDER BY platform_number`).all(ownerId);
+  const capacityFilters=row.provider_organization_id?{providerOrganizationId:ownerId}:{providerProfileId:ownerId};
+  const all=[];
+  let capacityCursor=null;
+  do{
+    const page=listPublicCapacityCursor(capacityFilters,{pageSize:16,cursor:capacityCursor});
+    all.push(...page.items);
+    capacityCursor=page.hasMore&&all.length<96?page.nextCursor:null;
+  }while(capacityCursor);
+  const vehicles=db.prepare(`SELECT vehicle.id,vehicle.platform_number,vehicle.make,vehicle.model,COALESCE(vehicle.cargo_configuration,vehicle.category) AS cargo_configuration,
+      assignment.driver_user_id,assigned_driver.name AS driver_name,fleet_driver.phone AS driver_phone
+    FROM vehicles vehicle
+    LEFT JOIN driver_vehicle_assignments assignment ON assignment.vehicle_id=vehicle.id AND assignment.active=1
+    LEFT JOIN users assigned_driver ON assigned_driver.id=assignment.driver_user_id
+    LEFT JOIN drivers fleet_driver ON fleet_driver.user_id=assignment.driver_user_id AND fleet_driver.active=1
+    WHERE vehicle.active=1 AND vehicle.${row.provider_organization_id?'organization_id':'provider_profile_id'}=? ORDER BY vehicle.platform_number`).all(ownerId);
   const reviews=db.prepare(`SELECT id,rating,note,created_at,dispute_status FROM provider_reviews WHERE ${ownerColumn}=? AND status='PUBLISHED' ORDER BY created_at DESC LIMIT 20`).all(ownerId);
-  const badges=verificationBadges(db,row.provider_organization_id?'ORGANIZATION':'PROVIDER_PROFILE',ownerId);
-  return {...safe,vehicles,capacities:all,reviews,verification_badges:badges,...publicProviderReviewSummary(db,row.provider_organization_id,row.provider_profile_id)};
+  const badges=[...verificationBadges(db,row.provider_organization_id?'ORGANIZATION':'PROVIDER_PROFILE',ownerId)];
+  const providerKind=providerOperatingModel(db,row);
+  const truckEvidenceBadge=publicTruckEvidenceBadge(db,row,vehicles,providerKind);
+  if(truckEvidenceBadge)badges.push(truckEvidenceBadge);
+  const trucks=vehicles.map(vehicle=>{
+    const capacity=all.find(item=>item.vehicle_id===vehicle.id)||null;
+    if(!capacity){
+      const driverSubjectType=row.provider_organization_id?'DRIVER':'PROVIDER_PROFILE';
+      const driverSubjectId=row.provider_organization_id?vehicle.driver_user_id:row.provider_profile_id;
+      const driverKind=row.provider_organization_id?'COMPANY_DRIVER':providerKind;
+      const driverName=vehicle.driver_name||row.profile_user_name||'';
+      const driverBadges=driverSubjectId?verificationBadges(db,driverSubjectType,driverSubjectId):verificationBadgesFromApproved('DRIVER',new Set());
+      const truckBadges=driverKind==='OWNER_OPERATOR'?verificationBadges(db,'VEHICLE',vehicle.id):[truckAuthorizationBadge(db,driverSubjectType,driverSubjectId||'',vehicle.id,vehicle.platform_number)];
+      return {platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,cargo_configuration:vehicle.cargo_configuration,
+        assigned_driver_first_name:String(driverName).trim().split(/\s+/)[0]||null,assigned_driver_phone:vehicle.driver_phone||(row.show_contact_phone?row.contact_phone:null),
+        driver_kind:driverKind,driver_kind_label:driverKind==='COMPANY_DRIVER'?'Company driver':providerOperatingModelLabel(driverKind),
+        driver_verification_badges:driverBadges,truck_verification_badges:truckBadges,capacity:null};
+    }
+    const {vehicle_id:privateVehicleId,provider_organization_id:privateOrganizationId,provider_profile_id:privateProfileId,...publicCapacity}=capacity;
+    return {platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,cargo_configuration:vehicle.cargo_configuration,capacity:publicCapacity};
+  });
+  return {...safe,provider_kind:providerKind,provider_kind_label:providerOperatingModelLabel(providerKind),vehicles:trucks.map(({capacity,...vehicle})=>vehicle),trucks,capacities:all,reviews,verification_badges:badges,...publicProviderReviewSummary(db,row.provider_organization_id,row.provider_profile_id)};
+}
+
+function isApprovedFeaturedDocument(db,subjectType,subjectId,verificationType,vehicleId=null) {
+  const vehicleClause=vehicleId?' AND related_vehicle_id=?':'';
+  const args=[subjectType,subjectId,verificationType,todayInEthiopia()];
+  if(vehicleId)args.push(vehicleId);
+  return Boolean(db.prepare(`SELECT 1 FROM verification_requests
+    WHERE subject_type=? AND subject_id=? AND verification_type=? AND status='APPROVED'
+      AND (expires_on IS NULL OR expires_on>=?)${vehicleClause}
+    ORDER BY reviewed_at DESC,submitted_at DESC LIMIT 1`).get(...args));
+}
+
+function selfManagedProviderHasTruckEvidence(db,row) {
+  const vehicles=db.prepare('SELECT id FROM vehicles WHERE provider_profile_id=? AND active=1').all(row.provider_profile_id);
+  return vehicles.some(vehicle=>isApprovedFeaturedDocument(db,'VEHICLE',vehicle.id,'VEHICLE_OWNERSHIP')
+    || isApprovedFeaturedDocument(db,'PROVIDER_PROFILE',row.provider_profile_id,'VEHICLE_AUTHORIZATION',vehicle.id)
+    || (row.profile_user_id&&isApprovedFeaturedDocument(db,'DRIVER',row.profile_user_id,'VEHICLE_AUTHORIZATION',vehicle.id)));
+}
+
+function providerOperatingModel(db,row){
+  if(row.provider_organization_id)return 'FLEET_TRANSPORTER';
+  if(!row.provider_profile_id)return 'TRANSPORT_PROVIDER';
+  const vehicles=db.prepare('SELECT id FROM vehicles WHERE provider_profile_id=? AND active=1 ORDER BY id').all(row.provider_profile_id);
+  if(vehicles.some(vehicle=>isApprovedFeaturedDocument(db,'VEHICLE',vehicle.id,'VEHICLE_OWNERSHIP')))return 'OWNER_OPERATOR';
+  if(vehicles.some(vehicle=>isApprovedFeaturedDocument(db,'PROVIDER_PROFILE',row.provider_profile_id,'VEHICLE_AUTHORIZATION',vehicle.id)
+    || (row.profile_user_id&&isApprovedFeaturedDocument(db,'DRIVER',row.profile_user_id,'VEHICLE_AUTHORIZATION',vehicle.id))))return 'SELF_MANAGED_DRIVER';
+  return 'SELF_MANAGED_DRIVER';
+}
+
+function providerOperatingModelLabel(value){
+  if(value==='FLEET_TRANSPORTER')return 'Fleet transporter';
+  if(value==='SELF_MANAGED_DRIVER')return 'Self-managed driver';
+  if(value==='OWNER_OPERATOR')return 'Owner-operator';
+  return 'Transporter';
+}
+
+function featuredProviderEligibility(db,row) {
+  const reasons=[];
+  if(!row.page_published)reasons.push('Public profile is not published');
+  if(!row.has_public_contact)reasons.push('No public contact method is enabled');
+  if(!row.base_place_ref||!row.base_place_label)reasons.push('General base city or town is not published');
+  if(!row.base_region_code)reasons.push('Base region or city administration is not published');
+  if(!row.fleet_size)reasons.push('No active truck is listed');
+  if(row.provider_organization_id){
+    for(const [type,label] of [['IDENTITY','National ID'],['BUSINESS_LICENSE','Business license'],['BUSINESS_ADDRESS','Business address']]){
+      if(!isApprovedFeaturedDocument(db,'ORGANIZATION',row.provider_organization_id,type))reasons.push(`${label} is not approved`);
+    }
+  }else if(row.provider_profile_id){
+    if(!isApprovedFeaturedDocument(db,'PROVIDER_PROFILE',row.provider_profile_id,'IDENTITY'))reasons.push('National ID is not approved');
+    if(!isApprovedFeaturedDocument(db,'PROVIDER_PROFILE',row.provider_profile_id,'DRIVER_IDENTITY'))reasons.push("Driver's license is not approved");
+    if(!selfManagedProviderHasTruckEvidence(db,row))reasons.push('Truck ownership or authorization is not approved');
+  }else reasons.push('Provider ownership is missing');
+  return {eligible:reasons.length===0,reasons};
+}
+
+function featuredProviderRows(db,regionCodes) {
+  const regions=Array.isArray(regionCodes)?regionCodes.filter(Boolean):[];
+  if(!regions.length)return [];
+  return db.prepare(`SELECT o.id AS provider_organization_id,p.id AS provider_profile_id,p.user_id AS profile_user_id,
+      COALESCE(o.name,p.business_name) AS provider_name,COALESCE(o.handle,p.handle) AS provider_handle,
+      COALESCE(o.city,p.city) AS base_place_label,COALESCE(o.city_place_ref,p.city_place_ref) AS base_place_ref,
+      cp.headline,cp.about,cp.services,cp.operating_regions,cp.base_region_code,cp.published AS page_published,
+      CASE WHEN cp.profile_image_path IS NOT NULL THEN 1 ELSE 0 END AS has_profile_image,cp.profile_image_path,cp.profile_image_preset,cp.profile_image_updated_at,
+      CASE WHEN (cp.show_contact_phone=1 AND trim(COALESCE(cp.contact_phone,''))<>'')
+        OR (cp.show_contact_whatsapp=1 AND trim(COALESCE(cp.contact_whatsapp,''))<>'')
+        OR (cp.show_contact_email=1 AND trim(COALESCE(cp.contact_email,''))<>'')
+        OR (cp.show_contact_website=1 AND trim(COALESCE(cp.contact_website,''))<>'') THEN 1 ELSE 0 END AS has_public_contact,
+      (SELECT COUNT(*) FROM vehicles owned WHERE owned.active=1 AND (owned.organization_id=o.id OR owned.provider_profile_id=p.id)) AS fleet_size,
+      (SELECT COUNT(*) FROM vehicles owned JOIN capacities latest ON latest.vehicle_id=owned.id
+        WHERE owned.active=1 AND (owned.organization_id=o.id OR owned.provider_profile_id=p.id)
+          AND latest.id=(SELECT current.id FROM capacities current WHERE current.vehicle_id=owned.id ORDER BY current.updated_at DESC,current.id DESC LIMIT 1)
+          AND COALESCE(latest.market_status,latest.status) IN ('EMPTY','PARTIAL')) AS active_capacity_count
+    FROM company_pages cp
+    LEFT JOIN organizations o ON o.id=cp.organization_id
+    LEFT JOIN provider_profiles p ON p.id=cp.provider_profile_id
+    WHERE cp.base_region_code IN (${regions.map(()=>'?').join(',')})
+      AND (p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')
+    ORDER BY provider_name`).all(...regions);
+}
+
+function decorateFeaturedProvider(db,row) {
+  const review=publicProviderReviewSummary(db,row.provider_organization_id,row.provider_profile_id);
+  const providerKind=providerOperatingModel(db,row);
+  const corridors=db.prepare(`SELECT geometry,route_points_json,area_center_label,area_boundary_json FROM profile_routes WHERE ${row.provider_organization_id?'organization_id':'provider_profile_id'}=? ORDER BY created_at DESC,id DESC LIMIT 1`).all(row.provider_organization_id||row.provider_profile_id).map(signal=>signal.geometry==='RADIUS'?`${signal.area_center_label||'Service area'} · ${routePointLabel(parsePlacePoints(signal.area_boundary_json,3,5),'–')}`:routePointLabel(parsePlacePoints(signal.route_points_json,2,5),'–'));
+  return {
+    provider_key:row.provider_organization_id?`organization:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`,
+    name:row.provider_name,handle:row.provider_handle,base_place:row.base_place_label,base_region:providerRegionLabel(row.base_region_code),headline:row.headline,
+    profile_image_url:row.has_profile_image?`/api/public/providers/${encodeURIComponent(row.provider_handle)}/image?v=${encodeURIComponent(row.profile_image_updated_at||'1')}`:seededTransporterPortraitUrl(row.profile_image_preset),
+    provider_kind:providerKind,provider_kind_label:providerOperatingModelLabel(providerKind),
+    about:row.about,services:row.services,operating_regions:row.operating_regions,corridors,
+    fleet_size:row.fleet_size,active_capacity_count:row.active_capacity_count,...review
+  };
+}
+
+export function listFeaturedProviderCandidates(user,date=todayInEthiopia()) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const db=getDb();
+  const expo=regionalExpoGroupForDate(validateFeaturedDate(date));
+  return featuredProviderRows(db,expo.regionCodes).map(row=>({...decorateFeaturedProvider(db,row),...featuredProviderEligibility(db,row)}));
+}
+
+function validateFeaturedDate(value) {
+  const date=String(value||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(`${date}T12:00:00.000Z`).getTime()))throw new Error('FEATURED_DATE_INVALID');
+  return date;
+}
+
+function validateFeaturedTikTokUrl(value) {
+  const raw=String(value||'').trim();
+  if(!raw)return null;
+  let url;
+  try{url=new URL(raw);}catch{throw new Error('FEATURED_TIKTOK_URL_INVALID');}
+  const hostname=url.hostname.toLowerCase();
+  if(url.protocol!=='https:'||!(hostname==='tiktok.com'||hostname.endsWith('.tiktok.com')))throw new Error('FEATURED_TIKTOK_URL_INVALID');
+  return url.toString();
+}
+
+function validateExpoText(value,min,max,errorCode) {
+  const text=String(value||'').trim();
+  if(!text)return null;
+  if(text.length<min||text.length>max)throw new Error(errorCode);
+  return text;
+}
+
+function sponsorshipProviderKey(row) {
+  return row.provider_organization_id?`organization:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`;
+}
+
+function providerSponsorshipRows(db,expo,date,{includeFuture=false}={}) {
+  const dateClause=includeFuture?'placement.ends_on>=?':'placement.starts_on<=? AND placement.ends_on>=?';
+  const args=includeFuture?[expo.key,date]:[expo.key,date,date];
+  return db.prepare(`SELECT placement.*,sponsor.sponsor_kind,sponsor.provider_organization_id,sponsor.provider_profile_id,
+    sponsor.business_name,sponsor.description,sponsor.website_url,sponsor.phone,sponsor.active AS sponsor_active
+    FROM sponsor_placements placement JOIN sponsors sponsor ON sponsor.id=placement.sponsor_id
+    WHERE placement.expo_group_key=? AND placement.active=1 AND sponsor.active=1 AND ${dateClause}
+    ORDER BY placement.starts_on,placement.position,placement.id`).all(...args);
+}
+
+function sponsoredProviderProjection(db,expo,date) {
+  const available=new Map(featuredProviderRows(db,expo.regionCodes).map(row=>[sponsorshipProviderKey(row),row]));
+  const providers=[];
+  for(const sponsorship of providerSponsorshipRows(db,expo,date)){
+    if(sponsorship.sponsor_kind==='ADVERTISER'){
+      providers.push({sponsor_kind:'ADVERTISER',name:sponsorship.business_name,description:sponsorship.description,website_url:sponsorship.website_url||null,phone:sponsorship.phone||null,sponsor_position:sponsorship.position,sponsored:true});
+      continue;
+    }
+    const row=available.get(sponsorshipProviderKey(sponsorship));
+    if(!row||!featuredProviderEligibility(db,row).eligible)continue;
+    const {provider_key:privateProviderKey,...safeProvider}=decorateFeaturedProvider(db,row);
+    providers.push({...safeProvider,sponsor_kind:'TRANSPORTER',sponsor_position:sponsorship.position,sponsored:true});
+  }
+  return providers.slice(0,SPONSORED_PROVIDER_LIMIT);
+}
+
+function sponsorName(row){return row.sponsor_kind==='ADVERTISER'?row.business_name:row.candidate?.name||null;}
+
+function assignSponsorsToSchedule(schedule,sponsors){
+  const names=sponsors.map(sponsor=>sponsorName(sponsor)||sponsor.name).filter(Boolean);
+  let index=0;
+  return {...schedule,entries:schedule.entries.map(entry=>{
+    if(entry.type!=='SPONSOR_BREAK'||!names.length)return entry;
+    const name=names[index%names.length];index+=1;
+    return {...entry,sponsor_name:name,label:`Sponsor · ${name}`};
+  })};
+}
+
+function validateSponsorWebsite(value){
+  const raw=String(value||'').trim();
+  if(!raw)return null;
+  let url;
+  try{url=new URL(raw);}catch{throw new Error('SPONSOR_WEBSITE_INVALID');}
+  if(url.protocol!=='https:')throw new Error('SPONSOR_WEBSITE_INVALID');
+  return url.toString();
+}
+
+function featuredScheduleJson(value,fallback){
+  if(value&&typeof value==='object')return value;
+  try{return JSON.parse(String(value||''));}catch{return fallback;}
+}
+
+function featuredScheduleForDay(day,featureDate,keys,now=Date.now(),{publicProjection=false,keyAliases=null}={}){
+  const mode=String(day?.schedule_mode||'AUTO').toUpperCase();
+  const config=featuredScheduleJson(day?.schedule_config_json,{});
+  let manualSchedule=featuredScheduleJson(day?.manual_schedule_json,[]);
+  if(publicProjection&&mode==='MANUAL'){
+    const allowed=new Set(keys);
+    manualSchedule=Array.isArray(manualSchedule)?manualSchedule.map(item=>({...item,providerKey:keyAliases?.get(String(item?.providerKey||''))||String(item?.providerKey||'')})).filter(item=>allowed.has(item.providerKey)):[];
+  }
+  try{return buildFeaturedDaySchedule(featureDate,keys,{mode,config,manualSchedule},now);}
+  catch(error){
+    if(publicProjection&&mode==='MANUAL')return buildFeaturedDaySchedule(featureDate,keys,{mode:'AUTO',config},now);
+    throw error;
+  }
+}
+
+export function saveFeaturedProviderDay(user,input={}) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const featureDate=validateFeaturedDate(input.featureDate);
+  const expo=regionalExpoGroupForDate(featureDate);
+  const status=input.publish?'PUBLISHED':'DRAFT';
+  const tiktokUrl=validateFeaturedTikTokUrl(input.tiktokUrl);
+  const publicHeadline=validateExpoText(input.publicHeadline,3,90,'FEATURED_HEADLINE_INVALID');
+  const publicIntroduction=validateExpoText(input.publicIntroduction,10,240,'FEATURED_INTRODUCTION_INVALID');
+  const providerKeys=(Array.isArray(input.providerKeys)?input.providerKeys:[]).map(String).filter(Boolean);
+  if(status==='PUBLISHED'&&!providerKeys.length)throw new Error('FEATURED_PROVIDER_REQUIRED');
+  if(new Set(providerKeys).size!==providerKeys.length)throw new Error('FEATURED_PROVIDER_DUPLICATE');
+  const db=getDb();
+  const available=new Map(featuredProviderRows(db,expo.regionCodes).map(row=>[
+    row.provider_organization_id?`organization:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`,row
+  ]));
+  const selected=[];
+  for(const providerKey of providerKeys){
+    const row=available.get(providerKey);
+    if(!row)throw new Error('FEATURED_PROVIDER_INVALID');
+    const eligibility=featuredProviderEligibility(db,row);
+    if(!eligibility.eligible)throw new Error(`FEATURED_PROVIDER_INELIGIBLE:${row.provider_name}: ${eligibility.reasons.join(', ')}`);
+    selected.push(row);
+  }
+  const scheduleMode=String(input.scheduleMode||'AUTO').toUpperCase();
+  const scheduleConfig=validateFeaturedScheduleConfig(input.scheduleConfig||{});
+  let manualSchedule=input.manualSchedule;
+  if(typeof manualSchedule==='string'){
+    try{manualSchedule=JSON.parse(manualSchedule||'[]');}catch{throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');}
+  }
+  if(!Array.isArray(manualSchedule))manualSchedule=[];
+  const schedule=buildFeaturedDaySchedule(featureDate,providerKeys,{mode:scheduleMode,config:scheduleConfig,manualSchedule});
+  const storedConfig=schedule.config;
+  const storedManual=scheduleMode==='MANUAL'?manualSchedule:[];
+  const existing=db.prepare('SELECT id FROM featured_provider_days WHERE feature_date=?').get(featureDate);
+  const dayId=existing?.id||randomId('featured-day-');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`INSERT INTO featured_provider_days
+      (id,feature_date,base_place_ref,base_place_label,expo_group_key,expo_group_label,expo_region_codes,public_headline,public_introduction,tiktok_url,broadcast_start_time,broadcast_end_time,schedule_mode,schedule_config_json,manual_schedule_json,status,created_by,published_by,created_at,updated_at,published_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(feature_date) DO UPDATE SET base_place_ref=excluded.base_place_ref,base_place_label=excluded.base_place_label,
+        expo_group_key=excluded.expo_group_key,expo_group_label=excluded.expo_group_label,expo_region_codes=excluded.expo_region_codes,
+        public_headline=excluded.public_headline,public_introduction=excluded.public_introduction,tiktok_url=excluded.tiktok_url,
+        broadcast_start_time=excluded.broadcast_start_time,broadcast_end_time=excluded.broadcast_end_time,
+        schedule_mode=excluded.schedule_mode,schedule_config_json=excluded.schedule_config_json,manual_schedule_json=excluded.manual_schedule_json,
+        status=excluded.status,published_by=excluded.published_by,updated_at=excluded.updated_at,published_at=excluded.published_at`)
+      .run(dayId,featureDate,`expo:${expo.key}`,expo.title,expo.key,expo.title,JSON.stringify(expo.regionCodes),publicHeadline,publicIntroduction,tiktokUrl,storedConfig.dayStart,storedConfig.dayEnd,scheduleMode,JSON.stringify(storedConfig),JSON.stringify(storedManual),status,user.id,status==='PUBLISHED'?user.id:null,timestamp,timestamp,status==='PUBLISHED'?timestamp:null);
+    db.prepare('DELETE FROM featured_provider_slots WHERE day_id=?').run(dayId);
+    const insertSlot=db.prepare(`INSERT INTO featured_provider_slots
+      (id,day_id,slot_position,provider_organization_id,provider_profile_id,created_by,created_at)
+      VALUES (?,?,?,?,?,?,?)`);
+    selected.forEach((row,index)=>insertSlot.run(randomId('featured-slot-'),dayId,index+1,row.provider_organization_id,row.provider_profile_id,user.id,timestamp));
+    audit(db,user,status==='PUBLISHED'?'FEATURED_DAY_PUBLISHED':'FEATURED_DAY_SAVED','FEATURED_PROVIDER_DAY',dayId,{featureDate,expoGroupKey:expo.key,providerCount:selected.length,scheduleMode,scheduleConfig:storedConfig,manualIntervalCount:storedManual.length});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return getAdminFeaturedProviderDay(user,featureDate);
+}
+
+export function getAdminFeaturedProviderDay(user,date=todayInEthiopia()) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const featureDate=validateFeaturedDate(date);
+  const expo=regionalExpoGroupForDate(featureDate);
+  const db=getDb();
+  const day=db.prepare('SELECT * FROM featured_provider_days WHERE feature_date=?').get(featureDate)||null;
+  const slots=day?db.prepare('SELECT * FROM featured_provider_slots WHERE day_id=? ORDER BY slot_position').all(day.id):[];
+  const candidates=listFeaturedProviderCandidates(user,featureDate);
+  const byProvider=new Map(candidates.map(candidate=>[candidate.provider_key,candidate]));
+  const slotEvaluations=slots.map(slot=>{const key=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;return {...slot,candidate:byProvider.get(key)||null,eligible:Boolean(byProvider.get(key)?.eligible)};});
+  const sponsorships=providerSponsorshipRows(db,expo,featureDate,{includeFuture:true}).map(sponsorship=>{
+    const candidate=sponsorship.sponsor_kind==='TRANSPORTER'?byProvider.get(sponsorshipProviderKey(sponsorship))||null:null;
+    return {...sponsorship,provider_key:sponsorship.sponsor_kind==='TRANSPORTER'?sponsorshipProviderKey(sponsorship):null,candidate,
+      sponsor_name:sponsorship.sponsor_kind==='ADVERTISER'?sponsorship.business_name:candidate?.name||'Transporter unavailable',
+      eligible:sponsorship.sponsor_kind==='ADVERTISER'||Boolean(candidate?.eligible)};
+  });
+  const slotKeys=slots.map(slot=>slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`);
+  const schedule=assignSponsorsToSchedule(featuredScheduleForDay(day,featureDate,slotKeys),sponsorships.filter(item=>item.eligible&&item.starts_on<=featureDate&&item.ends_on>=featureDate));
+  return {day,slots,slotEvaluations,candidates,sponsorships,expo,schedule,walkthroughs:schedule.walkthroughs};
+}
+
+export function saveProviderSponsorship(user,input={}) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const featureDate=validateFeaturedDate(input.featureDate);
+  const startsOn=validateFeaturedDate(input.startsOn);
+  const endsOn=validateFeaturedDate(input.endsOn);
+  if(startsOn>endsOn)throw new Error('SPONSORSHIP_DATE_RANGE_INVALID');
+  const span=(new Date(`${endsOn}T12:00:00.000Z`).getTime()-new Date(`${startsOn}T12:00:00.000Z`).getTime())/86400000;
+  if(span>365)throw new Error('SPONSORSHIP_DATE_RANGE_INVALID');
+  const position=Number(input.position);
+  if(!Number.isInteger(position)||position<1||position>SPONSORED_PROVIDER_LIMIT)throw new Error('SPONSORSHIP_POSITION_INVALID');
+  const sponsorKind=String(input.sponsorKind||'TRANSPORTER').toUpperCase();
+  if(!['TRANSPORTER','ADVERTISER'].includes(sponsorKind))throw new Error('SPONSORSHIP_KIND_INVALID');
+  const providerKey=String(input.providerKey||'');
+  const expo=regionalExpoGroupForDate(featureDate);
+  const db=getDb();
+  let provider=null;
+  let businessName=null,description=null,websiteUrl=null,phone=null;
+  if(sponsorKind==='TRANSPORTER'){
+    const available=new Map(featuredProviderRows(db,expo.regionCodes).map(row=>[sponsorshipProviderKey(row),row]));
+    provider=available.get(providerKey);
+    if(!provider)throw new Error('SPONSORSHIP_PROVIDER_INVALID');
+    const eligibility=featuredProviderEligibility(db,provider);
+    if(!eligibility.eligible)throw new Error(`SPONSORSHIP_PROVIDER_INELIGIBLE:${provider.provider_name}: ${eligibility.reasons.join(', ')}`);
+  }else{
+    businessName=String(input.businessName||'').trim();
+    description=String(input.description||'').trim();
+    if(businessName.length<2||businessName.length>100)throw new Error('SPONSOR_NAME_INVALID');
+    if(description.length<10||description.length>240)throw new Error('SPONSOR_DESCRIPTION_INVALID');
+    websiteUrl=validateSponsorWebsite(input.websiteUrl);
+    phone=normalizeOptionalCallbackPhone(input.phone);
+    if(!websiteUrl&&!phone)throw new Error('SPONSOR_CONTACT_REQUIRED');
+  }
+  const sponsorshipId=String(input.sponsorshipId||'').trim()||randomId('provider-sponsor-');
+  const existing=input.sponsorshipId?db.prepare('SELECT * FROM sponsor_placements WHERE id=?').get(sponsorshipId):null;
+  if(input.sponsorshipId&&!existing)throw new Error('SPONSORSHIP_NOT_FOUND');
+  const sponsorId=existing?.sponsor_id||(sponsorKind==='TRANSPORTER'?(provider.provider_organization_id?`sponsor-organization-${provider.provider_organization_id}`:`sponsor-profile-${provider.provider_profile_id}`):randomId('sponsor-advertiser-'));
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`INSERT INTO sponsors
+      (id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone,active,created_by,updated_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,1,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET sponsor_kind=excluded.sponsor_kind,provider_organization_id=excluded.provider_organization_id,
+        provider_profile_id=excluded.provider_profile_id,business_name=excluded.business_name,description=excluded.description,
+        website_url=excluded.website_url,phone=excluded.phone,active=1,updated_by=excluded.updated_by,updated_at=excluded.updated_at`)
+      .run(sponsorId,sponsorKind,provider?.provider_organization_id||null,provider?.provider_profile_id||null,businessName,description,websiteUrl,phone,user.id,user.id,timestamp,timestamp);
+    const overlap=db.prepare(`SELECT id FROM sponsor_placements WHERE active=1 AND expo_group_key=? AND starts_on<=? AND ends_on>=? AND id<>?
+      AND (position=? OR sponsor_id=?) LIMIT 1`).get(expo.key,endsOn,startsOn,sponsorshipId,position,sponsorId);
+    if(overlap)throw new Error('SPONSORSHIP_OVERLAP');
+    db.prepare(`INSERT INTO sponsor_placements
+      (id,sponsor_id,expo_group_key,starts_on,ends_on,position,active,created_by,updated_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,1,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET expo_group_key=excluded.expo_group_key,starts_on=excluded.starts_on,ends_on=excluded.ends_on,
+        position=excluded.position,sponsor_id=excluded.sponsor_id,
+        active=1,updated_by=excluded.updated_by,updated_at=excluded.updated_at`)
+      .run(sponsorshipId,sponsorId,expo.key,startsOn,endsOn,position,user.id,user.id,timestamp,timestamp);
+    audit(db,user,'SPONSORSHIP_SAVED','SPONSORSHIP',sponsorshipId,{expoGroupKey:expo.key,startsOn,endsOn,position,sponsorKind,providerKey:sponsorKind==='TRANSPORTER'?providerKey:null});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return getAdminFeaturedProviderDay(user,featureDate);
+}
+
+export function disableProviderSponsorship(user,sponsorshipId) {
+  if(user?.role!==USER_ROLES.ADMIN)throw new Error('FORBIDDEN');
+  const db=getDb();
+  const sponsorship=db.prepare('SELECT * FROM sponsor_placements WHERE id=?').get(String(sponsorshipId||''));
+  if(!sponsorship)throw new Error('SPONSORSHIP_NOT_FOUND');
+  const timestamp=nowIso();
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare('UPDATE sponsor_placements SET active=0,updated_by=?,updated_at=? WHERE id=?').run(user.id,timestamp,sponsorship.id);
+    audit(db,user,'SPONSORSHIP_DISABLED','SPONSORSHIP',sponsorship.id,{expoGroupKey:sponsorship.expo_group_key});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return sponsorship;
+}
+
+export function getDailyFeaturedProviders(date=todayInEthiopia()) {
+  const featureDate=validateFeaturedDate(date);
+  const expo=regionalExpoGroupForDate(featureDate);
+  const db=getDb();
+  let day=db.prepare("SELECT * FROM featured_provider_days WHERE feature_date=? AND status='PUBLISHED'").get(featureDate);
+  if(!day&&featureDate===todayInEthiopia()){
+    ensureSeededDailyFeaturedProviderDay(featureDate);
+    day=db.prepare("SELECT * FROM featured_provider_days WHERE feature_date=? AND status='PUBLISHED'").get(featureDate);
+  }
+  if(!day||(day.expo_group_key&&day.expo_group_key!==expo.key))return {
+    feature_date:featureDate,
+    base_place:expo.title,
+    expo_group:expo,
+    week:regionalExpoWeekForDate(featureDate),
+    headline:'Daily Featured Transporters',
+    introduction:`Today’s ${expo.title} transporter roster is being prepared.`,
+    tiktok_url:null,
+    broadcast_start_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart,
+    broadcast_end_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd,
+    schedule:buildFeaturedDaySchedule(featureDate,0),
+    walkthroughs:[],
+    sponsored_providers:[],
+    providers:[],
+    published:false
+  };
+  const matchingRows=new Map(featuredProviderRows(db,expo.regionCodes).map(row=>[
+    row.provider_organization_id?`organization:${row.provider_organization_id}`:`profile:${row.provider_profile_id}`,row
+  ]));
+  const slots=db.prepare('SELECT * FROM featured_provider_slots WHERE day_id=? ORDER BY slot_position').all(day.id);
+  const providers=[];
+  const publicProviderKeys=[];
+  const publicKeyAliases=new Map();
+  for(const slot of slots){
+    const providerKey=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;
+    const row=matchingRows.get(providerKey);
+    if(!row)continue;
+    const eligibility=featuredProviderEligibility(db,row);
+    if(!eligibility.eligible)continue;
+    const {provider_key:privateProviderKey,...safeProvider}=decorateFeaturedProvider(db,row);
+    providers.push({...safeProvider,position:slot.slot_position});
+    publicProviderKeys.push(safeProvider.handle);
+    publicKeyAliases.set(providerKey,safeProvider.handle);
+  }
+  const sponsoredProviders=sponsoredProviderProjection(db,expo,featureDate);
+  const schedule=assignSponsorsToSchedule(featuredScheduleForDay(day,featureDate,publicProviderKeys,Date.now(),{publicProjection:true,keyAliases:publicKeyAliases}),sponsoredProviders);
+  return {
+    feature_date:day.feature_date,
+    base_place:expo.title,
+    expo_group:expo,
+    week:regionalExpoWeekForDate(featureDate),
+    headline:day.public_headline||'Daily Featured Transporters',
+    introduction:day.public_introduction||`Meet transporters based in ${expo.title}, then find their current trucks in the Truck Market.`,
+    tiktok_url:day.tiktok_url,
+    broadcast_start_time:schedule.config.dayStart,
+    broadcast_end_time:schedule.config.dayEnd,
+    schedule,
+    walkthroughs:schedule.walkthroughs,
+    sponsored_providers:sponsoredProviders,
+    providers,
+    published:true
+  };
 }
 
 export function listAnonymousMarketplacePreview(limit=3) {
@@ -3011,7 +3931,6 @@ export function listAnonymousMarketplacePreview(limit=3) {
   }));
   const trucks=capacityBoardRows(anonymousAdmin,{},boundedLimit).map(row=>({
     status:row.status,
-    available_percent:row.available_percent,
     movement_scope:row.movement_scope,
     local_place_label:publicPlaceLabel(row.local_place_label,row.local_place_ref),
     local_radius_km:row.local_radius_km,
@@ -3108,7 +4027,10 @@ export function listOwnCapacity(user, capacityId = null, limit = null) {
     ORDER BY c.updated_at DESC${boundedLimit==null?'':' LIMIT ?'}`).all(...args,...(boundedLimit==null?[]:[boundedLimit]))
     .map(row => {
       const status=row.market_status||row.status;
-      return { ...row, status, proof_available: Boolean(row.photo_path), freshness: capacitySignalFreshness(status,row.updated_at,null,freshHours), expiry_state:'CURRENT', isOwn: true };
+      return { ...row, status,
+        current_route_points:parsePlacePoints(row.current_route_points_json,row.availability_geometry==='ROUTE'?2:0,5),
+        capacity_area_boundary:parsePlacePoints(row.capacity_area_boundary_json,row.availability_geometry==='RADIUS'?3:0,5),
+        proof_available: Boolean(row.photo_path), freshness: capacitySignalFreshness(status,row.updated_at,null,freshHours), expiry_state:'CURRENT', isOwn: true };
     });
 }
 
@@ -3144,7 +4066,7 @@ function attachCapacityPreferredRoutes(capacity) {
   return {
     ...capacity,
     preferred_routes:ownerId
-      ? db.prepare(`SELECT id,origin,destination FROM profile_routes WHERE ${condition} ORDER BY created_at,id`).all(ownerId)
+      ? db.prepare(`SELECT id,geometry,origin,destination,route_points_json,area_center_label,area_boundary_json FROM profile_routes WHERE ${condition} ORDER BY created_at,id LIMIT 1`).all(ownerId).map(row=>({...row,route_points:parsePlacePoints(row.route_points_json,row.geometry==='RADIUS'?0:2,5),area_boundary:parsePlacePoints(row.area_boundary_json,row.geometry==='RADIUS'?3:0,5)}))
       : []
   };
 }
@@ -3162,27 +4084,41 @@ export function listOwnVehicles(user) {
 
 export function listOwnRecurringCorridors(user) {
   assertWorkspaceAccess(user);const scope=providerScope(user);if(!scope)return [];const db=getDb(),ownerColumn=scope.column==='provider_organization_id'?'organization_id':'provider_profile_id';
-  return db.prepare(`SELECT * FROM profile_routes WHERE ${ownerColumn}=? ORDER BY created_at DESC,id LIMIT 2`).all(scope.id).map(row=>({...row,geometry:'ROUTE'}));
+  return db.prepare(`SELECT * FROM profile_routes WHERE ${ownerColumn}=? ORDER BY created_at DESC,id LIMIT 1`).all(scope.id).map(row=>({...row,geometry:row.geometry==='RADIUS'?'RADIUS':'ROUTE',route_points:parsePlacePoints(row.route_points_json,row.geometry==='RADIUS'?0:2,5),area_boundary:parsePlacePoints(row.area_boundary_json,row.geometry==='RADIUS'?3:0,5)}));
 }
 
 export function addRecurringCorridor(user,input) {
   assertWorkspaceAccess(user);if(isCompanyDriver(user)||![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role))throw new Error('FORBIDDEN');
   const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');
   const ownerColumn=scope.organizationId?'organization_id':'provider_profile_id',ownerId=scope.organizationId||scope.profileId;
-  const origin=resolvePlaceReference(input.originPlaceRef,input.origin),destination=resolvePlaceReference(input.destinationPlaceRef,input.destination);if(origin.place_ref===destination.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
-  const duplicate=db.prepare(`SELECT id FROM profile_routes WHERE ${ownerColumn}=? AND ((origin_place_ref=? AND destination_place_ref=?) OR (origin_place_ref=? AND destination_place_ref=?))`).get(ownerId,origin.place_ref,destination.place_ref,destination.place_ref,origin.place_ref);if(duplicate)throw new Error('CORRIDOR_ALREADY_EXISTS');
-  const count=Number(db.prepare(`SELECT COUNT(*) AS n FROM profile_routes WHERE ${ownerColumn}=?`).get(ownerId).n);if(count>=2)throw new Error('REGULAR_CORRIDOR_LIMIT');
-  const id=randomId('corridor-');db.prepare(`INSERT INTO profile_routes (id,organization_id,provider_profile_id,origin,destination,created_by,created_at,origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id,scope.organizationId,scope.profileId,origin.place_label,destination.place_label,user.id,nowIso(),origin.place_ref,origin.center_lat,origin.center_lng,destination.place_ref,destination.center_lat,destination.center_lng);audit(db,user,'RECURRING_CORRIDOR_ADDED','profile_route',id,{});return id;
+  const count=Number(db.prepare(`SELECT COUNT(*) AS n FROM profile_routes WHERE ${ownerColumn}=?`).get(ownerId).n);if(count>=1)throw new Error('REGULAR_CAPACITY_LIMIT');
+  const geometry=String(input.geometry||'ROUTE').toUpperCase();if(!['ROUTE','RADIUS'].includes(geometry))throw new Error('INVALID_AVAILABILITY_GEOMETRY');
+  let points=[],boundary=[],center=null;
+  if(geometry==='ROUTE')points=resolvePlaceSequence(input.routePlaces,2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
+  else{
+    center=resolvePlaceReference(input.areaCenterPlaceRef,input.areaCenter);
+    boundary=resolvePlaceSequence(input.areaBoundaryPlaces,3,5,'CAPACITY_AREA_BOUNDARY_REQUIRED');
+    if(boundary.some(point=>point.place_ref===center.place_ref))throw new Error('CAPACITY_PLACE_DUPLICATE');
+  }
+  const first=geometry==='ROUTE'?points[0]:{label:center.place_label,place_ref:center.place_ref,lat:Number(center.center_lat),lng:Number(center.center_lng)};
+  const last=geometry==='ROUTE'?points.at(-1):first;
+  const id=randomId('route-');db.prepare(`INSERT INTO profile_routes
+    (id,organization_id,provider_profile_id,geometry,origin,destination,created_by,created_at,
+      origin_place_ref,origin_lat,origin_lng,destination_place_ref,destination_lat,destination_lng,route_points_json,
+      area_center_place_ref,area_center_label,area_center_lat,area_center_lng,area_boundary_json)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(id,scope.organizationId,scope.profileId,geometry,first.label,last.label,user.id,nowIso(),first.place_ref,first.lat,first.lng,last.place_ref,last.lat,last.lng,JSON.stringify(points),center?.place_ref||null,center?.place_label||null,center?.center_lat??null,center?.center_lng??null,JSON.stringify(boundary));
+  audit(db,user,'REGULAR_CAPACITY_SIGNAL_ADDED','profile_route',id,{geometry,pointCount:geometry==='ROUTE'?points.length:boundary.length});return id;
 }
 
 export function removeRecurringCorridor(user,id) {
-  assertWorkspaceAccess(user);if(isCompanyDriver(user))throw new Error('FORBIDDEN');const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');const ownerColumn=scope.organizationId?'organization_id':'provider_profile_id',ownerId=scope.organizationId||scope.profileId;const route=db.prepare(`DELETE FROM profile_routes WHERE id=? AND ${ownerColumn}=?`).run(id,ownerId);if(!route.changes)throw new Error('NOT_FOUND');audit(db,user,'REGULAR_CORRIDOR_REMOVED','profile_route',id,{});
+  assertWorkspaceAccess(user);if(isCompanyDriver(user))throw new Error('FORBIDDEN');const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');const ownerColumn=scope.organizationId?'organization_id':'provider_profile_id',ownerId=scope.organizationId||scope.profileId;const route=db.prepare(`DELETE FROM profile_routes WHERE id=? AND ${ownerColumn}=?`).run(id,ownerId);if(!route.changes)throw new Error('NOT_FOUND');audit(db,user,'REGULAR_CAPACITY_SIGNAL_REMOVED','profile_route',id,{});
 }
 
 function providerShipmentOwnerClause(scope,alias='s') {return scope.organizationId?`${alias}.provider_organization_id=?`:`${alias}.provider_profile_id=?`;}
 
 export function createProviderShipment(user,input) {
   assertWorkspaceAccess(user);if(![USER_ROLES.TRANSPORTER,USER_ROLES.DRIVER].includes(user.role))throw new Error('FORBIDDEN');
+  if(isCompanyDriver(user)&&!getDriverAccess(user)?.can_manage_tracking)throw new Error('FORBIDDEN');
   const db=getDb(),scope=providerScope(user);if(!scope)throw new Error('FORBIDDEN');
   const vehicle=db.prepare(`SELECT * FROM vehicles WHERE id=? AND ${scope.organizationId?'organization_id':'provider_profile_id'}=? AND active=1`).get(input.vehicleId,scope.id);if(!vehicle)throw new Error('INVALID_VEHICLE');
   const assignedDriver=scope.organizationId?db.prepare(`SELECT driver_user_id FROM driver_vehicle_assignments WHERE vehicle_id=? AND active=1`).get(vehicle.id)?.driver_user_id:user.id;if(!assignedDriver)throw new Error('DRIVER_REQUIRED_FOR_SHIPMENT');if(isCompanyDriver(user)&&assignedDriver!==user.id)throw new Error('FORBIDDEN');
@@ -3190,14 +4126,15 @@ export function createProviderShipment(user,input) {
   const customerEmail=email(input.customerEmail);
   const origin=resolvePlaceReference(input.originPlaceRef,input.origin),destination=resolvePlaceReference(input.destinationPlaceRef,input.destination);if(origin.place_ref===destination.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   const cargo=String(input.cargoSummary||'').trim();if(cargo.length<3||cargo.length>500)throw new Error('INVALID_CARGO_SUMMARY');
-  const trackingMode='STATUS_ONLY';
+  const trackingMode=String(input.trackingMode||'STATUS_ONLY').toUpperCase();
+  if(!['STATUS_ONLY','LOCATION_AND_STATUS'].includes(trackingMode))throw new Error('INVALID_TRACKING_MODE');
   const pickup=String(input.expectedPickupDate||'').trim()||null,delivery=String(input.expectedDeliveryDate||'').trim()||null;if(pickup&&delivery&&delivery<pickup)throw new Error('INVALID_DELIVERY_DATE');
   const id=randomId('pshp-'),code=randomCode('LGX'),trackingCode=trackingAccessCode(id),timestamp=nowIso();
   db.exec('BEGIN IMMEDIATE');try{
     db.prepare(`INSERT INTO provider_shipments (id,code,provider_organization_id,provider_profile_id,assigned_vehicle_id,assigned_driver_user_id,origin,origin_place_ref,origin_lat,origin_lng,destination,destination_place_ref,destination_lat,destination_lng,cargo_summary,shipper_email,receiver_email,expected_pickup_date,expected_delivery_date,tracking_mode,operational_status,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'CREATED',?,?,?)`).run(id,code,scope.organizationId,scope.profileId,vehicle.id,assignedDriver,origin.place_label,origin.place_ref,origin.center_lat,origin.center_lng,destination.place_label,destination.place_ref,destination.center_lat,destination.center_lng,cargo,customerEmail,customerEmail,pickup,delivery,trackingMode,user.id,timestamp,timestamp);
     db.prepare(`INSERT INTO shipment_party_grants (id,shipment_id,party_role,code_hash,expires_at,revoked_at,created_at) VALUES (?,?,?,?,NULL,NULL,?)`).run(randomId('grant-'),id,'SHIPPER',hashTrackingAccessCode(trackingCode),timestamp);
     db.prepare(`INSERT INTO email_deliveries (id,shipment_id,party_role,delivery_kind,recipient_email,idempotency_key,status,attempts,last_error,next_attempt_at,sent_at,created_at,updated_at) VALUES (?,?,?,'TRACKING_ACCESS',?,?,'PENDING',0,NULL,?,NULL,?,?)`).run(randomId('email-'),id,'SHIPPER',customerEmail,`tracking-access:${id}`,timestamp,timestamp,timestamp);
-    db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,note,created_by,created_at) VALUES (?,?,?,?,?,?)`).run(randomId('pevt-'),id,'CREATED','Tracking session created',user.id,timestamp);
+    db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,event_type,note,created_by,created_at) VALUES (?,?,?,'STATUS',?,?,?)`).run(randomId('pevt-'),id,'CREATED','Tracking session created',user.id,timestamp);
     audit(db,user,'PROVIDER_SHIPMENT_CREATED','provider_shipment',id,{vehicleId:vehicle.id,assignedDriver,trackingMode});db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
   return {id,code,trackingCode,trackingPath:'/track'};
@@ -3205,6 +4142,7 @@ export function createProviderShipment(user,input) {
 
 export function listProviderShipments(user,options={}) {
   assertWorkspaceAccess(user);const scope=providerScope(user);if(!scope)return [];
+  if(isCompanyDriver(user)&&!getDriverAccess(user)?.can_manage_tracking)return [];
   const driverClause=isCompanyDriver(user)?' AND s.assigned_driver_user_id=?':'';const args=isCompanyDriver(user)?[scope.id,user.id]:[scope.id];
   return getDb().prepare(`SELECT s.*,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,u.name AS driver_name
     FROM provider_shipments s JOIN vehicles v ON v.id=s.assigned_vehicle_id JOIN users u ON u.id=s.assigned_driver_user_id
@@ -3213,21 +4151,52 @@ export function listProviderShipments(user,options={}) {
 
 export function getProviderShipment(user,id) {
   assertWorkspaceAccess(user);const db=getDb(),scope=providerScope(user);if(!scope)return null;const driverClause=isCompanyDriver(user)?' AND s.assigned_driver_user_id=?':'';const args=isCompanyDriver(user)?[id,id,scope.id,user.id]:[id,id,scope.id];
+  if(isCompanyDriver(user)&&!getDriverAccess(user)?.can_manage_tracking)return null;
   const shipment=db.prepare(`SELECT s.*,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,u.name AS driver_name FROM provider_shipments s JOIN vehicles v ON v.id=s.assigned_vehicle_id JOIN users u ON u.id=s.assigned_driver_user_id WHERE (s.id=? OR s.code=?) AND ${providerShipmentOwnerClause(scope)}${driverClause}`).get(...args);if(!shipment)return null;
-  shipment.events=db.prepare(`SELECT id,status,note,proof_path IS NOT NULL AS has_proof,created_at FROM provider_shipment_events WHERE shipment_id=? ORDER BY created_at,id`).all(shipment.id);shipment.email_deliveries=db.prepare(`SELECT party_role,delivery_kind,status,attempts,last_error,sent_at,updated_at FROM email_deliveries WHERE shipment_id=? ORDER BY created_at`).all(shipment.id);shipment.review=db.prepare(`SELECT * FROM provider_reviews WHERE shipment_id=?`).get(shipment.id)||null;shipment.tracking_access_code=shipment.guest_expires_at&&shipment.guest_expires_at<=nowIso()?null:trackingAccessCode(shipment.id);shipment.tracking_path='/track';return shipment;
+  shipment.events=db.prepare(`SELECT id,status,note,proof_path IS NOT NULL AS has_proof,created_at FROM provider_shipment_events WHERE shipment_id=? AND event_type='STATUS' ORDER BY created_at,id`).all(shipment.id);shipment.latest_location=db.prepare(`SELECT location_area,location_lat,location_lng,location_precision_km,created_at FROM provider_shipment_events WHERE shipment_id=? AND location_source='DEVICE_OBSCURED' ORDER BY created_at DESC,id DESC LIMIT 1`).get(shipment.id)||null;shipment.email_deliveries=db.prepare(`SELECT party_role,delivery_kind,status,attempts,last_error,sent_at,updated_at FROM email_deliveries WHERE shipment_id=? ORDER BY created_at`).all(shipment.id);shipment.review=db.prepare(`SELECT * FROM provider_reviews WHERE shipment_id=?`).get(shipment.id)||null;shipment.tracking_access_code=shipment.guest_expires_at&&shipment.guest_expires_at<=nowIso()?null:trackingAccessCode(shipment.id);shipment.tracking_path='/track';return shipment;
 }
 
-const PROVIDER_SHIPMENT_TRANSITIONS=Object.freeze({CREATED:['LOADING','ISSUE'],LOADING:['IN_TRANSIT','ISSUE'],IN_TRANSIT:['UNLOADING','ISSUE'],UNLOADING:['COMPLETED','ISSUE'],ISSUE:['IN_TRANSIT','UNLOADING']});
-export function updateProviderShipmentStatus(user,id,nextStatus,note='',proof=/** @type {null|{path:string,originalName:string,mimeType:string}} */(null)) {
+const PROVIDER_SHIPMENT_TRANSITIONS=Object.freeze({CREATED:['TO_PICKUP','LOADING','ISSUE'],TO_PICKUP:['LOADING','ISSUE'],LOADING:['IN_TRANSIT','ISSUE'],IN_TRANSIT:['UNLOADING','ISSUE'],UNLOADING:['COMPLETED','ISSUE'],ISSUE:['TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING']});
+function providerTrackingLocation(shipment,user,input={},required=false){
+  const assignedDriver=user.role===USER_ROLES.DRIVER&&shipment.assigned_driver_user_id===user.id;
+  if(required&&!assignedDriver)throw new Error('ASSIGNED_DRIVER_LOCATION_REQUIRED');
+  if(!input||input.locationSource!=='DEVICE_OBSCURED'){
+    if(required)throw new Error('TRACKING_DEVICE_LOCATION_REQUIRED');
+    return null;
+  }
+  if(!assignedDriver)throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
+  const lat=Number(input.approximateLat),lng=Number(input.approximateLng);
+  const precisionKm=validateCapacityPrivacyRadius('BOTH',input.locationPrecisionKm);
+  const area=qualifyAreaLabel(input.locationArea);
+  if(!area||!Number.isFinite(lat)||lat<3||lat>15||!Number.isFinite(lng)||lng<32||lng>49)throw new Error('INVALID_APPROXIMATE_LOCATION');
+  return {area,lat,lng,precisionKm,source:'DEVICE_OBSCURED'};
+}
+
+function insertProviderTrackingLocationEvent(db,shipment,user,location,eventType='LOCATION',note='Approximate location refreshed',timestamp=nowIso()){
+  db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,event_type,note,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(randomId('pevt-'),shipment.id,shipment.operational_status,eventType,note,location.area,location.lat,location.lng,location.precisionKm,location.source,user.id,timestamp);
+}
+
+export function updateProviderShipmentStatus(user,id,nextStatus,note='',proof=/** @type {null|{path:string,originalName:string,mimeType:string}} */(null),locationInput=/** @type {any} */(null)) {
   const shipment=getProviderShipment(user,id);if(!shipment)throw new Error('NOT_FOUND');const next=String(nextStatus||'').toUpperCase();if(!PROVIDER_SHIPMENT_TRANSITIONS[shipment.operational_status]?.includes(next))throw new Error('INVALID_STATUS_TRANSITION');
   if(proof&&!['LOADING','UNLOADING','ISSUE'].includes(next))throw new Error('PROOF_NOT_ALLOWED_FOR_STATUS');const cleanNote=String(note||'').trim();if(next==='ISSUE'&&!cleanNote)throw new Error('ISSUE_NOTE_REQUIRED');
+  const travelStatus=['TO_PICKUP','IN_TRANSIT'].includes(next);const location=shipment.tracking_mode==='LOCATION_AND_STATUS'&&travelStatus?providerTrackingLocation(shipment,user,locationInput||{},true):null;
   const db=getDb(),lastEventAt=db.prepare(`SELECT MAX(created_at) AS created_at FROM provider_shipment_events WHERE shipment_id=?`).get(shipment.id)?.created_at;
   const timestamp=new Date(Math.max(Date.now(),lastEventAt?Date.parse(lastEventAt)+1:0)).toISOString(),complete=next==='COMPLETED',guestExpires=complete?new Date(Date.now()+30*86_400_000).toISOString():null;db.exec('BEGIN IMMEDIATE');try{
     db.prepare(`UPDATE provider_shipments SET operational_status=?,updated_at=?,completed_at=CASE WHEN ? THEN ? ELSE completed_at END,guest_expires_at=CASE WHEN ? THEN ? ELSE guest_expires_at END WHERE id=?`).run(next,timestamp,complete?1:0,timestamp,complete?1:0,guestExpires,shipment.id);
-    db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,note,proof_path,proof_original_name,proof_mime_type,created_by,created_at) VALUES (?,?,?,?,?,?,?,?,?)`).run(randomId('pevt-'),shipment.id,next,cleanNote||null,proof?.path||null,proof?.originalName||null,proof?.mimeType||null,user.id,timestamp);
+    db.prepare(`INSERT INTO provider_shipment_events (id,shipment_id,status,event_type,note,proof_path,proof_original_name,proof_mime_type,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,created_at) VALUES (?,?,?,'STATUS',?,?,?,?,?,?,?,?,?,?,?)`).run(randomId('pevt-'),shipment.id,next,cleanNote||null,proof?.path||null,proof?.originalName||null,proof?.mimeType||null,location?.area||null,location?.lat??null,location?.lng??null,location?.precisionKm??null,location?.source||null,user.id,timestamp);
     if(complete){db.prepare(`UPDATE shipment_party_grants SET expires_at=? WHERE shipment_id=? AND revoked_at IS NULL`).run(guestExpires,shipment.id);db.prepare(`INSERT OR IGNORE INTO email_deliveries (id,shipment_id,party_role,delivery_kind,recipient_email,idempotency_key,status,attempts,last_error,next_attempt_at,sent_at,created_at,updated_at) VALUES (?,?,?,'COMPLETION',?,?,'PENDING',0,NULL,?,NULL,?,?)`).run(randomId('email-'),shipment.id,'SHIPPER',shipment.shipper_email,`completion:${shipment.id}:OWNER`,timestamp,timestamp,timestamp);}
-    audit(db,user,'PROVIDER_SHIPMENT_STATUS_UPDATED','provider_shipment',shipment.id,{from:shipment.operational_status,to:next,hasProof:Boolean(proof)});db.exec('COMMIT');
+    audit(db,user,'PROVIDER_SHIPMENT_STATUS_UPDATED','provider_shipment',shipment.id,{from:shipment.operational_status,to:next,hasProof:Boolean(proof),locationShared:Boolean(location),locationPrecisionKm:location?.precisionKm||null});db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}return {id:shipment.id,status:next,guestExpires};
+}
+
+export function updateProviderShipmentLocation(user,id,input){
+  const shipment=getProviderShipment(user,id);if(!shipment)throw new Error('NOT_FOUND');
+  if(shipment.tracking_mode!=='LOCATION_AND_STATUS'||!['TO_PICKUP','IN_TRANSIT'].includes(shipment.operational_status))throw new Error('TRACKING_LOCATION_NOT_ENABLED');
+  const location=providerTrackingLocation(shipment,user,input,true);const db=getDb();
+  const latest=db.prepare(`SELECT created_at FROM provider_shipment_events WHERE shipment_id=? AND location_source='DEVICE_OBSCURED' ORDER BY created_at DESC LIMIT 1`).get(shipment.id);
+  if(latest&&Date.now()-new Date(latest.created_at).getTime()<10*60*1000)return {recorded:false,reason:'THROTTLED'};
+  const timestamp=nowIso();db.exec('BEGIN IMMEDIATE');try{insertProviderTrackingLocationEvent(db,shipment,user,location,'LOCATION','Approximate location refreshed',timestamp);db.prepare('UPDATE provider_shipments SET updated_at=? WHERE id=?').run(timestamp,shipment.id);audit(db,user,'PROVIDER_SHIPMENT_LOCATION_UPDATED','provider_shipment',shipment.id,{status:shipment.operational_status,locationPrecisionKm:location.precisionKm});db.exec('COMMIT');}catch(error){db.exec('ROLLBACK');throw error;}
+  return {recorded:true,updatedAt:timestamp,locationArea:location.area,locationPrecisionKm:location.precisionKm};
 }
 
 export function unlockProviderTracking(code) {
@@ -3249,9 +4218,11 @@ export function unlockProviderReview(shipmentId,code) {
 export function getProviderGuestTracking(id,partyRole) {
   const db=getDb(),now=nowIso();
   purgeExpiredGuestShipmentData(db);
-  const shipment=db.prepare(`SELECT s.id,s.code,s.origin,s.destination,s.cargo_summary,s.tracking_mode,s.operational_status,s.expected_pickup_date,s.expected_delivery_date,s.completed_at,s.guest_expires_at,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,COALESCE(o.name,p.business_name) AS provider_name,COALESCE(o.handle,p.handle) AS provider_handle FROM provider_shipments s JOIN vehicles v ON v.id=s.assigned_vehicle_id LEFT JOIN organizations o ON o.id=s.provider_organization_id LEFT JOIN provider_profiles p ON p.id=s.provider_profile_id JOIN shipment_party_grants g ON g.shipment_id=s.id AND g.party_role=? WHERE s.id=? AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>?)`).get(partyRole,id,now);
+  const shipment=db.prepare(`SELECT s.id,s.code,s.origin,s.origin_lat,s.origin_lng,s.destination,s.destination_lat,s.destination_lng,s.cargo_summary,s.tracking_mode,s.operational_status,s.expected_pickup_date,s.expected_delivery_date,s.completed_at,s.guest_expires_at,v.platform_number,v.make AS vehicle_make,v.model AS vehicle_model,COALESCE(o.name,p.business_name) AS provider_name,COALESCE(o.handle,p.handle) AS provider_handle FROM provider_shipments s JOIN vehicles v ON v.id=s.assigned_vehicle_id LEFT JOIN organizations o ON o.id=s.provider_organization_id LEFT JOIN provider_profiles p ON p.id=s.provider_profile_id JOIN shipment_party_grants g ON g.shipment_id=s.id AND g.party_role=? WHERE s.id=? AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>?)`).get(partyRole,id,now);
   if(!shipment)return null;
-  shipment.events=db.prepare(`SELECT id,status,note,created_at FROM provider_shipment_events WHERE shipment_id=? ORDER BY created_at,id`).all(id);
+  shipment.events=db.prepare(`SELECT id,status,note,created_at FROM provider_shipment_events WHERE shipment_id=? AND event_type='STATUS' ORDER BY created_at,id`).all(id);
+  shipment.current_location=null;
+  if(shipment.tracking_mode==='LOCATION_AND_STATUS'&&['TO_PICKUP','IN_TRANSIT'].includes(shipment.operational_status))shipment.current_location=db.prepare(`SELECT location_area,location_lat,location_lng,location_precision_km,created_at AS updated_at FROM provider_shipment_events WHERE shipment_id=? AND location_source='DEVICE_OBSCURED' ORDER BY created_at DESC,id DESC LIMIT 1`).get(id)||null;
   shipment.party_role=partyRole;
   shipment.can_review=partyRole==='SHIPPER'&&shipment.operational_status==='COMPLETED'&&!db.prepare('SELECT 1 FROM provider_reviews WHERE shipment_id=?').get(id);
   shipment.review=partyRole==='SHIPPER'?db.prepare(`SELECT rating,note,status,dispute_status,created_at FROM provider_reviews WHERE shipment_id=?`).get(id)||null:null;
@@ -3294,6 +4265,23 @@ export function recordEmailDeliveryAttempt(id,{sent,error}={}) {
   db.prepare(`UPDATE email_deliveries SET status=?,attempts=?,last_error=?,next_attempt_at=?,sent_at=?,updated_at=? WHERE id=?`).run(sent?'SENT':'FAILED',attempts,sent?null:String(error||'DELIVERY_FAILED').slice(0,500),retryAt,sent?timestamp:null,timestamp,id);
 }
 
+export function listPendingAccessEmailDeliveries(limit=20) {
+  const count=Math.max(1,Math.min(100,Number(limit)||20));
+  return getDb().prepare(`SELECT * FROM access_email_deliveries
+    WHERE status IN ('QUEUED','FAILED') AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND attempts<6
+    ORDER BY created_at LIMIT ?`).all(nowIso(),count);
+}
+
+export function recordAccessEmailDeliveryAttempt(id,{sent,error}={}) {
+  const db=getDb(),timestamp=nowIso();
+  const row=db.prepare('SELECT attempts FROM access_email_deliveries WHERE id=?').get(id);
+  if(!row)throw new Error('NOT_FOUND');
+  const attempts=Number(row.attempts)+1;
+  const retryAt=sent?null:new Date(Date.now()+Math.min(24,2**attempts)*60*60*1000).toISOString();
+  db.prepare(`UPDATE access_email_deliveries SET status=?,attempts=?,last_error=?,next_attempt_at=?,sent_at=?,updated_at=? WHERE id=?`)
+    .run(sent?'SENT':'FAILED',attempts,sent?null:String(error||'DELIVERY_FAILED').slice(0,500),retryAt,sent?timestamp:null,timestamp,id);
+}
+
 export function submitProviderReview(shipmentId,partyRole,rating,note='') {
   if(partyRole!=='SHIPPER')throw new Error('REVIEW_NOT_ALLOWED');const db=getDb(),shipment=db.prepare(`SELECT * FROM provider_shipments WHERE id=? AND operational_status='COMPLETED' AND guest_expires_at>?`).get(shipmentId,nowIso());if(!shipment)throw new Error('REVIEW_NOT_ALLOWED');const value=Number(rating);if(!Number.isInteger(value)||value<1||value>5)throw new Error('INVALID_RATING');const clean=String(note||'').trim().slice(0,1000);const id=randomId('preview-');try{db.prepare(`INSERT INTO provider_reviews (id,shipment_id,provider_organization_id,provider_profile_id,rating,note,status,dispute_status,created_at) VALUES (?,?,?,?,?,?,'PUBLISHED','NONE',?)`).run(id,shipment.id,shipment.provider_organization_id,shipment.provider_profile_id,value,clean||null,nowIso());}catch(error){if(String(error?.message||'').includes('UNIQUE'))throw new Error('REVIEW_ALREADY_SUBMITTED');throw error;}return id;
 }
@@ -3321,27 +4309,29 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
     : null;
   if(vehicle.organization_id&&input.status!=='OFF_DUTY'&&!activeAssignment)throw new Error('DRIVER_REQUIRED_FOR_CAPACITY');
   const assignedDriverId=vehicle.provider_profile_id?user.id:activeAssignment?.driver_user_id;
-  const percent = validateCapacity(input.status,input.availablePercent);
+  const percent = validateCapacity(input.status);
   const acceptedLoads = validateAcceptedLoads(input.status,input.acceptedLoads);
   const movementScope=MOVEMENT_SCOPES.BOTH;
   const acceptsMultiPick=Boolean(input.acceptsMultiPick||input.acceptsMultiStop);
   const acceptsMultiDrop=Boolean(input.acceptsMultiDrop||input.acceptsMultiStop);
   const availabilityGeometry=input.status==='OFF_DUTY'?null:String(input.availabilityGeometry||'RADIUS').toUpperCase();
   if(availabilityGeometry&&!['RADIUS','ROUTE'].includes(availabilityGeometry))throw new Error('INVALID_AVAILABILITY_GEOMETRY');
-  const workRadiusKm=availabilityGeometry==='RADIUS'?Number(input.workRadiusKm):null;
-  if(availabilityGeometry==='RADIUS'&&(!Number.isInteger(workRadiusKm)||workRadiusKm<5||workRadiusKm>500))throw new Error('INVALID_CAPACITY_RADIUS');
-  if(availabilityGeometry==='ROUTE'&&(!input.currentRouteOrigin||!input.currentRouteDestination))throw new Error('ROUTE_ENDPOINTS_REQUIRED');
+  if(input.status==='PARTIAL'&&availabilityGeometry!=='ROUTE')throw new Error('PARTIAL_CAPACITY_ROUTE_REQUIRED');
+  const currentRoutePoints=availabilityGeometry==='ROUTE'?resolvePlaceSequence(input.currentRoutePlaces,2,5,'CAPACITY_ROUTE_POINTS_REQUIRED'):[];
+  const capacityAreaCenter=availabilityGeometry==='RADIUS'?resolvePlaceReference(input.capacityAreaCenterPlaceRef,input.capacityAreaCenter):null;
+  const capacityAreaBoundary=availabilityGeometry==='RADIUS'?resolvePlaceSequence(input.capacityAreaBoundaryPlaces,3,5,'CAPACITY_AREA_BOUNDARY_REQUIRED'):[];
+  if(capacityAreaCenter&&capacityAreaBoundary.some(point=>point.place_ref===capacityAreaCenter.place_ref))throw new Error('CAPACITY_PLACE_DUPLICATE');
+  const workRadiusKm=capacityAreaCenter?Math.min(500,Math.max(5,Math.ceil(Math.max(...capacityAreaBoundary.map(point=>distanceBetweenKm({lat:capacityAreaCenter.center_lat,lng:capacityAreaCenter.center_lng},point)))))):null;
   const routeIntent=availabilityGeometry==='ROUTE'?'SPECIFIC':'RADIUS';
   const hasCurrentRoute=input.status!=='OFF_DUTY'&&availabilityGeometry==='ROUTE';
   const hasPlannedRoute=false;
-  const currentOriginPlace=hasCurrentRoute?resolvePlaceReference(input.currentOriginPlaceRef,input.currentRouteOrigin):null;
-  const currentDestinationPlace=hasCurrentRoute?resolvePlaceReference(input.currentDestinationPlaceRef,input.currentRouteDestination):null;
+  const currentOriginPlace=hasCurrentRoute?currentRoutePoints[0]:null;
+  const currentDestinationPlace=hasCurrentRoute?currentRoutePoints.at(-1):null;
   const plannedOriginPlace=hasPlannedRoute?resolvePlaceReference(input.originPlaceRef,input.origin):null;
   const plannedDestinationPlace=hasPlannedRoute?resolvePlaceReference(input.destinationPlaceRef,input.destination):null;
-  if(hasCurrentRoute&&currentOriginPlace.place_ref===currentDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   if(hasPlannedRoute&&plannedOriginPlace.place_ref===plannedDestinationPlace.place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   if(hasPlannedRoute&&input.travelDate&&input.travelDate<todayInEthiopia())throw new Error('INVALID_ROUTE_DATE');
-  const visibility = 'OPEN';
+  const visibility = input.visibility==='PRIVATE'?'PRIVATE':'OPEN';
   if(user.role===USER_ROLES.TRANSPORTER&&input.locationSource==='DEVICE_OBSCURED')throw new Error('DEVICE_LOCATION_DRIVER_ONLY');
   let driverLocation=null;
   if(input.status!=='OFF_DUTY'){
@@ -3366,8 +4356,8 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
   const id = randomId('cap-');
   const origin=null;
   const destination=null;
-  const currentRouteOrigin=currentOriginPlace?.place_label||null;
-  const currentRouteDestination=currentDestinationPlace?.place_label||null;
+  const currentRouteOrigin=currentOriginPlace?.label||null;
+  const currentRouteDestination=currentDestinationPlace?.label||null;
   const legacyStatus=input.status==='PARTIAL'&&movementScope===MOVEMENT_SCOPES.LOCAL
       ? 'EMPTY'
       : input.status;
@@ -3386,13 +4376,17 @@ export function publishCapacity(user, input, photo = /** @type {null|{path:strin
         input.status==='OFF_DUTY'?null:'DEVICE_OBSCURED',acceptedLoads.acceptsFullLoad ? 1 : 0,acceptedLoads.acceptsPartialLoad ? 1 : 0,0,(acceptsMultiPick||acceptsMultiDrop) ? 1 : 0,photo?.path ? timestamp : null,currentRouteOrigin,currentRouteDestination,null,hasPlannedRoute?(acceptedLoads.acceptsFullLoad&&acceptedLoads.acceptsPartialLoad?'BOTH':acceptedLoads.acceptsPartialLoad?'PARTIAL':'FULL'):null,acceptsMultiPick?1:0,acceptsMultiDrop?1:0,movementScope,localPlace?.place_ref||null,localPlace?.place_label||null,localPlace?.center_lat??null,localPlace?.center_lng??null,localPlace?.radius_km??null,
         plannedOriginPlace?.place_ref||null,plannedOriginPlace?.center_lat??null,plannedOriginPlace?.center_lng??null,
         plannedDestinationPlace?.place_ref||null,plannedDestinationPlace?.center_lat??null,plannedDestinationPlace?.center_lng??null,
-        currentOriginPlace?.place_ref||null,currentOriginPlace?.center_lat??null,currentOriginPlace?.center_lng??null,
-        currentDestinationPlace?.place_ref||null,currentDestinationPlace?.center_lat??null,currentDestinationPlace?.center_lng??null,
+        currentOriginPlace?.place_ref||null,currentOriginPlace?.lat??null,currentOriginPlace?.lng??null,
+        currentDestinationPlace?.place_ref||null,currentDestinationPlace?.lat??null,currentDestinationPlace?.lng??null,
         driverLocation?.place.place_ref||null,input.status,null);
     db.prepare(`UPDATE capacities SET availability_geometry=?,work_radius_km=?,travel_date=NULL,origin=NULL,destination=NULL,
       origin_place_ref=NULL,origin_lat=NULL,origin_lng=NULL,destination_place_ref=NULL,destination_lat=NULL,destination_lng=NULL
       WHERE id=?`).run(availabilityGeometry,workRadiusKm,id);
-    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, percent, vehicleId: vehicle.id, availabilityGeometry, workRadiusKm, locationArea, locationSource:driverLocation?'DEVICE_OBSCURED':null, locationPrecisionKm:driverLocation?.precisionKm||null, acceptedLoads:input.status==='PARTIAL'?'PTL':input.status==='EMPTY'?input.acceptedLoads:null, routeIntent, currentRouteLive:hasCurrentRoute, acceptsMultiPick, acceptsMultiDrop });
+    db.prepare(`UPDATE capacities SET current_route_points_json=?,capacity_area_center_place_ref=?,capacity_area_center_label=?,
+      capacity_area_center_lat=?,capacity_area_center_lng=?,capacity_area_boundary_json=? WHERE id=?`).run(
+        JSON.stringify(currentRoutePoints),capacityAreaCenter?.place_ref||null,capacityAreaCenter?.place_label||null,
+        capacityAreaCenter?.center_lat??null,capacityAreaCenter?.center_lng??null,JSON.stringify(capacityAreaBoundary),id);
+    audit(db,user,'CAPACITY_PUBLISHED','capacity',id,{ status: input.status, visibility, percent, vehicleId: vehicle.id, availabilityGeometry, workRadiusKm, locationArea, locationSource:driverLocation?'DEVICE_OBSCURED':null, locationPrecisionKm:driverLocation?.precisionKm||null, acceptedLoads:input.status==='PARTIAL'?'PTL':input.status==='EMPTY'?input.acceptedLoads:null, routeIntent, currentRouteLive:hasCurrentRoute, acceptsMultiPick, acceptsMultiDrop });
     db.exec('COMMIT');
   } catch (error) {
     db.exec('ROLLBACK');
@@ -3481,6 +4475,12 @@ export function setAssignedVehicleDuty(user, vehicleId, onDuty, input={}) {
         onDuty?source.current_origin_place_ref:null,onDuty?source.current_origin_lat:null,onDuty?source.current_origin_lng:null,
         onDuty?source.current_destination_place_ref:null,onDuty?source.current_destination_lat:null,onDuty?source.current_destination_lng:null,
         onDuty?driverLocation.place.place_ref:null,status,null);
+    db.prepare(`UPDATE capacities SET availability_geometry=?,work_radius_km=?,current_route_points_json=?,
+      capacity_area_center_place_ref=?,capacity_area_center_label=?,capacity_area_center_lat=?,capacity_area_center_lng=?,capacity_area_boundary_json=? WHERE id=?`).run(
+        onDuty?source.availability_geometry:null,onDuty?source.work_radius_km:null,onDuty?source.current_route_points_json:'[]',
+        onDuty?source.capacity_area_center_place_ref:null,onDuty?source.capacity_area_center_label:null,
+        onDuty?source.capacity_area_center_lat:null,onDuty?source.capacity_area_center_lng:null,
+        onDuty?source.capacity_area_boundary_json:'[]',id);
     audit(db,user,onDuty ? 'VEHICLE_SET_ON_DUTY' : 'VEHICLE_SET_OFF_DUTY','vehicle',vehicleId,{restoredCapacityId:onDuty ? source.id : null,locationSource:onDuty?'DEVICE_OBSCURED':null});
     db.exec('COMMIT');
   } catch (error) {
@@ -3494,11 +4494,9 @@ export function listFleetDrivers(user) {
   assertWorkspaceAccess(user);
   if (user.role !== USER_ROLES.TRANSPORTER || !user.organization_id) throw new Error('FORBIDDEN');
   const db = getDb();
-  return db.prepare(`SELECT u.id,u.name,u.email,d.phone,d.license_verified,
-    COALESCE(p.can_browse_load_board,1) AS can_browse_load_board,
-    COALESCE(p.can_contact_businesses,1) AS can_contact_businesses,
-    COALESCE(p.can_negotiate_loads,1) AS can_negotiate_loads,
+  const drivers=db.prepare(`SELECT u.id,u.name,u.email,d.phone,d.license_verified,
     COALESCE(p.can_manage_capacity,1) AS can_manage_capacity,
+    COALESCE(p.can_manage_tracking,1) AS can_manage_tracking,
     MAX(a.vehicle_id) AS assigned_vehicle_id,
     GROUP_CONCAT(v.make || ' ' || v.model || ' · ' || COALESCE(v.plate,''),'; ') AS assigned_vehicles
     FROM users u JOIN drivers d ON d.user_id=u.id AND d.active=1
@@ -3507,6 +4505,13 @@ export function listFleetDrivers(user) {
     LEFT JOIN vehicles v ON v.id=a.vehicle_id AND v.active=1
     WHERE u.role='DRIVER' AND u.organization_id=? AND u.active=1
     GROUP BY u.id ORDER BY u.name`).all(user.organization_id);
+  return drivers.map(driver=>({
+    ...driver,
+    verification_badges:verificationBadges(db,'DRIVER',driver.id),
+    truck_verification_badges:driver.assigned_vehicle_id
+      ?[truckAuthorizationBadge(db,'DRIVER',driver.id,driver.assigned_vehicle_id,driver.assigned_vehicles)]
+      :[]
+  }));
 }
 
 export function updateFleetDriverPermissions(user, driverUserId, input) {
@@ -3521,22 +4526,21 @@ export function updateFleetDriverPermissions(user, driverUserId, input) {
       WHERE u.id=? AND u.role='DRIVER' AND u.organization_id=? AND u.active=1 AND d.active=1`).get(driverUserId,user.organization_id);
   if (!driver) throw new Error('NOT_FOUND');
   const values = {
-    browse:Boolean(input.canBrowseLoadBoard),
-    contact:Boolean(input.canContactBusinesses),
-    negotiate:Boolean(input.canNegotiateLoads),
-    capacity:Boolean(input.canManageCapacity)
+    capacity:Boolean(input.canManageCapacity),
+    tracking:Boolean(input.canManageTracking)
   };
   db.prepare(`INSERT INTO driver_permissions
-    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,updated_by,updated_at)
-    VALUES (?,?,?,?,?,?,?)
+    (user_id,can_browse_load_board,can_contact_businesses,can_negotiate_loads,can_manage_capacity,can_manage_tracking,updated_by,updated_at)
+    VALUES (?,0,0,0,?,?,?,?)
     ON CONFLICT(user_id) DO UPDATE SET
-      can_browse_load_board=excluded.can_browse_load_board,
-      can_contact_businesses=excluded.can_contact_businesses,
-      can_negotiate_loads=excluded.can_negotiate_loads,
+      can_browse_load_board=0,
+      can_contact_businesses=0,
+      can_negotiate_loads=0,
       can_manage_capacity=excluded.can_manage_capacity,
+      can_manage_tracking=excluded.can_manage_tracking,
       updated_by=excluded.updated_by,
       updated_at=excluded.updated_at`)
-    .run(driver.id,values.browse ? 1 : 0,values.contact ? 1 : 0,values.negotiate ? 1 : 0,values.capacity ? 1 : 0,user.id,nowIso());
+    .run(driver.id,values.capacity ? 1 : 0,values.tracking ? 1 : 0,user.id,nowIso());
   audit(db,user,'DRIVER_PERMISSIONS_UPDATED','user',driver.id,values);
 }
 
@@ -3660,6 +4664,193 @@ function assertSupportMessageRate(db,userId) {
   const count=db.prepare(`SELECT COUNT(*) AS n FROM support_messages
     WHERE sender_user_id=? AND created_at>=?`).get(userId,cutoff).n;
   if(count>=20)throw new Error('SUPPORT_MESSAGE_RATE_LIMITED');
+}
+
+function guestSupportEvent(db,conversationId,actorUserId,eventType,details={}){
+  db.prepare(`INSERT INTO guest_support_events (id,conversation_id,actor_user_id,event_type,details,created_at)
+    VALUES (?,?,?,?,?,?)`).run(randomId('guest-support-event-'),conversationId,actorUserId||null,eventType,JSON.stringify(details),nowIso());
+}
+
+function assignGuestSupportConversation(db,conversationId){
+  const agents=db.prepare(`SELECT profile.user_id,profile.max_open_conversations,profile.last_assigned_at,
+      (SELECT COUNT(*) FROM support_conversations c WHERE c.assigned_agent_user_id=profile.user_id AND c.status='OPEN')+
+      (SELECT COUNT(*) FROM guest_support_conversations g WHERE g.assigned_agent_user_id=profile.user_id AND g.status='OPEN') AS open_count
+    FROM support_agent_profiles profile JOIN users u ON u.id=profile.user_id
+    WHERE profile.active=1 AND profile.available=1 AND profile.can_manage_support=1 AND u.active=1
+    ORDER BY open_count ASC,CASE WHEN profile.last_assigned_at IS NULL THEN 0 ELSE 1 END,profile.last_assigned_at,profile.user_id`).all();
+  const agent=agents.find(item=>Number(item.open_count)<Number(item.max_open_conversations));
+  if(!agent)return null;
+  const timestamp=nowIso();
+  const result=db.prepare(`UPDATE guest_support_conversations SET assigned_agent_user_id=?,status='OPEN',assigned_at=?,updated_at=?
+    WHERE id=? AND status='WAITING' AND assigned_agent_user_id IS NULL`).run(agent.user_id,timestamp,timestamp,conversationId);
+  if(!result.changes)return null;
+  db.prepare(`UPDATE support_agent_profiles SET last_assigned_at=?,updated_at=? WHERE user_id=?`).run(timestamp,timestamp,agent.user_id);
+  guestSupportEvent(db,conversationId,null,'ASSIGNED',{agentUserId:agent.user_id});
+  notify(db,agent.user_id,'Assisted matching conversation','A guest has asked Loadgistic for help finding capacity.');
+  return agent.user_id;
+}
+
+export function getAssistedMatchingAvailability(){
+  const db=getDb();
+  const agents=db.prepare(`SELECT profile.user_id,profile.max_open_conversations,
+      (SELECT COUNT(*) FROM support_conversations c WHERE c.assigned_agent_user_id=profile.user_id AND c.status='OPEN')+
+      (SELECT COUNT(*) FROM guest_support_conversations g WHERE g.assigned_agent_user_id=profile.user_id AND g.status='OPEN') AS open_count
+    FROM support_agent_profiles profile JOIN users u ON u.id=profile.user_id
+    WHERE profile.active=1 AND profile.available=1 AND profile.can_manage_support=1 AND u.active=1`).all();
+  const available=agents.filter(agent=>Number(agent.open_count)<Number(agent.max_open_conversations));
+  return {available:Boolean(available.length),availableTeamMembers:available.length};
+}
+
+export function createGuestSupportConversation(input,upload=/** @type {null|{path:string,name:string,originalName:string,mimeType:string,size:number}} */(null)){
+  const email=normalizePrivateContactEmail(input.email),emailDigest=privateContactDigest(email);
+  const phone=normalizeOptionalCallbackPhone(input.phone),body=validateSupportMessage(input.body);
+  if(!phone)throw new Error('CALLBACK_PHONE_REQUIRED');
+  const db=getDb(),timestamp=nowIso();
+  const existing=db.prepare(`SELECT id FROM guest_support_conversations WHERE email_digest=? AND status IN ('WAITING','OPEN')`).get(emailDigest);
+  if(existing)throw new Error('GUEST_CONVERSATION_ALREADY_OPEN');
+  const id=randomId('guest-support-'),messageId=randomId('guest-support-message-');
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`INSERT INTO guest_support_conversations
+      (id,email,email_digest,phone,status,created_at,updated_at,last_message_at,guest_last_read_at)
+      VALUES (?,?,?,?,'WAITING',?,?,?,?)`).run(id,email,emailDigest,phone,timestamp,timestamp,timestamp,timestamp);
+    db.prepare(`INSERT INTO guest_support_messages (id,conversation_id,sender_kind,sender_user_id,body,created_at)
+      VALUES (?,?,'GUEST',NULL,?,?)`).run(messageId,id,body,timestamp);
+    if(upload)db.prepare(`INSERT INTO guest_support_attachments
+      (id,conversation_id,message_id,file_path,original_name,mime_type,size_bytes,created_at) VALUES (?,?,?,?,?,?,?,?)`)
+      .run(randomId('guest-support-file-'),id,messageId,upload.path,upload.originalName,upload.mimeType,upload.size,timestamp);
+    guestSupportEvent(db,id,null,'CREATED',{hasPhone:Boolean(phone),hasAttachment:Boolean(upload)});
+    assignGuestSupportConversation(db,id);
+    db.prepare(`INSERT INTO access_email_deliveries
+      (id,delivery_kind,entity_id,recipient_email,status,attempts,created_at,updated_at)
+      VALUES (?,'GUEST_SUPPORT',?,?,'QUEUED',0,?,?)`).run(randomId('delivery-'),id,email,timestamp,timestamp);
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return {id,emailDigest,accessCode:guestSupportAccessCode(id)};
+}
+
+export function verifyGuestSupportAccess(email,code){
+  const normalized=normalizePrivateContactEmail(email),emailDigest=privateContactDigest(normalized);
+  const conversations=getDb().prepare(`SELECT id FROM guest_support_conversations WHERE email_digest=? ORDER BY created_at DESC LIMIT 20`).all(emailDigest);
+  const conversation=conversations.find(item=>verifyPrivateAccessCode(guestSupportAccessCode(item.id),code));
+  if(!conversation)throw new Error('GUEST_SUPPORT_ACCESS_DENIED');
+  return {conversationId:conversation.id,emailDigest};
+}
+
+function guestConversationProjection(db,conversation){
+  if(!conversation)return null;
+  const messages=db.prepare(`SELECT m.*,a.id AS attachment_id,a.original_name AS attachment_name,a.mime_type AS attachment_mime_type
+    FROM guest_support_messages m LEFT JOIN guest_support_attachments a ON a.message_id=m.id
+    WHERE m.conversation_id=? ORDER BY m.created_at,m.id LIMIT 300`).all(conversation.id);
+  const unreadTeamCount=db.prepare(`SELECT COUNT(*) AS count FROM guest_support_messages WHERE conversation_id=? AND sender_kind='TEAM'
+    AND (? IS NULL OR created_at>?)`).get(conversation.id,conversation.guest_last_read_at||null,conversation.guest_last_read_at||null).count;
+  return {...conversation,messages,message_count:messages.length,unread_team_count:Number(unreadTeamCount||0)};
+}
+
+export function getGuestSupportConversationForGuest(conversationId,emailDigest,options={}){
+  const db=getDb();
+  let conversation=db.prepare(`SELECT c.*,agent.name AS assigned_agent_name FROM guest_support_conversations c
+    LEFT JOIN users agent ON agent.id=c.assigned_agent_user_id WHERE c.id=? AND c.email_digest=?`).get(conversationId,emailDigest);
+  if(!conversation)throw new Error('NOT_FOUND');
+  if(options.markRead!==false){const readAt=nowIso();db.prepare(`UPDATE guest_support_conversations SET guest_last_read_at=? WHERE id=?`).run(readAt,conversation.id);conversation={...conversation,guest_last_read_at:readAt};}
+  return guestConversationProjection(db,conversation);
+}
+
+export function getGuestSupportConversationForTeam(user,conversationId){
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
+  const db=getDb();
+  const conversation=user.role===USER_ROLES.SUPPORT
+    ? db.prepare(`SELECT c.*,agent.name AS assigned_agent_name FROM guest_support_conversations c LEFT JOIN users agent ON agent.id=c.assigned_agent_user_id WHERE c.id=? AND c.assigned_agent_user_id=?`).get(conversationId,user.id)
+    : db.prepare(`SELECT c.*,agent.name AS assigned_agent_name FROM guest_support_conversations c LEFT JOIN users agent ON agent.id=c.assigned_agent_user_id WHERE c.id=?`).get(conversationId);
+  if(!conversation)throw new Error('NOT_FOUND');
+  db.prepare(`UPDATE guest_support_conversations SET agent_last_read_at=? WHERE id=?`).run(nowIso(),conversation.id);
+  return guestConversationProjection(db,conversation);
+}
+
+export function listGuestSupportInbox(user,view='ASSIGNED',options={}){
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
+  const normalized=String(view||'ASSIGNED').toUpperCase();
+  if(!['ASSIGNED','WAITING','CLOSED','ALL'].includes(normalized))throw new Error('INVALID_SUPPORT_VIEW');
+  const db=getDb(),args=[];let where='1=1';
+  if(user.role===USER_ROLES.SUPPORT){
+    if(normalized==='WAITING')where=`c.status='WAITING' AND c.assigned_agent_user_id IS NULL`;
+    else if(normalized==='CLOSED'){where=`c.status='CLOSED' AND c.assigned_agent_user_id=?`;args.push(user.id);}
+    else {where=`c.status='OPEN' AND c.assigned_agent_user_id=?`;args.push(user.id);}
+  }else if(normalized==='WAITING')where=`c.status='WAITING'`;
+  else if(normalized==='ASSIGNED')where=`c.status='OPEN'`;
+  else if(normalized==='CLOSED')where=`c.status='CLOSED'`;
+  const base=`SELECT c.id,c.email,c.phone,c.status,c.created_at,c.updated_at,c.last_message_at,c.assigned_agent_user_id,
+    agent.name AS assigned_agent_name,(SELECT SUBSTR(m.body,1,120) FROM guest_support_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC,m.id DESC LIMIT 1) AS last_message_preview
+    FROM guest_support_conversations c LEFT JOIN users agent ON agent.id=c.assigned_agent_user_id`;
+  return paginateQuery(db,`${base} WHERE ${where}`,args,'last_message_at DESC,id',options);
+}
+
+export function claimGuestSupportConversation(user,conversationId){
+  if(user.role!==USER_ROLES.SUPPORT)throw new Error('FORBIDDEN');
+  assertPlatformPermission(user,PLATFORM_PERMISSIONS.SUPPORT);
+  const db=getDb(),agent=supportAgentRecord(db,user.id);
+  if(!agent?.active||!agent.available)throw new Error('SUPPORT_AGENT_UNAVAILABLE');
+  const guestOpen=db.prepare(`SELECT COUNT(*) AS n FROM guest_support_conversations WHERE assigned_agent_user_id=? AND status='OPEN'`).get(user.id).n;
+  if(Number(agent.open_count)+Number(guestOpen)>=Number(agent.max_open_conversations))throw new Error('SUPPORT_AGENT_AT_CAPACITY');
+  const timestamp=nowIso();
+  const result=db.prepare(`UPDATE guest_support_conversations SET assigned_agent_user_id=?,status='OPEN',assigned_at=?,updated_at=?
+    WHERE id=? AND status='WAITING' AND assigned_agent_user_id IS NULL`).run(user.id,timestamp,timestamp,conversationId);
+  if(!result.changes)throw new Error('SUPPORT_CONVERSATION_NOT_WAITING');
+  guestSupportEvent(db,conversationId,user.id,'CLAIMED',{});
+}
+
+export function sendGuestSupportMessage(actor,conversationId,body,emailDigest=/** @type {null|string} */(null),upload=/** @type {null|{path:string,name:string,originalName:string,mimeType:string,size:number}} */(null)){
+  const clean=validateSupportMessage(body),db=getDb();
+  const conversation=emailDigest
+    ? db.prepare(`SELECT * FROM guest_support_conversations WHERE id=? AND email_digest=?`).get(conversationId,emailDigest)
+    : getGuestSupportConversationForTeam(actor,conversationId);
+  if(!conversation)throw new Error('NOT_FOUND');
+  if(conversation.status==='CLOSED')throw new Error('SUPPORT_CONVERSATION_CLOSED');
+  const timestamp=nowIso(),messageId=randomId('guest-support-message-'),senderKind=emailDigest?'GUEST':'TEAM';
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.prepare(`INSERT INTO guest_support_messages (id,conversation_id,sender_kind,sender_user_id,body,created_at) VALUES (?,?,?,?,?,?)`)
+      .run(messageId,conversationId,senderKind,emailDigest?null:actor.id,clean,timestamp);
+    if(upload)db.prepare(`INSERT INTO guest_support_attachments
+      (id,conversation_id,message_id,file_path,original_name,mime_type,size_bytes,created_at) VALUES (?,?,?,?,?,?,?,?)`)
+      .run(randomId('guest-support-file-'),conversationId,messageId,upload.path,upload.originalName,upload.mimeType,upload.size,timestamp);
+    db.prepare(`UPDATE guest_support_conversations SET updated_at=?,last_message_at=? WHERE id=?`).run(timestamp,timestamp,conversationId);
+    guestSupportEvent(db,conversationId,emailDigest?null:actor.id,'MESSAGE_SENT',{senderKind,hasAttachment:Boolean(upload)});
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+  return messageId;
+}
+
+export function closeGuestSupportConversation(user,conversationId){
+  const conversation=getGuestSupportConversationForTeam(user,conversationId);
+  if(conversation.status==='CLOSED')return;
+  const db=getDb(),timestamp=nowIso();
+  const result=db.prepare(`UPDATE guest_support_conversations SET status='CLOSED',closed_at=?,closed_by_user_id=?,updated_at=?
+    WHERE id=? AND status IN ('WAITING','OPEN')`).run(timestamp,user.id,timestamp,conversationId);
+  if(result.changes)guestSupportEvent(db,conversationId,user.id,'CLOSED',{});
+}
+
+export function endGuestSupportConversation(conversationId,emailDigest){
+  const db=getDb(),conversation=db.prepare(`SELECT id,status FROM guest_support_conversations WHERE id=? AND email_digest=?`).get(conversationId,emailDigest);
+  if(!conversation)throw new Error('NOT_FOUND');
+  if(conversation.status==='CLOSED')return;
+  const timestamp=nowIso();
+  const result=db.prepare(`UPDATE guest_support_conversations SET status='CLOSED',closed_at=?,closed_by_user_id=NULL,updated_at=?
+    WHERE id=? AND status IN ('WAITING','OPEN')`).run(timestamp,timestamp,conversationId);
+  if(result.changes)guestSupportEvent(db,conversationId,null,'GUEST_CLOSED',{});
+}
+
+export async function readGuestSupportAttachment(actor,conversationId,attachmentId,emailDigest=/** @type {null|string} */(null)){
+  const db=getDb();
+  if(emailDigest){
+    const allowed=db.prepare(`SELECT 1 FROM guest_support_conversations WHERE id=? AND email_digest=?`).get(conversationId,emailDigest);
+    if(!allowed)throw new Error('NOT_FOUND');
+  }else getGuestSupportConversationForTeam(actor,conversationId);
+  const attachment=db.prepare(`SELECT * FROM guest_support_attachments WHERE id=? AND conversation_id=?`).get(attachmentId,conversationId);
+  if(!attachment)throw new Error('NOT_FOUND');
+  const bytes=await readPrivateUpload(attachment.file_path);
+  if(!bytes)throw new Error('NOT_FOUND');
+  return {bytes,mimeType:attachment.mime_type,originalName:attachment.original_name};
 }
 
 export function createSupportConversation(user,input) {
@@ -3979,12 +5170,13 @@ function provisionApplicationWorkspace(db, application, timestamp, sponsoredFree
   }
   const handle = `${slugify(application.business_name)}-${Math.random().toString(16).slice(2,6)}`;
   const trialEndsAt = accessPeriodEnd(timestamp,TRIAL_DAYS);
-  if (application.application_type === 'INDEPENDENT_PROVIDER') {
+  if (['INDEPENDENT_PROVIDER','OWNER_OPERATOR','SELF_MANAGED_DRIVER'].includes(application.application_type)) {
     const providerId = randomId('provider-');
     db.prepare(`INSERT INTO provider_profiles (id,user_id,business_name,handle,verified_identity,verified_license,vehicle_documents_verified,vehicle_type,corridors,phone,city,about,public_visibility,created_at) VALUES (?,?,?,?,0,0,0,NULL,NULL,NULL,NULL,?,'PUBLIC',?)`)
       .run(providerId,application.user_id,application.business_name,handle,'Complete your profile and submit documents to earn trust badges.',timestamp);
+    const headline=application.application_type==='OWNER_OPERATOR'?'Owner-operated freight services':'Self-managed freight services';
     db.prepare(`INSERT INTO company_pages (id,organization_id,provider_profile_id,headline,about,services,corridors,operating_regions,contact_phone,contact_email,published,updated_at) VALUES (?,NULL,?,?,?,?,?,?,?,?,?,?)`)
-      .run(randomId('page-'),providerId,'Self-managed freight provider','Complete this Public Profile Info before publishing.','','','','','',0,timestamp);
+      .run(randomId('page-'),providerId,headline,'Complete this Public Profile Info before publishing.','','','','','',0,timestamp);
     db.prepare('UPDATE users SET provider_profile_id=?,active=1 WHERE id=?').run(providerId,application.user_id);
     db.prepare(`INSERT INTO subscriptions
       (id,organization_id,provider_profile_id,plan_id,status,billing_model,starts_at,ends_at,updated_at)
@@ -4012,7 +5204,7 @@ function provisionApplicationWorkspace(db, application, timestamp, sponsoredFree
 export function getAdminOperations(user, query = '', options = {}) {
   const db=getDb();
   const view=String(options.view||'WORKSPACES').toUpperCase();
-  if(!['USERS','WORKSPACES','TRUCKS','DRIVERS','LOADS','CAPACITY','NETWORK','ROUTES','SUBSCRIPTIONS'].includes(view))throw new Error('INVALID_ADMIN_OPERATIONS_VIEW');
+  if(!['USERS','WORKSPACES','TRUCKS','DRIVERS','TRACKING','CAPACITY','ROUTES','SUBSCRIPTIONS'].includes(view))throw new Error('INVALID_ADMIN_OPERATIONS_VIEW');
   const viewPermission=['USERS','WORKSPACES'].includes(view)?PLATFORM_PERMISSIONS.CUSTOMERS
     : view==='SUBSCRIPTIONS'?PLATFORM_PERMISSIONS.BILLING:PLATFORM_PERMISSIONS.OPERATIONS;
   assertPlatformPermission(user,viewPermission);
@@ -4029,14 +5221,14 @@ export function getAdminOperations(user, query = '', options = {}) {
   const organizationBase=`SELECT o.id,'ORGANIZATION' AS record_kind,o.name,o.type,o.city,o.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.organization_id=o.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.organization_id=o.id AND v.active=1) AS truck_count,
-      (SELECT COUNT(*) FROM shipments s WHERE COALESCE(s.load_owner_organization_id,s.shipper_organization_id)=o.id OR s.provider_organization_id=o.id) AS load_count,
+      (SELECT COUNT(*) FROM provider_shipments s WHERE s.provider_organization_id=o.id) AS tracking_count,
       (SELECT status FROM subscriptions sub WHERE sub.organization_id=o.id ORDER BY sub.updated_at DESC LIMIT 1) AS subscription_status
     FROM organizations o
     WHERE ${matches("o.name || ' ' || o.type")}`;
   const providerBase=`SELECT p.id,'PROVIDER_PROFILE' AS record_kind,p.business_name AS name,'SELF_MANAGED_DRIVER' AS type,p.city,p.public_visibility,
       (SELECT COUNT(*) FROM users u WHERE u.provider_profile_id=p.id) AS user_count,
       (SELECT COUNT(*) FROM vehicles v WHERE v.provider_profile_id=p.id AND v.active=1) AS truck_count,
-      (SELECT COUNT(*) FROM shipments s WHERE s.provider_profile_id=p.id) AS load_count,
+      (SELECT COUNT(*) FROM provider_shipments s WHERE s.provider_profile_id=p.id) AS tracking_count,
       (SELECT status FROM subscriptions sub WHERE sub.provider_profile_id=p.id ORDER BY sub.updated_at DESC LIMIT 1) AS subscription_status
     FROM provider_profiles p
     WHERE ${matches("p.business_name")}`;
@@ -4049,22 +5241,23 @@ export function getAdminOperations(user, query = '', options = {}) {
     LEFT JOIN capacities c ON c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC LIMIT 1)
     WHERE ${matches("COALESCE(v.platform_number,'') || ' ' || COALESCE(v.make,'') || ' ' || COALESCE(v.model,'') || ' ' || COALESCE(v.cargo_configuration,'') || ' ' || COALESCE(v.plate,'') || ' ' || COALESCE(o.name,'') || ' ' || COALESCE(p.business_name,'')")}`;
   const driverBase=`SELECT u.id,u.name,u.email,u.active,o.name AS owner_name,v.platform_number,
-      COALESCE(dp.can_browse_load_board,1) AS can_browse_load_board,
-      COALESCE(dp.can_contact_businesses,1) AS can_contact_businesses,
-      COALESCE(dp.can_negotiate_loads,1) AS can_negotiate_loads,
-      COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity
+      COALESCE(dp.can_manage_capacity,1) AS can_manage_capacity,
+      COALESCE(dp.can_manage_tracking,1) AS can_manage_tracking
     FROM users u JOIN organizations o ON o.id=u.organization_id
     LEFT JOIN driver_permissions dp ON dp.user_id=u.id
     LEFT JOIN driver_vehicle_assignments assignment ON assignment.driver_user_id=u.id AND assignment.active=1
     LEFT JOIN vehicles v ON v.id=assignment.vehicle_id
     WHERE u.role='DRIVER' AND ${matches("u.name || ' ' || u.email || ' ' || o.name || ' ' || COALESCE(v.platform_number,'')")}`;
-  const loadBase=`SELECT s.id,s.code,s.title,s.origin,s.destination,s.load_type,s.operational_status,s.updated_at,
-      owner.name AS owner_name,COALESCE(provider.name,profile.business_name) AS provider_name
-    FROM shipments s
-    JOIN organizations owner ON owner.id=COALESCE(s.load_owner_organization_id,s.shipper_organization_id)
+  const trackingBase=`SELECT s.id,s.code,s.cargo_summary,s.origin,s.destination,s.operational_status,s.updated_at,
+      COALESCE(provider.name,profile.business_name) AS provider_name,
+      COALESCE(provider.handle,profile.handle) AS provider_handle,
+      vehicle.platform_number,driver.name AS driver_name
+    FROM provider_shipments s
     LEFT JOIN organizations provider ON provider.id=s.provider_organization_id
     LEFT JOIN provider_profiles profile ON profile.id=s.provider_profile_id
-    WHERE ${matches("s.code || ' ' || s.title || ' ' || owner.name || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'')")}`;
+    JOIN vehicles vehicle ON vehicle.id=s.assigned_vehicle_id
+    JOIN users driver ON driver.id=s.assigned_driver_user_id
+    WHERE ${matches("s.code || ' ' || s.cargo_summary || ' ' || s.origin || ' ' || s.destination || ' ' || COALESCE(provider.name,'') || ' ' || COALESCE(profile.business_name,'') || ' ' || vehicle.platform_number || ' ' || driver.name")}`;
   const capacityBase=`SELECT c.id,COALESCE(c.market_status,c.status) AS status,c.available_percent,c.visibility,c.location_area,c.updated_at,
       v.platform_number,v.make,v.model,COALESCE(o.name,p.business_name) AS owner_name
     FROM capacities c
@@ -4106,7 +5299,7 @@ export function getAdminOperations(user, query = '', options = {}) {
     users:db.prepare('SELECT COUNT(*) AS n FROM users').get().n,
     workspaces:db.prepare('SELECT (SELECT COUNT(*) FROM organizations)+(SELECT COUNT(*) FROM provider_profiles) AS n').get().n,
     trucks:db.prepare('SELECT COUNT(*) AS n FROM vehicles').get().n,
-    loads:db.prepare('SELECT COUNT(*) AS n FROM shipments').get().n,
+    tracking:db.prepare('SELECT COUNT(*) AS n FROM provider_shipments').get().n,
     board_capacity:db.prepare(`SELECT COUNT(DISTINCT c.vehicle_id) AS n FROM capacities c JOIN vehicles v ON v.id=c.vehicle_id
       WHERE v.active=1 AND c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=c.vehicle_id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)
         AND COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')`).get().n,
@@ -4123,13 +5316,11 @@ export function getAdminOperations(user, query = '', options = {}) {
         ? paginateQuery(db,vehicleBase,searchArgs,'active DESC,platform_number,id',pageOptions)
         : view==='DRIVERS'
           ? paginateQuery(db,driverBase,searchArgs,'active DESC,name,id',pageOptions)
-        : view==='LOADS'
-          ? paginateQuery(db,loadBase,searchArgs,'updated_at DESC,id',pageOptions)
+        : view==='TRACKING'
+          ? paginateQuery(db,trackingBase,searchArgs,'updated_at DESC,id',pageOptions)
           : view==='CAPACITY'
             ? paginateQuery(db,capacityBase,searchArgs,'updated_at DESC,id',pageOptions)
-            : view==='NETWORK'
-              ? paginateQuery(db,`${relationshipBase} UNION ALL ${favoriteBase}`,[...searchArgs,...searchArgs],'updated_at DESC,id',pageOptions)
-              : view==='ROUTES'
+            : view==='ROUTES'
                 ? paginateQuery(db,`${profileRouteBase} UNION ALL ${serviceAreaBase}`,[...searchArgs,...searchArgs],'created_at DESC,id',pageOptions)
                 : paginateQuery(db,subscriptionBase,searchArgs,'updated_at DESC,id',pageOptions);
   audit(db,user,'ADMIN_OPERATIONS_VIEWED','platform',null,{queryUsed:Boolean(term),view});
@@ -4310,7 +5501,8 @@ export function createBusinessApplication(input) {
   if (findUserByEmail(input.email)) throw new Error('EMAIL_ALREADY_EXISTS');
   const roleMap = {
     TRANSPORT_COMPANY: 'TRANSPORTER',
-    INDEPENDENT_PROVIDER: 'DRIVER'
+    OWNER_OPERATOR: 'DRIVER',
+    SELF_MANAGED_DRIVER: 'DRIVER'
   };
   const role = roleMap[input.applicationType];
   if (!role) throw new Error('INVALID_APPLICATION_TYPE');

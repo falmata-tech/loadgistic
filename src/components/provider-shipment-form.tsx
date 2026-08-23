@@ -2,15 +2,13 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { CalendarDays, Check, Clipboard, KeyRound, Link2, LoaderCircle, Mail, MapPin, PackageCheck, Route, ShieldCheck, Truck } from 'lucide-react';
+import { CalendarDays, Check, Clipboard, KeyRound, Link2, LoaderCircle, LocateFixed, Mail, MapPin, PackageCheck, Route, ShieldCheck, Truck } from 'lucide-react';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 type Vehicle={id:string;platform_number:string;make:string;model:string;cargo_configuration?:string;category?:string};
 type Created={id:string;code:string;trackingCode:string;trackingPath:string};
 
 export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
-  const router=useRouter();
   const [created,setCreated]=React.useState(null as Created|null);
   const [error,setError]=React.useState('');
   const [submitting,setSubmitting]=React.useState(false);
@@ -23,7 +21,6 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
       const body=await response.json();
       if(!response.ok)throw new Error(body.error||'Could not start Tracking.');
       setCreated(body);
-      router.refresh();
     }catch(problem){setError(problem instanceof Error?problem.message:'Could not start Tracking.');}
     finally{setSubmitting(false);}
   }
@@ -59,6 +56,7 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
     <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2>Customer owner</h2><p className="meta">This person receives the Track link, code, completion record, and verified review invitation. They may be the shipper or receiver.</p></div></div><div className="form-grid">
       <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/>Customer owner email</label><input id="customer-email" name="customerEmail" type="email" required autoComplete="off"/></div>
     </div></section>
+    <fieldset className="tracking-mode-choice"><legend><LocateFixed aria-hidden="true"/>Updates shared with the customer</legend><label><input type="radio" name="trackingMode" value="STATUS_ONLY" defaultChecked/><span><strong>Status only</strong><small>Shares the shipment timeline without Driver location.</small></span></label><label><input type="radio" name="trackingMode" value="LOCATION_AND_STATUS"/><span><strong>Status and approximate location</strong><small>During travel to pickup and delivery, the assigned Driver shares an obscured area from their phone.</small></span></label></fieldset>
     <button className="button" disabled={submitting||!vehicles.length}>{submitting?<LoaderCircle className="spin" aria-hidden="true"/>:<KeyRound aria-hidden="true"/>}{submitting?'Starting Tracking…':'Start Tracking'}</button>
   </form>;
 }

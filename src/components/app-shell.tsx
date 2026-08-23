@@ -8,11 +8,11 @@ import {
   CreditCard,
   Database,
   ExternalLink,
-  Gauge,
   Headphones,
   Home,
-  Menu,
   MoreHorizontal,
+  Network,
+  Sparkles,
   Truck,
   UserRound
 } from 'lucide-react';
@@ -24,18 +24,24 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   TRANSPORTER: [
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/app/fleet', label: 'Fleet', icon: Truck },
+    { href: '/app/network', label: 'Network', icon: Network },
     { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
-    { href: '/app/more', label: 'More', icon: MoreHorizontal }
+    { href: '/app/more', label: 'Account', icon: UserRound },
+    { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/capacity', label: 'Capacity market', icon: Gauge },
     { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
-    { href: '/app/more', label: 'More', icon: MoreHorizontal }
+    { href: '/app/network', label: 'Network', icon: Network },
+    { href: '/app/support', label: 'Support', icon: Headphones },
+    { href: '/app/more', label: 'Account', icon: UserRound },
+    { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   ADMIN: [
     { href: '/app/home', label: 'Home', icon: Home },
     { href: '/admin/operations', label: 'Operations', icon: Database },
+    { href: '/admin/featured', label: 'Featured', icon: Sparkles },
+    { href: '/admin/capacity-network', label: 'Capacity network', icon: Network },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
     { href: '/app/more', label: 'More', icon: MoreHorizontal }
@@ -48,9 +54,9 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
 const mobileNavigation: Record<string, string[]> = {
   SHIPPER: ['/app/home', '/app/more'],
   RECEIVER: ['/app/home', '/app/more'],
-  TRANSPORTER: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/more'],
-  DRIVER: ['/app/home', '/app/capacity', '/app/provider-shipments', '/app/more'],
-  ADMIN: ['/app/home', '/admin/operations', '/admin/reviews', '/admin/support', '/app/more'],
+  TRANSPORTER: ['/app/home', '/app/fleet', '/app/network', '/app/provider-shipments', '/app/menu'],
+  DRIVER: ['/app/home', '/app/provider-shipments', '/app/network', '/app/support', '/app/menu'],
+  ADMIN: ['/app/home', '/admin/operations', '/admin/capacity-network', '/admin/reviews', '/app/menu'],
   SUPPORT: ['/support']
 };
 
@@ -63,12 +69,22 @@ const roleLabels: Record<string, string> = {
   SUPPORT: 'Customer support'
 };
 
+function workspaceRoleLabel(user:any) {
+  if(user.provider_operating_model==='COMPANY_DRIVER')return 'Company driver';
+  if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator';
+  if(user.provider_operating_model==='SELF_MANAGED_DRIVER')return 'Self-managed driver';
+  return roleLabels[user.role] || user.role.replaceAll('_',' ');
+}
+
 const mobileLabels: Record<string, string> = {
   '/app/company-page': 'Profile',
-  '/app/capacity': 'Market',
+  '/app/menu': 'More',
   '/app/provider-shipments': 'Tracking',
+  '/app/network': 'Network',
+  '/admin/capacity-network': 'Network',
   '/admin/reviews': 'Reviews',
   '/admin/operations': 'Operations',
+  '/admin/featured': 'Featured',
   '/admin/ratings': 'Rating Reviews',
   '/admin/billing': 'Billing',
   '/admin/support': 'Support'
@@ -105,6 +121,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     ? items.map(item=>({...item,label:item.href==='/app/more'?'Plan & billing':item.label}))
     : (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
+  const workspaceRole=workspaceRoleLabel(user);
   const isSupport=user.role==='SUPPORT';
   const homeHref=isSupport?(items[0]?.href||'/login'):'/app/home';
   return (
@@ -123,26 +140,20 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         <div className="sidebar-foot">
           <div className="user-mini">
             <strong>{workspaceName}</strong>
-            <div className="meta">{user.driver_kind==='COMPANY'?'Company driver':roleLabels[user.role] || user.role.replaceAll('_',' ')}</div>
+            <div className="meta">{workspaceRole}</div>
           </div>
-          <LogoutButton/>
+          {isSupport?<LogoutButton/>:null}
         </div>
       </aside>
       <main className="app-main">
         <header className="app-topbar">
-          <div className="topbar-leading"><WorkspaceBackButton/><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{isSupport?'Customer support workspace':'B2B logistics workspace'}</div></div></div>
+          <div className="topbar-leading"><WorkspaceBackButton/><span className="mobile-app-brand"><Logo href={homeHref}/></span><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{isSupport?'Customer support':workspaceRole}</div></div></div>
           <div className="topbar-actions">
             {user.role==='DRIVER'?<Link className="button secondary small desktop-account" href="/"><ExternalLink aria-hidden="true"/>Exit dashboard</Link>:null}
-            {!isSupport&&!['ADMIN'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/>Help</Link>:null}
-            {!isSupport?<Link className="button secondary small desktop-account" href="/app/more"><UserRound aria-hidden="true"/>Account</Link>:null}
+            {!isSupport&&!['ADMIN'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/>Support</Link>:null}
+            {!isSupport?<Link className="button secondary small desktop-account" href="/app/menu"><MoreHorizontal aria-hidden="true"/>More</Link>:null}
           </div>
-          <details className="mobile-account-menu">
-            <summary><Menu aria-hidden="true"/>Menu</summary>
-            <div className="mobile-menu-panel">
-              <nav aria-label="All workspace navigation">{items.map(item => <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href}>{item.label}</Link>)}{user.role==='DRIVER'?<Link href="/">Exit dashboard</Link>:null}{!isSupport&&!['ADMIN'].includes(user.role)?<Link href="/app/support">Help</Link>:null}</nav>
-              <LogoutButton compact/>
-            </div>
-          </details>
+          {['DRIVER','TRANSPORTER'].includes(user.role)?<Link className="mobile-dashboard-exit" href="/"><ExternalLink aria-hidden="true"/><span>Exit dashboard</span></Link>:null}
         </header>
         {children}
       </main>

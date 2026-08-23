@@ -13,6 +13,7 @@ const {reviewAccessCode}=await import('../src/lib/security.js');
 const owner=repo.findUserByEmail('transporter@loadgistic.local');
 const selfManaged=repo.findUserByEmail('driver@loadgistic.local');
 const companyDriver=repo.findUserByEmail('company-driver@loadgistic.local');
+const admin=repo.findUserByEmail('admin@loadgistic.local');
 const vehicle=repo.listOwnVehicles(owner)[0];
 
 function create(){
@@ -47,6 +48,37 @@ test('assigned company Drivers can start Tracking while unrelated providers rema
   assert.throws(()=>repo.updateProviderShipmentStatus(selfManaged,created.id,'LOADING'),/NOT_FOUND/);
 });
 
+test('fleet tracking permission denies company Driver reads and commands without side effects',()=>{
+  const assignedVehicle=repo.listOwnVehicles(companyDriver)[0];
+  const assigned=repo.createProviderShipment(owner,{vehicleId:assignedVehicle.id,origin:'Addis Ababa, Ethiopia',originPlaceRef:'builtin:addis ababa',destination:'Adama, Ethiopia',destinationPlaceRef:'builtin:adama',cargoSummary:'Fleet-owned assigned load',customerEmail:'fleet-customer@example.test',trackingMode:'STATUS_ONLY'});
+  repo.updateFleetDriverPermissions(owner,companyDriver.id,{canManageCapacity:true,canManageTracking:false});
+  try{
+    assert.equal(repo.getDriverAccess(companyDriver).can_manage_tracking,false);
+    assert.equal(repo.getProviderShipment(companyDriver,assigned.id),null);
+    assert.equal(repo.listProviderShipments(companyDriver).some(shipment=>shipment.id===assigned.id),false);
+    const beforeShipments=getDb().prepare('SELECT COUNT(*) AS count FROM provider_shipments').get().count;
+    const beforeEvents=getDb().prepare('SELECT COUNT(*) AS count FROM provider_shipment_events WHERE shipment_id=?').get(assigned.id).count;
+    assert.throws(()=>repo.createProviderShipment(companyDriver,{vehicleId:assignedVehicle.id,origin:'Addis Ababa, Ethiopia',originPlaceRef:'builtin:addis ababa',destination:'Adama, Ethiopia',destinationPlaceRef:'builtin:adama',cargoSummary:'Denied Tracking session',customerEmail:'blocked@example.test',trackingMode:'STATUS_ONLY'}),/FORBIDDEN/);
+    assert.throws(()=>repo.updateProviderShipmentStatus(companyDriver,assigned.id,'LOADING'),/NOT_FOUND/);
+    assert.equal(getDb().prepare('SELECT COUNT(*) AS count FROM provider_shipments').get().count,beforeShipments);
+    assert.equal(getDb().prepare('SELECT COUNT(*) AS count FROM provider_shipment_events WHERE shipment_id=?').get(assigned.id).count,beforeEvents);
+  }finally{
+    repo.updateFleetDriverPermissions(owner,companyDriver.id,{canManageCapacity:true,canManageTracking:true});
+  }
+});
+
+test('administrator Tracking inventory uses current provider sessions without customer secrets',()=>{
+  const created=create();
+  const result=repo.getAdminOperations(admin,created.code,{view:'TRACKING'});
+  assert.equal(result.view,'TRACKING');
+  assert.equal(result.items.length,1);
+  assert.equal(result.items[0].id,created.id);
+  assert.equal(result.items[0].provider_name,'BlueLine Transport PLC');
+  assert.equal(result.items[0].platform_number,vehicle.platform_number);
+  assert.equal('shipper_email' in result.items[0],false);
+  assert.equal(JSON.stringify(result.items).includes(created.trackingCode),false);
+});
+
 test('provider page updates preserve Loadgistic-controlled presentation',()=>{
   const before=repo.getOwnCompanyPage(owner);
   repo.updateCompanyPage(owner,{headline:before.headline,about:before.about,services:before.services,contactPhone:before.contact_phone,contactWhatsapp:before.contact_whatsapp,contactEmail:before.contact_email,contactWebsite:before.contact_website,showContactPhone:Boolean(before.show_contact_phone),showContactWhatsapp:Boolean(before.show_contact_whatsapp),showContactEmail:Boolean(before.show_contact_email),showContactWebsite:Boolean(before.show_contact_website),published:Boolean(before.published),themePrimary:'#000000',themeAccent:'#ffffff',youtubeVideoId:'dQw4w9WgXcQ'});
@@ -71,6 +103,38 @@ test('provider workflow is explicit and queues one owner access email and one co
   assert.ok(shipment.email_deliveries.every(delivery=>delivery.status==='PENDING'));
   assert.deepEqual(shipment.email_deliveries.map(delivery=>delivery.delivery_kind),['TRACKING_ACCESS','COMPLETION']);
   assert.equal(new Set(getDb().prepare('SELECT idempotency_key FROM email_deliveries WHERE shipment_id=?').all(created.id).map(row=>row.idempotency_key)).size,2);
+});
+
+test('explicit location consent exposes only assigned Driver approximate location during travel',()=>{
+  const driverVehicle=repo.listOwnVehicles(selfManaged)[0];
+  const created=repo.createProviderShipment(selfManaged,{vehicleId:driverVehicle.id,origin:'Addis Ababa, Ethiopia',originPlaceRef:'builtin:addis ababa',destination:'Adama, Ethiopia',destinationPlaceRef:'builtin:adama',cargoSummary:'Metal workshop inputs',customerEmail:'location-owner@example.test',trackingMode:'LOCATION_AND_STATUS'});
+  const shipment=repo.getProviderShipment(selfManaged,created.id);
+  assert.equal(shipment.tracking_mode,'LOCATION_AND_STATUS');
+  assert.throws(()=>repo.updateProviderShipmentStatus(owner,created.id,'TO_PICKUP','Going to pickup',null,{locationArea:'Around Addis Ababa, Ethiopia',approximateLat:9.05,approximateLng:38.75,locationPrecisionKm:20,locationSource:'DEVICE_OBSCURED'}),/NOT_FOUND/);
+  assert.throws(()=>repo.updateProviderShipmentStatus(selfManaged,created.id,'TO_PICKUP','Going to pickup'),/TRACKING_DEVICE_LOCATION_REQUIRED/);
+  repo.updateProviderShipmentStatus(selfManaged,created.id,'TO_PICKUP','Going to pickup',null,{locationArea:'Around Addis Ababa, Ethiopia',approximateLat:9.05,approximateLng:38.75,locationPrecisionKm:20,locationSource:'DEVICE_OBSCURED'});
+  const unlocked=repo.unlockProviderTracking(created.trackingCode);
+  let guest=repo.getProviderGuestTracking(created.id,unlocked.partyRole);
+  assert.equal(guest.operational_status,'TO_PICKUP');
+  assert.deepEqual({area:guest.current_location.location_area,lat:guest.current_location.location_lat,lng:guest.current_location.location_lng,precision:guest.current_location.location_precision_km},{area:'Around Addis Ababa, Ethiopia',lat:9.05,lng:38.75,precision:20});
+  assert.equal('assigned_driver_user_id' in guest,false);
+  repo.updateProviderShipmentStatus(selfManaged,created.id,'LOADING','Loading');
+  guest=repo.getProviderGuestTracking(created.id,unlocked.partyRole);
+  assert.equal(guest.current_location,null);
+  repo.updateProviderShipmentStatus(selfManaged,created.id,'IN_TRANSIT','En route',null,{locationArea:'Around Adama, Ethiopia',approximateLat:8.55,approximateLng:39.27,locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'});
+  guest=repo.getProviderGuestTracking(created.id,unlocked.partyRole);
+  assert.equal(guest.current_location.location_area,'Around Adama, Ethiopia');
+  assert.deepEqual(guest.events.map(event=>event.status),['CREATED','TO_PICKUP','LOADING','IN_TRANSIT']);
+  assert.equal(repo.updateProviderShipmentLocation(selfManaged,created.id,{locationArea:'Around Adama, Ethiopia',approximateLat:8.56,approximateLng:39.28,locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'}).reason,'THROTTLED');
+  repo.updateProviderShipmentStatus(selfManaged,created.id,'UNLOADING','Unloading');
+  assert.equal(repo.getProviderGuestTracking(created.id,unlocked.partyRole).current_location,null);
+});
+
+test('status-only provider Tracking never accepts or projects Driver location',()=>{
+  const created=repo.createProviderShipment(selfManaged,{vehicleId:repo.listOwnVehicles(selfManaged)[0].id,origin:'Addis Ababa, Ethiopia',originPlaceRef:'builtin:addis ababa',destination:'Adama, Ethiopia',destinationPlaceRef:'builtin:adama',cargoSummary:'Status-only cargo',customerEmail:'status-owner@example.test',trackingMode:'STATUS_ONLY'});
+  repo.updateProviderShipmentStatus(selfManaged,created.id,'TO_PICKUP','Going to pickup');
+  assert.throws(()=>repo.updateProviderShipmentLocation(selfManaged,created.id,{locationArea:'Around Addis Ababa, Ethiopia',approximateLat:9.05,approximateLng:38.75,locationPrecisionKm:20,locationSource:'DEVICE_OBSCURED'}),/TRACKING_LOCATION_NOT_ENABLED/);
+  assert.equal(repo.getProviderGuestTracking(created.id,'SHIPPER').current_location,null);
 });
 
 test('the customer owner can review and low reviews remain published during dispute',()=>{

@@ -12,10 +12,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   try {
     assignFleetDriverVehicle(user,id,String(form.get('vehicleId')||''));
     updateFleetDriverPermissions(user,id,{
-      canBrowseLoadBoard:checked(form,'canBrowseLoadBoard'),
-      canContactBusinesses:checked(form,'canContactBusinesses'),
-      canNegotiateLoads:checked(form,'canNegotiateLoads'),
-      canManageCapacity:checked(form,'canManageCapacity')
+      canManageCapacity:checked(form,'canManageCapacity'),
+      canManageTracking:checked(form,'canManageTracking')
     });
     return redirectWith(request,'/app/fleet','success','Driver and truck updated.');
   } catch(error) {

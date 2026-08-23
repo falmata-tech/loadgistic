@@ -17,7 +17,8 @@ export async function POST(request:NextRequest){
       origin:text(form,'origin'),originPlaceRef:text(form,'originPlaceRef'),
       destination:text(form,'destination'),destinationPlaceRef:text(form,'destinationPlaceRef'),
       cargoSummary:text(form,'cargoSummary'),customerEmail:text(form,'customerEmail'),
-      expectedPickupDate:text(form,'expectedPickupDate'),expectedDeliveryDate:text(form,'expectedDeliveryDate')
+      expectedPickupDate:text(form,'expectedPickupDate'),expectedDeliveryDate:text(form,'expectedDeliveryDate'),
+      trackingMode:text(form,'trackingMode')
     });
     await deliverPendingShipmentEmails(10);
     return NextResponse.json(created,{status:201,headers:{'cache-control':'no-store'}});

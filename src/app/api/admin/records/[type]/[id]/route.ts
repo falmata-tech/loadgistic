@@ -12,10 +12,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{type:st
   try{
     const command=text(form,'command');
     if(type.toUpperCase()==='DRIVER_PERMISSIONS')updateFleetDriverPermissions(user,id,{
-      canBrowseLoadBoard:checked(form,'canBrowseLoadBoard'),
-      canContactBusinesses:checked(form,'canContactBusinesses'),
-      canNegotiateLoads:checked(form,'canNegotiateLoads'),
-      canManageCapacity:checked(form,'canManageCapacity')
+      canManageCapacity:checked(form,'canManageCapacity'),
+      canManageTracking:checked(form,'canManageTracking')
     });
     else if(command)moderateAdminRecord(user,type.toUpperCase(),id,command);
     else setAdminRecordActive(user,type.toUpperCase(),id,checked(form,'active'));

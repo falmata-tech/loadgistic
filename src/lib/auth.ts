@@ -6,7 +6,10 @@ import { getUserById, getWorkspaceAccess } from './repository.js';
 export const SESSION_COOKIE = 'lg_session';
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
 export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
+export const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
+export const GUEST_SUPPORT_COOKIE = 'lg_guest_support';
 export const TRACKING_IDLE_SECONDS = 5 * 60;
+export const SHARED_CAPACITY_IDLE_SECONDS = 30 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
   const store = await cookies();
@@ -61,4 +64,42 @@ export async function hasProviderReviewGrant(shipmentId:string) {
   const store=await cookies();
   const payload=verifySessionToken(store.get(REVIEW_GRANT_COOKIE)?.value);
   return payload?.sub===`provider-review:${shipmentId}`;
+}
+
+export async function setSharedCapacitySession(emailDigest:string) {
+  const store=await cookies();
+  const expiresAt=Date.now()+SHARED_CAPACITY_IDLE_SECONDS*1000;
+  store.set(SHARED_CAPACITY_COOKIE,createSessionToken(`shared-capacity:${emailDigest}`,SHARED_CAPACITY_IDLE_SECONDS),{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:SHARED_CAPACITY_IDLE_SECONDS
+  });
+  return {expiresAt};
+}
+
+export async function getSharedCapacitySession() {
+  const store=await cookies();
+  const payload=verifySessionToken(store.get(SHARED_CAPACITY_COOKIE)?.value);
+  const match=String(payload?.sub||'').match(/^shared-capacity:([a-f0-9]{64})$/);
+  return match?{emailDigest:match[1],expiresAt:Number(payload.exp)*1000}:null;
+}
+
+export async function clearSharedCapacitySession() {
+  const store=await cookies();
+  store.set(SHARED_CAPACITY_COOKIE,'',{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
+  });
+}
+
+export async function setGuestSupportSession(conversationId:string,emailDigest:string) {
+  const store=await cookies();
+  store.set(GUEST_SUPPORT_COOKIE,createSessionToken(`guest-support:${conversationId}:${emailDigest}`,60*60*24*30),{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:60*60*24*30
+  });
+}
+
+export async function getGuestSupportSession(conversationId?:string) {
+  const store=await cookies();
+  const payload=verifySessionToken(store.get(GUEST_SUPPORT_COOKIE)?.value);
+  const match=String(payload?.sub||'').match(/^guest-support:([^:]+):([a-f0-9]{64})$/);
+  if(!match||conversationId&&match[1]!==conversationId)return null;
+  return {conversationId:match[1],emailDigest:match[2]};
 }

@@ -6,10 +6,10 @@ export function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
-export function verifyPassword(password, stored) {
+export async function verifyPassword(password, stored) {
   try {
     const [salt, expectedHex] = stored.split(':');
-    const actual = crypto.scryptSync(password, salt, 64);
+    const actual = await new Promise((resolve,reject)=>crypto.scrypt(password,salt,64,(error,derivedKey)=>error?reject(error):resolve(derivedKey)));
     const expected = Buffer.from(expectedHex, 'hex');
     return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
   } catch {
@@ -35,6 +35,27 @@ export function trackingAccessCode(shipmentId) {
 export function reviewAccessCode(shipmentId) {
   const digest = crypto.createHmac('sha256', secret()).update(`review:${shipmentId}`).digest('hex').toUpperCase();
   return `LG-RV-${digest.slice(0,4)}-${digest.slice(4,8)}`;
+}
+
+export function privateContactDigest(email) {
+  return crypto.createHmac('sha256',secret()).update(`private-contact:${String(email||'').trim().toLowerCase()}`).digest('hex');
+}
+
+export function sharedCapacityOtpCode(challengeId) {
+  const digest=crypto.createHmac('sha256',secret()).update(`shared-capacity-otp:${challengeId}`).digest();
+  const value=digest.readUInt32BE(0)%100_000_000;
+  return String(value).padStart(8,'0');
+}
+
+export function guestSupportAccessCode(conversationId) {
+  const digest=crypto.createHmac('sha256',secret()).update(`guest-support:${conversationId}`).digest('hex').toUpperCase();
+  return `LG-HELP-${digest.slice(0,4)}-${digest.slice(4,8)}`;
+}
+
+export function verifyPrivateAccessCode(expected,value) {
+  const actual=Buffer.from(sign(`private-code:${String(value||'').trim().toUpperCase()}`));
+  const target=Buffer.from(sign(`private-code:${String(expected||'').trim().toUpperCase()}`));
+  return actual.length===target.length&&crypto.timingSafeEqual(actual,target);
 }
 
 export function verifyReviewAccessCode(shipmentId,value) {
