@@ -12,8 +12,11 @@ export function launchReadiness(environment=process.env){
   if(production&&(storage.backend!=='supabase'||!storage.configured))blockers.push('durable-private-storage');
 
   const dataBackend=String(environment.DATA_BACKEND||'sqlite').toLowerCase();
+  const authBackend=String(environment.AUTH_BACKEND||'local').toLowerCase();
   if(production){
     if(dataBackend!=='supabase')blockers.push('managed-postgres-data-backend');
+    if(authBackend!=='supabase')blockers.push('managed-auth-backend');
+    if(!environment.NEXT_PUBLIC_SUPABASE_URL||!environment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)blockers.push('supabase-public-config');
     blockers.push('supabase-repository-adapter');
     blockers.push('managed-identity-adapter');
     blockers.push('shared-rate-limit-adapter');
@@ -27,6 +30,7 @@ export function launchReadiness(environment=process.env){
     ok:blockers.length===0,
     runtime:production?'production':'local',
     dataBackend,
+    authBackend,
     storageBackend:storage.backend,
     blockers:[...new Set(blockers)],
     warnings:[...new Set(warnings)]

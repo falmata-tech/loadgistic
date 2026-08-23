@@ -43,6 +43,12 @@ jobs:
       - name: Run domain and repository tests
         run: npm test
 
+      - name: Exercise the 5,000-truck disposable scale fixture
+        env:
+          DATABASE_PATH: /tmp/loadgistic-market-scale-ci.db
+          MARKET_SCALE_TRUCKS: 5000
+        run: npm run db:stress && npm run test:scale
+
       - name: Type-check application
         run: npm run typecheck
 

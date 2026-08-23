@@ -1,0 +1,10 @@
+[build]
+command = "npm run build"
+
+[build.environment]
+NODE_VERSION = "22"
+NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify detects Next.js and provisions its maintained OpenNext adapter.
+# Do not pin @netlify/plugin-nextjs: automatic adapter updates preserve support
+# for the security-patched Next.js release in package-lock.json.

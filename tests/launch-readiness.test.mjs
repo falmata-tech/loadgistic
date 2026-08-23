@@ -9,7 +9,7 @@ test('local readiness is runnable and production readiness names durable blocker
 
   const production=launchReadiness({NODE_ENV:'production',PRIVATE_STORAGE_BACKEND:'local',SESSION_SECRET:'short'});
   assert.equal(production.ok,false);
-  for(const blocker of ['strong-session-secret','durable-private-storage','managed-postgres-data-backend','supabase-repository-adapter','managed-identity-adapter','shared-rate-limit-adapter','upload-malware-scanner']){
+  for(const blocker of ['strong-session-secret','durable-private-storage','managed-postgres-data-backend','managed-auth-backend','supabase-public-config','supabase-repository-adapter','managed-identity-adapter','shared-rate-limit-adapter','upload-malware-scanner']){
     assert.ok(production.blockers.includes(blocker));
   }
 });
