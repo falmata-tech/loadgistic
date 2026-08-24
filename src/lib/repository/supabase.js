@@ -90,7 +90,7 @@ function verificationBadges(subjectType,records){
   for(const record of records||[])if(!latest.has(record.verification_type))latest.set(record.verification_type,record);
   const required=subjectType==='VEHICLE'
     ?[latest.has('VEHICLE_AUTHORIZATION')?'VEHICLE_AUTHORIZATION':'VEHICLE_OWNERSHIP']
-    :['IDENTITY','DRIVER_IDENTITY'];
+    :subjectType==='ORGANIZATION'?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']:['IDENTITY','DRIVER_IDENTITY'];
   const today=ethiopiaDate();
   return required.map(type=>{
     const record=latest.get(type);
@@ -235,4 +235,158 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
     return {...base,geographic_match_label:geographicMatchLabel(base,filters,originPlace,destinationPlace,areaPlace)};
   });
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};
+}
+
+function seededTransporterPortraitUrl(filename){
+  const value=String(filename||'');
+  return /^[a-z0-9-]+\.png$/.test(value)?`/marketing/transporters/${value}`:null;
+}
+
+async function findPublicProviderOwner(client,handle){
+  const normalized=String(handle||'').trim().toLowerCase();
+  if(!normalized)return null;
+  const [organizationResult,profileResult]=await Promise.all([
+    client.from('organizations').select('id,name,handle,city,type').eq('handle',normalized).eq('type','TRANSPORT_COMPANY').maybeSingle(),
+    client.from('provider_profiles').select('id,user_id,business_name,handle,city').eq('handle',normalized).maybeSingle()
+  ]);
+  if(organizationResult.error||profileResult.error)throw new Error('SUPABASE_PUBLIC_PROVIDER_LOOKUP_FAILED',{cause:organizationResult.error||profileResult.error});
+  if(organizationResult.data)return {kind:'ORGANIZATION',id:organizationResult.data.id,organization:organizationResult.data,profile:null};
+  if(profileResult.data)return {kind:'PROVIDER_PROFILE',id:profileResult.data.id,organization:null,profile:profileResult.data};
+  return null;
+}
+
+export async function getSupabasePublicProviderProfileImage(handle){
+  const client=createSupabaseAdminClient();
+  const owner=await findPublicProviderOwner(client,handle);
+  if(!owner)return null;
+  const ownerColumn=owner.kind==='ORGANIZATION'?'organization_id':'provider_profile_id';
+  const {data,error}=await client.from('company_pages')
+    .select('profile_image_path,profile_image_mime,profile_image_updated_at,published')
+    .eq(ownerColumn,owner.id).eq('published',true).not('profile_image_path','is',null).maybeSingle();
+  if(error)throw new Error('SUPABASE_PUBLIC_PROVIDER_IMAGE_FAILED',{cause:error});
+  return data?{file_path:data.profile_image_path,mime_type:data.profile_image_mime,profile_image_updated_at:data.profile_image_updated_at}:null;
+}
+
+export async function getSupabasePublicProvider(handle){
+  const client=createSupabaseAdminClient();
+  const owner=await findPublicProviderOwner(client,handle);
+  if(!owner)return null;
+  const ownerColumn=owner.kind==='ORGANIZATION'?'organization_id':'provider_profile_id';
+  const capacityFilter=owner.kind==='ORGANIZATION'?{providerOrganizationId:owner.id}:{providerProfileId:owner.id};
+  const reviewOwner=owner.kind==='ORGANIZATION'
+    ?{requested_organization_id:owner.id,requested_provider_profile_id:null}
+    :{requested_organization_id:null,requested_provider_profile_id:owner.id};
+  const reviewOwnerColumn=owner.kind==='ORGANIZATION'?'provider_organization_id':'provider_profile_id';
+  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,providerVerificationResult]=await Promise.all([
+    client.from('company_pages').select('headline,about,services,theme_primary,theme_accent,contact_phone,contact_email,contact_whatsapp,contact_website,show_contact_phone,show_contact_whatsapp,show_contact_email,show_contact_website,youtube_video_id,profile_image_path,profile_image_updated_at,profile_image_preset,published')
+      .eq(ownerColumn,owner.id).eq('published',true).maybeSingle(),
+    client.from('vehicles').select('id,platform_number,make,model,category,cargo_configuration').eq(ownerColumn,owner.id).eq('active',true).order('platform_number'),
+    client.from('provider_reviews').select('id,rating,note,created_at,dispute_status').eq(reviewOwnerColumn,owner.id).eq('status','PUBLISHED').order('created_at',{ascending:false}).limit(20),
+    client.rpc('public_provider_review_summary',reviewOwner),
+    client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
+      .eq('subject_type',owner.kind).eq('subject_id',owner.id).eq('status','APPROVED')
+      .order('reviewed_at',{ascending:false,nullsFirst:false})
+  ]);
+  const initialError=pageResult.error||vehicleResult.error||reviewResult.error||reviewSummaryResult.error||providerVerificationResult.error;
+  if(initialError)throw new Error('SUPABASE_PUBLIC_PROVIDER_FAILED',{cause:initialError});
+  const page=pageResult.data;
+  if(!page)return null;
+  const vehicles=vehicleResult.data||[];
+  const vehicleIds=vehicles.map(vehicle=>vehicle.id);
+  const profileUserId=owner.profile?.user_id||null;
+  const [assignmentResult,vehicleDocumentResult,authorizationDocumentResult,profileUserResult]=await Promise.all([
+    vehicleIds.length?client.from('driver_vehicle_assignments').select('vehicle_id,driver_user_id').in('vehicle_id',vehicleIds).eq('active',true):Promise.resolve({data:[],error:null}),
+    vehicleIds.length?client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
+      .eq('subject_type','VEHICLE').in('subject_id',vehicleIds).eq('status','APPROVED')
+      .order('reviewed_at',{ascending:false,nullsFirst:false}):Promise.resolve({data:[],error:null}),
+    vehicleIds.length?client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
+      .eq('verification_type','VEHICLE_AUTHORIZATION').in('related_vehicle_id',vehicleIds).eq('status','APPROVED')
+      .order('reviewed_at',{ascending:false,nullsFirst:false}):Promise.resolve({data:[],error:null}),
+    profileUserId?client.from('profiles').select('id,full_name').eq('id',profileUserId).maybeSingle():Promise.resolve({data:null,error:null})
+  ]);
+  const secondaryError=assignmentResult.error||vehicleDocumentResult.error||authorizationDocumentResult.error||profileUserResult.error;
+  if(secondaryError)throw new Error('SUPABASE_PUBLIC_PROVIDER_DETAIL_FAILED',{cause:secondaryError});
+  const assignments=assignmentResult.data||[];
+  const driverIds=[...new Set([
+    ...assignments.map(assignment=>assignment.driver_user_id).filter(Boolean),
+    ...(owner.kind==='PROVIDER_PROFILE'&&profileUserId?[profileUserId]:[])
+  ])];
+  const [driverProfileResult,driverRecordResult,driverDocumentResult]=await Promise.all([
+    driverIds.length?client.from('profiles').select('id,full_name').in('id',driverIds):Promise.resolve({data:[],error:null}),
+    driverIds.length?client.from('drivers').select('user_id,phone').in('user_id',driverIds).eq('active',true):Promise.resolve({data:[],error:null}),
+    driverIds.length?client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
+      .eq('subject_type','DRIVER').in('subject_id',driverIds).eq('status','APPROVED')
+      .order('reviewed_at',{ascending:false,nullsFirst:false}):Promise.resolve({data:[],error:null})
+  ]);
+  const driverError=driverProfileResult.error||driverRecordResult.error||driverDocumentResult.error;
+  if(driverError)throw new Error('SUPABASE_PUBLIC_PROVIDER_DRIVER_FAILED',{cause:driverError});
+  const allDocuments=[...(providerVerificationResult.data||[]),...(vehicleDocumentResult.data||[]),
+    ...(authorizationDocumentResult.data||[]),...(driverDocumentResult.data||[])];
+  const documentsFor=(subjectType,subjectId)=>allDocuments.filter(record=>record.subject_type===subjectType&&record.subject_id===subjectId);
+  const assignmentByVehicle=new Map(assignments.map(assignment=>[assignment.vehicle_id,assignment.driver_user_id]));
+  const driverNameById=new Map((driverProfileResult.data||[]).map(driver=>[driver.id,driver.full_name]));
+  const driverPhoneById=new Map((driverRecordResult.data||[]).map(driver=>[driver.user_id,driver.phone]));
+  const ownershipExists=vehicles.some(vehicle=>documentsFor('VEHICLE',vehicle.id).some(record=>record.verification_type==='VEHICLE_OWNERSHIP'&&(!record.expires_on||record.expires_on>=ethiopiaDate())));
+  const providerKind=owner.kind==='ORGANIZATION'?'FLEET_TRANSPORTER':ownershipExists?'OWNER_OPERATOR':'SELF_MANAGED_DRIVER';
+  const capacities=[];let cursor=null;
+  do{
+    const capacityPage=await listSupabasePublicCapacityCursor(capacityFilter,{pageSize:16,cursor});
+    capacities.push(...capacityPage.items);
+    cursor=capacityPage.hasMore&&capacities.length<96?capacityPage.nextCursor:null;
+  }while(cursor);
+  const capacityByVehicle=new Map(capacities.map(capacity=>[capacity.vehicle_id,capacity]));
+  const publicContactPhone=page.show_contact_phone?page.contact_phone:null;
+  const trucks=vehicles.map(vehicle=>{
+    const capacity=capacityByVehicle.get(vehicle.id)||null;
+    if(capacity){
+      const {vehicle_id:unusedVehicle,provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,...safeCapacity}=capacity;
+      return {platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,
+        cargo_configuration:vehicle.cargo_configuration||vehicle.category,
+        assigned_driver_first_name:safeCapacity.assigned_driver_first_name,
+        assigned_driver_phone:safeCapacity.assigned_driver_phone,
+        driver_kind:safeCapacity.driver_kind,driver_kind_label:safeCapacity.driver_kind_label,
+        driver_verification_badges:safeCapacity.driver_verification_badges,
+        truck_verification_badges:safeCapacity.truck_verification_badges,capacity:safeCapacity};
+    }
+    const driverId=owner.kind==='ORGANIZATION'?assignmentByVehicle.get(vehicle.id):profileUserId;
+    const subjectType=owner.kind==='ORGANIZATION'?'DRIVER':'PROVIDER_PROFILE';
+    const subjectId=owner.kind==='ORGANIZATION'?driverId:owner.id;
+    const driverName=owner.kind==='ORGANIZATION'?driverNameById.get(driverId):profileUserResult.data?.full_name;
+    const driverKind=owner.kind==='ORGANIZATION'?'COMPANY_DRIVER':providerKind;
+    return {platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,
+      cargo_configuration:vehicle.cargo_configuration||vehicle.category,
+      assigned_driver_first_name:String(driverName||'').trim().split(/\s+/)[0]||null,
+      assigned_driver_phone:(owner.kind==='ORGANIZATION'?driverPhoneById.get(driverId):null)||publicContactPhone,
+      driver_kind:driverKind,driver_kind_label:providerKindLabel(providerKind),
+      driver_verification_badges:subjectId?verificationBadges(subjectType,documentsFor(subjectType,subjectId)):verificationBadges('DRIVER',[]),
+      truck_verification_badges:providerKind==='OWNER_OPERATOR'?verificationBadges('VEHICLE',documentsFor('VEHICLE',vehicle.id))
+        :[truckAuthorizationBadge(documentsFor(subjectType,subjectId),vehicle.id,vehicle.platform_number)],capacity:null};
+  });
+  const reviews=reviewResult.data||[];
+  const reviewSummary=reviewSummaryResult.data||{};
+  const providerBadges=verificationBadges(owner.kind,providerVerificationResult.data||[]);
+  if(owner.kind==='PROVIDER_PROFILE'){
+    const evidenceCandidates=vehicles.map(vehicle=>providerKind==='OWNER_OPERATOR'
+      ?verificationBadges('VEHICLE',documentsFor('VEHICLE',vehicle.id))[0]
+      :truckAuthorizationBadge([
+        ...documentsFor('PROVIDER_PROFILE',owner.id),
+        ...documentsFor('DRIVER',profileUserId)
+      ],vehicle.id,vehicle.platform_number));
+    const evidence=evidenceCandidates.find(badge=>badge?.verified)||evidenceCandidates.find(badge=>badge?.expired)||evidenceCandidates[0];
+    if(evidence)providerBadges.push(evidence);
+  }
+  const providerName=owner.organization?.name||owner.profile?.business_name;
+  const providerHandle=owner.organization?.handle||owner.profile?.handle;
+  return {name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:page.services,
+    city:owner.organization?.city||owner.profile?.city,theme_primary:page.theme_primary,theme_accent:page.theme_accent,
+    youtube_video_id:page.youtube_video_id,contact_phone:publicContactPhone,
+    contact_whatsapp:page.show_contact_whatsapp?page.contact_whatsapp:null,
+    contact_email:page.show_contact_email?page.contact_email:null,
+    contact_website:page.show_contact_website?page.contact_website:null,
+    provider_organization_id:owner.organization?.id||null,provider_profile_id:owner.profile?.id||null,
+    profile_image_url:page.profile_image_path?`/api/public/providers/${encodeURIComponent(providerHandle)}/image?v=${encodeURIComponent(page.profile_image_updated_at||'1')}`:seededTransporterPortraitUrl(page.profile_image_preset),
+    provider_kind:providerKind,provider_kind_label:providerKind==='FLEET_TRANSPORTER'?'Fleet transporter':providerKindLabel(providerKind),
+    vehicles:trucks.map(({capacity:unusedCapacity,...vehicle})=>vehicle),trucks,capacities,reviews,
+    verification_badges:providerBadges,review_count:Number(reviewSummary.review_count||0),
+    average_rating:reviewSummary.average_rating==null?null:Number(reviewSummary.average_rating)};
 }

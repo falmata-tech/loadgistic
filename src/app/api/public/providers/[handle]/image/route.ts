@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server.js';
-import { getPublicProviderProfileImage } from '@/lib/repository.js';
+import { getPublicProviderProfileImage } from '@/lib/public-provider.js';
 import { readPrivateUpload } from '@/lib/private-storage.js';
 
 export async function GET(_:Request,{params}:{params:Promise<{handle:string}>}){

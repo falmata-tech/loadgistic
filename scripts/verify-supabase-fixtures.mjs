@@ -58,7 +58,7 @@ if(!placeResults.some(place=>place.name==='Addis Ababa')){
   throw new Error('SUPABASE_FIXTURE_VERIFY_PLACE_SEARCH_FAILED');
 }
 
-const {listSupabasePublicCapacityCursor}=await import('../src/lib/repository/supabase.js');
+const {getSupabasePublicProvider,getSupabasePublicProviderProfileImage,listSupabasePublicCapacityCursor}=await import('../src/lib/repository/supabase.js');
 const firstPage=await listSupabasePublicCapacityCursor({},{pageSize:14});
 if(firstPage.items.length!==14||!firstPage.hasMore||!firstPage.nextCursor){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_CURSOR_FAILED');
@@ -96,5 +96,26 @@ const {error:anonymousCapacityError}=await anon.rpc('public_capacity_page',{
   query:{},cursor_updated_at:null,cursor_id:null,requested_page_size:14
 });
 if(!anonymousCapacityError)throw new Error('SUPABASE_FIXTURE_VERIFY_PUBLIC_RPC_EXPOSED');
+
+for(const handle of ['blueline-transport','abebe-owner-operator']){
+  const provider=await getSupabasePublicProvider(handle);
+  if(!provider||!provider.trucks.length||provider.trucks.some(truck=>
+    !Array.isArray(truck.driver_verification_badges)||!Array.isArray(truck.truck_verification_badges))){
+    throw new Error(`SUPABASE_FIXTURE_VERIFY_PROVIDER_PROJECTION_FAILED:${handle}`);
+  }
+  if(provider.trucks.some(truck=>truck.capacity&&(!truck.assigned_driver_first_name||!truck.driver_kind_label))){
+    throw new Error(`SUPABASE_FIXTURE_VERIFY_PROVIDER_DRIVER_FAILED:${handle}`);
+  }
+}
+if(await getSupabasePublicProvider('unknown-provider-handle')!==null){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_UNKNOWN_PROVIDER_EXPOSED');
+}
+if(await getSupabasePublicProviderProfileImage('unknown-provider-handle')!==null){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_UNKNOWN_PROVIDER_IMAGE_EXPOSED');
+}
+const {error:anonymousProviderSummaryError}=await anon.rpc('public_provider_review_summary',{
+  requested_organization_id:null,requested_provider_profile_id:null
+});
+if(!anonymousProviderSummaryError)throw new Error('SUPABASE_FIXTURE_VERIFY_PROVIDER_RPC_EXPOSED');
 
 process.stdout.write('Local Supabase fixture verification passed.\n');

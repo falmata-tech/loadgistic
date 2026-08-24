@@ -56,3 +56,13 @@ test('public capacity migration is bounded, server-only, and strips private curr
   assert.match(capacity,/revoke all on function public\.public_capacity_page[\s\S]*from public,anon,authenticated/i);
   assert.match(capacity,/grant execute on function public\.public_capacity_page[\s\S]*to service_role/i);
 });
+
+test('public provider review summary is aggregate-only and server-only',()=>{
+  const provider=fs.readFileSync(path.join(root,'supabase','migrations','039_public_provider_review_summary.sql'),'utf8');
+  assert.match(provider,/jsonb_build_object\([\s\S]*'review_count',count\(\*\)::integer[\s\S]*'average_rating'/i);
+  assert.match(provider,/where review\.status='PUBLISHED'/i);
+  assert.match(provider,/security definer/i);
+  assert.match(provider,/revoke all on function public\.public_provider_review_summary\(uuid,uuid\) from public,anon,authenticated/i);
+  assert.match(provider,/grant execute on function public\.public_provider_review_summary\(uuid,uuid\) to service_role/i);
+  assert.doesNotMatch(provider,/shipper|receiver|email|phone|note/i);
+});

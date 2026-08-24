@@ -5,7 +5,7 @@ import {PublicHeader} from '@/components/public-header';
 import {ProviderIntroVideo} from '@/components/provider-intro-video';
 import {ProviderFleetShowcase} from '@/components/provider-fleet-showcase';
 import {VerificationBadges} from '@/components/verification-badges';
-import {getPublicProvider} from '@/lib/repository.js';
+import {getPublicProvider} from '@/lib/public-provider.js';
 
 export const dynamic='force-dynamic';
 
