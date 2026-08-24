@@ -44,3 +44,15 @@ test('managed identity projection binds its subject to auth uid and exposes no p
   assert.match(identity,/grant execute on function public\.current_user_projection\(\) to authenticated,service_role/i);
   assert.doesNotMatch(identity,/password|token|secret/i);
 });
+
+test('public capacity migration is bounded, server-only, and strips private current geometry',()=>{
+  const capacity=fs.readFileSync(path.join(root,'supabase','migrations','038_public_capacity_projection.sql'),'utf8');
+  assert.match(capacity,/greatest\(12,least\(coalesce\(requested_page_size,14\),16\)\)/i);
+  assert.match(capacity,/case when visibility='OPEN' then location_lat end/i);
+  assert.match(capacity,/case when visibility='OPEN' then current_route_points_json else '\[\]'::jsonb end/i);
+  assert.match(capacity,/position\(input\.search_text in lower/i);
+  assert.match(capacity,/capacity_route_matches\(signal->'route_points'/i);
+  assert.match(capacity,/capacity_area_matches\(signal->'area_boundary'/i);
+  assert.match(capacity,/revoke all on function public\.public_capacity_page[\s\S]*from public,anon,authenticated/i);
+  assert.match(capacity,/grant execute on function public\.public_capacity_page[\s\S]*to service_role/i);
+});

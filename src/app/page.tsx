@@ -2,7 +2,7 @@ import type {Metadata} from 'next';
 import {MapPinned} from 'lucide-react';
 import {PublicHeader} from '@/components/public-header';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
-import {listPublicCapacityCursor} from '@/lib/repository.js';
+import {listPublicCapacityCursor} from '@/lib/capacity-market.js';
 
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'Truck Market',description:'Find public truck capacity for local, regional, long-distance, full-truck, and Partial-load freight across Ethiopia.'};

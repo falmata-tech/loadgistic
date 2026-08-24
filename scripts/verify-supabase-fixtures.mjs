@@ -58,4 +58,43 @@ if(!placeResults.some(place=>place.name==='Addis Ababa')){
   throw new Error('SUPABASE_FIXTURE_VERIFY_PLACE_SEARCH_FAILED');
 }
 
+const {listSupabasePublicCapacityCursor}=await import('../src/lib/repository/supabase.js');
+const firstPage=await listSupabasePublicCapacityCursor({},{pageSize:14});
+if(firstPage.items.length!==14||!firstPage.hasMore||!firstPage.nextCursor){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_CURSOR_FAILED');
+}
+if(firstPage.items.some(item=>item.recurring_corridors.length!==1
+  ||item.driver_verification_badges.length!==2||item.truck_verification_badges.length!==1)){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_PROJECTION_FAILED');
+}
+const privateSignal=firstPage.items.find(item=>item.current_signal_geometry_visible===false);
+if(privateSignal&&(privateSignal.location_lat!==null||privateSignal.current_route_points.length!==0
+  ||privateSignal.capacity_area_boundary.length!==0||privateSignal.recurring_corridors.length!==1)){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_PRIVATE_CAPACITY_LEAK');
+}
+const secondPage=await listSupabasePublicCapacityCursor({},{pageSize:14,cursor:firstPage.nextCursor});
+const firstIds=new Set(firstPage.items.map(item=>item.id));
+if(!secondPage.items.length||secondPage.items.some(item=>firstIds.has(item.id))){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_CURSOR_DUPLICATE');
+}
+const partialPage=await listSupabasePublicCapacityCursor({status:'PARTIAL'},{pageSize:14});
+if(!partialPage.items.length||partialPage.items.some(item=>item.status!=='PARTIAL')){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_STATUS_FILTER_FAILED');
+}
+const routeSignal=firstPage.items.find(item=>item.current_route_points.length>=2)
+  ||firstPage.items.find(item=>item.recurring_corridors.some(signal=>signal.route_points.length>=2));
+const routePoints=routeSignal?.current_route_points.length>=2
+  ?routeSignal.current_route_points:routeSignal?.recurring_corridors.find(signal=>signal.route_points.length>=2)?.route_points;
+if(!routePoints)throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_ROUTE_MISSING');
+const routePage=await listSupabasePublicCapacityCursor({
+  originPlaceRef:routePoints[0].place_ref,destinationPlaceRef:routePoints.at(-1).place_ref
+},{pageSize:14});
+if(!routePage.items.length||routePage.items.some(item=>!item.geographic_match_label)){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_ROUTE_FILTER_FAILED');
+}
+const {error:anonymousCapacityError}=await anon.rpc('public_capacity_page',{
+  query:{},cursor_updated_at:null,cursor_id:null,requested_page_size:14
+});
+if(!anonymousCapacityError)throw new Error('SUPABASE_FIXTURE_VERIFY_PUBLIC_RPC_EXPOSED');
+
 process.stdout.write('Local Supabase fixture verification passed.\n');

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { listPublicCapacityCursor } from '@/lib/repository.js';
+import { listPublicCapacityCursor } from '@/lib/capacity-market.js';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
