@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createSessionToken, verifySessionToken } from './security.js';
-import { getUserById, getWorkspaceAccess } from './repository.js';
 import { getManagedCurrentUser } from './identity/supabase';
+import { getManagedWorkspaceAccess } from './identity/workspace-access.js';
 import { usesSupabaseAuth } from './supabase/config';
 import { createSupabaseServerClient } from './supabase/server';
 
@@ -21,9 +21,10 @@ export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
     if(error||!data.user)return null;
     const user=await getManagedCurrentUser(client,data.user);
     if(!user||!user.active)return null;
-    if(!options.allowLimited&&!(await getWorkspaceAccess(user)).granted)return null;
+    if(!options.allowLimited&&!getManagedWorkspaceAccess(user).granted)return null;
     return user;
   }
+  const {getUserById,getWorkspaceAccess}=await import('./repository.js');
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   const payload = verifySessionToken(token);
@@ -38,7 +39,12 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
   const user = await getCurrentUser({allowLimited:true});
   if (!user) redirect('/login?error=Please+log+in');
   if (allowedRoles && !allowedRoles.includes(user.role)) redirect('/app/home?error=You+do+not+have+access+to+that+page');
-  if (!options.allowLimited && !(await getWorkspaceAccess(user)).granted) redirect('/app/home?billing=required');
+  if (!options.allowLimited) {
+    const access=usesSupabaseAuth()
+      ? getManagedWorkspaceAccess(user)
+      : await (await import('./repository.js')).getWorkspaceAccess(user);
+    if(!access.granted)redirect('/app/home?billing=required');
+  }
   return user;
 }
 

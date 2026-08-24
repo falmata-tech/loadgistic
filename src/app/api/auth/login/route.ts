@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { findUserByEmail } from '@/lib/repository.js';
 import { verifyPassword, createSessionToken } from '@/lib/security.js';
 import { SESSION_COOKIE } from '@/lib/auth';
 import { redirectWith, text } from '@/lib/redirects';
@@ -33,6 +32,7 @@ export async function POST(request: NextRequest) {
     response.headers.set('Location',projection.role==='SUPPORT'?'/support':'/app/home');
     return response;
   }
+  const {findUserByEmail}=await import('@/lib/repository.js');
   const user = await findUserByEmail(email);
   if (!user || !user.active || !await verifyPassword(password, user.password_hash)) {
     return redirectWith(request, '/login', 'error', 'The email or password is incorrect.');

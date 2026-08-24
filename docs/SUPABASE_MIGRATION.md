@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite while ADR-041 is being implemented. That is now a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `037` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer now creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. The managed Auth role projection is implemented; the application repository and test-runtime cutover remain incomplete. Production readiness therefore remains blocked.
+The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite for repository paths not yet migrated while ADR-041 is being implemented. That is a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `037` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. Managed Auth, health, and bounded place search now run without importing SQLite when their Supabase flags are enabled; the remaining application repository and test-runtime cutover is incomplete. Production readiness therefore remains blocked.
 
 ## Current migration coverage
 
@@ -43,7 +43,9 @@ The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent clo
 
 ## Required adapter work
 
-The managed identity slice is implemented behind `AUTH_BACKEND=supabase`: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. A real local login/session/logout check passes. The flag stays disabled for the normal application until repository pages no longer reach SQLite.
+The managed identity slice is implemented behind `AUTH_BACKEND=supabase`: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. Managed workspace and Driver access projection is isolated from the local repository, so Supabase login requests do not load SQLite. A real local login/session/logout check passes. The flag stays disabled for the normal application until repository pages no longer reach SQLite.
+
+The first PostgreSQL read/readiness slice is implemented behind `DATA_BACKEND=supabase`. `/api/health` counts the managed profile projection and fails closed with a non-secret `database-unavailable` blocker if PostgreSQL cannot be reached. `/api/places` uses a bounded server-only Supabase query and returns the existing public place contract without loading the SQLite repository. Local fixture verification exercises that real adapter. These routes do not imply Truck Market or command parity; the production repository blocker remains active.
 
 Keep these active contracts stable while replacing SQLite operations:
 

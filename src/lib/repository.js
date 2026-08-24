@@ -50,6 +50,8 @@ import { placeIdentity, placeLabel, placeLocalName, qualifyAreaLabel } from './p
 import { accessPeriodEnd, PAID_ACCESS_DAYS, subscriptionAccess, TRIAL_DAYS } from './subscription-access.js';
 import { providerRegionLabel, regionalExpoGroupForDate, regionalExpoWeekForDate, validateProviderRegionCode } from './provider-regions.js';
 import { buildFeaturedDaySchedule, DEFAULT_FEATURED_SCHEDULE_CONFIG, validateFeaturedScheduleConfig } from './expo-broadcast.js';
+import { getManagedDriverAccess, getManagedWorkspaceAccess } from './identity/workspace-access.js';
+import { searchSupabasePlaces } from './repository/supabase.js';
 
 const SPONSORED_PROVIDER_LIMIT=5;
 
@@ -122,8 +124,7 @@ export function getWorkspaceAccess(user, at = new Date()) {
     return {granted:true,status:user.role,ends_at:null,days_remaining:null,subscription:null};
   }
   if(process.env.AUTH_BACKEND==='supabase'||process.env.DATA_BACKEND==='supabase'){
-    const subscription=user?.workspace_subscription||null;
-    return {...subscriptionAccess(subscription,at),subscription};
+    return getManagedWorkspaceAccess(user,at);
   }
   const subscription = workspaceSubscription(getDb(),user);
   return {...subscriptionAccess(subscription,at),subscription};
@@ -202,14 +203,7 @@ export function getDriverAccess(user) {
   }
   if (!isCompanyDriver(user)) return null;
   if(process.env.AUTH_BACKEND==='supabase'||process.env.DATA_BACKEND==='supabase'){
-    return {
-      kind:'COMPANY',
-      can_browse_load_board:false,
-      can_contact_businesses:false,
-      can_negotiate_loads:false,
-      can_manage_capacity:Boolean(user.can_manage_capacity),
-      can_manage_tracking:Boolean(user.can_manage_tracking)
-    };
+    return getManagedDriverAccess(user);
   }
   const stored = getDb().prepare('SELECT * FROM driver_permissions WHERE user_id=?').get(user.id);
   return {
@@ -238,10 +232,11 @@ function canNegotiateLoads(user) {
   return access ? access.can_negotiate_loads && access.can_contact_businesses && access.can_browse_load_board : true;
 }
 
-export function searchPlaces(query,limit=20) {
+export async function searchPlaces(query,limit=20) {
   const normalized = normalizePlace(placeLocalName(query));
   if (normalized.length < 2) return [];
   const boundedLimit = Math.max(1,Math.min(Number(limit)||20,50));
+  if(process.env.DATA_BACKEND==='supabase')return searchSupabasePlaces(query,normalized,boundedLimit);
   const db = getDb();
   const select=`SELECT id,name,
       name || CASE WHEN parent_name IS NOT NULL AND trim(parent_name)<>'' AND lower(parent_name)<>lower(name) THEN ', ' || parent_name ELSE '' END || ', ' || country_name AS display_name,

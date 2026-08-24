@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { searchPlaces } from '@/lib/repository.js';
+import { searchPlaces } from '@/lib/place-search.js';
 
 export const runtime = 'nodejs';
 

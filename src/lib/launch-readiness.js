@@ -17,12 +17,14 @@ export function launchReadiness(environment=process.env){
     if(dataBackend!=='supabase')blockers.push('managed-postgres-data-backend');
     if(authBackend!=='supabase')blockers.push('managed-auth-backend');
     if(!environment.NEXT_PUBLIC_SUPABASE_URL||!environment.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)blockers.push('supabase-public-config');
+    if(!environment.SUPABASE_SERVICE_ROLE_KEY)blockers.push('supabase-service-config');
     blockers.push('supabase-repository-adapter');
     blockers.push('managed-identity-adapter');
     blockers.push('shared-rate-limit-adapter');
     blockers.push('upload-malware-scanner');
   }else{
-    warnings.push('local-sqlite-data');
+    if(dataBackend==='sqlite')warnings.push('local-sqlite-data');
+    else if(dataBackend==='supabase'&&!environment.SUPABASE_SERVICE_ROLE_KEY)warnings.push('supabase-service-config-missing');
     if(storage.backend==='local')warnings.push('local-private-storage');
   }
 

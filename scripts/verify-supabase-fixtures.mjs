@@ -50,4 +50,12 @@ if(!objects?.some(object=>object.name==='verification-document.jpg')){
   throw new Error('SUPABASE_FIXTURE_VERIFY_STORAGE_OBJECT_MISSING');
 }
 
+process.env.NEXT_PUBLIC_SUPABASE_URL=url;
+process.env.SUPABASE_SERVICE_ROLE_KEY=serviceRoleKey;
+const {searchSupabasePlaces}=await import('../src/lib/repository/supabase.js');
+const placeResults=await searchSupabasePlaces('Addis Ababa','addis ababa',5);
+if(!placeResults.some(place=>place.name==='Addis Ababa')){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_PLACE_SEARCH_FAILED');
+}
+
 process.stdout.write('Local Supabase fixture verification passed.\n');
