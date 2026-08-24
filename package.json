@@ -11,6 +11,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:reset": "node scripts/reset-db.mjs",
+    "db:supabase:fixtures": "node scripts/import-supabase-fixtures.mjs --reset-local",
+    "db:supabase:verify": "node scripts/verify-supabase-fixtures.mjs",
     "db:stress": "node scripts/seed-market-scale-db.mjs",
     "test:scale": "node scripts/market-scale-audit.mjs",
     "db:fixtures:tracking": "node scripts/add-tracking-fixtures.mjs",

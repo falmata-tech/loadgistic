@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite while ADR-041 is being implemented. That is now a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `033` replay successfully against the isolated local Supabase PostgreSQL stack; the repository, Auth role projection, Storage, deterministic seed, and test-runtime cutover remain incomplete. Production readiness therefore remains blocked.
+The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite while ADR-041 is being implemented. That is now a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `036` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer now creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. The application repository, Auth role projection, and test-runtime cutover remain incomplete. Production readiness therefore remains blocked.
 
 ## Current migration coverage
 
@@ -19,6 +19,24 @@ The runnable Loadgistic application still uses `src/lib/repository.js` with Node
 - `031`: unified transporter and outside-advertiser sponsor catalogue plus bounded regional/date placements and schedule attribution.
 - `032`: creates and locks down the private `provider-profile` Storage bucket used by the transporter-image adapter.
 - `033`: repairs and narrows the Driver duty RPC after the canonical capacity table rename used by the PostgreSQL runtime.
+- `034`: closes current SQLite/PostgreSQL column parity for Driver Tracking authority, assigned regular-service signals, Support permissions, shipment assignment, and external shipment-party details.
+- `035`: supplies current-table SQL privileges beneath RLS, reserves service-role repository access, denies anonymous Loadgistic application-table access, leaves Supabase-owned PostGIS metadata grants outside the application audit, and requires explicit privileges for every future table.
+- `036`: permits a regular Service area to use one center for both endpoint labels while preserving distinct endpoints for regular Capacity routes.
+
+The local-only fixture reset is explicit and refuses non-loopback Supabase URLs:
+
+```bash
+SUPABASE_SEED_URL=http://127.0.0.1:55321 \
+SUPABASE_SEED_SERVICE_ROLE_KEY='local service-role key' \
+npm run db:supabase:fixtures
+
+SUPABASE_SEED_URL=http://127.0.0.1:55321 \
+SUPABASE_SEED_SERVICE_ROLE_KEY='local service-role key' \
+SUPABASE_SEED_ANON_KEY='local anonymous key' \
+npm run db:supabase:verify
+```
+
+Keys come from the isolated local Supabase CLI stack and must remain outside shell history, logs, and source control. The importer uses `data/supabase-fixture-source.db` only as a disposable transformation source during cutover; it is not an application runtime or a remote import path.
 
 The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent cloud purge is intentionally not automatic: it is destructive and must be executed only after a verified backup, exact row-count review, and explicit rollout approval.
 
@@ -40,13 +58,13 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `032` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `036` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
 3. Import the bundled place catalog with `npm run places:import:supabase`.
 4. Implement the Supabase PostgreSQL repository, managed identity, and private Storage adapters as the only application runtime; do not add a dual-write or runtime SQLite fallback.
-5. Replace synthetic SQLite fixtures with deterministic local-Supabase Auth and PostgreSQL seed data, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack.
+5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. The importer and basic runtime verification are complete; switching those suites from SQLite remains pending.
 6. Configure private proof/support storage, malware scanning/quarantine, email delivery, authorized Supabase Realtime with polling fallback, shared rate limiting, monitoring, and cleanup jobs.
 7. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
 8. Deploy the managed backend to a non-production environment, run `npm run launch:check`, and rehearse application and data rollback.

@@ -16,7 +16,7 @@ Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds us
 
 - 30 published provider pages;
 - nine fleet companies and 21 self-managed provider profiles;
-- 47 active current-capacity signals;
+- 143 active current-capacity signals;
 - exactly one regular Service area or Capacity route for each of the 30 published providers in the standard fixture;
 - no Business/capacity-seeker accounts, shipment-demand rows, network relationships, or Business reviews.
 
@@ -33,6 +33,10 @@ Credentials are local-only and never rendered in the public application.
 | Platform administrator | `admin@loadgistic.local` |
 
 Use the development password stored in the local seed-credentials file. Generated public-market provider accounts use deterministic `@providers.loadgistic.test` addresses and are fixtures, not customer data.
+
+## Supabase cutover stack
+
+The current application remains on the temporary SQLite adapter while the single-runtime cutover is implemented. The isolated Supabase CLI stack uses ports `55320`–`55324`. After a local `supabase db reset`, use `npm run db:supabase:fixtures` and `npm run db:supabase:verify` with the ignored local CLI service-role and anonymous keys. Both commands refuse remote Supabase hosts. Do not paste keys into tracked files or shell history. See `docs/SUPABASE_MIGRATION.md` for the exact guarded workflow and current boundary.
 
 ## Useful checks
 
