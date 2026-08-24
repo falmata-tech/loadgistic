@@ -2,10 +2,7 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   Building2,
-  LockKeyhole,
-  Mail,
   Phone,
-  Send,
   Truck,
   UserRound
 } from 'lucide-react';
@@ -64,12 +61,11 @@ export default async function ApplyPage({
       <div className="form-grid">
         <div className="form-group"><label htmlFor="applicant-name"><UserRound aria-hidden="true"/>Your name</label><input id="applicant-name" name="name" autoComplete="name" required/></div>
         <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Transporter name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
-        <div className="form-group"><label htmlFor="application-email"><Mail aria-hidden="true"/>Account email</label><input id="application-email" name="email" type="email" autoComplete="email" required/><div className="meta">Private. Used to log in.</div></div>
         <div className="form-group"><label htmlFor="application-phone"><Phone aria-hidden="true"/>Account phone</label><input id="application-phone" name="phone" type="tel" autoComplete="tel" required/><div className="meta">Private. Add a public phone later.</div></div>
-        <div className="form-group"><label htmlFor="application-password"><LockKeyhole aria-hidden="true"/>Password</label><input id="application-password" name="password" type="password" autoComplete="new-password" minLength={10} required/></div>
         <div className="form-group full"><label htmlFor="application-note"><Truck aria-hidden="true"/>About your transport work <span className="meta">(optional)</span></label><textarea id="application-note" name="notes"/></div>
       </div>
-      <button className="button"><Send aria-hidden="true"/>Create transporter account</button>
+      <button className="button auth-google-button"><span className="auth-google-mark" aria-hidden="true">G</span>Continue with Google</button>
+      <p className="meta">Google confirms your account email. Loadgistic does not collect a signup password or publish your private phone.</p>
     </form>
     <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Back to Truck Market</Link>
   </div></main></>;

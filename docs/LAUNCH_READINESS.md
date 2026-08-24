@@ -16,8 +16,8 @@ The repository supports local development, browser testing, controlled demonstra
 
 ## Public-production blockers
 
-1. Finish and parity-test the remaining provider profile, fleet, verification, billing, Support, administration, sponsor, and managed-onboarding PostgreSQL ports. SQLite is not the public-production datastore and managed failures never fall back to it.
-2. Apply/lint migrations `001`–`044` in staging, verify RLS/RPC behavior, import place data, and rehearse encrypted logical backup/restore.
+1. Finish and parity-test the remaining provider profile, fleet, verification, billing, Support, administration, and sponsor PostgreSQL ports. SQLite is not the public-production datastore and managed failures never fall back to it.
+2. Apply/lint migrations `001`–`045` in staging, verify RLS/RPC behavior, import place data, and rehearse encrypted logical backup/restore.
 3. Inventory and purge any cloud legacy demand data only after a verified backup and explicit approval.
 4. Configure managed private storage plus malware scanning/quarantine for verification, Tracking, and Assisted matching attachments.
 5. Configure `LOADGISTIC_EMAIL_WEBHOOK_URL`, webhook authentication, delivery/retry monitoring, and scheduled guest-retention cleanup.
@@ -26,8 +26,8 @@ The repository supports local development, browser testing, controlled demonstra
 8. Replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering; pass the disposable 5,000-truck API and CPU-throttled phone audit before public traffic.
 9. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect
    URL for each environment, Google identity credentials, the numeric-token
-   email template, and verified custom SMTP; prove managed onboarding creates
-   the matching active Loadgistic role projection.
+   email template, and verified custom SMTP; repeat the locally verified managed
+   signup workflow against Preview before enabling it publicly.
 
 ## Bounded beta map warning
 

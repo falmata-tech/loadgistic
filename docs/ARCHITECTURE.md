@@ -39,6 +39,10 @@ authenticated subject resolves through `current_user_projection()`. OAuth
 returns only through the deployment-owned `/api/auth/callback` URL and never
 accepts a dynamic post-login destination. Password authentication is an
 explicit non-Production fixture tool, not a managed customer login method.
+Public signup prepares a 15-minute service-role-only intent, bootstraps a new
+Auth subject as inactive, and provisions the selected provider workspace,
+draft page, signup record, and trial in one PostgreSQL transaction before the
+profile becomes active.
 
 The installable shell is public-first: `/` is the manifest identity and Truck Market launch URL, while `/featured`, `/shared-capacity`, `/track`, `/about`, and `/apply` are distinct public route workspaces. The shared public header and route-aware navigation persist visually across client-side `Link` transitions, and its persistent chat launcher restores one authorized guest conversation across public route changes. `/help` remains a recovery fallback rather than a primary navigation destination. Market and Featured remain separate Server Component trees so each route loads only its own projection and client modules. Desktop uses a floating public workspace rail; public and authenticated phone layouts provide their own role-appropriate fixed navigation. The service worker ignores navigation requests, private workspace pages, and framework chunks; only stable brand and vehicle artwork may use cache-first delivery.
 
@@ -46,4 +50,4 @@ Public current-capacity projection is privacy aware: a Private network signal ex
 
 ## Deployment path
 
-Replay `supabase/migrations/001` through `038` from an empty local stack and the linked Preview project, complete the PostgreSQL repository plus Supabase Auth/Storage adapters, run repository/RLS/identity tests, configure managed email, malware scanning, Supabase Realtime, cleanup, shared rate limiting, and monitoring, rehearse backup and rollback, then deploy the Next.js application through Netlify's maintained OpenNext adapter. Managed Auth, health, place search, and the public Truck Market already use isolated Supabase adapter ports; remaining repository paths stay production-blocked until parity. CI also builds the standalone Docker artifact from the same commit for reproducibility and host portability. No application runtime falls back to SQLite or local serverless files.
+Replay `supabase/migrations/001` through `045` from an empty local stack and the linked Preview project, complete the remaining PostgreSQL repository plus hardened private Storage adapters, run repository/RLS/identity tests, configure managed email, malware scanning, Supabase Realtime, cleanup, shared rate limiting, and monitoring, rehearse backup and rollback, then deploy the Next.js application through Netlify's maintained OpenNext adapter. Managed Auth/signup, health, place search, public discovery, Shared capacity, provider Capacity, and provider-owned Tracking already use isolated Supabase adapter ports; remaining repository paths stay production-blocked until parity. CI also builds the standalone Docker artifact from the same commit for reproducibility and host portability. No application runtime falls back to SQLite or local serverless files.

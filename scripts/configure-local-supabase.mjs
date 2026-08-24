@@ -79,4 +79,5 @@ if(options.has('--verify')){
   runScript('scripts/verify-supabase-shared-capacity.mjs');
   runScript('scripts/verify-supabase-provider-capacity.mjs');
   runScript('scripts/verify-supabase-provider-tracking.mjs');
+  runScript('scripts/verify-supabase-provider-signup.mjs');
 }

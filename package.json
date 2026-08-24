@@ -16,6 +16,7 @@
     "db:supabase:verify:shared": "node scripts/verify-supabase-shared-capacity.mjs",
     "db:supabase:verify:capacity": "node scripts/verify-supabase-provider-capacity.mjs",
     "db:supabase:verify:tracking": "node scripts/verify-supabase-provider-tracking.mjs",
+    "db:supabase:verify:signup": "node scripts/verify-supabase-provider-signup.mjs",
     "supabase:local:configure": "node scripts/configure-local-supabase.mjs --write-env --fixtures --verify",
     "db:stress": "node scripts/seed-market-scale-db.mjs",
     "test:scale": "node scripts/market-scale-audit.mjs",

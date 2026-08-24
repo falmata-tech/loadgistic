@@ -823,5 +823,7 @@ credential system.
 Rollback may temporarily disable Google or email-code buttons independently at
 the Supabase provider boundary, but must not re-enable passwords in Production.
 Public launch still requires verified custom SMTP, the numeric-token email
-template, Google console configuration, and atomic managed onboarding that
-creates the matching Auth identity and Loadgistic role projection.
+template, and Google console configuration. Managed onboarding uses a
+15-minute server-only intent and one transactional provisioning command that
+keeps a new Auth profile inactive until its provider workspace, draft page,
+approved signup record, seven-day trial, and audit record exist.

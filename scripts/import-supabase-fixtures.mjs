@@ -251,7 +251,11 @@ for(const [sourceTable,targetTable] of plan){
   if(!sourceRows.length)continue;
   const rows=sourceRows.map(row=>projectRow(sourceTable,targetTable,row));
   for(let index=0;index<rows.length;index+=250){
-    const {error}=await supabase.from(targetTable).insert(rows.slice(index,index+250));
+    const batch=rows.slice(index,index+250);
+    const operation=targetTable==='profiles'
+      ?supabase.from(targetTable).upsert(batch,{onConflict:'id'})
+      :supabase.from(targetTable).insert(batch);
+    const {error}=await operation;
     if(error)throw new Error(`FIXTURE_IMPORT_FAILED:${sourceTable}->${targetTable}:${error.message}`);
   }
   process.stdout.write(`${targetTable}: ${rows.length}\n`);
