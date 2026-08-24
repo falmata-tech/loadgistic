@@ -70,9 +70,9 @@ Then Public Market returns complete current geometry only for active Public Mark
 And a Private network truck with public regular service remains callable on the Public Market using only its categorical Empty or Partial status and regular-service geometry\
 And its public truck marker is placed on that regular route or area as a service marker explicitly described as not the truck's current location\
 And its private current route, current Service area, approximate location, and related location filters remain absent from the anonymous projection\
-And Shared capacity returns an authorized email's active public and private current geometry and approximate location without duplicates\
+And Shared capacity returns an authorized email's latest public and private Empty or Partial geometry and approximate location without duplicates\
 And the provider's one regular-service signal remains public in either mode\
-And Off Duty or expired capacity disappears from both surfaces without deleting the network grant.
+And older capacity remains visible with separate capacity and location age labels while Off Duty disappears from both surfaces without deleting the network grant.
 
 ### Scenario: revocation is immediate
 

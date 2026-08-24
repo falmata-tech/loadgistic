@@ -29,9 +29,9 @@ function placeLabels(points:any[]|undefined,separator:string){
 }
 
 function capacityTitle(capacity:any){
-  if(capacity.availability_geometry==='ROUTE')return placeLabels(capacity.current_route_points,' → ')||'Current Capacity route';
+  if(capacity.availability_geometry==='ROUTE')return placeLabels(capacity.current_route_points,' → ')||'Published Capacity route';
   const boundary=placeLabels(capacity.capacity_area_boundary,' · ');
-  return boundary?`${capacity.capacity_area_center_label||'Service area'} · ${boundary}`:capacity.capacity_area_center_label||'Current Service area';
+  return boundary?`${capacity.capacity_area_center_label||'Service area'} · ${boundary}`:capacity.capacity_area_center_label||'Published Service area';
 }
 
 function regularServiceTitle(capacity:any){
@@ -82,12 +82,12 @@ export function ProviderFleetShowcase({providerName,trucks}:{providerName:string
     <header className="provider-fleet-heading">
       <div>
         <span><Truck aria-hidden="true"/>Active fleet</span>
-        <h2 id="provider-fleet-title">Trucks and current capacity</h2>
-        <p>Review each {providerName} truck, then open its map to compare public capacity and approximate location with your position.</p>
+        <h2 id="provider-fleet-title">Trucks and published capacity</h2>
+        <p>Review each {providerName} truck, check when its capacity and approximate location were updated, then open its map for geographic context.</p>
       </div>
-      <div className="provider-fleet-counts" aria-label={`${trucks.length} active trucks, ${availableCount} available now`}>
+      <div className="provider-fleet-counts" aria-label={`${trucks.length} active trucks, ${availableCount} published capacity signals`}>
         <span><strong>{trucks.length}</strong> active</span>
-        <span className="available"><strong>{availableCount}</strong> available now</span>
+        <span className="available"><strong>{availableCount}</strong> capacity signals</span>
       </div>
     </header>
 
@@ -97,11 +97,12 @@ export function ProviderFleetShowcase({providerName,trucks}:{providerName:string
       const regularService=regularServiceTitle(capacity);
       const mapPanelId=panelId(truck.platform_number);
       const capacityState=capacity?.status==='PARTIAL'?'Partial space · confirm fit':'Empty truck';
+      const capacityHeading=capacity?.capacity_confirmation_needed?`Last reported ${capacityState.toLowerCase()}`:capacityState;
       return <article className={`provider-truck-card${isOpen?' expanded':''}`} key={truck.platform_number}>
         <div className="provider-truck-card-main">
           <div className="provider-truck-image">
             <Image src={vehicleConfigurationImage(truck.cargo_configuration)} width={300} height={210} alt={`${truck.make||''} ${truck.model||''} ${truck.cargo_configuration||'road freight truck'}`.trim()}/>
-            <span className={`status ${capacity?.status==='PARTIAL'?'yellow':capacity?'green':'neutral'}`}>{capacity?capacityState:'Ask about availability'}</span>
+            <span className={`status ${capacity?.status==='PARTIAL'?'yellow':capacity?'green':'neutral'}`}>{capacity?capacityHeading:'Ask about availability'}</span>
           </div>
 
           <div className="provider-truck-copy">
@@ -116,10 +117,10 @@ export function ProviderFleetShowcase({providerName,trucks}:{providerName:string
             {capacity?<div className="provider-truck-capacity-grid">
               <section className={`provider-truck-current ${capacity.status==='PARTIAL'?'partial':'empty'}`}>
                 {capacity.availability_geometry==='ROUTE'?<Route aria-hidden="true"/>:<CircleDotDashed aria-hidden="true"/>}
-                <span><small>{capacityState} · {capacity.availability_geometry==='ROUTE'?'Capacity route':'Service area'}</small><strong>{capacityTitle(capacity)}</strong></span>
+                <span><small>{capacityHeading} · {capacity.availability_geometry==='ROUTE'?'Capacity route':'Service area'}</small><strong>{capacityTitle(capacity)}</strong></span>
               </section>
               <div className="provider-truck-meta">
-                <span><Clock3 aria-hidden="true"/><span><small>Last updated</small><strong>{capacity.updated_label||'Recently'}</strong></span></span>
+                <span><Clock3 aria-hidden="true"/><span><small>Capacity update</small><strong>{capacity.capacity_updated_label||capacity.updated_label||'Update unavailable'}</strong>{capacity.location_updated_label?<em>{capacity.location_updated_label}</em>:null}</span></span>
                 {regularService?<span><Navigation aria-hidden="true"/><span><small>{regularService.label}</small><strong>{regularService.value||'Confirm route directly'}</strong></span></span>:null}
               </div>
             </div>:<div className="provider-truck-off-duty"><CalendarClock aria-hidden="true"/><span><strong>No current capacity published</strong><small>Ask the transporter about this truck&apos;s next availability.</small></span></div>}

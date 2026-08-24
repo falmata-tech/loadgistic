@@ -56,7 +56,7 @@ And the result remains an unranked geographic set of current trucks.
 
 ### Scenario: current and regular Capacity routes remain distinct
 
-Given one truck has a fresh current Capacity route or Service area and its provider has a regular Capacity route\
+Given one truck has a latest Empty or Partial Capacity route or Service area and its provider has a regular Capacity route\
 When either signal is compared with a manual public Board query\
 Then both signals are evaluated independently and labeled by source\
 And a regular Capacity route is eligible in either direction while the current Capacity route retains its published direction\
@@ -86,11 +86,12 @@ And the evidence does not claim rank, dispatch suitability, road distance, or gu
 ### Scenario: current truck area is uncertainty aware
 
 Given a Board query includes the visitor's separately displaced search center and a bounded search radius\
-When a truck has a fresh Driver-obscured current radius\
+When a truck has a Driver-obscured latest reported radius\
 Then Prefer mode raises overlapping trucks without excluding other route matches\
 And Require mode keeps only trucks whose uncertainty circle overlaps the requested area\
 And the result says Current area overlaps rather than exposing or implying an exact truck position\
-And stale or missing current-area coordinates cannot satisfy Require mode.
+And missing current-area coordinates cannot satisfy Require mode\
+And an older coordinate that satisfies Require mode is labeled with its actual update age and never described as a live position.
 
 ### Scenario: Service-area matching stays polygon based
 

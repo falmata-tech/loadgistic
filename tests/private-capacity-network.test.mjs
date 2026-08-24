@@ -57,6 +57,9 @@ test('one email OTP opens every active private truck share and is single-use',()
   assert.equal(publicFallback[0].current_signal_visibility,'PRIVATE_NETWORK');
   assert.equal(publicFallback[0].availability_geometry,null);
   assert.equal(publicFallback[0].location_lat,null);
+  assert.equal(publicFallback[0].location_update_stage,null);
+  assert.equal(publicFallback[0].location_updated_label,null);
+  assert.equal(publicFallback[0].location_is_last_reported,null);
   assert.deepEqual(publicFallback[0].current_route_points,[]);
   assert.equal(publicFallback[0].recurring_corridors.length,1);
   assert.equal(repo.listPublicCapacityCursor({q:'Confidential Origin'},{pageSize:12}).items.some(item=>item.id===candidate.id),false);
@@ -77,6 +80,7 @@ test('one email OTP opens every active private truck share and is single-use',()
   assert.deepEqual(shared.items[0].current_route_points.map(point=>point.label),privateRoute.map(point=>point.label));
   assert.equal(repo.listSharedCapacity(access.emailDigest,{}).items.filter(item=>[candidate.vehicle_id,second.vehicle_id].includes(item.vehicle_id)).length,2);
   assert.equal(shared.items[0].location_precision_km,db.prepare('SELECT location_precision_km FROM capacities WHERE id=?').get(candidate.id).location_precision_km);
+  assert.ok(shared.items[0].location_updated_label);
   assert.equal(JSON.stringify(shared).includes('recipient_email'),false);
   assert.throws(()=>repo.verifySharedCapacityAccess('buyer@example.com',challenge.accessCode),/SHARED_CAPACITY_ACCESS_DENIED/);
   repo.revokePrivateCapacityAccess(owner,grant.id);

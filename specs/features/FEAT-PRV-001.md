@@ -52,7 +52,7 @@ And unknown, reserved, malformed, or unpublished handles reveal no profile.
 
 Given a provider maintains its page\
 When a visitor opens the microsite\
-Then it may show logo or hero media, headline, about text, services, verification badges, verified-shipment review summary, active fleet presentation, current capacity, one regular Service area or Capacity route, and provider-selected public contacts\
+Then it may show logo or hero media, headline, about text, services, verification badges, verified-shipment review summary, active fleet presentation, the latest published capacity with its age, one regular Service area or Capacity route, and provider-selected public contacts\
 And each claim is based on owner input or current records rather than invented metrics\
 And a low rating that is awaiting review remains visible and included in the public count and average\
 And the page remains usable on mobile and without playing media.
@@ -71,10 +71,10 @@ And phone layouts use one readable column with no horizontal overflow, clipped a
 
 Given a published provider owns one or more active trucks\
 When a visitor opens the provider microsite\
-Then every active truck receives its own detailed card with platform truck number, make, model, cargo configuration, current Empty or Partial state when published, current Service area or Capacity route, provider regular service, freshness, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
+Then every active truck receives its own detailed card with platform truck number, make, model, cargo configuration, latest Empty or Partial state when published, reported Service area or Capacity route, provider regular service, separate capacity and approximate-location age, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
 And a Company driver names the employing fleet transporter while an Owner-operator or Self-managed driver remains clearly independent\
 And plate, Driver surname, private account details, exact coordinates, proof files, and inactive trucks remain absent\
-And trucks without current public capacity remain visible as part of the provider's fleet but show Ask about this truck instead of an old location or availability claim.
+And trucks with no published Empty or Partial signal remain visible as part of the provider's fleet but show Ask about this truck instead of an old location or availability claim.
 
 ### Scenario: a truck map compares public capacity with the visitor
 

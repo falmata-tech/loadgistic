@@ -19,7 +19,7 @@ Then one compact welcome header explains that visitors can find public truck cap
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\
-And both views offer search across truck, transporter, Service area, and Capacity route facts, selectable truck markers, compact truck details, and a Transporter details action\
+And the Map offers search across truck, transporter, Service area, and Capacity route facts, selectable truck markers, compact truck details, and a Transporter details action\
 And selecting a truck opens a compact dismissible information window inside the fixed map canvas without adding document height or narrowing the map\
 And that window keeps only the truck identity, availability, transporter, contact, and profile actions needed before inspecting its map signals\
 And the persistent public navigation links directly to the separate Daily Featured Transporters workspace as well as the Truck Market\
@@ -47,7 +47,7 @@ And Driver Home remains the private Capacity management workspace for publishing
 
 Given a visitor searches the Truck Market using a provider name\
 When the public capacity query is applied\
-Then only current public trucks belonging to matching providers appear on the Map\
+Then only discoverable Empty or Partial trucks belonging to matching providers appear on the Map\
 And featured or sponsored View trucks on map actions apply the transporter’s exact public handle as well as its readable name\
 And automatic visitor-location refresh keeps all trucks from that explicitly selected transporter visible while adding the visitor marker for relative map context\
 And provider cards, provider markers, Area Market buildings, and provider-led result lists do not appear\
@@ -77,7 +77,19 @@ And a truck whose current signal is a Service area may still match when its prov
 And a Service-area search may match either the truck's current Service area or its provider's regular Service area\
 And truck facts and browser-location proximity may be combined with either geography\
 And public availability filtering remains categorical as Empty or Partial, with no remaining-space percentage or minimum-space filter\
-And every result remains a current truck signal rather than a provider card or demand post.
+And every result remains one truck's latest Empty or Partial signal rather than a provider card or demand post.
+
+### Scenario: the Market distinguishes signal age from availability status
+
+Given an Empty or Partial truck was not updated recently\
+When its marker, selected summary, or capacity geometry is shown\
+Then Empty or Partial still describes the provider's last published capacity state\
+And a separate plain-language capacity-update label states Today, Past few days, Past week, Past month, or Older\
+And a separate approximate-location label states when that location was last updated\
+And the selected summary does not call an older location current or imply the truck remains available\
+And visitors are prompted to call and confirm older signals directly\
+And the Market remains unranked\
+And update time is used only as a deterministic bounded-cursor retrieval key, without a provider score or ordered visitor list.
 
 ### Scenario: search and view controls remain consistent
 

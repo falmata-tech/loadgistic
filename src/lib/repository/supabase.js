@@ -3,6 +3,7 @@ import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-priv
 import {capacityRouteAlignmentMatch,capacityRoutePointMatch,normalizePlace,serviceAreaGeometryMatch} from '../route-matching.js';
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
 import {providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
+import {capacityUpdatePresentation} from '../domain.js';
 
 const PLACE_TYPE_ORDER=new Map([
   ['city',0],['town',1],['suburb',2],['neighbourhood',3],['quarter',4],['village',5]
@@ -221,6 +222,9 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
     const distance=hasNear&&row.near_center_distance_km!=null
       ?possibleDistanceRange(Number(row.near_center_distance_km),Number(row.location_precision_km||20),BUSINESS_SEARCH_PRIVACY_KM):null;
     const driverKind=row.provider_kind==='FLEET_TRANSPORTER'?'COMPANY_DRIVER':row.provider_kind;
+    const capacityAge=capacityUpdatePresentation(row.updated_at);
+    const currentGeometryVisible=row.current_signal_geometry_visible!==false;
+    const locationAge=currentGeometryVisible?capacityUpdatePresentation(row.location_updated_at,{kind:'location'}):null;
     const base={...row,provider_kind:undefined,driver_documents:undefined,vehicle_documents:undefined,authorization_documents:undefined,
       recurring_corridors:recurring,current_route_points:validPlacePoints(row.current_route_points,row.availability_geometry==='ROUTE'?2:0),
       capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
@@ -231,6 +235,10 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
         :[truckAuthorizationBadge(row.authorization_documents,row.vehicle_id,row.platform_number)],
       possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
       near_center_distance_km:undefined,updated_label:publicBoardTime(row.updated_at),
+      capacity_update_stage:capacityAge.stage,capacity_updated_label:capacityAge.label,
+      capacity_confirmation_needed:capacityAge.confirmAvailability,
+      location_update_stage:locationAge?.stage??null,location_updated_label:locationAge?.label??null,
+      location_is_last_reported:locationAge?.lastReported??null,
       accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),
       accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop)
     };

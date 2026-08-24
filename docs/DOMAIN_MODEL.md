@@ -15,7 +15,7 @@ Each truck has one latest current state:
 - `RADIUS` is the internal value for a Service area built from one searchable center city and three through five surrounding boundary cities. The map renders the boundary as a polygon.
 - `ROUTE` is the internal value for an immediate one-direction Capacity route containing two through five ordered structured places and no date.
 - Location privacy accuracy is independent of Service area geometry and may be changed whenever the authorized Driver refreshes location.
-- Off Duty, expired, unpublished, and superseded signals are excluded from public discovery.
+- Off Duty, unpublished, inactive, and superseded signals are excluded from public discovery. A latest Empty or Partial signal remains discoverable when its legacy expiry passes, with capacity and approximate-location ages shown separately and older information clearly requiring direct confirmation.
 
 A provider may publish one undated regular-service signal. It is either a Service area with one center and three through five surrounding catalog places or a two-way Capacity route with two through five ordered places. It is a market signal rather than current truck availability and requires direct confirmation.
 
@@ -65,7 +65,7 @@ Demonstration geography is location-keyed rather than randomly combined: a curre
 
 ## Provider microsite
 
-Every published provider owns a unique handle and may configure accurate headline, description, services, one profile identity image, and independent visibility for phone, WhatsApp, email, and website. Loadgistic controls one shared white-space theme, hero treatment, safety language, and optional introductory video. Public pages project every active truck through a safe detailed card; only a current Empty or Partial signal supplies a lazily opened map, while a truck without current public capacity exposes no stale location. Public pages also show the provider's one regular-service signal, reviewed evidence badges, and verified-shipment reviews.
+Every published provider owns a unique handle and may configure accurate headline, description, services, one profile identity image, and independent visibility for phone, WhatsApp, email, and website. Loadgistic controls one shared white-space theme, hero treatment, safety language, and optional introductory video. Public pages project every active truck through a safe detailed card; only its latest published Empty or Partial signal supplies a lazily opened map, with capacity age and approximate-location age stated separately. Off Duty trucks expose no prior location. Public pages also show the provider's one regular-service signal, reviewed evidence badges, and verified-shipment reviews.
 
 ## Provider Tracking session
 

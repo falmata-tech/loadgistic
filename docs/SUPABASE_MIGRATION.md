@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite for repository paths not yet migrated while ADR-041 is being implemented. That is a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `040` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. Managed Auth, health, place search, the public Truck Market, published transporter microsites, and Daily Featured Transporters now run without importing SQLite when their Supabase flags are enabled; the remaining application repository and test-runtime cutover is incomplete. Production readiness therefore remains blocked.
+The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite for repository paths not yet migrated while ADR-041 is being implemented. That is a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `041` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. Managed Auth, health, place search, the public Truck Market, published transporter microsites, and Daily Featured Transporters now run without importing SQLite when their Supabase flags are enabled; the remaining application repository and test-runtime cutover is incomplete. Production readiness therefore remains blocked.
 
 ## Current migration coverage
 
@@ -26,21 +26,17 @@ The runnable Loadgistic application still uses `src/lib/repository.js` with Node
 - `038`: adds the server-only bounded public-capacity projection, literal search, PostGIS route/Service-area matching, stable cursor indexes, post-limit Driver/review/document enrichment, and projection-time removal of private current geometry. Anonymous and ordinary authenticated clients cannot execute the RPC directly.
 - `039`: adds a server-only published-review count and average aggregate for transporter microsites. Anonymous and ordinary authenticated clients cannot execute the aggregate RPC, and review-party data is never returned by it.
 - `040`: adds the server-only regional candidate projection for Daily Featured Transporters and Sponsors. It rechecks published profile, structured base, public-contact, active-fleet, evidence, operating-model, review, and current-capacity facts while excluding private contact, document, coordinate, and account fields.
+- `041`: keeps only the latest Empty or Partial signal discoverable through service-role public and Featured projections until an explicit Off Duty update. Historical expiry values and their authenticated RLS boundary remain unchanged, while public projections present capacity and approximate-location update age independently.
 
-The local-only fixture reset is explicit and refuses non-loopback Supabase URLs:
+The local configurator reads the isolated CLI stack without printing keys,
+writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
+runs managed verification. It fails closed for any non-loopback API URL:
 
 ```bash
-SUPABASE_SEED_URL=http://127.0.0.1:55321 \
-SUPABASE_SEED_SERVICE_ROLE_KEY='local service-role key' \
-npm run db:supabase:fixtures
-
-SUPABASE_SEED_URL=http://127.0.0.1:55321 \
-SUPABASE_SEED_SERVICE_ROLE_KEY='local service-role key' \
-SUPABASE_SEED_ANON_KEY='local anonymous key' \
-npm run db:supabase:verify
+SUPABASE_CLI_PATH=/absolute/path/to/supabase npm run supabase:local:configure
 ```
 
-Keys come from the isolated local Supabase CLI stack and must remain outside shell history, logs, and source control. The importer uses `data/supabase-fixture-source.db` only as a disposable transformation source during cutover; it is not an application runtime or a remote import path.
+Keys come from the isolated local Supabase CLI stack and must remain outside shell history, logs, and source control. The lower-level `db:supabase:fixtures` and `db:supabase:verify` commands remain available for CI orchestration with injected local-only variables. The importer uses `data/supabase-fixture-source.db` only as a disposable transformation source during cutover; it is not an application runtime or a remote import path.
 
 The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent cloud purge is intentionally not automatic: it is destructive and must be executed only after a verified backup, exact row-count review, and explicit rollout approval.
 
@@ -72,7 +68,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `040` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `041` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.

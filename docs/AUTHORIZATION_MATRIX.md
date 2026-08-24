@@ -4,7 +4,7 @@ The active product is supply-first. Capacity seekers are anonymous visitors; onl
 
 | Action | Allowed actor and scope | Denial behavior |
 |---|---|---|
-| Browse public capacity | Anyone; only latest published, unexpired Empty or Partial provider signals | Hidden records are omitted |
+| Browse public capacity | Anyone; only the latest published Empty or Partial provider signal, with separate capacity and approximate-location age labels | Off Duty, inactive, unpublished, and unauthorized private records are omitted; older active signals stay visible with confirmation guidance |
 | Use visitor proximity | Anyone who grants browser geolocation; exact visitor point stays in browser and only a bounded query point is sent | No prompt loop; normal Board remains usable |
 | View provider microsite | Anyone; published provider-selected fields and contact channels only | `NOT_FOUND` for unpublished/unknown handle |
 | Read Shared capacity | Anonymous browser with a valid email-OTP session that has not been idle for 30 minutes; only trucks actively shared with that normalized email | Generic invalid-code or expired-session response; no grant or truck existence leak |

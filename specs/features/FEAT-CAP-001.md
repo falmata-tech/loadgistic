@@ -3,8 +3,8 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Authorized providers publish one current signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive private details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry, and regular service remains public. A private-current truck remains publicly callable through its categorical status and public regular service without presenting the regular-service marker as a live location. Exact truck and visitor coordinates remain private.
-contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshness, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
+behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive private details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry, and regular service remains public. A private-current truck remains publicly callable through its categorical status and public regular service without presenting the regular-service marker as a live location. Exact truck and visitor coordinates remain private.
+contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
 rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and monitor public-projection fields and query volume.
 ---
@@ -55,13 +55,27 @@ Then its current signal is absent from public discovery\
 And its provider regular-service signal remains a separate record governed by its own state\
 And Busy is rejected.
 
+### Scenario: older signals remain visible with honest age
+
+Given a truck's latest saved status is Empty or Partial\
+When its capacity confirmation deadline passes without a new update\
+Then the latest signal remains discoverable instead of disappearing solely because of age\
+And its capacity update is assigned exactly one stage: Today, Past few days, Past week, Past month, or Older\
+And its approximate-location update is assigned its own stage using the same boundaries\
+And Today means less than 24 hours old, Past few days means 24 hours through less than four days, Past week means four through less than eight days, Past month means eight through less than 31 days, and Older means at least 31 days\
+And each stage has a short plain-language label derived from its actual timestamp\
+And missing or invalid location time is stated as Location update unavailable\
+And a Past week, Past month, or Older capacity signal says Confirm availability directly\
+And an older approximate location is described as the last reported approximate area rather than the truck's current position\
+And selecting Off Duty still removes the truck from public and authorized Shared capacity discovery.
+
 ### Scenario: public Board is cursor bounded
 
 Given public capacity contains more results than one response\
-When any visitor opens or scrolls the Board\
+When any visitor opens the Map or requests another result batch\
 Then the server returns a stable cursor page of 12 through 16 independently actionable cards\
 And the Market does not duplicate those signals in a ranked truck-list mode\
-And approaching the end fetches the next page\
+And an explicit Load more trucks action fetches the next bounded map batch\
 And a Load more capacity fallback remains keyboard accessible\
 And filters, loaded cursor state, and scroll position survive a profile/detail round trip\
 And the end of results is stated plainly.
@@ -117,11 +131,11 @@ And intermediate cities are included only when they clarify the road path rather
 ### Scenario: one shared map is the primary capacity view
 
 Given a visitor opens the Capacity Board\
-When no view choice has been made\
-Then one shared interactive map is the default primary view and List is the secondary choice\
+When the result surface renders\
+Then one shared interactive map is the only public result view\
 And search, filters, and the location action remain available in their established command area above the map\
 And the map starts at a useful Ethiopia-level zoom, permits bounded panning across a practical East Africa envelope, and never falls back to a world or Africa-wide view\
-And cards appear only after choosing List rather than creating one live map per card\
+And no ranked or paginated truck-list surface is offered\
 And before selection the map clusters crowded signals that separate as the visitor zooms\
 And each cluster contains only Empty trucks or only Partial trucks, names that status, and is visibly offset from an opposite-status cluster occupying the same map cell\
 And the complete map key remains visible without another action and uses pointed pins for capacity status, a polygon for Service area, and solid or dashed polylines for Capacity routes rather than repeating same-shaped color bars\

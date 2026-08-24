@@ -231,6 +231,49 @@ export function capacitySignalFreshness(status, updatedAt, availableAgainDate, f
   return capacityFreshness(updatedAt,null,freshHours);
 }
 
+export const CAPACITY_UPDATE_STAGES = Object.freeze({
+  TODAY:'TODAY',
+  FEW_DAYS:'FEW_DAYS',
+  WEEK:'WEEK',
+  MONTH:'MONTH',
+  OLDER:'OLDER',
+  UNKNOWN:'UNKNOWN'
+});
+
+export function capacityUpdateStage(updatedAt, now = Date.now()) {
+  if(updatedAt===null||updatedAt===undefined||String(updatedAt).trim()==='')return CAPACITY_UPDATE_STAGES.UNKNOWN;
+  const updated=new Date(updatedAt).getTime();
+  const current=now instanceof Date?now.getTime():new Date(now).getTime();
+  if(!Number.isFinite(updated)||!Number.isFinite(current))return CAPACITY_UPDATE_STAGES.UNKNOWN;
+  const age=Math.max(0,current-updated);
+  const day=24*60*60*1000;
+  if(age<day)return CAPACITY_UPDATE_STAGES.TODAY;
+  if(age<4*day)return CAPACITY_UPDATE_STAGES.FEW_DAYS;
+  if(age<8*day)return CAPACITY_UPDATE_STAGES.WEEK;
+  if(age<31*day)return CAPACITY_UPDATE_STAGES.MONTH;
+  return CAPACITY_UPDATE_STAGES.OLDER;
+}
+
+export function capacityUpdatePresentation(updatedAt,{kind='capacity',now=Date.now()}={}) {
+  const stage=capacityUpdateStage(updatedAt,now);
+  const subject=kind==='location'?'Location':'Capacity';
+  const updated=updatedAt===null||updatedAt===undefined||String(updatedAt).trim()===''?Number.NaN:new Date(updatedAt).getTime();
+  const current=now instanceof Date?now.getTime():new Date(now).getTime();
+  const days=Number.isFinite(updated)&&Number.isFinite(current)?Math.max(0,Math.floor((current-updated)/(24*60*60*1000))):null;
+  const label=stage===CAPACITY_UPDATE_STAGES.TODAY?`${subject} updated today`
+    :stage===CAPACITY_UPDATE_STAGES.FEW_DAYS?`${subject} updated ${Math.max(1,days)} ${Math.max(1,days)===1?'day':'days'} ago`
+    :stage===CAPACITY_UPDATE_STAGES.WEEK?`${subject} updated within the past week`
+    :stage===CAPACITY_UPDATE_STAGES.MONTH?`${subject} updated within the past month`
+    :stage===CAPACITY_UPDATE_STAGES.OLDER?`${subject} last updated over a month ago`
+    :`${subject} update unavailable`;
+  return {
+    stage,
+    label,
+    confirmAvailability:kind==='capacity'&&[CAPACITY_UPDATE_STAGES.WEEK,CAPACITY_UPDATE_STAGES.MONTH,CAPACITY_UPDATE_STAGES.OLDER,CAPACITY_UPDATE_STAGES.UNKNOWN].includes(stage),
+    lastReported:kind==='location'&&![CAPACITY_UPDATE_STAGES.TODAY,CAPACITY_UPDATE_STAGES.FEW_DAYS].includes(stage)
+  };
+}
+
 export const CAPACITY_EXPIRY_WARNING_HOURS = 2;
 export const LOAD_BOARD_GRACE_DAYS = 2;
 

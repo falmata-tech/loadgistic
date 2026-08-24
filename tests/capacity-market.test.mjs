@@ -121,20 +121,30 @@ test('public capacity keeps Service areas Empty and publishes Partial only on ro
   }
 });
 
-test('expired current capacity is absent from public and shared map projections',()=>{
+test('older Empty or Partial capacity remains visible with separate age labels',()=>{
   const db=getDb();
-  const candidate=db.prepare(`SELECT id,expires_at FROM capacities
+  const candidate=db.prepare(`SELECT id,expires_at,updated_at,location_updated_at FROM capacities
     WHERE COALESCE(market_status,status) IN ('EMPTY','PARTIAL') AND visibility='OPEN'
     ORDER BY updated_at DESC,id DESC LIMIT 1`).get();
   assert.ok(candidate);
   try{
     db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run('2000-01-01T00:00:00.000Z',candidate.id);
-    assert.equal(repo.listPublicCapacityCursor({capacityId:candidate.id},{pageSize:12}).items.length,0);
-    assert.equal(repo.listPublicCapacityCursor({capacityId:candidate.id},{pageSize:12,authorizedVehicleIds:[
+    db.prepare('UPDATE capacities SET updated_at=?,location_updated_at=? WHERE id=?')
+      .run('2026-06-01T00:00:00.000Z','2026-07-01T00:00:00.000Z',candidate.id);
+    const publicItem=repo.listPublicCapacityCursor({capacityId:candidate.id},{pageSize:12}).items[0];
+    assert.ok(publicItem);
+    assert.equal(publicItem.capacity_update_stage,'OLDER');
+    assert.equal(publicItem.capacity_confirmation_needed,true);
+    assert.match(publicItem.capacity_updated_label,/over a month ago/);
+    assert.equal(publicItem.location_is_last_reported,true);
+    const sharedItem=repo.listPublicCapacityCursor({capacityId:candidate.id},{pageSize:12,authorizedVehicleIds:[
       db.prepare('SELECT vehicle_id FROM capacities WHERE id=?').get(candidate.id).vehicle_id
-    ]}).items.length,0);
+    ]}).items[0];
+    assert.ok(sharedItem);
+    assert.equal(sharedItem.capacity_update_stage,'OLDER');
   }finally{
-    db.prepare('UPDATE capacities SET expires_at=? WHERE id=?').run(candidate.expires_at,candidate.id);
+    db.prepare('UPDATE capacities SET expires_at=?,updated_at=?,location_updated_at=? WHERE id=?')
+      .run(candidate.expires_at,candidate.updated_at,candidate.location_updated_at,candidate.id);
   }
 });
 

@@ -59,9 +59,9 @@ And intermediate cities clarify the road path without manufacturing unnecessary 
 
 Given the deterministic capacity cohort\
 When anonymous discovery follows cursor pages to the end\
-Then all 143 eligible capacity signals are returned exactly once\
+Then all 143 latest Empty or Partial capacity signals are returned exactly once\
 And fleet and owner-operator profiles, current Service areas, current Capacity routes, and both regular-service geometries are represented\
-And expired, Off Duty, and unpublished signals remain excluded.
+And older fixture signals retain explicit age metadata while Off Duty and unpublished signals remain excluded.
 
 ### Scenario: demand fixtures are removed
 

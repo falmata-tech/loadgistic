@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityUpdateStage, capacityUpdatePresentation, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, capacityRouteAlignmentMatch, corridorAlignmentMatch, geographicRouteMatch, normalizePlace, serviceAreaGeometryMatch, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
@@ -164,6 +164,26 @@ test('capacity freshness labels expired data honestly',()=>{
 test('cargo-space freshness is based on the current signal update',()=>{
  assert.equal(capacitySignalFreshness('EMPTY','2026-07-28T09:00:00.000Z',null,12,'2026-07-30'),'UPDATE_NEEDED');
  assert.equal(capacitySignalFreshness('PARTIAL',new Date().toISOString(),null,12),'FRESH');
+});
+
+test('capacity and location update ages use readable non-overlapping stages',()=>{
+ const now=new Date('2026-08-24T12:00:00.000Z');
+ assert.equal(capacityUpdateStage('2026-08-24T00:00:01.000Z',now),'TODAY');
+ assert.equal(capacityUpdateStage('2026-08-22T12:00:00.000Z',now),'FEW_DAYS');
+ assert.equal(capacityUpdateStage('2026-08-19T12:00:00.000Z',now),'WEEK');
+ assert.equal(capacityUpdateStage('2026-08-10T12:00:00.000Z',now),'MONTH');
+ assert.equal(capacityUpdateStage('2026-07-01T12:00:00.000Z',now),'OLDER');
+ assert.equal(capacityUpdateStage('not-a-time',now),'UNKNOWN');
+ assert.equal(capacityUpdateStage(null,now),'UNKNOWN');
+ assert.equal(capacityUpdateStage('  ',now),'UNKNOWN');
+ assert.equal(capacityUpdatePresentation(null,{kind:'location',now}).label,'Location update unavailable');
+ assert.deepEqual(capacityUpdatePresentation('2026-08-22T12:00:00.000Z',{now}),{
+   stage:'FEW_DAYS',label:'Capacity updated 2 days ago',confirmAvailability:false,lastReported:false
+ });
+ assert.deepEqual(capacityUpdatePresentation('2026-08-10T12:00:00.000Z',{kind:'location',now}),{
+   stage:'MONTH',label:'Location updated within the past month',confirmAvailability:false,lastReported:true
+ });
+ assert.equal(capacityUpdatePresentation('2026-08-19T12:00:00.000Z',{now}).confirmAvailability,true);
 });
 
 test('legacy capacity expiry utility remains deterministic for historical records',()=>{

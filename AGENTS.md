@@ -43,7 +43,9 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 1. Keep state transitions explicit in `domain.js`.
 2. Authorize every mutation in server-side repository services.
 3. Do not expose proof files without shipment authorization.
-4. Do not show expired, full, or off-duty capacity in marketplace discovery.
+4. Do not show full or Off Duty capacity in marketplace discovery. An older
+   Empty or Partial signal may remain visible only with explicit capacity and
+   location age labels that tell visitors to confirm availability directly.
 5. Use ETB or Quote Requested; do not introduce USD marketplace prices.
 6. Show only data derived from actual records or verified inputs.
 7. Preserve mobile-first simplicity.

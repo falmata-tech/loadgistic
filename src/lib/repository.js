@@ -23,6 +23,7 @@ import {
   distanceBetweenKm,
   assertTransition,
   capacitySignalFreshness,
+  capacityUpdatePresentation,
   loadBoardDeadlineState,
   LOAD_BOARD_GRACE_DAYS,
   isPendingDirectRequest,
@@ -2747,12 +2748,20 @@ const CAPACITY_BOARD_COLUMNS=`c.id,c.provider_organization_id,c.provider_profile
 
 function marketCapacityRow(row, freshHours, additions = {}) {
   const status=row.market_status||row.status;
+  const capacityAge=capacityUpdatePresentation(row.updated_at);
+  const locationAge=capacityUpdatePresentation(row.location_updated_at,{kind:'location'});
   return {
     ...row,
     ...additions,
     status,
     proof_available:Boolean(row.proof_available),
     freshness: capacitySignalFreshness(status,row.updated_at,null,freshHours),
+    capacity_update_stage:capacityAge.stage,
+    capacity_updated_label:capacityAge.label,
+    capacity_confirmation_needed:capacityAge.confirmAvailability,
+    location_update_stage:locationAge.stage,
+    location_updated_label:locationAge.label,
+    location_is_last_reported:locationAge.lastReported,
     expiry_state:'CURRENT'
   };
 }
@@ -3104,9 +3113,8 @@ export function listPublicCapacityCursor(filters={},options={}) {
   const where=[`v.active=1`,`cp.published=1`,
     `c.id=(SELECT latest.id FROM capacities latest WHERE latest.vehicle_id=v.id ORDER BY latest.updated_at DESC,latest.id DESC LIMIT 1)`,
     `COALESCE(c.market_status,c.status) IN ('EMPTY','PARTIAL')`,
-    `c.expires_at>?`,
     `(p.id IS NOT NULL OR o.type='TRANSPORT_COMPANY')`];
-  const args=[nowIso()];
+  const args=[];
   if(authorizedVehicleIds){
     if(!authorizedVehicleIds.length)where.push('0=1');
     else{where.push(`c.vehicle_id IN (${authorizedVehicleIds.map(()=>'?').join(',')})`);args.push(...authorizedVehicleIds);}
@@ -3225,7 +3233,8 @@ export function listPublicCapacityCursor(filters={},options={}) {
   const selected=rows.slice(0,pageSize).map(row=>{
     const review=publicProviderReviewSummary(db,row.provider_organization_id,row.provider_profile_id);
     const distance=hasNear?possibleDistanceRange(row.near_center_distance_km,row.location_precision_km,BUSINESS_SEARCH_PRIVACY_KM):null;
-    return {...row,...review,near_center_distance_km:undefined,possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop),updated_label:publicBoardTime(row.updated_at)};
+    const capacityAge=capacityUpdatePresentation(row.updated_at);
+    return {...row,...review,near_center_distance_km:undefined,possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop),updated_label:publicBoardTime(row.updated_at),capacity_update_stage:capacityAge.stage,capacity_updated_label:capacityAge.label,capacity_confirmation_needed:capacityAge.confirmAvailability};
   });
   const items=attachPublicCapacitySignals(selected).map(baseItem=>{
     const providerKind=baseItem.provider_organization_id?'FLEET_TRANSPORTER':providerOperatingModel(db,baseItem);
@@ -3237,20 +3246,24 @@ export function listPublicCapacityCursor(filters={},options={}) {
       : [truckAuthorizationBadge(db,driverSubjectType,driverSubjectId||'',baseItem.vehicle_id,baseItem.platform_number)];
     const driverFirstName=String(baseItem.assigned_driver_name||'').trim().split(/\s+/)[0]||null;
     const currentGeometryVisible=baseItem.visibility==='OPEN'||!anonymousProjection;
+    const locationAge=currentGeometryVisible?capacityUpdatePresentation(baseItem.location_updated_at,{kind:'location'}):null;
     const item={...baseItem,visibility:undefined,assigned_driver_name:undefined,assigned_driver_user_id:undefined,profile_user_id:undefined,
       assigned_driver_first_name:driverFirstName,assigned_driver_phone:baseItem.assigned_driver_phone||null,
       driver_kind:providerKind==='FLEET_TRANSPORTER'?'COMPANY_DRIVER':providerKind,
       driver_kind_label:providerKind==='FLEET_TRANSPORTER'?'Company driver':providerOperatingModelLabel(providerKind),
       driver_verification_badges:driverBadges,truck_verification_badges:truckBadges,
       current_signal_visibility:baseItem.visibility==='PRIVATE'?'PRIVATE_NETWORK':'PUBLIC_MARKET',
-      current_signal_geometry_visible:currentGeometryVisible};
+      current_signal_geometry_visible:currentGeometryVisible,
+      location_update_stage:locationAge?.stage??null,location_updated_label:locationAge?.label??null,
+      location_is_last_reported:locationAge?.lastReported??null};
     if(!currentGeometryVisible)Object.assign(item,{
       availability_geometry:null,
       location_area:null,location_lat:null,location_lng:null,location_precision_km:null,work_radius_km:null,location_updated_at:null,
       current_route_origin:null,current_route_destination:null,current_origin_place_ref:null,current_origin_lat:null,current_origin_lng:null,
       current_destination_place_ref:null,current_destination_lat:null,current_destination_lng:null,current_route_points:[],
       capacity_area_center_place_ref:null,capacity_area_center_label:null,capacity_area_center_lat:null,capacity_area_center_lng:null,capacity_area_boundary:[],
-      accepts_full_load:false,accepts_partial_load:false,accepts_multi_pick:false,accepts_multi_drop:false
+      accepts_full_load:false,accepts_partial_load:false,accepts_multi_pick:false,accepts_multi_drop:false,
+      location_update_stage:null,location_updated_label:null,location_is_last_reported:null
     });
     if(originPlace&&destinationPlace){
       const query={origin_lat:originPlace.center_lat,origin_lng:originPlace.center_lng,destination_lat:destinationPlace.center_lat,destination_lng:destinationPlace.center_lng};
@@ -3287,7 +3300,7 @@ export function listPublicCapacityCursor(filters={},options={}) {
       const matches=areas.map(area=>({...area,...serviceAreaGeometryMatch({lat:currentAreaPlace.center_lat,lng:currentAreaPlace.center_lng},area.boundary,{searchRadiusKm:filters.currentAreaRadiusKm})})).filter(match=>match.matched).sort((first,second)=>first.distance_km-second.distance_km);
       return {...item,geographic_match_label:`${matches[0]?.source||'Service area'} reaches ${currentAreaPlace.place_label||filters.currentArea}${matches[0]?.inside?'':' nearby'}`};
     }
-    if(hasNear)return {...item,geographic_match_label:'Approximate truck location is within your selected proximity'};
+    if(hasNear)return {...item,geographic_match_label:`${item.location_is_last_reported?'Last reported approximate location':'Approximate truck location'} is within your selected proximity · ${item.location_updated_label||'location update unavailable'}`};
     return item;
   });
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};

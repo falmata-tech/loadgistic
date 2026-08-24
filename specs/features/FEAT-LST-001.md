@@ -62,7 +62,7 @@ And every matching record remains reachable.
 Given public truck capacity grows beyond the development fixture\
 When a normal public cursor page is requested\
 Then the application does not materialize every authorized record before slicing one page\
-And indexed status, expiry, geometry, locality, ownership, and publication predicates reduce the query\
+And indexed latest-state, geometry, locality, ownership, and publication predicates reduce the query\
 And the opaque cursor cannot be edited to reveal hidden or prior-filter records.
 
 ### Scenario: production map remains bounded at national scale

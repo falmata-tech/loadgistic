@@ -16,7 +16,7 @@ A request, load, and operating shipment use one record. UI terminology changes b
 
 ## ADR-004 — Minimal capacity
 
-Capacity is truck-level and intentionally direct: Empty, Partial, or Off Duty; Empty-only FTL/PTL/Both acceptance; optional Multi Pick and Multi Drop; assigned-Driver device area and freshness; an undated live Partial route; an Empty Anywhere or Specific-route intent with an optional upcoming weekday/date; Public/Partners visibility; and expiry. Direct service is implicit and recurring-contract capacity is outside this model. Partial implies PTL and requires a live route even for Local work. Local uses a 10–50 km circle centered on the device-resolved locality. A full or unavailable truck is Off Duty and is not shown in discovery.
+Capacity is truck-level and intentionally direct: Empty, Partial, or Off Duty; Empty-only FTL/PTL/Both acceptance; optional Multi Pick and Multi Drop; assigned-Driver approximate area; an undated Empty Service area or Empty/Partial Capacity route; Public Market or Private network visibility; and separate capacity/location freshness. Direct service is implicit. Partial implies PTL and requires a Capacity route. Empty and Partial remain discoverable with explicit age labels until the provider selects Off Duty; a full or unavailable truck is Off Duty and is not shown in discovery.
 
 ## ADR-005 — Server-rendered forms
 
@@ -110,7 +110,7 @@ Shared-load discovery presents two modes in one workspace because both help a pr
 
 Use `profile_routes` as the single durable source for member-declared route pairs. Business-facing UI calls these Freight Routes; fleet transporters and self-managed drivers see Preferred Routes. The legacy company-page corridor field is retained only for additive database compatibility and is not written or rendered as a second route model.
 
-Current partial-capacity routes are live and use capacity freshness as their clock; planned truck routes remain dated capacity facts rather than profile declarations. Matching and maps combine every fresh active route for the viewer's eligible trucks with the stable profile routes, preserve each source label in operational data, and exclude stale or past records. Comparison-map styling represents ownership rather than route source: all viewed-profile routes are solid blue and all viewer-owned routes are consolidated under one warm-brown dashed Your routes layer drawn above them. Current-partial and planned routes do not create separate comparison legend colors. Public truck capacity may show the owner's Preferred Routes for context without implying that every preferred route is the current truck movement.
+Current partial-capacity routes are undated published signals whose age follows the capacity update; planned truck routes remain dated capacity facts rather than profile declarations. Matching and maps combine the latest active route for the viewer's eligible trucks with stable profile routes, preserve each source label in operational data, and label an older latest route rather than silently dropping it. Past dated routes remain excluded. Comparison-map styling represents ownership rather than route source: all viewed-profile routes are solid blue and all viewer-owned routes are consolidated under one warm-brown dashed Your routes layer drawn above them. Current-partial and planned routes do not create separate comparison legend colors. Public truck capacity may show the owner's Preferred Routes for context without implying that every preferred route is the current truck movement.
 
 Every truck receives one unique, immutable `LG-TRK-*` platform number. Member discovery and Public Profiles use that number; license plates remain private operational data for the truck owner and administrators.
 
@@ -228,8 +228,11 @@ execute indexed geographic predicates before pagination.
 Model truck duty, cargo-space availability, and signal freshness independently.
 Empty and Partial are On Duty; Off Duty is the explicit hidden state.
 Empty and Partial remain visible during the early-market rollout when their
-updates become old, but their relative update times and stale warning are
-prominent and stale records rank below otherwise equivalent fresh records.
+updates become old. Capacity age and approximate-location age are presented
+separately and older records carry clear confirmation guidance. The public map
+is geographic and unranked, so freshness never creates a provider ranking.
+Only explicit Off Duty, deactivation, or unpublishing removes a truck from
+discovery.
 Partial live routes are undated signals whose freshness follows the capacity
 update. Empty Specific routes may carry an optional upcoming travel date; dated
 routes stop matching after that day, while undated routes follow signal freshness.

@@ -6,7 +6,7 @@ problem: Capacity seekers need to understand nearby and route-based truck availa
 behavior: Empty capacity uses either a Service area or Capacity route, while Partial capacity uses a Capacity route only. Drivers obscure device location before publication, the selected signal always shows a separate approximate-location circle sized by the Driver's accuracy, and each provider may publish one regular Service area or Capacity route.
 contracts: [AvailabilityGeometry, CurrentRadiusArea, CurrentCorridor, RegularCapacitySignal, VisitorSearchArea, TruckPrivacyCircle, PublicCapacityGeography, GeographicMatch]
 observability: [geographic_match_kind, visitor_location_consent_outcome, bounded_geography_query, public_map_open]
-rollout: Reuse structured place references, prune pre-customer regular records deterministically to one per provider, add regular geometry fields, rebuild demo signals near current truck locations, and keep location-based ranking disabled until projection and privacy tests pass.
+rollout: Reuse structured place references, prune pre-customer regular records deterministically to one per provider, add regular geometry fields, rebuild demo signals near reported truck locations, and keep visitor proximity an explicit filter rather than a ranking input.
 ---
 
 # Public capacity geography
@@ -55,7 +55,7 @@ And it is not represented as a currently located truck.
 Given a visitor opens public capacity discovery\
 When the visitor grants location permission\
 Then the exact coordinate stays in browser memory\
-And a separately displaced search point and bounded search radius are sent for ranking\
+And a separately displaced search point and bounded search radius are sent only after the visitor enables the proximity filter\
 And the interface confirms that a new device reading was received\
 And the shared map shows a browser-rendered You marker relative to public uncertainty areas\
 And public cards explain the resulting possible distance range when one is available.
@@ -68,13 +68,10 @@ And no repeated permission prompt blocks the page.
 
 ### Scenario: public map does not multiply map clients
 
-Given a cursor page contains many capacity cards\
-When the list view renders\
-Then cards use lightweight geographic summaries and a prominent View on map action\
-And no live tile map is instantiated inside each card.
-
-When the visitor opens Map view or a card map action\
-Then one shared map is loaded on demand and synchronized with the current filtered feed\
+Given a bounded cursor page contains many capacity signals\
+When the Market renders\
+Then one shared map is loaded and synchronized with the current filtered feed\
+And no per-truck tile map or ranked List view is instantiated\
 And its initial framing remains focused on Ethiopia while public and provider views may be panned only within a practical East Africa envelope\
 And violet approximate location, status-colored current Service area or Capacity route, and blue regular service use shape, line style, icon, and text in addition to color\
 And selecting a truck removes other truck markers and clusters until the selected card is closed\
@@ -95,7 +92,7 @@ And unresolved data stays preserved for rollback without inventing coordinates o
 
 ## Contract ownership
 
-- Domain: radius, route, direction, displacement, overlap, and expiry rules
+- Domain: radius, route, direction, displacement, overlap, and update-age rules
 - Persistence: current capacity, one regular Service area or Capacity route, and structured location fields
 - Frontend: provider editor, public Capacity Board filters, cards, and one shared map
 - Tests: domain, repository, authorization, E2E, and visual audit
