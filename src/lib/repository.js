@@ -121,6 +121,10 @@ export function getWorkspaceAccess(user, at = new Date()) {
   if ([USER_ROLES.ADMIN,USER_ROLES.SUPPORT].includes(user?.role)) {
     return {granted:true,status:user.role,ends_at:null,days_remaining:null,subscription:null};
   }
+  if(process.env.AUTH_BACKEND==='supabase'||process.env.DATA_BACKEND==='supabase'){
+    const subscription=user?.workspace_subscription||null;
+    return {...subscriptionAccess(subscription,at),subscription};
+  }
   const subscription = workspaceSubscription(getDb(),user);
   return {...subscriptionAccess(subscription,at),subscription};
 }
@@ -197,6 +201,16 @@ export function getDriverAccess(user) {
     };
   }
   if (!isCompanyDriver(user)) return null;
+  if(process.env.AUTH_BACKEND==='supabase'||process.env.DATA_BACKEND==='supabase'){
+    return {
+      kind:'COMPANY',
+      can_browse_load_board:false,
+      can_contact_businesses:false,
+      can_negotiate_loads:false,
+      can_manage_capacity:Boolean(user.can_manage_capacity),
+      can_manage_tracking:Boolean(user.can_manage_tracking)
+    };
+  }
   const stored = getDb().prepare('SELECT * FROM driver_permissions WHERE user_id=?').get(user.id);
   return {
     kind:'COMPANY',

@@ -28,6 +28,12 @@ const {data:session,error:loginError}=await anon.auth.signInWithPassword({
 if(loginError||!session.user||!session.session?.access_token){
   throw new Error(`SUPABASE_FIXTURE_VERIFY_AUTH_FAILED:${loginError?.message||'missing session'}`);
 }
+const {data:projection,error:projectionError}=await anon.rpc('current_user_projection');
+if(projectionError)throw new Error(`SUPABASE_FIXTURE_VERIFY_IDENTITY_FAILED:${projectionError.message}`);
+if(projection?.id!==session.user.id||projection?.role!=='DRIVER'||projection?.driver_kind!=='COMPANY'){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_IDENTITY_MISMATCH');
+}
+if(!projection.workspace_subscription)throw new Error('SUPABASE_FIXTURE_VERIFY_SUBSCRIPTION_MISSING');
 await anon.auth.signOut();
 
 const {error:anonymousWriteError}=await anon.from('audit_logs').insert({

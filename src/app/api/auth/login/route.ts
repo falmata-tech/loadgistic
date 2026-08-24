@@ -4,6 +4,9 @@ import { verifyPassword, createSessionToken } from '@/lib/security.js';
 import { SESSION_COOKIE } from '@/lib/auth';
 import { redirectWith, text } from '@/lib/redirects';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
+import { usesSupabaseAuth } from '@/lib/supabase/config';
+import { createSupabaseRouteClient } from '@/lib/supabase/route';
+import { getManagedCurrentUser } from '@/lib/identity/supabase';
 
 export const runtime = 'nodejs';
 
@@ -17,6 +20,19 @@ export async function POST(request: NextRequest) {
   const password = text(form, 'password');
   const accountRate = checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`,accountLimit,60_000);
   if (!accountRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${accountRate.retryAfterSeconds} seconds.`);
+  if(usesSupabaseAuth()){
+    const response=new NextResponse(null,{status:303,headers:{Location:'/app/home'}});
+    const client=createSupabaseRouteClient(request,response);
+    const {data,error}=await client.auth.signInWithPassword({email,password});
+    const projection=!error&&data.user?await getManagedCurrentUser(client,data.user):null;
+    if(error||!projection||!projection.active){
+      await client.auth.signOut();
+      response.headers.set('Location','/login?error=The+email+or+password+is+incorrect.');
+      return response;
+    }
+    response.headers.set('Location',projection.role==='SUPPORT'?'/support':'/app/home');
+    return response;
+  }
   const user = await findUserByEmail(email);
   if (!user || !user.active || !await verifyPassword(password, user.password_hash)) {
     return redirectWith(request, '/login', 'error', 'The email or password is incorrect.');

@@ -36,3 +36,11 @@ test('runtime parity migrations preserve area routes and least-privilege RLS enf
   assert.doesNotMatch(privileges,/grant .* on all tables in schema public to anon/i);
   assert.match(privileges,/PostGIS metadata relations/);
 });
+
+test('managed identity projection binds its subject to auth uid and exposes no password material',()=>{
+  const identity=fs.readFileSync(path.join(root,'supabase','migrations','037_current_user_identity_projection.sql'),'utf8');
+  assert.match(identity,/where profile\.id=auth\.uid\(\)/i);
+  assert.match(identity,/revoke all on function public\.current_user_projection\(\) from public,anon/i);
+  assert.match(identity,/grant execute on function public\.current_user_projection\(\) to authenticated,service_role/i);
+  assert.doesNotMatch(identity,/password|token|secret/i);
+});

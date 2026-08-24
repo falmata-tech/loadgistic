@@ -2,6 +2,9 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createSessionToken, verifySessionToken } from './security.js';
 import { getUserById, getWorkspaceAccess } from './repository.js';
+import { getManagedCurrentUser } from './identity/supabase';
+import { usesSupabaseAuth } from './supabase/config';
+import { createSupabaseServerClient } from './supabase/server';
 
 export const SESSION_COOKIE = 'lg_session';
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
@@ -12,6 +15,15 @@ export const TRACKING_IDLE_SECONDS = 5 * 60;
 export const SHARED_CAPACITY_IDLE_SECONDS = 30 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
+  if(usesSupabaseAuth()){
+    const client=await createSupabaseServerClient();
+    const {data,error}=await client.auth.getUser();
+    if(error||!data.user)return null;
+    const user=await getManagedCurrentUser(client,data.user);
+    if(!user||!user.active)return null;
+    if(!options.allowLimited&&!(await getWorkspaceAccess(user)).granted)return null;
+    return user;
+  }
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   const payload = verifySessionToken(token);
@@ -31,6 +43,7 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
 }
 
 export async function setSession(userId: string) {
+  if(usesSupabaseAuth())throw new Error('MANAGED_SESSION_ESTABLISHMENT_REQUIRED');
   const store = await cookies();
   store.set(SESSION_COOKIE, createSessionToken(userId), {
     httpOnly: true,
@@ -42,6 +55,11 @@ export async function setSession(userId: string) {
 }
 
 export async function clearSession() {
+  if(usesSupabaseAuth()){
+    const client=await createSupabaseServerClient();
+    await client.auth.signOut();
+    return;
+  }
   const store = await cookies();
   store.set(SESSION_COOKIE, '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
 }

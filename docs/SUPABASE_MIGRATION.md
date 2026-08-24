@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite while ADR-041 is being implemented. That is now a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `036` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer now creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. The application repository, Auth role projection, and test-runtime cutover remain incomplete. Production readiness therefore remains blocked.
+The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite while ADR-041 is being implemented. That is now a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `037` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer now creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. The managed Auth role projection is implemented; the application repository and test-runtime cutover remain incomplete. Production readiness therefore remains blocked.
 
 ## Current migration coverage
 
@@ -22,6 +22,7 @@ The runnable Loadgistic application still uses `src/lib/repository.js` with Node
 - `034`: closes current SQLite/PostgreSQL column parity for Driver Tracking authority, assigned regular-service signals, Support permissions, shipment assignment, and external shipment-party details.
 - `035`: supplies current-table SQL privileges beneath RLS, reserves service-role repository access, denies anonymous Loadgistic application-table access, leaves Supabase-owned PostGIS metadata grants outside the application audit, and requires explicit privileges for every future table.
 - `036`: permits a regular Service area to use one center for both endpoint labels while preserving distinct endpoints for regular Capacity routes.
+- `037`: exposes one parameter-free, `auth.uid()`-bound account/workspace role projection for the SSR identity adapter and grants it only to authenticated/service roles.
 
 The local-only fixture reset is explicit and refuses non-loopback Supabase URLs:
 
@@ -42,6 +43,8 @@ The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent clo
 
 ## Required adapter work
 
+The managed identity slice is implemented behind `AUTH_BACKEND=supabase`: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. A real local login/session/logout check passes. The flag stays disabled for the normal application until repository pages no longer reach SQLite.
+
 Keep these active contracts stable while replacing SQLite operations:
 
 - Public capacity cursor/detail and public provider projections.
@@ -58,7 +61,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `036` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `037` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
