@@ -6,13 +6,22 @@
 nvm use
 cp .env.example .env.local
 npm install
-npm run db:reset
+npx supabase start
+npm run supabase:local:configure
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds use `.next`. SQLite and private uploads live under ignored `data/` paths.
+Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds use `.next`. The configurator selects the isolated local Supabase PostgreSQL/Auth/Storage stack and writes ignored local credentials without printing them.
 
-`npm run db:reset` is destructive only to the configured local SQLite database and is denied in Production. It imports the bundled Ethiopia place catalog, purges obsolete fake demand fixtures, and creates a supply-first market with:
+All maps use the shared tile configuration. Leaving
+`NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` blank uses the
+direct attributed OpenStreetMap community endpoint. A custom source must be a
+single HTTPS template containing `{z}`, `{x}`, and `{y}` (not `{s}`) plus
+linked provider attribution. Invalid pairs fail back to the direct community
+endpoint. Tiles are requested by the browser; the application never proxies,
+prefetches, or copies them.
+
+`npm run db:reset` is a compatibility-only SQLite reset and is not the normal application setup. `npm run supabase:local:configure` refuses remote hosts, imports the bundled Ethiopia place catalog, purges obsolete fake demand fixtures, and creates a supply-first local Supabase market with:
 
 - 30 published provider pages;
 - nine fleet companies and 21 self-managed provider profiles;
@@ -36,7 +45,7 @@ Use the development password stored in the local seed-credentials file. Generate
 
 ## Supabase cutover stack
 
-The current application remains on the temporary SQLite adapter while the single-runtime cutover is implemented. The isolated Supabase CLI stack uses ports `55320`–`55324`. After a local `supabase db reset`, use `npm run db:supabase:fixtures` and `npm run db:supabase:verify` with the ignored local CLI service-role and anonymous keys. Both commands refuse remote Supabase hosts. Do not paste keys into tracked files or shell history. See `docs/SUPABASE_MIGRATION.md` for the exact guarded workflow and current boundary.
+The isolated Supabase CLI stack uses ports `55320`–`55324`. After a local `supabase db reset`, run `npm run supabase:local:configure`; it imports the fixture and verifies identity, public projections, Shared capacity, provider Capacity, and provider-owned Tracking with SQLite disabled. Lower-level verification scripts remain available for CI. Every configurator and importer refuses remote Supabase hosts. Do not paste keys into tracked files or shell history. See `docs/SUPABASE_MIGRATION.md` for the exact guarded workflow and remaining cutover boundary.
 
 ## Useful checks
 
@@ -53,6 +62,6 @@ Run `npm run test:ui-audit` only after explicit approval and while the developme
 - Missing `node:sqlite`: use the Node version in `.nvmrc`.
 - Session failures: set a long random `SESSION_SECRET` in `.env.local`.
 - Empty/stale local market: run `npm run db:reset` only if replacing the local database is intended.
-- Map remains blank: confirm the response CSP allows both `tile.openstreetmap.org` and its subdomains, and inspect browser console tile errors.
+- Map remains blank: confirm the response CSP names the exact configured tile origin, verify the URL/linked-attribution pair, and inspect browser tile errors.
 - Completion email remains queued: configure `LOADGISTIC_EMAIL_WEBHOOK_URL`; an unconfigured adapter does not pretend delivery succeeded.
 - Shared capacity access in local development shows an eligible recipient a clearly labeled local test code when `LOADGISTIC_EMAIL_WEBHOOK_URL` is absent. Production never returns OTP plaintext to the browser. The email must first have an active truck share in the provider Network.

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { setAssignedVehicleDuty } from '@/lib/repository.js';
+import { setProviderAssignedVehicleDuty } from '@/lib/provider-capacity.js';
 import { errorMessage } from '@/lib/errors';
 import { checked, redirectWith, text } from '@/lib/redirects';
 
@@ -10,7 +10,7 @@ export async function POST(request:NextRequest) {
   const form=await request.formData();
   try {
     const onDuty=checked(form,'onDuty');
-    await setAssignedVehicleDuty(user,text(form,'vehicleId'),onDuty,{
+    await setProviderAssignedVehicleDuty(user,text(form,'vehicleId'),onDuty,{
       locationArea:text(form,'locationArea'),
       approximateLat:text(form,'approximateLat'),
       approximateLng:text(form,'approximateLng'),

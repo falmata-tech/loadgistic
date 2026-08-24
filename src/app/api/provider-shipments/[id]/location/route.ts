@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { updateProviderShipmentLocation } from '@/lib/repository.js';
+import { updateProviderShipmentLocation } from '@/lib/provider-tracking.js';
 import { errorMessage } from '@/lib/errors';
 
 export const runtime='nodejs';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { createProviderShipment } from '@/lib/repository.js';
+import { createProviderShipment } from '@/lib/provider-tracking.js';
 import { deliverPendingShipmentEmails } from '@/lib/email-delivery';
 import { errorMessage } from '@/lib/errors';
 import { text } from '@/lib/redirects';

@@ -42,7 +42,8 @@ function writeLocalEnvironment(){
     ['SUPABASE_SERVICE_ROLE_KEY',serviceRoleKey],
     ['DATA_BACKEND','supabase'],
     ['AUTH_BACKEND','supabase'],
-    ['PRIVATE_STORAGE_BACKEND','supabase']
+    ['PRIVATE_STORAGE_BACKEND','supabase'],
+    ['ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN','true']
   ]);
   if(!/^SESSION_SECRET=/m.test(source))values.set('SESSION_SECRET',randomBytes(32).toString('base64url'));
   const seen=new Set();
@@ -73,4 +74,9 @@ function runScript(script,args=[]){
 
 if(options.has('--write-env'))writeLocalEnvironment();
 if(options.has('--fixtures'))runScript('scripts/import-supabase-fixtures.mjs',['--reset-local']);
-if(options.has('--verify'))runScript('scripts/verify-supabase-fixtures.mjs');
+if(options.has('--verify')){
+  runScript('scripts/verify-supabase-fixtures.mjs');
+  runScript('scripts/verify-supabase-shared-capacity.mjs');
+  runScript('scripts/verify-supabase-provider-capacity.mjs');
+  runScript('scripts/verify-supabase-provider-tracking.mjs');
+}

@@ -5,7 +5,7 @@ Loadgistic is a Next.js App Router application on the Node runtime. Server-rende
 ## Layers
 
 1. UI/routing — `src/app`, `src/components`.
-2. Authentication and guest-grant boundary — `src/lib/auth.ts`.
+2. Authentication and guest-grant boundary — `src/lib/auth.ts`, managed PKCE/email-code adapters under `src/app/api/auth`, and fixed callback policy in `src/lib/auth-flow.js`.
 3. Pure state/validation rules — `src/lib/domain.js`, `src/lib/security.js`.
 4. Application services, authorization, and projections — `src/lib/repository.js`.
 5. Persistence — Supabase PostgreSQL behind explicit repository ports; local work uses the isolated Supabase CLI stack.
@@ -22,15 +22,23 @@ Dependency direction is HTTP/UI → application authorization/services → domai
 - Anonymous Truck Market query with full-polygon Service-area proximity, every-segment multi-city route alignment, route/area label search, safe truck-fact predicates, browser-only map centering, and explicitly enabled browser-displaced visitor proximity.
 - Published provider microsite with a shared presentation template, safe contact projection, and nested active-truck/current-capacity projection.
 - Administrator-published Daily Featured Transporters day, ordered variable slots, deterministic automatic or validated manual two-session timeline, unified transporter/outside-advertiser sponsor catalogue, and separately disclosed sponsorship placements.
-- Provider shipment and immutable execution events.
-- One active customer-owner code grant and private access/completion email-delivery attempts.
-- Provider review and low-rating dispute.
+- Provider-owned Tracking and immutable execution events behind the service-role-only managed Tracking repository; PostgreSQL independently rechecks workspace ownership, Driver permission, assignment, transition, and location consent.
+- One active customer-owner code digest, a separate review-code digest, customer-safe guest projection, and private idempotent access/completion delivery attempts.
+- Provider review and low-rating dispute, with completion/expiry/uniqueness and owning-provider checks repeated inside managed commands.
 - Verification request, subscription/payment proof, Support conversation, notification, and audit log.
 - Truck-scoped Capacity access grant, short-lived Shared capacity email OTP,
   30-minute rolling-idle restricted visitor session with explicit logout, and account-free Assisted matching conversation
   with private attachments and explicit guest/team closure.
 
 Identity-bearing records enforce one provider owner scope. Current routes and transitions are explicit. Public projections are separate from private email- and platform-audience capacity projections. No active domain aggregate represents public shipment demand, interests, Business profiles, or demand-side member networks. The provider Network is truck-scoped access control, not a demand relationship graph.
+
+Managed provider identity uses Supabase Auth with SSR cookies. Google login asks
+only for OpenID, email, and profile identity, while email OTP requests set
+`shouldCreateUser:false`; neither flow grants application authority until the
+authenticated subject resolves through `current_user_projection()`. OAuth
+returns only through the deployment-owned `/api/auth/callback` URL and never
+accepts a dynamic post-login destination. Password authentication is an
+explicit non-Production fixture tool, not a managed customer login method.
 
 The installable shell is public-first: `/` is the manifest identity and Truck Market launch URL, while `/featured`, `/shared-capacity`, `/track`, `/about`, and `/apply` are distinct public route workspaces. The shared public header and route-aware navigation persist visually across client-side `Link` transitions, and its persistent chat launcher restores one authorized guest conversation across public route changes. `/help` remains a recovery fallback rather than a primary navigation destination. Market and Featured remain separate Server Component trees so each route loads only its own projection and client modules. Desktop uses a floating public workspace rail; public and authenticated phone layouts provide their own role-appropriate fixed navigation. The service worker ignores navigation requests, private workspace pages, and framework chunks; only stable brand and vehicle artwork may use cache-first delivery.
 

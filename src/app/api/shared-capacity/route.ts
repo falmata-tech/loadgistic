@@ -6,6 +6,7 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 
 function filters(params:URLSearchParams){return {
+  cursor:params.get('cursor')||'',
   q:params.get('q')||'',provider:params.get('provider')||'',status:params.get('status')||'',geometry:params.get('geometry')||'',
   vehicleCategory:params.get('vehicleCategory')||'',loadType:params.get('loadType')||'',stopOption:params.get('stopOption')||'',freshness:params.get('freshness')||'',
   currentAreaPlaceRef:params.get('currentAreaPlaceRef')||'',currentArea:params.get('currentArea')||'',currentAreaRadiusKm:params.get('currentAreaRadiusKm')||'',

@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite for repository paths not yet migrated while ADR-041 is being implemented. That is a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `041` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. Managed Auth, health, place search, the public Truck Market, published transporter microsites, and Daily Featured Transporters now run without importing SQLite when their Supabase flags are enabled; the remaining application repository and test-runtime cutover is incomplete. Production readiness therefore remains blocked.
+The runnable application uses Supabase for managed identity, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, and provider-owned Tracking. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `044` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Profile, fleet, verification, billing, Support, administration, sponsorship management, and managed onboarding remain before Production readiness.
 
 ## Current migration coverage
 
@@ -27,6 +27,9 @@ The runnable Loadgistic application still uses `src/lib/repository.js` with Node
 - `039`: adds a server-only published-review count and average aggregate for transporter microsites. Anonymous and ordinary authenticated clients cannot execute the aggregate RPC, and review-party data is never returned by it.
 - `040`: adds the server-only regional candidate projection for Daily Featured Transporters and Sponsors. It rechecks published profile, structured base, public-contact, active-fleet, evidence, operating-model, review, and current-capacity facts while excluding private contact, document, coordinate, and account fields.
 - `041`: keeps only the latest Empty or Partial signal discoverable through service-role public and Featured projections until an explicit Off Duty update. Historical expiry values and their authenticated RLS boundary remain unchanged, while public projections present capacity and approximate-location update age independently.
+- `042`: adds service-role-only Shared-capacity grant, OTP, leased delivery, email-audience projection, Operations projection, immediate-revocation, and audit commands. Browser roles receive no direct function access.
+- `043`: adds actor-scoped provider Capacity workspace and transactional current-signal, approximate-location, duty, and one-regular-service commands with canonical place resolution and repeated ownership/assignment/permission checks.
+- `044`: adds provider-owned Tracking, customer-safe guest projection, status/location commands, verified review/dispute commands, leased email delivery, and bounded 30-day guest-data cleanup while preserving provider history.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -42,39 +45,37 @@ The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent clo
 
 ## Required adapter work
 
-The managed identity slice is implemented behind `AUTH_BACKEND=supabase`: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. Managed workspace and Driver access projection is isolated from the local repository, so Supabase login requests do not load SQLite. A real local login/session/logout check passes. The flag stays disabled for the normal application until repository pages no longer reach SQLite.
+The managed identity slice is implemented behind `AUTH_BACKEND=supabase`: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. Managed workspace and Driver access projection is isolated from the local repository, so Supabase login requests do not load SQLite. Google PKCE and numeric email-code sign-in are implemented; managed provider onboarding remains pending.
 
 The first PostgreSQL read/readiness slice is implemented behind `DATA_BACKEND=supabase`. `/api/health` counts the managed profile projection and fails closed with a non-secret `database-unavailable` blocker if PostgreSQL cannot be reached. `/api/places` uses a bounded server-only Supabase query and returns the existing public place contract without loading the SQLite repository.
 
 The public Truck Market uses a separate application port that dynamically selects the Supabase adapter without importing the SQLite repository. Its service-role RPC returns only 12–16 rows plus one cursor look-ahead, evaluates every multi-city route segment and complete Service-area polygon in PostgreSQL, keeps text search literal, enriches only the bounded result set, and strips all private current geometry before returning a row. The server then produces the established safe badge, approximate-distance, regular-service, and geographic-match labels. Clean reset plus live fixture verification covers cursor uniqueness, status and route filters, private fallback, badge shape, and anonymous RPC denial.
 
-Published transporter microsites use a second application port with explicit Supabase selections for the public page, active fleet, assigned Driver first name and callback, separate Driver/truck evidence badges, current safe Capacity projection, independently visible contacts, fixture portrait, and the latest 20 published review notes. PostgreSQL calculates the all-review count and average through a service-role-only aggregate. Hidden contacts, exact coordinates, private proof paths, surnames, and unknown or unpublished handles remain excluded. Shared capacity and command parity remain pending, so the production repository blocker stays active.
+Published transporter microsites use a second application port with explicit Supabase selections for the public page, active fleet, assigned Driver first name and callback, separate Driver/truck evidence badges, current safe Capacity projection, independently visible contacts, fixture portrait, and the latest 20 published review notes. PostgreSQL calculates the all-review count and average through a service-role-only aggregate. Hidden contacts, exact coordinates, private proof paths, surnames, and unknown or unpublished handles remain excluded.
 
-Daily Featured Transporters uses its own application port and the pure two-session scheduler. PostgreSQL returns only candidates from the date-derived regional group and rechecks every eligibility input at read time. The server joins the administrator-ordered published roster and at most five active Sponsor placements, strips owner IDs and eligibility internals, maps manual schedule keys to public handles, and safely projects either eligible transporters or bounded outside advertisements. Anonymous and ordinary authenticated clients cannot execute the candidate RPC. Shared capacity and command parity remain pending.
+Daily Featured Transporters uses its own application port and the pure two-session scheduler. PostgreSQL returns only candidates from the date-derived regional group and rechecks every eligibility input at read time. The server joins the administrator-ordered published roster and at most five active Sponsor placements, strips owner IDs and eligibility internals, maps manual schedule keys to public handles, and safely projects either eligible transporters or bounded outside advertisements. Anonymous and ordinary authenticated clients cannot execute the candidate RPC.
+
+Shared capacity, provider Capacity, and provider-owned Tracking now select dedicated application ports. Service-role-only commands repeat ownership, assignment, subscription, permission, guest-grant, transition, and review rules in PostgreSQL. Delivery workers lease rows with `FOR UPDATE SKIP LOCKED`, and successful delivery is terminal. Clean local verification exercises all three slices with SQLite unavailable and proves browser-role denial.
 
 Keep these active contracts stable while replacing SQLite operations:
 
 - Public capacity cursor/detail and public provider projections.
-- Provider current-capacity, maximum-one regular-service, profile, fleet, and verification commands.
-- Provider shipment creation, assignment, transitions, proof authorization, and bounded history.
-- Customer-owner code verification and short-lived guest sessions.
-- Completion-email queue/retry and 30-day retention cleanup.
-- Provider review submission, low-rating dispute, and audited review decision.
+- Provider profile, fleet, and verification commands.
 - Provider billing, Support, and platform Operations commands.
-- Private capacity grants, Shared capacity projections, Operations-only Loadgistic shares, account-free Assisted matching, private attachments, and recovery-email delivery attempts.
+- Account-free Assisted matching, private attachments, sponsor/featured administration, and remaining platform administration commands.
 
 Use RLS-protected queries or transactional RPCs. Never place a service-role key in browser code, never return raw private-table rows to anonymous clients, and keep access-code verification on the server.
 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `041` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `044` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
 3. Import the bundled place catalog with `npm run places:import:supabase`.
-4. Implement the Supabase PostgreSQL repository, managed identity, and private Storage adapters as the only application runtime; do not add a dual-write or runtime SQLite fallback.
-5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. The importer and basic runtime verification are complete; switching those suites from SQLite remains pending.
+4. Finish the remaining Supabase PostgreSQL repository, managed onboarding, and hardened private Storage adapters as the only application runtime; do not add a dual-write or runtime SQLite fallback.
+5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. Identity, public projections, Shared capacity, provider Capacity, and Tracking managed workflow verification are complete; remaining adapters and browser-suite cutover are pending.
 6. Configure private proof/support storage, malware scanning/quarantine, email delivery, authorized Supabase Realtime with polling fallback, shared rate limiting, monitoring, and cleanup jobs.
 7. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
 8. Deploy the managed backend to a non-production environment, run `npm run launch:check`, and rehearse application and data rollback.

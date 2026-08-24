@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { revalidatePath } from 'next/cache';
 import { getProviderTrackingGrant, hasProviderReviewGrant } from '@/lib/auth';
-import { submitProviderReview } from '@/lib/repository.js';
+import { submitProviderReview } from '@/lib/provider-tracking.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text } from '@/lib/redirects';
 

@@ -1,4 +1,5 @@
-import { listPendingAccessEmailDeliveries, listPendingEmailDeliveries, recordAccessEmailDeliveryAttempt, recordEmailDeliveryAttempt } from './repository.js';
+import { listPendingAccessEmailDeliveries, recordAccessEmailDeliveryAttempt } from './repository.js';
+import { listPendingEmailDeliveries, recordEmailDeliveryAttempt } from './provider-tracking.js';
 import { guestSupportAccessCode, reviewAccessCode, sharedCapacityOtpCode, trackingAccessCode } from './security.js';
 
 export function emailDeliveryConfigured(){

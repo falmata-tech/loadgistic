@@ -59,4 +59,4 @@ Run visual inspection only when the user has approved it. During iteration inspe
 
 ## Production boundary
 
-Tests use local SQLite and local fixtures. They do not establish Supabase adapter parity, managed email delivery, malware scanning, production tile capacity, backup/restore, or a production rollout. Those remain launch gates in `docs/PROGRESS.md` and `docs/SUPABASE_MIGRATION.md`.
+Tests use local SQLite and local fixtures. They do not establish Supabase adapter parity, managed email delivery, malware scanning, sustained third-party tile capacity, backup/restore, or a production rollout. The community-tile fallback is a monitored bounded-beta warning; the remaining concerns stay launch gates in `docs/PROGRESS.md` and `docs/SUPABASE_MIGRATION.md`.

@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { KeyRound, LocateFixed } from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 import { Flash } from '@/components/flash';
-import { getProviderGuestTracking } from '@/lib/repository.js';
+import { getProviderGuestTracking } from '@/lib/provider-tracking.js';
 import { StatusPill } from '@/components/status-pill';
 import { getProviderTrackingGrant, hasProviderReviewGrant } from '@/lib/auth';
 import { TrackingIdleGuard } from '@/components/tracking-idle-guard';

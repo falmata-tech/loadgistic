@@ -52,7 +52,19 @@ import { accessPeriodEnd, PAID_ACCESS_DAYS, subscriptionAccess, TRIAL_DAYS } fro
 import { providerRegionLabel, regionalExpoGroupForDate, regionalExpoWeekForDate, validateProviderRegionCode } from './provider-regions.js';
 import { buildFeaturedDaySchedule, DEFAULT_FEATURED_SCHEDULE_CONFIG, validateFeaturedScheduleConfig } from './expo-broadcast.js';
 import { getManagedDriverAccess, getManagedWorkspaceAccess } from './identity/workspace-access.js';
-import { searchSupabasePlaces } from './repository/supabase.js';
+import {
+  grantSupabasePrivateCapacityAccess,
+  listSupabaseLoadgisticSharedCapacity,
+  listSupabasePendingAccessEmailDeliveries,
+  listSupabasePrivateCapacityNetwork,
+  listSupabaseSharedCapacity,
+  recordSupabaseAccessEmailDeliveryAttempt,
+  requestSupabaseSharedCapacityOtp,
+  revokeSupabasePrivateCapacityAccess,
+  searchSupabasePlaces,
+  setSupabaseLoadgisticCapacityAccess,
+  verifySupabaseSharedCapacityAccess
+} from './repository/supabase.js';
 
 const SPONSORED_PROVIDER_LIMIT=5;
 
@@ -3312,6 +3324,7 @@ export function getPublicCapacityDetail(id) {
 
 export function listPrivateCapacityNetwork(user) {
   assertWorkspaceAccess(user);
+  if(process.env.DATA_BACKEND==='supabase')return listSupabasePrivateCapacityNetwork(user);
   const db=getDb();
   let vehicles=[];
   if(user.role===USER_ROLES.TRANSPORTER){
@@ -3347,6 +3360,7 @@ export function listPrivateCapacityNetwork(user) {
 
 export function grantPrivateCapacityAccess(user,input) {
   assertWorkspaceAccess(user);
+  if(process.env.DATA_BACKEND==='supabase')return grantSupabasePrivateCapacityAccess(user,input);
   const db=getDb();
   const vehicle=privateNetworkVehicle(db,user,String(input.vehicleId||''));
   const email=normalizePrivateContactEmail(input.email);
@@ -3368,6 +3382,7 @@ export function grantPrivateCapacityAccess(user,input) {
 
 export function setLoadgisticCapacityAccess(user,vehicleId,enabled) {
   assertWorkspaceAccess(user);
+  if(process.env.DATA_BACKEND==='supabase')return setSupabaseLoadgisticCapacityAccess(user,vehicleId,enabled);
   const db=getDb();
   const vehicle=privateNetworkVehicle(db,user,String(vehicleId||''));
   const digest=privateContactDigest('loadgistic-platform');
@@ -3392,6 +3407,7 @@ export function setLoadgisticCapacityAccess(user,vehicleId,enabled) {
 
 export function revokePrivateCapacityAccess(user,grantId) {
   assertWorkspaceAccess(user);
+  if(process.env.DATA_BACKEND==='supabase')return revokeSupabasePrivateCapacityAccess(user,grantId);
   const db=getDb();
   const grant=db.prepare(`SELECT * FROM capacity_access_grants WHERE id=?`).get(grantId);
   if(!grant)throw new Error('NOT_FOUND');
@@ -3403,6 +3419,7 @@ export function revokePrivateCapacityAccess(user,grantId) {
 }
 
 export function requestSharedCapacityOtp(email) {
+  if(process.env.DATA_BACKEND==='supabase')return requestSupabaseSharedCapacityOtp(email);
   const normalized=normalizePrivateContactEmail(email),digest=privateContactDigest(normalized);
   const db=getDb(),timestamp=nowIso();
   const eligible=db.prepare(`SELECT 1 FROM capacity_access_grants WHERE audience_type='EMAIL' AND recipient_email_digest=?
@@ -3426,6 +3443,7 @@ export function requestSharedCapacityOtp(email) {
 }
 
 export function verifySharedCapacityAccess(email,code) {
+  if(process.env.DATA_BACKEND==='supabase')return verifySupabaseSharedCapacityAccess(email,code);
   const normalized=normalizePrivateContactEmail(email),digest=privateContactDigest(normalized);
   const db=getDb(),timestamp=nowIso();
   const challenge=db.prepare(`SELECT * FROM shared_capacity_email_otps WHERE recipient_email_digest=?
@@ -3448,17 +3466,19 @@ export function verifySharedCapacityAccess(email,code) {
 }
 
 export function listSharedCapacity(emailDigest,filters={}) {
+  if(process.env.DATA_BACKEND==='supabase')return listSupabaseSharedCapacity(emailDigest,filters,{pageSize:100,cursor:filters.cursor});
   const db=getDb();
   const rows=db.prepare(`SELECT DISTINCT vehicle_id FROM capacity_access_grants WHERE audience_type='EMAIL'
     AND recipient_email_digest=? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?)`).all(emailDigest,nowIso());
-  return listPublicCapacityCursor(filters,{authorizedVehicleIds:rows.map(row=>row.vehicle_id),pageSize:100});
+  return listPublicCapacityCursor(filters,{authorizedVehicleIds:rows.map(row=>row.vehicle_id),pageSize:100,cursor:filters.cursor});
 }
 
 export function listLoadgisticSharedCapacity(user,filters={}) {
   assertPlatformPermission(user,PLATFORM_PERMISSIONS.OPERATIONS);
+  if(process.env.DATA_BACKEND==='supabase')return listSupabaseLoadgisticSharedCapacity(user,filters,{pageSize:100,cursor:filters.cursor});
   const rows=getDb().prepare(`SELECT DISTINCT vehicle_id FROM capacity_access_grants WHERE audience_type='LOADGISTIC'
     AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?)`).all(nowIso());
-  return listPublicCapacityCursor(filters,{authorizedVehicleIds:rows.map(row=>row.vehicle_id),pageSize:100});
+  return listPublicCapacityCursor(filters,{authorizedVehicleIds:rows.map(row=>row.vehicle_id),pageSize:100,cursor:filters.cursor});
 }
 
 export function getPublicProvider(handle) {
@@ -4288,6 +4308,7 @@ export function recordEmailDeliveryAttempt(id,{sent,error}={}) {
 }
 
 export function listPendingAccessEmailDeliveries(limit=20) {
+  if(process.env.DATA_BACKEND==='supabase')return listSupabasePendingAccessEmailDeliveries(limit);
   const count=Math.max(1,Math.min(100,Number(limit)||20));
   return getDb().prepare(`SELECT * FROM access_email_deliveries
     WHERE status IN ('QUEUED','FAILED') AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND attempts<6
@@ -4295,6 +4316,7 @@ export function listPendingAccessEmailDeliveries(limit=20) {
 }
 
 export function recordAccessEmailDeliveryAttempt(id,{sent,error}={}) {
+  if(process.env.DATA_BACKEND==='supabase')return recordSupabaseAccessEmailDeliveryAttempt(id,{sent,error});
   const db=getDb(),timestamp=nowIso();
   const row=db.prepare('SELECT attempts FROM access_email_deliveries WHERE id=?').get(id);
   if(!row)throw new Error('NOT_FOUND');

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { TRACKING_GRANT_COOKIE, TRACKING_IDLE_SECONDS } from '@/lib/auth';
-import { unlockProviderTracking } from '@/lib/repository.js';
+import { unlockProviderTracking } from '@/lib/provider-tracking.js';
 import { createSessionToken } from '@/lib/security.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectUrl, redirectWith, text } from '@/lib/redirects';

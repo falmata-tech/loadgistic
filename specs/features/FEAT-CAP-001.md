@@ -6,7 +6,7 @@ problem: Capacity seekers need immediate, public, location-relevant truck discov
 behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive private details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry, and regular service remains public. A private-current truck remains publicly callable through its categorical status and public regular service without presenting the regular-service marker as a live location. Exact truck and visitor coordinates remain private.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
-rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and monitor public-projection fields and query volume.
+rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
 ---
 
 # Public truck-capacity signals
@@ -233,9 +233,22 @@ And the existing capacity summary retains its map, current availability, approxi
 And Tracking does not duplicate, replace, cover, or move the capacity map into another workflow\
 And completing or collapsing a Tracking update returns the Driver to the same Home hierarchy.
 
+### Scenario: managed provider capacity is authorized and persisted atomically
+
+Given the Supabase data backend is selected and an authenticated provider opens or changes Capacity management\
+When Loadgistic reads assigned trucks and latest signals, publishes Empty, Partial, or Off Duty, refreshes approximate location, changes restricted Driver duty, or changes regular service\
+Then the inbound page or route uses the provider-capacity application port and a server-only Supabase RPC rather than importing the SQLite repository\
+And the RPC repeats active-account, subscription, provider ownership, Driver assignment, and capacity-permission checks before reading or writing\
+And route and Service-area place references are resolved to canonical stored coordinates inside PostgreSQL\
+And each accepted mutation and its audit record commit atomically with the authenticated actor and owning provider scope\
+And a denied or invalid command creates neither a capacity, regular-service, nor success-audit record\
+And anonymous and authenticated browser clients cannot execute the service-role RPCs directly\
+And selecting the managed backend never falls back to SQLite after a Supabase error.
+
 ## Contract ownership
 
 - Public pages: `/capacity`, `/capacity/[id]`
 - Provider editors: Driver Home and truck-specific Fleet page
-- Application services: current-capacity, regular-capacity-route, public projection, cursor and proximity functions
-- Tests: domain, repository, authorization, E2E, visual audit
+- Application services: provider-capacity workspace and commands, current-capacity, regular-capacity-route, public projection, cursor and proximity functions
+- Persistence adapters: server-only Supabase provider-capacity RPCs in migration `043_provider_capacity_runtime.sql`; the legacy SQLite adapter remains isolated from managed execution during cutover
+- Tests: domain, provider-capacity Supabase authorization, repository, authorization, E2E, visual audit

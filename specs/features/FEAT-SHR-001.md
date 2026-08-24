@@ -6,7 +6,7 @@ problem: Drivers need to share sensitive current geometry and approximate locati
 behavior: Each truck has a Private capacity network. An authorized Driver may grant an email access to that truck's current capacity geometry and Driver-selected approximate location; the fleet owner can inspect and revoke every grant. One short-lived email OTP opens a restricted visitor session that shows every active truck grant for the verified email in one Shared capacity map without creating a Loadgistic member account, profile, password, or dashboard. The session ends after 30 minutes without deliberate visitor activity and may be ended immediately with Log out. Regular service and the categorical Empty or Partial status remain publicly discoverable, but a private current route, Service area, and approximate location do not. A distinct Share with Loadgistic control gives the assisted-matching team the same private projection without using a pretend email identity.
 contracts: [PrivateCapacityGrant, PrivateCapacityAudience, SharedCapacityEmailOtp, SharedCapacityVisitorSession, PrivateCapacityProjection, LoadgisticCapacityAudience]
 observability: [private_capacity_granted, private_capacity_revoked, shared_capacity_otp_requested, shared_capacity_otp_verified, private_capacity_access_denied, loadgistic_capacity_shared]
-rollout: Additive Supabase PostgreSQL schema replayed locally and remotely. Existing current capacity remains public until its authorized publisher explicitly selects Private network. Roll back by hiding private-sharing routes and rejecting new grants while retaining audited grant history.
+rollout: Additive Supabase PostgreSQL migration 042 supplies server-only grant, OTP, delivery-queue, and private-map application ports. Existing current capacity remains public until its authorized publisher explicitly selects Private network. Roll back by hiding private-sharing routes and rejecting new grants while retaining audited grant history; never fall back to SQLite when the managed runtime is selected.
 ---
 
 # Private capacity network
@@ -118,11 +118,21 @@ Then the same Shared capacity map includes every currently active authorized tru
 And each truck retains its own provider, Driver-selected approximation, visibility, expiry, and revocation boundary\
 And adding or revoking one share is reflected on the next map read without changing unrelated shares.
 
+### Scenario: managed Shared capacity never falls back to SQLite
+
+Given `DATA_BACKEND=supabase` in local development, Preview, or Production\
+When a provider lists or changes a truck grant, a visitor requests or verifies an OTP, email delivery is claimed or recorded, or a Shared capacity map is read\
+Then the application uses the server-only Supabase PostgreSQL port and its audited functions\
+And PostgreSQL rechecks the actor-to-truck or Operations permission before every protected provider or administrator operation\
+And anonymous and ordinary authenticated Supabase browser roles cannot execute those functions or read the underlying grant, OTP, delivery, or private projection tables\
+And an unavailable or rejected Supabase request fails closed instead of importing or querying SQLite.
+
 ## Contract ownership
 
 - Public pages: `/shared-capacity`
 - Provider page: `/app/network`
 - Administrator page: `/admin/capacity-network`
 - Inbound adapters: `/api/capacity-network/*` and `/api/shared-capacity/*`, including rolling renewal and logout at `/api/shared-capacity/session`
-- Application service and persistence adapter: `src/lib/repository.js`
+- Application service boundary: `src/lib/repository.js`
+- Supabase PostgreSQL adapter and server-only ports: `src/lib/repository/supabase.js` and `supabase/migrations/042_shared_capacity_runtime.sql`
 - Tests: domain/repository authorization, capacity-market projection, desktop/mobile E2E

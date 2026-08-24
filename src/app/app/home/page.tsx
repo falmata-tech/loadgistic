@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getDashboard, getDriverAccess, getWorkspaceAccess, listOwnCapacity, listOwnRecurringCorridors, listOwnVehicles } from '@/lib/repository.js';
+import { getBillingSummary, getDashboard, getWorkspaceAccess } from '@/lib/repository.js';
+import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
@@ -64,7 +65,8 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   }
   if(user.role==='DRIVER') {
     const plain=(value:any)=>JSON.parse(JSON.stringify(value));
-    return <DriverCapacityHome vehicles={plain(await listOwnVehicles(user))} capacities={plain(await listOwnCapacity(user))} corridors={plain(await listOwnRecurringCorridors(user))} access={plain(await getDriverAccess(user))} query={query}/>;
+    const workspace=await getProviderCapacityWorkspace(user);
+    return <DriverCapacityHome vehicles={plain(workspace.vehicles)} capacities={plain(workspace.capacities)} corridors={plain(workspace.corridors)} access={plain(workspace.access)} query={query}/>;
   }
   const data:any=await getDashboard(user);
   const greeting=user.organization_name||user.provider_business_name||user.name;

@@ -12,9 +12,12 @@ the Docker image.
 
 The application is still approved only for local validation and controlled
 demonstration. Public production remains blocked until the managed
-identity/repository, email, rate-limit, upload-scanning, tile-service, backup,
+identity/repository, email, rate-limit, upload-scanning, backup,
 and monitoring gates in `docs/LAUNCH_READINESS.md` pass.
-`DATA_BACKEND=supabase` is not implemented yet.
+Managed public discovery, Shared capacity, provider Capacity, and provider-owned
+Tracking already run through Supabase when `DATA_BACKEND=supabase`; remaining
+profile, fleet, verification, billing, Support, administration, and onboarding
+paths must complete the same cutover before the Production flag is enabled.
 
 ## Provisioned control plane — 2026-08-17
 
@@ -74,11 +77,13 @@ pin the adapter plugin. Connect the GitHub Production branch only after its
 required CI checks pass; keep automatic Production publishing disabled until
 the release gate is green.
 
-Supabase Auth will own transporter identity, Google OAuth, and browser sessions.
-The browser/server SSR clients and conditional request-cookie refresh boundary
-are present behind `AUTH_BACKEND=supabase`; local development remains on the
-local adapter until the managed Auth role projection and negative authorization
-suite pass.
+Supabase Auth owns transporter identity, Google OAuth, numeric email-code login,
+and browser sessions. The browser/server SSR clients, PKCE callback exchange,
+conditional request-cookie refresh boundary, active-role projection, and
+Production-disabled fixture-password boundary are present behind
+`AUTH_BACKEND=supabase`. Managed provider onboarding still must provision the
+Auth identity and Loadgistic role projection atomically before public signup can
+be enabled.
 The default Supabase SMTP service is demonstration-only and cannot deliver a
 public launch. Configure one verified sending domain through Resend Free (3,000
 messages per month and 100 per day) for Supabase Auth and Loadgistic delivery
@@ -88,6 +93,20 @@ process-local memory.
 
 Configure Preview and Production independently:
 
+1. Set Supabase **Site URL** to that environment's `APP_URL` origin.
+2. Add the exact `<APP_URL>/api/auth/callback` to Supabase **Redirect URLs**.
+   Preview and Production use separate exact entries; do not add a wildcard
+   callback or a visitor-controlled `next` destination.
+3. Enable Google in Supabase Auth, then configure the Google OAuth client with
+   the Supabase provider callback shown by the dashboard. Loadgistic requests
+   only `openid email profile`.
+4. Change the Supabase sign-in email template to display the numeric
+   `{{ .Token }}` value rather than a magic-link-only `{{ .ConfirmationURL }}`.
+   Set the code to six digits and ten minutes to match the reviewed local configuration.
+5. Configure verified custom SMTP and test delivery, expiry, retry, unknown
+   addresses, and rate limiting before enabling public login.
+6. Keep `ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN` unset in Preview and Production.
+
 Use Node 22.x and configure Preview/Production independently:
 
 ```text
@@ -96,8 +115,11 @@ SESSION_SECRET
 DATA_BACKEND
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+NEXT_PUBLIC_MAP_TILE_URL
+NEXT_PUBLIC_MAP_TILE_ATTRIBUTION
 SUPABASE_SERVICE_ROLE_KEY
 AUTH_BACKEND
+ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN
 PRIVATE_STORAGE_BACKEND
 LOADGISTIC_EMAIL_WEBHOOK_URL
 LOADGISTIC_EMAIL_WEBHOOK_TOKEN
@@ -111,8 +133,12 @@ Bucket identifiers are migration-owned: `shipment-proof`, `verification`,
 `PRIVATE_UPLOAD_DIR` are local/Docker-only and must never be used for durable
 Netlify data. Do not set a configuration flag that merely claims malware scans
 occurred; uploads stay blocked until the scanner/quarantine adapter proves the
-stored object passed. Configure and monitor a compliant production tile source
-before public traffic; community OSM tiles provide no SLA.
+stored object passed. The public map values are a non-secret HTTPS tile template
+and its required linked attribution. If they are absent or invalid, the bounded
+beta falls back to the direct OpenStreetMap community endpoint and readiness
+reports a warning. Browsers fetch tiles directly; do not add a Netlify proxy,
+prefetcher, bulk copy, or self-hosted tile set. Monitor traffic and replace the
+fallback with a reviewed provider before sustained use.
 
 ## Release verification
 

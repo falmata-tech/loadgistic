@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, CalendarClock, KeyRound, Link2, MapPin, PackageCheck, ShieldAlert, Star, Truck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getProviderShipment } from '@/lib/repository.js';
+import { getProviderShipment } from '@/lib/provider-tracking.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';

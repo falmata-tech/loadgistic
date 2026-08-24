@@ -78,3 +78,25 @@ test('Daily Featured candidate projection rechecks eligibility and is server-onl
   assert.match(featured,/grant execute on function public\.public_featured_provider_candidates\(text\[\]\) to service_role/i);
   assert.doesNotMatch(featured,/storage_path|original_name|mime_type|review_note|dispute_reason/i);
 });
+
+test('Shared capacity runtime is server-only, actor-scoped, and never projects recipient secrets',()=>{
+  const shared=fs.readFileSync(path.join(root,'supabase','migrations','042_shared_capacity_runtime.sql'),'utf8');
+  assert.match(shared,/private_capacity_actor_controls_vehicle\(actor_user_id,target_vehicle_id\)/i);
+  assert.match(shared,/membership\.membership_role='OWNER'/i);
+  assert.match(shared,/assignment\.driver_user_id=actor\.id[\s\S]*assignment\.active/i);
+  assert.match(shared,/support\.can_manage_operations/i);
+  assert.match(shared,/challenge\.attempt_count>=5/i);
+  assert.match(shared,/set attempt_count=least\(5,attempt_count\+1\)/i);
+  assert.match(shared,/challenge_expires_at>now\(\)\+interval '10 minutes 5 seconds'/i);
+  assert.match(shared,/for update skip locked/i);
+  assert.match(shared,/next_attempt_at=now\(\)\+interval '10 minutes'/i);
+  assert.match(shared,/if delivery\.status='SENT' then return true/i);
+  assert.match(shared,/grant_record\.recipient_email_digest=requested_digest/i);
+  assert.match(shared,/current_signal_geometry_visible',true/i);
+  assert.match(shared,/cursor_updated_at is null[\s\S]*capacity\.updated_at<cursor_updated_at/i);
+  assert.match(shared,/limit greatest\(2,least\(coalesce\(requested_page_size,100\),100\)\+1\)/i);
+  assert.match(shared,/revoke all on function public\.private_capacity_projection\(text,text,uuid,timestamptz,uuid,integer\) from public,anon,authenticated/i);
+  assert.match(shared,/grant execute on function public\.private_capacity_projection\(text,text,uuid,timestamptz,uuid,integer\) to service_role/i);
+  const projection=shared.slice(shared.indexOf('create or replace function public.private_capacity_projection'),shared.indexOf('create or replace function public.pending_access_email_deliveries'));
+  assert.doesNotMatch(projection,/'recipient_email'|'recipient_email_digest'|'code_digest'|'plate'/i);
+});

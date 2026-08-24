@@ -407,10 +407,13 @@ a card action selects that record on the shared map. Exact visitor
 coordinates remain in browser memory and the server receives only a separately
 displaced search point. Exact Driver coordinates are displaced in the browser
 before submission. Public projections expose uncertainty circles and structured
-route evidence, not truck pins. Community OpenStreetMap tiles are development
-only; production map readiness requires a named provider or self-hosted tile
-service with attribution, capacity, caching, privacy, failure behavior, and
-monitoring reviewed against its terms.
+route evidence, not truck pins. All Leaflet surfaces use one central build-time
+HTTPS tile configuration and visible linked attribution. The bounded beta may
+use the exact direct OpenStreetMap community endpoint with a launch warning
+while traffic is low; it is not an SLA. Content Security Policy permits only
+the resolved tile origin. Loadgistic does not proxy, prefetch, scrape,
+bulk-copy, or self-host community tiles on Netlify. A reviewed provider can
+replace the URL and linked attribution without changing map components.
 
 Only transport providers receive public profiles. A validated unique `/@handle`
 resolves to a published microsite with bounded theme colors, public fleet and
@@ -800,3 +803,25 @@ fixture contains no customer data and is replaced by deterministic Supabase seed
 data; it is not dual-written or kept as an operational cache. Rollback restores
 the prior application artifact against the same PostgreSQL schema and reviewed
 backup, not the retired SQLite runtime.
+
+## ADR-042 — Managed transporter sign-in is Google or email code
+
+Use Supabase Auth's SSR-compatible authorization-code PKCE flow for Google and
+numeric email one-time codes for the managed transporter login. Google requests
+only OpenID, email, and profile scopes. Email-code requests never create an
+unknown Auth identity. Both flows receive application authority only after the
+authenticated subject resolves to an active Loadgistic role projection.
+
+OAuth returns through the fixed `/api/auth/callback` path on the deployment-owned
+`APP_URL`; the callback accepts no arbitrary post-login destination. Preview and
+Production maintain exact Supabase Site URL and Redirect URL entries. Provider
+tokens and upstream error details are not persisted or shown. Password login is
+retained only behind an explicit non-Production fixture flag so deterministic
+local and browser tests remain available without creating a second Production
+credential system.
+
+Rollback may temporarily disable Google or email-code buttons independently at
+the Supabase provider boundary, but must not re-enable passwords in Production.
+Public launch still requires verified custom SMTP, the numeric-token email
+template, Google console configuration, and atomic managed onboarding that
+creates the matching Auth identity and Loadgistic role projection.

@@ -4,7 +4,7 @@ title: Customer-owner tracking, completion email and retention
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-REV-001, FEAT-GEO-001]
 problem: The customer who owns an agreed shipment needs one simple tracking handoff and a durable emailed record without creating a Loadgistic account.
 behavior: A provider starts one Tracking session after agreeing work offline, issues one stable customer-owner code and Track link, emails both to that owner, exposes a customer-safe timeline after code entry, emails one idempotent completion summary, expires guest access 30 days after completion, and retains the provider-owned history.
-contracts: [CustomerTrackingCode, TrackingCodeDigest, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort]
+contracts: [CustomerTrackingCode, TrackingCodeDigest, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort, ManagedTrackingRepository]
 observability: [tracking_access_queued, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, tracking_location_saved, tracking_location_denied, completion_email_queued, completion_email_sent, completion_email_failed, completion_email_retry, guest_access_expired]
 rollout: Reuse the stable keyed-code contract, keep only its digest in persistence, preserve legacy provider-tracking rows during compatibility, send one owner delivery with bounded retries, and keep guest access disabled in production until sender configuration, private storage, scanning, retention cleanup and monitoring are verified.
 ---
@@ -45,6 +45,15 @@ Then a short-lived browser grant returns only the customer-safe tracking summary
 And the code is not placed in the URL, logs, analytics, or clear-text storage\
 And inactivity clears the browser grant\
 And an invalid, expired, or rate-limited code reveals no Tracking session.
+
+### Scenario: customer-safe reads remain narrow in managed persistence
+
+Given a valid short-lived browser grant was created from an owner-code digest\
+When the server requests the customer Tracking projection\
+Then a service-role-only PostgreSQL projection rechecks the unrevoked, unexpired shipment grant\
+And returns only the public provider/truck summary, customer-safe Status events, and an eligible obscured travel location\
+And never returns customer email, code digest, private proof path, delivery error, actor identity, or unrelated shipment data\
+And a mismatched role, revoked grant, expired grant, or unknown shipment returns no row.
 
 ### Scenario: provider updates one governed timeline
 
@@ -102,6 +111,14 @@ And when 30 days have passed the code and browser grants expire and guest-facing
 And the provider-owned authenticated history remains\
 And retention cleanup records counts and identifiers without logging party emails or codes.
 
+### Scenario: retention cleanup redacts guest data without deleting provider history
+
+Given one or more completed Tracking sessions passed their 30-day guest expiry\
+When the bounded managed cleanup command runs\
+Then it deletes the expired customer grant and delivery-queue rows, clears the review-code digest, and replaces both compatibility email fields with non-routable redacted values\
+And it preserves the provider shipment, assignment, ordered Status/location events, review, and authenticated provider history\
+And its result contains only a bounded count and shipment identifiers, never customer emails or codes.
+
 ### Scenario: proof remains private
 
 Given an optional operational proof exists\
@@ -114,5 +131,6 @@ And public capacity or provider-profile visibility never grants file access.
 - Public pages: `/track` and unlocked tracking view
 - Provider controls: owned Tracking list, Tracking detail, and Driver action panel
 - Outbound adapter: idempotent completion-email delivery
-- Cleanup: scheduled 30-day guest-access expiry
-- Tests: domain, repository, authorization, E2E
+- Cleanup: scheduled 30-day guest-access expiry through the service-role-only managed command
+- Persistence: `044_provider_tracking_runtime.sql` and the server-only provider Tracking adapter
+- Tests: domain, repository, managed Tracking authorization, E2E

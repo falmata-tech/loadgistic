@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight, CalendarClock, ClipboardList, CirclePlus, MapPin, PackageCheck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getDriverAccess, listProviderShipments } from '@/lib/repository.js';
+import { getProviderTrackingWorkspace } from '@/lib/provider-tracking.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
@@ -11,9 +11,10 @@ export default async function ProviderShipmentsPage({searchParams}:{searchParams
   const user=await requireUser();
   if(!['TRANSPORTER','DRIVER'].includes(user.role))redirect('/app/home');
   const query=await searchParams;
-  const trackingAllowed=(await getDriverAccess(user))?.can_manage_tracking!==false;
+  const workspace=await getProviderTrackingWorkspace(user,{limit:100});
+  const trackingAllowed=workspace.access?.can_manage_tracking!==false;
   if(!trackingAllowed)return <div className="page"><PageHeader icon={ClipboardList} title="Tracking" subtitle="Your fleet owner controls access to assigned Tracking work."/><Flash error={query.error} success={query.success}/><div className="empty-state"><ClipboardList aria-hidden="true"/><strong>Tracking access is off.</strong><span>Ask your fleet owner to enable Tracking updates in Driver access.</span><Link className="button secondary" href="/app/home">Return to capacity</Link></div></div>;
-  const shipments=await listProviderShipments(user,{limit:100});
+  const shipments=workspace.shipments||[];
   const mayCreate=trackingAllowed;
   return <div className="page"><PageHeader icon={ClipboardList} title="Tracking" subtitle="Start and update Tracking sessions for transport work agreed offline." action={mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start Tracking</Link>:undefined}/><Flash error={query.error} success={query.success}/>
     <div className="tracking-list provider-shipment-list">{shipments.map((shipment:any)=><Link href={`/app/provider-shipments/${shipment.id}`} className="tracking-row" key={shipment.id}>

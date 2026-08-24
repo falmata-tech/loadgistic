@@ -4,7 +4,7 @@ title: Verified guest reviews for transport providers
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-SHP-001, FEAT-TRK-001, FEAT-PRV-001]
 problem: A capacity seeker without an account still needs a trustworthy way to review the provider after a real completed shipment, without letting low ratings be hidden during moderation.
 behavior: The emailed customer owner may submit one verified review of the transport provider after completion. The provider never rates the guest or other people sharing Tracking access. Every rating publishes and counts immediately. A provider may dispute a one-, two-, or three-star rating, but the rating stays public and counted while that dispute is pending.
-contracts: [VerifiedProviderReview, ReviewAuthorizationGrant, ProviderReviewSummary, LowRatingReviewRequest]
+contracts: [VerifiedProviderReview, ReviewAuthorizationGrant, ProviderReviewSummary, LowRatingReviewRequest, ManagedProviderReviewRepository]
 observability: [provider_review_submitted, low_rating_review_requested, low_rating_review_resolved, provider_review_denial]
 rollout: Add provider-review ownership and guest authorization additively, purge fake local Business-to-Business reviews, and switch public reputation only after the new projection and authorization tests pass.
 ---
@@ -52,9 +52,18 @@ When authorization is evaluated\
 Then no review is created or changed\
 And the response reveals no private shipment or party data.
 
+### Scenario: managed review commands preserve authorization and publication rules
+
+Given the server has verified the shipment-bound review browser grant or an authenticated provider actor\
+When it submits a review or opens a dispute through the managed repository\
+Then a service-role-only PostgreSQL command rechecks completion, guest expiry, one-review uniqueness, provider ownership, rating range, and dispute state\
+And unrelated providers, assigned company Drivers, expired grants, duplicate reviews, and four- or five-star disputes are denied\
+And every accepted rating is Published immediately while an accepted low-rating dispute remains Pending without hiding the rating.
+
 ## Contract ownership
 
 - Public flow: completion-email review action and guest review form
 - Public projection: provider microsite review summary and verified-shipment label
 - Administration: bounded one- to three-star dispute queue and audited terminal decision
-- Tests: repository, authorization, E2E
+- Persistence: `044_provider_tracking_runtime.sql` and the server-only provider Tracking/review adapter
+- Tests: repository, managed authorization, E2E

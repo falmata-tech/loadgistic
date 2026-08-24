@@ -16,6 +16,7 @@ if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
 process.env.DATABASE_PATH=path.join(process.cwd(),'data','supabase-fixture-source.db');
 const {getDb}=await import('../src/lib/db.js');
+const {hashTrackingAccessCode,reviewAccessCode,trackingAccessCode}=await import('../src/lib/security.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
 const sqlite=getDb();
@@ -229,6 +230,12 @@ function projectRow(sourceTable,targetTable,row){
     let sourceColumn=aliases[column]||column;
     let value=row[sourceColumn];
     if(sourceTable==='users'&&column==='id')value=userIds.get(row.id);
+    if(sourceTable==='provider_shipments'&&column==='review_code_hash'){
+      value=hashTrackingAccessCode(reviewAccessCode(mapUuid(row.id)));
+    }
+    if(sourceTable==='shipment_party_grants'&&column==='code_hash'){
+      value=hashTrackingAccessCode(trackingAccessCode(mapUuid(row.shipment_id)));
+    }
     if(sourceTable==='verification_requests'&&column==='storage_path'&&value)value='demo/verification-document.jpg';
     if(value!==undefined)result[column]=convertValue(value,property);
   }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth';
-import { saveUpload, updateProviderShipmentStatus } from '@/lib/repository.js';
+import { updateProviderShipmentStatus } from '@/lib/provider-tracking.js';
 import { deliverPendingShipmentEmails } from '@/lib/email-delivery';
-import { removePrivateUpload } from '@/lib/private-storage.js';
+import { removePrivateUpload, storePrivateUpload } from '@/lib/private-storage.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text } from '@/lib/redirects';
 
@@ -22,7 +22,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     if(file&&typeof file!=='string'&&file.size){
       if(!['LOADING','UNLOADING','ISSUE'].includes(nextStatus))throw new Error('PROOF_NOT_ALLOWED_FOR_STATUS');
       if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('UNSUPPORTED_FILE_TYPE');
-      upload=await saveUpload(file,'tracking-proof');
+      upload=await storePrivateUpload(file,'tracking-proof');
     }
     const proof=upload?{path:upload.path,originalName:upload.originalName,mimeType:upload.mimeType}:null;
     const result=await updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{

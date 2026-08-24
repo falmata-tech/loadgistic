@@ -6,7 +6,7 @@ The repository supports local development, browser testing, controlled demonstra
 
 ## Verified locally
 
-- Public account-free capacity list/map with real tile rendering, clustering, provider details, and safe proximity behavior.
+- Public account-free map with real tile rendering, clustering, provider details, and safe proximity behavior.
 - Busy supply-only fixture across fleet companies and self-managed owner-operators, with no local demand data.
 - Provider capacity/profile/fleet workflows and provider-owned shipment tracking.
 - One stable customer-owner code/link, governed transitions, 30-day guest expiry, access/completion email retry records, and provider reviews/disputes.
@@ -16,15 +16,30 @@ The repository supports local development, browser testing, controlled demonstra
 
 ## Public-production blockers
 
-1. Implement and parity-test the Supabase/PostgreSQL repository and managed identity adapter. SQLite is not the public-production datastore.
-2. Apply/lint migrations `001`–`032` in staging, verify RLS/RPC behavior, import place data, and rehearse encrypted logical backup/restore.
+1. Finish and parity-test the remaining provider profile, fleet, verification, billing, Support, administration, sponsor, and managed-onboarding PostgreSQL ports. SQLite is not the public-production datastore and managed failures never fall back to it.
+2. Apply/lint migrations `001`–`044` in staging, verify RLS/RPC behavior, import place data, and rehearse encrypted logical backup/restore.
 3. Inventory and purge any cloud legacy demand data only after a verified backup and explicit approval.
 4. Configure managed private storage plus malware scanning/quarantine for verification, Tracking, and Assisted matching attachments.
 5. Configure `LOADGISTIC_EMAIL_WEBHOOK_URL`, webhook authentication, delivery/retry monitoring, and scheduled guest-retention cleanup.
 6. Add shared rate limiting and bot protection for public discovery, login, tracking unlock, Shared capacity recovery, Assisted matching, reviews, and signup; configure authorized Supabase Realtime subscriptions with polling fallback for active guest conversations.
-7. Choose a production tile service/self-hosted source with reviewed attribution, privacy, capacity, caching, failure, and monitoring terms.
-8. Configure strong production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
-9. Replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering; pass the disposable 5,000-truck API and CPU-throttled phone audit before public traffic.
+7. Configure strong production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
+8. Replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering; pass the disposable 5,000-truck API and CPU-throttled phone audit before public traffic.
+9. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect
+   URL for each environment, Google identity credentials, the numeric-token
+   email template, and verified custom SMTP; prove managed onboarding creates
+   the matching active Loadgistic role projection.
+
+## Bounded beta map warning
+
+Every Leaflet surface resolves one exact HTTPS tile origin through
+`NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION`, with linked
+attribution and matching Content Security Policy. If both values are absent or
+invalid, the beta uses the direct OpenStreetMap community endpoint and
+`launch:check` reports `community-osm-tile-service` as a warning, not a blocker.
+This is acceptable only for the low-traffic pilot: monitor use, retain visible
+attribution, and switch to a reviewed provider before sustained traffic.
+Loadgistic does not proxy, prefetch, bulk-copy, or self-host map tiles on
+Netlify.
 
 ## Approved pilot topology
 
@@ -35,6 +50,8 @@ The repository supports local development, browser testing, controlled demonstra
   adapter. It does not run the Docker image or persist local files.
 - Supabase Free provides the managed Postgres, Auth, private Storage, and
   bounded Realtime services.
+- Browsers request configured map tiles directly; Netlify does not relay or
+  store them.
 - Resend Free provides verified-domain transactional SMTP/email within its
   3,000-message monthly and 100-message daily limits.
 - Cloudflare Turnstile may protect anonymous and authentication entry points;

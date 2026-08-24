@@ -1,9 +1,11 @@
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
+import {randomUUID} from 'node:crypto';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
 import {capacityRouteAlignmentMatch,capacityRoutePointMatch,normalizePlace,serviceAreaGeometryMatch} from '../route-matching.js';
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
 import {providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
-import {capacityUpdatePresentation} from '../domain.js';
+import {capacityUpdatePresentation,distanceBetweenKm,normalizePrivateContactEmail} from '../domain.js';
+import {hashTrackingAccessCode,privateContactDigest,sharedCapacityOtpCode} from '../security.js';
 
 const PLACE_TYPE_ORDER=new Map([
   ['city',0],['town',1],['suburb',2],['neighbourhood',3],['quarter',4],['village',5]
@@ -245,6 +247,213 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
     return {...base,geographic_match_label:geographicMatchLabel(base,filters,originPlace,destinationPlace,areaPlace)};
   });
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};
+}
+
+function managedCapacityError(code,error){
+  const message=String(error?.message||'');
+  if(/NOT_FOUND/.test(message))return new Error('NOT_FOUND');
+  if(/FORBIDDEN/.test(message))return new Error('FORBIDDEN');
+  if(/INVALID_EMAIL/.test(message))return new Error('INVALID_EMAIL');
+  return new Error(code,{cause:error});
+}
+
+export async function listSupabasePrivateCapacityNetwork(user){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('private_capacity_network',{actor_user_id:user.id});
+  if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_NETWORK_FAILED',error);
+  return (data||[]).map(row=>row.payload||row);
+}
+
+export async function grantSupabasePrivateCapacityAccess(user,input){
+  const email=normalizePrivateContactEmail(input.email);
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('grant_private_capacity_access',{
+    actor_user_id:user.id,target_vehicle_id:String(input.vehicleId||''),
+    normalized_recipient_email:email,recipient_digest:privateContactDigest(email)
+  });
+  if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_GRANT_FAILED',error);
+  return data;
+}
+
+export async function setSupabaseLoadgisticCapacityAccess(user,vehicleId,enabled){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('set_loadgistic_capacity_access',{
+    actor_user_id:user.id,target_vehicle_id:String(vehicleId||''),enabled:Boolean(enabled),
+    platform_digest:privateContactDigest('loadgistic-platform')
+  });
+  if(error)throw managedCapacityError('SUPABASE_LOADGISTIC_CAPACITY_ACCESS_FAILED',error);
+  return data;
+}
+
+export async function revokeSupabasePrivateCapacityAccess(user,grantId){
+  const client=createSupabaseAdminClient();
+  const {error}=await client.rpc('revoke_private_capacity_access',{
+    actor_user_id:user.id,target_grant_id:String(grantId||'')
+  });
+  if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_REVOKE_FAILED',error);
+}
+
+export async function requestSupabaseSharedCapacityOtp(value){
+  const email=normalizePrivateContactEmail(value),emailDigest=privateContactDigest(email);
+  const challengeId=randomUUID(),accessCode=sharedCapacityOtpCode(challengeId);
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('request_shared_capacity_otp',{
+    challenge_id:challengeId,normalized_recipient_email:email,recipient_digest:emailDigest,
+    challenge_code_digest:hashTrackingAccessCode(accessCode),
+    challenge_expires_at:new Date(Date.now()+10*60*1000).toISOString()
+  });
+  if(error)throw managedCapacityError('SUPABASE_SHARED_CAPACITY_OTP_REQUEST_FAILED',error);
+  return data
+    ?{accepted:true,deliveryQueued:true,challengeId,accessCode}
+    :{accepted:true,deliveryQueued:false};
+}
+
+export async function verifySupabaseSharedCapacityAccess(value,code){
+  const email=normalizePrivateContactEmail(value),emailDigest=privateContactDigest(email);
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('consume_shared_capacity_otp',{
+    recipient_digest:emailDigest,submitted_code_digest:hashTrackingAccessCode(String(code||'').trim())
+  });
+  if(error||!data)throw new Error('SHARED_CAPACITY_ACCESS_DENIED',{cause:error||undefined});
+  return {emailDigest};
+}
+
+function privateCapacitySearchText(item){
+  return [item.provider_name,item.provider_handle,item.platform_number,item.vehicle_make,item.vehicle_model,
+    item.cargo_configuration,item.location_area,item.capacity_area_center_label,
+    ...(item.current_route_points||[]).map(point=>point.label),
+    ...(item.capacity_area_boundary||[]).map(point=>point.label),
+    ...(item.recurring_corridors||[]).flatMap(signal=>[
+      ...(signal.route_points||[]).map(point=>point.label),...(signal.area_boundary||[]).map(point=>point.label),signal.area_center_label
+    ])].filter(Boolean).join(' ').toLowerCase();
+}
+
+function sharedCapacityBasicMatch(item,filters){
+  if(filters.capacityId&&item.id!==filters.capacityId)return false;
+  if(filters.provider&&String(item.provider_handle||'').toLowerCase()!==String(filters.provider).toLowerCase())return false;
+  if(filters.status&&item.status!==String(filters.status).toUpperCase())return false;
+  if(filters.geometry){
+    const geometry=String(filters.geometry).toUpperCase();
+    if(item.status==='PARTIAL'&&geometry==='RADIUS')return false;
+    if(item.availability_geometry!==geometry&&!item.recurring_corridors.some(signal=>signal.geometry===geometry))return false;
+  }
+  if(filters.vehicleCategory&&item.cargo_configuration!==filters.vehicleCategory)return false;
+  if(filters.loadType==='FTL'&&!item.accepts_full_load)return false;
+  if(filters.loadType==='PTL'&&!item.accepts_partial_load)return false;
+  if(filters.stopOption==='MULTI_PICK'&&!item.accepts_multi_pick)return false;
+  if(filters.stopOption==='MULTI_DROP'&&!item.accepts_multi_drop)return false;
+  const age=Date.now()-new Date(item.updated_at).getTime();
+  if(filters.freshness==='FRESH'&&age>12*60*60*1000)return false;
+  if(filters.freshness==='UPDATE_NEEDED'&&age<=12*60*60*1000)return false;
+  if(filters.q&&!privateCapacitySearchText(item).includes(String(filters.q).trim().toLowerCase()))return false;
+  return true;
+}
+
+function projectPrivateCapacityRow(row,hasNear,nearLat,nearLng){
+  const recurring=(row.recurring_corridors||[]).slice(0,1).map(signal=>({
+    ...signal,geometry:signal.geometry==='RADIUS'?'RADIUS':'ROUTE',
+    route_points:validPlacePoints(signal.route_points,signal.geometry==='RADIUS'?0:2),
+    area_boundary:validPlacePoints(signal.area_boundary,signal.geometry==='RADIUS'?3:0)
+  }));
+  const nearCenterDistance=hasNear&&Number.isFinite(Number(row.location_lat))&&Number.isFinite(Number(row.location_lng))
+    ?distanceBetweenKm({lat:nearLat,lng:nearLng},{lat:Number(row.location_lat),lng:Number(row.location_lng)}):null;
+  const distance=nearCenterDistance==null?null
+    :possibleDistanceRange(nearCenterDistance,Number(row.location_precision_km||20),BUSINESS_SEARCH_PRIVACY_KM);
+  const capacityAge=capacityUpdatePresentation(row.updated_at);
+  const locationAge=capacityUpdatePresentation(row.location_updated_at,{kind:'location'});
+  const driverKind=row.provider_kind==='FLEET_TRANSPORTER'?'COMPANY_DRIVER':row.provider_kind;
+  return {...row,provider_kind:undefined,driver_documents:undefined,vehicle_documents:undefined,authorization_documents:undefined,
+    recurring_corridors:recurring,current_route_points:validPlacePoints(row.current_route_points,row.availability_geometry==='ROUTE'?2:0),
+    capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
+    driver_kind:driverKind,driver_kind_label:providerKindLabel(row.provider_kind),
+    driver_verification_badges:verificationBadges(row.provider_kind==='FLEET_TRANSPORTER'?'DRIVER':'PROVIDER_PROFILE',row.driver_documents),
+    truck_verification_badges:row.provider_kind==='OWNER_OPERATOR'
+      ?verificationBadges('VEHICLE',row.vehicle_documents)
+      :[truckAuthorizationBadge(row.authorization_documents,row.vehicle_id,row.platform_number)],
+    possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
+    updated_label:publicBoardTime(row.updated_at),capacity_update_stage:capacityAge.stage,
+    capacity_updated_label:capacityAge.label,capacity_confirmation_needed:capacityAge.confirmAvailability,
+    location_update_stage:locationAge.stage,location_updated_label:locationAge.label,
+    location_is_last_reported:locationAge.lastReported,
+    accepts_full_load:Boolean(row.accepts_full_load),accepts_partial_load:Boolean(row.accepts_partial_load),
+    accepts_multi_pick:Boolean(row.accepts_multi_pick),accepts_multi_drop:Boolean(row.accepts_multi_drop),
+    current_signal_geometry_visible:true,near_center_distance_km:nearCenterDistance};
+}
+
+export async function listSupabaseSharedCapacity(emailDigest,filters={},options={}){
+  return listSupabasePrivateCapacityProjection('EMAIL',emailDigest,null,filters,options);
+}
+
+export async function listSupabaseLoadgisticSharedCapacity(user,filters={},options={}){
+  return listSupabasePrivateCapacityProjection('LOADGISTIC',privateContactDigest('loadgistic-platform'),user.id,filters,options);
+}
+
+async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorUserId,filters,options){
+  const client=createSupabaseAdminClient();
+  const [originPlace,destinationPlace,areaPlace]=await Promise.all([
+    resolveSupabasePlace(client,filters.originPlaceRef,filters.origin),
+    resolveSupabasePlace(client,filters.destinationPlaceRef,filters.destination),
+    resolveSupabasePlace(client,filters.currentAreaPlaceRef,filters.currentArea)
+  ]);
+  const nearLat=Number(filters.nearLat),nearLng=Number(filters.nearLng);
+  const hasNear=Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
+  const hasGeographicFilter=Boolean(originPlace||destinationPlace||areaPlace);
+  const nearRadius=[5,10,20,50,100].includes(Number(filters.nearRadiusKm))?Number(filters.nearRadiusKm):20;
+  const pageSize=Math.max(12,Math.min(100,Number(options.pageSize)||100));
+  const databasePageSize=100,maxScanPages=10;
+  let databaseCursor=decodePublicCursor(options.cursor),databaseHasMore=true,scanPages=0;
+  const matches=[];
+  while(databaseHasMore&&matches.length<=pageSize&&scanPages<maxScanPages){
+    const {data,error}=await client.rpc('private_capacity_projection',{
+      requested_audience:audience,requested_digest:emailDigest,actor_user_id:actorUserId,
+      cursor_updated_at:databaseCursor?.updatedAt||null,cursor_id:databaseCursor?.id||null,
+      requested_page_size:databasePageSize
+    });
+    if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_PROJECTION_FAILED',error);
+    const rawRows=(data||[]).map(row=>row.payload||row);
+    databaseHasMore=rawRows.length>databasePageSize;
+    const candidates=rawRows.slice(0,databasePageSize);
+    let consumed=0;
+    for(const row of candidates){
+      consumed+=1;
+      const item=projectPrivateCapacityRow(row,hasNear,nearLat,nearLng);
+      if(!sharedCapacityBasicMatch(item,filters))continue;
+      if(hasNear&&(item.near_center_distance_km==null
+        ||item.near_center_distance_km>nearRadius+Number(item.location_precision_km||20)+BUSINESS_SEARCH_PRIVACY_KM))continue;
+      const projected={...item,geographic_match_label:geographicMatchLabel(item,filters,originPlace,destinationPlace,areaPlace)};
+      if(hasGeographicFilter&&!projected.geographic_match_label)continue;
+      matches.push(projected);
+      if(matches.length>pageSize)break;
+    }
+    const lastConsumed=candidates[consumed-1];
+    if(lastConsumed)databaseCursor={updatedAt:lastConsumed.updated_at,id:lastConsumed.id};
+    if(candidates.length<databasePageSize)databaseHasMore=false;
+    scanPages+=1;
+  }
+  const selected=matches.slice(0,pageSize);
+  const scanLimitReached=databaseHasMore&&scanPages>=maxScanPages&&matches.length<=pageSize;
+  const hasMore=matches.length>pageSize||scanLimitReached;
+  const nextCursor=matches.length>pageSize
+    ?encodePublicCursor(selected.at(-1))
+    :scanLimitReached&&databaseCursor
+      ?encodePublicCursor({updated_at:databaseCursor.updatedAt,id:databaseCursor.id})
+      :null;
+  return {items:selected,nextCursor,hasMore,pageSize};
+}
+
+export async function listSupabasePendingAccessEmailDeliveries(limit=20){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('pending_access_email_deliveries',{requested_limit:Math.max(1,Math.min(100,Number(limit)||20))});
+  if(error)throw managedCapacityError('SUPABASE_ACCESS_EMAIL_QUEUE_FAILED',error);
+  return (data||[]).map(row=>row.payload||row);
+}
+
+export async function recordSupabaseAccessEmailDeliveryAttempt(id,{sent,error}={}){
+  const client=createSupabaseAdminClient();
+  const {error:queryError}=await client.rpc('record_access_email_delivery_attempt',{
+    delivery_id:id,was_sent:Boolean(sent),failure_message:sent?null:String(error||'DELIVERY_FAILED').slice(0,500)
+  });
+  if(queryError)throw managedCapacityError('SUPABASE_ACCESS_EMAIL_RECORD_FAILED',queryError);
 }
 
 function seededTransporterPortraitUrl(filename){
