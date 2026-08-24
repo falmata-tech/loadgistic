@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import {
+  isNumericEmailOtp,
+  localFixturePasswordLoginEnabled,
+  managedAuthCallbackUrl,
+  managedWorkspaceDestination,
+  normalizeManagedAuthEmail
+} from '../src/lib/auth-flow.js';
+
+test('managed callback is fixed to the deployment-owned HTTPS origin',()=>{
+  assert.equal(managedAuthCallbackUrl({
+    environment:{NODE_ENV:'production',APP_URL:'https://loadgistic.netlify.app/ignored/path'},
+    requestUrl:'https://attacker.example/callback'
+  }),'https://loadgistic.netlify.app/api/auth/callback');
+  assert.equal(managedAuthCallbackUrl({environment:{NODE_ENV:'production'},requestUrl:'https://loadgistic.netlify.app'}),null);
+  assert.equal(managedAuthCallbackUrl({environment:{NODE_ENV:'production',APP_URL:'http://loadgistic.example'}}),null);
+  assert.equal(managedAuthCallbackUrl({environment:{NODE_ENV:'production',APP_URL:'https://user:secret@loadgistic.example'}}),null);
+  assert.equal(managedAuthCallbackUrl({environment:{NODE_ENV:'development'},requestUrl:'http://127.0.0.1:3000/login'}),'http://127.0.0.1:3000/api/auth/callback');
+});
+
+test('fixture passwords are explicitly non-production only',()=>{
+  assert.equal(localFixturePasswordLoginEnabled({NODE_ENV:'development',ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN:'true'}),true);
+  assert.equal(localFixturePasswordLoginEnabled({NODE_ENV:'development'}),false);
+  assert.equal(localFixturePasswordLoginEnabled({NODE_ENV:'production',ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN:'true'}),false);
+});
+
+test('email-code inputs are bounded and normalized without account disclosure',()=>{
+  assert.equal(normalizeManagedAuthEmail(' Provider@Example.COM '),'provider@example.com');
+  assert.equal(normalizeManagedAuthEmail('not-an-email'),null);
+  assert.equal(isNumericEmailOtp('123456'),true);
+  assert.equal(isNumericEmailOtp('12345678'),false);
+  assert.equal(isNumericEmailOtp('12345'),false);
+  assert.equal(isNumericEmailOtp('123 456'),false);
+  assert.equal(managedWorkspaceDestination('SUPPORT'),'/support');
+  assert.equal(managedWorkspaceDestination('DRIVER'),'/app/home');
+});
+
+test('managed adapters request minimum Google scopes and never create an OTP user',()=>{
+  const google=readFileSync(new URL('../src/app/api/auth/google/route.ts',import.meta.url),'utf8');
+  const otp=readFileSync(new URL('../src/app/api/auth/email-otp/request/route.ts',import.meta.url),'utf8');
+  const callback=readFileSync(new URL('../src/app/api/auth/callback/route.ts',import.meta.url),'utf8');
+  assert.match(google,/provider:'google'/);
+  assert.match(google,/scopes:'openid email profile'/);
+  assert.match(google,/redirectTo:callbackUrl/);
+  assert.match(otp,/shouldCreateUser:false/);
+  assert.match(callback,/exchangeCodeForSession\(code,flowId\?\{flowId\}:undefined\)/);
+  assert.doesNotMatch(callback,/searchParams\.get\(['"]next['"]\)/);
+});

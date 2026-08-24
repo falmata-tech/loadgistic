@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 const root=path.resolve(process.cwd(),'src');
-const required=['app/page.tsx','app/featured/page.tsx','app/shared-capacity/page.tsx','app/about/page.tsx','app/login/page.tsx','app/app/home/page.tsx','app/app/provider-shipments/page.tsx','app/app/network/page.tsx','app/app/support/page.tsx','app/support/page.tsx','app/admin/support/page.tsx','app/admin/capacity-network/page.tsx','app/api/health/route.ts','app/api/files/payment-proof/[id]/route.ts','middleware.ts','lib/db.js','lib/repository.js','lib/private-storage.js','lib/launch-readiness.js'];
+const required=['app/page.tsx','app/featured/page.tsx','app/shared-capacity/page.tsx','app/about/page.tsx','app/login/page.tsx','app/app/home/page.tsx','app/app/provider-shipments/page.tsx','app/app/network/page.tsx','app/app/support/page.tsx','app/support/page.tsx','app/admin/support/page.tsx','app/admin/capacity-network/page.tsx','app/api/health/route.ts','app/api/auth/google/route.ts','app/api/auth/email-otp/request/route.ts','app/api/auth/email-otp/verify/route.ts','app/api/auth/callback/route.ts','app/api/files/payment-proof/[id]/route.ts','middleware.ts','lib/auth-flow.js','lib/db.js','lib/repository.js','lib/private-storage.js','lib/launch-readiness.js'];
 for(const item of required){if(!fs.existsSync(path.join(root,item)))throw new Error(`Missing ${item}`)}
 if(fs.existsSync(path.join(root,'app/api/shipments/[id]/note/route.ts')))throw new Error('Retired internal-note route is still present');
 if(!fs.readFileSync(path.join(root,'middleware.ts'),'utf8').includes('retiredDemandResponse'))throw new Error('Retired demand mutations are not centrally denied');

@@ -5,5 +5,10 @@ import { getSupabasePublicConfig } from './config';
 
 export function createSupabaseBrowserClient() {
   const { url, publishableKey } = getSupabasePublicConfig();
-  return createBrowserClient(url, publishableKey);
+  return createBrowserClient(url, publishableKey, {
+    auth: {
+      flowType: 'pkce',
+      experimental: { appendPkceFlowIdToRedirects: true }
+    }
+  });
 }

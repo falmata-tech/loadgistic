@@ -3,25 +3,57 @@ id: FEAT-IAM-001
 title: Identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
-behavior: Valid active provider users receive a signed HTTP-only session and role-scoped workspace access. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
-contracts: [IdentityLookupPort, PasswordVerifier, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
+behavior: Valid active provider users sign in through Supabase Google OAuth or a numeric email one-time code and receive an SSR-compatible HTTP-only session with role-scoped workspace access. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
+contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
 ---
 
 # Identity and access
 
-### Scenario: active provider logs in
+### Scenario: active provider logs in with Google
 
-Given an active seeded local-Supabase user or managed Production user and the correct password\
-When the user submits the login form\
-Then Supabase Auth establishes an SSR-compatible HTTP-only session\
+Given an active managed Supabase user has a Loadgistic role projection and a linked Google identity\
+When the user chooses Continue with Google\
+Then Loadgistic requests only OpenID, email, and profile identity scopes\
+And Supabase Auth completes authorization-code PKCE through Loadgistic's fixed callback route\
+And the callback accepts no visitor-controlled destination\
+And Supabase Auth establishes an SSR-compatible HTTP-only session\
 And the response redirects relatively to `/app/home` on the current origin.
 
-### Scenario: invalid or inactive account
+### Scenario: active provider logs in with an email code
 
-Given an unknown email, wrong password, or suspended account\
-When login is attempted\
+Given an active managed Supabase user has a Loadgistic role projection\
+When the user requests a sign-in code for their email\
+Then Supabase Auth is asked to send a six-digit, ten-minute one-time code without creating an unknown user\
+And the interface returns the same bounded response whether or not the address is eligible\
+And a valid numeric code establishes the same SSR-compatible HTTP-only session and role-scoped destination.
+
+### Scenario: callback and one-time-code failure stays generic
+
+Given an OAuth callback is denied, expired, malformed, replayed, or belongs to an identity without an active Loadgistic role projection\
+Or an email code is invalid, expired, malformed, or rate limited\
+When authentication completes or verification is attempted\
+Then no workspace session remains\
+And the visitor receives a generic retry message that does not disclose account existence, suspension, provider configuration, token details, or upstream error text.
+
+### Scenario: callback origins are deployment-owned
+
+Given managed authentication is enabled\
+When Loadgistic starts Google OAuth or an email-code flow\
+Then its callback is derived from the deployment-owned `APP_URL` and the fixed `/api/auth/callback` path in Production\
+And Production rejects a missing, invalid, or non-HTTPS callback origin\
+And Supabase's Site URL and Redirect URL allowlist must contain the exact Preview or Production callback before traffic is enabled.
+
+### Scenario: local fixture password login is isolated
+
+Given deterministic fixture credentials are needed for local development or automated browser tests\
+When the non-Production runtime explicitly enables fixture password login\
+Then the local login form and password route may authenticate those fixtures\
+And managed Preview and Production never render or accept password login.
+
+Given an unknown email, wrong password, or suspended local fixture account\
+When local password login is attempted\
 Then no session is created\
 And a generic credential error is returned without revealing account state.
 
@@ -32,7 +64,8 @@ When a browser creates, refreshes, or clears an identity session\
 Then the browser and server use the publishable Supabase key through the SSR cookie adapter\
 And request middleware refreshes expiring session cookies without exposing the service-role key\
 And authorization trusts a server-validated `auth.getUser()` result mapped to an active Loadgistic role projection rather than unverified browser metadata\
-And missing configuration or a missing role projection denies workspace access instead of falling back to local authentication.
+And missing configuration or a missing role projection denies workspace access instead of falling back to local authentication\
+And provider access tokens from Google are never persisted by Loadgistic or exposed to application UI.
 
 ### Scenario: role access is denied
 
@@ -114,4 +147,5 @@ And the service worker does not cache Next.js executable chunks, preventing a fr
 - Inbound adapters: `src/app/login/page.tsx`, public capacity/provider/track pages, workspace pages, `src/app/api/auth/*`
 - Application boundary: `src/lib/auth.ts`, repository user lookups, managed-identity projection
 - Outbound adapters: Supabase SSR browser/server clients and Auth in local development, tests, Preview, and Production
-- Tests: `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`
+- External configuration: Supabase Google provider, exact Site URL/Redirect URL allowlists, numeric `{{ .Token }}` email template, and verified custom SMTP
+- Tests: `tests/auth-flow.test.mjs`, `tests/e2e/auth-role-language.spec.ts`, `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`

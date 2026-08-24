@@ -6,6 +6,10 @@ export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabasePublicConfig();
   return createServerClient(url, publishableKey, {
+    auth: {
+      flowType: 'pkce',
+      experimental: { appendPkceFlowIdToRedirects: true }
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -5,6 +5,10 @@ import { getSupabasePublicConfig } from './config';
 export function createSupabaseRouteClient(request:NextRequest,response:NextResponse){
   const {url,publishableKey}=getSupabasePublicConfig();
   return createServerClient(url,publishableKey,{
+    auth:{
+      flowType:'pkce',
+      experimental:{appendPkceFlowIdToRedirects:true}
+    },
     cookies:{
       getAll(){
         return request.cookies.getAll();

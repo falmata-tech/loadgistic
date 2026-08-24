@@ -6,10 +6,12 @@ import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 import { usesSupabaseAuth } from '@/lib/supabase/config';
 import { createSupabaseRouteClient } from '@/lib/supabase/route';
 import { getManagedCurrentUser } from '@/lib/identity/supabase';
+import { localFixturePasswordLoginEnabled } from '@/lib/auth-flow.js';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+  if(!localFixturePasswordLoginEnabled())return redirectWith(request,'/login','error','Password login is available only for local fixture testing.');
   const clientLimit=Number(process.env.LOGIN_CLIENT_RATE_LIMIT||60);
   const accountLimit=Number(process.env.LOGIN_ACCOUNT_RATE_LIMIT||12);
   const clientRate = checkRateLimit(requestKey(request,'login-client'),clientLimit,60_000);
