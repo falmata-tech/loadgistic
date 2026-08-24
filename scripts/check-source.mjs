@@ -4,7 +4,29 @@ const root=path.resolve(process.cwd(),'src');
 const required=['app/page.tsx','app/featured/page.tsx','app/shared-capacity/page.tsx','app/about/page.tsx','app/login/page.tsx','app/app/home/page.tsx','app/app/provider-shipments/page.tsx','app/app/network/page.tsx','app/app/support/page.tsx','app/support/page.tsx','app/admin/support/page.tsx','app/admin/capacity-network/page.tsx','app/api/health/route.ts','app/api/files/payment-proof/[id]/route.ts','middleware.ts','lib/db.js','lib/repository.js','lib/private-storage.js','lib/launch-readiness.js'];
 for(const item of required){if(!fs.existsSync(path.join(root,item)))throw new Error(`Missing ${item}`)}
 if(fs.existsSync(path.join(root,'app/api/shipments/[id]/note/route.ts')))throw new Error('Retired internal-note route is still present');
-if(!fs.readFileSync(path.join(root,'middleware.ts'),'utf8').includes('DEMAND_WORKFLOW_RETIRED'))throw new Error('Retired demand mutations are not centrally denied');
+if(!fs.readFileSync(path.join(root,'middleware.ts'),'utf8').includes('retiredDemandResponse'))throw new Error('Retired demand mutations are not centrally denied');
+const retiredDemandApiRoutes=[
+  'app/api/shipments/route.ts',
+  'app/api/shipments/[id]/accept/route.ts',
+  'app/api/shipments/[id]/business-review/route.ts',
+  'app/api/shipments/[id]/interest/route.ts',
+  'app/api/shipments/[id]/load-proof/request/route.ts',
+  'app/api/shipments/[id]/load-proof/share/route.ts',
+  'app/api/shipments/[id]/proof/route.ts',
+  'app/api/shipments/[id]/receiver-contact/route.ts',
+  'app/api/shipments/[id]/status/route.ts',
+  'app/api/shipments/[id]/tracking-mode/route.ts',
+  'app/api/shipments/[id]/tracking-update/route.ts',
+  'app/api/shipments/[id]/vehicle/route.ts',
+  'app/api/files/load-proof/[id]/route.ts',
+  'app/api/files/proof/[id]/route.ts'
+];
+for(const route of retiredDemandApiRoutes){
+  const source=fs.readFileSync(path.join(root,route),'utf8').trim();
+  if(!/^export \{ retiredDemandResponse as (GET|POST) \} from '@\/lib\/retired-demand';$/.test(source)){
+    throw new Error(`Retired demand route can still reach application code: ${route}`);
+  }
+}
 const names=[];
 function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const full=path.join(dir,entry.name);if(entry.isDirectory())walk(full);else names.push(full)}}
 walk(root);

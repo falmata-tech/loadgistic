@@ -4,8 +4,8 @@ title: Supply-first local development dataset
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
 problem: Public capacity discovery needs enough realistic provider and truck variation to test cursor loading, clustering, provider pages, and responsive layouts without retaining obsolete demand fixtures.
 behavior: Every non-Production local database receives a deterministic supply-only market centered on city and town freight: courier motorcycles, courier cars, cargo vans, conventional pickups, stake-body pickups, and all mini-truck configurations form about 70 percent of active capacity, light-duty trucks are the next-largest group, and only occasional medium or heavy trucks carry longer road corridors. The 70-percent local-delivery cohort stays within 30 kilometres of its base through road-connected town routes or compact multi-place operating polygons. Each provider retains one regular Service area or Capacity route; legacy demand, future-trip, Business-account, and relationship fixtures are purged.
-contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge]
-observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure]
+contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge, RetiredDemandBoundary]
+observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure, retired_demand_request]
 rollout: The dataset is deterministic and local-only; production execution of reset or fixture commands remains denied. Rollback restores a pre-migration database backup, not retired demand fixtures.
 ---
 
@@ -71,6 +71,14 @@ Then legacy shipment-demand rows, Business organizations and users, network rela
 And provider organizations, provider profiles, fleet records, verification evidence, and provider-owned shipment records remain\
 And the migration is idempotent.
 
+### Scenario: retired demand routes never reach persistence
+
+Given a browser or old client requests a retired Shipment Board, pooled-load, along-route, Business shipment, proof, interest, assignment, or demand-tracking address\
+When the request reaches the current application\
+Then a page address redirects to the public Truck Market or provider-owned Tracking workspace as appropriate\
+And a retired mutation or file API returns HTTP 410 with a bounded response\
+And the request does not authenticate, open SQLite, query Supabase, read a private object, or mutate any record.
+
 ### Scenario: public projection remains safe
 
 Given the busy seed contains provider contacts and obscured truck locations\
@@ -90,4 +98,5 @@ Then it fails before deleting or writing data.
 - Schema, purge, and deterministic seed: `src/lib/db.js`
 - Reset adapter: `scripts/reset-db.mjs`
 - Public cursor: `listPublicCapacityCursor` in `src/lib/repository.js`
-- Tests: `tests/capacity-market.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Retired demand boundary: `src/lib/retired-demand.ts`, retired page and route modules, and `src/middleware.ts`
+- Tests: `tests/capacity-market.test.mjs`, `scripts/check-source.mjs`, `tests/e2e/smoke.spec.ts`

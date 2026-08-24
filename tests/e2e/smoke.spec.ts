@@ -832,8 +832,16 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
 test('retired demand URLs redirect to the public supply market',async({page,request}:{page:any;request:any})=>{
   await page.goto('/app/loads');
   await expect(page).toHaveURL(/\/$/);
+  const pageResponse=await request.get('/app/shipments/retired-id',{maxRedirects:0});
+  expect(pageResponse.status()).toBe(307);
+  expect(pageResponse.headers().location).toBe('/app/provider-shipments');
   const response=await request.post('/api/shipments',{form:{title:'retired'}});
   expect(response.status()).toBe(410);
+  expect(await response.json()).toMatchObject({error:{code:'DEMAND_WORKFLOW_RETIRED'}});
+  const nestedResponse=await request.post('/api/shipments/retired-id/status',{form:{status:'COMPLETED'}});
+  expect(nestedResponse.status()).toBe(410);
+  const proofResponse=await request.get('/api/files/proof/retired-id');
+  expect(proofResponse.status()).toBe(410);
   const networkResponse=await request.post('/api/network',{form:{action:'REQUEST'}});
   expect(networkResponse.status()).toBe(410);
 });
