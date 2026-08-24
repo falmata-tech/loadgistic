@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Circle, CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { Circle, CircleMarker, MapContainer, Polygon, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { BaseMapTiles } from '@/components/base-map-tiles';
 
 type Point={lat:number;lng:number};type PlacePoint=Point&{label:string};type RegularSignal={id:string;geometry:'ROUTE'|'RADIUS';route_points:PlacePoint[];area_boundary:PlacePoint[];area_center_lat?:number;area_center_lng?:number;area_center_label?:string};
 const EAST_AFRICA_MAP_BOUNDS:L.LatLngBoundsExpression=[[-12.5,28],[18,52.5]];
@@ -17,7 +18,7 @@ export function CapacityLocationMapLeaflet({center,radiusKm,areaCenter=null,area
   const currentTooltipClass=`capacity-route-tooltip ${availabilityStatus==='PARTIAL'?'partial':'empty'}`;
   return <div className="capacity-location-map" aria-label={`${radiusKm} kilometre approximate truck location`}>
     <MapContainer center={[center.lat,center.lng]} zoom={8} minZoom={5} maxZoom={13} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom={false} dragging>
-      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+      <BaseMapTiles/>
       <ResizeMap/>
       <Bounds center={center} radiusKm={radiusKm} areaCenter={areaCenter} areaBoundary={areaBoundary} routePoints={routePoints} regularSignals={regularSignals}/>
       <Circle center={[center.lat,center.lng]} radius={radiusKm*1000} pathOptions={{color:'#7c3aed',weight:7,fill:false,dashArray:'7 7'}}><Tooltip className="capacity-route-tooltip location">Approximate truck location<br/>Within {radiusKm} km · not an exact position</Tooltip></Circle>

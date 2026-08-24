@@ -1,8 +1,6 @@
-/** @type {import('next').NextConfig} */
-const scriptPolicy = process.env.NODE_ENV !== 'production'
-  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  : "script-src 'self' 'unsafe-inline'";
+import { contentSecurityPolicy } from './src/lib/security-headers.js';
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
@@ -38,7 +36,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; ${scriptPolicy}; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`
+            value: contentSecurityPolicy(process.env)
           }
         ]
       }

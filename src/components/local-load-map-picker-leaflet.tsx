@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, MapContainer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { MapPin, Navigation } from 'lucide-react';
+import { BaseMapTiles } from '@/components/base-map-tiles';
 
 type Point={lat:number;lng:number};
 
@@ -50,7 +51,7 @@ export function LeafletLocalLoadMapPicker({center}:{center?:Point|null}) {
     </div>
     <div className="local-pin-map">
       <MapContainer center={[mapCenter.lat,mapCenter.lng]} zoom={12} minZoom={7} maxZoom={18} scrollWheelZoom>
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+        <BaseMapTiles/>
         <MapCenter center={currentPoint||mapCenter}/>
         <PointCapture mode={mode} onPoint={capture}/>
         {pickup?<CircleMarker center={[pickup.lat,pickup.lng]} radius={9} pathOptions={{color:'#1769e0',fillColor:'#1769e0',fillOpacity:.9}}><Tooltip permanent direction="top">Pickup</Tooltip></CircleMarker>:null}

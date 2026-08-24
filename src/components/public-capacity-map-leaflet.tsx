@@ -2,8 +2,9 @@
 
 import React from 'react';
 import L from 'leaflet';
-import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
+import { BaseMapTiles } from '@/components/base-map-tiles';
 
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
@@ -238,7 +239,7 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,onSelect}:{ite
   const visibleSignalInfos=pinnedInfo?[pinnedInfo]:hoveredInfo?[hoveredInfo]:[];
   return <div className="public-capacity-map" aria-label="Map of available trucks">
     <MapContainer center={[9.1,40.2]} zoom={7} minZoom={5} maxZoom={15} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom>
-      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+      <BaseMapTiles/>
       <ResizeMap/>
       <Bounds items={items} viewer={viewer} selectedId={selectedId}/>
       {viewer?<CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{className:'public-viewer-location-marker',color:'#6d28d9',fillColor:'#8b5cf6',fillOpacity:1,weight:3}}><Tooltip direction="top" offset={[0,-10]} opacity={1} className="capacity-location-tooltip">Your location</Tooltip></CircleMarker>:null}

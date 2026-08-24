@@ -6,7 +6,7 @@ problem: Capacity seekers need to understand nearby and route-based truck availa
 behavior: Empty capacity uses either a Service area or Capacity route, while Partial capacity uses a Capacity route only. Drivers obscure device location before publication, the selected signal always shows a separate approximate-location circle sized by the Driver's accuracy, and each provider may publish one regular Service area or Capacity route.
 contracts: [AvailabilityGeometry, CurrentRadiusArea, CurrentCorridor, RegularCapacitySignal, VisitorSearchArea, TruckPrivacyCircle, PublicCapacityGeography, GeographicMatch]
 observability: [geographic_match_kind, visitor_location_consent_outcome, bounded_geography_query, public_map_open]
-rollout: Reuse structured place references, prune pre-customer regular records deterministically to one per provider, add regular geometry fields, rebuild demo signals near reported truck locations, and keep visitor proximity an explicit filter rather than a ranking input.
+rollout: Reuse structured place references, prune pre-customer regular records deterministically to one per provider, add regular geometry fields, rebuild demo signals near reported truck locations, keep visitor proximity an explicit filter rather than a ranking input, and select one attributed HTTPS tile origin through public runtime configuration without proxying or bulk-copying tiles.
 ---
 
 # Public capacity geography
@@ -81,6 +81,15 @@ And clicking or pressing a signal pins the explanation until it is dismissed or 
 And clicking or pressing one signal pins only that signal's compact explanation until it is dismissed or another signal is chosen\
 And overlapping current and regular Capacity routes use small opposite visual offsets without changing their stored cities so each remains independently selectable\
 And Service-area and approximate-location interiors remain non-interactive while their wide outlines remain available to pointer and keyboard users.
+
+### Scenario: tile delivery is centralized and attributable
+
+Given any public, provider, Tracking, or location-picker map is rendered\
+When its basemap loads\
+Then the map uses the same centrally resolved HTTPS tile template and visible linked attribution\
+And Content Security Policy permits only the exact resolved tile origin rather than a wildcard tile domain\
+And an invalid, insecure, or subdomain-template configuration falls back to the direct `https://tile.openstreetmap.org/{z}/{x}/{y}.png` pilot endpoint\
+And Loadgistic does not proxy, prefetch, scrape, bulk-copy, or self-host community tiles in the Netlify application.
 
 ### Scenario: legacy geography is migrated honestly
 
