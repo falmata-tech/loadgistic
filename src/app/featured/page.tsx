@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import {FeaturedProviderSection} from '@/components/featured-provider-section';
 import {PublicHeader} from '@/components/public-header';
-import {getDailyFeaturedProviders} from '@/lib/repository.js';
+import {getDailyFeaturedProviders} from '@/lib/public-featured.js';
 
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'Daily Featured Transporters',description:'Meet today\'s featured Ethiopian transporters and review the public presentation programme.'};

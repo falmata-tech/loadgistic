@@ -118,4 +118,18 @@ const {error:anonymousProviderSummaryError}=await anon.rpc('public_provider_revi
 });
 if(!anonymousProviderSummaryError)throw new Error('SUPABASE_FIXTURE_VERIFY_PROVIDER_RPC_EXPOSED');
 
+const {getSupabaseDailyFeaturedProviders}=await import('../src/lib/repository/supabase.js');
+const featured=await getSupabaseDailyFeaturedProviders();
+if(!featured.published||!featured.providers.length||featured.walkthroughs.length!==featured.providers.length){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_FEATURED_PROJECTION_FAILED');
+}
+if(featured.providers.some(provider=>Object.keys(provider).some(key=>key.endsWith('_id')||key==='eligible'))
+  ||featured.sponsored_providers.some(sponsor=>Object.keys(sponsor).some(key=>key.endsWith('_id')||key==='eligible'))){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_FEATURED_PRIVATE_KEY_EXPOSED');
+}
+const {error:anonymousFeaturedError}=await anon.rpc('public_featured_provider_candidates',{
+  requested_region_codes:['ADDIS_ABABA']
+});
+if(!anonymousFeaturedError)throw new Error('SUPABASE_FIXTURE_VERIFY_FEATURED_RPC_EXPOSED');
+
 process.stdout.write('Local Supabase fixture verification passed.\n');

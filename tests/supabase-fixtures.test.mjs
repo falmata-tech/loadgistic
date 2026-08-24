@@ -66,3 +66,15 @@ test('public provider review summary is aggregate-only and server-only',()=>{
   assert.match(provider,/grant execute on function public\.public_provider_review_summary\(uuid,uuid\) to service_role/i);
   assert.doesNotMatch(provider,/shipper|receiver|email|phone|note/i);
 });
+
+test('Daily Featured candidate projection rechecks eligibility and is server-only',()=>{
+  const featured=fs.readFileSync(path.join(root,'supabase','migrations','040_public_featured_candidates.sql'),'utf8');
+  assert.match(featured,/page\.base_region_code=any/i);
+  assert.match(featured,/candidate\.base_place_ref is not null/i);
+  assert.match(featured,/count\(distinct vehicle\.id\)/i);
+  assert.match(featured,/request\.verification_type='BUSINESS_ADDRESS'/i);
+  assert.match(featured,/request\.verification_type='VEHICLE_AUTHORIZATION'/i);
+  assert.match(featured,/revoke all on function public\.public_featured_provider_candidates\(text\[\]\) from public,anon,authenticated/i);
+  assert.match(featured,/grant execute on function public\.public_featured_provider_candidates\(text\[\]\) to service_role/i);
+  assert.doesNotMatch(featured,/storage_path|original_name|mime_type|review_note|dispute_reason/i);
+});

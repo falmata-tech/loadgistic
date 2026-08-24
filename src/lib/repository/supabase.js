@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
 import {capacityRouteAlignmentMatch,capacityRoutePointMatch,normalizePlace,serviceAreaGeometryMatch} from '../route-matching.js';
+import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
+import {providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
 
 const PLACE_TYPE_ORDER=new Map([
   ['city',0],['town',1],['suburb',2],['neighbourhood',3],['quarter',4],['village',5]
@@ -389,4 +391,119 @@ export async function getSupabasePublicProvider(handle){
     vehicles:trucks.map(({capacity:unusedCapacity,...vehicle})=>vehicle),trucks,capacities,reviews,
     verification_badges:providerBadges,review_count:Number(reviewSummary.review_count||0),
     average_rating:reviewSummary.average_rating==null?null:Number(reviewSummary.average_rating)};
+}
+
+function featuredScheduleValue(value,fallback){
+  if(value&&typeof value==='object')return value;
+  try{return JSON.parse(String(value||''));}catch{return fallback;}
+}
+
+function featuredSchedule(day,featureDate,keys,keyAliases){
+  const mode=String(day?.schedule_mode||'AUTO').toUpperCase();
+  const config=featuredScheduleValue(day?.schedule_config_json,{});
+  let manualSchedule=featuredScheduleValue(day?.manual_schedule_json,[]);
+  if(mode==='MANUAL'){
+    const allowed=new Set(keys);
+    manualSchedule=(Array.isArray(manualSchedule)?manualSchedule:[]).map(item=>({
+      ...item,providerKey:keyAliases.get(String(item?.providerKey||''))||String(item?.providerKey||'')
+    })).filter(item=>allowed.has(item.providerKey));
+  }
+  try{return buildFeaturedDaySchedule(featureDate,keys,{mode,config,manualSchedule});}
+  catch(error){
+    if(mode==='MANUAL')return buildFeaturedDaySchedule(featureDate,keys,{mode:'AUTO',config});
+    throw error;
+  }
+}
+
+function assignFeaturedSponsors(schedule,sponsors){
+  const names=sponsors.map(sponsor=>sponsor.name).filter(Boolean);
+  let index=0;
+  return {...schedule,entries:schedule.entries.map(entry=>{
+    if(entry.type!=='SPONSOR_BREAK'||!names.length)return entry;
+    const name=names[index%names.length];index+=1;
+    return {...entry,sponsor_name:name,label:`Sponsor · ${name}`};
+  })};
+}
+
+function featuredPortraitUrl(candidate){
+  return candidate.has_profile_image
+    ?`/api/public/providers/${encodeURIComponent(candidate.handle)}/image?v=${encodeURIComponent(candidate.profile_image_updated_at||'1')}`
+    :seededTransporterPortraitUrl(candidate.profile_image_preset);
+}
+
+function decorateFeaturedCandidate(candidate){
+  const signal=candidate.regular_signal;
+  const corridor=signal?.geometry==='RADIUS'
+    ?[signal.area_center_label,...(signal.area_boundary||[]).map(point=>point.label)].filter(Boolean).join(' · ')
+    :(signal?.route_points||[]).map(point=>point.label).filter(Boolean).join('–');
+  return {...candidate,profile_image_url:featuredPortraitUrl(candidate),base_region:providerRegionLabel(candidate.base_region_code),
+    provider_kind_label:candidate.provider_kind==='FLEET_TRANSPORTER'?'Fleet transporter':providerKindLabel(candidate.provider_kind),
+    corridors:corridor?[corridor]:[]};
+}
+
+export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
+  const featureDate=String(date||'');
+  const expo=regionalExpoGroupForDate(featureDate);
+  const client=createSupabaseAdminClient();
+  const [dayResult,candidateResult]=await Promise.all([
+    client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,schedule_mode,schedule_config_json,manual_schedule_json,status')
+      .eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
+    client.rpc('public_featured_provider_candidates',{requested_region_codes:expo.regionCodes})
+  ]);
+  if(dayResult.error||candidateResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error||candidateResult.error});
+  const day=dayResult.data;
+  const empty=()=>({feature_date:featureDate,base_place:expo.title,expo_group:expo,week:regionalExpoWeekForDate(featureDate),
+    headline:'Daily Featured Transporters',introduction:`Today’s ${expo.title} transporter roster is being prepared.`,
+    tiktok_url:null,broadcast_start_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart,
+    broadcast_end_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd,schedule:buildFeaturedDaySchedule(featureDate,0),
+    walkthroughs:[],sponsored_providers:[],providers:[],published:false});
+  if(!day||day.expo_group_key!==expo.key)return empty();
+  const candidates=(candidateResult.data||[]).map(row=>decorateFeaturedCandidate(row.payload||row));
+  const candidateByKey=new Map(candidates.map(candidate=>[
+    candidate.provider_organization_id?`organization:${candidate.provider_organization_id}`:`profile:${candidate.provider_profile_id}`,candidate
+  ]));
+  const {data:slots,error:slotError}=await client.from('featured_provider_slots')
+    .select('slot_position,provider_organization_id,provider_profile_id').eq('day_id',day.id).order('slot_position');
+  if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});
+  const providers=[];const providerKeys=[];const aliases=new Map();
+  for(const slot of slots||[]){
+    const key=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;
+    const candidate=candidateByKey.get(key);
+    if(!candidate?.eligible)continue;
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,
+      base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,
+      profile_image_updated_at:unusedImageUpdated,regular_signal:unusedSignal,...safe}=candidate;
+    providers.push({...safe,position:slot.slot_position});providerKeys.push(candidate.handle);aliases.set(key,candidate.handle);
+  }
+  const {data:placements,error:placementError}=await client.from('sponsor_placements')
+    .select('sponsor_id,position').eq('expo_group_key',expo.key).eq('active',true)
+    .lte('starts_on',featureDate).gte('ends_on',featureDate).order('position').limit(5);
+  if(placementError)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:placementError});
+  const sponsorIds=(placements||[]).map(placement=>placement.sponsor_id);
+  const sponsorResult=sponsorIds.length?await client.from('sponsors')
+    .select('id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone')
+    .in('id',sponsorIds).eq('active',true):{data:[],error:null};
+  if(sponsorResult.error)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:sponsorResult.error});
+  const sponsorById=new Map((sponsorResult.data||[]).map(sponsor=>[sponsor.id,sponsor]));
+  const sponsoredProviders=[];
+  for(const placement of placements||[]){
+    const sponsor=sponsorById.get(placement.sponsor_id);if(!sponsor)continue;
+    if(sponsor.sponsor_kind==='ADVERTISER'){
+      sponsoredProviders.push({sponsor_kind:'ADVERTISER',name:sponsor.business_name,description:sponsor.description,
+        website_url:sponsor.website_url||null,phone:sponsor.phone||null,sponsor_position:placement.position,sponsored:true});
+      continue;
+    }
+    const key=sponsor.provider_organization_id?`organization:${sponsor.provider_organization_id}`:`profile:${sponsor.provider_profile_id}`;
+    const candidate=candidateByKey.get(key);if(!candidate?.eligible)continue;
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,
+      base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,
+      profile_image_updated_at:unusedImageUpdated,regular_signal:unusedSignal,...safe}=candidate;
+    sponsoredProviders.push({...safe,sponsor_kind:'TRANSPORTER',sponsor_position:placement.position,sponsored:true});
+  }
+  const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,providerKeys,aliases),sponsoredProviders);
+  return {feature_date:featureDate,base_place:expo.title,expo_group:expo,week:regionalExpoWeekForDate(featureDate),
+    headline:day.public_headline||'Daily Featured Transporters',
+    introduction:day.public_introduction||`Meet transporters based in ${expo.title}, then find their current trucks in the Truck Market.`,
+    tiktok_url:day.tiktok_url,broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,
+    schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers,published:true};
 }

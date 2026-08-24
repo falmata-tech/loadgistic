@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite for repository paths not yet migrated while ADR-041 is being implemented. That is a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `039` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. Managed Auth, health, place search, the public Truck Market, and published transporter microsites now run without importing SQLite when their Supabase flags are enabled; the remaining application repository and test-runtime cutover is incomplete. Production readiness therefore remains blocked.
+The runnable Loadgistic application still uses `src/lib/repository.js` with Node SQLite for repository paths not yet migrated while ADR-041 is being implemented. That is a migration state, not an accepted local runtime. Ordered SQL migrations `001` through `040` replay successfully against the isolated local Supabase PostgreSQL stack. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and its login/storage/RLS checks pass. Managed Auth, health, place search, the public Truck Market, published transporter microsites, and Daily Featured Transporters now run without importing SQLite when their Supabase flags are enabled; the remaining application repository and test-runtime cutover is incomplete. Production readiness therefore remains blocked.
 
 ## Current migration coverage
 
@@ -25,6 +25,7 @@ The runnable Loadgistic application still uses `src/lib/repository.js` with Node
 - `037`: exposes one parameter-free, `auth.uid()`-bound account/workspace role projection for the SSR identity adapter and grants it only to authenticated/service roles.
 - `038`: adds the server-only bounded public-capacity projection, literal search, PostGIS route/Service-area matching, stable cursor indexes, post-limit Driver/review/document enrichment, and projection-time removal of private current geometry. Anonymous and ordinary authenticated clients cannot execute the RPC directly.
 - `039`: adds a server-only published-review count and average aggregate for transporter microsites. Anonymous and ordinary authenticated clients cannot execute the aggregate RPC, and review-party data is never returned by it.
+- `040`: adds the server-only regional candidate projection for Daily Featured Transporters and Sponsors. It rechecks published profile, structured base, public-contact, active-fleet, evidence, operating-model, review, and current-capacity facts while excluding private contact, document, coordinate, and account fields.
 
 The local-only fixture reset is explicit and refuses non-loopback Supabase URLs:
 
@@ -53,6 +54,8 @@ The public Truck Market uses a separate application port that dynamically select
 
 Published transporter microsites use a second application port with explicit Supabase selections for the public page, active fleet, assigned Driver first name and callback, separate Driver/truck evidence badges, current safe Capacity projection, independently visible contacts, fixture portrait, and the latest 20 published review notes. PostgreSQL calculates the all-review count and average through a service-role-only aggregate. Hidden contacts, exact coordinates, private proof paths, surnames, and unknown or unpublished handles remain excluded. Shared capacity and command parity remain pending, so the production repository blocker stays active.
 
+Daily Featured Transporters uses its own application port and the pure two-session scheduler. PostgreSQL returns only candidates from the date-derived regional group and rechecks every eligibility input at read time. The server joins the administrator-ordered published roster and at most five active Sponsor placements, strips owner IDs and eligibility internals, maps manual schedule keys to public handles, and safely projects either eligible transporters or bounded outside advertisements. Anonymous and ordinary authenticated clients cannot execute the candidate RPC. Shared capacity and command parity remain pending.
+
 Keep these active contracts stable while replacing SQLite operations:
 
 - Public capacity cursor/detail and public provider projections.
@@ -69,7 +72,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `039` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `040` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
