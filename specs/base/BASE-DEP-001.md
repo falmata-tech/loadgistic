@@ -79,6 +79,8 @@ Given the owner is preparing Netlify and Supabase\
 When project credentials become available\
 Then documentation names every required non-secret variable, migration command, private bucket, callback URL, CI check, backup, and smoke test\
 And the public browser credential is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` consistently in source, examples, and Netlify\
+And `APP_URL` supplies one HTTPS deployment-owned origin for fixed Supabase Auth callbacks\
+And Supabase's Site URL and Redirect URL allowlists, Google provider, numeric email template, and verified SMTP are recorded as owner-managed controls\
 And secret values are entered in the deployment platforms rather than committed\
 And Netlify or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and upload scanning contracts pass.
 
@@ -91,6 +93,15 @@ And Preview deploys carry validation traffic before a bounded Production promoti
 And the operator maintains encrypted off-platform logical database backups because the Supabase Free plan has no downloadable automatic backups\
 And the application presents a truthful temporary-unavailable state if either provider pauses service rather than falling back to local serverless files or SQLite\
 And the deployment contract remains portable to Vercel Pro or a container host without changing domain behavior.
+
+### Scenario: beta tile fallback is reported without blocking the pilot
+
+Given the production build has no reviewed third-party tile configuration\
+When launch readiness is evaluated\
+Then the direct OpenStreetMap community tile origin is reported as a non-secret production warning rather than a blocker\
+And the configured build never broadens Content Security Policy beyond the single resolved HTTPS tile origin\
+And operators monitor traffic and can switch the public tile URL and linked attribution without changing map components\
+And no application path proxies, prefetches, or bulk-copies map tiles.
 
 ### Scenario: dependency posture is current and deliberate
 

@@ -9,9 +9,22 @@ test('local readiness is runnable and production readiness names durable blocker
 
   const production=launchReadiness({NODE_ENV:'production',PRIVATE_STORAGE_BACKEND:'local',SESSION_SECRET:'short'});
   assert.equal(production.ok,false);
-  for(const blocker of ['strong-session-secret','durable-private-storage','managed-postgres-data-backend','managed-auth-backend','supabase-public-config','supabase-service-config','supabase-repository-adapter','managed-identity-adapter','shared-rate-limit-adapter','upload-malware-scanner']){
+  assert.ok(production.warnings.includes('community-osm-tile-service'));
+  for(const blocker of ['strong-session-secret','durable-private-storage','managed-postgres-data-backend','managed-auth-backend','managed-auth-callback-url','supabase-public-config','supabase-service-config','supabase-repository-adapter','managed-identity-adapter','shared-rate-limit-adapter','upload-malware-scanner']){
     assert.ok(production.blockers.includes(blocker));
   }
+});
+
+test('production rejects an unsafe auth callback and local fixture password flag',()=>{
+  const result=launchReadiness({
+    NODE_ENV:'production',APP_URL:'http://loadgistic.example',AUTH_BACKEND:'supabase',
+    ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN:'true',PRIVATE_STORAGE_BACKEND:'supabase',
+    SESSION_SECRET:'a-secure-production-session-secret-that-is-long',
+    DATA_BACKEND:'supabase',NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'public',SUPABASE_SERVICE_ROLE_KEY:'service'
+  });
+  assert.ok(result.blockers.includes('managed-auth-callback-url'));
+  assert.ok(result.blockers.includes('local-fixture-password-enabled'));
 });
 
 test('local managed runtime does not claim SQLite or silently accept missing service configuration',()=>{
