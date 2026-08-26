@@ -4,8 +4,8 @@ title: Deployment, delivery, and operations base
 related_ids: [BASE-FE-001, BASE-BE-001]
 problem: Changes need reproducible validation, controlled secrets, observable health, and a reversible release path.
 behavior: CI validates specs, source, tests, types, and production build before deployment artifacts are accepted.
-contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, LaunchReadiness, CloudHandoff]
-observability: [ci_status, health_endpoint, deployment_log, migration_log, storage_backend, readiness_blocker]
+contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, ManagedEmailPort, ScheduledOperationsWorker, LaunchReadiness, CloudHandoff]
+observability: [ci_status, health_endpoint, deployment_log, migration_log, storage_backend, email_delivery_counts, retention_cleanup_count, readiness_blocker]
 rollout: Promote immutable artifacts only after required checks; roll back application before destructive data changes.
 ---
 
@@ -47,6 +47,24 @@ Given a database migration is required\
 When it is prepared for release\
 Then it is additive or has an explicit backup and rollback procedure\
 And application compatibility across the rollout window is documented.
+
+### Scenario: managed transactional email is durable and idempotent
+
+Given a managed Shared capacity, Assisted matching, Tracking-access, or Tracking-completion delivery is due\
+When the bounded delivery worker claims queue rows\
+Then each row is leased transactionally so concurrent workers do not claim it together\
+And the configured server-only email provider receives a stable idempotency key, verified sender, bounded subject, plain-text body, and escaped HTML body\
+And successful delivery becomes terminal while failure records only a bounded non-secret provider status and a future retry time\
+And no API key, access code, customer email, or message body is written to application logs.
+
+### Scenario: scheduled operations are bounded and observable
+
+Given the Production application is published on Netlify\
+When the managed-operations schedule runs every fifteen minutes in UTC\
+Then one worker processes bounded Tracking and access-email batches and invokes bounded expired-guest cleanup\
+And its result contains counts and safe status names only\
+And an infrastructure failure returns a failed invocation for operator visibility without exposing private queue rows\
+And Preview or local execution can invoke the same application service explicitly without maintaining an in-memory timer.
 
 ### Scenario: browser tests are isolated from developer data
 
@@ -122,7 +140,7 @@ And generated identities, capacity, files, and reports are never written to Prod
 
 ## Contract details
 
-`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable local Supabase project and non-development ports. `PrivateStoragePort` stores, reads, and removes opaque private references. `LaunchReadiness` distinguishes a locally runnable Supabase stack from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
+`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable local Supabase project and non-development ports. `PrivateStoragePort` stores, reads, and removes opaque private references. `ManagedEmailPort` converts bounded application templates to one verified provider request without exposing provider credentials. `ScheduledOperationsWorker` leases bounded durable work and emits safe counts. `LaunchReadiness` distinguishes a locally runnable Supabase stack from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
 
 ## Required verification
 

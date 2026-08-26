@@ -7,6 +7,18 @@ import test from 'node:test';
 const root=path.resolve(import.meta.dirname,'..');
 const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
 
+test('fixture importer refreshes the current Ethiopia Featured day before copying reusable source data',()=>{
+  const source=fs.readFileSync(importer,'utf8');
+  assert.match(source,/ensureSeededDailyFeaturedProviderDay\(today\)/);
+  assert.match(source,/timeZone:'Africa\/Addis_Ababa'/);
+});
+
+test('Shared capacity verification chooses an unexpired market signal',()=>{
+  const source=fs.readFileSync(path.join(root,'scripts','verify-supabase-shared-capacity.mjs'),'utf8');
+  assert.match(source,/\.in\('market_status',\['EMPTY','PARTIAL'\]\)/);
+  assert.match(source,/\.gt\('expires_at',new Date\(\)\.toISOString\(\)\)/);
+});
+
 test('fixture importer refuses a remote Supabase target before making requests',()=>{
   const result=spawnSync(process.execPath,[importer,'--reset-local'],{
     cwd:root,

@@ -5,6 +5,7 @@ import path from 'node:path';
 
 const root=process.cwd();
 const migration=fs.readFileSync(path.join(root,'supabase','migrations','044_provider_tracking_runtime.sql'),'utf8');
+const operationsMigration=fs.readFileSync(path.join(root,'supabase','migrations','046_managed_email_operations.sql'),'utf8');
 const facade=fs.readFileSync(path.join(root,'src','lib','provider-tracking.js'),'utf8');
 const managed=fs.readFileSync(path.join(root,'src','lib','provider-tracking','supabase.js'),'utf8');
 
@@ -67,9 +68,10 @@ test('cleanup removes only temporary guest data and redacts contacts',()=>{
 });
 
 test('email workers lease rows and cannot downgrade a completed delivery',()=>{
-  const queue=section('create or replace function public.pending_provider_tracking_email_deliveries','create or replace function public.record_provider_tracking_email_attempt');
-  assert.match(queue,/for update skip locked/i);
-  assert.match(queue,/next_attempt_at=now\(\)\+interval '10 minutes'/i);
+  assert.match(operationsMigration,/for update skip locked/i);
+  assert.match(operationsMigration,/next_attempt_at=now\(\)\+interval '10 minutes'/i);
+  assert.match(operationsMigration,/jsonb_agg\(jsonb_build_object\([\s\S]*'status',event\.status,[\s\S]*'note',event\.note,[\s\S]*'created_at',event\.created_at/i);
+  assert.doesNotMatch(operationsMigration,/proof_storage_path|actor_user_id|approximate_lat|approximate_lng/i);
   const record=section('create or replace function public.record_provider_tracking_email_attempt','revoke all on function public.provider_tracking_actor_scope');
   assert.match(record,/if delivery\.status='SENT' then return true/i);
 });

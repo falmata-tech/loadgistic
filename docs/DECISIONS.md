@@ -827,3 +827,25 @@ template, and Google console configuration. Managed onboarding uses a
 15-minute server-only intent and one transactional provisioning command that
 keeps a new Auth profile inactive until its provider workspace, draft page,
 approved signup record, seven-day trial, and audit record exist.
+
+## ADR-043 — Durable email uses one managed port and a bounded scheduled worker
+
+Application email is produced from escaped, customer-safe templates and sent
+through a server-only provider port. The initial managed adapter calls Resend's
+HTTPS API directly with a verified sender and one stable SHA-256 idempotency key
+derived from the durable queue row. An HTTPS webhook remains an optional private
+integration adapter; neither adapter may expose credentials, recipient data,
+access codes, bodies, or provider responses in logs.
+
+Immediate request handling may attempt delivery, while a Netlify scheduled
+function runs every 15 minutes in UTC to process bounded Tracking and access
+email leases plus bounded 30-day guest cleanup. PostgreSQL `SKIP LOCKED` leases
+prevent concurrent claims, successful delivery is terminal, and worker output
+contains only provider names, safe status codes, and counts. Failure never
+rolls back the domain transaction that queued the message.
+
+Supabase Auth SMTP and application delivery use the same verified domain but
+remain separate adapters. Rollback disables the schedule or restores the prior
+application artifact without deleting queue, shipment, grant, review, or audit
+history. Production remains blocked until the sender, delivery, retry, cleanup,
+quota monitoring, and alert behavior are verified remotely.

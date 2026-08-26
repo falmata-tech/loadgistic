@@ -60,7 +60,7 @@ an unencrypted dump in Git, a CI log, or a public artifact.
 
 1. Create a project in the intended region and verify backup/restore first.
 2. Apply all migrations from `001_loadgistic_schema.sql` through
-   `045_managed_provider_signup.sql` in numeric order.
+   `046_managed_email_operations.sql` in numeric order.
 3. Run SQL lint and review every RLS policy/default-deny private table.
 4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
 5. Confirm private proof, verification, capacity, and payment buckets; add malware scanning/quarantine before serving uploads.
@@ -87,8 +87,10 @@ seven-day trial, and active role projection atomically. It still requires the
 hosted Google, callback, and SMTP configuration below before public enablement.
 The default Supabase SMTP service is demonstration-only and cannot deliver a
 public launch. Configure one verified sending domain through Resend Free (3,000
-messages per month and 100 per day) for Supabase Auth and Loadgistic delivery
-queues. Cloudflare Turnstile may provide the no-cost bot challenge, while the
+messages per month and 100 per day) for Supabase Auth SMTP and the Loadgistic
+direct email adapter. Netlify invokes bounded delivery retries and guest cleanup
+every 15 minutes in UTC; monitor the daily email and function-credit ceilings.
+Cloudflare Turnstile may provide the no-cost bot challenge, while the
 shared enforcement counters remain transactional Supabase records rather than
 process-local memory.
 
@@ -122,6 +124,10 @@ SUPABASE_SERVICE_ROLE_KEY
 AUTH_BACKEND
 ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN
 PRIVATE_STORAGE_BACKEND
+RESEND_API_KEY
+LOADGISTIC_EMAIL_FROM
+LOADGISTIC_EMAIL_REPLY_TO
+# Optional private fallback only:
 LOADGISTIC_EMAIL_WEBHOOK_URL
 LOADGISTIC_EMAIL_WEBHOOK_TOKEN
 NEXT_PUBLIC_TURNSTILE_SITE_KEY

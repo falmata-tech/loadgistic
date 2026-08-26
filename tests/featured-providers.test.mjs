@@ -82,10 +82,11 @@ test('administrator schedules bounded sponsorship without changing featured-tran
 test('administrator can schedule an outside advertiser and Sponsor breaks name it safely',()=>{
   const admin=repo.findUserByEmail('admin@loadgistic.local');
   const provider=repo.findUserByEmail('transporter@loadgistic.local');
-  const featureDate=ethiopiaDate(4);
+  const featureDate='2026-08-13';
   const candidates=repo.listFeaturedProviderCandidates(admin,featureDate).filter(item=>item.eligible);
   assert.ok(candidates.length>=6);
-  repo.saveFeaturedProviderDay(admin,{featureDate,providerKeys:candidates.slice(0,6).map(item=>item.provider_key),scheduleConfig:{sponsorBreakEvery:2},publish:true});
+  const selected=candidates.slice(0,6);
+  repo.saveFeaturedProviderDay(admin,{featureDate,providerKeys:selected.map(item=>item.provider_key),scheduleConfig:{sponsorBreakEvery:2},publish:true});
   const input={featureDate,sponsorKind:'ADVERTISER',businessName:'Blue Nile Tyres',description:'Commercial tyres and roadside support for freight operators.',websiteUrl:'https://example.com/blue-nile-tyres',phone:'+251911000111',startsOn:featureDate,endsOn:featureDate,position:1};
   assert.throws(()=>repo.saveProviderSponsorship(provider,input),/FORBIDDEN/);
   const saved=repo.saveProviderSponsorship(admin,input);

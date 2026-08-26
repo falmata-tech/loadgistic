@@ -102,6 +102,11 @@ And the shared Tracking code cannot authorize review submission\
 And a retry cannot create duplicate successful deliveries\
 And email failure does not roll back the completed shipment.
 
+Given immediate delivery fails or the request ends before a queued email is sent\
+When the managed scheduled worker later leases the delivery\
+Then it retries through the same idempotent provider request\
+And a completion email includes the ordered customer-safe Status timeline without private proof paths, actor identities, or location coordinates.
+
 ### Scenario: completed guest access lasts 30 days
 
 Given a shipment is Complete\
@@ -132,5 +137,5 @@ And public capacity or provider-profile visibility never grants file access.
 - Provider controls: owned Tracking list, Tracking detail, and Driver action panel
 - Outbound adapter: idempotent completion-email delivery
 - Cleanup: scheduled 30-day guest-access expiry through the service-role-only managed command
-- Persistence: `044_provider_tracking_runtime.sql` and the server-only provider Tracking adapter
+- Persistence: `044_provider_tracking_runtime.sql`, `046_managed_email_operations.sql`, and the server-only provider Tracking adapter
 - Tests: domain, repository, managed Tracking authorization, E2E

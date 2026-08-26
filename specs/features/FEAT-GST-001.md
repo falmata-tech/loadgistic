@@ -21,6 +21,11 @@ And the contact details are available only to the assigned team for reconnecting
 And no Load, shipment request, public demand signal, ranking, transaction, or user account is created\
 And the UI explains that the visitor may still browse, call, and negotiate with transporters directly.
 
+Given the recovery message is queued but its immediate email attempt does not complete\
+When the scheduled managed-operations worker leases it later\
+Then the recovery email uses the same stable idempotency key and private conversation code\
+And delivery failure never publishes the conversation or contact details.
+
 ### Scenario: active conversation feels live and fails safely
 
 Given a guest has an open conversation\

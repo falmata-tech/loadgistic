@@ -27,26 +27,36 @@ const {privateContactDigest}=await import('../src/lib/security.js');
 const sharedEmail='shared-capacity-verify@loadgistic.local';
 const sharedDigest=privateContactDigest(sharedEmail);
 const platformDigest=privateContactDigest('loadgistic-platform');
-const {data:ownerProfile,error:ownerError}=await service.from('profiles').select('id,role').eq('email','transporter@loadgistic.local').maybeSingle();
-if(ownerError||!ownerProfile)throw new Error(`SUPABASE_SHARED_VERIFY_OWNER_MISSING:${ownerError?.message||''}`);
-const {data:membership,error:membershipError}=await service.from('organization_members').select('organization_id')
-  .eq('user_id',ownerProfile.id).eq('membership_role','OWNER').limit(1).maybeSingle();
-if(membershipError||!membership)throw new Error(`SUPABASE_SHARED_VERIFY_MEMBERSHIP_MISSING:${membershipError?.message||''}`);
-const owner={...ownerProfile,organization_id:membership.organization_id,workspace_subscription:{status:'SPONSORED'}};
-const {data:vehicles,error:vehicleError}=await service.from('vehicles').select('id')
-  .eq('organization_id',membership.organization_id).eq('active',true).limit(20);
-if(vehicleError||!vehicles?.length)throw new Error(`SUPABASE_SHARED_VERIFY_VEHICLE_MISSING:${vehicleError?.message||''}`);
 const {data:platformGrants,error:platformGrantError}=await service.from('capacity_access_grants').select('vehicle_id')
   .eq('audience_type','LOADGISTIC').eq('recipient_email_digest',platformDigest).is('revoked_at',null);
 if(platformGrantError)throw new Error(`SUPABASE_SHARED_VERIFY_PLATFORM_READ_FAILED:${platformGrantError.message}`);
 const alreadyShared=new Set((platformGrants||[]).map(grant=>grant.vehicle_id));
-const vehicle=vehicles.find(candidate=>!alreadyShared.has(candidate.id))||vehicles[0];
-if(alreadyShared.has(vehicle.id))throw new Error('SUPABASE_SHARED_VERIFY_ISOLATED_VEHICLE_MISSING');
+const {data:capacityCandidates,error:capacityError}=await service.from('capacities').select('id,vehicle_id,visibility')
+  .not('provider_organization_id','is',null).in('market_status',['EMPTY','PARTIAL'])
+  .gt('expires_at',new Date().toISOString()).order('updated_at',{ascending:false}).limit(50);
+if(capacityError||!capacityCandidates?.length)throw new Error(`SUPABASE_SHARED_VERIFY_CAPACITY_MISSING:${capacityError?.message||''}`);
+const vehicleIds=capacityCandidates.map(candidate=>candidate.vehicle_id);
+const {data:vehicles,error:vehicleError}=await service.from('vehicles').select('id,organization_id')
+  .in('id',vehicleIds).eq('active',true);
+if(vehicleError||!vehicles?.length)throw new Error(`SUPABASE_SHARED_VERIFY_VEHICLE_MISSING:${vehicleError?.message||''}`);
+const vehicleById=new Map(vehicles.map(candidate=>[candidate.id,candidate]));
+const organizationIds=[...new Set(vehicles.map(candidate=>candidate.organization_id).filter(Boolean))];
+const {data:memberships,error:membershipError}=await service.from('organization_members').select('organization_id,user_id')
+  .in('organization_id',organizationIds).eq('membership_role','OWNER');
+if(membershipError||!memberships?.length)throw new Error(`SUPABASE_SHARED_VERIFY_MEMBERSHIP_MISSING:${membershipError?.message||''}`);
+const ownerByOrganization=new Map(memberships.map(candidate=>[candidate.organization_id,candidate.user_id]));
+const capacity=capacityCandidates.find(candidate=>{
+  const organizationId=vehicleById.get(candidate.vehicle_id)?.organization_id;
+  return !alreadyShared.has(candidate.vehicle_id)&&ownerByOrganization.has(organizationId);
+});
+if(!capacity)throw new Error('SUPABASE_SHARED_VERIFY_ISOLATED_VEHICLE_MISSING');
+const vehicle=vehicleById.get(capacity.vehicle_id);
+const {data:ownerProfile,error:ownerError}=await service.from('profiles').select('id,role')
+  .eq('id',ownerByOrganization.get(vehicle.organization_id)).maybeSingle();
+if(ownerError||!ownerProfile)throw new Error(`SUPABASE_SHARED_VERIFY_OWNER_MISSING:${ownerError?.message||''}`);
+const owner={...ownerProfile,organization_id:vehicle.organization_id,workspace_subscription:{status:'SPONSORED'}};
 
 await service.from('capacity_access_grants').delete().eq('recipient_email_digest',sharedDigest);
-const {data:capacity,error:capacityError}=await service.from('capacities').select('id,visibility')
-  .eq('vehicle_id',vehicle.id).order('updated_at',{ascending:false}).order('id',{ascending:false}).limit(1).maybeSingle();
-if(capacityError||!capacity)throw new Error(`SUPABASE_SHARED_VERIFY_CAPACITY_MISSING:${capacityError?.message||''}`);
 
 const grant=await grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:sharedEmail});
 if(!grant?.id||!grant.created)throw new Error('SUPABASE_SHARED_VERIFY_GRANT_FAILED');

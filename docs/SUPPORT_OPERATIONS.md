@@ -102,9 +102,10 @@ data, and unrelated private files are excluded.
   deployment replaces guest polling with Supabase Realtime subscriptions to
   committed, authorized rows and falls back to bounded polling on disconnect;
   PostgreSQL remains persistence authority.
-- Recovery email delivery uses the existing idempotent managed-email webhook
-  adapter. Without that adapter, the row remains queued and the current signed
-  browser session remains usable.
+- Recovery email delivery uses the idempotent managed-email port: direct Resend
+  is the Production adapter and an HTTPS webhook is an optional private
+  fallback. Without either adapter, the row remains queued and the current
+  signed browser session remains usable.
 - Production attachment acceptance remains blocked until durable private
   storage and malware scanning are configured. Every download reauthorizes the
   conversation relationship.

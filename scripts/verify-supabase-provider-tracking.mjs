@@ -112,6 +112,8 @@ await tracking.resolveProviderReview(admin,reviewId,'UPHELD','The review is supp
 const pendingEmails=await tracking.listPendingEmailDeliveries(100);
 if(!pendingEmails.some(delivery=>delivery.shipment_id===created.id&&delivery.delivery_kind==='COMPLETION'))throw new Error('SUPABASE_TRACKING_VERIFY_COMPLETION_EMAIL_MISSING');
 const completion=pendingEmails.find(delivery=>delivery.shipment_id===created.id&&delivery.delivery_kind==='COMPLETION');
+if(!Array.isArray(completion.events)||completion.events.length<5)throw new Error('SUPABASE_TRACKING_VERIFY_COMPLETION_TIMELINE_MISSING');
+if(completion.events.some(event=>Object.keys(event).some(key=>['proof_storage_path','actor_user_id','approximate_lat','approximate_lng'].includes(key))))throw new Error('SUPABASE_TRACKING_VERIFY_COMPLETION_TIMELINE_PRIVATE_DATA');
 await tracking.recordEmailDeliveryAttempt(completion.id,{sent:false,error:'LOCAL_VERIFICATION'});
 const {data:failedDelivery,error:failedError}=await service.from('email_deliveries')
   .select('status,attempts').eq('id',completion.id).maybeSingle();

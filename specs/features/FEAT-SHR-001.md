@@ -103,12 +103,17 @@ And OTP values are generated cryptographically, never stored or logged in plaint
 
 ### Scenario: local testing does not pretend email delivery succeeded
 
-Given the application is running outside production without a configured email-delivery webhook\
+Given the application is running outside production without a configured managed email provider\
 When an email with at least one active truck share requests a Shared capacity code\
 Then the response states that email delivery is not configured and presents the issued code as a local test code\
 And an email without an active share still receives the generic non-disclosing response and no local code\
 And production never returns an OTP value in an HTTP response, UI projection, log, or audit event\
 And configuring the email adapter removes the local-code presentation and sends through the managed delivery adapter.
+
+Given an eligible Shared capacity code is queued but immediate delivery does not complete\
+When the scheduled managed-operations worker leases it later\
+Then the same short-lived challenge is sent using a stable idempotency key if it remains deliverable\
+And concurrent workers cannot send separate copies from the same queue row.
 
 ### Scenario: one verified email aggregates multiple trucks
 

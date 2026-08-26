@@ -15,11 +15,15 @@ if(!localHosts.has(endpoint.hostname))throw new Error('REMOTE_FIXTURE_IMPORT_REF
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
 process.env.DATABASE_PATH=path.join(process.cwd(),'data','supabase-fixture-source.db');
-const {getDb}=await import('../src/lib/db.js');
+const {ensureSeededDailyFeaturedProviderDay,getDb}=await import('../src/lib/db.js');
 const {hashTrackingAccessCode,reviewAccessCode,trackingAccessCode}=await import('../src/lib/security.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
 const sqlite=getDb();
+const today=new Intl.DateTimeFormat('en-CA',{
+  timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'
+}).format(new Date());
+ensureSeededDailyFeaturedProviderDay(today);
 const supabase=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 
 const openApiResponse=await fetch(`${url}/rest/v1/`,{
