@@ -3,8 +3,8 @@ id: FEAT-IAM-001
 title: Identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
-behavior: Valid active provider users sign in through Supabase Google OAuth or a numeric email one-time code and receive an SSR-compatible HTTP-only session with role-scoped workspace access. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
-contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
+behavior: Valid active provider users sign in through Supabase Google OAuth or a numeric email one-time code and receive an SSR-compatible HTTP-only session with role-scoped workspace access. New provider identities may use either method through a separate short-lived signup handoff before supplying provider facts. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
+contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
 ---
@@ -28,6 +28,21 @@ When the user requests a sign-in code for their email\
 Then Supabase Auth is asked to send a six-digit, ten-minute one-time code without creating an unknown user\
 And the interface returns the same bounded response whether or not the address is eligible\
 And a valid numeric code establishes the same SSR-compatible HTTP-only session and role-scoped destination.
+
+### Scenario: a new provider proves identity without a password
+
+Given a visitor chooses to create a transporter account\
+When they continue with Google or request a six-digit email code\
+Then Loadgistic creates only a signed, HTTP-only, 15-minute signup handoff\
+And Supabase Auth may create one inactive identity that has no Loadgistic workspace authority\
+And a valid Google callback or email code returns the verified identity to the provider-details step\
+And the login email is not published or reused as a public contact\
+And no password is requested, stored, or accepted.
+
+Given a signup handoff is missing, expired, altered, or does not match the email-code flow\
+When provider details or a signup code is submitted\
+Then no provider workspace is created\
+And the response gives a generic restart message without exposing identity or upstream provider state.
 
 ### Scenario: callback and one-time-code failure stays generic
 

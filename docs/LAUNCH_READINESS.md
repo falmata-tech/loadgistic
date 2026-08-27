@@ -26,7 +26,7 @@ The repository supports local development, browser testing, controlled demonstra
 8. Replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering; pass the disposable 5,000-truck API and CPU-throttled phone audit before public traffic.
 9. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect
    URL for each environment, Google identity credentials, the numeric-token
-   email template, and verified custom SMTP; repeat the locally verified managed
+   login and signup templates, and verified custom SMTP; repeat the managed
    signup workflow against Preview before enabling it publicly.
 
 ## Bounded beta map warning

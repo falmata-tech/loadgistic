@@ -3,8 +3,8 @@ id: FEAT-APP-001
 title: Immediate transport-provider signup
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001]
 problem: Transport providers need low-friction operating accounts while capacity seekers should browse and track without being forced to register.
-behavior: A public user supplies the minimum provider facts, chooses Fleet transporter, Owner-operator, or Self-managed driver, and proves a Google identity through Supabase Auth; the selected operating model, active provider workspace, draft public page, approved signup record, and seven-day trial are then provisioned atomically. Capacity-seeker, password, and company-Driver signup are absent, and signup never implies document verification.
-contracts: [SignupIntent, SignupOperatingModel, ManagedIdentityProof, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
+behavior: A public user first proves a Google or numeric email-code identity, then supplies the minimum provider facts and chooses Fleet transporter, Owner-operator, or Self-managed driver; the selected operating model, active provider workspace, draft public page, approved signup record, and seven-day trial are then provisioned atomically. Capacity-seeker, password, and company-Driver signup are absent, and signup never implies document verification.
+contracts: [SignupIdentityHandoff, SignupIntent, SignupOperatingModel, ManagedIdentityProof, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
 observability: [signup_audit, workspace_provisioned, trial_provisioned, rate_limit_outcome]
 rollout: Add the managed signup-intent table, inactive Auth-profile bootstrap, and transactional provisioning command additively. Keep signup disabled if Google, callback, database, or trial-plan configuration is unavailable. Roll back by disabling new signup initiation and allowing already provisioned accounts to keep signing in; never reactivate Production passwords or delete completed signup records.
 ---
@@ -13,12 +13,20 @@ rollout: Add the managed signup-intent table, inactive Auth-profile bootstrap, a
 
 ### Scenario: signup submitted
 
-Given a supported account type, provider name, private callback phone, and Google identity\
-When the public signup form is submitted and Google returns through the fixed Loadgistic callback\
+Given a Google or email-code identity was proved through a valid short-lived signup handoff\
+When the visitor submits a supported account type, provider name, and private callback phone\
 Then an active user, the correct provider workspace, a draft provider microsite record, and seven-day trial are created atomically\
 And an approved signup record is retained for audit history\
 And the authenticated user enters that workspace immediately\
 And no password is collected or stored by Loadgistic.
+
+### Scenario: identity comes before provider details
+
+Given a visitor opens transporter signup\
+When no valid managed identity and signup handoff exist\
+Then the page offers Continue with Google and Email me a code before asking for operating or business details\
+And a returning verified signup identity sees one concise provider-details step\
+And an already active provider is sent to their workspace instead of creating another account.
 
 ### Scenario: signup offers only provider accounts
 
@@ -42,10 +50,10 @@ And no identity, license, driver, or truck verification is inferred from signup.
 
 ### Scenario: signup intent is short-lived and private
 
-Given a visitor submits valid provider facts before Google authentication\
-When Loadgistic prepares the identity handoff\
-Then the server stores a 15-minute intent behind RLS with only a digest of a random browser token\
-And the browser receives only that random token in a Secure, HttpOnly, SameSite cookie\
+Given a visitor completes identity proof and submits valid provider facts\
+When Loadgistic prepares atomic provisioning\
+Then the server stores a 15-minute intent behind RLS with only a digest of a random provisioning token\
+And the earlier browser handoff remains signed, Secure in Production, HttpOnly, SameSite, and short lived\
 And anonymous or authenticated browser clients cannot read, write, or execute the intent or provisioning tables and commands directly\
 And an expired, consumed, missing, or altered intent cannot provision a workspace.
 
@@ -68,7 +76,7 @@ And retrying cannot create a second workspace for the same authenticated identit
 
 ## Contract ownership
 
-- Inbound adapter: `/apply`, `/api/applications`, and the fixed managed-auth callback
+- Inbound adapter: `/apply`, `/api/applications`, `/api/applications/google`, `/api/applications/email-otp/*`, and the fixed managed-auth callback
 - Application service: provider signup-intent and completion commands
 - Persistence: `045_managed_provider_signup.sql` behind the service-role-only Supabase adapter
 - Tests: managed signup contract, local Supabase workflow verification, and browser handoff coverage

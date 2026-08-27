@@ -1,50 +1,69 @@
 import {randomUUID} from 'node:crypto';
-import { NextRequest,NextResponse } from 'next/server.js';
-import {managedAuthCallbackUrl} from '@/lib/auth-flow.js';
+import {NextRequest,NextResponse} from 'next/server.js';
+import {managedWorkspaceDestination} from '@/lib/auth-flow.js';
+import {getManagedCurrentUser} from '@/lib/identity/supabase';
 import {
-  MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,MANAGED_SIGNUP_MAX_AGE_SECONDS,
-  normalizeProviderSignupInput,prepareManagedProviderSignup
+  completeManagedProviderSignup,MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,
+  normalizeProviderSignupInput,prepareManagedProviderSignup,readProviderSignupHandoff
 } from '@/lib/provider-signup.js';
-import { redirectUrl,redirectWith,text } from '@/lib/redirects';
-import { checkRateLimit, requestKey } from '@/lib/rate-limit';
-import {getSupabasePublicConfig,usesSupabaseAuth} from '@/lib/supabase/config';
+import {redirectUrl,text} from '@/lib/redirects';
+import {checkRateLimit,requestKey} from '@/lib/rate-limit';
+import {usesSupabaseAuth} from '@/lib/supabase/config';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
 
 export const runtime='nodejs';
 
+function responseFor(request:NextRequest,path='/apply',error=''){
+  const location=redirectUrl(request,path);
+  if(error)location.searchParams.set('error',error);
+  const response=NextResponse.redirect(location,303);
+  response.headers.set('Cache-Control','no-store');
+  return response;
+}
+
+function clearSignupCookie(response:NextResponse){
+  response.cookies.set(MANAGED_SIGNUP_COOKIE,'',{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
+  });
+}
+
 export async function POST(request:NextRequest){
-  const rate=checkRateLimit(requestKey(request,'provider-signup'),5,10*60_000);
-  if(!rate.allowed)return redirectWith(request,'/apply','error',`Please wait ${rate.retryAfterSeconds} seconds before trying again.`);
-  if(!usesSupabaseAuth())return redirectWith(request,'/apply','error',MANAGED_SIGNUP_ERROR);
+  const rate=checkRateLimit(requestKey(request,'provider-signup-complete'),5,10*60_000);
+  if(!rate.allowed)return responseFor(request,'/apply',`Please wait ${rate.retryAfterSeconds} seconds before trying again.`);
+  if(!usesSupabaseAuth())return responseFor(request,'/apply',MANAGED_SIGNUP_ERROR);
+  const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
+  if(!handoff)return responseFor(request,'/apply',MANAGED_SIGNUP_ERROR);
+
   const form=await request.formData();
   const normalized=normalizeProviderSignupInput({
     name:text(form,'name'),businessName:text(form,'businessName'),phone:text(form,'phone'),
     applicationType:text(form,'applicationType'),notes:text(form,'notes')
   });
-  if(!normalized.ok)return redirectWith(request,'/apply','error',normalized.error||MANAGED_SIGNUP_ERROR);
-  const callbackUrl=managedAuthCallbackUrl({requestUrl:request.url});
-  if(!callbackUrl)return redirectWith(request,'/apply','error',MANAGED_SIGNUP_ERROR);
+  if(!normalized.ok)return responseFor(request,'/apply?step=details',normalized.error||MANAGED_SIGNUP_ERROR);
 
-  const token=randomUUID().replaceAll('-','');
-  const response=NextResponse.redirect(redirectUrl(request,'/apply'),303);
-  response.headers.set('Cache-Control','no-store');
+  const response=responseFor(request,'/apply?step=details',MANAGED_SIGNUP_ERROR);
   try{
-    await prepareManagedProviderSignup(normalized.input,token);
     const client=createSupabaseRouteClient(request,response);
-    const {data,error}=await client.auth.signInWithOAuth({
-      provider:'google',
-      options:{redirectTo:callbackUrl,scopes:'openid email profile',skipBrowserRedirect:true}
-    });
-    const providerUrl=data.url?new URL(data.url):null;
-    const supabaseOrigin=new URL(getSupabasePublicConfig().url).origin;
-    if(error||!providerUrl||providerUrl.origin!==supabaseOrigin)throw new Error('SIGNUP_OAUTH_UNAVAILABLE');
-    response.cookies.set(MANAGED_SIGNUP_COOKIE,token,{
-      httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',
-      maxAge:MANAGED_SIGNUP_MAX_AGE_SECONDS
-    });
-    response.headers.set('Location',providerUrl.toString());
+    const {data,error}=await client.auth.getUser();
+    const projection=!error&&data.user?await getManagedCurrentUser(client,data.user):null;
+    if(error||!data.user||!projection)throw new Error('SIGNUP_IDENTITY_REQUIRED');
+    const authenticatedEmail=String(data.user.email||'').trim().toLowerCase();
+    if(handoff.email&&authenticatedEmail!==handoff.email)throw new Error('SIGNUP_IDENTITY_MISMATCH');
+    if(projection.active){
+      response.headers.set('Location',managedWorkspaceDestination(projection.role));
+      clearSignupCookie(response);
+      return response;
+    }
+
+    const provisioningToken=randomUUID().replaceAll('-','');
+    await prepareManagedProviderSignup(normalized.input,provisioningToken);
+    await completeManagedProviderSignup(data.user.id,provisioningToken);
+    const completed=await getManagedCurrentUser(client,data.user);
+    if(!completed?.active)throw new Error('SIGNUP_NOT_AVAILABLE');
+    response.headers.set('Location',managedWorkspaceDestination(completed.role));
+    clearSignupCookie(response);
     return response;
   }catch{
-    return redirectWith(request,'/apply','error',MANAGED_SIGNUP_ERROR);
+    return response;
   }
 }

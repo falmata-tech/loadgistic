@@ -33,16 +33,18 @@ Dependency direction is HTTP/UI → application authorization/services → domai
 Identity-bearing records enforce one provider owner scope. Current routes and transitions are explicit. Public projections are separate from private email- and platform-audience capacity projections. No active domain aggregate represents public shipment demand, interests, Business profiles, or demand-side member networks. The provider Network is truck-scoped access control, not a demand relationship graph.
 
 Managed provider identity uses Supabase Auth with SSR cookies. Google login asks
-only for OpenID, email, and profile identity, while email OTP requests set
-`shouldCreateUser:false`; neither flow grants application authority until the
+only for OpenID, email, and profile identity, while login email OTP requests set
+`shouldCreateUser:false`; neither login flow grants application authority until the
 authenticated subject resolves through `current_user_projection()`. OAuth
 returns only through the deployment-owned `/api/auth/callback` URL and never
 accepts a dynamic post-login destination. Password authentication is an
 explicit non-Production fixture tool, not a managed customer login method.
-Public signup prepares a 15-minute service-role-only intent, bootstraps a new
-Auth subject as inactive, and provisions the selected provider workspace,
-draft page, signup record, and trial in one PostgreSQL transaction before the
-profile becomes active.
+Public signup proves Google or numeric email-code identity through a signed
+15-minute HTTP-only handoff before asking for provider facts. The signup-only
+email request may create one Auth subject, but the database trigger keeps it
+inactive. A service-role-only provisioning intent then creates the selected
+provider workspace, draft page, signup record, and trial in one PostgreSQL
+transaction before the profile becomes active.
 
 The installable shell is public-first: `/` is the manifest identity and Truck Market launch URL, while `/featured`, `/shared-capacity`, `/track`, `/about`, and `/apply` are distinct public route workspaces. The shared public header and route-aware navigation persist visually across client-side `Link` transitions, and its persistent chat launcher restores one authorized guest conversation across public route changes. `/help` remains a recovery fallback rather than a primary navigation destination. Market and Featured remain separate Server Component trees so each route loads only its own projection and client modules. Desktop uses a floating public workspace rail; public and authenticated phone layouts provide their own role-appropriate fixed navigation. The service worker ignores navigation requests, private workspace pages, and framework chunks; only stable brand and vehicle artwork may use cache-first delivery.
 

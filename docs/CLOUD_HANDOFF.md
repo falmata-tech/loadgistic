@@ -77,13 +77,14 @@ pin the adapter plugin. Connect the GitHub Production branch only after its
 required CI checks pass; keep automatic Production publishing disabled until
 the release gate is green.
 
-Supabase Auth owns transporter identity, Google OAuth, numeric email-code login,
+Supabase Auth owns transporter identity, Google OAuth, numeric email-code login and signup,
 and browser sessions. The browser/server SSR clients, PKCE callback exchange,
 conditional request-cookie refresh boundary, active-role projection, and
 Production-disabled fixture-password boundary are present behind
 `AUTH_BACKEND=supabase`. Managed provider onboarding now provisions an inactive
-Auth subject and the matching provider workspace, draft page, signup record,
-seven-day trial, and active role projection atomically. It still requires the
+Auth subject, collects the short provider profile after Google or email-code
+identity proof, and then provisions the matching provider workspace, draft page,
+signup record, seven-day trial, and active role projection atomically. It still requires the
 hosted Google, callback, and SMTP configuration below before public enablement.
 The default Supabase SMTP service is demonstration-only and cannot deliver a
 public launch. Configure one verified sending domain through Resend Free (3,000

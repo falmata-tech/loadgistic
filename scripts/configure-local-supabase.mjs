@@ -6,7 +6,7 @@ import path from 'node:path';
 const root=process.cwd();
 const cli=String(process.env.SUPABASE_CLI_PATH||'supabase').trim();
 const options=new Set(process.argv.slice(2));
-const supported=new Set(['--write-env','--fixtures','--verify']);
+const supported=new Set(['--write-env','--fixtures','--verify','--verify-signup']);
 for(const option of options){
   if(!supported.has(option))throw new Error(`UNKNOWN_OPTION:${option}`);
 }
@@ -21,7 +21,8 @@ const url=String(runtime.API_URL||'').trim();
 const publishableKey=String(runtime.PUBLISHABLE_KEY||runtime.ANON_KEY||'').trim();
 const anonKey=String(runtime.ANON_KEY||runtime.PUBLISHABLE_KEY||'').trim();
 const serviceRoleKey=String(runtime.SERVICE_ROLE_KEY||'').trim();
-if(!url||!publishableKey||!anonKey||!serviceRoleKey){
+const mailUrl=String(runtime.INBUCKET_URL||runtime.MAILPIT_URL||'').trim();
+if(!url||!publishableKey||!anonKey||!serviceRoleKey||!mailUrl){
   throw new Error('LOCAL_SUPABASE_CONFIG_INCOMPLETE');
 }
 const endpoint=new URL(url);
@@ -66,7 +67,8 @@ function runScript(script,args=[]){
       ...process.env,
       SUPABASE_SEED_URL:url,
       SUPABASE_SEED_ANON_KEY:anonKey,
-      SUPABASE_SEED_SERVICE_ROLE_KEY:serviceRoleKey
+      SUPABASE_SEED_SERVICE_ROLE_KEY:serviceRoleKey,
+      SUPABASE_SEED_MAIL_URL:mailUrl
     }
   });
   if(result.status!==0)throw new Error(`LOCAL_SUPABASE_SCRIPT_FAILED:${script}`);
@@ -81,3 +83,4 @@ if(options.has('--verify')){
   runScript('scripts/verify-supabase-provider-tracking.mjs');
   runScript('scripts/verify-supabase-provider-signup.mjs');
 }
+if(options.has('--verify-signup'))runScript('scripts/verify-supabase-provider-signup.mjs');

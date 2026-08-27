@@ -4,9 +4,12 @@ import {createClient} from '@supabase/supabase-js';
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
 const anonKey=String(process.env.SUPABASE_SEED_ANON_KEY||'').trim();
-if(!url||!serviceRoleKey||!anonKey)throw new Error('SUPABASE_SIGNUP_VERIFY_CONFIG_MISSING');
+const mailUrl=String(process.env.SUPABASE_SEED_MAIL_URL||'').trim();
+if(!url||!serviceRoleKey||!anonKey||!mailUrl)throw new Error('SUPABASE_SIGNUP_VERIFY_CONFIG_MISSING');
 const endpoint=new URL(url);
 if(!new Set(['127.0.0.1','localhost','::1']).has(endpoint.hostname))throw new Error('REMOTE_SIGNUP_VERIFY_REFUSED');
+const mailEndpoint=new URL(mailUrl);
+if(!new Set(['127.0.0.1','localhost','::1']).has(mailEndpoint.hostname))throw new Error('REMOTE_SIGNUP_MAIL_VERIFY_REFUSED');
 
 process.env.NEXT_PUBLIC_SUPABASE_URL=url;
 process.env.SUPABASE_SERVICE_ROLE_KEY=serviceRoleKey;
@@ -22,9 +25,43 @@ const {prepareManagedProviderSignup,completeManagedProviderSignup,providerSignup
 const token=randomBytes(32).toString('base64url');
 const tokenDigest=providerSignupIntentDigest(token);
 const email=`signup-${randomBytes(8).toString('hex')}@loadgistic.local`;
+const otpEmail=`signup-otp-${randomBytes(8).toString('hex')}@loadgistic.local`;
 let authUserId=null;
+let otpAuthUserId=null;
 let applicationId=null;
+
+async function localOtp(emailAddress){
+  const {error}=await anon.auth.signInWithOtp({email:emailAddress,options:{shouldCreateUser:true}});
+  if(error)throw new Error('SUPABASE_SIGNUP_VERIFY_OTP_REQUEST_FAILED');
+  for(let attempt=0;attempt<80;attempt+=1){
+    const listResponse=await fetch(new URL('/api/v1/messages',mailEndpoint));
+    if(!listResponse.ok)throw new Error('SUPABASE_SIGNUP_VERIFY_MAIL_READ_FAILED');
+    const list=await listResponse.json();
+    const summary=list.messages?.find(message=>message.To?.some(recipient=>recipient.Address===emailAddress));
+    if(summary){
+      const messageResponse=await fetch(new URL(`/api/v1/message/${encodeURIComponent(summary.ID)}`,mailEndpoint));
+      if(!messageResponse.ok)throw new Error('SUPABASE_SIGNUP_VERIFY_MAIL_READ_FAILED');
+      const message=await messageResponse.json();
+      const code=String(message.Text||message.HTML||'').match(/\b\d{6}\b/)?.[0];
+      if(code)return code;
+    }
+    await new Promise(resolve=>setTimeout(resolve,250));
+  }
+  throw new Error('SUPABASE_SIGNUP_VERIFY_OTP_MISSING');
+}
+
 try{
+  const code=await localOtp(otpEmail);
+  let verification=await anon.auth.verifyOtp({email:otpEmail,token:code,type:'signup'});
+  if(verification.error){
+    verification=await anon.auth.verifyOtp({email:otpEmail,token:code,type:'email'});
+  }
+  const {data:verified,error:verifyError}=verification;
+  if(verifyError||!verified.user)throw new Error('SUPABASE_SIGNUP_VERIFY_OTP_FAILED');
+  otpAuthUserId=verified.user.id;
+  const {data:otpProfile,error:otpProfileError}=await service.from('profiles').select('active,role').eq('id',otpAuthUserId).maybeSingle();
+  if(otpProfileError||!otpProfile||otpProfile.active!==false)throw new Error('SUPABASE_SIGNUP_VERIFY_OTP_AUTHORITY_FAILED');
+
   await prepareManagedProviderSignup({
     name:'Managed Signup Driver',businessName:'Managed Signup Transport',phone:'+251 911 222 333',
     applicationType:'OWNER_OPERATOR',notes:'Local managed signup verification.'
@@ -70,6 +107,12 @@ try{
   if(applicationId)await service.from('audit_logs').delete().eq('entity_id',applicationId);
   if(tokenDigest)await service.from('provider_signup_intents').delete().eq('token_digest',tokenDigest);
   if(authUserId)await service.auth.admin.deleteUser(authUserId);
+  if(otpAuthUserId)await service.auth.admin.deleteUser(otpAuthUserId);
+  else{
+    const {data:users}=await service.auth.admin.listUsers({page:1,perPage:200});
+    const orphan=users?.users?.find(candidate=>candidate.email===otpEmail);
+    if(orphan)await service.auth.admin.deleteUser(orphan.id);
+  }
 }
 
-process.stdout.write('Supabase managed provider signup bootstrap, atomic workspace, trial, duplicate denial, and browser denial checks passed.\n');
+process.stdout.write('Supabase managed provider email OTP, inactive bootstrap, atomic workspace, trial, duplicate denial, and browser denial checks passed.\n');

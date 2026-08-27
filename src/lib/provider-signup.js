@@ -1,10 +1,31 @@
-import {privateContactDigest} from './security.js';
+import {createSessionToken,privateContactDigest,verifySessionToken} from './security.js';
 
 export const MANAGED_SIGNUP_COOKIE='lg_provider_signup';
 export const MANAGED_SIGNUP_MAX_AGE_SECONDS=15*60;
 export const MANAGED_SIGNUP_ERROR='We could not create the transporter account. Please try again.';
 
 const ACCOUNT_TYPES=new Set(['TRANSPORT_COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER']);
+
+export function createProviderSignupHandoff(email=''){
+  const normalized=String(email||'').trim().toLowerCase();
+  if(normalized&&!(normalized.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))){
+    throw new Error('INVALID_SIGNUP_EMAIL');
+  }
+  return createSessionToken(`provider-signup:${normalized||'google'}`,MANAGED_SIGNUP_MAX_AGE_SECONDS);
+}
+
+export function readProviderSignupHandoff(token){
+  const payload=verifySessionToken(token);
+  const match=String(payload?.sub||'').match(/^provider-signup:(google|[^\s@]+@[^\s@]+\.[^\s@]+)$/);
+  if(!match)return null;
+  return {email:match[1]==='google'?null:match[1],expiresAt:Number(payload.exp)*1000};
+}
+
+export function maskedProviderSignupEmail(email){
+  const [local,domain]=String(email||'').split('@');
+  if(!local||!domain)return '';
+  return `${local.slice(0,2)}${local.length>2?'•'.repeat(Math.min(6,local.length-2)):''}@${domain}`;
+}
 
 export function providerSignupIntentDigest(token){
   const value=String(token||'').trim();

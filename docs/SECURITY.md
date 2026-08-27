@@ -3,7 +3,8 @@
 ## Implemented locally
 
 - HTTP-only SameSite signed provider sessions and scrypt password hashes for local fixtures.
-- Supabase SSR PKCE sessions for managed Google and numeric email-code login,
+- Supabase SSR PKCE sessions for managed Google and numeric email-code login
+  and signup, with a signed 15-minute signup handoff and inactive Auth bootstrap,
   fixed deployment-owned callbacks, minimum Google identity scopes, generic
   denial for missing role projections, and a Production-disabled fixture-password boundary.
 - Server-side provider, fleet, Driver-assignment, record-owner, platform-permission, and state-transition checks.
@@ -29,7 +30,7 @@
 
 - Complete PostgreSQL/Supabase repository parity and managed provider onboarding
   with reviewed RLS/RPC authorization. Before traffic, configure the Google
-  provider, exact Site URL/Redirect URL allowlists, numeric email template, and verified SMTP.
+  provider, exact Site URL/Redirect URL allowlists, numeric login and signup email templates, and verified SMTP.
 - Shared rate limiting and bot protection for public queries, login, code unlock, review submission, and provider signup.
 - Malware scanning/quarantine and production private-object authorization, including Assisted matching attachments.
 - Managed email delivery, webhook authentication, retry monitoring, guest support retention, authorized Supabase Realtime with polling fallback, and cleanup scheduling.

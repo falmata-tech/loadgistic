@@ -22,9 +22,9 @@ test('public account navigation and transporter signup follow session state',asy
   await expect(page.getByRole('heading',{name:'Transporter login'})).toBeVisible();
   await page.getByRole('link',{name:'Create a transporter account'}).click();
   await expect(page).toHaveURL(/\/apply$/);
-  for(const label of ['Fleet transporter','Owner-operator','Self-managed driver']){
-    await expect(page.getByRole('radio',{name:new RegExp(`^${label}`)})).toBeVisible();
-  }
+  await expect(page.getByText('First, confirm the email you will use to access your transporter workspace.')).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByText(/Transporter signup is temporarily unavailable|No password is needed/)).toBeVisible();
 
   await login(page,'driver@loadgistic.local');
   await page.goto('/');

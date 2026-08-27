@@ -4,6 +4,9 @@ import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/migrations/045_managed_provider_signup.sql','utf8');
 const route=fs.readFileSync('src/app/api/applications/route.ts','utf8');
+const google=fs.readFileSync('src/app/api/applications/google/route.ts','utf8');
+const otpRequest=fs.readFileSync('src/app/api/applications/email-otp/request/route.ts','utf8');
+const otpVerify=fs.readFileSync('src/app/api/applications/email-otp/verify/route.ts','utf8');
 const callback=fs.readFileSync('src/app/api/auth/callback/route.ts','utf8');
 const page=fs.readFileSync('src/app/apply/page.tsx','utf8');
 
@@ -19,6 +22,26 @@ test('managed signup accepts only the three provider operating models without a 
   assert.equal(normalizeProviderSignupInput({name:'Aster',businessName:'Aster Transport',phone:'+251911000000',applicationType:'COMPANY_DRIVER'}).ok,false);
   assert.doesNotMatch(page,/name="password"|type="password"/i);
   assert.match(page,/Continue with Google/i);
+  assert.match(page,/Email me a code/i);
+  assert.match(page,/provider-details-form/i);
+});
+
+test('signup handoff is signed, short lived, and keeps the account email private',async()=>{
+  const previous=process.env.SESSION_SECRET;
+  process.env.SESSION_SECRET='provider-signup-test-secret-longer-than-32-characters';
+  try{
+    const {createProviderSignupHandoff,maskedProviderSignupEmail,readProviderSignupHandoff}=await import('../src/lib/provider-signup.js');
+    const token=createProviderSignupHandoff(' New.Provider@Example.com ');
+    const handoff=readProviderSignupHandoff(token);
+    assert.equal(handoff.email,'new.provider@example.com');
+    assert.ok(handoff.expiresAt>Date.now());
+    assert.equal(maskedProviderSignupEmail(handoff.email),'ne••••••@example.com');
+    assert.equal(readProviderSignupHandoff(`${token}altered`),null);
+    assert.equal(readProviderSignupHandoff(createProviderSignupHandoff()).email,null);
+  }finally{
+    if(previous===undefined)delete process.env.SESSION_SECRET;
+    else process.env.SESSION_SECRET=previous;
+  }
 });
 
 test('signup intent and provisioning commands are server-only and authority activates last',()=>{
@@ -43,12 +66,25 @@ test('signup intent and provisioning commands are server-only and authority acti
   assert.doesNotMatch(migration,/grant execute on function public\.complete_provider_signup\(uuid,text\) to (?:anon|authenticated)/i);
 });
 
-test('public signup hands a short-lived intent to fixed Google callback and never calls SQLite signup',()=>{
+test('public signup proves identity first and provisions only after an authenticated details submission',()=>{
+  assert.match(google,/MANAGED_SIGNUP_MAX_AGE_SECONDS/);
+  assert.match(google,/scopes:'openid email profile'/);
+  assert.match(google,/createProviderSignupHandoff\(\)/);
+  assert.match(otpRequest,/shouldCreateUser:true/);
+  assert.match(otpRequest,/emailRedirectTo:callbackUrl/);
+  assert.match(otpRequest,/createProviderSignupHandoff\(email\)/);
+  assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'signup'\}\)/);
+  assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'email'\}\)/);
+  assert.match(otpVerify,/authenticatedEmail!==handoff\.email/);
+  assert.match(otpVerify,/redirectUrl\(request,'\/apply\?step=details'\)/);
+  assert.match(callback,/readProviderSignupHandoff/);
+  assert.match(callback,/authenticatedEmail!==signupHandoff\.email/);
+  assert.match(callback,/\/apply\?step=details/);
+  assert.doesNotMatch(callback,/completeManagedProviderSignup/);
   assert.match(route,/prepareManagedProviderSignup/);
-  assert.match(route,/MANAGED_SIGNUP_MAX_AGE_SECONDS/);
-  assert.match(route,/scopes:'openid email profile'/);
+  assert.match(route,/client\.auth\.getUser\(\)/);
+  assert.match(route,/handoff\.email&&authenticatedEmail!==handoff\.email/);
+  assert.match(route,/completeManagedProviderSignup/);
   assert.doesNotMatch(route,/createBusinessApplication|@\/lib\/repository/);
-  assert.match(callback,/completeManagedProviderSignup/);
-  assert.match(callback,/projection\?\.active/);
-  assert.match(callback,/maxAge:0/);
+  assert.match(route,/clearSignupCookie/);
 });

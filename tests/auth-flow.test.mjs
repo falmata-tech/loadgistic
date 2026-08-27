@@ -48,3 +48,19 @@ test('managed adapters request minimum Google scopes and never create an OTP use
   assert.match(callback,/exchangeCodeForSession\(code,flowId\?\{flowId\}:undefined\)/);
   assert.doesNotMatch(callback,/searchParams\.get\(['"]next['"]\)/);
 });
+
+test('signup uses the same managed identity choices but may create only an inactive Auth identity',()=>{
+  const google=readFileSync(new URL('../src/app/api/applications/google/route.ts',import.meta.url),'utf8');
+  const otp=readFileSync(new URL('../src/app/api/applications/email-otp/request/route.ts',import.meta.url),'utf8');
+  const verify=readFileSync(new URL('../src/app/api/applications/email-otp/verify/route.ts',import.meta.url),'utf8');
+  const config=readFileSync(new URL('../supabase/config.toml',import.meta.url),'utf8');
+  const template=readFileSync(new URL('../supabase/templates/signup-code.html',import.meta.url),'utf8');
+  assert.match(google,/provider:'google'/);
+  assert.match(google,/scopes:'openid email profile'/);
+  assert.match(otp,/shouldCreateUser:true/);
+  assert.match(verify,/readProviderSignupHandoff/);
+  assert.match(verify,/projection\.active/);
+  assert.match(verify,/type:'signup'/);
+  assert.match(config,/\[auth\.email\.template\.confirmation\][\s\S]*signup-code\.html/);
+  assert.match(template,/\{\{ \.Token \}\}/);
+});

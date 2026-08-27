@@ -824,9 +824,13 @@ Rollback may temporarily disable Google or email-code buttons independently at
 the Supabase provider boundary, but must not re-enable passwords in Production.
 Public launch still requires verified custom SMTP, the numeric-token email
 template, and Google console configuration. Managed onboarding uses a
-15-minute server-only intent and one transactional provisioning command that
-keeps a new Auth profile inactive until its provider workspace, draft page,
-approved signup record, seven-day trial, and audit record exist.
+signed 15-minute HTTP-only identity handoff followed by a server-only intent
+and one transactional provisioning command. Google and a six-digit email code
+both reach the same concise provider-details step. A signup email request may
+create one Supabase Auth subject, but the bootstrap keeps it inactive until its
+provider workspace, draft page, approved signup record, seven-day trial, and
+audit record exist. Existing-account login email requests continue to use
+`shouldCreateUser:false`.
 
 ## ADR-043 — Durable email uses one managed port and a bounded scheduled worker
 
