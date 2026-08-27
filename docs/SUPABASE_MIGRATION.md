@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, shared abuse counters, and private upload quarantine. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` through `049` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`049` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Fleet, verification, billing, Support, administration, and sponsorship management remain before Production readiness.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, shared abuse counters, and private upload quarantine. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` through `050` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`050` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Verification, billing, Support, administration, and sponsorship management remain before Production readiness.
 
 ## Current migration coverage
 
@@ -35,6 +35,7 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `047`: adds one service-role-only atomic request-window counter using HMAC-digested keys, bounded limits/windows, fixed retry intervals, RLS default denial, and bounded expired-row cleanup for the managed operations worker.
 - `048`: adds a private, server-only upload-quarantine bucket with no browser policy. The storage adapter releases an object to its purpose bucket only after signature validation and an explicit clean scanner verdict, then removes quarantine on success or failure.
 - `049`: adds service-role-only transporter-profile workspace, bounded transactional page update, and profile-image metadata commands. Each function repeats active actor, workspace, owner, structured place, and Company-driver denial rules and writes contact-safe audit details.
+- `050`: moves the authenticated workspace dashboard and Fleet management to service-role-only bounded RPCs. Fleet-owner reads exclude account email and proof paths; Driver assignment plus Capacity/Tracking permissions update atomically under repeated organization/subscription/asset checks and write contact-safe audit metadata.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -67,7 +68,7 @@ Transporter-profile editing now selects a dedicated application port. Its Postgr
 Keep these active contracts stable while replacing SQLite operations:
 
 - Public capacity cursor/detail and public provider projections.
-- Fleet and verification commands.
+- Verification commands.
 - Provider billing, Support, and platform Operations commands.
 - Account-free Assisted matching, private attachments, sponsor/featured administration, and remaining platform administration commands.
 
@@ -82,7 +83,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
    phone rows before validating that constraint in a later reviewed migration.
 3. Import the bundled place catalog with `npm run places:import:supabase`.
 4. Finish the remaining Supabase PostgreSQL repository and hardened private Storage adapters as the only application runtime; do not add a dual-write or runtime SQLite fallback.
-5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. Identity, provider signup, public projections, Shared capacity, provider Capacity, and Tracking managed workflow verification are complete; remaining adapters and browser-suite cutover are pending.
+5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. Identity, provider signup, public projections, Shared capacity, provider Capacity, Tracking, workspace, and Fleet managed workflow verification are complete; remaining adapters and browser-suite cutover are pending.
 6. Configure the server-only Cloudmersive scanner key, verify clean/dirty/timeout/quota behavior against Staging, complete the privacy/vendor review, configure the verified Resend sender, authorized Supabase Realtime with polling fallback, Preview concurrency verification for shared rate limiting, and monitoring for scheduled email/cleanup jobs. The local EICAR-aware scanner is test-only and cannot satisfy Production readiness.
 7. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
 8. Deploy the managed backend to a non-production environment, run `npm run launch:check`, and rehearse application and data rollback.

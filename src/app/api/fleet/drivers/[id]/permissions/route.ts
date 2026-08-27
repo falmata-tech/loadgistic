@@ -1,6 +1,6 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { assignFleetDriverVehicle, updateFleetDriverPermissions } from '@/lib/repository.js';
+import { updateFleetDriverAccess } from '@/lib/fleet.js';
 import { checked,redirectWith } from '@/lib/redirects';
 import { errorMessage } from '@/lib/errors';
 
@@ -10,8 +10,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try {
-    await assignFleetDriverVehicle(user,id,String(form.get('vehicleId')||''));
-    await updateFleetDriverPermissions(user,id,{
+    await updateFleetDriverAccess(user,id,{
+      vehicleId:String(form.get('vehicleId')||''),
       canManageCapacity:checked(form,'canManageCapacity'),
       canManageTracking:checked(form,'canManageTracking')
     });

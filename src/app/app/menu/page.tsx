@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getWorkspaceAccess } from '@/lib/repository.js';
+import { getWorkspaceAccess } from '@/lib/workspace.js';
 import { LogoutButton } from '@/components/logout-button';
 import { PageHeader } from '@/components/page-header';
 import { BadgeCheck, CreditCard, ExternalLink, Headphones, LayoutGrid, MapPinned, Sparkles, UserRound } from 'lucide-react';

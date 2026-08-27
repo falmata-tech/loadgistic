@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getWorkspaceAccess, paginateResults } from '@/lib/repository.js';
+import { getBillingSummary, getWorkspaceAccess } from '@/lib/workspace.js';
+import { paginateResults } from '@/lib/pagination.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';

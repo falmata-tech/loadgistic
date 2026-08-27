@@ -86,5 +86,6 @@ if(options.has('--verify')){
   runScript('scripts/verify-supabase-rate-limit.mjs');
   runScript('scripts/verify-supabase-upload-scanning.mjs');
   runScript('scripts/verify-supabase-provider-profile.mjs');
+  runScript('scripts/verify-supabase-workspace-fleet.mjs');
 }
 if(options.has('--verify-signup'))runScript('scripts/verify-supabase-provider-signup.mjs');

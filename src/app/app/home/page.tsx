@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getDashboard, getWorkspaceAccess } from '@/lib/repository.js';
+import { getBillingSummary, getDashboard, getWorkspaceAccess } from '@/lib/workspace.js';
 import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';

@@ -6,7 +6,7 @@ problem: Fleet owners need Drivers to publish assigned-truck capacity and operat
 behavior: A fleet Driver works inside one provider organization, has at most one current truck assignment, and may manage assigned-truck capacity or tracking only when the fleet owner permits each capability. Fleet owners create shipment records and retain full history; self-managed Drivers retain full provider authority.
 contracts: [FleetDriverMembership, DriverPermissionPolicy, DriverVehicleAssignment, DutyCommand, OwnerOversightProjection]
 observability: [driver_permission_audit, driver_duty_audit, denied_driver_command, update_actor]
-rollout: Add permissions and assignments additively with conservative defaults, retain transporter-owner access, and roll back by hiding owner controls while preserving stored settings.
+rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access commands with conservative defaults, retain transporter-owner access, and roll back by hiding owner controls while preserving stored settings; local development, Preview, and Production never fall back to SQLite.
 ---
 
 # Fleet driver access
@@ -25,6 +25,16 @@ Given an authenticated fleet owner and an active driver in the same transporter 
 When the owner changes that Driver's capacity-control or shipment-tracking permission\
 Then the setting is saved only for that driver\
 And the change is audited with actor, driver, permission, and resulting value.
+
+### Scenario: managed Fleet has one production-shaped persistence path
+
+Given local development, Preview, or Production uses the managed runtime\
+When a Fleet owner opens bounded truck or Driver access data or saves assignment and permission changes\
+Then the active application route uses the dedicated Fleet application port and Supabase PostgreSQL\
+And one transactional command repeats active actor, workspace subscription, ownership, Driver, and truck checks before ending or creating assignments and updating permissions\
+And PostgreSQL preserves displaced assignment history and writes one contact-safe audit outcome\
+And unavailable or rejected managed persistence fails closed without importing or querying SQLite\
+And anonymous and ordinary browser roles cannot execute the server-only Fleet functions.
 
 ### Scenario: fleet owner assigns one current driver to one current truck
 
@@ -112,7 +122,7 @@ And Dashboard returns to the authenticated workspace without requiring a new log
 
 ## Contract ownership
 
-- Application policy and services: Driver access, shipment, tracking, and capacity functions in `src/lib/repository.js`
+- Application policy and services: dedicated managed Fleet, Tracking, and Capacity application ports
 - Inbound adapters: Driver Home, assignment detail, Fleet team controls, and related route handlers
-- Persistence adapter: additive fleet-driver permission and vehicle-assignment tables in `src/lib/db.js`
-- Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Persistence adapter: Supabase PostgreSQL fleet-driver, permission, assignment, verification-summary, and audit functions; SQLite remains test-fixture history only during removal
+- Tests: managed Fleet contract and live Supabase verifier, `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`
