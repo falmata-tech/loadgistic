@@ -872,3 +872,28 @@ scheduled-operations worker removes expired windows, and its output contains a
 count only. Rollback restores the previous application artifact and preserves
 the additive counter table; public Production remains blocked if the managed
 counter verifier or health contract fails.
+
+## ADR-045 — Private uploads quarantine before synchronous release
+
+Every upload enters one purpose-independent private quarantine boundary only
+after size, declared MIME, and magic-byte checks pass. The application then
+submits the in-memory bytes to one scanner port. Only an explicit clean verdict
+allows the bytes to be copied into the purpose-specific private bucket and the
+quarantine object to be removed. Dirty, malformed, timed-out, quota-limited,
+unavailable, or unexpected results fail closed, remove transient objects, and
+return no reference for domain persistence. Reads accept released bucket
+references only and continue to reauthorize the owning record.
+
+The pilot managed adapter uses Cloudmersive's advanced HTTPS file-scan endpoint
+with executable, invalid-file, script, password-protected, macro, unsafe-archive,
+embedded-object, and unwanted-action allowances disabled. Its documented free
+quota is a pilot boundary, not a scale claim. Operators must review its privacy
+terms and disclose the security processor before configuring the server-only
+API key. The free public VirusTotal upload is prohibited for customer or
+identity documents because private VirusTotal scanning is a paid product.
+
+Local development uses a deterministic EICAR-aware scanner only for workflow
+and cleanup verification; it never satisfies Production readiness. Rollback
+disables upload entry points or restores the prior application artifact without
+making quarantined objects readable. A scanner outage must not cause direct
+final-bucket writes or a configuration-flag bypass.

@@ -32,7 +32,7 @@
   with reviewed RLS/RPC authorization. Before traffic, configure the Google
   provider, exact Site URL/Redirect URL allowlists, numeric login and signup email templates, and verified SMTP.
 - Shared rate limiting and bot protection for public queries, login, code unlock, review submission, and provider signup.
-- Malware scanning/quarantine and production private-object authorization, including Assisted matching attachments.
+- Configure the managed scanner key and prove clean, malicious, unavailable, quota, cleanup, and browser-denial behavior against Staging. The isolated local stack already proves quarantine-before-release, EICAR rejection, cleanup, and private-object denial, but its local scanner is test-only.
 - Managed email delivery, webhook authentication, retry monitoring, guest support retention, authorized Supabase Realtime with polling fallback, and cleanup scheduling.
 - Monitor the attributed direct community-tile fallback during the bounded beta and move to a reviewed provider before sustained traffic; never proxy or bulk-copy community tiles.
 - HTTPS, managed secrets, key rotation, central logging/alerts, backups, restore drills, and a reviewed destructive-demand-purge procedure.

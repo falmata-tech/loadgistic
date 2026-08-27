@@ -44,6 +44,7 @@ function writeLocalEnvironment(){
     ['DATA_BACKEND','supabase'],
     ['AUTH_BACKEND','supabase'],
     ['PRIVATE_STORAGE_BACKEND','supabase'],
+    ['UPLOAD_SCANNER_BACKEND','local'],
     ['ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN','true']
   ]);
   if(!/^SESSION_SECRET=/m.test(source))values.set('SESSION_SECRET',randomBytes(32).toString('base64url'));
@@ -83,5 +84,6 @@ if(options.has('--verify')){
   runScript('scripts/verify-supabase-provider-tracking.mjs');
   runScript('scripts/verify-supabase-provider-signup.mjs');
   runScript('scripts/verify-supabase-rate-limit.mjs');
+  runScript('scripts/verify-supabase-upload-scanning.mjs');
 }
 if(options.has('--verify-signup'))runScript('scripts/verify-supabase-provider-signup.mjs');

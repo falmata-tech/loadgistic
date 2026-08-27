@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import {scanPrivateUpload,uploadScannerStatus} from './upload-scanner.js';
 
 const MIME_CONFIG={
   'image/jpeg':{extension:'.jpg',matches:(bytes)=>bytes.length>=3&&bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff},
@@ -21,6 +22,7 @@ const PURPOSE_BUCKET={
   'guest-support':'support-attachment',
   file:'shipment-proof'
 };
+const QUARANTINE_BUCKET='private-upload-quarantine';
 
 function storageBackend(environment=process.env){
   const backend=String(environment.PRIVATE_STORAGE_BACKEND||'local').toLowerCase();
@@ -66,12 +68,26 @@ function supabaseParts(reference){
   return {bucket:match[1],objectPath:match[2]};
 }
 
+async function removeSupabaseObject(client,bucket,objectPath){
+  const {error}=await client.storage.from(bucket).remove([objectPath]);
+  if(error)throw new Error('PRIVATE_STORAGE_DELETE_FAILED');
+}
+
+async function removeLocalObject(reference){
+  try{await fs.unlink(localPathForReference(reference));}
+  catch(error){if(!error||typeof error!=='object'||error.code!=='ENOENT')throw error;}
+}
+
 export function privateStorageStatus(environment=process.env){
   const backend=storageBackend(environment);
+  const scanner=uploadScannerStatus(environment);
   return {
     backend,
     durable:backend==='supabase',
-    configured:backend==='local'||Boolean(environment.NEXT_PUBLIC_SUPABASE_URL&&environment.SUPABASE_SERVICE_ROLE_KEY)
+    configured:backend==='local'||Boolean(environment.NEXT_PUBLIC_SUPABASE_URL&&environment.SUPABASE_SERVICE_ROLE_KEY),
+    scannerBackend:scanner.backend,
+    scannerConfigured:scanner.configured,
+    scannerProductionSafe:scanner.productionSafe
   };
 }
 
@@ -88,22 +104,51 @@ export async function storePrivateUpload(file,purpose='file'){
 
   const date=new Date().toISOString().slice(0,10);
   const objectPath=`${purpose}/${date}/${crypto.randomUUID()}${config.extension}`;
+  const quarantinePath=`incoming/${date}/${crypto.randomUUID()}${config.extension}`;
   const backend=storageBackend();
   let reference;
   if(backend==='supabase'){
     const bucket=PURPOSE_BUCKET[purpose];
-    const {error}=await supabaseClient().storage.from(bucket).upload(objectPath,bytes,{
-      contentType:mimeType,
-      cacheControl:'0',
-      upsert:false
-    });
-    if(error)throw new Error('PRIVATE_STORAGE_WRITE_FAILED');
-    reference=`supabase://${bucket}/${objectPath}`;
+    const client=supabaseClient();
+    let quarantined=false;let released=false;
+    try{
+      const {error:quarantineError}=await client.storage.from(QUARANTINE_BUCKET).upload(quarantinePath,bytes,{
+        contentType:mimeType,cacheControl:'0',upsert:false
+      });
+      if(quarantineError)throw new Error('PRIVATE_STORAGE_QUARANTINE_FAILED');
+      quarantined=true;
+      await scanPrivateUpload(bytes,mimeType);
+      const {error:releaseError}=await client.storage.from(bucket).upload(objectPath,bytes,{
+        contentType:mimeType,cacheControl:'0',upsert:false
+      });
+      if(releaseError)throw new Error('PRIVATE_STORAGE_WRITE_FAILED');
+      released=true;
+      await removeSupabaseObject(client,QUARANTINE_BUCKET,quarantinePath);
+      quarantined=false;
+      reference=`supabase://${bucket}/${objectPath}`;
+    }catch(error){
+      if(released)await removeSupabaseObject(client,bucket,objectPath).catch(()=>undefined);
+      if(quarantined)await removeSupabaseObject(client,QUARANTINE_BUCKET,quarantinePath).catch(()=>undefined);
+      throw error;
+    }
   }else{
+    const quarantineReference=`local://quarantine/${quarantinePath}`;
+    const quarantineTarget=localPathForReference(quarantineReference);
     const target=localPathForReference(`local://${objectPath}`);
-    await fs.mkdir(path.dirname(target),{recursive:true});
-    await fs.writeFile(target,bytes,{flag:'wx'});
-    reference=`local://${objectPath}`;
+    let released=false;
+    try{
+      await fs.mkdir(path.dirname(quarantineTarget),{recursive:true});
+      await fs.writeFile(quarantineTarget,bytes,{flag:'wx'});
+      await scanPrivateUpload(bytes,mimeType);
+      await fs.mkdir(path.dirname(target),{recursive:true});
+      await fs.rename(quarantineTarget,target);
+      released=true;
+      reference=`local://${objectPath}`;
+    }catch(error){
+      await removeLocalObject(quarantineReference).catch(()=>undefined);
+      if(released)await removeLocalObject(`local://${objectPath}`).catch(()=>undefined);
+      throw error;
+    }
   }
   return {path:reference,name:path.basename(objectPath),originalName:cleanOriginalName(file.name),mimeType,size:bytes.length};
 }
@@ -112,6 +157,7 @@ export async function readPrivateUpload(reference){
   if(!reference)return null;
   if(String(reference).startsWith('supabase://')){
     const {bucket,objectPath}=supabaseParts(String(reference));
+    if(bucket===QUARANTINE_BUCKET)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
     const {data,error}=await supabaseClient().storage.from(bucket).download(objectPath);
     if(error){
       if(String(error.statusCode||'')==='404')return null;
@@ -119,6 +165,7 @@ export async function readPrivateUpload(reference){
     }
     return Buffer.from(await data.arrayBuffer());
   }
+  if(String(reference).startsWith('local://quarantine/'))throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
   try{
     return await fs.readFile(localPathForReference(String(reference)));
   }catch(error){
@@ -131,13 +178,10 @@ export async function removePrivateUpload(reference){
   if(!reference)return;
   if(String(reference).startsWith('supabase://')){
     const {bucket,objectPath}=supabaseParts(String(reference));
-    const {error}=await supabaseClient().storage.from(bucket).remove([objectPath]);
-    if(error)throw new Error('PRIVATE_STORAGE_DELETE_FAILED');
+    if(bucket===QUARANTINE_BUCKET)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+    await removeSupabaseObject(supabaseClient(),bucket,objectPath);
     return;
   }
-  try{
-    await fs.unlink(localPathForReference(String(reference)));
-  }catch(error){
-    if(!error||typeof error!=='object'||error.code!=='ENOENT')throw error;
-  }
+  if(String(reference).startsWith('local://quarantine/'))throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+  await removeLocalObject(String(reference));
 }

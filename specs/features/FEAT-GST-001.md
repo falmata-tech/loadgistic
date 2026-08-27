@@ -6,7 +6,7 @@ problem: Account-free visitors may want Loadgistic to help identify suitable tra
 behavior: A visitor starts a private Assisted matching conversation with a required email, required callback phone, and bounded message. The persistent public-shell launcher is the primary chat surface; it opens a compact desktop dialog or mobile sheet and restores the active session across public route changes and browser refreshes. It enters the existing support assignment workflow without creating a user account or public demand record. Available agents are assigned immediately, active conversations refresh automatically at a fast bounded interval, and the guest may attach specifically requested private images or PDFs. The guest or team may end the chat; its retained transcript becomes read-only and the guest may start a distinct new session. Supabase Realtime replaces polling during managed deployment; the local adapter must not claim push delivery. Loadgistic presents this as assisted matching, not a service guarantee or transaction handler.
 contracts: [GuestSupportIdentity, GuestConversationAccess, AssistedMatchingConversation, GuestSupportMessage, GuestSupportAttachment, GuestSupportProjection, PersistentPublicChatLauncher]
 observability: [guest_conversation_created, guest_message_sent, guest_attachment_uploaded, guest_conversation_access_denied, guest_conversation_closed]
-rollout: Additive Supabase PostgreSQL schema plus a private support-attachment bucket in the isolated local and managed stacks. Production exposure remains blocked until malware scanning, managed email, and shared rate limiting pass readiness checks. Roll back by disabling guest creation while retaining private records for the retention window.
+rollout: Additive Supabase PostgreSQL schema plus private support-attachment and server-only quarantine buckets in the isolated local and managed stacks. Production exposure remains blocked until the managed scanner, email, and shared-rate-limit adapters pass remote readiness checks. Roll back by disabling guest creation while retaining private records for the retention window.
 ---
 
 # Anonymous assisted matching
@@ -60,10 +60,11 @@ And ending or starting does not create a Load, demand record, member account, or
 Given the team asks a guest for supporting information\
 When the guest uploads a JPEG, PNG, WebP, or PDF no larger than the configured limit\
 Then its signature is validated before storage under a private opaque reference\
+And it is quarantined and receives a clean scanner verdict before the conversation stores that reference\
 And only that guest session, the assigned Support actor, or an administrator with Support permission can download it\
 And every download reauthorizes the conversation relationship\
 And filenames are sanitized while passwords, PINs, and one-time codes are explicitly discouraged\
-And production upload acceptance remains blocked without configured malware scanning and durable private storage.
+And production upload acceptance fails closed without configured malware scanning and durable private storage.
 
 ### Scenario: guest access fails closed
 

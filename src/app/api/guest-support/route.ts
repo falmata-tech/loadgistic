@@ -15,7 +15,6 @@ export async function POST(request:NextRequest){
   const form=await request.formData();
   try{
     const file=form.get('file');
-    if(file&&typeof file!=='string'&&file.size&&process.env.NODE_ENV==='production'&&process.env.PRIVATE_UPLOAD_MALWARE_SCANNED!=='true')throw new Error('GUEST_FILE_SCANNING_REQUIRED');
     const upload=file&&typeof file!=='string'&&file.size?await saveUpload(file,'guest-support'):null;
     const result=await createGuestSupportConversation({email:text(form,'email'),phone:text(form,'phone'),body:text(form,'body')},upload);
     await setGuestSupportSession(result.id,result.emailDigest);

@@ -16,7 +16,6 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   try{
     const file=form.get('file');
-    if(file&&typeof file!=='string'&&file.size&&process.env.NODE_ENV==='production'&&process.env.PRIVATE_UPLOAD_MALWARE_SCANNED!=='true')throw new Error('GUEST_FILE_SCANNING_REQUIRED');
     const upload=file&&typeof file!=='string'&&file.size?await saveUpload(file,'guest-support'):null;
     await sendGuestSupportMessage(user,id,text(form,'body'),session?.emailDigest||null,upload);
     return json?NextResponse.json({ok:true}):redirectWith(request,session?`/help/${id}`:`/support/assisted/${id}`,'success','Message sent.');

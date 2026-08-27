@@ -45,6 +45,19 @@ test('production rejects an unsafe auth callback and local fixture password flag
   assert.ok(result.blockers.includes('local-fixture-password-enabled'));
 });
 
+test('production accepts only a configured managed upload scanner',()=>{
+  const common={
+    NODE_ENV:'production',APP_URL:'https://loadgistic.example',AUTH_BACKEND:'supabase',
+    PRIVATE_STORAGE_BACKEND:'supabase',SESSION_SECRET:'a-secure-production-session-secret-that-is-long',
+    DATA_BACKEND:'supabase',NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'public',SUPABASE_SERVICE_ROLE_KEY:'service'
+  };
+  assert.ok(launchReadiness({...common,UPLOAD_SCANNER_BACKEND:'local'}).blockers.includes('upload-malware-scanner'));
+  const managed=launchReadiness({...common,UPLOAD_SCANNER_BACKEND:'cloudmersive',CLOUDMERSIVE_API_KEY:'private'});
+  assert.ok(!managed.blockers.includes('upload-malware-scanner'));
+  assert.doesNotMatch(JSON.stringify(managed),/private/);
+});
+
 test('local managed runtime does not claim SQLite or silently accept missing service configuration',()=>{
   const configured=launchReadiness({NODE_ENV:'development',DATA_BACKEND:'supabase',AUTH_BACKEND:'supabase',PRIVATE_STORAGE_BACKEND:'supabase',NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:55321',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'public',SUPABASE_SERVICE_ROLE_KEY:'service'});
   assert.equal(configured.ok,true);

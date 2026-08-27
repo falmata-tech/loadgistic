@@ -60,10 +60,10 @@ an unencrypted dump in Git, a CI log, or a public artifact.
 
 1. Create a project in the intended region and verify backup/restore first.
 2. Apply all migrations from `001_loadgistic_schema.sql` through
-   `047_shared_rate_limits.sql` in numeric order.
+   `048_private_upload_quarantine.sql` in numeric order.
 3. Run SQL lint and review every RLS policy/default-deny private table.
 4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
-5. Confirm private proof, verification, capacity, and payment buckets; add malware scanning/quarantine before serving uploads.
+5. Confirm every purpose bucket plus the private `private-upload-quarantine` bucket, then configure and prove the managed scanner before serving uploads.
 6. Implement and parity-test the Supabase repository/managed Auth adapters.
 7. Inventory any old cloud demand data. Purge only after explicit approval and a verified backup; record exact before/after counts privately.
 
@@ -125,6 +125,9 @@ SUPABASE_SERVICE_ROLE_KEY
 AUTH_BACKEND
 ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN
 PRIVATE_STORAGE_BACKEND
+UPLOAD_SCANNER_BACKEND
+CLOUDMERSIVE_API_KEY
+UPLOAD_SCANNER_TIMEOUT_MS
 RESEND_API_KEY
 LOADGISTIC_EMAIL_FROM
 LOADGISTIC_EMAIL_REPLY_TO
@@ -137,11 +140,15 @@ TURNSTILE_SECRET_KEY
 
 Bucket identifiers are migration-owned: `shipment-proof`, `verification`,
 `capacity-photo`, `payment-proof`, `provider-profile`, and
-`support-attachment`. They are private. `DATABASE_PATH` and
+`support-attachment`. `private-upload-quarantine` is a separate server-only
+staging bucket. They are private. `DATABASE_PATH` and
 `PRIVATE_UPLOAD_DIR` are local/Docker-only and must never be used for durable
-Netlify data. Do not set a configuration flag that merely claims malware scans
-occurred; uploads stay blocked until the scanner/quarantine adapter proves the
-stored object passed. The public map values are a non-secret HTTPS tile template
+Netlify data. Set `UPLOAD_SCANNER_BACKEND=cloudmersive`,
+`CLOUDMERSIVE_API_KEY` as a server-only secret, and a bounded
+`UPLOAD_SCANNER_TIMEOUT_MS` only after the privacy/vendor review. Do not set a
+configuration flag that merely claims malware scans occurred; uploads stay
+blocked until the scanner/quarantine adapter proves the stored object passed.
+The local scanner is development/test-only. The public map values are a non-secret HTTPS tile template
 and its required linked attribution. If they are absent or invalid, the bounded
 beta falls back to the direct OpenStreetMap community endpoint and readiness
 reports a warning. Browsers fetch tiles directly; do not add a Netlify proxy,

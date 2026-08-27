@@ -32,7 +32,7 @@ export function launchReadiness(environment=process.env){
     blockers.push('supabase-repository-adapter');
     blockers.push('managed-identity-adapter');
     if(!rateLimits.configured||!rateLimits.durable)blockers.push('shared-rate-limit-adapter');
-    blockers.push('upload-malware-scanner');
+    if(!storage.scannerConfigured||!storage.scannerProductionSafe)blockers.push('upload-malware-scanner');
     if(mapTiles.communityOsm)warnings.push('community-osm-tile-service');
   }else{
     if(dataBackend==='sqlite')warnings.push('local-sqlite-data');

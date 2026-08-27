@@ -18,6 +18,7 @@
     "db:supabase:verify:tracking": "node scripts/verify-supabase-provider-tracking.mjs",
     "db:supabase:verify:signup": "node scripts/verify-supabase-provider-signup.mjs",
     "db:supabase:verify:rate-limit": "node scripts/verify-supabase-rate-limit.mjs",
+    "db:supabase:verify:uploads": "node scripts/verify-supabase-upload-scanning.mjs",
     "supabase:local:configure": "node scripts/configure-local-supabase.mjs --write-env --fixtures --verify",
     "db:stress": "node scripts/seed-market-scale-db.mjs",
     "test:scale": "node scripts/market-scale-audit.mjs",

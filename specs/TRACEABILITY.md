@@ -32,7 +32,7 @@ All features depend on `BASE-BE-001`; user-facing features depend on `BASE-FE-00
 
 Cross-feature authorization contracts are mapped in `docs/AUTHORIZATION_MATRIX.md` and verified by the focused capacity-market, provider-tracking, domain, and E2E suites.
 
-Production deployment readiness is mapped in `docs/LAUNCH_READINESS.md` and checked by `npm run launch:check`. `BASE-DEP-001` maps shared abuse control to migration `047_shared_rate_limits.sql`, `src/lib/rate-limit.js`, the managed operations worker, and the local concurrency/privacy/RLS verifier. The command remains intentionally red until the remaining managed data, identity, and upload-scanning adapters are implemented.
+Production deployment readiness is mapped in `docs/LAUNCH_READINESS.md` and checked by `npm run launch:check`. `BASE-DEP-001` maps shared abuse control to migration `047_shared_rate_limits.sql`, `src/lib/rate-limit.js`, the managed operations worker, and the local concurrency/privacy/RLS verifier. It maps private-upload protection to migration `048_private_upload_quarantine.sql`, `src/lib/private-storage.js`, `src/lib/upload-scanner.js`, and the local clean/dirty/cleanup/browser-denial verifier. The command remains intentionally red until the remaining managed data/identity ports and hosted scanner/email/deployment evidence are complete.
 
 Playwright runs through `BrowserTestRuntime` on isolated port `3100` by default, with `PLAYWRIGHT_PORT`/`PLAYWRIGHT_BASE_URL` available for a clean alternate port and `data/test-e2e.db`; it never reuses the development database at `data/loadgistic.db`.
 

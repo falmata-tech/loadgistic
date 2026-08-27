@@ -4,8 +4,8 @@ title: Deployment, delivery, and operations base
 related_ids: [BASE-FE-001, BASE-BE-001]
 problem: Changes need reproducible validation, controlled secrets, observable health, and a reversible release path.
 behavior: CI validates specs, source, tests, types, and production build before deployment artifacts are accepted.
-contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, ManagedEmailPort, SharedRateLimitPort, ScheduledOperationsWorker, LaunchReadiness, CloudHandoff]
-observability: [ci_status, health_endpoint, deployment_log, migration_log, storage_backend, email_delivery_counts, retention_cleanup_count, readiness_blocker]
+contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, UploadScannerPort, ManagedEmailPort, SharedRateLimitPort, ScheduledOperationsWorker, LaunchReadiness, CloudHandoff]
+observability: [ci_status, health_endpoint, deployment_log, migration_log, storage_backend, scanner_backend, email_delivery_counts, retention_cleanup_count, readiness_blocker]
 rollout: Promote immutable artifacts only after required checks; roll back application before destructive data changes.
 ---
 
@@ -30,9 +30,13 @@ Then deployment is rejected or reported unhealthy without exposing secret values
 Given an authorized route accepts proof, verification, payment, or capacity media\
 When it validates and stores the upload\
 Then the file's actual signature agrees with its permitted MIME type\
-And the database stores an opaque private-storage reference rather than a public URL\
+And the untrusted object is first written to a dedicated private quarantine boundary\
+And a configured scanner returns an explicit clean verdict before the object is copied into its purpose-specific private bucket\
+And an infected, malformed, timed-out, quota-limited, unavailable, or unexpected scanner result deletes the quarantined object and returns no storage reference\
+And the database stores an opaque released private-storage reference rather than a public URL or quarantine reference\
 And every download rechecks domain authorization before reading that reference\
-And every runtime uses a private Supabase Storage bucket, with local development using the isolated local Supabase stack.
+And every managed runtime uses private Supabase Storage buckets while local development uses an isolated EICAR-aware test scanner that cannot satisfy Production readiness\
+And scanner credentials, verdict details, original document content, and quarantine references are never written to application logs.
 
 ### Scenario: production readiness reports blockers truthfully
 
