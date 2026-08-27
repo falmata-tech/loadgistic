@@ -3,7 +3,7 @@ import { mkdir, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 
-const baseURL=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3000';
+const baseURL=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3100';
 const outputDir=path.resolve('artifacts/marketing');
 const workDir=path.join(outputDir,'.recording');
 const password='Loadgistic123!';

@@ -11,7 +11,9 @@ npm run supabase:local:configure
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`. Development uses `.next-dev`; production builds use `.next`. The configurator selects the isolated local Supabase PostgreSQL/Auth/Storage stack and writes ignored local credentials without printing them.
+Open `http://127.0.0.1:3100`. Development uses `.next-dev`; production builds use `.next`. Loadgistic reserves port `3100` so it does not collide with the separate MirtPage workspace on port `3000`. The configurator selects the isolated local Supabase PostgreSQL/Auth/Storage stack and writes ignored local credentials without printing them.
+
+Local email codes are delivered to the isolated Mailpit inbox at `http://127.0.0.1:55324`; they are not sent to Gmail. Fixture-password login remains available only when the explicit non-Production fixture flag is enabled. Preview and Production expose only Google and numeric email-code authentication.
 
 All maps use the shared tile configuration. Leaving
 `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` blank uses the

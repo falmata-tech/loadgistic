@@ -10,9 +10,12 @@ const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
 test('local managed signup verification uses only the isolated mail sink and numeric signup OTP',()=>{
   const configure=fs.readFileSync(path.join(root,'scripts','configure-local-supabase.mjs'),'utf8');
   const verifier=fs.readFileSync(path.join(root,'scripts','verify-supabase-provider-signup.mjs'),'utf8');
+  const localConfig=fs.readFileSync(path.join(root,'supabase','config.toml'),'utf8');
   assert.match(configure,/INBUCKET_URL\|\|runtime\.MAILPIT_URL/);
   assert.match(configure,/SUPABASE_SEED_MAIL_URL:mailUrl/);
   assert.match(configure,/--verify-signup/);
+  assert.match(configure,/APP_URL','http:\/\/127\.0\.0\.1:3100'/);
+  assert.match(localConfig,/site_url = "http:\/\/127\.0\.0\.1:3100"/);
   assert.match(verifier,/REMOTE_SIGNUP_MAIL_VERIFY_REFUSED/);
   assert.match(verifier,/verifyOtp\(\{email:otpEmail,token:code,type:'signup'\}\)/);
   assert.match(verifier,/verifyOtp\(\{email:otpEmail,token:code,type:'email'\}\)/);

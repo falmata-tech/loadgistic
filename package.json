@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "NEXT_DIST_DIR=${NEXT_DIST_DIR:-.next-dev} next dev --turbopack",
+    "dev": "NEXT_DIST_DIR=${NEXT_DIST_DIR:-.next-dev} next dev --turbopack --hostname 127.0.0.1 --port ${PORT:-3100}",
     "build": "node scripts/run-next-build.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",

@@ -37,7 +37,7 @@ function writeLocalEnvironment(){
     if(error?.code!=='ENOENT')throw error;
   }
   const values=new Map([
-    ['APP_URL','http://localhost:3000'],
+    ['APP_URL','http://127.0.0.1:3100'],
     ['NEXT_PUBLIC_SUPABASE_URL',url],
     ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',publishableKey],
     ['SUPABASE_SERVICE_ROLE_KEY',serviceRoleKey],

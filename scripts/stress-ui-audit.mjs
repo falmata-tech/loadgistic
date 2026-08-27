@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const baseURL=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3000';
+const baseURL=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3100';
 const outputDir=path.resolve('artifacts/stress-ui');
 const password='Loadgistic123!';
 

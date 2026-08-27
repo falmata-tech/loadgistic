@@ -50,13 +50,14 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 nvm use
 cp .env.example .env.local
 npm install
-npm run db:reset
+npx supabase start
+npm run supabase:local:configure
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Open `http://127.0.0.1:3100`.
 
-The database is created at `data/loadgistic.db` and seeded automatically. Reset imports the bundled OpenStreetMap-derived catalog of 3,575 Ethiopian cities, towns, villages, hamlets, suburbs, and neighbourhoods. `npm run places:setup` is optional and refreshes that catalog from Overpass when the service is available. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
+The normal development runtime uses the isolated local Supabase PostgreSQL, Auth, Storage, and Mailpit services on ports `55320`–`55324`. The configurator refreshes the deterministic supply-only fixture and writes ignored local credentials without printing them. `npm run db:reset` remains a compatibility-only SQLite fixture and is not the normal application setup. `npm run places:setup` is optional and refreshes the bundled Ethiopia place catalog from Overpass when the service is available. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
 After the first setup, the only command needed to start the app is `npm run dev`.
 This command explicitly uses Turbopack. In development, the first visit to a route compiles that route and is expected to be slower; repeat visits should be fast. Use `npm run build && npm start` when measuring production behavior.
 

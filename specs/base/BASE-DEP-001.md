@@ -79,6 +79,7 @@ And its generated Next.js artifacts are isolated from both the live development 
 Given a developer starts Loadgistic with the documented development command\
 When application routes are opened and edited\
 Then Next.js uses its stable Turbopack development bundler explicitly\
+And the default local origin is the Loadgistic-owned `http://127.0.0.1:3100`, separate from other workspace applications\
 And development compilation time is distinguished from repository query time\
 And production performance claims are verified against a production build rather than inferred from first-visit development compilation.
 
