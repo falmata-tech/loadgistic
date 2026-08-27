@@ -28,7 +28,7 @@ function clearSignupCookie(response:NextResponse){
 }
 
 export async function POST(request:NextRequest){
-  const rate=checkRateLimit(requestKey(request,'provider-signup-complete'),5,10*60_000);
+  const rate=await checkRateLimit(requestKey(request,'provider-signup-complete'),5,10*60_000);
   if(!rate.allowed)return responseFor(request,'/apply',`Please wait ${rate.retryAfterSeconds} seconds before trying again.`);
   if(!usesSupabaseAuth())return responseFor(request,'/apply',MANAGED_SIGNUP_ERROR);
   const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');

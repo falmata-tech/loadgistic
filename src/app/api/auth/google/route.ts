@@ -14,7 +14,7 @@ function unavailable(request:NextRequest) {
 }
 
 export async function POST(request:NextRequest) {
-  const rate=checkRateLimit(requestKey(request,'managed-google-login'),10,10*60_000);
+  const rate=await checkRateLimit(requestKey(request,'managed-google-login'),10,10*60_000);
   if(!rate.allowed||!usesSupabaseAuth())return unavailable(request);
   const callbackUrl=managedAuthCallbackUrl({requestUrl:request.url});
   if(!callbackUrl)return unavailable(request);

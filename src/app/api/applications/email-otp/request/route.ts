@@ -26,8 +26,8 @@ export async function POST(request:NextRequest){
   const form=await request.formData();
   const email=normalizeManagedAuthEmail(text(form,'email'));
   if(!email)return redirectApply(request,'error','Enter a valid email address.');
-  const clientRate=checkRateLimit(requestKey(request,'provider-signup-email-request'),5,10*60_000);
-  const accountRate=checkRateLimit(`provider-signup-email-request:${email}`,3,10*60_000);
+  const clientRate=await checkRateLimit(requestKey(request,'provider-signup-email-request'),5,10*60_000);
+  const accountRate=await checkRateLimit(`provider-signup-email-request:${email}`,3,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed){
     return redirectApply(request,'error','Please wait before requesting another code.');
   }

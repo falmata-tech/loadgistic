@@ -13,15 +13,16 @@ The repository supports local development, browser testing, controlled demonstra
 - Truck-scoped private-capacity grants, email/code Shared capacity access, Operations-only Loadgistic sharing, and account-free Assisted matching with bounded local live-refresh behavior.
 - Specification/source checks, Node tests, TypeScript, production build, desktop/mobile E2E, and approved visual audit evidence as recorded in `docs/PROGRESS.md`.
 - Standalone Node build, private local storage adapter, PWA shell, and health endpoint.
+- Atomic Supabase request limits for login, signup, Shared capacity, Assisted matching, and member Support, including digest-only keys, browser-role denial, fail-closed behavior, and bounded cleanup.
 
 ## Public-production blockers
 
 1. Finish and parity-test the remaining provider profile, fleet, verification, billing, Support, administration, and sponsor PostgreSQL ports. SQLite is not the public-production datastore and managed failures never fall back to it.
-2. Apply/lint migrations `001`–`046` in staging, verify RLS/RPC behavior, import place data, and rehearse encrypted logical backup/restore.
+2. Apply/lint migrations `001`–`047` in staging, verify RLS/RPC behavior including concurrent request limits, import place data, and rehearse encrypted logical backup/restore.
 3. Inventory and purge any cloud legacy demand data only after a verified backup and explicit approval.
 4. Configure managed private storage plus malware scanning/quarantine for verification, Tracking, and Assisted matching attachments.
 5. Verify a Resend sending domain, configure the server-only API key/from/reply-to values, test Supabase Auth SMTP plus application delivery, and monitor the existing 15-minute delivery/retry/guest-cleanup function.
-6. Add shared rate limiting and bot protection for public discovery, login, tracking unlock, Shared capacity recovery, Assisted matching, reviews, and signup; configure authorized Supabase Realtime subscriptions with polling fallback for active guest conversations.
+6. Verify the implemented shared PostgreSQL request limiter under Preview concurrency, add reviewed bot protection for high-risk anonymous entry points, and configure authorized Supabase Realtime subscriptions with polling fallback for active guest conversations. Public discovery and review submission still need explicit shared-limit coverage before launch.
 7. Configure strong production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
 8. Replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering; pass the disposable 5,000-truck API and CPU-throttled phone audit before public traffic.
 9. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect

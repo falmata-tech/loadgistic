@@ -29,8 +29,8 @@ export async function POST(request:NextRequest){
   const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   const code=text(await request.formData(),'code');
   if(!handoff?.email||!isNumericEmailOtp(code))return responseFor(request);
-  const clientRate=checkRateLimit(requestKey(request,'provider-signup-email-verify'),10,10*60_000);
-  const accountRate=checkRateLimit(`provider-signup-email-verify:${handoff.email}`,6,10*60_000);
+  const clientRate=await checkRateLimit(requestKey(request,'provider-signup-email-verify'),10,10*60_000);
+  const accountRate=await checkRateLimit(`provider-signup-email-verify:${handoff.email}`,6,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed)return responseFor(request,'code','Please wait before trying another code.');
 
   const response=responseFor(request);

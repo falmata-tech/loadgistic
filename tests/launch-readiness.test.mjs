@@ -27,7 +27,9 @@ test('production requires managed transactional email and exposes only its provi
   assert.ok(missing.blockers.includes('managed-email-delivery'));
   const configured=launchReadiness({...common,RESEND_API_KEY:'re_private',LOADGISTIC_EMAIL_FROM:'updates@loadgistic.example'});
   assert.equal(configured.emailProvider,'resend');
+  assert.equal(configured.rateLimitBackend,'supabase');
   assert.ok(!configured.blockers.includes('managed-email-delivery'));
+  assert.ok(!configured.blockers.includes('shared-rate-limit-adapter'));
   assert.doesNotMatch(JSON.stringify(configured),/re_private|updates@loadgistic/);
 });
 

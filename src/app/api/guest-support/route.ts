@@ -10,7 +10,7 @@ export const runtime='nodejs';
 
 export async function POST(request:NextRequest){
   const json=request.headers.get('accept')?.includes('application/json');
-  const rate=checkRateLimit(requestKey(request,'guest-support-create'),5,60_000);
+  const rate=await checkRateLimit(requestKey(request,'guest-support-create'),5,60_000);
   if(!rate.allowed)return json?NextResponse.json({ok:false,error:`Too many requests. Try again in ${rate.retryAfterSeconds} seconds.`},{status:429}):redirectWith(request,'/help','error',`Too many requests. Try again in ${rate.retryAfterSeconds} seconds.`);
   const form=await request.formData();
   try{

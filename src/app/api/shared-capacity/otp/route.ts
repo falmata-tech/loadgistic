@@ -10,8 +10,8 @@ export const runtime='nodejs';
 export async function POST(request:NextRequest){
   const form=await request.formData();
   const email=text(form,'email');
-  const originRate=checkRateLimit(requestKey(request,'shared-capacity-otp'),8,10*60_000);
-  const emailRate=checkRateLimit(`shared-capacity-otp-email:${email.trim().toLowerCase()}`,3,10*60_000);
+  const originRate=await checkRateLimit(requestKey(request,'shared-capacity-otp'),8,10*60_000);
+  const emailRate=await checkRateLimit(`shared-capacity-otp-email:${email.trim().toLowerCase()}`,3,10*60_000);
   if(!originRate.allowed||!emailRate.allowed){
     return NextResponse.json({ok:false,error:'Wait a few minutes before requesting another code.'},{status:429,headers:{'Cache-Control':'no-store'}});
   }

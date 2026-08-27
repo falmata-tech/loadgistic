@@ -11,7 +11,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const json=request.headers.get('accept')?.includes('application/json');
   const {id}=await params;const session=await getGuestSupportSession(id);const user=session?null:await getCurrentUser({allowLimited:true});
   if(!session&&!user)return json?NextResponse.json({ok:false,error:'Conversation access is required.'},{status:401}):NextResponse.redirect(new URL('/help',request.url),303);
-  const rate=checkRateLimit(`${requestKey(request,'guest-support-message')}:${session?.emailDigest||user?.id}`,20,60_000);
+  const rate=await checkRateLimit(`${requestKey(request,'guest-support-message')}:${session?.emailDigest||user?.id}`,20,60_000);
   if(!rate.allowed)return json?NextResponse.json({ok:false,error:'Too many messages. Wait a minute and try again.'},{status:429}):redirectWith(request,session?`/help/${id}`:`/support/assisted/${id}`,'error','Too many messages. Wait a minute and try again.');
   const form=await request.formData();
   try{

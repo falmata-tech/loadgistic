@@ -1,5 +1,6 @@
 import {deliverPendingAccessEmails,deliverPendingShipmentEmails} from './email-delivery.js';
 import {purgeExpiredProviderShipmentGuests} from './provider-tracking.js';
+import {purgeExpiredRateLimits} from './rate-limit.js';
 
 async function run(name,operation){
   try{return {name,ok:true,result:operationResult(name,await operation())};}
@@ -12,7 +13,7 @@ function safeOperationError(error){
 }
 
 function operationResult(name,result){
-  if(name==='tracking-guest-cleanup'){
+  if(name==='tracking-guest-cleanup'||name==='rate-limit-cleanup'){
     const count=typeof result==='number'?result:result?.count;
     return {count:Math.max(0,Number(count)||0)};
   }
@@ -29,7 +30,8 @@ export async function runManagedOperations({
   emailLimit=25,cleanupLimit=100,
   deliverShipment=deliverPendingShipmentEmails,
   deliverAccess=deliverPendingAccessEmails,
-  purgeGuests=purgeExpiredProviderShipmentGuests
+  purgeGuests=purgeExpiredProviderShipmentGuests,
+  purgeRateLimits=purgeExpiredRateLimits
 }={}){
   const boundedEmail=Math.max(1,Math.min(100,Number(emailLimit)||25));
   const boundedCleanup=Math.max(1,Math.min(500,Number(cleanupLimit)||100));
@@ -37,5 +39,6 @@ export async function runManagedOperations({
   operations.push(await run('tracking-email',()=>deliverShipment(boundedEmail)));
   operations.push(await run('access-email',()=>deliverAccess(boundedEmail)));
   operations.push(await run('tracking-guest-cleanup',()=>purgeGuests(boundedCleanup)));
+  operations.push(await run('rate-limit-cleanup',()=>purgeRateLimits(boundedCleanup)));
   return {ok:operations.every(operation=>operation.ok),operations};
 }

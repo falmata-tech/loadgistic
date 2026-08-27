@@ -4,7 +4,7 @@ title: Deployment, delivery, and operations base
 related_ids: [BASE-FE-001, BASE-BE-001]
 problem: Changes need reproducible validation, controlled secrets, observable health, and a reversible release path.
 behavior: CI validates specs, source, tests, types, and production build before deployment artifacts are accepted.
-contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, ManagedEmailPort, ScheduledOperationsWorker, LaunchReadiness, CloudHandoff]
+contracts: [BuildArtifact, ContainerArtifact, RuntimeConfig, HealthEndpoint, MigrationUnit, ReleaseGate, BrowserTestRuntime, PrivateStoragePort, ManagedEmailPort, SharedRateLimitPort, ScheduledOperationsWorker, LaunchReadiness, CloudHandoff]
 observability: [ci_status, health_endpoint, deployment_log, migration_log, storage_backend, email_delivery_counts, retention_cleanup_count, readiness_blocker]
 rollout: Promote immutable artifacts only after required checks; roll back application before destructive data changes.
 ---
@@ -65,6 +65,16 @@ Then one worker processes bounded Tracking and access-email batches and invokes 
 And its result contains counts and safe status names only\
 And an infrastructure failure returns a failed invocation for operator visibility without exposing private queue rows\
 And Preview or local execution can invoke the same application service explicitly without maintaining an in-memory timer.
+
+### Scenario: public abuse limits are shared and privacy preserving
+
+Given login, signup, Shared capacity, Assisted matching, or member Support receives a rate-limited request\
+When any application instance consumes that request's limit\
+Then one atomic PostgreSQL counter is authoritative across all instances\
+And the counter key is an HMAC digest rather than a raw email address, IP address, account identifier, access code, or message body\
+And the database returns a bounded retry interval computed from the authoritative window\
+And a managed-counter failure denies the request without falling back to an instance-local counter\
+And scheduled operations delete expired counter rows in bounded batches without logging counter keys.
 
 ### Scenario: browser tests are isolated from developer data
 
@@ -141,7 +151,7 @@ And generated identities, capacity, files, and reports are never written to Prod
 
 ## Contract details
 
-`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable local Supabase project and non-development ports. `PrivateStoragePort` stores, reads, and removes opaque private references. `ManagedEmailPort` converts bounded application templates to one verified provider request without exposing provider credentials. `ScheduledOperationsWorker` leases bounded durable work and emits safe counts. `LaunchReadiness` distinguishes a locally runnable Supabase stack from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
+`BuildArtifact` and `ContainerArtifact` are produced from the lockfile with Node 22. `RuntimeConfig` supplies secrets outside source control. `HealthEndpoint` reports service readiness without private data. `MigrationUnit` is ordered and reviewable. `ReleaseGate` is the GitHub required-check set described in `docs/GUARDRAILS.md`. `BrowserTestRuntime` owns a disposable local Supabase project and non-development ports. `PrivateStoragePort` stores, reads, and removes opaque private references. `ManagedEmailPort` converts bounded application templates to one verified provider request without exposing provider credentials. `SharedRateLimitPort` atomically consumes HMAC-digested request buckets and purges expired buckets without exposing caller identifiers. `ScheduledOperationsWorker` leases bounded durable work and emits safe counts. `LaunchReadiness` distinguishes a locally runnable Supabase stack from a publicly deployable production stack. `CloudHandoff` lists configuration keys and owner actions without containing their values.
 
 ## Required verification
 

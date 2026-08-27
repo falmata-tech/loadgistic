@@ -13,7 +13,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
-  const rate=checkRateLimit(`${requestKey(request,'support-message')}:${user.id}`,20,60_000);
+  const rate=await checkRateLimit(`${requestKey(request,'support-message')}:${user.id}`,20,60_000);
   if(!rate.allowed)return redirectWith(request,returnPath(user,id),'error','Too many messages. Wait a minute and try again.');
   const form=await request.formData();
   try {

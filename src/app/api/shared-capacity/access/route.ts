@@ -7,7 +7,7 @@ import {redirectWith,text} from '@/lib/redirects';
 export const runtime='nodejs';
 
 export async function POST(request:NextRequest){
-  const rate=checkRateLimit(requestKey(request,'shared-capacity-access'),8,60_000);
+  const rate=await checkRateLimit(requestKey(request,'shared-capacity-access'),8,60_000);
   const json=request.headers.get('accept')?.includes('application/json');
   if(!rate.allowed)return json?NextResponse.json({ok:false,error:`Too many attempts. Try again in ${rate.retryAfterSeconds} seconds.`},{status:429}):redirectWith(request,'/shared-capacity','error',`Too many attempts. Try again in ${rate.retryAfterSeconds} seconds.`);
   const form=await request.formData();

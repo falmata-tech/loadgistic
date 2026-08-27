@@ -853,3 +853,22 @@ remain separate adapters. Rollback disables the schedule or restores the prior
 application artifact without deleting queue, shipment, grant, review, or audit
 history. Production remains blocked until the sender, delivery, retry, cleanup,
 quota monitoring, and alert behavior are verified remotely.
+
+## ADR-044 — Shared request limits use atomic PostgreSQL windows
+
+All managed login, signup, Shared capacity, Assisted matching, and member
+Support limits use one Supabase PostgreSQL counter contract. The application
+HMAC-digests each scoped request key before persistence, so the counter table
+never stores a raw email address, IP address, account identifier, access code,
+or message body. One security-definer function validates bounded limits and
+windows, atomically resets or increments the row, and returns only the allowed
+state and retry interval. Anonymous and authenticated browser roles receive no
+table or function grant.
+
+Local in-memory limits remain only for the explicitly local SQLite fixture
+runtime. A configured Supabase runtime fails closed if its counter call fails;
+it never weakens protection by falling back to a process-local Map. The bounded
+scheduled-operations worker removes expired windows, and its output contains a
+count only. Rollback restores the previous application artifact and preserves
+the additive counter table; public Production remains blocked if the managed
+counter verifier or health contract fails.

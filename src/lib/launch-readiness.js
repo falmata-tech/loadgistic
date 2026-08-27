@@ -2,6 +2,7 @@ import { privateStorageStatus } from './private-storage.js';
 import { resolveMapTileConfig } from './map-tiles.js';
 import { managedAuthCallbackUrl } from './auth-flow.js';
 import { emailDeliveryStatus } from './email-provider.js';
+import { rateLimitStatus } from './rate-limit.js';
 
 const unsafeSessionSecrets=new Set(['','local-development-secret-change-before-production-1234','ci-only-session-secret-not-for-production-123456']);
 
@@ -12,6 +13,7 @@ export function launchReadiness(environment=process.env){
   const warnings=[];
   const mapTiles=resolveMapTileConfig(environment);
   const emailDelivery=emailDeliveryStatus(environment);
+  const rateLimits=rateLimitStatus(environment);
   const secret=String(environment.SESSION_SECRET||'');
   if(production&&(secret.length<32||unsafeSessionSecrets.has(secret)))blockers.push('strong-session-secret');
   if(production&&(storage.backend!=='supabase'||!storage.configured))blockers.push('durable-private-storage');
@@ -29,7 +31,7 @@ export function launchReadiness(environment=process.env){
     if(!emailDelivery.configured)blockers.push('managed-email-delivery');
     blockers.push('supabase-repository-adapter');
     blockers.push('managed-identity-adapter');
-    blockers.push('shared-rate-limit-adapter');
+    if(!rateLimits.configured||!rateLimits.durable)blockers.push('shared-rate-limit-adapter');
     blockers.push('upload-malware-scanner');
     if(mapTiles.communityOsm)warnings.push('community-osm-tile-service');
   }else{
@@ -45,6 +47,7 @@ export function launchReadiness(environment=process.env){
     authBackend,
     storageBackend:storage.backend,
     emailProvider:emailDelivery.provider,
+    rateLimitBackend:rateLimits.backend,
     mapTileOrigin:mapTiles.origin,
     blockers:[...new Set(blockers)],
     warnings:[...new Set(warnings)]

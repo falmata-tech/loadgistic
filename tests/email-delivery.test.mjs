@@ -93,15 +93,17 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
     emailLimit:7,cleanupLimit:9,
     deliverShipment:async limit=>{limits.push(limit);return {configured:true,provider:'resend',attempted:3,sent:2,failed:1,privateRows:['secret']};},
     deliverAccess:async limit=>{limits.push(limit);throw new Error('recipient guest@example.test failed');},
-    purgeGuests:async limit=>{limits.push(limit);return {count:4,shipmentIds:['private-shipment-id']};}
+    purgeGuests:async limit=>{limits.push(limit);return {count:4,shipmentIds:['private-shipment-id']};},
+    purgeRateLimits:async limit=>{limits.push(limit);return 6;}
   });
-  assert.deepEqual(limits,[7,7,9]);
+  assert.deepEqual(limits,[7,7,9,9]);
   assert.equal(result.ok,false);
   assert.deepEqual(result.operations[0],{
     name:'tracking-email',ok:true,result:{configured:true,provider:'resend',attempted:3,sent:2,failed:1}
   });
   assert.deepEqual(result.operations[1],{name:'access-email',ok:false,error:'OPERATION_FAILED'});
   assert.deepEqual(result.operations[2],{name:'tracking-guest-cleanup',ok:true,result:{count:4}});
+  assert.deepEqual(result.operations[3],{name:'rate-limit-cleanup',ok:true,result:{count:6}});
   assert.doesNotMatch(JSON.stringify(result),/guest@example|private-shipment|secret/);
 });
 

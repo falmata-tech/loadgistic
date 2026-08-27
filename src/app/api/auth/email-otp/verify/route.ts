@@ -21,8 +21,8 @@ export async function POST(request:NextRequest) {
   const email=normalizeManagedAuthEmail(text(form,'email'));
   const token=text(form,'code');
   if(!email||!isNumericEmailOtp(token))return failed(request);
-  const clientRate=checkRateLimit(requestKey(request,'managed-email-otp-verify'),12,10*60_000);
-  const accountRate=checkRateLimit(`managed-email-otp-verify:${email}`,6,10*60_000);
+  const clientRate=await checkRateLimit(requestKey(request,'managed-email-otp-verify'),12,10*60_000);
+  const accountRate=await checkRateLimit(`managed-email-otp-verify:${email}`,6,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed)return failed(request,'Please wait before trying another code.');
 
   const response=failed(request);

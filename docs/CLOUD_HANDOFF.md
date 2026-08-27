@@ -60,7 +60,7 @@ an unencrypted dump in Git, a CI log, or a public artifact.
 
 1. Create a project in the intended region and verify backup/restore first.
 2. Apply all migrations from `001_loadgistic_schema.sql` through
-   `046_managed_email_operations.sql` in numeric order.
+   `047_shared_rate_limits.sql` in numeric order.
 3. Run SQL lint and review every RLS policy/default-deny private table.
 4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
 5. Confirm private proof, verification, capacity, and payment buckets; add malware scanning/quarantine before serving uploads.

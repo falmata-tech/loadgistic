@@ -12,8 +12,8 @@ export async function POST(request:NextRequest) {
   const form=await request.formData();
   const email=normalizeManagedAuthEmail(text(form,'email'));
   if(!email)return redirectWith(request,'/login','error','Enter a valid email address.');
-  const clientRate=checkRateLimit(requestKey(request,'managed-email-otp-request'),8,10*60_000);
-  const accountRate=checkRateLimit(`managed-email-otp-request:${email}`,3,10*60_000);
+  const clientRate=await checkRateLimit(requestKey(request,'managed-email-otp-request'),8,10*60_000);
+  const accountRate=await checkRateLimit(`managed-email-otp-request:${email}`,3,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed){
     return redirectWith(request,'/login','error','Please wait before requesting another code.');
   }

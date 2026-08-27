@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
   if(!localFixturePasswordLoginEnabled())return redirectWith(request,'/login','error','Password login is available only for local fixture testing.');
   const clientLimit=Number(process.env.LOGIN_CLIENT_RATE_LIMIT||60);
   const accountLimit=Number(process.env.LOGIN_ACCOUNT_RATE_LIMIT||12);
-  const clientRate = checkRateLimit(requestKey(request,'login-client'),clientLimit,60_000);
+  const clientRate = await checkRateLimit(requestKey(request,'login-client'),clientLimit,60_000);
   if (!clientRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${clientRate.retryAfterSeconds} seconds.`);
   const form = await request.formData();
   const email = text(form, 'email');
   const password = text(form, 'password');
-  const accountRate = checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`,accountLimit,60_000);
+  const accountRate = await checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`,accountLimit,60_000);
   if (!accountRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${accountRate.retryAfterSeconds} seconds.`);
   if(usesSupabaseAuth()){
     const response=new NextResponse(null,{status:303,headers:{Location:'/app/home'}});
