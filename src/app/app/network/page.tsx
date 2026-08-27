@@ -1,6 +1,6 @@
 import {Mail,Network,ShieldCheck,Truck,UserRound} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
-import {listPrivateCapacityNetwork} from '@/lib/repository.js';
+import {listPrivateCapacityNetwork} from '@/lib/private-capacity.js';
 import {PageHeader} from '@/components/page-header';
 import {Flash} from '@/components/flash';
 

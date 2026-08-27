@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getCurrentUser} from '@/lib/auth';
-import {grantPrivateCapacityAccess,revokePrivateCapacityAccess,setLoadgisticCapacityAccess} from '@/lib/repository.js';
+import {grantPrivateCapacityAccess,revokePrivateCapacityAccess,setLoadgisticCapacityAccess} from '@/lib/private-capacity.js';
 import {errorMessage} from '@/lib/errors';
 import {redirectWith,text} from '@/lib/redirects';
 import {deliverPendingAccessEmails} from '@/lib/email-delivery';

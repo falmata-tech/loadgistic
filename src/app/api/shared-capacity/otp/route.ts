@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {deliverPendingAccessEmails,localAccessCodeForDevelopment} from '@/lib/email-delivery';
-import {requestSharedCapacityOtp} from '@/lib/repository.js';
+import {requestSharedCapacityOtp} from '@/lib/private-capacity.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {errorMessage} from '@/lib/errors';
 import {text} from '@/lib/redirects';

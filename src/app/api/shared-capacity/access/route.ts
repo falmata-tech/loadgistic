@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {setSharedCapacitySession} from '@/lib/auth';
-import {verifySharedCapacityAccess} from '@/lib/repository.js';
+import {verifySharedCapacityAccess} from '@/lib/private-capacity.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectWith,text} from '@/lib/redirects';
 

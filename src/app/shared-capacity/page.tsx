@@ -4,7 +4,7 @@ import {PublicHeader} from '@/components/public-header';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
 import {Flash} from '@/components/flash';
 import {getSharedCapacitySession} from '@/lib/auth';
-import {listSharedCapacity} from '@/lib/repository.js';
+import {listSharedCapacity} from '@/lib/private-capacity.js';
 import {SharedCapacityAccessForm} from '@/components/shared-capacity-access-form';
 import {SharedCapacitySessionBoundary} from '@/components/shared-capacity-session-boundary';
 

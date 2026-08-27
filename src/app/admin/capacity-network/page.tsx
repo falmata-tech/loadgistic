@@ -1,6 +1,6 @@
 import {Network} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
-import {listLoadgisticSharedCapacity} from '@/lib/repository.js';
+import {listLoadgisticSharedCapacity} from '@/lib/private-capacity.js';
 import {PageHeader} from '@/components/page-header';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
 

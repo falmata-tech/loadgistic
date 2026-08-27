@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getCurrentUser} from '@/lib/auth';
-import {listLoadgisticSharedCapacity} from '@/lib/repository.js';
+import {listLoadgisticSharedCapacity} from '@/lib/private-capacity.js';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
