@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, shared abuse counters, and private upload quarantine. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` and `048` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`048` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Profile, fleet, verification, billing, Support, administration, and sponsorship management remain before Production readiness.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, shared abuse counters, and private upload quarantine. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` through `049` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`049` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Fleet, verification, billing, Support, administration, and sponsorship management remain before Production readiness.
 
 ## Current migration coverage
 
@@ -34,6 +34,7 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `046`: replaces the leased Tracking-email projection with a customer-safe completion timeline containing only status, note, and time. The service-role-only queue remains bounded, uses `FOR UPDATE SKIP LOCKED`, and never projects proof paths, actor identities, or coordinates.
 - `047`: adds one service-role-only atomic request-window counter using HMAC-digested keys, bounded limits/windows, fixed retry intervals, RLS default denial, and bounded expired-row cleanup for the managed operations worker.
 - `048`: adds a private, server-only upload-quarantine bucket with no browser policy. The storage adapter releases an object to its purpose bucket only after signature validation and an explicit clean scanner verdict, then removes quarantine on success or failure.
+- `049`: adds service-role-only transporter-profile workspace, bounded transactional page update, and profile-image metadata commands. Each function repeats active actor, workspace, owner, structured place, and Company-driver denial rules and writes contact-safe audit details.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -61,10 +62,12 @@ Daily Featured Transporters uses its own application port and the pure two-sessi
 
 Shared capacity, provider Capacity, and provider-owned Tracking now select dedicated application ports. Service-role-only commands repeat ownership, assignment, subscription, permission, guest-grant, transition, and review rules in PostgreSQL. Delivery workers lease rows with `FOR UPDATE SKIP LOCKED`, successful delivery is terminal, and the Netlify scheduled function invokes bounded Tracking email, access email, and expired-guest cleanup batches every 15 minutes. The managed email port prefers direct Resend delivery with stable idempotency keys and retains an HTTPS webhook adapter for private integrations. Clean local verification exercises all three slices with SQLite unavailable and proves browser-role denial.
 
+Transporter-profile editing now selects a dedicated application port. Its PostgreSQL workspace and mutation functions deny Company drivers and browser roles, repeat current subscription/ownership rules, resolve the general base from the managed place catalog, bound public content and contacts, and audit only visibility flags and non-sensitive place/region identifiers. Profile images use the central quarantine/scanner/storage port before an atomic metadata command; failed metadata removes the new object and successful replacement removes the superseded object after commit.
+
 Keep these active contracts stable while replacing SQLite operations:
 
 - Public capacity cursor/detail and public provider projections.
-- Provider profile, fleet, and verification commands.
+- Fleet and verification commands.
 - Provider billing, Support, and platform Operations commands.
 - Account-free Assisted matching, private attachments, sponsor/featured administration, and remaining platform administration commands.
 
@@ -73,7 +76,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `048` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `049` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.

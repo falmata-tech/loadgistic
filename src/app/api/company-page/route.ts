@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { updateCompanyPage } from '@/lib/repository.js';
+import { updateCompanyPage } from '@/lib/provider-profile.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text, checked } from '@/lib/redirects';
 

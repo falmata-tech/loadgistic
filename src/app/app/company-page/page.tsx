@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { getOwnCompanyPage } from '@/lib/repository.js';
+import { getOwnCompanyPage } from '@/lib/provider-profile.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { EthiopiaPlaceInput } from '@/components/ethiopia-place-input';

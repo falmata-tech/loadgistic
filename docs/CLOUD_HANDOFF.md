@@ -14,9 +14,9 @@ The application is still approved only for local validation and controlled
 demonstration. Public production remains blocked until the managed
 identity/repository, email, rate-limit, upload-scanning, backup,
 and monitoring gates in `docs/LAUNCH_READINESS.md` pass.
-Managed public discovery, Shared capacity, provider Capacity, and provider-owned
-Tracking plus managed provider signup already run through Supabase when the
-managed backends are selected; remaining profile, fleet, verification, billing, Support, and administration
+Managed public discovery, Shared capacity, provider Capacity, provider-owned
+Tracking, transporter-profile editing, and managed provider signup already run through Supabase when the
+managed backends are selected; remaining fleet, verification, billing, Support, and administration
 paths must complete the same cutover before the Production flag is enabled.
 
 ## Provisioned control plane — 2026-08-17
@@ -60,7 +60,7 @@ an unencrypted dump in Git, a CI log, or a public artifact.
 
 1. Create a project in the intended region and verify backup/restore first.
 2. Apply all migrations from `001_loadgistic_schema.sql` through
-   `048_private_upload_quarantine.sql` in numeric order.
+   `049_managed_provider_profile.sql` in numeric order.
 3. Run SQL lint and review every RLS policy/default-deny private table.
 4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
 5. Confirm every purpose bucket plus the private `private-upload-quarantine` bucket, then configure and prove the managed scanner before serving uploads.

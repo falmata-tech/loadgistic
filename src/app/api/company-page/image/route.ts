@@ -1,6 +1,6 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { removeProviderProfileImage,updateProviderProfileImage } from '@/lib/repository.js';
+import { removeProviderProfileImage,updateProviderProfileImage } from '@/lib/provider-profile.js';
 import { redirectWith,text } from '@/lib/redirects';
 import { errorMessage } from '@/lib/errors';
 

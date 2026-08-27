@@ -6,7 +6,7 @@ problem: Transport providers need to be represented as credible businesses, whil
 behavior: Fleet transporters and self-managed providers with current public trucks receive canonical `/@handle` microsites reached from truck details rather than a Provider Market, provider map, Area Market, or provider list. Providers manage accurate public contacts, business content, one general base region or federal city, and one validated profile image. Every microsite uses one Loadgistic-controlled white-space template and presents each active truck through a detailed safe card with a lazily opened relative map when that truck has current public capacity.
 contracts: [ProviderMicrosite, MicrositeTruckCard, MicrositeTruckMap, PublicProviderHandle, ProviderBaseRegion, ProviderOperatingModel, ProviderProfileImage, SeededTransporterPortrait, SharedProviderTemplate, PublicContactPolicy, YouTubeVideoReference, ProviderPageCommand, PublicFleetProjection]
 observability: [provider_page_view, provider_profile_update, public_contact_click, video_open, handle_resolution]
-rollout: Add profile presentation fields additively, reserve and validate handles, keep legacy provider URLs as redirects, and exclude all capacity-seeking Business profiles from public projections.
+rollout: Add profile presentation fields and actor-scoped managed profile commands additively, reserve and validate handles, keep legacy provider URLs as redirects, and exclude all capacity-seeking Business profiles from public projections.
 ---
 
 # Transporter public presence
@@ -27,6 +27,16 @@ When the base location is saved\
 Then one current regional state or Addis Ababa or Dire Dawa city administration is required together with the structured city or town\
 And the Daily Featured Transporters programme and transporter microsite may display that general base\
 And an exact office, yard, home, or device coordinate is never requested or inferred from that profile field.
+
+### Scenario: managed profile editing repeats provider ownership
+
+Given a signed-in fleet owner or independent provider opens or changes its transporter information\
+When the managed application reads or writes the profile\
+Then one service-role-only PostgreSQL contract resolves the active actor to exactly one owned organization or provider profile\
+And it repeats current workspace-access, provider-owner, structured-place, regional-code, bounded-content, HTTPS-website, and public-contact rules inside the transaction\
+And a Company driver, unrelated provider, inactive actor, expired workspace, anonymous browser, or ordinary authenticated browser cannot read the owner editor projection or mutate the page\
+And a successful update records an audit event without storing private contact values in audit details\
+And a failed update changes neither the public page nor its owner base.
 
 ### Scenario: public provider labels describe the operating model
 
@@ -110,7 +120,9 @@ And the image is stored behind an owner-scoped command and served only for a cur
 And raw storage references remain absent from public projections\
 And Featured Provider cards and the provider microsite use that image as provider identity rather than using one of the provider's trucks\
 And a Loadgistic-supplied default transporter portrait appears when no image has been supplied\
-And replacing an image removes the superseded object after the new record is committed.
+And replacing an image removes the superseded object after the new record is committed\
+And a rejected metadata command removes the newly quarantined-and-scanned object rather than leaving it orphaned\
+And browser roles cannot call the image metadata command or receive either the current or superseded storage reference.
 
 ### Scenario: every seeded transporter has a distinct portrait
 
