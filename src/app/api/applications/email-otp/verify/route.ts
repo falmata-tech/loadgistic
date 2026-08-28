@@ -4,7 +4,6 @@ import {getManagedCurrentUser} from '@/lib/identity/supabase';
 import {MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,readProviderSignupHandoff} from '@/lib/provider-signup.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectUrl,text} from '@/lib/redirects';
-import {usesSupabaseAuth} from '@/lib/supabase/config';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
 
 export const runtime='nodejs';
@@ -25,7 +24,6 @@ function clearSignupCookie(response:NextResponse){
 }
 
 export async function POST(request:NextRequest){
-  if(!usesSupabaseAuth())return responseFor(request,'');
   const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   const code=text(await request.formData(),'code');
   if(!handoff?.email||!isNumericEmailOtp(code))return responseFor(request);

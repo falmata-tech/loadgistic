@@ -11,11 +11,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ ok: false, error: { code: 'INVALID_ORIGIN', message: 'Cross-origin mutation blocked.' } }, { status: 403 });
     }
   }
-  if (process.env.AUTH_BACKEND === 'supabase') {
-    const { refreshSupabaseSession } = await import('@/lib/supabase/session-middleware');
-    return refreshSupabaseSession(request);
-  }
-  return NextResponse.next();
+  const { refreshSupabaseSession } = await import('@/lib/supabase/session-middleware');
+  return refreshSupabaseSession(request);
 }
 
 export const config = {

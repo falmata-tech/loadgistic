@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server.js';
 import { MANAGED_AUTH_CODE_SENT, MANAGED_AUTH_UNAVAILABLE, managedAuthCallbackUrl, normalizeManagedAuthEmail } from '@/lib/auth-flow.js';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 import { redirectUrl, redirectWith, text } from '@/lib/redirects';
-import { usesSupabaseAuth } from '@/lib/supabase/config';
 import { createSupabaseRouteClient } from '@/lib/supabase/route';
 
 export const runtime='nodejs';
 
 export async function POST(request:NextRequest) {
-  if(!usesSupabaseAuth())return redirectWith(request,'/login','error',MANAGED_AUTH_UNAVAILABLE);
   const form=await request.formData();
   const email=normalizeManagedAuthEmail(text(form,'email'));
   if(!email)return redirectWith(request,'/login','error','Enter a valid email address.');

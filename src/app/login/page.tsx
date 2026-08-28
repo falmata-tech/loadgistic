@@ -5,20 +5,18 @@ import { PublicHeader } from '@/components/public-header';
 import { Flash } from '@/components/flash';
 import { getCurrentUser } from '@/lib/auth';
 import { localFixturePasswordLoginEnabled } from '@/lib/auth-flow.js';
-import { usesSupabaseAuth } from '@/lib/supabase/config';
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string,string | undefined>> }) {
   const user=await getCurrentUser();
   if (user) redirect(user.role==='SUPPORT'?'/support':'/app/home');
   const query = await searchParams;
-  const managed=usesSupabaseAuth();
   const fixturePassword=localFixturePasswordLoginEnabled();
-  const codeStep=managed&&query.step==='code';
+  const codeStep=query.step==='code';
   return <><PublicHeader/><main className="public-app-page public-form-workspace"><div className="container auth-shell public-form-container">
     <section className="form-card">
       <div className="auth-heading"><span className="task-heading-icon"><LogIn aria-hidden="true"/></span><div><h1 className="page-title">Transporter login</h1><p className="page-subtitle">Open your transporter workspace securely. Capacity seekers do not need an account.</p></div></div>
       <Flash error={query.error} success={query.success}/>
-      {managed?<div className="managed-login-stack">
+      <div className="managed-login-stack">
         <form action="/api/auth/google" method="post">
           <button className="button secondary auth-google-button" type="submit"><span className="auth-google-mark" aria-hidden="true">G</span>Continue with Google</button>
         </form>
@@ -33,8 +31,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <button className="button" type="submit"><Send aria-hidden="true"/>Email me a code</button>
         </form>}
         <p className="auth-privacy-note"><LockKeyhole aria-hidden="true"/>Google and email codes are used only to identify your Loadgistic account.</p>
-      </div>:null}
-      {fixturePassword?<details className="auth-fixture-login" open={!managed}>
+      </div>
+      {fixturePassword?<details className="auth-fixture-login">
         <summary>Local fixture password</summary>
         <form action="/api/auth/login" method="post" className="stack" data-testid="login-form">
           <div className="form-group"><label htmlFor="email"><Mail aria-hidden="true"/>Email</label><input id="email" name="email" type="email" autoComplete="email" required/></div>
@@ -42,7 +40,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <button className="button" type="submit"><LogIn aria-hidden="true"/>Log in</button>
         </form>
       </details>:null}
-      {!managed&&!fixturePassword?<div className="auth-unavailable" role="status"><LockKeyhole aria-hidden="true"/><p>Transporter sign in is temporarily unavailable.</p></div>:null}
       <div className="auth-signup"><span>New to Loadgistic?</span><Link className="button secondary" href="/apply"><CirclePlus aria-hidden="true"/>Create a transporter account</Link></div>
     </section>
     <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Back to Truck Market</Link>

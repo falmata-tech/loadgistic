@@ -30,9 +30,9 @@ paths must complete the same cutover before the Production flag is enabled.
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 No deploy or Git continuous-deployment hook has been created. The service-role
-key is not configured. `AUTH_BACKEND`, `DATA_BACKEND`, and
-`PRIVATE_STORAGE_BACKEND` have not been switched to Supabase because the role
-projection, repository parity, and upload-scanning gates below remain red.
+key is not configured. Managed Supabase Auth is now the only identity runtime;
+`DATA_BACKEND` and `PRIVATE_STORAGE_BACKEND` have not been configured remotely
+because repository parity and upload-scanning gates below remain red.
 
 ## Free-pilot operating envelope
 
@@ -79,9 +79,9 @@ the release gate is green.
 
 Supabase Auth owns transporter identity, Google OAuth, numeric email-code login and signup,
 and browser sessions. The browser/server SSR clients, PKCE callback exchange,
-conditional request-cookie refresh boundary, active-role projection, and
-Production-disabled fixture-password boundary are present behind
-`AUTH_BACKEND=supabase`. Managed provider onboarding now provisions an inactive
+request-cookie refresh boundary, active-role projection, and
+Production-disabled local fixture-password boundary are the only identity
+runtime. Managed provider onboarding now provisions an inactive
 Auth subject, collects the short provider profile after Google or email-code
 identity proof, and then provisions the matching provider workspace, draft page,
 signup record, seven-day trial, and active role projection atomically. It still requires the
@@ -122,7 +122,6 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_MAP_TILE_URL
 NEXT_PUBLIC_MAP_TILE_ATTRIBUTION
 SUPABASE_SERVICE_ROLE_KEY
-AUTH_BACKEND
 ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN
 PRIVATE_STORAGE_BACKEND
 UPLOAD_SCANNER_BACKEND

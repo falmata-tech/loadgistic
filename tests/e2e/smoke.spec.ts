@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 async function login(page:any,email:string){
   await page.goto('/login');
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('Loadgistic123!');
   await page.getByRole('button',{name:'Log in'}).click();

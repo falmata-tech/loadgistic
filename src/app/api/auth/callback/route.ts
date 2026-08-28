@@ -3,7 +3,6 @@ import { MANAGED_AUTH_ERROR, managedWorkspaceDestination } from '@/lib/auth-flow
 import { getManagedCurrentUser } from '@/lib/identity/supabase';
 import {MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,readProviderSignupHandoff} from '@/lib/provider-signup.js';
 import { redirectUrl } from '@/lib/redirects';
-import { usesSupabaseAuth } from '@/lib/supabase/config';
 import { createSupabaseRouteClient } from '@/lib/supabase/route';
 
 export const runtime='nodejs';
@@ -34,7 +33,7 @@ export async function GET(request:NextRequest) {
   const flowId=query.get('sb_flow_id')||'';
   const signupHandoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   const signup=Boolean(signupHandoff);
-  if(!usesSupabaseAuth()||query.has('error')||!code||code.length>4096)return failedAndCleared(request,signup);
+  if(query.has('error')||!code||code.length>4096)return failedAndCleared(request,signup);
   if(flowId&&(flowId.length>256||!/^[A-Za-z0-9_-]+$/.test(flowId)))return failedAndCleared(request,signup);
 
   const response=failed(request,signup);

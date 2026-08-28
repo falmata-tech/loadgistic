@@ -17,6 +17,7 @@ test('Sponsors stay separate, compact, and schedule-attributed',async({page}:{pa
   await expect(sponsors.getByRole('button',{name:/next|previous|pause/i})).toHaveCount(0);
 
   await page.goto('/login');
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill('admin@loadgistic.local');
   await page.getByLabel('Password').fill('Loadgistic123!');
   await page.getByRole('button',{name:'Log in'}).click();
@@ -41,6 +42,7 @@ test('capture focused featured schedule review',async({page}:{page:any})=>{
   await featured.locator('.featured-programme-command').screenshot({path:path.join(output,`${project}-schedule.png`)});
 
   await page.goto('/login');
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill('admin@loadgistic.local');
   await page.getByLabel('Password').fill('Loadgistic123!');
   await page.getByRole('button',{name:'Log in'}).click();

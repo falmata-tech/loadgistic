@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server.js';
 import { MANAGED_AUTH_UNAVAILABLE, managedAuthCallbackUrl } from '@/lib/auth-flow.js';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 import { redirectUrl } from '@/lib/redirects';
-import { getSupabasePublicConfig, usesSupabaseAuth } from '@/lib/supabase/config';
+import { getSupabasePublicConfig } from '@/lib/supabase/config';
 import { createSupabaseRouteClient } from '@/lib/supabase/route';
 
 export const runtime = 'nodejs';
@@ -15,7 +15,7 @@ function unavailable(request:NextRequest) {
 
 export async function POST(request:NextRequest) {
   const rate=await checkRateLimit(requestKey(request,'managed-google-login'),10,10*60_000);
-  if(!rate.allowed||!usesSupabaseAuth())return unavailable(request);
+  if(!rate.allowed)return unavailable(request);
   const callbackUrl=managedAuthCallbackUrl({requestUrl:request.url});
   if(!callbackUrl)return unavailable(request);
 

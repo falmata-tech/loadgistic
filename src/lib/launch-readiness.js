@@ -19,10 +19,9 @@ export function launchReadiness(environment=process.env){
   if(production&&(storage.backend!=='supabase'||!storage.configured))blockers.push('durable-private-storage');
 
   const dataBackend=String(environment.DATA_BACKEND||'sqlite').toLowerCase();
-  const authBackend=String(environment.AUTH_BACKEND||'local').toLowerCase();
+  const authBackend='supabase';
   if(production){
     if(dataBackend!=='supabase')blockers.push('managed-postgres-data-backend');
-    if(authBackend!=='supabase')blockers.push('managed-auth-backend');
     const callbackReady=Boolean(managedAuthCallbackUrl({environment}));
     if(!callbackReady)blockers.push('managed-auth-callback-url');
     if(environment.ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN==='true')blockers.push('local-fixture-password-enabled');

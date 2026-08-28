@@ -69,6 +69,7 @@ async function login(page, email) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await gotoReady(page, '/login');
     if (new URL(page.url()).pathname === expectedPath) return;
+    await page.locator('details.auth-fixture-login>summary').click();
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Log in' }).click();

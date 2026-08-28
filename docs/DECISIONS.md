@@ -897,3 +897,18 @@ and cleanup verification; it never satisfies Production readiness. Rollback
 disables upload entry points or restores the prior application artifact without
 making quarantined objects readable. A scanner outage must not cause direct
 final-bucket writes or a configuration-flag bypass.
+
+## ADR-046 — Retire the authenticated Directory and local identity fallback
+
+Supersede ADR-018. Current transport discovery belongs to the account-free Truck
+Market, and current transporter detail belongs to the canonical public
+microsite. Former `/app/providers` and `/companies` collection links redirect to
+the Truck Market while preserving a useful name query; old detail links redirect
+to the matching public microsite. The retired member-directory API returns a
+bounded `410 Gone` response and cannot query compatibility storage.
+
+Managed Supabase Auth is the only application identity runtime in local
+development, browser tests, Preview, and Production. The explicitly enabled
+local fixture-password form remains a test convenience, but it authenticates
+the isolated Supabase Auth fixtures and never creates a separate signed-cookie
+or SQLite identity system. Missing managed Auth configuration fails closed.

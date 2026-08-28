@@ -42,7 +42,6 @@ function writeLocalEnvironment(){
     ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',publishableKey],
     ['SUPABASE_SERVICE_ROLE_KEY',serviceRoleKey],
     ['DATA_BACKEND','supabase'],
-    ['AUTH_BACKEND','supabase'],
     ['PRIVATE_STORAGE_BACKEND','supabase'],
     ['UPLOAD_SCANNER_BACKEND','local'],
     ['ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN','true']

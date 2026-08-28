@@ -136,7 +136,7 @@ export function getWorkspaceAccess(user, at = new Date()) {
   if ([USER_ROLES.ADMIN,USER_ROLES.SUPPORT].includes(user?.role)) {
     return {granted:true,status:user.role,ends_at:null,days_remaining:null,subscription:null};
   }
-  if(process.env.AUTH_BACKEND==='supabase'||process.env.DATA_BACKEND==='supabase'){
+  if(process.env.DATA_BACKEND==='supabase'){
     return getManagedWorkspaceAccess(user,at);
   }
   const subscription = workspaceSubscription(getDb(),user);
@@ -215,7 +215,7 @@ export function getDriverAccess(user) {
     };
   }
   if (!isCompanyDriver(user)) return null;
-  if(process.env.AUTH_BACKEND==='supabase'||process.env.DATA_BACKEND==='supabase'){
+  if(process.env.DATA_BACKEND==='supabase'){
     return getManagedDriverAccess(user);
   }
   const stored = getDb().prepare('SELECT * FROM driver_permissions WHERE user_id=?').get(user.id);

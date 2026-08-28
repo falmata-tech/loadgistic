@@ -23,6 +23,7 @@ await publicState('mobile',{width:412,height:915});
 
 const admin=await browser.newPage({viewport:{width:1440,height:1000}});
 await admin.goto(`${baseUrl}/login`,{waitUntil:'networkidle'});
+await admin.locator('details.auth-fixture-login>summary').click();
 await admin.getByLabel('Email').fill('admin@loadgistic.local');
 await admin.getByLabel('Password').fill('Loadgistic123!');
 await admin.getByRole('button',{name:'Log in'}).click();
@@ -33,6 +34,7 @@ await admin.close();
 for(const [name,viewport] of [['desktop',{width:1440,height:1000}],['mobile',{width:412,height:915}]]){
   const driver=await browser.newPage({viewport});
   await driver.goto(`${baseUrl}/login`,{waitUntil:'networkidle'});
+  await driver.locator('details.auth-fixture-login>summary').click();
   await driver.getByLabel('Email').fill('driver@loadgistic.local');
   await driver.getByLabel('Password').fill('Loadgistic123!');
   await driver.getByRole('button',{name:'Log in'}).click();

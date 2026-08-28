@@ -10,8 +10,10 @@ const nextConfig = {
     return [
       {source:'/app/loads/:path*',destination:'/',permanent:false},
       {source:'/app/shipments/:path*',destination:'/app/provider-shipments',permanent:false},
-      {source:'/app/providers/:path*',destination:'/providers',permanent:false},
-      {source:'/companies/:path*',destination:'/providers',permanent:false}
+      {source:'/app/providers',destination:'/',permanent:false},
+      {source:'/app/providers/:handle',destination:'/providers/:handle',permanent:false},
+      {source:'/companies',destination:'/',permanent:false},
+      {source:'/companies/:handle',destination:'/providers/:handle',permanent:false}
     ];
   },
   async rewrites() {

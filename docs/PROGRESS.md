@@ -55,9 +55,9 @@
 - The Netlify Free site is provisioned under the `loadgistic` team and linked
   locally at `https://loadgistic.netlify.app`. No application Supabase, backend,
   auth, storage, email, session, monitoring, or map-provider environment values
-  are configured yet, and no deploy or Git hook has been started. The Supabase SSR browser/server clients and conditional
-  session-refresh middleware compile behind `AUTH_BACKEND=supabase`, while
-  production continues to fail closed pending role/repository parity.
+  are configured yet, and no deploy or Git hook has been started. The Supabase SSR browser/server clients and
+  unconditional managed session-refresh boundary are active locally; Production
+  continues to fail closed pending repository parity and hosted configuration.
 
 - Repository paths not yet migrated retain Node SQLite only as a compatibility adapter. ADR-041 requires Supabase PostgreSQL/Auth/Storage for local development, browser tests, Preview, and Production; there is no managed-error fallback to SQLite. Public discovery, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, managed provider signup, the authenticated workspace shell, Fleet management, Verification, Billing, member Support, Assisted matching, and platform-team management have completed their managed ports; Operations, Featured/Sponsor administration, and retired compatibility routes remain.
 - The Supabase identity slice now has a parameter-free `auth.uid()` role projection plus SSR Google PKCE, numeric email-code verification, refresh, current-user, logout, and managed signup adapters. Managed completion and workspace-access evaluation no longer import the SQLite repository; both sign-in methods deny a missing or inactive Loadgistic role projection. Signup uses a signed handoff, separate numeric confirmation template, and the same inactive bootstrap before atomic Owner-operator or fleet workspace/page/application/trial provisioning. Hosted Google credentials, exact callback allowlists, numeric login/signup templates, and verified custom SMTP remain rollout prerequisites.

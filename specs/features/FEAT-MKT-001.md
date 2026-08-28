@@ -144,6 +144,14 @@ And the authenticated Dashboard action replaces login without leaving a signup i
 And Provider Market, provider directory, and Area Market actions are absent\
 And Shipment Board, Post shipment, Business signup, and Business Directory actions are absent.
 
+### Scenario: retired authenticated Directory cannot reach legacy data
+
+Given a visitor or provider follows an old authenticated Directory or company-profile link\
+When `/app/providers`, `/app/providers/[handle]`, or `/companies` is opened\
+Then the request redirects to the public Truck Market or canonical public transporter microsite\
+And useful provider-name search input is preserved where available\
+And the retired member-directory search endpoint returns `410 Gone` without querying a compatibility repository.
+
 ### Scenario: claims remain evidence safe
 
 Given the homepage explains Loadgistic's purpose\

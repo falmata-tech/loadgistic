@@ -11,7 +11,6 @@ import {getManagedCurrentUser} from '@/lib/identity/supabase';
 import {
   MANAGED_SIGNUP_COOKIE,maskedProviderSignupEmail,readProviderSignupHandoff
 } from '@/lib/provider-signup.js';
-import {usesSupabaseAuth} from '@/lib/supabase/config';
 import {createSupabaseServerClient} from '@/lib/supabase/server';
 
 const accountTypes=[
@@ -35,12 +34,11 @@ export default async function ApplyPage({
   searchParams:Promise<Record<string,string|undefined>>;
 }){
   const query=await searchParams;
-  const managed=usesSupabaseAuth();
   const store=await cookies();
   const handoff=readProviderSignupHandoff(store.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   let identityProved=false;
   let activeDestination='';
-  if(managed&&handoff){
+  if(handoff){
     try{
       const client=await createSupabaseServerClient();
       const {data,error}=await client.auth.getUser();
@@ -57,13 +55,12 @@ export default async function ApplyPage({
   return <><PublicHeader/><main className="public-app-page public-form-workspace"><div className="container public-form-container">
     <div className="auth-heading"><span className="task-heading-icon"><Building2 aria-hidden="true"/></span><div><h1 className="page-title">Create a transporter account</h1><p className="page-subtitle">{detailsStep?'Tell us how you operate. You can complete trucks, public contacts, and documents from your workspace.':'First, confirm the email you will use to access your transporter workspace.'}</p></div></div>
     <Flash error={query.error} success={query.success}/>
-    {detailsStep?<ProviderDetailsForm selectedType={selectedType}/>:codeStep?<EmailCodeForm maskedEmail={maskedProviderSignupEmail(handoff?.email||'')}/>:<IdentityChoice managed={managed}/>}
+    {detailsStep?<ProviderDetailsForm selectedType={selectedType}/>:codeStep?<EmailCodeForm maskedEmail={maskedProviderSignupEmail(handoff?.email||'')}/>:<IdentityChoice/>}
     <Link className="auth-back" href="/"><ArrowLeft aria-hidden="true"/>Back to Truck Market</Link>
   </div></main></>;
 }
 
-function IdentityChoice({managed}:{managed:boolean}){
-  if(!managed)return <section className="form-card auth-unavailable" role="status"><LockKeyhole aria-hidden="true"/><p>Transporter signup is temporarily unavailable.</p></section>;
+function IdentityChoice(){
   return <section className="form-card managed-login-stack">
     <form action="/api/applications/google" method="post">
       <button className="button secondary auth-google-button" type="submit"><span className="auth-google-mark" aria-hidden="true">G</span>Continue with Google</button>

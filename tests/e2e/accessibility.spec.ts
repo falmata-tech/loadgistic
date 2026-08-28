@@ -9,6 +9,7 @@ test.setTimeout(120_000);
 
 async function login(page: Page, email: string, destination = '/app/home') {
   await page.goto('/login');
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();

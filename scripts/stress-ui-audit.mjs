@@ -40,6 +40,7 @@ async function gotoReady(page,route){
 
 async function login(page,persona){
   await gotoReady(page,'/login');
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill(persona.email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button',{name:'Log in'}).click();

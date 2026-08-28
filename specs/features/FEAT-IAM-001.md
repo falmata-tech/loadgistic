@@ -64,7 +64,8 @@ And Supabase's Site URL and Redirect URL allowlist must contain the exact Previe
 
 Given deterministic fixture credentials are needed for local development or automated browser tests\
 When the non-Production runtime explicitly enables fixture password login\
-Then the local login form and password route may authenticate those fixtures\
+Then the local login form and password route authenticate those fixtures only through the isolated local Supabase Auth project\
+And no signed-cookie or SQLite identity fallback exists\
 And managed Preview and Production never render or accept password login.
 
 Given an unknown email, wrong password, or suspended local fixture account\

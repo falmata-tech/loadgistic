@@ -39,10 +39,10 @@ Then the primary workflow remains visible and operable without horizontal scroll
 
 ### Scenario: detail navigation remains reversible
 
-Given an authenticated member opens a truck, capacity, load, pooled-load, or profile detail\
+Given an authenticated member opens a truck, capacity, Tracking, or provider-profile detail\
 When the detail page renders\
 Then a Back control returns to the most recent in-workspace page when one is known\
-And a direct deep link uses the relevant Board, Fleet, Tracking, or Directory as its fallback\
+And a direct deep link uses the Truck Market, Fleet, Tracking, or public transporter microsite as its fallback\
 And the control remains available on desktop and mobile without replacing primary navigation.
 
 ## Contract details

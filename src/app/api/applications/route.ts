@@ -8,7 +8,6 @@ import {
 } from '@/lib/provider-signup.js';
 import {redirectUrl,text} from '@/lib/redirects';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
-import {usesSupabaseAuth} from '@/lib/supabase/config';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
 
 export const runtime='nodejs';
@@ -30,7 +29,6 @@ function clearSignupCookie(response:NextResponse){
 export async function POST(request:NextRequest){
   const rate=await checkRateLimit(requestKey(request,'provider-signup-complete'),5,10*60_000);
   if(!rate.allowed)return responseFor(request,'/apply',`Please wait ${rate.retryAfterSeconds} seconds before trying again.`);
-  if(!usesSupabaseAuth())return responseFor(request,'/apply',MANAGED_SIGNUP_ERROR);
   const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   if(!handoff)return responseFor(request,'/apply',MANAGED_SIGNUP_ERROR);
 

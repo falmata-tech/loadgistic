@@ -9,7 +9,3 @@ export function getSupabasePublicConfig(): SupabasePublicConfig {
   if (!url || !publishableKey) throw new Error('SUPABASE_PUBLIC_CONFIG_MISSING');
   return { url, publishableKey };
 }
-
-export function usesSupabaseAuth() {
-  return process.env.AUTH_BACKEND === 'supabase';
-}

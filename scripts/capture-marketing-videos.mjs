@@ -23,6 +23,7 @@ async function loginState(browser,email){
   const context=await browser.newContext({viewport});
   const page=await context.newPage();
   await page.goto(`${baseURL}/login`,{waitUntil:'domcontentloaded'});
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button',{name:'Log in'}).click();

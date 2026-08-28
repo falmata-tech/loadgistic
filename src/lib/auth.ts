@@ -3,10 +3,8 @@ import { redirect } from 'next/navigation';
 import { createSessionToken, verifySessionToken } from './security.js';
 import { getManagedCurrentUser } from './identity/supabase';
 import { getManagedWorkspaceAccess } from './identity/workspace-access.js';
-import { usesSupabaseAuth } from './supabase/config';
 import { createSupabaseServerClient } from './supabase/server';
 
-export const SESSION_COOKIE = 'lg_session';
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
 export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
 export const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
@@ -15,23 +13,12 @@ export const TRACKING_IDLE_SECONDS = 5 * 60;
 export const SHARED_CAPACITY_IDLE_SECONDS = 30 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
-  if(usesSupabaseAuth()){
-    const client=await createSupabaseServerClient();
-    const {data,error}=await client.auth.getUser();
-    if(error||!data.user)return null;
-    const user=await getManagedCurrentUser(client,data.user);
-    if(!user||!user.active)return null;
-    if(!options.allowLimited&&!getManagedWorkspaceAccess(user).granted)return null;
-    return user;
-  }
-  const {getUserById,getWorkspaceAccess}=await import('./repository.js');
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-  const payload = verifySessionToken(token);
-  if (!payload) return null;
-  const user = await getUserById(payload.sub);
-  if (!user || !user.active) return null;
-  if (!options.allowLimited && !(await getWorkspaceAccess(user)).granted) return null;
+  const client=await createSupabaseServerClient();
+  const {data,error}=await client.auth.getUser();
+  if(error||!data.user)return null;
+  const user=await getManagedCurrentUser(client,data.user);
+  if(!user||!user.active)return null;
+  if(!options.allowLimited&&!getManagedWorkspaceAccess(user).granted)return null;
   return user;
 }
 
@@ -40,34 +27,10 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
   if (!user) redirect('/login?error=Please+log+in');
   if (allowedRoles && !allowedRoles.includes(user.role)) redirect('/app/home?error=You+do+not+have+access+to+that+page');
   if (!options.allowLimited) {
-    const access=usesSupabaseAuth()
-      ? getManagedWorkspaceAccess(user)
-      : await (await import('./repository.js')).getWorkspaceAccess(user);
+    const access=getManagedWorkspaceAccess(user);
     if(!access.granted)redirect('/app/home?billing=required');
   }
   return user;
-}
-
-export async function setSession(userId: string) {
-  if(usesSupabaseAuth())throw new Error('MANAGED_SESSION_ESTABLISHMENT_REQUIRED');
-  const store = await cookies();
-  store.set(SESSION_COOKIE, createSessionToken(userId), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 12
-  });
-}
-
-export async function clearSession() {
-  if(usesSupabaseAuth()){
-    const client=await createSupabaseServerClient();
-    await client.auth.signOut();
-    return;
-  }
-  const store = await cookies();
-  store.set(SESSION_COOKIE, '', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 0 });
 }
 
 export async function hasTrackingGrant(shipmentId: string) {

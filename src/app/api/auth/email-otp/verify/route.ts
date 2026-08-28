@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { MANAGED_AUTH_ERROR, MANAGED_AUTH_UNAVAILABLE, isNumericEmailOtp, managedWorkspaceDestination, normalizeManagedAuthEmail } from '@/lib/auth-flow.js';
+import { MANAGED_AUTH_ERROR, isNumericEmailOtp, managedWorkspaceDestination, normalizeManagedAuthEmail } from '@/lib/auth-flow.js';
 import { getManagedCurrentUser } from '@/lib/identity/supabase';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 import { redirectUrl, text } from '@/lib/redirects';
-import { usesSupabaseAuth } from '@/lib/supabase/config';
 import { createSupabaseRouteClient } from '@/lib/supabase/route';
 
 export const runtime='nodejs';
@@ -16,7 +15,6 @@ function failed(request:NextRequest,message=MANAGED_AUTH_ERROR) {
 }
 
 export async function POST(request:NextRequest) {
-  if(!usesSupabaseAuth())return failed(request,MANAGED_AUTH_UNAVAILABLE);
   const form=await request.formData();
   const email=normalizeManagedAuthEmail(text(form,'email'));
   const token=text(form,'code');
