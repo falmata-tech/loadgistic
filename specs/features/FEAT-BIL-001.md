@@ -6,7 +6,7 @@ problem: Self-managed Driver and fleet transporter workspaces need a useful tria
 behavior: Successful provider signup starts a seven-day workspace trial; a manually approved payment grants 30 days; expired or unpaid providers retain login, Home, Account, and billing access while provider operating commands are denied. Public capacity discovery and guest tracking never depend on a seeker subscription.
 contracts: [WorkspaceSubscription, SubscriptionAccessPolicy, TrialPeriod, PaidPeriod, PaymentProofAggregate, EtbAmount, BillingReviewPolicy, BillingFilePort]
 observability: [billing_audit, subscription_access_denial, trial_provisioned, paid_period_started, submission_outcome, review_outcome]
-rollout: Keep review manual and plan prices undisclosed until a separately specified payment integration and commercial price schedule are approved; monitor expiry denials and renewal-review time.
+rollout: Keep review manual and plan prices undisclosed until a separately specified payment integration and commercial price schedule are approved; use private Supabase Storage plus actor-scoped PostgreSQL commands in every runtime, monitor expiry denials and renewal-review time, and never fall back to SQLite.
 ---
 
 # Billing proof
@@ -86,8 +86,20 @@ When an administrator attempts another review\
 Then the command is rejected\
 And the proof and subscription retain their terminal result.
 
+### Scenario: managed billing is actor scoped and durable
+
+Given local development, Preview, or Production uses the managed runtime\
+When a workspace reads payment history, submits a proof, opens its private file, or an authorized Billing actor reviews it\
+Then the active application route uses the dedicated Billing port, Supabase PostgreSQL, and private Supabase Storage\
+And PostgreSQL repeats current actor, workspace or Billing permission, subscription ownership, status, amount, and terminal-review checks\
+And a failed metadata command removes a newly released upload instead of leaving an unowned proof object\
+And every private-file read repeats workspace or Billing authorization without returning its storage reference to the browser\
+And browser roles cannot execute the service-only commands or read the private bucket directly\
+And managed failure never falls back to SQLite or a serverless local file.
+
 ## Contract ownership
 
 - Pages and adapters: `/app/more`, `/admin/billing`, billing route handlers
-- Application services: billing and workspace-access functions in `src/lib/repository.js`; pure expiry policy in `src/lib/subscription-access.js`
-- Tests: `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Application services: dedicated managed Billing and workspace application ports; pure expiry policy in `src/lib/subscription-access.js`
+- Persistence and files: actor-scoped Supabase PostgreSQL commands plus private Storage quarantine/release/read/remove adapters
+- Tests: managed Billing contract and live Supabase verifier, `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`

@@ -1,5 +1,6 @@
 import {getManagedWorkspaceAccess} from './identity/workspace-access.js';
 import {createSupabaseAdminClient} from './supabase-adapter.js';
+import {getBillingSummaryData} from './billing.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
   CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT'
@@ -47,16 +48,9 @@ export async function getDashboard(user){
   return {...(data||{}),role:user.role,actions:dashboardActions(user),capacities:[]};
 }
 
-export async function getBillingSummary(user){
-  const subscription=user.workspace_subscription||null;
+export async function getBillingSummary(user,options={}){
+  const managed=await getBillingSummaryData(user,options);
+  const subscription=managed.subscription||user.workspace_subscription||null;
   const access=getWorkspaceAccess(user);
-  if(!subscription)return {subscription:null,proofs:[],access};
-  const client=createSupabaseAdminClient();
-  const {data,error}=await client.from('payment_proofs')
-    .select('id,subscription_id,amount_minor,reference,file_path,original_name,mime_type,status,submitted_at,reviewed_at')
-    .eq('subscription_id',subscription.id)
-    .order('submitted_at',{ascending:false})
-    .limit(100);
-  if(error)throw new Error('SUPABASE_BILLING_SUMMARY_FAILED',{cause:error});
-  return {subscription,proofs:data||[],access};
+  return {...managed,subscription,access};
 }

@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/auth';
-import { getVerificationCenter, paginateResults } from '@/lib/repository.js';
+import { getVerificationCenter } from '@/lib/verification.js';
+import { paginateResults } from '@/lib/pagination.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';

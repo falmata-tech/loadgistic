@@ -1,6 +1,6 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { getPaymentProofFile } from '@/lib/repository.js';
+import { getPaymentProofFile } from '@/lib/billing.js';
 import { readPrivateUpload } from '@/lib/private-storage.js';
 
 export const runtime='nodejs';

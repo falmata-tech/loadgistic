@@ -6,7 +6,7 @@ problem: Public capacity seekers need visible, evidence-based trust signals for 
 behavior: Authorized providers submit private verification documents for an owned organization, Driver, or Driver-truck pairing. Administrators review each request and expiry. Public Capacity Board cards and provider microsites derive vivid category-specific badges only from current approvals and always tell visitors to perform their own checks.
 contracts: [VerificationSubject, VerificationTypePolicy, VerificationSubmission, VerificationReview, VerificationExpiry, DriverTruckAuthorization, VerificationBadgeSummary, VerificationBadgeMeaning, VerificationRiskNotice, VerificationFileAuthorization]
 observability: [verification_submitted_audit, verification_reviewed_audit, verification_denied_outcome]
-rollout: Document names remain extensible; keep files private, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history.
+rollout: Document names remain extensible; use private Supabase Storage plus actor-scoped PostgreSQL commands in every runtime, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history; never fall back to SQLite.
 ---
 
 # Verification
@@ -122,6 +122,17 @@ When an unrelated authenticated user or anonymous visitor requests the file\
 Then access is denied\
 And only the submitting owner or an administrator can read it.
 
+### Scenario: managed verification is actor scoped and durable
+
+Given local development, Preview, or Production uses the managed runtime\
+When a workspace reads its verification center, submits evidence, opens its private file, or an authorized Trust actor reviews it\
+Then the active application route uses the dedicated Verification port, Supabase PostgreSQL, and private Supabase Storage\
+And PostgreSQL repeats current actor, workspace or Trust permission, subject ownership, evidence type, Driver-truck pairing, expiry, duplicate, and terminal-review checks\
+And a failed metadata command removes a newly released upload instead of leaving an unowned evidence object\
+And every private-file read repeats submitter or Trust authorization without returning its storage reference to the browser\
+And browser roles cannot execute the service-only commands or read the private bucket directly\
+And managed failure never falls back to SQLite or a serverless local file.
+
 ## Supported categories
 
 - Fleet transporter organization: National ID, Business license, and Business address
@@ -135,6 +146,6 @@ The catalog may add country- or actor-specific document names in a later accepte
 ## Contract ownership
 
 - Pages: `/app/verification`, `/admin/verifications`, public Capacity Board, provider microsites, and truck rosters
-- Application services: verification functions in `src/lib/repository.js`
-- Private file adapter: `/api/files/verification/[id]`
-- Tests: `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Application services: dedicated managed Verification application port
+- Private file adapter: `/api/files/verification/[id]` backed by actor-scoped PostgreSQL authorization and private Storage
+- Tests: managed Verification contract and live Supabase verifier, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
