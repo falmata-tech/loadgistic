@@ -6,7 +6,7 @@ import path from 'node:path';
 const root=process.cwd();
 const cli=String(process.env.SUPABASE_CLI_PATH||'supabase').trim();
 const options=new Set(process.argv.slice(2));
-const supported=new Set(['--write-env','--fixtures','--verify','--verify-signup']);
+const supported=new Set(['--write-env','--fixtures','--verify','--verify-signup','--verify-support']);
 for(const option of options){
   if(!supported.has(option))throw new Error(`UNKNOWN_OPTION:${option}`);
 }
@@ -88,5 +88,7 @@ if(options.has('--verify')){
   runScript('scripts/verify-supabase-provider-profile.mjs');
   runScript('scripts/verify-supabase-workspace-fleet.mjs');
   runScript('scripts/verify-supabase-verification-billing.mjs');
+  runScript('scripts/verify-supabase-support.mjs');
 }
 if(options.has('--verify-signup'))runScript('scripts/verify-supabase-provider-signup.mjs');
+if(options.has('--verify-support'))runScript('scripts/verify-supabase-support.mjs');

@@ -18,6 +18,8 @@ async function findPublicRegularServiceFallback(request:any){
 
 async function login(page:any,email:string,expected=/\/app\/home/){
   await page.goto('/login');
+  const fixtureLogin=page.locator('details.auth-fixture-login');
+  if(await fixtureLogin.count()&&!(await fixtureLogin.getAttribute('open')))await fixtureLogin.locator('summary').click();
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill('Loadgistic123!');
   await page.getByRole('button',{name:'Log in'}).click();
@@ -26,7 +28,7 @@ async function login(page:any,email:string,expected=/\/app\/home/){
 
 test('Assisted matching behaves as an immediate private chat',async({page,browser}:{page:any;browser:any})=>{
   test.setTimeout(60_000);
-  const email=`guest-${test.info().project.name}@example.test`;
+  const email=`guest-${test.info().project.name}-${Date.now()}@example.test`;
   await page.goto('/');
   await page.getByRole('button',{name:'Ask Loadgistic'}).click();
   const dialog=page.getByRole('dialog',{name:'Ask Loadgistic'});
@@ -46,7 +48,7 @@ test('Assisted matching behaves as an immediate private chat',async({page,browse
   await teamPage.goto('/support/assisted?view=ASSIGNED');
   const conversationHref=await teamPage.getByText(email,{exact:true}).locator('xpath=ancestor::article[1]').getByRole('link',{name:'Open'}).getAttribute('href');
   await teamPage.goto(conversationHref!);
-  await expect(teamPage).toHaveURL(/\/support\/assisted\/guest-support-/);
+  await expect(teamPage).toHaveURL(/\/support\/assisted\/[0-9a-f-]{36}$/);
   await expect(teamPage.getByText('I need a local cargo van from Adama to Bishoftu tomorrow morning.')).toBeVisible();
   await teamPage.getByLabel('Message').fill('I am checking nearby vans now.');
   await teamPage.getByRole('button',{name:'Send'}).click();

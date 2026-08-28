@@ -6,7 +6,7 @@ problem: Account-free visitors may want Loadgistic to help identify suitable tra
 behavior: A visitor starts a private Assisted matching conversation with a required email, required callback phone, and bounded message. The persistent public-shell launcher is the primary chat surface; it opens a compact desktop dialog or mobile sheet and restores the active session across public route changes and browser refreshes. It enters the existing support assignment workflow without creating a user account or public demand record. Available agents are assigned immediately, active conversations refresh automatically at a fast bounded interval, and the guest may attach specifically requested private images or PDFs. The guest or team may end the chat; its retained transcript becomes read-only and the guest may start a distinct new session. Supabase Realtime replaces polling during managed deployment; the local adapter must not claim push delivery. Loadgistic presents this as assisted matching, not a service guarantee or transaction handler.
 contracts: [GuestSupportIdentity, GuestConversationAccess, AssistedMatchingConversation, GuestSupportMessage, GuestSupportAttachment, GuestSupportProjection, PersistentPublicChatLauncher]
 observability: [guest_conversation_created, guest_message_sent, guest_attachment_uploaded, guest_conversation_access_denied, guest_conversation_closed]
-rollout: Additive Supabase PostgreSQL schema plus private support-attachment and server-only quarantine buckets in the isolated local and managed stacks. Production exposure remains blocked until the managed scanner, email, and shared-rate-limit adapters pass remote readiness checks. Roll back by disabling guest creation while retaining private records for the retention window.
+rollout: Use service-only Supabase PostgreSQL commands plus private support-attachment and server-only quarantine buckets in the isolated local and managed stacks; managed failure never falls back to SQLite. Production exposure remains blocked until the managed scanner, email, and shared-rate-limit adapters pass remote readiness checks. Roll back by disabling guest creation while retaining private records for the retention window.
 ---
 
 # Anonymous assisted matching
@@ -89,11 +89,22 @@ When public or conversation UI explains that help\
 Then it uses Assisted matching\
 And it does not claim Loadgistic guarantees a transporter, documents, cargo fit, price, payment, delivery, or legal brokerage outcome.
 
+### Scenario: managed guest chat is private and durable
+
+Given local development, Preview, or Production uses the managed runtime\
+When a visitor creates, restores, reads, replies to, ends, or downloads a file from Assisted matching\
+Then the active application route uses the dedicated Support port, Supabase PostgreSQL, and private Supabase Storage\
+And PostgreSQL repeats the server-held guest digest or assigned Support authorization on every conversation, message, lifecycle, and file command\
+And a failed metadata command removes a newly released upload instead of leaving an unowned attachment object\
+And Storage references, contact digests, recovery codes, and delivery internals never appear in the browser projection\
+And browser roles cannot execute the service-only commands or read the private bucket directly\
+And managed failure never falls back to SQLite or a serverless local file.
+
 ## Contract ownership
 
 - Public surface: persistent public-shell launcher; `/help` and `/help/[id]` remain recovery and shareable fallbacks rather than primary navigation destinations
 - Support/admin inboxes: existing `/support` and `/admin/support`
 - Inbound adapters: `/api/guest-support/*` and authorized private-file reads
-- Application service and persistence adapter: `src/lib/repository.js`
-- Private storage adapter: `src/lib/private-storage.js`
-- Tests: domain, repository authorization/rate-limit, file authorization, desktop/mobile E2E
+- Application service and persistence adapter: dedicated managed Support port and service-only Supabase PostgreSQL commands
+- Private storage adapter: quarantined/scanned Supabase private Storage through `src/lib/private-storage.js`
+- Tests: managed Support contract and live Supabase verifier, domain authorization/rate-limit, file authorization, desktop/mobile E2E

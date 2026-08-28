@@ -6,7 +6,7 @@ problem: Members need simple in-app help while platform owners need bounded assi
 behavior: Loadgistic presents signed-in Support as a simple New chat, Continue chat, and Past chats workflow; stores authoritative conversations and messages; lets either participant end an owned chat; routes one open conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration. FEAT-GST-001 extends the same queue with clearly labeled account-free Assisted matching conversations and private requested attachments without changing member ownership.
 contracts: [SupportConversation, SupportMessage, SupportCategory, SupportAgentState, SupportQueueAssignment, SupportAccessPolicy, SupportAudit]
 observability: [support_conversation_created, support_message_sent, support_conversation_assigned, support_conversation_claimed, support_conversation_closed, support_agent_availability_changed, support_assignment_capacity_reached, denied_support_access]
-rollout: Additive schema and SUPPORT role. Start with visibility-aware five-second refreshes and bounded message/query windows; durable database records remain authoritative so Realtime or Telegram notifications can be added later without changing ownership.
+rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Preview, and Production with visibility-aware bounded refreshes and message/query windows; durable database records remain authoritative so authorized Realtime notifications can be enabled without changing ownership, and managed failure never falls back to SQLite.
 ---
 
 # Customer support inbox
@@ -92,10 +92,21 @@ And pauses refresh while hidden\
 And each response contains at most 50 recent messages\
 And queue and history lists use server pagination and supporting indexes.
 
+### Scenario: managed Support is actor scoped and durable
+
+Given local development, Preview, or Production uses the managed runtime\
+When a member, assigned Support actor, or administrator reads or changes Support state\
+Then the active application route uses the dedicated Support port and Supabase PostgreSQL\
+And PostgreSQL repeats active-role, ownership, assignment, Support-permission, capacity, open-state, message-limit, and terminal-state checks\
+And member history, staff queues, conversations, messages, and team lists are bounded independently\
+And assignment or requeue decisions are atomic across member and Assisted matching conversations\
+And browser roles cannot execute the service-only actor commands directly\
+And managed failure never falls back to SQLite.
+
 ## Contract ownership
 
 - Pages: `/app/support`, `/support`, `/support/[id]`, `/admin/support`
-- Application services: native support services in `src/lib/repository.js`
+- Application services: dedicated managed Support application port
 - Inbound adapters: `/api/support/*` and `/api/admin/support-agents`
-- Persistence adapter: additive Supabase PostgreSQL migration `008`, replayed in the isolated local stack and managed project
-- Tests: domain, repository authorization/routing, E2E customer/agent flow, and desktop/mobile UI audit
+- Persistence adapter: actor-scoped Supabase PostgreSQL commands extending migration `008`
+- Tests: managed Support contract and live Supabase verifier, domain authorization/routing, E2E customer/agent flow, and desktop/mobile UI audit

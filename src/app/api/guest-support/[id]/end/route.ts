@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getGuestSupportSession} from '@/lib/auth';
-import {endGuestSupportConversation} from '@/lib/repository.js';
+import {endGuestSupportConversation} from '@/lib/support.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {errorMessage} from '@/lib/errors';
 

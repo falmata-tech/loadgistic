@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, shared abuse counters, and private upload quarantine. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` through `053` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`053` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Support, administration, and sponsorship management remain before Production readiness.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, shared abuse counters, and private upload quarantine. Repository paths not yet migrated still have a Node SQLite compatibility adapter while ADR-041 is being completed; that is not an accepted Production fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` through `056` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`056` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage, and managed identity/storage/RLS/workflow checks pass with `DATABASE_PATH=/dev/null`. Operations, Featured/Sponsor administration, and retired compatibility routes remain before Production readiness.
 
 ## Current migration coverage
 
@@ -38,6 +38,9 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `050`: moves the authenticated workspace dashboard and Fleet management to service-role-only bounded RPCs. Fleet-owner reads exclude account email and proof paths; Driver assignment plus Capacity/Tracking permissions update atomically under repeated organization/subscription/asset checks and write contact-safe audit metadata.
 - `051`: adds actor-scoped Verification and Billing centers, submissions, private-file authorization, bounded Trust/Billing review queues, terminal decisions, subscription renewal, and contact-safe audit events. Only service-role adapters can execute the functions; public projections receive file-presence booleans rather than Storage references.
 - `052`–`053`: explicitly compile the two Verification mutation functions with unambiguous PL/pgSQL variable scope after live execution exposed identifier collisions; no data migration is performed.
+- `054`: adds service-role-only member Support, Assisted matching, private-attachment authorization, bounded queues/history, atomic least-loaded assignment, terminal lifecycle, and platform-team management commands. Projections exclude contact digests, recovery codes, Storage paths, and delivery internals.
+- `055`: safely promotes only an exact inactive, unowned managed-Auth placeholder into a passwordless SUPPORT identity; active or already-owned identities remain rejected.
+- `056`: extends the shared platform-team permission helper to Customer, Operations, Trust, Billing, and Support responsibilities while retaining administrator authority.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -70,21 +73,21 @@ Transporter-profile editing now selects a dedicated application port. Its Postgr
 Keep these active contracts stable while replacing SQLite operations:
 
 - Public capacity cursor/detail and public provider projections.
-- Support and platform Operations commands.
-- Account-free Assisted matching, private attachments, sponsor/featured administration, and remaining platform administration commands.
+- Platform Operations commands.
+- Sponsor/Featured administration and remaining retired compatibility commands.
 
 Use RLS-protected queries or transactional RPCs. Never place a service-role key in browser code, never return raw private-table rows to anonymous clients, and keep access-code verification on the server.
 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `053` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `056` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
 3. Import the bundled place catalog with `npm run places:import:supabase`.
 4. Finish the remaining Supabase PostgreSQL repository and hardened private Storage adapters as the only application runtime; do not add a dual-write or runtime SQLite fallback.
-5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. Identity, provider signup, public projections, Shared capacity, provider Capacity, Tracking, workspace, Fleet, Verification, and Billing managed workflow verification are complete; remaining adapters and browser-suite cutover are pending.
+5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. Identity, provider signup, public projections, Shared capacity, provider Capacity, Tracking, workspace, Fleet, Verification, Billing, Support, Assisted matching, and platform-team managed workflow verification are complete; remaining adapters and browser-suite cutover are pending.
 6. Configure the server-only Cloudmersive scanner key, verify clean/dirty/timeout/quota behavior against Staging, complete the privacy/vendor review, configure the verified Resend sender, authorized Supabase Realtime with polling fallback, Preview concurrency verification for shared rate limiting, and monitoring for scheduled email/cleanup jobs. The local EICAR-aware scanner is test-only and cannot satisfy Production readiness.
 7. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
 8. Deploy the managed backend to a non-production environment, run `npm run launch:check`, and rehearse application and data rollback.

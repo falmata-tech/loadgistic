@@ -93,6 +93,7 @@ And the mutation does not occur.
 
 Given an active user has the SUPPORT role\
 When the user logs in\
+Then the identity was provisioned by an administrator and uses managed Google or email-code sign-in without a Loadgistic password\
 Then the user is routed to the support inbox\
 And workspace subscription enforcement does not apply\
 And marketplace, tracking, fleet, verification, billing-review, and administration pages remain denied.

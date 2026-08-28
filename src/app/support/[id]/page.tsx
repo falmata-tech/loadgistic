@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Headphones } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getSupportConversation } from '@/lib/repository.js';
+import { getSupportConversation } from '@/lib/support.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { SupportThread } from '@/components/support-thread';

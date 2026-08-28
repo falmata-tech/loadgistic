@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, BadgeCheck, CircleHelp, CreditCard, Headphones, History, MessageCircle, MessagesSquare, PackageSearch, Plus, Send, Truck, UserRound } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getOpenMemberSupportConversation, getSupportConversation, listMemberSupportConversations } from '@/lib/repository.js';
+import { getOpenMemberSupportConversation, getSupportConversation, listMemberSupportConversations } from '@/lib/support.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { SupportThread } from '@/components/support-thread';

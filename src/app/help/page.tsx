@@ -1,7 +1,7 @@
 import {Headphones,MessageCircle,ShieldCheck} from 'lucide-react';
 import {PublicHeader} from '@/components/public-header';
 import {Flash} from '@/components/flash';
-import {getAssistedMatchingAvailability} from '@/lib/repository.js';
+import {getAssistedMatchingAvailability} from '@/lib/support.js';
 
 export default async function HelpPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const query=await searchParams;

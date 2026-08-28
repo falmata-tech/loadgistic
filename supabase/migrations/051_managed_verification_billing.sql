@@ -17,8 +17,11 @@ as $$
     where profile.id=actor_user_id and profile.active and (
       profile.role='ADMIN'
       or profile.role='SUPPORT' and support.active and case upper(permission_name)
+        when 'CUSTOMERS' then support.can_manage_customers
+        when 'OPERATIONS' then support.can_manage_operations
         when 'TRUST' then support.can_manage_trust
         when 'BILLING' then support.can_manage_billing
+        when 'SUPPORT' then support.can_manage_support
         else false
       end
     )

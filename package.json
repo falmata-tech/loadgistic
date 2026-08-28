@@ -22,6 +22,7 @@
     "db:supabase:verify:profile": "node scripts/verify-supabase-provider-profile.mjs",
     "db:supabase:verify:fleet": "node scripts/verify-supabase-workspace-fleet.mjs",
     "db:supabase:verify:trust-billing": "node scripts/verify-supabase-verification-billing.mjs",
+    "db:supabase:verify:support": "node scripts/verify-supabase-support.mjs",
     "supabase:local:configure": "node scripts/configure-local-supabase.mjs --write-env --fixtures --verify",
     "db:stress": "node scripts/seed-market-scale-db.mjs",
     "test:scale": "node scripts/market-scale-audit.mjs",

@@ -89,8 +89,9 @@ And the actor, target, resulting state, and time are audited.
 Given an authenticated administrator opens Support Team\
 When the administrator creates or updates a support agent\
 Then the agent receives only the SUPPORT role\
+And the administrator supplies a name and email but never creates or sees a password\
+And the managed Auth identity signs in through the same email-code or Google choices as other active accounts\
 And availability, active state, maximum open conversations, and Customer, Operations, Trust, Billing, and Support permissions are validated and audited\
-And credentials are never redisplayed after creation\
 And disabling an agent or removing Support permission returns their open conversations to the waiting queue for safe reassignment.
 
 ### Scenario: platform team permissions are least privilege

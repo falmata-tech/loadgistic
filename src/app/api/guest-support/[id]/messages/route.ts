@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getCurrentUser,getGuestSupportSession} from '@/lib/auth';
-import {saveUpload,sendGuestSupportMessage} from '@/lib/repository.js';
+import {sendGuestSupportMessage} from '@/lib/support.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {errorMessage} from '@/lib/errors';
 import {redirectWith,text} from '@/lib/redirects';
@@ -16,7 +16,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   try{
     const file=form.get('file');
-    const upload=file&&typeof file!=='string'&&file.size?await saveUpload(file,'guest-support'):null;
+    const upload=file&&typeof file!=='string'&&file.size?file:null;
     await sendGuestSupportMessage(user,id,text(form,'body'),session?.emailDigest||null,upload);
     return json?NextResponse.json({ok:true}):redirectWith(request,session?`/help/${id}`:`/support/assisted/${id}`,'success','Message sent.');
   }catch(error){return json?NextResponse.json({ok:false,error:errorMessage(error)},{status:400}):redirectWith(request,session?`/help/${id}`:`/support/assisted/${id}`,'error',errorMessage(error));}

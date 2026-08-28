@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getCurrentUser,getGuestSupportSession} from '@/lib/auth';
-import {readGuestSupportAttachment} from '@/lib/repository.js';
+import {readGuestSupportAttachment} from '@/lib/support.js';
 
 export const runtime='nodejs';
 function safeName(value:string){return String(value||'attachment').replace(/[\r\n"\\]/g,'_').slice(0,160);}

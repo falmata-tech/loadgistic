@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getGuestSupportSession} from '@/lib/auth';
-import {getAssistedMatchingAvailability,getGuestSupportConversationForGuest} from '@/lib/repository.js';
+import {getAssistedMatchingAvailability,getGuestSupportConversationForGuest} from '@/lib/support.js';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';

@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {setGuestSupportSession} from '@/lib/auth';
-import {createGuestSupportConversation,saveUpload} from '@/lib/repository.js';
+import {createGuestSupportConversation} from '@/lib/support.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {errorMessage} from '@/lib/errors';
 import {redirectWith,text} from '@/lib/redirects';
@@ -15,7 +15,7 @@ export async function POST(request:NextRequest){
   const form=await request.formData();
   try{
     const file=form.get('file');
-    const upload=file&&typeof file!=='string'&&file.size?await saveUpload(file,'guest-support'):null;
+    const upload=file&&typeof file!=='string'&&file.size?file:null;
     const result=await createGuestSupportConversation({email:text(form,'email'),phone:text(form,'phone'),body:text(form,'body')},upload);
     await setGuestSupportSession(result.id,result.emailDigest);
     await deliverPendingAccessEmails();

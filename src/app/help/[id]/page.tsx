@@ -2,7 +2,7 @@ import {notFound} from 'next/navigation';
 import {PublicHeader} from '@/components/public-header';
 import {GuestSupportThread} from '@/components/guest-support-thread';
 import {getGuestSupportSession} from '@/lib/auth';
-import {getGuestSupportConversationForGuest} from '@/lib/repository.js';
+import {getGuestSupportConversationForGuest} from '@/lib/support.js';
 
 export const dynamic='force-dynamic';
 export default async function GuestHelpConversationPage({params}:{params:Promise<{id:string}>}){

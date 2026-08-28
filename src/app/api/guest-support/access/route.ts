@@ -1,6 +1,6 @@
 import {NextRequest} from 'next/server.js';
 import {setGuestSupportSession} from '@/lib/auth';
-import {verifyGuestSupportAccess} from '@/lib/repository.js';
+import {verifyGuestSupportAccess} from '@/lib/support.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectWith,text} from '@/lib/redirects';
 
