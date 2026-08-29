@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { moderateAdminRecord, setAdminRecordActive, updateFleetDriverPermissions } from '@/lib/repository.js';
+import { moderateAdminRecord, setAdminRecordActive, updateFleetDriverPermissions } from '@/lib/platform-admin.js';
 import { errorMessage } from '@/lib/errors';
 import { checked, redirectWith, text } from '@/lib/redirects';
 

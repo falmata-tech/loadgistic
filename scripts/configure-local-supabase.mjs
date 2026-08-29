@@ -88,6 +88,7 @@ if(options.has('--verify')){
   runScript('scripts/verify-supabase-workspace-fleet.mjs');
   runScript('scripts/verify-supabase-verification-billing.mjs');
   runScript('scripts/verify-supabase-support.mjs');
+  runScript('scripts/verify-supabase-platform-admin.mjs');
 }
 if(options.has('--verify-signup'))runScript('scripts/verify-supabase-provider-signup.mjs');
 if(options.has('--verify-support'))runScript('scripts/verify-supabase-support.mjs');

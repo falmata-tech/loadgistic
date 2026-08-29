@@ -15,9 +15,9 @@ demonstration. Public production remains blocked until the managed
 identity/repository, email, rate-limit, upload-scanning, backup,
 and monitoring gates in `docs/LAUNCH_READINESS.md` pass.
 Managed public discovery, Shared capacity, provider Capacity, provider-owned
-Tracking, transporter-profile editing, managed provider signup, the authenticated workspace shell, Fleet management, Verification, Billing, member Support, Assisted matching, and platform-team management already run through Supabase when the
-managed backends are selected; remaining Operations, Featured/Sponsor administration, and retired compatibility
-paths must complete the same cutover before the Production flag is enabled.
+Tracking, transporter-profile editing, managed provider signup, the authenticated workspace shell, Fleet management, Verification, Billing, member Support, Assisted matching, platform-team management, Operations, and Featured/Sponsor administration already run through Supabase when the
+managed backends are selected; dormant compatibility paths must be removed
+before the Production flag is enabled.
 
 ## Provisioned control plane — 2026-08-17
 

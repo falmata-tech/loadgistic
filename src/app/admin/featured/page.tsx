@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { BadgeDollarSign,CalendarDays,CheckCircle2,ExternalLink,MapPin,Save,ShieldAlert,Sparkles } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getAdminFeaturedProviderDay,listFeaturedProviderCandidates } from '@/lib/repository.js';
+import { getAdminFeaturedProviderDay } from '@/lib/platform-admin.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { providerRegionLabel,regionalExpoWeekForDate } from '@/lib/provider-regions.js';
@@ -22,7 +22,7 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   const stored=await getAdminFeaturedProviderDay(user,date);
   const expo=stored.expo!;
   const expoWeek=regionalExpoWeekForDate(date);
-  const candidates:any[]=await listFeaturedProviderCandidates(user,date);
+  const candidates:any[]=stored.candidates;
   const eligible=candidates.filter((item:any)=>item.eligible);
   const selectedProviderKeys=stored.slots.map((slot:any)=>slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`);
   const excluded=candidates.filter((item:any)=>!item.eligible);

@@ -192,12 +192,13 @@ And the administrator may add, remove, and reorder any eligible provider in a va
 And the administration view previews both sessions, every provider interval, transitions, Sponsor breaks, and the midday intermission before publication\
 And the fixed regional group, provider eligibility, generated board geometry, schedule validation, safety wording, responsive layout, and Loadgistic visual system cannot be overridden\
 And empty optional content falls back to truthful region-based copy\
-And providers cannot pay for or edit a featured slot through their own workspace.
+And providers cannot pay for or edit a featured slot through their own workspace\
+And the roster, presentation settings, slots, and audit record are saved atomically through a service-role-only Supabase command that rechecks administrator authority and current provider eligibility.
 
 ## Contract ownership
 
 - Public page: homepage Daily Featured Transporters section
 - Administrator: date-derived regional group, variable eligible roster and order, public headline, introduction, publication, TikTok reference, automatic/manual schedule mode, bounded break configuration, and provider interval overrides
-- Application services: eligibility evaluation, provider operating-model classification, Ethiopia-day activation, two-session timeline calculation, public safe projection, and audited commands
+- Application services: eligibility evaluation, provider operating-model classification, Ethiopia-day activation, two-session timeline calculation, public safe projection, and audited managed commands in the platform admin port
 - Persistence: additive featured-day and ordered featured-slot tables with provider, general base place, date, positive position, schedule mode/configuration/manual intervals, and status constraints
 - Tests: schedule generation, break boundaries, manual validation, real responsive billboard width, row growth and non-overlap in desktop/mobile browsers; repository authorization/eligibility; public projection; focused E2E; and visual review

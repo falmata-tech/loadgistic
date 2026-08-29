@@ -118,6 +118,13 @@ Deep workspace detail routes expose a Back link with a route-specific fallback t
 
 Administrators receive bounded, searchable Operations projections across users, workspaces, trucks, company-driver authority, loads, latest capacity, network relationships, Business favorites, Preferred Routes, local service areas, and subscriptions. It excludes credentials, sessions, tracking secrets, exact coordinates, and proof paths. Account/truck controls, capacity removal, network/route moderation, driver permissions, and monthly or sponsored plan state are explicit audited commands. Immutable events, messages, reviews, evidence, and audit records remain history rather than generic editable rows.
 
+The active Operations, Daily Featured, and Sponsor administration surfaces use
+one Supabase-only platform-admin port. Service-role-only PostgreSQL functions
+repeat responsibility checks, return bounded projections, and commit each
+reversible command or roster/placement update with its audit row atomically.
+Anonymous and ordinary authenticated browser roles cannot execute those
+functions. A managed failure is surfaced rather than retried through SQLite.
+
 ## ADR-021 — Private low-rating moderation
 
 Treat a completed-load Business rating as either public reputation or a private investigation report. Four- and five-star ratings publish immediately. One- through three-star ratings require a note, enter Pending, remain readable only by the submitting Business and administrators, and do not affect the subject's public count or average.

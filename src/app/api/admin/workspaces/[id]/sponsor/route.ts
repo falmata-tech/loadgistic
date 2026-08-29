@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { grantSponsoredBusinessAccess } from '@/lib/repository.js';
+import { grantSponsoredBusinessAccess } from '@/lib/platform-admin.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith } from '@/lib/redirects';
 

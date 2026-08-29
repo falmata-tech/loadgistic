@@ -4,7 +4,7 @@ title: Focused platform operations and review center
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-FTR-001, FEAT-SPN-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001, FEAT-SHR-001, FEAT-GST-001]
 problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
 behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document, rating, and payment queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust, Billing, and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
-contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, AdminReviewQueue, PlatformTeamPermissionPolicy, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
+contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, ManagedPlatformAdminPort, AdminReviewQueue, PlatformTeamPermissionPolicy, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
 observability: [admin_operations_read, admin_record_status_audit, denied_admin_command]
 rollout: Add the inventory without changing tenant-facing visibility; status commands are reversible, audited, and deny non-admin callers.
 ---
@@ -44,7 +44,9 @@ When an administrator opens Operations or changes its record-type tab\
 Then only the selected inventory query returns a bounded page\
 And platform-wide counts remain visible\
 And entering a search narrows the selected record type and resets its page\
-And switching record type preserves a useful search term but does not render hidden inventory rows.
+And switching record type preserves a useful search term but does not render hidden inventory rows\
+And the server reads the selected projection through a service-role-only Supabase function that independently verifies the actor's current platform permission\
+And no local SQLite repository or fallback is consulted.
 
 ### Scenario: Review Center keeps related queues together
 
@@ -84,6 +86,15 @@ Then the truck remains recorded with its permanent platform number\
 And inactive trucks disappear from Fleet and marketplace discovery\
 And the actor, target, resulting state, and time are audited.
 
+### Scenario: managed administrator commands remain atomic and reversible
+
+Given an administrator or delegated platform team member submits an Operations command\
+When the service-role-only managed command function receives the verified actor identifier, record type, record identifier, and bounded command\
+Then PostgreSQL independently verifies the actor's current Customer, Operations, or Billing permission\
+And account, Driver permission, truck, Capacity, regular-service, or plan changes complete atomically with their audit record\
+And an unsupported command, missing record, self-suspension attempt, or insufficient permission changes nothing\
+And suspending a Support team member safely returns their open conversations to the waiting queue.
+
 ### Scenario: administrator manages support agents
 
 Given an authenticated administrator opens Support Team\
@@ -107,6 +118,7 @@ And permission changes take effect on the next authorized request and are audite
 ## Contract ownership
 
 - Pages: `/admin/operations` and `/admin/featured`
-- Application services: admin inventory and activation functions in `src/lib/repository.js`
+- Application services: `src/lib/platform-admin.js` with the Supabase adapter in `src/lib/platform-admin/supabase.js`
 - Inbound adapter: `/api/admin/records/[type]/[id]`
-- Tests: `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Persistence: service-role-only managed admin projection and command functions with actor permission checks and atomic audit writes
+- Tests: managed admin contract tests, local Supabase verifier, `tests/repository.test.mjs`, and `tests/e2e/smoke.spec.ts`

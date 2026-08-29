@@ -33,7 +33,8 @@ Then a transporter sponsor stores only the linked provider identity\
 And an outside advertiser requires a business name, a bounded description, and at least one validated HTTPS website or public phone number\
 And exactly one sponsor kind is stored\
 And non-administrators are denied without creating or changing a sponsor\
-And create, update, disable, and validation outcomes are audited.
+And create, update, disable, and validation outcomes are audited\
+And each save or disable runs atomically through a service-role-only Supabase command that rechecks administrator authority, date overlap, position, sponsor kind, and current transporter eligibility.
 
 ### Scenario: administrators control placement and timing
 
@@ -86,6 +87,6 @@ And a day without active sponsors retains a generic Sponsor break.
 
 - Public page: Sponsors panel beside the Daily Featured Transporters board on wide screens and above it on narrow screens
 - Administrator: sponsor catalogue plus bounded schedule, regional group, position, and active state
-- Application services: sponsor-kind validation, overlapping-date validation, provider eligibility, safe projection, schedule attribution, and audited commands
+- Application services: sponsor-kind validation, overlapping-date validation, provider eligibility, safe projection, schedule attribution, and audited managed commands in the platform admin port
 - Persistence: additive sponsor catalogue and sponsor-placement schedule tables
 - Tests: repository authorization/eligibility, safe projection, and focused desktop/mobile E2E

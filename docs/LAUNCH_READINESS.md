@@ -18,8 +18,8 @@ The repository supports local development, browser testing, controlled demonstra
 
 ## Public-production blockers
 
-1. Finish and parity-test the remaining Operations, Featured/Sponsor administration, and retired compatibility PostgreSQL ports. SQLite is not the public-production datastore and managed failures never fall back to it.
-2. Apply/lint migrations `001`–`056` in staging, verify RLS/RPC behavior including concurrent request limits, private-quarantine isolation, provider-profile/Fleet ownership, Verification/Billing and Assisted-matching private-file scope, Support assignment/requeue, and terminal reviews, import place data, and rehearse encrypted logical backup/restore.
+1. Remove the dormant SQLite/compatibility ports and replace the disposable SQLite fixture transformation source. SQLite is not the public-production datastore and managed failures never fall back to it.
+2. Replay and lint migrations `001`–`057` from an empty staging project, verify RLS/RPC behavior including concurrent request limits, private-quarantine isolation, provider-profile/Fleet ownership, Verification/Billing and Assisted-matching private-file scope, Support assignment/requeue, bounded Operations, atomic Featured/Sponsor administration, and terminal reviews, import place data, and rehearse encrypted logical backup/restore.
 3. Inventory and purge any cloud legacy demand data only after a verified backup and explicit approval.
 4. Configure the server-only Cloudmersive key, complete the privacy/vendor review, and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial upload proofs against Supabase Staging. The local test scanner does not satisfy this gate.
 5. Verify a Resend sending domain, configure the server-only API key/from/reply-to values, test Supabase Auth SMTP plus application delivery, and monitor the existing 15-minute delivery/retry/guest-cleanup function.

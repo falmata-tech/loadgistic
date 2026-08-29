@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Activity, BadgeDollarSign, Building2, Gauge, PackageSearch, Route, Search, Trash2, Truck, UserRoundCog, Users } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getAdminOperations, hasPlatformPermission, PLATFORM_PERMISSIONS } from '@/lib/repository.js';
+import { getAdminOperations, hasPlatformPermission, PLATFORM_PERMISSIONS } from '@/lib/platform-admin.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';

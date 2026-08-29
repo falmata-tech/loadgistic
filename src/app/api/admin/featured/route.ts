@@ -1,6 +1,6 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship } from '@/lib/repository.js';
+import { disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship } from '@/lib/platform-admin.js';
 import { redirectWith,text } from '@/lib/redirects';
 import { errorMessage } from '@/lib/errors';
 
