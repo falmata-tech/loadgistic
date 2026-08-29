@@ -21,10 +21,25 @@ test('local managed signup verification uses only the isolated mail sink and num
   assert.match(verifier,/verifyOtp\(\{email:otpEmail,token:code,type:'email'\}\)/);
 });
 
-test('fixture importer refreshes the current Ethiopia Featured day before copying reusable source data',()=>{
+test('fixture importer uses a credential-free managed source and creates the current Ethiopia Featured day',()=>{
   const source=fs.readFileSync(importer,'utf8');
-  assert.match(source,/ensureSeededDailyFeaturedProviderDay\(today\)/);
+  const fixturePath=path.join(root,'resources','fixtures','managed-market.json');
+  const fixtureText=fs.readFileSync(fixturePath,'utf8');
+  const fixture=JSON.parse(fixtureText);
+  assert.match(source,/managed-market\.json/);
+  assert.match(source,/regionalExpoGroupForDate\(today\)/);
+  assert.match(source,/buildFeaturedFixtureTables\(\)/);
   assert.match(source,/timeZone:'Africa\/Addis_Ababa'/);
+  assert.doesNotMatch(source,/node:sqlite|DATABASE_PATH|db\.js|repository\.js/);
+  assert.equal(fixture.schema_version,1);
+  assert.equal(fixture.tables.users.length,154);
+  assert.equal(fixture.tables.capacities.length,143);
+  assert.equal(fixture.tables.verification_requests.length,335);
+  assert.doesNotMatch(fixtureText,/password_hash|password_digest|access_code|code_digest/);
+  assert.doesNotMatch(fixtureText,/\/(?:Users|home)\//);
+  for(const retired of ['shipments','shipment_events','shipment_interests','partner_relationships','business_reviews']){
+    assert.equal(Object.hasOwn(fixture.tables,retired),false,retired);
+  }
 });
 
 test('Shared capacity verification chooses an unexpired market signal',()=>{
@@ -51,6 +66,19 @@ test('fixture importer requires an explicit destructive local reset flag',()=>{
   });
   assert.notEqual(result.status,0);
   assert.match(result.stderr,/LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED/);
+});
+
+test('fixture importer refuses Production even when a loopback target is supplied',()=>{
+  const result=spawnSync(process.execPath,[importer,'--reset-local'],{
+    cwd:root,
+    env:{
+      ...process.env,NODE_ENV:'production',SUPABASE_SEED_URL:'http://127.0.0.1:55321',
+      SUPABASE_SEED_SERVICE_ROLE_KEY:'not-a-secret'
+    },
+    encoding:'utf8'
+  });
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/PRODUCTION_FIXTURE_IMPORT_REFUSED/);
 });
 
 test('runtime parity migrations preserve area routes and least-privilege RLS enforcement',()=>{

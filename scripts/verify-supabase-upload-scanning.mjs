@@ -10,7 +10,6 @@ if(!new Set(['127.0.0.1','localhost','::1']).has(endpoint.hostname))throw new Er
 
 process.env.NEXT_PUBLIC_SUPABASE_URL=url;
 process.env.SUPABASE_SERVICE_ROLE_KEY=serviceRoleKey;
-process.env.PRIVATE_STORAGE_BACKEND='supabase';
 process.env.UPLOAD_SCANNER_BACKEND='local';
 process.env.NODE_ENV='development';
 

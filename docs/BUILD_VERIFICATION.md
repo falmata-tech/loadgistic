@@ -24,14 +24,18 @@ Verified locally on 2026-08-11 with Node.js v22.16.0.
 - Managed-only identity and retired-Directory checkpoint (2026-08-29): Supabase Auth is now the sole identity runtime for local development, browser tests, Preview, and Production. The explicitly local fixture-password form authenticated an isolated Supabase Auth Driver in a focused browser workflow; no signed-cookie or SQLite identity fallback remains. Live local requests proved `/app/providers` and `/companies` collection links preserve name searches into the Truck Market, their detail links preserve the exact public microsite handle, and the retired member-directory search API returns `410 Gone`. Three focused boundary tests, the complete quality gate, and the optimized 74-route build passed.
 - Managed platform-administration checkpoint (2026-08-29): additive migration `057` applied to the isolated Loadgistic stack. The live verifier exercised bounded counts and paginated projections across all eight Operations inventories, denied an ordinary member and the anonymous browser role, proved delegated Customer-only scope, and reversibly exercised account/truck activation, Driver permissions, route removal, subscription paid/expiry/sponsorship, Featured roster publication, Sponsor overlap denial, and Sponsor disable. Every command committed its audit atomically, and active Operations/Featured/Sponsor routes no longer import the SQLite repository.
 - Unconditional managed-runtime checkpoint (2026-08-29): active application facades, health, request limiting, private uploads, the scheduled worker, the browser-test server, and the standalone container now use Supabase without data or Storage backend selectors. Missing PostgreSQL, private Storage, or shared-counter configuration fails closed; local files, process-local counters, and SQLite health fallback cannot be selected. A clean guarded fixture refresh rebuilt 154 Auth identities, 143 current truck signals, 335 verification records, and 3,703 places, then every managed verifier passed. The complete quality gate passed 164 Node tests, the optimized 74-route build completed without a SQLite runtime warning, and 16 critical desktop/mobile browser checks passed across the public Market, location, provider profile, Tracking, and Driver Capacity workflows. The dormant monolithic repository/database and SQLite-derived fixture transformation remain the next isolated removal.
+- PostgreSQL-only development checkpoint (2026-08-29): the retired local database/repository, transformation, reset, place-import, stress, Tracking-fixture, and duplicate integration-test paths were removed. `resources/fixtures/managed-market.json` now supplies credential-free, demand-free, machine-path-free records directly to isolated Supabase Auth/PostgreSQL/Storage. A newly empty local Docker volume replayed migrations `001`–`057`; the guarded importer rebuilt 154 Auth identities, 143 current truck signals, 122 Drivers/assignments, 335 verification records, 3,703 places, and the current Ethiopia Featured/Sponsor programme. Every managed live verifier passed. The current quality gate passed 126 focused domain/managed-contract tests, the optimized standalone build passed, and all 16 critical desktop/mobile browser workflows passed on isolated port `3110` while the developer server remained untouched.
 
-- `npm run quality`: passed. Specification validation found 28 specs and 25 features with all links resolved; source validation found 266 files and every required route; all 164 Node tests passed; TypeScript completed with no errors.
+- `npm run quality`: passed. Specification validation found 28 specs and 25 features with all links resolved; source validation found 264 files and every required route; all 126 Node tests passed; TypeScript completed with no errors.
 - `npm run build`: passed. Next.js 15.5.22 produced the optimized application, including all public capacity, provider, tracking, and authenticated provider routes.
+- `docker build --tag loadgistic:local-supabase-only .`: passed. The pinned
+  Node 22.16.0 multi-stage image rebuilt all 74 routes and copied only the
+  standalone runtime, public assets, and static chunks into the non-root runner.
 - `npm run test:e2e`: 50 workflows passed and two explicitly opt-in screenshot captures were skipped across desktop Chromium and mobile Chromium. Coverage includes Map-first public discovery, automatic visitor location, regional centering, denial/retry behavior, live accessible suggestions, route and Service-area matching, stable close-zoom cluster separation, responsive non-scrolling selected cards, bounded List pages, provider pages, dynamic featured schedules, current Driver permissions, provider-owned Tracking, the unified capacity summary, retired demand routes, and credential-safe login.
 - `npm run test:a11y`: 12 desktop/mobile accessibility workflows passed. Serious and critical WCAG 2 A/AA, 2.1 AA, and 2.2 AA findings are scanned across public, transporter, Driver, administrator, and support routes; keyboard dialog operation, Escape dismissal, opener-focus restoration, and 320-pixel reflow are asserted. Leaflet's spatial marker pane is excluded only from the target-size rule because markers are already large, can straddle the active viewport, and have an equivalent Truck List; every other rule continues to inspect the map.
 - `npm run test:ui-stress`: 84 dense-data desktop/mobile screens passed with zero failures, including bounded Truck List pagination and current Admin Tracking inventory.
 - `npm run test:ui-audit`: 86 desktop/mobile screens were captured across logged-out, fleet-owner, self-managed Driver, company Driver, administrator, and support-agent views with zero automated layout/accessibility flags and zero browser-flow errors. Every visible Leaflet map rendered real tiles before capture.
-- `npm audit --json`: zero known vulnerabilities across 80 total production, development, optional, and peer dependencies.
+- `npm audit --audit-level=high`: zero known vulnerabilities.
 - Automated map workflows and visual capture verified the visible map key, vehicle-image markers, close-zoom separation of overlapping trucks, selected-only approximate-location/current/two-way-regular-corridor layers, responsive detail card, responsive List cards, and restoration of the clustered market after close.
 
 ## Focused Market evidence — 2026-08-15
@@ -42,21 +46,19 @@ Verified locally on 2026-08-11 with Node.js v22.16.0.
 - Focused Playwright Market workflows: six desktop/mobile checks passed for independent route endpoints, map-only bounded loading, status-specific clustering, bounded cluster membership, and non-overlapping status labels.
 - Focused desktop and phone captures are under `artifacts/focused-2026-08-15-market-final/`. The full release, accessibility, stress, and visual-audit gates have not been rerun for this uncommitted batch.
 
-## Scale and launch follow-up — 2026-08-15
+## PostgreSQL scale evidence — 2026-08-29
 
-- The disposable supply-only scale harness generated 5,000 additional current
-  trucks across 500 synthetic transporters without creating demand records.
-- The bounded local SQLite adapter returned the first 14-truck page in 22.05 ms
-  after warm-up, a filtered page in 32.94 ms, and a 51,621-byte first payload;
-  ten cursor pages transferred 505,340 bytes. These measurements validate the
-  local adapter and API boundary only, not concurrent serverless capacity.
-- GitHub validation now regenerates this disposable fixture and runs
-  `npm run test:scale`. The desktop/mobile browser suite includes a six-times
-  CPU-throttled phone check that forbids background cursor draining and bounds
-  rendered marker/cluster count and JavaScript heap.
-- Public-production scale remains blocked until viewport-scoped PostGIS
-  discovery, server-side or tile-based clustering, the managed repository and
-  identity adapters, shared rate limiting, and staging concurrency tests pass.
+- `npm run test:scale` inserted 5,000 additional supply-only vehicles and
+  current signals inside one isolated PostgreSQL transaction.
+- The server-only public projection returned its bounded 15-row look-ahead page
+  in 320.124 ms with a 41,295-byte payload. The PostGIS origin/destination route
+  filter returned 15 rows in 590.971 ms.
+- The transaction rolled back and the harness proved zero `LG-SCALE-*` vehicles
+  remained. It refuses any local project ID except `loadgistic-local` and any
+  scale below 5,000 or above 10,000.
+- These are local single-transaction measurements, not Preview concurrency or
+  sustained hosted-load evidence. The existing CPU-throttled mobile workflow
+  continues to bound background cursor loading and rendered map records.
 
 ## Private capacity and Assisted matching evidence — 2026-08-15
 
@@ -86,4 +88,4 @@ Verified locally on 2026-08-11 with Node.js v22.16.0.
 
 ## Release boundary
 
-The legacy release evidence above verifies the local SQLite implementation; the 2026-08-24/26/27/28/29 checkpoints separately verify managed Auth, provider signup, health, place search, the public Truck Market, published transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared request limits, private-upload quarantine, and the local managed email/retention worker against isolated local Supabase. Production remains blocked on dormant compatibility-port retirement, a clean `001`–`057` replay, a configured and remotely proven managed upload scanner, live verified email delivery, public-discovery/review shared-limit coverage, backup/restore evidence, monitoring, and an approved migration rollout. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.
+The historical evidence above is retained for chronology; the current application, local development, CI, fixtures, browser workflows, and scale gate all use Supabase/PostgreSQL. Production remains blocked on the exact hosted migration/backup rehearsal, a remotely proven managed upload scanner, live verified email delivery, public-discovery/review shared-limit coverage, monitoring, Preview smoke/concurrency evidence, and an approved Production promotion. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.

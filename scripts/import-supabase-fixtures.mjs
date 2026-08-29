@@ -9,21 +9,104 @@ const fixturePassword=String(process.env.SUPABASE_FIXTURE_PASSWORD||'Loadgistic1
 const resetRequested=process.argv.includes('--reset-local');
 
 if(!url||!serviceRoleKey)throw new Error('SUPABASE_FIXTURE_CONFIG_MISSING');
+if(process.env.NODE_ENV==='production')throw new Error('PRODUCTION_FIXTURE_IMPORT_REFUSED');
 const endpoint=new URL(url);
 const localHosts=new Set(['127.0.0.1','localhost','::1']);
 if(!localHosts.has(endpoint.hostname))throw new Error('REMOTE_FIXTURE_IMPORT_REFUSED');
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
-process.env.DATABASE_PATH=path.join(process.cwd(),'data','supabase-fixture-source.db');
-const {ensureSeededDailyFeaturedProviderDay,getDb}=await import('../src/lib/db.js');
-const {hashTrackingAccessCode,reviewAccessCode,trackingAccessCode}=await import('../src/lib/security.js');
+const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
-const sqlite=getDb();
 const today=new Intl.DateTimeFormat('en-CA',{
   timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'
 }).format(new Date());
-ensureSeededDailyFeaturedProviderDay(today);
+const fixturePath=path.join(process.cwd(),'resources','fixtures','managed-market.json');
+const fixtureDocument=JSON.parse(fs.readFileSync(fixturePath,'utf8'));
+if(fixtureDocument.schema_version!==1||!fixtureDocument.tables||!fixtureDocument.captured_at){
+  throw new Error('MANAGED_FIXTURE_FORMAT_INVALID');
+}
+const fixtureAnchor=Date.parse(fixtureDocument.captured_at);
+if(!Number.isFinite(fixtureAnchor))throw new Error('MANAGED_FIXTURE_ANCHOR_INVALID');
+const fixtureOffset=Date.now()-fixtureAnchor;
+
+function rebaseFixtureRow(row){
+  return Object.fromEntries(Object.entries(row).map(([key,value])=>{
+    if(value&&key.endsWith('_at')){
+      const parsed=Date.parse(String(value));
+      if(Number.isFinite(parsed))return [key,new Date(parsed+fixtureOffset).toISOString()];
+    }
+    return [key,value];
+  }));
+}
+
+const fixtureTables=Object.fromEntries(Object.entries(fixtureDocument.tables)
+  .map(([table,rows])=>[table,Array.isArray(rows)?rows.map(rebaseFixtureRow):[]]));
+
+function buildFeaturedFixtureTables(){
+  const iso=new Date().toISOString();
+  const expo=regionalExpoGroupForDate(today);
+  const organizations=new Map((fixtureTables.organizations||[]).map(row=>[row.id,row]));
+  const profiles=new Map((fixtureTables.provider_profiles||[]).map(row=>[row.id,row]));
+  const ownerByOrganization=new Map((fixtureTables.memberships||[])
+    .filter(row=>row.membership_role==='OWNER').map(row=>[row.organization_id,row.user_id]));
+  const candidates=(fixtureTables.company_pages||[]).filter(page=>Number(page.published)===1
+    &&(String(page.id).startsWith('page-public-fleet-')||String(page.id).startsWith('page-public-owner-')))
+    .map(page=>{
+      const organization=page.organization_id?organizations.get(page.organization_id):null;
+      const profile=page.provider_profile_id?profiles.get(page.provider_profile_id):null;
+      return {
+        organization_id:organization?.id||null,profile_id:profile?.id||null,
+        owner_user_id:organization?ownerByOrganization.get(organization.id):profile?.user_id,
+        name:organization?.name||profile?.business_name||'',base_region_code:page.base_region_code
+      };
+    }).filter(candidate=>candidate.owner_user_id&&candidate.name).sort((first,second)=>first.name.localeCompare(second.name));
+  const featured=candidates.filter(candidate=>expo.regionCodes.includes(candidate.base_region_code));
+  if(!featured.length)throw new Error('MANAGED_FIXTURE_FEATURED_CANDIDATES_MISSING');
+  const dayId=`featured-demo-${today}`;
+  const featuredDay={
+    id:dayId,feature_date:today,base_place_ref:`featured:${expo.key}`,base_place_label:expo.title,
+    expo_group_key:expo.key,expo_group_label:expo.title,expo_region_codes:expo.regionCodes,
+    public_headline:'Daily Featured Transporters',
+    public_introduction:`Meet transporters based in ${expo.title}, then find their current trucks in the Truck Market.`,
+    tiktok_url:null,broadcast_start_time:'08:00',broadcast_end_time:'22:00',schedule_mode:'AUTO',
+    schedule_config_json:{},manual_schedule_json:[],status:'PUBLISHED',created_by:'user-admin',
+    published_by:'user-admin',created_at:iso,updated_at:iso,published_at:iso
+  };
+  const slots=featured.map((candidate,index)=>({
+    id:`featured-demo-slot-${today}-${index+1}`,day_id:dayId,slot_position:index+1,
+    provider_organization_id:candidate.organization_id,provider_profile_id:candidate.profile_id,
+    created_by:'user-admin',created_at:iso
+  }));
+  const sponsors=candidates.map(candidate=>({
+    id:candidate.organization_id?`sponsor-organization-${candidate.organization_id}`:`sponsor-profile-${candidate.profile_id}`,
+    sponsor_kind:'TRANSPORTER',provider_organization_id:candidate.organization_id,
+    provider_profile_id:candidate.profile_id,business_name:null,description:null,website_url:null,phone:null,
+    active:1,created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
+  }));
+  const advertiser={
+    id:'sponsor-advertiser-alem-freight-supplies',sponsor_kind:'ADVERTISER',
+    provider_organization_id:null,provider_profile_id:null,business_name:'Alem Freight Supplies',
+    description:'Tyres, straps, and roadside essentials for commercial vehicles.',website_url:null,
+    phone:'+251911555019',active:1,created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
+  };
+  sponsors.push(advertiser);
+  const positions=[1,3,4,5];
+  const placements=featured.slice(0,4).map((candidate,index)=>({
+    id:`placement-featured-demo-${today}-${index+1}`,
+    sponsor_id:candidate.organization_id?`sponsor-organization-${candidate.organization_id}`:`sponsor-profile-${candidate.profile_id}`,
+    expo_group_key:expo.key,starts_on:today,ends_on:today,position:positions[index],active:1,
+    created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
+  }));
+  placements.splice(1,0,{
+    id:`placement-sponsor-advertiser-${today}`,sponsor_id:advertiser.id,expo_group_key:expo.key,
+    starts_on:today,ends_on:today,position:2,active:1,created_by:'user-admin',updated_by:'user-admin',
+    created_at:iso,updated_at:iso
+  });
+  return {featured_provider_days:[featuredDay],featured_provider_slots:slots,sponsors,sponsor_placements:placements};
+}
+
+Object.assign(fixtureTables,buildFeaturedFixtureTables());
 const supabase=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 
 const openApiResponse=await fetch(`${url}/rest/v1/`,{
@@ -34,7 +117,6 @@ const openApi=await openApiResponse.json();
 const definitions=openApi.definitions||openApi.components?.schemas||{};
 
 const plan=[
-  ['place_catalog','place_catalog'],
   ['users','profiles'],
   ['organizations','organizations'],
   ['provider_profiles','provider_profiles'],
@@ -46,41 +128,29 @@ const plan=[
   ['driver_vehicle_assignments','driver_vehicle_assignments'],
   ['plans','plans'],
   ['subscriptions','subscriptions'],
-  ['applications','applications'],
-  ['partner_relationships','partner_relationships'],
   ['profile_routes','profile_routes'],
   ['service_areas','service_areas'],
   ['capacities','capacities'],
-  ['shipments','shipments'],
-  ['shipment_events','shipment_events'],
-  ['shipment_interests','shipment_interests'],
-  ['business_reviews','business_reviews'],
-  ['proof_files','proof_files'],
-  ['provider_shipments','provider_shipments'],
-  ['provider_shipment_events','provider_shipment_events'],
-  ['shipment_party_grants','shipment_party_grants'],
-  ['email_deliveries','email_deliveries'],
-  ['provider_reviews','provider_reviews'],
   ['verification_requests','verification_requests'],
   ['support_agent_profiles','support_agent_profiles'],
-  ['support_conversations','support_conversations'],
-  ['support_messages','support_messages'],
-  ['support_events','support_events'],
   ['featured_provider_days','featured_provider_days'],
   ['featured_provider_slots','featured_provider_slots'],
-  ['provider_sponsorships','provider_sponsorships'],
   ['sponsors','sponsors'],
   ['sponsor_placements','sponsor_placements'],
-  ['capacity_access_grants','capacity_access_grants'],
-  ['shared_capacity_email_otps','shared_capacity_email_otps'],
-  ['access_email_deliveries','access_email_deliveries'],
-  ['guest_support_conversations','guest_support_conversations'],
-  ['guest_support_messages','guest_support_messages'],
-  ['guest_support_attachments','guest_support_attachments'],
-  ['guest_support_events','guest_support_events'],
-  ['notifications','notifications'],
-  ['audit_logs','audit_logs']
-].filter(([source,target])=>tableExists(source)&&definitions[target]);
+  ['notifications','notifications']
+].filter(([source,target])=>Array.isArray(fixtureTables[source])&&definitions[target]);
+
+const localResetTables=[
+  'place_catalog','profiles','organizations','provider_profiles','organization_members','company_pages','vehicles',
+  'drivers','driver_permissions','driver_vehicle_assignments','plans','subscriptions','applications',
+  'partner_relationships','profile_routes','service_areas','capacities','shipments','shipment_events',
+  'shipment_interests','business_reviews','proof_files','provider_shipments','provider_shipment_events',
+  'shipment_party_grants','email_deliveries','provider_reviews','verification_requests','support_agent_profiles',
+  'support_conversations','support_messages','support_events','featured_provider_days','featured_provider_slots',
+  'provider_sponsorships','sponsors','sponsor_placements','capacity_access_grants','shared_capacity_email_otps',
+  'access_email_deliveries','guest_support_conversations','guest_support_messages','guest_support_attachments',
+  'guest_support_events','notifications','audit_logs'
+].filter(table=>definitions[table]);
 
 const aliases={
   full_name:'name',
@@ -89,10 +159,6 @@ const aliases={
   proof_storage_path:'proof_path',
   storage_path:'file_path'
 };
-
-function tableExists(table){
-  return Boolean(sqlite.prepare("select 1 from sqlite_master where type='table' and name=?").get(table));
-}
 
 function uuidFor(value){
   const bytes=crypto.createHash('sha256').update(`loadgistic-fixture:${value}`).digest().subarray(0,16);
@@ -104,7 +170,7 @@ function uuidFor(value){
 
 async function deleteLocalFixtures(){
   const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id'};
-  for(const [,table] of [...plan].reverse()){
+  for(const table of [...localResetTables].reverse()){
     const deleteKey=deleteKeys[table]||'id';
     const {error}=await supabase.from(table).delete().not(deleteKey,'is',null);
     if(error&&!/does not exist/i.test(error.message))throw new Error(`FIXTURE_CLEAR_FAILED:${table}:${error.message}`);
@@ -160,11 +226,11 @@ for(const place of ETHIOPIA_PLACES){
     source:'BUILT_IN',parent_place_id:null,parent_name:null,country_name:'Ethiopia',country_code:'ET'
   });
 }
-for(const {name:table} of sqlite.prepare("select name from sqlite_master where type='table' and name not like 'sqlite_%'").all()){
-  const columns=sqlite.prepare(`pragma table_info("${table}")`).all().map(column=>column.name);
-  for(const placeRefColumn of columns.filter(column=>column.endsWith('_place_ref'))){
+for(const rows of Object.values(fixtureTables)){
+  for(const row of rows){
+    const columns=Object.keys(row);
+    for(const placeRefColumn of columns.filter(column=>column.endsWith('_place_ref'))){
     const prefix=placeRefColumn.slice(0,-'_place_ref'.length);
-    for(const row of sqlite.prepare(`select * from "${table}" where "${placeRefColumn}" is not null`).all()){
       const id=String(row[placeRefColumn]);
       if(!id.startsWith('builtin:'))continue;
       const localName=id.slice('builtin:'.length);
@@ -193,7 +259,7 @@ for(let index=0;index<catalog.length;index+=250){
 }
 process.stdout.write(`place_catalog: ${catalog.length}\n`);
 
-const sourceUsers=sqlite.prepare('select * from users order by id').all();
+const sourceUsers=fixtureTables.users;
 const userIds=new Map();
 for(const user of sourceUsers){
   const {data,error}=await supabase.auth.admin.createUser({
@@ -234,12 +300,6 @@ function projectRow(sourceTable,targetTable,row){
     let sourceColumn=aliases[column]||column;
     let value=row[sourceColumn];
     if(sourceTable==='users'&&column==='id')value=userIds.get(row.id);
-    if(sourceTable==='provider_shipments'&&column==='review_code_hash'){
-      value=hashTrackingAccessCode(reviewAccessCode(mapUuid(row.id)));
-    }
-    if(sourceTable==='shipment_party_grants'&&column==='code_hash'){
-      value=hashTrackingAccessCode(trackingAccessCode(mapUuid(row.shipment_id)));
-    }
     if(sourceTable==='verification_requests'&&column==='storage_path'&&value)value='demo/verification-document.jpg';
     if(value!==undefined)result[column]=convertValue(value,property);
   }
@@ -251,7 +311,7 @@ function projectRow(sourceTable,targetTable,row){
 }
 
 for(const [sourceTable,targetTable] of plan){
-  const sourceRows=sourceTable==='users'?sourceUsers:sqlite.prepare(`select * from "${sourceTable}"`).all();
+  const sourceRows=sourceTable==='users'?sourceUsers:fixtureTables[sourceTable];
   if(!sourceRows.length)continue;
   const rows=sourceRows.map(row=>projectRow(sourceTable,targetTable,row));
   for(let index=0;index<rows.length;index+=250){

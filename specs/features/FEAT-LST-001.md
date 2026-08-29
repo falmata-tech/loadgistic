@@ -86,5 +86,5 @@ And private columns are selected only for an authorized detail workflow.
 ## Contract ownership
 
 - Pages: public Truck Map; provider Shipments, Fleet, account history, verification, and admin queues/inventory
-- Application services: bounded result helpers and list projections in `src/lib/repository.js`
-- Tests: capacity-market, provider-tracking, E2E, and UI audit
+- Application services: managed capacity, Tracking, workspace, and platform-administration ports under `src/lib/`
+- Tests: managed capacity/Tracking contract tests, guarded live PostgreSQL verifiers, E2E, and UI audit

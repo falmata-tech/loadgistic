@@ -1,78 +1,64 @@
-# Implementation Audit
+# Implementation audit
+
+Current as of 2026-08-29. Historical evidence remains in Git and the dated
+application audit; this document describes the active runtime.
 
 ## Real and wired
 
-- Next.js App Router UI, route handlers, role-aware navigation, and PWA shell.
-- Local SQLite repository with tenant/party authorization, state transitions,
-  pagination, deterministic reset, high-volume stress data, and additive
-  tracking scenarios.
-- Shipment Board, Truck Board, Shared Shipments, Directory, Network, Fleet,
-  My Shipments, secret-code customer tracking, billing review, verification,
-  rating moderation, administration, and native Support.
-- Driver-only obscured device location for truck capacity and automatic
-  shipment tracking. Fleet-owner capacity edits preserve the Driver location
-  timestamp; no current-location text fallback is rendered.
-- Private local or Supabase Storage adapter with server-authorized reads and
-  file signature/type/size validation.
-- Production build, desktop/mobile Playwright workflows, UI audit, source/spec
-  checks, GitHub CI, and a non-root standalone Docker definition.
+- Next.js App Router UI, route handlers, responsive PWA shells, and role-aware
+  public/provider/Driver/Support/administrator navigation.
+- Supabase Auth with SSR refresh, Google PKCE, numeric email codes, inactive
+  signup bootstrap, and an explicitly local fixture-password option.
+- Supabase PostgreSQL/PostGIS for every application read, command, request
+  counter, audit record, fixture, and scale test.
+- Supply-only Truck Market, transporter microsites, Daily Featured and Sponsors,
+  Shared capacity, provider Capacity, provider-owned Tracking, reviews, Fleet,
+  Verification/Billing, Support, Assisted matching, and Operations.
+- Supabase private Storage with signature validation, quarantine, explicit-clean
+  scanning, purpose-bucket release, and authorization on every read.
+- Bounded idempotent email queues and the scheduled Netlify operations worker.
+- Production build, desktop/mobile Playwright, accessibility, UI/stress audit,
+  source/spec checks, managed live verifiers, GitHub CI, and a non-root
+  standalone Docker definition.
 
-## Intentional fixture data
+## Deterministic non-Production data
 
-Records created by `npm run db:reset`, `npm run db:stress`, and
-`npm run db:fixtures:tracking` are deterministic development fixtures, not
-customer claims. The public homepage uses a strict anonymous projection over
-the current database and withholds identity, contact, exact coordinates,
-files, raw IDs, and free text.
+`resources/fixtures/managed-market.json` is a credential-free supply fixture,
+not a customer claim. It contains no password or access-code material, demand,
+private conversation, or machine-local path. The guarded importer refuses
+Production and non-loopback Supabase targets.
 
-## Partially wired adapters
+The normal fixture creates 30 published transporters, 143 current-capacity
+signals, 122 Drivers/assignments, 335 verification records, the Ethiopia place
+catalog, and a current-date regional Featured/Sponsor programme. The scale gate
+adds 5,000 trucks in one isolated PostgreSQL transaction and rolls it back.
 
-- Supabase Storage is implemented for private files when configured.
-- PostgreSQL schema, RLS, indexes, PostGIS matching, support, billing, and
-  capacity constraints are modeled in migrations `001`–`010`.
-- `DATA_BACKEND=supabase` is deliberately rejected as a production claim: the
-  repository and managed identity adapters do not exist yet.
-- Rate limits are process-local. They are correct for one process but not a
-  horizontally scaled deployment.
-- Browser geolocation is device-reported and privacy-obscured, not
-  hardware-attested. A modified client can falsify its own coordinates, so
-  freshness, verification, route evidence, and proof remain distinct signals.
+## External controls still required for hosted Production
 
-## Backend-only and compatibility surfaces
+- Apply migrations `001`–`057` to the exact reviewed hosted project and record
+  backup/restore, lint, RLS, fixture-free smoke, and rollback evidence.
+- Configure exact Supabase Site/Redirect URLs, Google OAuth credentials, numeric
+  email templates, and a verified SMTP provider.
+- Configure a reviewed managed malware scanner. The local EICAR-aware scanner is
+  intentionally test-only.
+- Configure the verified application email sender and monitor leased delivery,
+  retry, retention, and scheduled-worker failures.
+- Configure Netlify environment values, deploy Preview, execute critical and
+  security smoke tests, then explicitly approve Production promotion.
+- Monitor Supabase/Netlify free-plan quotas and maintain encrypted off-platform
+  logical backups.
+- Keep the direct OpenStreetMap community tile endpoint as a monitored beta
+  fallback only; select an appropriate provider before sustained traffic.
 
-- User-facing forms and commands have route handlers; the source scan found no
-  `href="#"`, placeholder form actions, empty click handlers, TODO command
-  stubs, or UI-only fake success paths. The desktop/mobile browser audit found
-  no console or page errors.
-- `listLoads` and `listCapacity` are unpaginated compatibility/test helpers.
-  Production Board pages use their bounded server-paginated counterparts.
-- `listProviders`, `listOrganizationsByType`, `getApplicationStatus`, and the
-  older `setReceiverContact` command remain fixture/test or compatibility
-  helpers. Current UI uses searchable Directory projections, immediate signup,
-  and the full shipment-party command.
-- `listAudit` is an administrator-authorized backend diagnostic with no product
-  UI. Do not expose raw audit details without a bounded, redacted admin spec;
-  entity management already exposes task-specific audited commands.
+## Security boundary
 
-## Hard-coded by design
+No service-role key reaches browser code. Anonymous and ordinary authenticated
+roles cannot execute server-only projection or command RPCs. PostgreSQL commands
+repeat actor, ownership, assignment, permission, subscription, state, and file
+authorization rather than trusting a browser projection. Missing PostgreSQL,
+Storage, shared rate-limit, or scanner configuration fails closed without an
+alternate persistence engine or local serverless files.
 
-- Roles, workflow states, error codes, supported cargo configurations, privacy
-  radii, plan durations, and fixture IDs are product/domain constants.
-- Built-in major Ethiopian cities are an offline fallback. Normal place search
-  uses the imported, bounded OpenStreetMap-derived catalog and stored
-  coordinates.
-- Demo credentials exist only in local setup documentation and automated test
-  fixtures. Public login fields remain empty.
-
-## Public-production blockers
-
-- Supabase/PostgreSQL repository parity and Supabase Auth.
-- Shared rate limiting, malware scanning/quarantine, monitoring, backups, and a
-  completed restore drill.
-- Production secrets, private buckets, callback URLs, and final security smoke
-  tests in `docs/CLOUD_HANDOFF.md`.
-- Complete Amharic and Afaan Oromo product translation.
-
-`npm run launch:check` remains red in Production until the technical blockers
-are real. A passing build, Docker health check, or configured service-role key
-must not be presented as public-production readiness.
+`npm run launch:check` may report hosted-configuration blockers until the
+external controls above are proven. A passing build or local Docker health check
+alone is not Production approval.

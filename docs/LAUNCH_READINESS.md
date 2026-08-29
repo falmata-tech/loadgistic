@@ -12,21 +12,20 @@ The repository supports local development, browser testing, controlled demonstra
 - One stable customer-owner code/link, governed transitions, 30-day guest expiry, access/completion email retry records, and provider reviews/disputes.
 - Truck-scoped private-capacity grants, email/code Shared capacity access, Operations-only Loadgistic sharing, and account-free Assisted matching with bounded local live-refresh behavior.
 - Specification/source checks, Node tests, TypeScript, production build, desktop/mobile E2E, and approved visual audit evidence as recorded in `docs/PROGRESS.md`.
-- Standalone Node build, private local storage adapter, PWA shell, and health endpoint.
+- Standalone Node build, private Supabase Storage adapter, PWA shell, and health endpoint.
 - Atomic Supabase request limits for login, signup, Shared capacity, Assisted matching, and member Support, including digest-only keys, browser-role denial, fail-closed behavior, and bounded cleanup.
 - Server-only private-upload quarantine, signature checking, explicit clean release, EICAR rejection, cleanup, and anonymous list/download denial against the isolated local Supabase stack.
 
 ## Public-production blockers
 
-1. Remove the dormant SQLite/compatibility ports and replace the disposable SQLite fixture transformation source. SQLite is not the public-production datastore and managed failures never fall back to it.
-2. Replay and lint migrations `001`–`057` from an empty staging project, verify RLS/RPC behavior including concurrent request limits, private-quarantine isolation, provider-profile/Fleet ownership, Verification/Billing and Assisted-matching private-file scope, Support assignment/requeue, bounded Operations, atomic Featured/Sponsor administration, and terminal reviews, import place data, and rehearse encrypted logical backup/restore.
-3. Inventory and purge any cloud legacy demand data only after a verified backup and explicit approval.
-4. Configure the server-only Cloudmersive key, complete the privacy/vendor review, and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial upload proofs against Supabase Staging. The local test scanner does not satisfy this gate.
-5. Verify a Resend sending domain, configure the server-only API key/from/reply-to values, test Supabase Auth SMTP plus application delivery, and monitor the existing 15-minute delivery/retry/guest-cleanup function.
-6. Verify the implemented shared PostgreSQL request limiter under Preview concurrency, add reviewed bot protection for high-risk anonymous entry points, and configure authorized Supabase Realtime subscriptions with polling fallback for active guest conversations. Public discovery and review submission still need explicit shared-limit coverage before launch.
-7. Configure strong production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
-8. Replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering; pass the disposable 5,000-truck API and CPU-throttled phone audit before public traffic.
-9. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect
+1. Replay and lint migrations `001`–`057` from an empty hosted Preview project, verify RLS/RPC behavior including concurrent request limits, private-quarantine isolation, provider-profile/Fleet ownership, Verification/Billing and Assisted-matching private-file scope, Support assignment/requeue, bounded Operations, atomic Featured/Sponsor administration, and terminal reviews; import place data; and rehearse encrypted logical backup/restore.
+2. Inventory and purge any hosted legacy demand data only after a verified backup and explicit approval. A new empty project requires no purge.
+3. Configure a server-only managed scanner, complete the privacy/vendor review, and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial upload proofs against Supabase Preview. The local test scanner does not satisfy this gate.
+4. Verify an email sending domain, configure the server-only provider values, test Supabase Auth SMTP plus application delivery, and monitor the existing 15-minute delivery/retry/guest-cleanup function.
+5. Verify the implemented shared PostgreSQL request limiter under Preview concurrency, add reviewed bot protection for high-risk anonymous entry points, and configure authorized Supabase Realtime subscriptions with polling fallback for active guest conversations. Public discovery and review submission still need explicit shared-limit coverage before launch.
+6. Configure strong Production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
+7. Keep the low-traffic pilot's explicit bounded cursor loading and CPU-throttled phone limits under observation. Before the market approaches thousands of simultaneously discoverable trucks, replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering.
+8. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect
    URL for each environment, Google identity credentials, the numeric-token
    login and signup templates, and verified custom SMTP; repeat the managed
    signup workflow against Preview before enabling it publicly.

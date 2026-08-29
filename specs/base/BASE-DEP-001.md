@@ -53,6 +53,14 @@ Then it uses Supabase PostgreSQL, Auth, and private Storage without a backend se
 And no environment value can select SQLite, an in-memory request counter, or local private files\
 And missing or unavailable managed configuration fails closed with a bounded non-secret error.
 
+### Scenario: development and verification use the production data engine
+
+Given Loadgistic source, local setup, browser tests, fixture generation, scale checks, and deployment artifacts\
+When repository boundaries are validated\
+Then no executable source imports `node:sqlite` or opens a local database file\
+And local development and automated workflows use the isolated Supabase PostgreSQL/Auth/Storage project\
+And disposable scale data is created and rolled back in PostgreSQL rather than a second persistence engine.
+
 ### Scenario: schema rollout
 
 Given a database migration is required\
@@ -171,4 +179,4 @@ And generated identities, capacity, files, and reports are never written to Prod
 - `src/app/api/health/route.ts`
 - `npm run quality`
 - `npm run build`
-- `npm run db:stress && npm run test:scale`
+- `npm run test:scale`

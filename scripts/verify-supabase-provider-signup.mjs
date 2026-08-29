@@ -13,8 +13,6 @@ if(!new Set(['127.0.0.1','localhost','::1']).has(mailEndpoint.hostname))throw ne
 
 process.env.NEXT_PUBLIC_SUPABASE_URL=url;
 process.env.SUPABASE_SERVICE_ROLE_KEY=serviceRoleKey;
-process.env.DATA_BACKEND='supabase';
-process.env.DATABASE_PATH='/dev/null';
 process.env.SESSION_SECRET=process.env.SESSION_SECRET||'provider-signup-local-verification-secret';
 
 const service=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});

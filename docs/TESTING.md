@@ -59,4 +59,4 @@ Run visual inspection only when the user has approved it. During iteration inspe
 
 ## Production boundary
 
-Tests use local SQLite and local fixtures. They do not establish Supabase adapter parity, managed email delivery, malware scanning, sustained third-party tile capacity, backup/restore, or a production rollout. The community-tile fallback is a monitored bounded-beta warning; the remaining concerns stay launch gates in `docs/PROGRESS.md` and `docs/SUPABASE_MIGRATION.md`.
+Tests use the isolated local Supabase PostgreSQL/Auth/Storage stack and the credential-free managed fixture. Guarded live verifiers establish local adapter, authorization, RLS/RPC, Storage, Auth, and queue parity, but they do not establish hosted email delivery, hosted malware scanning, sustained third-party tile capacity, backup/restore, Preview concurrency, or a Production rollout. The community-tile fallback is a monitored bounded-beta warning; the remaining concerns stay launch gates in `docs/PROGRESS.md` and `docs/SUPABASE_MIGRATION.md`.

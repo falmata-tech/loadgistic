@@ -11,13 +11,13 @@ a portable fallback; Netlify runs the maintained OpenNext adapter rather than
 the Docker image.
 
 The application is still approved only for local validation and controlled
-demonstration. Public production remains blocked until the managed
-identity/repository, email, rate-limit, upload-scanning, backup,
-and monitoring gates in `docs/LAUNCH_READINESS.md` pass.
-Managed public discovery, Shared capacity, provider Capacity, provider-owned
-Tracking, transporter-profile editing, managed provider signup, the authenticated workspace shell, Fleet management, Verification, Billing, member Support, Assisted matching, platform-team management, Operations, and Featured/Sponsor administration already run through Supabase when the
-managed backends are selected; dormant compatibility paths must be removed
-before the Production flag is enabled.
+demonstration. Public Production remains blocked until hosted migration,
+email, upload-scanning, backup, Preview verification, and monitoring gates in
+`docs/LAUNCH_READINESS.md` pass. Public discovery, Shared capacity, provider
+Capacity, provider-owned Tracking, transporter-profile editing, managed signup,
+the authenticated workspace shell, Fleet management, Verification, Billing,
+member Support, Assisted matching, platform-team management, Operations, and
+Featured/Sponsor administration all use the unconditional managed runtime.
 
 ## Provisioned control plane — 2026-08-17
 
@@ -25,9 +25,9 @@ before the Production flag is enabled.
 - Netlify site: `loadgistic` (`88fc3f4f-5bf4-479e-a4a3-08ab14a75111`)
 - Reserved URL: `https://loadgistic.netlify.app`
 - Local repository link: `.netlify/state.json` (ignored by Git)
-- Configured non-secret Netlify values: `APP_URL`,
+- Required non-secret Netlify values: `APP_URL`,
   `NEXT_PUBLIC_SUPABASE_URL`, and
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not yet configured remotely)
 
 No deploy or Git continuous-deployment hook has been created. The service-role
 key is not configured. Supabase is the unconditional identity, data, request-limit,
@@ -60,12 +60,12 @@ an unencrypted dump in Git, a CI log, or a public artifact.
 
 1. Create a project in the intended region and verify backup/restore first.
 2. Apply all migrations from `001_loadgistic_schema.sql` through
-   `049_managed_provider_profile.sql` in numeric order.
+   `057_managed_platform_admin.sql` in numeric order.
 3. Run SQL lint and review every RLS policy/default-deny private table.
 4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
 5. Confirm every purpose bucket plus the private `private-upload-quarantine` bucket, then configure and prove the managed scanner before serving uploads.
-6. Implement and parity-test the Supabase repository/managed Auth adapters.
-7. Inventory any old cloud demand data. Purge only after explicit approval and a verified backup; record exact before/after counts privately.
+6. Run every guarded managed verifier and the critical browser workflow against Preview without importing fake market identities into Production.
+7. Inventory any old cloud demand data. Purge only after explicit approval and a verified backup; record exact before/after counts privately. A new empty project requires no purge.
 
 The service-role key is server-only and never uses a `NEXT_PUBLIC_` name. Browser code receives only explicit safe projections or authorized short-lived file access.
 

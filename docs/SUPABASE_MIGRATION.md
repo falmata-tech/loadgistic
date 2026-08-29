@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. The dormant monolithic repository and database modules remain only for historical unit fixtures and the temporary Supabase fixture transformation step while ADR-041 is being completed; they are not an application fallback. Ordered SQL migrations `001` through `046` replay successfully against the isolated local Supabase PostgreSQL stack; additive migrations `047` through `057` applied to that stack and passed their live verifiers, while the next empty-database release rehearsal must replay the complete `001`–`057` chain. A guarded deterministic importer creates the complete fake market in local Supabase Auth, PostgreSQL, and private Storage. Replacing that SQLite-derived importer is the remaining engine-removal step before Production readiness.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `057` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
 
 ## Current migration coverage
 
@@ -51,17 +51,17 @@ runs managed verification. It fails closed for any non-loopback API URL:
 SUPABASE_CLI_PATH=/absolute/path/to/supabase npm run supabase:local:configure
 ```
 
-Keys come from the isolated local Supabase CLI stack and must remain outside shell history, logs, and source control. The lower-level `db:supabase:fixtures` and `db:supabase:verify` commands remain available for CI orchestration with injected local-only variables. The importer uses `data/supabase-fixture-source.db` only as a disposable transformation source during cutover; it is not an application runtime or a remote import path.
+Keys come from the isolated local Supabase CLI stack and must remain outside shell history, logs, and source control. The lower-level `db:supabase:fixtures` and `db:supabase:verify` commands remain available for CI orchestration with injected local-only variables. The importer reads `resources/fixtures/managed-market.json`, refuses non-loopback and Production targets, and contains no remote import path.
 
-The local fake-demand purge is implemented in `src/lib/db.js`. An equivalent cloud purge is intentionally not automatic: it is destructive and must be executed only after a verified backup, exact row-count review, and explicit rollout approval.
+The managed fixture contains no demand rows. Any hosted legacy-demand purge remains intentionally separate and destructive: execute it only after a verified backup, exact row-count review, and explicit rollout approval.
 
-## Required adapter work
+## Managed runtime contracts
 
 Managed identity has no runtime selector or SQLite fallback: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. The explicitly local fixture-password form authenticates the same isolated Supabase Auth fixture identities. Google PKCE and numeric email-code sign-in are implemented. Public provider signup first proves Google or six-digit email-code identity through a signed 15-minute HttpOnly handoff, then collects the short provider profile and uses the server-only provisioning intent to complete one fleet or independent-provider workspace, draft public page, approved signup record, and seven-day trial atomically. An incomplete or abandoned identity remains inactive and has no Loadgistic authority. Local Supabase defines separate numeric templates for existing-user magic-link login and new-user confirmation; Preview and Production must configure the equivalent hosted templates and verified SMTP.
 
-Health and place search use PostgreSQL unconditionally. `/api/health` counts the managed profile projection and fails closed with a non-secret `database-unavailable` blocker if PostgreSQL cannot be reached. `/api/places` uses a bounded server-only Supabase query and returns the existing public place contract without loading the SQLite repository.
+Health and place search use PostgreSQL unconditionally. `/api/health` counts the managed profile projection and fails closed with a non-secret `database-unavailable` blocker if PostgreSQL cannot be reached. `/api/places` uses a bounded server-only Supabase query and returns the public place contract.
 
-The public Truck Market uses a separate Supabase-only application port without importing the SQLite repository. Its service-role RPC returns only 12–16 rows plus one cursor look-ahead, evaluates every multi-city route segment and complete Service-area polygon in PostgreSQL, keeps text search literal, enriches only the bounded result set, and strips all private current geometry before returning a row. The server then produces the established safe badge, approximate-distance, regular-service, and geographic-match labels. Clean reset plus live fixture verification covers cursor uniqueness, status and route filters, private fallback, badge shape, and anonymous RPC denial.
+The public Truck Market uses a dedicated managed application port. Its service-role RPC returns only 12–16 rows plus one cursor look-ahead, evaluates every multi-city route segment and complete Service-area polygon in PostgreSQL, keeps text search literal, enriches only the bounded result set, and strips all private current geometry before returning a row. The server then produces the established safe badge, approximate-distance, regular-service, and geographic-match labels. Clean reset plus live fixture verification covers cursor uniqueness, status and route filters, private fallback, badge shape, and anonymous RPC denial.
 
 Published transporter microsites use a second application port with explicit Supabase selections for the public page, active fleet, assigned Driver first name and callback, separate Driver/truck evidence badges, current safe Capacity projection, independently visible contacts, fixture portrait, and the latest 20 published review notes. PostgreSQL calculates the all-review count and average through a service-role-only aggregate. Hidden contacts, exact coordinates, private proof paths, surnames, and unknown or unpublished handles remain excluded.
 
@@ -71,11 +71,11 @@ Shared capacity, provider Capacity, and provider-owned Tracking use dedicated Su
 
 Transporter-profile editing now selects a dedicated application port. Its PostgreSQL workspace and mutation functions deny Company drivers and browser roles, repeat current subscription/ownership rules, resolve the general base from the managed place catalog, bound public content and contacts, and audit only visibility flags and non-sensitive place/region identifiers. Profile images use the central quarantine/scanner/storage port before an atomic metadata command; failed metadata removes the new object and successful replacement removes the superseded object after commit.
 
-Keep these active contracts stable while retiring dormant SQLite compatibility code:
+Keep these active contracts stable during hosted rollout:
 
 - Public capacity cursor/detail and public provider projections.
 - Platform Operations and Sponsor/Featured administration commands.
-- Retired-route behavior and remaining compatibility-only test contracts.
+- Retired-demand route behavior and managed-contract tests.
 
 Use RLS-protected queries or transactional RPCs. Never place a service-role key in browser code, never return raw private-table rows to anonymous clients, and keep access-code verification on the server.
 
@@ -87,12 +87,10 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
 3. Import the bundled place catalog with `npm run places:import:supabase`.
-4. Remove the dormant SQLite compatibility modules so Supabase PostgreSQL and hardened private Storage remain the only application runtime; do not add a dual-write or runtime SQLite fallback.
-5. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, and E2E suites against the isolated stack. Identity, provider signup, public projections, Shared capacity, provider Capacity, Tracking, workspace, Fleet, Verification, Billing, Support, Assisted matching, platform-team, Operations, and Featured/Sponsor managed workflow verification are complete; clean replay and complete browser-suite cutover remain pending.
-6. Configure the server-only Cloudmersive scanner key, verify clean/dirty/timeout/quota behavior against Staging, complete the privacy/vendor review, configure the verified Resend sender, authorized Supabase Realtime with polling fallback, Preview concurrency verification for shared rate limiting, and monitoring for scheduled email/cleanup jobs. The local EICAR-aware scanner is test-only and cannot satisfy Production readiness.
-7. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
-8. Deploy the managed backend to a non-production environment, run `npm run launch:check`, and rehearse application and data rollback.
-9. Remove the dormant SQLite repository/database and replace SQLite-derived fixture generation; health, active runtime ports, private Storage, request limits, browser-server configuration, and container configuration already have no selectable fallback.
+4. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, scale, and E2E suites against the isolated stack.
+5. Configure the server-only managed scanner, verify clean/dirty/timeout/quota behavior against Preview, complete the privacy/vendor review, configure the verified email sender, authorized Supabase Realtime with polling fallback, Preview concurrency verification for shared rate limiting, and monitoring for scheduled email/cleanup jobs. The local EICAR-aware scanner is test-only and cannot satisfy Production readiness.
+6. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
+7. Deploy the managed backend to Preview, run `npm run launch:check`, and rehearse application and data rollback before Production promotion.
 
 ## Rollback
 

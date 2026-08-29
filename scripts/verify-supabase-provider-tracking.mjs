@@ -9,8 +9,6 @@ if(!new Set(['127.0.0.1','localhost','::1']).has(endpoint.hostname))throw new Er
 
 process.env.NEXT_PUBLIC_SUPABASE_URL=url;
 process.env.SUPABASE_SERVICE_ROLE_KEY=serviceRoleKey;
-process.env.DATA_BACKEND='supabase';
-process.env.DATABASE_PATH='/dev/null';
 process.env.SESSION_SECRET=process.env.SESSION_SECRET||'provider-tracking-local-verification-secret';
 
 const service=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});

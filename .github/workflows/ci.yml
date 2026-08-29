@@ -16,11 +16,10 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: true
       SESSION_SECRET: ci-only-session-secret-not-for-production-123456
-      DATABASE_PATH: /tmp/loadgistic-ci.db
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -33,6 +32,17 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+
+      - name: Set up pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.111.0
+
+      - name: Start isolated Supabase
+        run: supabase start
+
+      - name: Import and verify managed fixtures
+        run: npm run supabase:local:configure
 
       - name: Audit high-severity dependency advisories
         run: npm audit --audit-level=high
@@ -40,14 +50,13 @@ jobs:
       - name: Validate specifications and source
         run: npm run check
 
-      - name: Run domain and repository tests
+      - name: Run domain and managed-contract tests
         run: npm test
 
-      - name: Exercise the 5,000-truck disposable scale fixture
+      - name: Exercise the rolled-back 5,000-truck PostgreSQL scale fixture
         env:
-          DATABASE_PATH: /tmp/loadgistic-market-scale-ci.db
           MARKET_SCALE_TRUCKS: 5000
-        run: npm run db:stress && npm run test:scale
+        run: npm run test:scale
 
       - name: Type-check application
         run: npm run typecheck
@@ -55,14 +64,17 @@ jobs:
       - name: Build production artifact
         run: npm run build
 
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --no-backup
+
   e2e:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       CI: true
       SESSION_SECRET: ci-only-session-secret-not-for-production-123456
-      DATABASE_PATH: /tmp/loadgistic-e2e.db
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -76,11 +88,26 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Set up pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.111.0
+
+      - name: Start isolated Supabase
+        run: supabase start
+
+      - name: Import and verify managed fixtures
+        run: npm run supabase:local:configure
+
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
 
       - name: Run desktop and mobile browser workflows
         run: npm run test:e2e
+
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --no-backup
 
   container:
     needs: validate

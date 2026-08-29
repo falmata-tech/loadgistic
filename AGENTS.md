@@ -32,16 +32,17 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 
 - `src/app`: Next.js App Router pages and route handlers
 - `src/lib/domain.js`: pure domain rules
-- `src/lib/repository.js`: local persistence adapter and domain services
-- `src/lib/db.js`: Node SQLite schema and deterministic seed
+- `src/lib/repository/supabase.js`: server-only Supabase/PostgreSQL adapter
+- `src/lib/*/supabase.js`: bounded application ports for managed workflows
 - `src/lib/auth.ts`: signed session cookie boundary
-- `supabase/`: cloud PostgreSQL/RLS target
-- `tests/`: domain, repository, and browser workflows
+- `supabase/`: PostgreSQL schema, RLS, RPCs, Auth, and Storage configuration
+- `resources/fixtures/managed-market.json`: credential-free local managed fixture
+- `tests/`: domain, managed-contract, and browser workflows
 
 ## Rules
 
 1. Keep state transitions explicit in `domain.js`.
-2. Authorize every mutation in server-side repository services.
+2. Authorize every mutation in server-side application services and PostgreSQL commands.
 3. Do not expose proof files without shipment authorization.
 4. Do not show full or Off Duty capacity in marketplace discovery. An older
    Empty or Partial signal may remain visible only with explicit capacity and

@@ -6,7 +6,7 @@
 nvm use
 cp .env.example .env.local
 npm install
-npx supabase start
+supabase start
 npm run supabase:local:configure
 npm run dev
 ```
@@ -23,7 +23,7 @@ linked provider attribution. Invalid pairs fail back to the direct community
 endpoint. Tiles are requested by the browser; the application never proxies,
 prefetches, or copies them.
 
-`npm run db:reset` is a compatibility-only SQLite reset and is not the normal application setup. `npm run supabase:local:configure` refuses remote hosts, imports the bundled Ethiopia place catalog, purges obsolete fake demand fixtures, and creates a supply-first local Supabase market with:
+`npm run db:reset` aliases the same guarded Supabase configuration workflow. `npm run supabase:local:configure` refuses remote hosts and Production, imports the bundled Ethiopia place catalog, clears the isolated local project, and creates a supply-first market with:
 
 - 30 published provider pages;
 - nine fleet companies and 21 self-managed provider profiles;
@@ -47,7 +47,7 @@ Use the development password stored in the local seed-credentials file. Generate
 
 ## Supabase cutover stack
 
-The isolated Supabase CLI stack uses ports `55320`–`55324`. After a local `supabase db reset`, run `npm run supabase:local:configure`; it refreshes the current Ethiopia Featured fixture, imports the market, and verifies identity, public projections, Shared capacity, provider Capacity, provider-owned Tracking, customer-safe completion email data, and managed signup with SQLite disabled. Lower-level verification scripts remain available for CI. Every configurator and importer refuses remote Supabase hosts. Do not paste keys into tracked files or shell history. See `docs/SUPABASE_MIGRATION.md` for the exact guarded workflow and remaining cutover boundary.
+The isolated Supabase CLI stack uses ports `55320`–`55324`. After a local `supabase db reset`, run `npm run supabase:local:configure`; it refreshes the current Ethiopia Featured fixture, imports the market, and verifies identity, public projections, Shared capacity, provider Capacity, provider-owned Tracking, customer-safe completion email data, signup, Storage, request limits, Fleet, Verification/Billing, Support, and platform administration. Lower-level verification scripts remain available for CI. Every configurator and importer refuses remote Supabase hosts and fixture reset is rejected in Production. Do not paste keys into tracked files or shell history. See `docs/SUPABASE_MIGRATION.md` for the guarded workflow and hosted rollout boundary.
 
 ## Useful checks
 
@@ -61,9 +61,9 @@ Run `npm run test:ui-audit` only after explicit approval and while the developme
 
 ## Troubleshooting
 
-- Missing `node:sqlite`: use the Node version in `.nvmrc`.
+- Supabase CLI cannot start: confirm Docker is running and CLI `2.111.0` is installed.
 - Session failures: set a long random `SESSION_SECRET` in `.env.local`.
-- Empty/stale local market: reset the isolated local Supabase database and rerun `npm run supabase:local:configure`; `npm run db:reset` is only the retired SQLite compatibility fixture.
+- Empty/stale local market: run `npm run db:reset`; it refreshes only the isolated loopback Supabase project.
 - Map remains blank: confirm the response CSP names the exact configured tile origin, verify the URL/linked-attribution pair, and inspect browser tile errors.
 - Completion email remains queued: configure `RESEND_API_KEY` and `LOADGISTIC_EMAIL_FROM`, or the optional HTTPS webhook adapter; an unconfigured adapter does not pretend delivery succeeded.
 - Shared capacity access in local development shows an eligible recipient a clearly labeled local test code when no managed email provider is configured. Production never returns OTP plaintext to the browser. The email must first have an active truck share in the provider Network.

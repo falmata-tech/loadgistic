@@ -3,7 +3,7 @@ id: FEAT-DAT-001
 title: Supply-first local development dataset
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
 problem: Public capacity discovery needs enough realistic provider and truck variation to test cursor loading, clustering, provider pages, and responsive layouts without retaining obsolete demand fixtures.
-behavior: Every non-Production local database receives a deterministic supply-only market centered on city and town freight: courier motorcycles, courier cars, cargo vans, conventional pickups, stake-body pickups, and all mini-truck configurations form about 70 percent of active capacity, light-duty trucks are the next-largest group, and only occasional medium or heavy trucks carry longer road corridors. The 70-percent local-delivery cohort stays within 30 kilometres of its base through road-connected town routes or compact multi-place operating polygons. Each provider retains one regular Service area or Capacity route; legacy demand, future-trip, Business-account, and relationship fixtures are purged.
+behavior: Every explicitly reset non-Production Supabase project receives a deterministic supply-only market centered on city and town freight: courier motorcycles, courier cars, cargo vans, conventional pickups, stake-body pickups, and all mini-truck configurations form about 70 percent of active capacity, light-duty trucks are the next-largest group, and only occasional medium or heavy trucks carry longer road routes. The 70-percent local-delivery cohort stays within 30 kilometres of its base through road-connected town routes or compact multi-place operating polygons. Each provider retains one regular Service area or Capacity route; the managed fixture contains no legacy demand, future-trip, Business-account, or relationship records and is imported without SQLite.
 contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge, RetiredDemandBoundary]
 observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure, retired_demand_request]
 rollout: The dataset is deterministic and local-only; production execution of reset or fixture commands remains denied. Rollback restores a pre-migration database backup, not retired demand fixtures.
@@ -13,8 +13,8 @@ rollout: The dataset is deterministic and local-only; production execution of re
 
 ### Scenario: normal reset creates a busy capacity market
 
-Given the process is not running in Production\
-When a fresh local database is initialized or reset\
+Given the process targets the isolated local Supabase project and is not running in Production\
+When its managed fixture is reset\
 Then it contains 30 published provider pages across nine fleet companies and 21 self-managed provider profiles\
 And it contains 143 active current-capacity signals with Empty, Partial, Service-area, and Capacity-route variation\
 And 100 of those 143 trucks are courier motorcycles, courier cars, cargo vans, conventional pickups, stake-body pickups, or mini trucks, with every local-delivery configuration represented\
@@ -65,11 +65,20 @@ And older fixture signals retain explicit age metadata while Off Duty and unpubl
 
 ### Scenario: demand fixtures are removed
 
-Given a local database created by an older Loadgistic version\
-When the supply-first data migration runs\
-Then legacy shipment-demand rows, Business organizations and users, network relationships, favorites, and Business reviews are deleted\
-And provider organizations, provider profiles, fleet records, verification evidence, and provider-owned shipment records remain\
-And the migration is idempotent.
+Given the managed fixture source is prepared for local development or browser tests\
+When the importer reads its deterministic records\
+Then it contains no shipment-demand rows, Business organizations or users, network relationships, favorites, or Business reviews\
+And it creates provider organizations, provider profiles, fleet records, verification evidence, and the supply-only public market directly in Supabase\
+And neither the importer nor its source opens, creates, transforms, or references a SQLite database.
+
+### Scenario: the current Daily Featured programme is generated at import time
+
+Given a managed fixture reset on any Ethiopia calendar date\
+When the importer builds Daily Featured Transporters and Sponsors\
+Then it derives the current regional group from that date\
+And it selects the eligible fixture providers based in that group in stable display-name order\
+And it creates one published day, ordered featured slots, transporter Sponsor records, one outside advertiser, and current-date placements\
+And no previously captured calendar date is required in the fixture source.
 
 ### Scenario: retired demand routes never reach persistence
 
@@ -95,8 +104,9 @@ Then it fails before deleting or writing data.
 
 ## Contract ownership
 
-- Schema, purge, and deterministic seed: `src/lib/db.js`
-- Reset adapter: `scripts/reset-db.mjs`
-- Public cursor: `listPublicCapacityCursor` in `src/lib/repository.js`
+- Schema: ordered SQL migrations under `supabase/migrations/`
+- Credential-free deterministic seed input: `resources/fixtures/managed-market.json`
+- Reset/import adapter: `scripts/import-supabase-fixtures.mjs`
+- Public cursor: the Supabase-only capacity port in `src/lib/capacity-market.js`
 - Retired demand boundary: `src/lib/retired-demand.ts`, retired page and route modules, and `src/middleware.ts`
-- Tests: `tests/capacity-market.test.mjs`, `scripts/check-source.mjs`, `tests/e2e/smoke.spec.ts`
+- Tests: `tests/supabase-fixtures.test.mjs`, the guarded live fixture verifier, and `tests/e2e/smoke.spec.ts`
