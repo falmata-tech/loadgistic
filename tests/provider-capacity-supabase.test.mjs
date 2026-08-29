@@ -84,6 +84,6 @@ test('active provider Capacity pages and routes use the application port, not SQ
   assert.match(publishRoute,/removePrivateUpload\(upload\.path\)/);
 
   const application=fs.readFileSync(path.join(root,'src','lib','provider-capacity.js'),'utf8');
-  assert.match(application,/process\.env\.DATA_BACKEND==='supabase'/);
-  assert.doesNotMatch(application,/catch\s*\(/);
+  assert.match(application,/provider-capacity\/supabase\.js/);
+  assert.doesNotMatch(application,/DATA_BACKEND|repository\.js|catch\s*\(/);
 });

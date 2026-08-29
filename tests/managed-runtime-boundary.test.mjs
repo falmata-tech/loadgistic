@@ -46,13 +46,27 @@ test('retired authenticated Directory redirects safely and exposes no repository
   }
 });
 
-test('browser test server selects managed data, Auth, and Storage boundaries',()=>{
+test('browser test server has no selectable data, Auth, or Storage fallback',()=>{
   const server=read('scripts/e2e-server.mjs');
   const example=read('.env.example');
-  assert.match(server,/DATA_BACKEND = 'supabase'/);
-  assert.match(server,/PRIVATE_STORAGE_BACKEND = 'supabase'/);
-  assert.doesNotMatch(server,/resetDb|DATABASE_PATH|AUTH_BACKEND = 'local'|DATA_BACKEND = 'sqlite'/);
-  assert.match(example,/DATA_BACKEND=supabase/);
-  assert.match(example,/PRIVATE_STORAGE_BACKEND=supabase/);
-  assert.doesNotMatch(example,/DATABASE_PATH|AUTH_BACKEND=local|PRIVATE_STORAGE_BACKEND=local/);
+  const health=read('src/app/api/health/route.ts');
+  const storage=read('src/lib/private-storage.js');
+  const limits=read('src/lib/rate-limit.js');
+  assert.doesNotMatch(server,/resetDb|DATABASE_PATH|AUTH_BACKEND|DATA_BACKEND|PRIVATE_STORAGE_BACKEND/);
+  assert.doesNotMatch(example,/DATABASE_PATH|AUTH_BACKEND|DATA_BACKEND|PRIVATE_STORAGE_BACKEND/);
+  assert.doesNotMatch(health,/db\.js|sqlite|DATA_BACKEND/);
+  assert.doesNotMatch(storage,/node:fs|local:\/\/|PRIVATE_STORAGE_BACKEND|PRIVATE_UPLOAD_DIR/);
+  assert.doesNotMatch(limits,/globalBuckets|checkMemoryRateLimit|DATA_BACKEND/);
+});
+
+test('every active data facade imports only its managed adapter',()=>{
+  for(const relative of [
+    'src/lib/access-email.js','src/lib/capacity-market.js','src/lib/place-search.js',
+    'src/lib/provider-capacity.js','src/lib/provider-profile.js','src/lib/provider-tracking.js',
+    'src/lib/public-featured.js','src/lib/public-provider.js'
+  ]){
+    const source=read(relative);
+    assert.doesNotMatch(source,/repository\.js|DATA_BACKEND|usesManagedData|legacy\(/,relative);
+    assert.match(source,/supabase\.js/,relative);
+  }
 });

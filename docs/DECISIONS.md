@@ -872,9 +872,9 @@ windows, atomically resets or increments the row, and returns only the allowed
 state and retry interval. Anonymous and authenticated browser roles receive no
 table or function grant.
 
-Local in-memory limits remain only for the explicitly local SQLite fixture
-runtime. A configured Supabase runtime fails closed if its counter call fails;
-it never weakens protection by falling back to a process-local Map. The bounded
+Supabase is the only request-limit runtime in development, browser tests,
+Preview, Production, and scheduled work. If its counter call fails, the request
+fails closed; protection never falls back to a process-local Map. The bounded
 scheduled-operations worker removes expired windows, and its output contains a
 count only. Rollback restores the previous application artifact and preserves
 the additive counter table; public Production remains blocked if the managed

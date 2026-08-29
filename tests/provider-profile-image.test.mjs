@@ -12,26 +12,16 @@ if(fs.existsSync(uploadDirectory))fs.rmSync(uploadDirectory,{recursive:true});
 const repo=await import('../src/lib/repository.js');
 const {getDb}=await import('../src/lib/db.js');
 
-const png=Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360f8cfc0000004010100f689891d0000000049454e44ae426082','hex');
-
-test('provider owner controls one validated public profile image without exposing storage',async()=>{
-  const owner=repo.findUserByEmail('transporter@loadgistic.local');
-  const companyDriver=repo.findUserByEmail('company-driver@loadgistic.local');
-  const upload=new File([png],'provider.png',{type:'image/png'});
-  await assert.rejects(()=>repo.updateProviderProfileImage(companyDriver,upload),/FORBIDDEN/);
-  await assert.rejects(()=>repo.updateProviderProfileImage(owner,new File([Buffer.from('%PDF-1.4')],'profile.pdf',{type:'application/pdf'})),/PROFILE_IMAGE_TYPE_INVALID/);
-  await repo.updateProviderProfileImage(owner,upload);
-  const own=repo.getOwnCompanyPage(owner);
-  assert.match(own.profile_image_url,/^\/api\/public\/providers\/blueline-transport\/image\?v=/);
-  const publicProvider=repo.getPublicProvider('blueline-transport');
-  assert.equal(publicProvider.profile_image_url,own.profile_image_url);
-  assert.equal(JSON.stringify(publicProvider).includes('profile_image_path'),false);
-  const image=repo.getPublicProviderProfileImage('blueline-transport');
-  assert.equal(image.mime_type,'image/png');
-  assert.ok(image.file_path.startsWith('local://provider-profile/'));
-  await repo.removeProviderProfileImage(owner);
-  assert.equal(repo.getPublicProvider('blueline-transport').profile_image_url,'/marketing/transporters/blueline-transport.png');
-  assert.equal(repo.getPublicProviderProfileImage('blueline-transport'),undefined);
+test('active provider profile images use only the managed storage lifecycle',()=>{
+  const facade=fs.readFileSync(path.resolve(process.cwd(),'src/lib/provider-profile.js'),'utf8');
+  const verifier=fs.readFileSync(path.resolve(process.cwd(),'scripts/verify-supabase-provider-profile.mjs'),'utf8');
+  assert.match(facade,/from '\.\/provider-profile\/supabase\.js'/);
+  assert.doesNotMatch(facade,/repository\.js|DATA_BACKEND|local:\/\//);
+  assert.match(verifier,/updateSupabaseProviderProfileImage\(actor,upload\)/);
+  assert.match(verifier,/removeSupabaseProviderProfileImage\(actor\)/);
+  assert.match(verifier,/SUPABASE_PROVIDER_PROFILE_DRIVER_ALLOWED/);
+  assert.match(verifier,/SUPABASE_PROVIDER_PROFILE_ANONYMOUS_RPC_ALLOWED/);
+  assert.match(verifier,/SUPABASE_PROVIDER_PROFILE_IMAGE_OBJECT_RETAINED/);
 });
 
 test('every seeded transporter portrait resolves to a distinct repository asset',()=>{

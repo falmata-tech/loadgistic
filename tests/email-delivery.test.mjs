@@ -110,7 +110,7 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
 test('scheduled worker and migration remain bounded and service-role-only',()=>{
   const worker=fs.readFileSync(path.join(root,'netlify/functions/managed-operations.mjs'),'utf8');
   const migration=fs.readFileSync(path.join(root,'supabase/migrations/046_managed_email_operations.sql'),'utf8');
-  assert.match(worker,/DATA_BACKEND!=='supabase'/);
+  assert.doesNotMatch(worker,/DATA_BACKEND|managed-data-backend-required/);
   assert.match(worker,/schedule:'\*\/15 \* \* \* \*'/);
   assert.match(migration,/for update skip locked/i);
   assert.match(migration,/next_attempt_at=now\(\)\+interval '10 minutes'/i);

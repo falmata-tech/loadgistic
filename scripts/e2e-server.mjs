@@ -2,8 +2,6 @@ import { spawn } from 'node:child_process';
 process.env.NEXT_DIST_DIR = '.next-e2e';
 process.env.LOGIN_CLIENT_RATE_LIMIT = '500';
 process.env.LOGIN_ACCOUNT_RATE_LIMIT = '100';
-process.env.DATA_BACKEND = 'supabase';
-process.env.PRIVATE_STORAGE_BACKEND = 'supabase';
 process.env.ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN = 'true';
 const port = process.env.PLAYWRIGHT_PORT || '3100';
 

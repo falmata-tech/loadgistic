@@ -30,9 +30,9 @@ before the Production flag is enabled.
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 No deploy or Git continuous-deployment hook has been created. The service-role
-key is not configured. Managed Supabase Auth is now the only identity runtime;
-`DATA_BACKEND` and `PRIVATE_STORAGE_BACKEND` have not been configured remotely
-because repository parity and upload-scanning gates below remain red.
+key is not configured. Supabase is the unconditional identity, data, request-limit,
+and private-Storage runtime; there are no backend selector variables to configure.
+Remote upload-scanning and rollout gates below remain red.
 
 ## Free-pilot operating envelope
 
@@ -116,14 +116,12 @@ Use Node 22.x and configure Preview/Production independently:
 ```text
 APP_URL
 SESSION_SECRET
-DATA_BACKEND
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_MAP_TILE_URL
 NEXT_PUBLIC_MAP_TILE_ATTRIBUTION
 SUPABASE_SERVICE_ROLE_KEY
 ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN
-PRIVATE_STORAGE_BACKEND
 UPLOAD_SCANNER_BACKEND
 CLOUDMERSIVE_API_KEY
 UPLOAD_SCANNER_TIMEOUT_MS
@@ -140,9 +138,8 @@ TURNSTILE_SECRET_KEY
 Bucket identifiers are migration-owned: `shipment-proof`, `verification`,
 `capacity-photo`, `payment-proof`, `provider-profile`, and
 `support-attachment`. `private-upload-quarantine` is a separate server-only
-staging bucket. They are private. `DATABASE_PATH` and
-`PRIVATE_UPLOAD_DIR` are local/Docker-only and must never be used for durable
-Netlify data. Set `UPLOAD_SCANNER_BACKEND=cloudmersive`,
+staging bucket. They are private. Netlify never uses a database path or local
+upload directory. Set `UPLOAD_SCANNER_BACKEND=cloudmersive`,
 `CLOUDMERSIVE_API_KEY` as a server-only secret, and a bounded
 `UPLOAD_SCANNER_TIMEOUT_MS` only after the privacy/vendor review. Do not set a
 configuration flag that merely claims malware scans occurred; uploads stay

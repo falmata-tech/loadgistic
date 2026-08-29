@@ -6,28 +6,20 @@ import {checkRateLimit,rateLimitStatus} from '../src/lib/rate-limit.js';
 
 const root=process.cwd();
 
-test('local fixture limits remain bounded while managed limits require shared configuration',async()=>{
+test('rate limits are always managed and fail closed without shared configuration',async()=>{
   const original={
-    DATA_BACKEND:process.env.DATA_BACKEND,
     NEXT_PUBLIC_SUPABASE_URL:process.env.NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY:process.env.SUPABASE_SERVICE_ROLE_KEY
   };
   try{
-    process.env.DATA_BACKEND='sqlite';
-    const key=`memory-${Date.now()}-${Math.random()}`;
-    assert.equal((await checkRateLimit(key,2,60_000)).allowed,true);
-    assert.equal((await checkRateLimit(key,2,60_000)).allowed,true);
-    assert.equal((await checkRateLimit(key,2,60_000)).allowed,false);
-    assert.deepEqual(rateLimitStatus({DATA_BACKEND:'sqlite'}),{
-      backend:'memory',configured:true,durable:false
-    });
-
-    process.env.DATA_BACKEND='supabase';
     delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     assert.equal((await checkRateLimit('managed-unavailable',2,60_000)).allowed,false);
-    assert.deepEqual(rateLimitStatus({DATA_BACKEND:'supabase'}),{
+    assert.deepEqual(rateLimitStatus({}),{
       backend:'supabase',configured:false,durable:true
+    });
+    assert.deepEqual(rateLimitStatus({NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'service'}),{
+      backend:'supabase',configured:true,durable:true
     });
   }finally{
     for(const [key,value] of Object.entries(original)){

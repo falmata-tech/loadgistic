@@ -125,7 +125,7 @@ And adding or revoking one share is reflected on the next map read without chang
 
 ### Scenario: managed Shared capacity never falls back to SQLite
 
-Given `DATA_BACKEND=supabase` in local development, Preview, or Production\
+Given Loadgistic is running in local development, Preview, or Production\
 When a provider lists or changes a truck grant, a visitor requests or verifies an OTP, email delivery is claimed or recorded, or a Shared capacity map is read\
 Then the application uses the server-only Supabase PostgreSQL port and its audited functions\
 And PostgreSQL rechecks the actor-to-truck or Operations permission before every protected provider or administrator operation\
@@ -138,6 +138,6 @@ And an unavailable or rejected Supabase request fails closed instead of importin
 - Provider page: `/app/network`
 - Administrator page: `/admin/capacity-network`
 - Inbound adapters: `/api/capacity-network/*` and `/api/shared-capacity/*`, including rolling renewal and logout at `/api/shared-capacity/session`
-- Application service boundary: `src/lib/repository.js`
+- Application service boundary: the Supabase-only private-capacity port under `src/lib/private-capacity.js`
 - Supabase PostgreSQL adapter and server-only ports: `src/lib/repository/supabase.js` and `supabase/migrations/042_shared_capacity_runtime.sql`
 - Tests: domain/repository authorization, capacity-market projection, desktop/mobile E2E

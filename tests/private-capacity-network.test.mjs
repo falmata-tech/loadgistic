@@ -8,7 +8,7 @@ const file=path.resolve(process.cwd(),process.env.DATABASE_PATH);
 for(const suffix of ['', '-wal','-shm'])if(fs.existsSync(file+suffix))fs.rmSync(file+suffix);
 const repo=await import('../src/lib/repository.js');
 const {getDb}=await import('../src/lib/db.js');
-const {deliverPendingAccessEmails,localAccessCodeForDevelopment}=await import('../src/lib/email-delivery.js');
+const {localAccessCodeForDevelopment}=await import('../src/lib/email-delivery.js');
 const {
   SHARED_CAPACITY_IDLE_MS,
   SHARED_CAPACITY_RENEW_AFTER_MS,
@@ -141,27 +141,16 @@ test('anonymous Assisted matching creates no load and authorizes only guest or a
   assert.notEqual(restarted.id,created.id);
 });
 
-test('private-capacity and Assisted matching recovery emails use the managed delivery adapter',async()=>{
-  const db=getDb();
-  const owner=repo.findUserByEmail('transporter@loadgistic.local');
-  const vehicle=db.prepare(`SELECT id FROM vehicles WHERE organization_id=? AND active=1 LIMIT 1`).get(owner.organization_id);
-  repo.grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:'delivery-capacity@example.com'});
-  const challenge=repo.requestSharedCapacityOtp('delivery-capacity@example.com');
-  const conversation=repo.createGuestSupportConversation({email:'delivery-help@example.com',phone:'+251 911 000 222',body:'Please help me find a local van.'});
-  const requests=[];const previousFetch=globalThis.fetch;
-  process.env.LOADGISTIC_EMAIL_WEBHOOK_URL='https://email.example.test/deliver';
-  globalThis.fetch=async(_url,init)=>{requests.push(JSON.parse(init.body));return new Response(null,{status:204});};
-  try{
-    const result=await deliverPendingAccessEmails(100);
-    assert.ok(result.sent>=2);
-  }finally{
-    globalThis.fetch=previousFetch;
-    delete process.env.LOADGISTIC_EMAIL_WEBHOOK_URL;
-  }
-  const shared=requests.find(item=>item.template==='shared-capacity-access'&&item.to==='delivery-capacity@example.com');
-  const help=requests.find(item=>item.template==='assisted-matching-access'&&item.to==='delivery-help@example.com');
-  assert.equal(shared.access.code,challenge.accessCode);
-  assert.equal(help.access.code,conversation.accessCode);
-  assert.equal(db.prepare(`SELECT status FROM access_email_deliveries WHERE entity_id=?`).get(challenge.challengeId).status,'SENT');
-  assert.equal(db.prepare(`SELECT status FROM access_email_deliveries WHERE entity_id=?`).get(conversation.id).status,'SENT');
+test('private-capacity recovery email delivery stays on the managed queue boundary',()=>{
+  const accessFacade=fs.readFileSync(path.resolve(process.cwd(),'src/lib/access-email.js'),'utf8');
+  const deliveryWorker=fs.readFileSync(path.resolve(process.cwd(),'src/lib/email-delivery.js'),'utf8');
+  const verifier=fs.readFileSync(path.resolve(process.cwd(),'scripts/verify-supabase-shared-capacity.mjs'),'utf8');
+  assert.match(accessFacade,/listSupabasePendingAccessEmailDeliveries/);
+  assert.match(accessFacade,/recordSupabaseAccessEmailDeliveryAttempt/);
+  assert.doesNotMatch(accessFacade,/repository\.js|DATA_BACKEND/);
+  assert.match(deliveryWorker,/from '\.\/access-email\.js'/);
+  assert.match(verifier,/listPendingAccessEmailDeliveries\(100\)/);
+  assert.match(verifier,/recordAccessEmailDeliveryAttempt\(delivery\.id,\{sent:true\}\)/);
+  assert.match(verifier,/SUPABASE_SHARED_VERIFY_DELIVERY_QUEUE_FAILED/);
+  assert.match(verifier,/SUPABASE_SHARED_VERIFY_DELIVERY_RECORD_FAILED/);
 });

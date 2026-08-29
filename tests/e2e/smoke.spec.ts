@@ -38,7 +38,7 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(page.locator('a[href="/featured"]:visible').first()).toHaveAttribute('href','/featured');
   await expect(page.locator('.featured-provider-section')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Providers',exact:true})).toHaveCount(0);
-  await expect(page.locator('.market-command-column').getByRole('combobox',{name:'Search available trucks'})).toBeVisible();
+  await expect(page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
   await page.getByRole('button',{name:'Filters'}).click();
   const filterDialog=page.getByRole('dialog',{name:'Truck filters'});
   await expect(filterDialog).toBeVisible();
@@ -149,7 +149,7 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
   await page.goto('/capacity?q=Fuso');
   await expect(page).toHaveURL(/\?q=Fuso$/);
-  await expect(page.getByRole('combobox',{name:'Search available trucks'})).toHaveValue('Fuso');
+  await expect(page.getByRole('combobox',{name:'Search published truck capacity'})).toHaveValue('Fuso');
 });
 
 test('public mobile shell keeps every visitor destination directly reachable',async({page}:{page:any})=>{
@@ -199,7 +199,7 @@ test('public mobile shell keeps every visitor destination directly reachable',as
 
 test('Truck Market search suggests transporters and trucks and opens the selected truck',async({page}:{page:any})=>{
   await page.goto('/');
-  const search=page.locator('.market-command-column').getByRole('combobox',{name:'Search available trucks'});
+  const search=page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'});
   await search.fill('BlueLine');
   const suggestions=page.getByRole('listbox',{name:'Search suggestions'});
   await expect(suggestions).toBeVisible();
@@ -236,7 +236,7 @@ test('public search and filters use every multi-city route and Service-area poin
   expect((await areaMatchResponse.json()).items.some((item:any)=>item.id===areaSignal.id)).toBe(true);
 
   await page.goto('/');
-  const search=page.locator('.market-command-column').getByRole('combobox',{name:'Search available trucks'});
+  const search=page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'});
   await search.fill(origin.label.split(',')[0]);
   const suggestions=page.getByRole('listbox',{name:'Search suggestions'});
   await expect(suggestions).toBeVisible();
@@ -300,7 +300,7 @@ test('administrator can review and publish an ordered daily provider roster',asy
 test('capacity Market is map-only and loads bounded truck batches',async({page}:{page:any})=>{
   await page.goto('/capacity');
   const commandColumn=page.locator('.market-command-column');
-  await expect(commandColumn.getByRole('combobox',{name:'Search available trucks'})).toBeVisible();
+  await expect(commandColumn.getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
   await expect(commandColumn.getByRole('button',{name:'Filters'})).toBeVisible();
   await expect(commandColumn.getByRole('button',{name:/location/i})).toBeVisible();
   await expect(page.locator('.public-capacity-map')).toBeVisible();
@@ -308,7 +308,7 @@ test('capacity Market is map-only and loads bounded truck batches',async({page}:
   await expect(page.getByRole('button',{name:'Map',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.getByRole('navigation',{name:'Truck list pagination'})).toHaveCount(0);
-  await expect(commandColumn.getByRole('combobox',{name:'Search available trucks'})).toBeVisible();
+  await expect(commandColumn.getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
   await page.getByRole('button',{name:/Filters/}).click();
   await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier motorcycle'})).toHaveCount(1);
   await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier car'})).toHaveCount(1);

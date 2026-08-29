@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import os from 'node:os';
+import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { readPrivateUpload,removePrivateUpload,storePrivateUpload } from '../src/lib/private-storage.js';
+import { privateStorageStatus,readPrivateUpload,storePrivateUpload } from '../src/lib/private-storage.js';
 
 const pngBytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00]);
 
@@ -11,32 +10,26 @@ function upload(name,type,bytes){
   return {name,type,size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
 }
 
-test('local private storage validates bytes and uses opaque references',async()=>{
-  const root=await fs.mkdtemp(path.join(os.tmpdir(),'loadgistic-storage-'));
-  const previousBackend=process.env.PRIVATE_STORAGE_BACKEND;
-  const previousRoot=process.env.PRIVATE_UPLOAD_DIR;
+test('private storage is Supabase-only and validates bytes before managed writes',async()=>{
+  const previousUrl=process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const previousService=process.env.SUPABASE_SERVICE_ROLE_KEY;
   const previousScanner=process.env.UPLOAD_SCANNER_BACKEND;
-  process.env.PRIVATE_STORAGE_BACKEND='local';
-  process.env.PRIVATE_UPLOAD_DIR=root;
+  delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   process.env.UPLOAD_SCANNER_BACKEND='local';
   try{
-    const stored=await storePrivateUpload(upload('../cargo.png','image/png',pngBytes),'capacity');
-    assert.match(stored.path,/^local:\/\/capacity\//);
-    assert.equal(stored.originalName,'cargo.png');
-    assert.deepEqual(await readPrivateUpload(stored.path),pngBytes);
-    await removePrivateUpload(stored.path);
-    assert.equal(await readPrivateUpload(stored.path),null);
-    const quarantineEntries=await fs.readdir(path.join(root,'quarantine'),{recursive:true,withFileTypes:true});
-    assert.equal(quarantineEntries.some(entry=>entry.isFile()),false);
-    const eicarPdf=Buffer.from(`%PDF-1.4\nX5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*`,'ascii');
-    await assert.rejects(()=>storePrivateUpload(upload('unsafe.pdf','application/pdf',eicarPdf),'verification'),/UPLOAD_REJECTED/);
-    assert.equal((await fs.readdir(path.join(root,'quarantine'),{recursive:true,withFileTypes:true})).some(entry=>entry.isFile()),false);
-    await assert.rejects(()=>readPrivateUpload('local://quarantine/incoming/unsafe.pdf'),/INVALID_PRIVATE_STORAGE_REFERENCE/);
+    assert.deepEqual(privateStorageStatus({UPLOAD_SCANNER_BACKEND:'local'}),{
+      backend:'supabase',durable:true,configured:false,
+      scannerBackend:'local',scannerConfigured:true,scannerProductionSafe:false
+    });
     await assert.rejects(()=>storePrivateUpload(upload('fake.png','image/png',Buffer.from('not an image')),'capacity'),/FILE_CONTENT_MISMATCH/);
+    await assert.rejects(()=>storePrivateUpload(upload('../cargo.png','image/png',pngBytes),'capacity'),/SUPABASE_NOT_CONFIGURED/);
+    await assert.rejects(()=>readPrivateUpload('local://capacity/unsafe.png'),/INVALID_PRIVATE_STORAGE_REFERENCE/);
+    const source=fs.readFileSync(path.join(process.cwd(),'src/lib/private-storage.js'),'utf8');
+    assert.doesNotMatch(source,/node:fs|local:\/\/|PRIVATE_STORAGE_BACKEND|PRIVATE_UPLOAD_DIR/);
   }finally{
-    if(previousBackend===undefined)delete process.env.PRIVATE_STORAGE_BACKEND;else process.env.PRIVATE_STORAGE_BACKEND=previousBackend;
-    if(previousRoot===undefined)delete process.env.PRIVATE_UPLOAD_DIR;else process.env.PRIVATE_UPLOAD_DIR=previousRoot;
+    if(previousUrl===undefined)delete process.env.NEXT_PUBLIC_SUPABASE_URL;else process.env.NEXT_PUBLIC_SUPABASE_URL=previousUrl;
+    if(previousService===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=previousService;
     if(previousScanner===undefined)delete process.env.UPLOAD_SCANNER_BACKEND;else process.env.UPLOAD_SCANNER_BACKEND=previousScanner;
-    await fs.rm(root,{recursive:true,force:true});
   }
 });

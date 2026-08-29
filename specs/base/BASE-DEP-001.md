@@ -45,6 +45,14 @@ When durable database, private storage, session secret, or upload-scanning confi
 Then readiness returns an unhealthy response with non-secret blocker names\
 And it never falls back to SQLite or local serverless files when Supabase is unavailable.
 
+### Scenario: one managed runtime is unconditional
+
+Given Loadgistic runs in local development, browser tests, Preview, Production, or the scheduled worker\
+When an application route reads or changes data, consumes an abuse limit, stores a private file, or reports health\
+Then it uses Supabase PostgreSQL, Auth, and private Storage without a backend selector\
+And no environment value can select SQLite, an in-memory request counter, or local private files\
+And missing or unavailable managed configuration fails closed with a bounded non-secret error.
+
 ### Scenario: schema rollout
 
 Given a database migration is required\

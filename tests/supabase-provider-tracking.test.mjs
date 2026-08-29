@@ -94,7 +94,8 @@ test('active Tracking routes use the dedicated managed-data facade without deman
     assert.match(source,/@\/lib\/provider-tracking\.js/);
     assert.doesNotMatch(source,/@\/lib\/repository\.js/);
   }
-  assert.match(facade,/process\.env\.DATA_BACKEND==='supabase'/);
+  assert.match(facade,/provider-tracking\/supabase\.js/);
+  assert.doesNotMatch(facade,/DATA_BACKEND|repository\.js/);
   assert.match(managed,/createSupabaseAdminClient/);
   assert.doesNotMatch(migration,/insert into public\.(?:shipments|shipment_interests|business_reviews)\b/i);
 });
