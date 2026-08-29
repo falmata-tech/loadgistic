@@ -549,7 +549,7 @@ test('provider-name search filters the one Truck Market and truck details reach 
   await page.goto(`/@${blueLineTrucks[0].provider_handle}`);
   await expect(page.locator('.provider-handle')).toContainText('/@');
   await expect(page.getByRole('heading',{name:'Reviewed documents'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Trucks and current capacity'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Trucks and published capacity'})).toBeVisible();
   await expect.poll(()=>page.locator('.provider-truck-card').count()).toBeGreaterThan(0);
   await expect(page.locator('.provider-truck-relative-map')).toHaveCount(0);
   const fleetTop=await page.locator('.provider-fleet-showcase').evaluate((element:any)=>element.getBoundingClientRect().top+window.scrollY);

@@ -88,11 +88,11 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
 
   if(locked)return <section className="container shared-capacity-session-ending" role="status"><Clock3 aria-hidden="true"/><strong>Closing private capacity…</strong></section>;
 
-  return <>
+  return <div className="shared-capacity-session-workspace">
     <div className="container shared-capacity-session-bar">
       <span><Clock3 aria-hidden="true"/>For your privacy, access ends after 30 minutes without activity.</span>
       <button type="button" className="button secondary small" data-shared-capacity-logout onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/>Log out</button>
     </div>
     {children}
-  </>;
+  </div>;
 }

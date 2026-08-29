@@ -62,7 +62,8 @@ test('Assisted matching behaves as an immediate private chat',async({page,browse
 });
 
 test('provider Network and public Shared capacity remain distinct',async({page}:{page:any})=>{
-  const sharedEmail=`shared-${test.info().project.name}@example.test`;
+  test.setTimeout(60_000);
+  const sharedEmail=`shared-${Date.now()}-${test.info().project.name}@example.test`;
   await page.goto('/shared-capacity');
   await expect(page.getByRole('heading',{name:'Private capacity shared with you.'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Email me a code'})).toBeVisible();
@@ -101,7 +102,12 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   const renewed=page.waitForResponse((response:any)=>response.url().endsWith('/api/shared-capacity/session')&&response.request().method()==='POST');
   await page.keyboard.press('Tab');
   expect((await renewed).ok()).toBe(true);
-  await page.getByRole('button',{name:'Log out'}).click();
+  const logout=page.getByRole('button',{name:'Log out'});
+  const [logoutBox,mapBox]=await Promise.all([logout.boundingBox(),page.locator('.public-capacity-map').boundingBox()]);
+  expect(logoutBox).toBeTruthy();
+  expect(mapBox).toBeTruthy();
+  expect(mapBox!.y).toBeGreaterThanOrEqual(logoutBox!.y+logoutBox!.height);
+  await logout.click();
   await expect(page).toHaveURL(/\/shared-capacity\?session=logout/);
   await expect(page.getByText('You have logged out of Shared capacity.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Email me a code'})).toBeVisible();

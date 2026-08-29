@@ -51,6 +51,7 @@ And the visitor sees a concise session-expired message without any private truck
 Given an email-verified visitor is viewing the Shared capacity map\
 When the visitor selects Log out\
 Then the restricted session cookie is cleared immediately\
+And the visible session controls occupy a stable region outside the interactive map so map layers cannot cover or intercept them\
 And the map is replaced by the email-verification entry screen\
 And the visitor must complete a new email OTP challenge to regain access.
 
