@@ -60,6 +60,16 @@ Then its callback is derived from the deployment-owned `APP_URL` and the fixed `
 And Production rejects a missing, invalid, or non-HTTPS callback origin\
 And Supabase's Site URL and Redirect URL allowlist must contain the exact Preview or Production callback before traffic is enabled.
 
+### Scenario: Google clients are isolated by environment
+
+Given Google identity is enabled for local development and hosted Production\
+When Supabase starts either Auth environment\
+Then local development uses a dedicated Google Web client whose only application origin is `http://127.0.0.1:3100` and whose Supabase callback is `http://127.0.0.1:55321/auth/v1/callback`\
+And Production uses a separate Google Web client whose application origin is the canonical HTTPS Loadgistic origin and whose Supabase callback belongs to the exact hosted project\
+And each client requests only OpenID, email, and profile scopes\
+And local credentials come from an ignored mode-`0600` file while hosted credentials remain in Supabase Auth configuration\
+And no Google client secret is committed, printed, placed in Netlify browser variables, or copied between environments.
+
 ### Scenario: local fixture password login is isolated
 
 Given deterministic fixture credentials are needed for local development or automated browser tests\

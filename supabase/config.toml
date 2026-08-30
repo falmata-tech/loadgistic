@@ -39,6 +39,12 @@ content_path = "./supabase/templates/sign-in-code.html"
 subject = "Your Loadgistic signup code"
 content_path = "./supabase/templates/signup-code.html"
 
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
+skip_nonce_check = false
+
 [storage]
 enabled = true
 file_size_limit = "10MiB"

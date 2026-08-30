@@ -49,6 +49,22 @@ test('managed adapters request minimum Google scopes and never create an OTP use
   assert.doesNotMatch(callback,/searchParams\.get\(['"]next['"]\)/);
 });
 
+test('local Google OAuth uses an ignored environment boundary and a dedicated callback',()=>{
+  const config=readFileSync(new URL('../supabase/config.toml',import.meta.url),'utf8');
+  const starter=readFileSync(new URL('../scripts/start-local-supabase.mjs',import.meta.url),'utf8');
+  const workflow=readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8');
+  assert.match(config,/\[auth\.external\.google\][\s\S]*enabled = true/);
+  assert.match(config,/client_id = "env\(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID\)"/);
+  assert.match(config,/secret = "env\(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET\)"/);
+  assert.match(config,/site_url = "http:\/\/127\.0\.0\.1:3100"/);
+  assert.match(starter,/\.local','google-oauth\.env'/);
+  assert.match(starter,/INSECURE_LOCAL_GOOGLE_OAUTH_FILE_PERMISSIONS/);
+  assert.match(starter,/stdio:\['ignore','ignore','inherit'\]/);
+  assert.match(starter,/local-google-not-configured\.apps\.googleusercontent\.com/);
+  assert.doesNotMatch(starter,/console\.log\([^)]*clientSecret/);
+  assert.equal((workflow.match(/npm run supabase:start/g)||[]).length,2);
+});
+
 test('signup uses the same managed identity choices but may create only an inactive Auth identity',()=>{
   const google=readFileSync(new URL('../src/app/api/applications/google/route.ts',import.meta.url),'utf8');
   const otp=readFileSync(new URL('../src/app/api/applications/email-otp/request/route.ts',import.meta.url),'utf8');

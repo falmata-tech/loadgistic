@@ -101,9 +101,14 @@ Configure Preview and Production independently:
 2. Add the exact `<APP_URL>/api/auth/callback` to Supabase **Redirect URLs**.
    Preview and Production use separate exact entries; do not add a wildcard
    callback or a visitor-controlled `next` destination.
-3. Enable Google in Supabase Auth, then configure the Google OAuth client with
-   the Supabase provider callback shown by the dashboard. Loadgistic requests
-   only `openid email profile`.
+3. Create separate Google Web application clients for Production and local
+   development. The Production client authorizes
+   `https://loadgistic-473.netlify.app` and redirects only to
+   `https://tpwyyzoqijjmbvsmmvcm.supabase.co/auth/v1/callback`. Enter that
+   client ID and secret only in the hosted Supabase Google provider. The local
+   client authorizes `http://127.0.0.1:3100` and redirects only to
+   `http://127.0.0.1:55321/auth/v1/callback`; its values live only in the
+   ignored `.local/google-oauth.env`. Both request only `openid email profile`.
 4. Change the Supabase sign-in email template to display the numeric
    `{{ .Token }}` value rather than a magic-link-only `{{ .ConfirmationURL }}`.
    Set the code to six digits and ten minutes to match the reviewed local configuration.

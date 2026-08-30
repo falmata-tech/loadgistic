@@ -6,7 +6,7 @@
 nvm use
 cp .env.example .env.local
 npm install
-supabase start
+npm run supabase:start
 npm run supabase:local:configure
 npm run dev
 ```
@@ -14,6 +14,17 @@ npm run dev
 Open `http://127.0.0.1:3100`. Development uses `.next-dev`; production builds use `.next`. Loadgistic reserves port `3100` so it does not collide with the separate MirtPage workspace on port `3000`. The configurator selects the isolated local Supabase PostgreSQL/Auth/Storage stack and writes ignored local credentials without printing them.
 
 Local email codes are delivered to the isolated Mailpit inbox at `http://127.0.0.1:55324`; they are not sent to Gmail. Fixture-password login remains available only when the explicit non-Production fixture flag is enabled. Preview and Production expose only Google and numeric email-code authentication.
+
+Local Google login uses a separate Google **Web application** client. Copy
+`supabase/google-oauth.env.example` to the ignored
+`.local/google-oauth.env`, make the copy readable only by the current user, and
+enter the Local Development client ID and secret there. The local Google client
+uses `http://127.0.0.1:3100` as its only authorized JavaScript origin and
+`http://127.0.0.1:55321/auth/v1/callback` as its authorized redirect URI.
+Restart with `supabase stop` followed by `npm run supabase:start`. The starter
+never prints either value. When the ignored file is absent, Supabase still
+starts for deterministic email-code and fixture testing, but Google login is
+truthfully unavailable.
 
 All maps use the shared tile configuration. Leaving
 `NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` blank uses the

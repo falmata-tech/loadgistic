@@ -24,6 +24,7 @@
     "db:supabase:verify:trust-billing": "node scripts/verify-supabase-verification-billing.mjs",
     "db:supabase:verify:support": "node scripts/verify-supabase-support.mjs",
     "db:supabase:verify:admin": "node scripts/verify-supabase-platform-admin.mjs",
+    "supabase:start": "node scripts/start-local-supabase.mjs",
     "supabase:local:configure": "node scripts/configure-local-supabase.mjs --write-env --fixtures --verify",
     "test:scale": "node scripts/market-scale-audit.mjs",
     "places:download": "node scripts/download-ethiopia-places.mjs",
