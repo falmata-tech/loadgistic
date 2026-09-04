@@ -23,6 +23,7 @@ And the remaining cohort contains 18 light-duty trucks, 11 medium trucks, seven 
 And light, medium, and both heavy variants provide useful examples without visually dominating the Market\
 And independent Owner-operator and Self-managed driver provider records outnumber fleet-transporter provider records\
 And every current truck resolves to one visible Company driver, Owner-operator, or Self-managed driver identity with deterministic public callback and document-category status\
+And every active independent-provider truck is assigned to its owning Driver identity during import without replacing an existing active assignment\
 And each provider has one regular-service signal while no provider has more than one\
 And regular Service areas and regular Capacity routes are both represented\
 And every truck's approximate location lies on or close to its provider's regular-service geometry\
@@ -111,6 +112,7 @@ Given a managed fixture reset on any Ethiopia calendar date\
 When the importer builds Daily Featured Trucks and Sponsors\
 Then it derives the current regional group from that date\
 And it selects the eligible fixture providers based in that group in stable display-name order\
+And every truck type in the seven-day rotation has at least one active truck with an active assigned Driver\
 And it creates one published day, ordered featured slots, transporter Sponsor records, one outside advertiser, and current-date placements\
 And no previously captured calendar date is required in the fixture source.
 

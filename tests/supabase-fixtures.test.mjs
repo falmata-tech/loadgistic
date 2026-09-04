@@ -4,9 +4,10 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
-  applyManagedFixtureMarketPolicy,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
+  applyManagedFixtureMarketPolicy,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
   selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS
 } from '../scripts/fixture-market-policy.mjs';
+import {FEATURED_TRUCK_DAYS} from '../src/lib/featured-trucks.js';
 
 const root=path.resolve(import.meta.dirname,'..');
 const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
@@ -34,6 +35,7 @@ test('fixture importer uses a credential-free managed source and creates the cur
   const fixture=JSON.parse(fixtureText);
   assert.match(source,/managed-market\.json/);
   assert.match(source,/regionalExpoGroupForDate\(today\)/);
+  assert.match(source,/ensureIndependentVehicleAssignments\(/);
   assert.match(source,/buildFeaturedFixtureTables\(\)/);
   assert.match(source,/provider_shipments: 1/);
   assert.match(source,/timeZone:'Africa\/Addis_Ababa'/);
@@ -52,6 +54,28 @@ test('fixture importer uses a credential-free managed source and creates the cur
   assert.doesNotMatch(fixtureText,/\/(?:Users|home)\//);
   for(const retired of ['shipments','shipment_events','shipment_interests','partner_relationships','business_reviews']){
     assert.equal(Object.hasOwn(fixture.tables,retired),false,retired);
+  }
+});
+
+test('managed import assigns every independent truck to its owning Driver and supports every Featured theme',()=>{
+  const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
+  const {vehicles,provider_profiles:profiles,driver_vehicle_assignments:existing}=fixture.tables;
+  const assignedAt='2026-01-01T00:00:00.000Z';
+  const assignments=ensureIndependentVehicleAssignments(vehicles,profiles,existing,{assignedAt});
+  const activeByVehicle=new Map(assignments.filter(assignment=>Number(assignment.active)!==0)
+    .map(assignment=>[assignment.vehicle_id,assignment]));
+  const profileById=new Map(profiles.map(profile=>[profile.id,profile]));
+
+  assert.equal(assignments.length,vehicles.length);
+  assert.deepEqual(assignments.slice(0,existing.length),existing);
+  for(const vehicle of vehicles.filter(candidate=>Number(candidate.active)!==0&&candidate.provider_profile_id)){
+    const assignment=activeByVehicle.get(vehicle.id);
+    assert.equal(assignment?.driver_user_id,profileById.get(vehicle.provider_profile_id)?.user_id,vehicle.id);
+    assert.equal(assignment?.assigned_at,assignedAt,vehicle.id);
+  }
+  for(const theme of FEATURED_TRUCK_DAYS){
+    assert.equal(vehicles.some(vehicle=>Number(vehicle.active)!==0
+      &&theme.configurations.includes(vehicle.cargo_configuration)&&activeByVehicle.has(vehicle.id)),true,theme.key);
   }
 });
 

@@ -51,3 +51,24 @@ export function normalizeDemoSharedEmails(value,{maximum=5}={}){
   if(emails.some(email=>!/^\S+@\S+\.\S+$/.test(email)))throw new Error('DEMO_SHARED_EMAIL_INVALID');
   return emails;
 }
+
+export function ensureIndependentVehicleAssignments(vehicles,providerProfiles,assignments,{assignedAt}={}){
+  const profileById=new Map(providerProfiles.map(profile=>[profile.id,profile]));
+  const activeVehicleIds=new Set(assignments
+    .filter(assignment=>Number(assignment.active)!==0)
+    .map(assignment=>assignment.vehicle_id));
+  const additions=vehicles.filter(vehicle=>Number(vehicle.active)!==0&&vehicle.provider_profile_id
+    &&!activeVehicleIds.has(vehicle.id)).map(vehicle=>{
+    const profile=profileById.get(vehicle.provider_profile_id);
+    if(!profile?.user_id)throw new Error(`INDEPENDENT_VEHICLE_OWNER_MISSING:${vehicle.id}`);
+    return {
+      id:`driver-vehicle-independent-${vehicle.id}`,
+      driver_user_id:profile.user_id,
+      vehicle_id:vehicle.id,
+      assigned_by:profile.user_id,
+      assigned_at:assignedAt||vehicle.created_at||profile.created_at,
+      active:1
+    };
+  });
+  return [...assignments,...additions];
+}

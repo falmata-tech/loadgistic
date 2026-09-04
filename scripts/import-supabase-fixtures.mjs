@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {
-  applyManagedFixtureMarketPolicy,normalizeDemoSharedEmails,selectSharedFixtureVehicleIds
+  applyManagedFixtureMarketPolicy,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
+  selectSharedFixtureVehicleIds
 } from './fixture-market-policy.mjs';
 
 const localEnvironmentPath=path.join(process.cwd(),'.env.local');
@@ -60,6 +61,10 @@ function rebaseFixtureRow(row){
 const fixtureTables=Object.fromEntries(Object.entries(fixtureDocument.tables)
   .map(([table,rows])=>[table,Array.isArray(rows)?rows.map(rebaseFixtureRow):[]]));
 fixtureTables.capacities=applyManagedFixtureMarketPolicy(fixtureTables.capacities||[],fixtureTables.vehicles||[]);
+fixtureTables.driver_vehicle_assignments=ensureIndependentVehicleAssignments(
+  fixtureTables.vehicles||[],fixtureTables.provider_profiles||[],fixtureTables.driver_vehicle_assignments||[],
+  {assignedAt:new Date(fixtureAnchor+fixtureOffset).toISOString()}
+);
 
 function buildFeaturedFixtureTables(){
   const iso=new Date().toISOString();
