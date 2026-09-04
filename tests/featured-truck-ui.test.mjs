@@ -24,3 +24,12 @@ test('featured route loading preserves the final page geometry without editorial
   assert.match(loading,/aria-busy="true"/);
   assert.doesNotMatch(loading,/Preparing|Loading the regional|portraits/);
 });
+test('empty featured roster keeps readable full-width copy and one market action',()=>{
+  const section=source('src/components/featured-provider-section.tsx');
+  const styles=source('src/app/globals.css');
+  assert.match(section,/regional-expo-empty/);
+  assert.match(section,/Today&apos;s truck roster is being prepared\./);
+  assert.match(section,/href="\/">Find capacity/);
+  assert.match(styles,/\.regional-expo-empty\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
+  assert.match(styles,/@media\(max-width:760px\)\{\.regional-expo-empty\{grid-template-columns:minmax\(0,1fr\)/);
+});

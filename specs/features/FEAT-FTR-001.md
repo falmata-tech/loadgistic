@@ -52,6 +52,8 @@ Given the current day has no published roster or a selected truck or Driver is n
 When the Featured route renders\
 Then the daily truck-type theme and programme window remain visible\
 And the page states concisely that the roster is being prepared\
+And the empty-state message uses the available board width on desktop and phone without collapsed text columns\
+And one clear action returns the visitor to Open capacity\
 And no truck, Driver, or transporter is invented or substituted\
 And an administrator draft is never published or overwritten by a public read.
 
