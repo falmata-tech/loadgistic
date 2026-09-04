@@ -37,7 +37,10 @@ only for OpenID, email, and profile identity, while login email OTP requests set
 `shouldCreateUser:false`; neither login flow grants application authority until the
 authenticated subject resolves through `current_user_projection()`. OAuth
 returns only through the deployment-owned `/api/auth/callback` URL and never
-accepts a dynamic post-login destination. Password authentication is an
+accepts a dynamic post-login destination. A signed, HTTP-only intent binds Login
+or Signup to the exact PKCE verifier slot without placing the flow selector in
+the callback URL; the callback clears that intent after one terminal attempt.
+Password authentication is an
 explicit non-Production fixture tool, not a managed customer login method.
 Public signup proves Google or numeric email-code identity through a signed
 15-minute HTTP-only handoff before asking for provider facts. The signup-only

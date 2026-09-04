@@ -3,7 +3,7 @@ id: FEAT-MKT-001
 title: Frictionless public capacity marketplace
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FTR-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Manufacturers, workshops, growers, producers, and other capacity seekers need to discover legitimate road-freight options immediately without creating an account or posting demand.
-behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical map-only Truck Market, `/shared-capacity` is the email-verified private map, `/featured` is the complete seven-day Daily Featured Transporters programme, and Track and About retain their own routes. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the Truck Market to that transporter's current trucks; there is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
+behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical map-only Open Transport Capacity workspace, `/shared-capacity` is the email-verified Private Transport Capacity map, `/featured` is the seven-day Daily Featured Trucks programme, and Track and About retain their own routes. Together they present Loadgistic as a public and private transport-capacity sharing and shipment-collaboration platform without exposing internal product terminology in interface copy. Public navigation uses the concise Open capacity and Private capacity labels; map-first workspaces rely on that persistent selected navigation and an accessible page name instead of repeating a visible title and explanation above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the public map to that transporter's current trucks; there is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
 contracts: [PublicAppShell, PublicWorkspaceNavigation, PublicMarketplaceView, PublicCapacityProjection, PublicTrackingEntry, LocationConsentPrompt, ProgressiveCapacityMap]
 observability: [public_workspace_navigation, public_capacity_query, public_tracking_entry, location_consent_outcome, anonymous_projection_review]
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
@@ -15,14 +15,15 @@ rollout: Release the public capacity surface with retired-route redirects, purge
 
 Given a visitor opens Loadgistic\
 When the public application shell and default Market workspace render\
-Then one compact welcome header explains that visitors can find public truck capacity for local, regional, long-distance, full-truck, or smaller Partial-load work without an account\
+Then the selected Open capacity navigation identifies the workspace without a duplicate visible page header\
+And an accessible Open Transport Capacity page name remains available to assistive technology\
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\
 And the Map offers search across truck, transporter, Service area, and Capacity route facts, selectable truck markers, compact truck details, and a Transporter details action\
 And selecting a truck opens a compact dismissible information window inside the fixed map canvas without adding document height or narrowing the map\
 And that window keeps only the truck identity, availability, transporter, contact, and profile actions needed before inspecting its map signals\
-And the persistent public navigation links directly to the separate Daily Featured Transporters workspace as well as the Truck Market\
+And the persistent public navigation links directly to the separate Daily Featured Trucks workspace as well as the Truck Market\
 And `/featured` renders the current programme, featured board, and clearly labeled separate Sponsored transporters panel without rendering the Truck Market\
 And `/` does not server-render or hydrate the featured programme while `/featured` does not server-render or hydrate the Truck Market\
 And repeated educational or promotional sections do not interrupt either workspace\
@@ -35,11 +36,19 @@ And the page does not ask the visitor to post demand or sign up as a Business\
 And the legacy `/capacity` URL preserves its query string while redirecting to `/` rather than rendering a duplicate market page\
 And `/providers` redirects to the Truck Market without rendering a provider list or selecting a provider mode.
 
+### Scenario: map status does not steal map space
+
+Given Open or Private Transport Capacity renders with loading, no results, a recoverable error, or more cursor results\
+When that state changes\
+Then its message or action occupies a compact positioned region inside the bounded map canvas\
+And it never creates an implicit grid row, increases document height, or reduces the phone map below 300 CSS pixels\
+And map search, filters, location, legend, selected-truck details, attribution, chat, and application navigation retain non-overlapping operable regions at desktop, 390-pixel, and 320-pixel widths.
+
 ### Scenario: authenticated discovery does not fork the public market
 
 Given a Driver, fleet transporter, or administrator wants to inspect public capacity or featured transporters\
 When the actor uses workspace navigation or an older authenticated Capacity market URL\
-Then Truck Market opens `/` and Daily Featured Transporters opens `/featured` in the public application shell while the signed-in session remains active\
+Then Truck Market opens `/` and Daily Featured Trucks opens `/featured` in the public application shell while the signed-in session remains active\
 And `/app/capacity` and its former detail routes do not render another Market, provider directory, or administrator-only copy\
 And Driver Home remains the private Capacity management workspace for publishing that Driver's own truck signal.
 
@@ -124,9 +133,11 @@ And the visitor may manually retry after enabling browser site permission.
 Given more public signals match the active filters\
 When the visitor explores the Truck Map\
 Then the browser receives bounded result batches without duplicate capacity identities\
+And additional batches append automatically without a manual Load more trucks control\
 And a phone without visitor location opens at a useful Ethiopia-level camera rather than fitting a distant East Africa overview\
 And status-specific map clusters preserve distinct regional and city markets instead of joining distant markets through transitive neighbors\
 And bounded screen-space placement keeps nearby Empty and Partial groups individually readable instead of drawing their labels on top of one another\
+And every marker or cluster remains anchored to the geographic center of its members rather than being displaced into another town, oscillating between arbitrary screen cells, or changing position when the same zoom state is revisited\
 And clustering work grows approximately linearly with loaded markers rather than comparing every marker with every other marker\
 And each cluster has a bounded membership so zooming out does not collapse a whole region into one misleading bubble\
 And visible shipment origin and destination controls evaluate eligible current and regular Capacity routes and Empty Service areas without ranking transporters\
@@ -136,10 +147,10 @@ And filters constrain the map without creating a ranked result list.
 
 Given any public page is rendered\
 When the shared public application navigation and calls to action appear\
-Then Truck Market, Daily Featured Transporters, Track, About, and the session-appropriate Transporter login or Dashboard action are available as route links\
+Then Truck Market, Daily Featured Trucks, Track, About, and the session-appropriate Log in or Dashboard action are available as route links\
 And one current destination is communicated visually and with `aria-current="page"`\
 And desktop uses a compact floating workspace rail while phones use the persistent bottom navigation\
-And an anonymous visitor reaches transporter signup from the Transporter login page rather than a separate Market navigation item\
+And an anonymous visitor reaches transporter setup through the unified Log in flow rather than a separate Market navigation item\
 And the authenticated Dashboard action replaces login without leaving a signup item behind\
 And Provider Market, provider directory, and Area Market actions are absent\
 And Shipment Board, Post shipment, Business signup, and Business Directory actions are absent.
@@ -161,41 +172,41 @@ And every discovery surface reminds visitors to confirm availability, identity, 
 
 ### Scenario: public workspaces are visually light and purposeful
 
-Given a visitor opens the Market or Daily Featured Transporters workspace\
+Given a visitor opens the Market or Daily Featured Trucks workspace\
 When the route renders at desktop or mobile width\
-Then warm white and off-white surfaces provide useful spacing around a compact workspace heading and its primary tool\
+Then warm white and off-white surfaces provide useful spacing around the primary tool\
 And Loadgistic blue and orange appear in bounded navigation, actions, status, and trust accents rather than saturating whole sections\
 And the hero visual shows young Ethiopian men at a metal door-and-window workshop handling incoming metal inputs and finished goods with local road freight, without presenting one truck as the product\
 And its bright negative space blends into the white-first layout while navy, teal, aqua, and a restrained amber accent follow the approved Loadgistic palette\
 And at mobile widths the full visual scales and crops to the available hero width, preserves its important workshop subjects, and uses soft white edge fades rather than exposing a rectangular image boundary\
-And concise route actions lead directly to the Market, Daily Featured Transporters, Track, About, or transporter signup\
-And the shell, workspace heading, and active tool read as one composed public application rather than stacked website sections\
+And concise route actions lead directly to the Market, Daily Featured Trucks, Track, About, or transporter signup\
+And the shell, selected navigation, and active tool read as one composed public application rather than stacked website sections\
 And the Market uses a compact command panel beside the Map on desktop and progressive controls above the Map on mobile\
 And explanatory copy stays subordinate to the two working marketplace tools.
 
 ### Scenario: mobile public workspaces open directly on their task
 
 Given a visitor opens the Market or Featured route on a supported phone\
-When the compact public app shell and workspace heading render\
-Then the Market keeps one short welcome message without a website-scale hero or promotional artwork delaying the map\
+When the compact public app shell and selected navigation render\
+Then the Market does not place a welcome or promotional header between the application bars and the map\
 And the active Market or Featured experience begins in the first viewport\
 And the page itself remains fixed while Map and board canvases fill their bounded workspace and List or disclosure overflow stays inside that workspace\
 And map search, filters, location retry, legend, selected-truck details, and bounded loading remain operable above the fixed app navigation\
-And Daily Featured Transporters opens as its own full-width app workspace rather than following the Market in the same document\
+And Daily Featured Trucks opens as its own full-width app workspace rather than following the Market in the same document\
 And the desktop footer is not duplicated beneath the mobile bottom navigation.
 
-### Scenario: featured transport providers reach their board quickly
+### Scenario: visitors reach the featured-truck board quickly
 
-Given the current Daily Featured Transporters programme is published\
+Given the current Daily Featured Trucks programme is published\
 When its dedicated `/featured` workspace renders\
-Then the current region or grouped regions, date, livestream window, and provider count are immediately understandable\
+Then the date, daily truck type, 07:30–09:00 EAT window, and truck count are immediately understandable\
 And the heading and introduction stay compact enough that the weekly programme and board remain close to the section entry\
 And repeated explanation moves into provider detail, provider profiles, or About\
-And the generated board blends into the public white-space system while retaining a realistic evenly lit framed surface, numbered pinned provider portraits, readable scheduled intervals, and current-live emphasis\
+And the generated board blends into the public white-space system while retaining a realistic evenly lit surface, numbered truck images, Driver and provider identity, readable scheduled intervals, and current-live emphasis\
 And no fixed illustration determines participant count, row count, or board dimensions.
 
 ## Contract ownership
 
-- Pages: `/` as the canonical Truck Market; `/featured` as Daily Featured Transporters; `/capacity` and `/providers` as compatibility redirects to the Market; `/track`, `/about`, and `/@handle`
+- Pages: `/` as the canonical Truck Market; `/featured` as Daily Featured Trucks; `/capacity` and `/providers` as compatibility redirects to the Market; `/track`, `/about`, and `/@handle`
 - Projection boundary: explicit public whitelists only
 - Tests: repository, E2E, visual audit

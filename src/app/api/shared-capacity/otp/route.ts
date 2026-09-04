@@ -1,28 +1,42 @@
-import {NextRequest,NextResponse} from 'next/server.js';
-import {deliverPendingAccessEmails,localAccessCodeForDevelopment} from '@/lib/email-delivery';
+import {after,NextRequest,NextResponse} from 'next/server.js';
+import {deliverTargetedAccessEmail,sharedCapacityOtpRequestResponse} from '@/lib/email-delivery';
+import {checkOriginBeforeScopedLimit} from '@/lib/guest-rate-limit.js';
 import {requestSharedCapacityOtp} from '@/lib/private-capacity.js';
-import {checkRateLimit,requestKey} from '@/lib/rate-limit';
+import {requestKey} from '@/lib/rate-limit';
 import {errorMessage} from '@/lib/errors';
 import {text} from '@/lib/redirects';
 
 export const runtime='nodejs';
 
 export async function POST(request:NextRequest){
-  const form=await request.formData();
-  const email=text(form,'email');
-  const originRate=await checkRateLimit(requestKey(request,'shared-capacity-otp'),8,10*60_000);
-  const emailRate=await checkRateLimit(`shared-capacity-otp-email:${email.trim().toLowerCase()}`,3,10*60_000);
-  if(!originRate.allowed||!emailRate.allowed){
-    return NextResponse.json({ok:false,error:'Wait a few minutes before requesting another code.'},{status:429,headers:{'Cache-Control':'no-store'}});
+  const rate=await checkOriginBeforeScopedLimit({
+    originKey:requestKey(request,'shared-capacity-otp'),originLimit:12,windowMs:10*60_000,scopedLimit:5,
+    readScope:async()=>{
+      const form=await request.formData();
+      const email=text(form,'email');
+      return {key:`shared-capacity-otp-email:${email.trim().toLowerCase()}`,value:{email}};
+    }
+  });
+  if(!rate.allowed){
+    const minutes=Math.max(1,Math.ceil(rate.retryAfterSeconds/60));
+    return NextResponse.json(
+      {ok:false,error:`Too many code requests. Try again in about ${minutes} minute${minutes===1?'':'s'}.`},
+      {status:429,headers:{'Cache-Control':'no-store','Retry-After':String(rate.retryAfterSeconds)}}
+    );
   }
   try{
+    const email=rate.scope?.email||'';
     const challenge=await requestSharedCapacityOtp(email);
-    const delivery=await deliverPendingAccessEmails();
-    const localTestCode=localAccessCodeForDevelopment(challenge,delivery);
-    return NextResponse.json(localTestCode
-      ?{ok:true,message:'Email delivery is not configured in this local environment. Use the local test code below.',localTestCode}
-      :{ok:true,message:'If this email has active capacity shares, a one-time code has been sent.'},
-    {headers:{'Cache-Control':'no-store'}});
+    if(challenge.deliveryQueued){
+      after(async()=>{
+        try{
+          await deliverTargetedAccessEmail('SHARED_CAPACITY',challenge.challengeId);
+        }catch{
+          // The committed outbox row remains available to the bounded retry worker.
+        }
+      });
+    }
+    return NextResponse.json(sharedCapacityOtpRequestResponse(challenge),{headers:{'Cache-Control':'no-store'}});
   }catch(error){
     return NextResponse.json({ok:false,error:errorMessage(error)},{status:400,headers:{'Cache-Control':'no-store'}});
   }

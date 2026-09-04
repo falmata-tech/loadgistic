@@ -1,24 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { TRACKING_GRANT_COOKIE, TRACKING_IDLE_SECONDS } from '@/lib/auth';
-import { unlockProviderTracking } from '@/lib/provider-tracking.js';
-import { createSessionToken } from '@/lib/security.js';
-import { errorMessage } from '@/lib/errors';
-import { redirectUrl, redirectWith, text } from '@/lib/redirects';
+import {setProviderTrackingGrant} from '@/lib/auth';
+import {verifyProviderTrackingOtp} from '@/lib/provider-tracking.js';
+import {checkOriginBeforeScopedLimit} from '@/lib/guest-rate-limit.js';
+import {requestKey} from '@/lib/rate-limit';
+import {text} from '@/lib/redirects';
+
+export const runtime='nodejs';
 
 export async function POST(request:NextRequest) {
-  const form=await request.formData();
+  const rate=await checkOriginBeforeScopedLimit({
+    originKey:requestKey(request,'tracking-unlock'),originLimit:12,windowMs:10*60_000,scopedLimit:5,
+    readScope:async()=>{
+      const form=await request.formData();
+      const email=text(form,'email').trim().toLowerCase();
+      return {key:`tracking-unlock-email:${email}`,value:{form,email}};
+    }
+  });
+  if(!rate.allowed)return NextResponse.json(
+    {ok:false,error:`Too many attempts. Try again in ${rate.retryAfterSeconds} seconds.`},
+    {status:429,headers:{'Cache-Control':'no-store'}}
+  );
   try {
-    const shipment=await unlockProviderTracking(text(form,'trackingCode'));
-    const response=NextResponse.redirect(redirectUrl(request,`/track/${shipment.id}`),303);
-    response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipment.id}:${shipment.partyRole}`,TRACKING_IDLE_SECONDS),{
-      httpOnly:true,
-      sameSite:'lax',
-      secure:process.env.NODE_ENV==='production',
-      path:'/',
-      maxAge:TRACKING_IDLE_SECONDS
-    });
-    return response;
-  } catch(error) {
-    return redirectWith(request,'/track','error',errorMessage(error));
+    const {form,email}=rate.scope||{form:new FormData(),email:''};
+    const shipment=await verifyProviderTrackingOtp(
+      email,text(form,'trackingCode'),text(form,'challengeId'),text(form,'code')
+    );
+    await setProviderTrackingGrant(shipment.id,shipment.recipientDigest);
+    return NextResponse.json({ok:true,path:`/track/${shipment.id}`},{headers:{'Cache-Control':'no-store'}});
+  } catch {
+    return NextResponse.json(
+      {ok:false,error:'That email, Tracking code, and one-time code could not be verified.'},
+      {status:401,headers:{'Cache-Control':'no-store'}}
+    );
   }
 }

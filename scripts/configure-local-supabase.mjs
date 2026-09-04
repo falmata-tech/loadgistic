@@ -29,6 +29,10 @@ const endpoint=new URL(url);
 if(!new Set(['127.0.0.1','localhost','::1']).has(endpoint.hostname)){
   throw new Error('REMOTE_SUPABASE_CONFIG_REFUSED');
 }
+const mailEndpoint=new URL(mailUrl);
+if(mailEndpoint.protocol!=='http:'||!new Set(['127.0.0.1','localhost','::1','[::1]']).has(mailEndpoint.hostname)){
+  throw new Error('REMOTE_LOCAL_MAIL_REFUSED');
+}
 
 function writeLocalEnvironment(){
   const target=path.join(root,'.env.local');
@@ -41,6 +45,7 @@ function writeLocalEnvironment(){
     ['NEXT_PUBLIC_SUPABASE_URL',url],
     ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',publishableKey],
     ['SUPABASE_SERVICE_ROLE_KEY',serviceRoleKey],
+    ['LOADGISTIC_LOCAL_MAILPIT_URL',mailUrl],
     ['UPLOAD_SCANNER_BACKEND','local'],
     ['ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN','true']
   ]);
@@ -66,7 +71,11 @@ function runScript(script,args=[]){
       SUPABASE_SEED_URL:url,
       SUPABASE_SEED_ANON_KEY:anonKey,
       SUPABASE_SEED_SERVICE_ROLE_KEY:serviceRoleKey,
-      SUPABASE_SEED_MAIL_URL:mailUrl
+      SUPABASE_SEED_MAIL_URL:mailUrl,
+      NEXT_PUBLIC_SUPABASE_URL:url,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:publishableKey,
+      SUPABASE_SERVICE_ROLE_KEY:serviceRoleKey,
+      LOADGISTIC_LOCAL_MAILPIT_URL:mailUrl
     }
   });
   if(result.status!==0)throw new Error(`LOCAL_SUPABASE_SCRIPT_FAILED:${script}`);

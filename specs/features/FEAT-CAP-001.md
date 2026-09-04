@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive private details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry, and regular service remains public. A private-current truck remains publicly callable through its categorical status and public regular service without presenting the regular-service marker as a live location. Exact truck and visitor coordinates remain private.
+behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive explicitly granted details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry; it accompanies an otherwise eligible Public Market truck but never makes a Private-network truck anonymously discoverable. Exact truck and visitor coordinates remain private.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
 rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
@@ -90,18 +90,14 @@ And missing, pending, rejected, or expired Driver and truck evidence is shown as
 And it excludes the Driver's surname, plate, private account contacts, raw exact coordinates, proof paths, tracking secrets, and administrative data\
 And the card links to a public signal detail and the provider microsite.
 
-### Scenario: private current geometry retains a public service marker
+### Scenario: private current capacity is absent from public discovery
 
 Given an active Empty or Partial truck publishes its current geometry and approximate location to Private network\
-And its transporter has one public regular Capacity route or Service area\
 When an anonymous visitor opens or filters the Truck Market\
-Then the truck remains discoverable with its categorical Empty or Partial marker, public Driver and transporter contact, verification summaries, and public regular-service geometry\
-And a route marker is placed at the distance midpoint of the regular polyline while an area marker uses the saved regular-area center\
-And the marker and selected-truck summary state that this is a regular-service placement rather than the truck's current location\
-And the visitor may call directly and ask the Driver to share private capacity with their email\
-And no private current route point, Service-area point, approximate coordinate, precision radius, or current-geometry label is returned\
-And search, route, area, or proximity filters cannot infer those hidden values\
-And an active private truck without public regular service is absent from the anonymous Market.
+Then the truck is absent even when its transporter has one regular Capacity route or Service area\
+And no status, truck identity, provider identity, contact, regular-service geometry, private current geometry, approximate coordinate, precision radius, suggestion, or current-geometry label is returned for that truck\
+And search, route, area, freshness, configuration, or proximity filters cannot infer its presence\
+And the same truck appears publicly only after its authorized publisher selects Public Market.
 
 ### Scenario: visitor location is requested without blocking discovery
 
@@ -123,10 +119,15 @@ When demonstration capacity geometry is rebuilt\
 Then every current Capacity route contains two through five distinct cities in a plausible road-travel sequence\
 And the route passes through or immediately beside the truck's approximate current city rather than jumping to an unrelated part of Ethiopia\
 And every Service area uses a center near the truck's approximate current city and a boundary that contains that center\
-And courier motorcycles, courier cars, cargo vans, pickups, and mini trucks expose only current and regular geography within 30 kilometres of their base city or town\
-And every provider regular-service signal begins in, contains, or closely approaches the approximate current location of one of that provider's demonstration trucks\
+And cargo vans, pickups, and mini trucks expose current capacity geography within 30 kilometres of their base city or town\
+And every provider regular-service signal contains or closely approaches the approximate current location of every one of that provider's demonstration trucks\
 And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a nearby center and enclosing boundary\
 And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
+
+Given a truck's latest current capacity visibility is Private network\
+When an anonymous visitor opens or filters the public Capacity Board\
+Then that truck contributes no marker, status, identity, regular-service fallback, suggestion, or filter result\
+And only an active Public Market signal may appear on the public map.
 
 ### Scenario: one shared map is the primary capacity view
 
@@ -138,12 +139,14 @@ And the map starts at a useful Ethiopia-level zoom, permits bounded panning acro
 And no ranked or paginated truck-list surface is offered\
 And before selection the map clusters crowded signals that separate as the visitor zooms\
 And each cluster contains only Empty trucks or only Partial trucks, names that status, and is visibly offset from an opposite-status cluster occupying the same map cell\
+And clustering uses a screen cell at least as wide as the corresponding unselected marker so neighboring full-size pins are not rendered on top of one another\
+And a cluster that remains crowded at maximum zoom stays a single bounded cluster and opens an accessible truck chooser instead of exploding its members into an overlapping ring\
 And the complete map key remains visible without another action and uses pointed pins for capacity status, a polygon for Service area, and solid or dashed polylines for Capacity routes rather than repeating same-shaped color bars\
-And each unclustered truck marker is a pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types without opening a card\
-And the truck artwork is centered and legible inside a true circular head that does not become egg-shaped, while the extra-long rigid-truck-with-trailer artwork is excluded from map pins and falls back to the corresponding heavy-rigid truck image\
-And the marker uses a complete green ring and Empty text for Empty or a complete bright-yellow ring and Partial text for Partial\
+And each unclustered truck marker is a sufficiently large pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types before selecting it\
+And the truck artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while a heavy rigid truck with trailer keeps its own artwork framed on the cab and a clearly visible part of the trailer\
+And the marker uses a complete green ring and tail for Empty or a complete bright-yellow ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
 And no percentage or percentage-progress ring appears in a public truck marker\
-And status is never communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
+And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
 And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
 And a truck or visitor-location summary appears only on hover or keyboard focus, sits above its marker, and retains a pointer to that marker rather than permanently covering the map\
 And selecting one truck enters an explicit focus state that removes every other truck marker and cluster\

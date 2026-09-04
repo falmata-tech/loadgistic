@@ -42,7 +42,7 @@ try{
   if(!anonymousRpcError)throw new Error('SUPABASE_RATE_LIMIT_ANONYMOUS_RPC_ALLOWED');
 
   const {error:expiryError}=await service.from('rate_limit_windows')
-    .update({reset_at:new Date(Date.now()-1000).toISOString()}).eq('key_digest',digest);
+    .update({reset_at:new Date(0).toISOString()}).eq('key_digest',digest);
   if(expiryError)throw new Error('SUPABASE_RATE_LIMIT_EXPIRY_SETUP_FAILED');
   const deleted=await purgeExpiredRateLimits(10);
   if(deleted<1)throw new Error('SUPABASE_RATE_LIMIT_CLEANUP_FAILED');

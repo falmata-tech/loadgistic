@@ -9,6 +9,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: localBrowserBaseUrl,
+    // Keep automated local requests out of a developer's manual browser
+    // buckets. Hosted proxies supply their own trusted client-IP header.
+    extraHTTPHeaders: { 'x-forwarded-for': '127.0.0.240' },
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },

@@ -2,6 +2,21 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import {
+  applyManagedFixtureMarketPolicy,normalizeDemoSharedEmails,selectSharedFixtureVehicleIds
+} from './fixture-market-policy.mjs';
+
+const localEnvironmentPath=path.join(process.cwd(),'.env.local');
+if(fs.existsSync(localEnvironmentPath)){
+  const localEnvironment=fs.readFileSync(localEnvironmentPath,'utf8');
+  for(const key of ['SESSION_SECRET','LOADGISTIC_DEMO_SHARED_EMAILS']){
+    if(process.env[key])continue;
+    const match=localEnvironment.match(new RegExp(`^${key}=(.*)$`,'m'));
+    if(!match)continue;
+    const value=match[1].trim().replace(/^(['"])(.*)\1$/,'$2');
+    if(value)process.env[key]=value;
+  }
+}
 
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
@@ -16,8 +31,10 @@ if(!localHosts.has(endpoint.hostname))throw new Error('REMOTE_FIXTURE_IMPORT_REF
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
 const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
+const {featuredTruckTypeForDate}=await import('../src/lib/featured-trucks.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
+const {privateContactDigest}=await import('../src/lib/security.js');
 const today=new Intl.DateTimeFormat('en-CA',{
   timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'
 }).format(new Date());
@@ -42,10 +59,12 @@ function rebaseFixtureRow(row){
 
 const fixtureTables=Object.fromEntries(Object.entries(fixtureDocument.tables)
   .map(([table,rows])=>[table,Array.isArray(rows)?rows.map(rebaseFixtureRow):[]]));
+fixtureTables.capacities=applyManagedFixtureMarketPolicy(fixtureTables.capacities||[],fixtureTables.vehicles||[]);
 
 function buildFeaturedFixtureTables(){
   const iso=new Date().toISOString();
   const expo=regionalExpoGroupForDate(today);
+  const theme=featuredTruckTypeForDate(today);
   const organizations=new Map((fixtureTables.organizations||[]).map(row=>[row.id,row]));
   const profiles=new Map((fixtureTables.provider_profiles||[]).map(row=>[row.id,row]));
   const ownerByOrganization=new Map((fixtureTables.memberships||[])
@@ -61,21 +80,26 @@ function buildFeaturedFixtureTables(){
         name:organization?.name||profile?.business_name||'',base_region_code:page.base_region_code
       };
     }).filter(candidate=>candidate.owner_user_id&&candidate.name).sort((first,second)=>first.name.localeCompare(second.name));
-  const featured=candidates.filter(candidate=>expo.regionCodes.includes(candidate.base_region_code));
+  const candidateByOwner=new Map(candidates.map(candidate=>[candidate.organization_id?`organization:${candidate.organization_id}`:`profile:${candidate.profile_id}`,candidate]));
+  const assignmentByVehicle=new Map((fixtureTables.driver_vehicle_assignments||[]).filter(assignment=>Number(assignment.active)!==0).map(assignment=>[assignment.vehicle_id,assignment]));
+  const featured=(fixtureTables.vehicles||[]).filter(vehicle=>Number(vehicle.active)!==0&&theme.configurations.includes(vehicle.cargo_configuration))
+    .map(vehicle=>{const owner=candidateByOwner.get(vehicle.organization_id?`organization:${vehicle.organization_id}`:`profile:${vehicle.provider_profile_id}`);const assignment=assignmentByVehicle.get(vehicle.id);return owner&&assignment?{vehicle,owner,assignment}:null;})
+    .filter(Boolean).sort((first,second)=>String(first.vehicle.platform_number||first.vehicle.id).localeCompare(String(second.vehicle.platform_number||second.vehicle.id))).slice(0,8);
   if(!featured.length)throw new Error('MANAGED_FIXTURE_FEATURED_CANDIDATES_MISSING');
   const dayId=`featured-demo-${today}`;
   const featuredDay={
-    id:dayId,feature_date:today,base_place_ref:`featured:${expo.key}`,base_place_label:expo.title,
-    expo_group_key:expo.key,expo_group_label:expo.title,expo_region_codes:expo.regionCodes,
-    public_headline:'Daily Featured Transporters',
-    public_introduction:`Meet transporters based in ${expo.title}, then find their current trucks in the Truck Market.`,
-    tiktok_url:null,broadcast_start_time:'08:00',broadcast_end_time:'22:00',schedule_mode:'AUTO',
-    schedule_config_json:{},manual_schedule_json:[],status:'PUBLISHED',created_by:'user-admin',
+    id:dayId,feature_date:today,base_place_ref:`featured:${theme.key}`,base_place_label:theme.label,
+    expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],
+    public_headline:'Daily Featured Trucks',
+    public_introduction:`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
+    tiktok_url:null,broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule_mode:'AUTO',
+    schedule_config_json:{dayStart:'07:30',dayEnd:'09:00',targetCount:featured.length,sponsorBreakEvery:2,sponsorBreakMinutes:2},manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',
     published_by:'user-admin',created_at:iso,updated_at:iso,published_at:iso
   };
   const slots=featured.map((candidate,index)=>({
     id:`featured-demo-slot-${today}-${index+1}`,day_id:dayId,slot_position:index+1,
-    provider_organization_id:candidate.organization_id,provider_profile_id:candidate.profile_id,
+    provider_organization_id:candidate.owner.organization_id,provider_profile_id:candidate.owner.profile_id,
+    vehicle_id:candidate.vehicle.id,driver_user_id:candidate.assignment.driver_user_id,
     created_by:'user-admin',created_at:iso
   }));
   const sponsors=candidates.map(candidate=>({
@@ -92,7 +116,7 @@ function buildFeaturedFixtureTables(){
   };
   sponsors.push(advertiser);
   const positions=[1,3,4,5];
-  const placements=featured.slice(0,4).map((candidate,index)=>({
+  const placements=candidates.slice(0,4).map((candidate,index)=>({
     id:`placement-featured-demo-${today}-${index+1}`,
     sponsor_id:candidate.organization_id?`sponsor-organization-${candidate.organization_id}`:`sponsor-profile-${candidate.profile_id}`,
     expo_group_key:expo.key,starts_on:today,ends_on:today,position:positions[index],active:1,
@@ -148,6 +172,7 @@ const localResetTables=[
   'shipment_party_grants','email_deliveries','provider_reviews','verification_requests','support_agent_profiles',
   'support_conversations','support_messages','support_events','featured_provider_days','featured_provider_slots',
   'provider_sponsorships','sponsors','sponsor_placements','capacity_access_grants','shared_capacity_email_otps',
+  'provider_tracking_recipients','provider_tracking_email_otps',
   'access_email_deliveries','guest_support_conversations','guest_support_messages','guest_support_attachments',
   'guest_support_events','notifications','audit_logs'
 ].filter(table=>definitions[table]);
@@ -324,6 +349,66 @@ for(const [sourceTable,targetTable] of plan){
   }
   process.stdout.write(`${targetTable}: ${rows.length}\n`);
 }
+
+if(definitions.provider_shipments&&definitions.provider_shipment_events){
+  const vehicle=fixtureTables.vehicles.find(candidate=>candidate.id==='veh-trans-1');
+  const assignment=fixtureTables.driver_vehicle_assignments.find(candidate=>candidate.vehicle_id===vehicle?.id&&Number(candidate.active)!==0);
+  const origin=placeRows.get('builtin:addis ababa');
+  const destination=placeRows.get('builtin:adama');
+  if(!vehicle||!assignment||!origin||!destination)throw new Error('MANAGED_FIXTURE_TRACKING_SOURCE_MISSING');
+  const shipmentId=uuidFor('demo-provider-tracking');
+  const createdAt=new Date(Date.now()-2*60*60*1000).toISOString();
+  const updatedAt=new Date(Date.now()-35*60*1000).toISOString();
+  const {error:trackingError}=await supabase.from('provider_shipments').insert({
+    id:shipmentId,code:'LGX-DEMO-0001',provider_organization_id:mapUuid(vehicle.organization_id),
+    provider_profile_id:null,assigned_vehicle_id:mapUuid(vehicle.id),
+    assigned_driver_user_id:mapUuid(assignment.driver_user_id),origin:'Addis Ababa, Ethiopia',
+    origin_place_ref:origin.id,origin_lat:origin.latitude,origin_lng:origin.longitude,
+    destination:'Adama, Ethiopia',destination_place_ref:destination.id,
+    destination_lat:destination.latitude,destination_lng:destination.longitude,
+    cargo_summary:'Packaged household goods',shipper_email:'demo.shipper@example.test',
+    receiver_email:'demo.receiver@example.test',expected_pickup_date:today,expected_delivery_date:today,
+    tracking_mode:'LOCATION_AND_STATUS',operational_status:'IN_TRANSIT',
+    created_by:mapUuid('user-transporter'),created_at:createdAt,updated_at:updatedAt
+  });
+  if(trackingError)throw new Error(`FIXTURE_IMPORT_FAILED:provider_shipments:${trackingError.message}`);
+  const events=[
+    {id:uuidFor('demo-provider-tracking-created'),shipment_id:shipmentId,status:'CREATED',event_type:'STATUS',note:'Tracking started',created_by:mapUuid('user-transporter'),created_at:createdAt},
+    {id:uuidFor('demo-provider-tracking-transit'),shipment_id:shipmentId,status:'IN_TRANSIT',event_type:'STATUS',note:'Cargo is moving toward Adama',created_by:mapUuid(assignment.driver_user_id),created_at:updatedAt}
+  ];
+  const {error:eventError}=await supabase.from('provider_shipment_events').insert(events);
+  if(eventError)throw new Error(`FIXTURE_IMPORT_FAILED:provider_shipment_events:${eventError.message}`);
+  process.stdout.write('provider_shipments: 1\nprovider_shipment_events: 2\n');
+}
+
+const demoSharedEmails=normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS);
+const sharedVehicleIds=selectSharedFixtureVehicleIds(fixtureTables.capacities);
+const loadgisticDigest=privateContactDigest('loadgistic-platform');
+const capacityByVehicleId=new Map(fixtureTables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
+const grantRows=[];
+for(const vehicleId of sharedVehicleIds){
+  const capacity=capacityByVehicleId.get(vehicleId);
+  if(!capacity)continue;
+  const createdBy=mapUuid(capacity.updated_by);
+  const createdAt=capacity.updated_at||new Date().toISOString();
+  grantRows.push({
+    id:uuidFor(`demo-capacity-grant:${vehicleId}:loadgistic`),vehicle_id:mapUuid(vehicleId),
+    audience_type:'LOADGISTIC',recipient_email:null,recipient_email_digest:loadgisticDigest,
+    created_by:createdBy,created_at:createdAt,expires_at:null,revoked_at:null,revoked_by:null
+  });
+  for(const email of demoSharedEmails){
+    grantRows.push({
+      id:uuidFor(`demo-capacity-grant:${vehicleId}:email:${email}`),vehicle_id:mapUuid(vehicleId),
+      audience_type:'EMAIL',recipient_email:email,recipient_email_digest:privateContactDigest(email),
+      created_by:createdBy,created_at:createdAt,expires_at:null,revoked_at:null,revoked_by:null
+    });
+  }
+}
+for(let index=0;index<grantRows.length;index+=250){
+  const {error}=await supabase.from('capacity_access_grants').insert(grantRows.slice(index,index+250));
+  if(error)throw new Error(`FIXTURE_IMPORT_FAILED:capacity_access_grants:${error.message}`);
+}
+process.stdout.write(`capacity_access_grants: ${grantRows.length} across ${sharedVehicleIds.size} vehicles\n`);
 
 const demoDocument=fs.readFileSync(path.join(process.cwd(),'public','vehicle-configurations','cargo-van.jpg'));
 const {error:storageError}=await supabase.storage.from('verification').upload(

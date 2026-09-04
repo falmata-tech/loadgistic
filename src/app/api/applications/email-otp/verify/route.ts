@@ -1,15 +1,18 @@
 import {NextRequest,NextResponse} from 'next/server.js';
-import {isNumericEmailOtp,managedWorkspaceDestination} from '@/lib/auth-flow.js';
+import {isNumericEmailOtp,MANAGED_AUTH_ERROR,managedWorkspaceDestination} from '@/lib/auth-flow.js';
 import {getManagedCurrentUser} from '@/lib/identity/supabase';
-import {MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,readProviderSignupHandoff} from '@/lib/provider-signup.js';
+import {
+  managedProviderSignupEligible,MANAGED_SIGNUP_COOKIE,readProviderSignupHandoff
+} from '@/lib/provider-signup.js';
+import {MANAGED_OAUTH_COOKIE} from '@/lib/managed-oauth-flow.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectUrl,text} from '@/lib/redirects';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
 
 export const runtime='nodejs';
 
-function responseFor(request:NextRequest,step='code',error=MANAGED_SIGNUP_ERROR){
-  const location=redirectUrl(request,'/apply');
+function responseFor(request:NextRequest,step='code',error=MANAGED_AUTH_ERROR){
+  const location=redirectUrl(request,'/login');
   if(step)location.searchParams.set('step',step);
   if(error)location.searchParams.set('error',error);
   const response=NextResponse.redirect(location,303);
@@ -23,12 +26,18 @@ function clearSignupCookie(response:NextResponse){
   });
 }
 
+function clearOAuthCookie(response:NextResponse){
+  response.cookies.set(MANAGED_OAUTH_COOKIE,'',{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
+  });
+}
+
 export async function POST(request:NextRequest){
   const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   const code=text(await request.formData(),'code');
   if(!handoff?.email||!isNumericEmailOtp(code))return responseFor(request);
-  const clientRate=await checkRateLimit(requestKey(request,'provider-signup-email-verify'),10,10*60_000);
-  const accountRate=await checkRateLimit(`provider-signup-email-verify:${handoff.email}`,6,10*60_000);
+  const clientRate=await checkRateLimit(requestKey(request,'managed-account-email-verify'),10,10*60_000);
+  const accountRate=await checkRateLimit(`managed-account-email-verify:${handoff.email}`,6,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed)return responseFor(request,'code','Please wait before trying another code.');
 
   const response=responseFor(request);
@@ -46,9 +55,17 @@ export async function POST(request:NextRequest){
     if(projection.active){
       response.headers.set('Location',managedWorkspaceDestination(projection.role));
       clearSignupCookie(response);
+      clearOAuthCookie(response);
       return response;
     }
-    response.headers.set('Location',redirectUrl(request,'/apply?step=details').toString());
+    if(await managedProviderSignupEligible(data.user.id)){
+      response.headers.set('Location',redirectUrl(request,'/apply?step=details').toString());
+      clearOAuthCookie(response);
+      return response;
+    }
+    await client.auth.signOut();
+    clearSignupCookie(response);
+    clearOAuthCookie(response);
     return response;
   }catch{
     if(client)await client.auth.signOut().catch(()=>undefined);

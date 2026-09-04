@@ -83,6 +83,12 @@ Then assignment is atomic\
 And another agent cannot claim the same conversation\
 And the member sees the assigned agent name after refresh.
 
+Given a waiting conversation cannot yet be opened by the current staff actor\
+When its queue row is rendered\
+Then the conversation identity is plain content rather than a link to `#` or another dead destination\
+And only an authorized Claim action is presented\
+And an Open action appears only when the actor can actually open the conversation detail.
+
 ### Scenario: compact refresh preserves performance
 
 Given a customer or agent keeps one conversation open\

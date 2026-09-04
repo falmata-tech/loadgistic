@@ -13,14 +13,15 @@ test('Sponsors stay separate, compact, and schedule-attributed',async({page}:{pa
   if(phone){
     const firstPair=await sponsors.locator('.expo-sponsored-card').allTextContents();
     await expect.poll(async()=>JSON.stringify(await sponsors.locator('.expo-sponsored-card').allTextContents()),{timeout:12_000}).not.toBe(JSON.stringify(firstPair));
-  }else await expect(sponsors.getByText('Outside advertiser')).toBeVisible();
+  }else await expect(sponsors.getByText('Advertiser')).toBeVisible();
   await expect(sponsors.getByRole('button',{name:/next|previous|pause/i})).toHaveCount(0);
 
   await page.goto('/login');
   await page.locator('details.auth-fixture-login>summary').click();
-  await page.getByLabel('Email').fill('admin@loadgistic.local');
-  await page.getByLabel('Password').fill('Loadgistic123!');
-  await page.getByRole('button',{name:'Log in'}).click();
+  const localLogin=page.getByTestId('login-form');
+  await localLogin.getByLabel('Email').fill('admin@loadgistic.local');
+  await localLogin.getByLabel('Password').fill('Loadgistic123!');
+  await Promise.all([page.waitForURL(/\/(?:admin|app\/home)/),localLogin.getByRole('button',{name:'Log in'}).click()]);
   await page.goto('/admin/featured');
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect(page.getByLabel('Sponsor type')).toContainText('Outside advertiser');
@@ -36,6 +37,8 @@ test('capture focused featured schedule review',async({page}:{page:any})=>{
   const featured=page.locator('.featured-provider-section');
   await featured.scrollIntoViewIfNeeded();
   await expect(featured.getByRole('heading',{name:'Sponsors'})).toBeVisible();
+  await expect.poll(()=>featured.locator('.featured-truck-tile').count()).toBeGreaterThan(0);
+  await expect(featured.locator('.featured-truck-tile').first()).toContainText(/Company driver|Owner-operator|Self-managed driver/);
   await featured.screenshot({path:path.join(output,`${project}-public.png`)});
   await featured.locator('.expo-schedule-panel>summary').click();
   await expect(featured.locator('.expo-programme-strip')).toBeVisible();
@@ -43,9 +46,10 @@ test('capture focused featured schedule review',async({page}:{page:any})=>{
 
   await page.goto('/login');
   await page.locator('details.auth-fixture-login>summary').click();
-  await page.getByLabel('Email').fill('admin@loadgistic.local');
-  await page.getByLabel('Password').fill('Loadgistic123!');
-  await page.getByRole('button',{name:'Log in'}).click();
+  const localLogin=page.getByTestId('login-form');
+  await localLogin.getByLabel('Email').fill('admin@loadgistic.local');
+  await localLogin.getByLabel('Password').fill('Loadgistic123!');
+  await Promise.all([page.waitForURL(/\/(?:admin|app\/home)/),localLogin.getByRole('button',{name:'Log in'}).click()]);
   await page.goto('/admin/featured');
   const scheduler=page.locator('.featured-roster-editor');
   await expect(scheduler.getByRole('button',{name:'Automatic'})).toBeVisible();

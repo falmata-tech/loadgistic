@@ -24,7 +24,7 @@ export function TrackingIdleGuard({shipmentId}:{shipmentId:string}) {
       const form=new FormData();
       form.set('shipmentId',shipmentId);
       const response=await fetch('/api/tracking/session',{method:'POST',body:form});
-      if(!response.ok)router.replace('/track?error=Enter+the+tracking+code+again.');
+      if(!response.ok)router.replace('/track?error=Verify+your+email+to+open+Tracking+again.');
     },REFRESH_MS);
     return ()=>{
       events.forEach(event=>window.removeEventListener(event,markActive));

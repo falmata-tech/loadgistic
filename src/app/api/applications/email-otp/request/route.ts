@@ -5,14 +5,15 @@ import {
 import {
   createProviderSignupHandoff,MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_MAX_AGE_SECONDS
 } from '@/lib/provider-signup.js';
+import {MANAGED_OAUTH_COOKIE} from '@/lib/managed-oauth-flow.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectUrl,text} from '@/lib/redirects';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
 
 export const runtime='nodejs';
 
-function redirectApply(request:NextRequest,key:'error'|'success',message:string,step=''){
-  const location=redirectUrl(request,'/apply');
+function redirectAccess(request:NextRequest,key:'error'|'success',message:string,step=''){
+  const location=redirectUrl(request,'/login');
   if(step)location.searchParams.set('step',step);
   location.searchParams.set(key,message);
   const response=NextResponse.redirect(location,303);
@@ -23,28 +24,32 @@ function redirectApply(request:NextRequest,key:'error'|'success',message:string,
 export async function POST(request:NextRequest){
   const form=await request.formData();
   const email=normalizeManagedAuthEmail(text(form,'email'));
-  if(!email)return redirectApply(request,'error','Enter a valid email address.');
-  const clientRate=await checkRateLimit(requestKey(request,'provider-signup-email-request'),5,10*60_000);
-  const accountRate=await checkRateLimit(`provider-signup-email-request:${email}`,3,10*60_000);
+  if(!email)return redirectAccess(request,'error','Enter a valid email address.');
+  const clientRate=await checkRateLimit(requestKey(request,'managed-account-email-request'),10,10*60_000);
+  const accountRate=await checkRateLimit(`managed-account-email-request:${email}`,5,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed){
-    return redirectApply(request,'error','Please wait before requesting another code.');
+    const seconds=Math.max(clientRate.retryAfterSeconds,accountRate.retryAfterSeconds);
+    const minutes=Math.max(1,Math.ceil(seconds/60));
+    return redirectAccess(request,'error',`Too many code requests. Try again in about ${minutes} minute${minutes===1?'':'s'}.`);
   }
-  const callbackUrl=managedAuthCallbackUrl({requestUrl:request.url});
-  if(!callbackUrl)return redirectApply(request,'error',MANAGED_AUTH_UNAVAILABLE);
+  const callbackUrl=managedAuthCallbackUrl({requestUrl:redirectUrl(request,'/').toString()});
+  if(!callbackUrl)return redirectAccess(request,'error',MANAGED_AUTH_UNAVAILABLE);
 
-  const response=redirectApply(request,'success',MANAGED_AUTH_CODE_SENT,'code');
+  const response=redirectAccess(request,'success',MANAGED_AUTH_CODE_SENT,'code');
+  response.cookies.set(MANAGED_SIGNUP_COOKIE,createProviderSignupHandoff(email),{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',
+    maxAge:MANAGED_SIGNUP_MAX_AGE_SECONDS
+  });
+  response.cookies.set(MANAGED_OAUTH_COOKIE,'',{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
+  });
   try{
     const client=createSupabaseRouteClient(request,response);
-    const {error}=await client.auth.signInWithOtp({
+    await client.auth.signInWithOtp({
       email,options:{shouldCreateUser:true,emailRedirectTo:callbackUrl}
     });
-    if(error)throw new Error('SIGNUP_EMAIL_UNAVAILABLE');
-    response.cookies.set(MANAGED_SIGNUP_COOKIE,createProviderSignupHandoff(email),{
-      httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',
-      maxAge:MANAGED_SIGNUP_MAX_AGE_SECONDS
-    });
-    return response;
   }catch{
-    return redirectApply(request,'error',MANAGED_AUTH_UNAVAILABLE);
+    // Keep the public response independent of account state and provider detail.
   }
+  return response;
 }

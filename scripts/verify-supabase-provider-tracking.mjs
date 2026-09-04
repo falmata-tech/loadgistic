@@ -49,9 +49,10 @@ if(originError||destinationError||!origin||!destination)throw new Error('SUPABAS
 const created=await tracking.createProviderShipment(driver,{
   vehicleId:driverWorkspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,
   cargoSummary:'Managed Tracking verification cargo',customerEmail:'tracking-owner@example.test',
+  additionalRecipientEmails:['tracking-party@example.test'],
   trackingMode:'LOCATION_AND_STATUS'
 });
-if(!created.id||!/^LG-[A-F0-9]{4}-[A-F0-9]{4}$/.test(created.trackingCode))throw new Error('SUPABASE_TRACKING_VERIFY_CREATE_FAILED');
+if(!created.id||!/^LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/.test(created.trackingCode))throw new Error('SUPABASE_TRACKING_VERIFY_CREATE_FAILED');
 const {data:storedShipment,error:storedError}=await service.from('provider_shipments')
   .select('review_code_hash,shipper_email').eq('id',created.id).maybeSingle();
 const {data:storedGrant,error:grantError}=await service.from('shipment_party_grants')
@@ -59,9 +60,45 @@ const {data:storedGrant,error:grantError}=await service.from('shipment_party_gra
 if(storedError||grantError||!storedShipment||!storedGrant)throw new Error('SUPABASE_TRACKING_VERIFY_AGGREGATE_MISSING');
 if(storedGrant.code_hash===created.trackingCode||storedShipment.review_code_hash===reviewAccessCode(created.id))throw new Error('SUPABASE_TRACKING_VERIFY_PLAINTEXT_CODE');
 
-const unlocked=await tracking.unlockProviderTracking(created.trackingCode);
-if(unlocked.id!==created.id||unlocked.partyRole!=='SHIPPER')throw new Error('SUPABASE_TRACKING_VERIFY_UNLOCK_FAILED');
-await expectCode(tracking.unlockProviderTracking('LG-0000-0000'),/INVALID_TRACKING_CODE/);
+const providerDetail=await tracking.getProviderShipment(driver,created.id);
+if(providerDetail.tracking_recipients.length!==2
+  ||providerDetail.tracking_recipients[0].recipient_role!=='OWNER'
+  ||providerDetail.tracking_recipients[1].recipient_role!=='TRACKING_PARTY'){
+  throw new Error('SUPABASE_TRACKING_VERIFY_RECIPIENTS_MISSING');
+}
+const beforeIneligibleChallenges=await service.from('provider_tracking_email_otps').select('id',{count:'exact',head:true});
+const beforeIneligibleDeliveries=await service.from('access_email_deliveries').select('id',{count:'exact',head:true}).eq('delivery_kind','TRACKING_OTP');
+const ineligible=await tracking.requestProviderTrackingOtp('unknown@example.test',created.trackingCode);
+const wrongCode=await tracking.requestProviderTrackingOtp('tracking-owner@example.test','LG-0000-0000-0000-0000');
+const afterIneligibleChallenges=await service.from('provider_tracking_email_otps').select('id',{count:'exact',head:true});
+const afterIneligibleDeliveries=await service.from('access_email_deliveries').select('id',{count:'exact',head:true}).eq('delivery_kind','TRACKING_OTP');
+if(ineligible.deliveryQueued||wrongCode.deliveryQueued
+  ||afterIneligibleChallenges.count!==beforeIneligibleChallenges.count
+  ||afterIneligibleDeliveries.count!==beforeIneligibleDeliveries.count){
+  throw new Error('SUPABASE_TRACKING_VERIFY_INELIGIBLE_OTP_SIDE_EFFECT');
+}
+const ownerChallenge=await tracking.requestProviderTrackingOtp('tracking-owner@example.test',created.trackingCode);
+if(!ownerChallenge.deliveryQueued)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_OTP_NOT_QUEUED');
+const invalidOwnerOtp=ownerChallenge.accessCode==='000000'?'000001':'000000';
+await expectCode(tracking.verifyProviderTrackingOtp(
+  'tracking-owner@example.test',created.trackingCode,ownerChallenge.challengeId,invalidOwnerOtp
+),/TRACKING_ACCESS_DENIED/);
+const unlocked=await tracking.verifyProviderTrackingOtp(
+  'tracking-owner@example.test',created.trackingCode,ownerChallenge.challengeId,ownerChallenge.accessCode
+);
+if(unlocked.id!==created.id||unlocked.recipientRole!=='OWNER'||!unlocked.recipientDigest)throw new Error('SUPABASE_TRACKING_VERIFY_UNLOCK_FAILED');
+const partyChallenge=await tracking.requestProviderTrackingOtp('tracking-party@example.test',created.trackingCode);
+const partyAccess=await tracking.verifyProviderTrackingOtp(
+  'tracking-party@example.test',created.trackingCode,partyChallenge.challengeId,partyChallenge.accessCode
+);
+if(partyAccess.recipientRole!=='TRACKING_PARTY')throw new Error('SUPABASE_TRACKING_VERIFY_PARTY_UNLOCK_FAILED');
+let partyGuest=await tracking.getProviderGuestTracking(created.id,partyAccess.recipientDigest);
+if(!partyGuest||partyGuest.party_role!=='RECEIVER'||partyGuest.can_review)throw new Error('SUPABASE_TRACKING_VERIFY_PARTY_PROJECTION_FAILED');
+await tracking.revokeProviderTrackingRecipient(driver,created.id,providerDetail.tracking_recipients[1].id);
+partyGuest=await tracking.getProviderGuestTracking(created.id,partyAccess.recipientDigest);
+if(partyGuest!==null)throw new Error('SUPABASE_TRACKING_VERIFY_REVOKED_SESSION_ALLOWED');
+const revokedRequest=await tracking.requestProviderTrackingOtp('tracking-party@example.test',created.trackingCode);
+if(revokedRequest.deliveryQueued)throw new Error('SUPABASE_TRACKING_VERIFY_REVOKED_OTP_QUEUED');
 const {error:anonymousUnlockError}=await anon.rpc('unlock_provider_tracking',{tracking_code_hash:'not-a-valid-digest'});
 if(!anonymousUnlockError)throw new Error('SUPABASE_TRACKING_VERIFY_ANONYMOUS_UNLOCK_ALLOWED');
 
@@ -76,11 +113,11 @@ await tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP','Going
   locationArea:'Around Addis Ababa, Ethiopia',approximateLat:9.03,approximateLng:38.75,
   locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'
 });
-let guest=await tracking.getProviderGuestTracking(created.id,'SHIPPER');
+let guest=await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest);
 if(!guest?.current_location||guest.current_location.location_precision_km!==10)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_LOCATION_MISSING');
 if(JSON.stringify(guest).includes('tracking-owner@example.test')||'assigned_driver_user_id' in guest)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_SECRET_LEAK');
 await tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading');
-guest=await tracking.getProviderGuestTracking(created.id,'SHIPPER');
+guest=await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest);
 if(guest.current_location!==null)throw new Error('SUPABASE_TRACKING_VERIFY_LOCATION_STATE_LEAK');
 await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'IN_TRANSIT','',{
   path:'supabase://shipment-proof/tracking-proof/test.jpg',originalName:'test.jpg',mimeType:'image/jpeg'
@@ -125,8 +162,11 @@ if(!cleanup.shipmentIds.includes(created.id))throw new Error('SUPABASE_TRACKING_
 const retained=await tracking.getProviderShipment(driver,created.id);
 if(!retained||!/@redacted\.invalid$/.test(retained.shipper_email)||retained.events.length<5||!retained.review)throw new Error('SUPABASE_TRACKING_VERIFY_HISTORY_NOT_RETAINED');
 if(retained.email_deliveries.length!==0||retained.tracking_access_code!==null)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_DATA_RETAINED');
-if(await tracking.getProviderGuestTracking(created.id,'SHIPPER')!==null)throw new Error('SUPABASE_TRACKING_VERIFY_EXPIRED_GUEST_READ');
+if(await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest)!==null)throw new Error('SUPABASE_TRACKING_VERIFY_EXPIRED_GUEST_READ');
+const retainedRecipients=await service.from('provider_tracking_recipients').select('id',{count:'exact',head:true}).eq('shipment_id',created.id);
+const retainedOtps=await service.from('provider_tracking_email_otps').select('id',{count:'exact',head:true}).eq('shipment_id',created.id);
+if(retainedRecipients.count!==0||retainedOtps.count!==0)throw new Error('SUPABASE_TRACKING_VERIFY_EXPIRED_RECIPIENT_DATA_RETAINED');
 
 const afterDemand=await service.from('shipments').select('id',{count:'exact',head:true});
 if(afterDemand.error||afterDemand.count!==beforeDemand.count)throw new Error('SUPABASE_TRACKING_VERIFY_DEMAND_MUTATED');
-process.stdout.write('Supabase provider Tracking create, authorization, location, review, email, and cleanup checks passed.\n');
+process.stdout.write('Supabase provider Tracking recipients, email OTP, revocation, location, review, delivery, and cleanup checks passed.\n');

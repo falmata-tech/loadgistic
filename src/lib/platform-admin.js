@@ -2,6 +2,7 @@ export {
   PLATFORM_PERMISSIONS,
   disableProviderSponsorship,
   getAdminFeaturedProviderDay,
+  getAdminOperationRecord,
   getAdminOperations,
   grantSponsoredBusinessAccess,
   hasPlatformPermission,

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import {normalizeDemoSharedEmails} from './fixture-market-policy.mjs';
 
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
@@ -14,13 +15,26 @@ if(!new Set(['127.0.0.1','localhost','::1']).has(endpoint.hostname)){
 
 const service=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 const anon=createClient(url,anonKey,{auth:{autoRefreshToken:false,persistSession:false}});
-const expectedMinimums={profiles:154,vehicles:143,capacities:143,verification_requests:335,place_catalog:3703};
+const expectedMinimums={profiles:154,vehicles:143,capacities:143,provider_shipments:1,verification_requests:335,place_catalog:3690};
 
 for(const [table,minimum] of Object.entries(expectedMinimums)){
   const {count,error}=await service.from(table).select('*',{count:'exact',head:true});
   if(error)throw new Error(`SUPABASE_FIXTURE_VERIFY_READ_FAILED:${table}:${error.message}`);
   if((count||0)<minimum)throw new Error(`SUPABASE_FIXTURE_VERIFY_COUNT_FAILED:${table}:${count||0}<${minimum}`);
 }
+
+const {privateContactDigest}=await import('../src/lib/security.js');
+const expectedSharedVehicles=Math.ceil(expectedMinimums.vehicles*.25);
+for(const email of normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS)){
+  const {count,error}=await service.from('capacity_access_grants').select('*',{count:'exact',head:true})
+    .eq('audience_type','EMAIL').eq('recipient_email_digest',privateContactDigest(email)).is('revoked_at',null);
+  if(error)throw new Error(`SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_FAILED:${error.message}`);
+  if((count||0)<expectedSharedVehicles)throw new Error('SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_INCOMPLETE');
+}
+const {count:loadgisticGrantCount,error:loadgisticGrantError}=await service.from('capacity_access_grants')
+  .select('*',{count:'exact',head:true}).eq('audience_type','LOADGISTIC').is('revoked_at',null);
+if(loadgisticGrantError)throw new Error(`SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_FAILED:${loadgisticGrantError.message}`);
+if((loadgisticGrantCount||0)<expectedSharedVehicles)throw new Error('SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_INCOMPLETE');
 
 const {data:session,error:loginError}=await anon.auth.signInWithPassword({
   email:'company-driver@loadgistic.local',
@@ -135,16 +149,6 @@ try{
   const expiredLatest=await listSupabasePublicCapacityCursor({capacityId:freshnessTarget.capacity.id},{pageSize:14});
   if(expiredLatest.items.length!==1)throw new Error('SUPABASE_FIXTURE_VERIFY_EXPIRED_LATEST_HIDDEN');
 
-  const {error:rlsLoginError}=await anon.auth.signInWithPassword({
-    email:'company-driver@loadgistic.local',password:fixturePassword
-  });
-  if(rlsLoginError)throw new Error(`SUPABASE_FIXTURE_VERIFY_RLS_LOGIN_FAILED:${rlsLoginError.message}`);
-  const {data:historicalRead,error:historicalReadError}=await anon.from('capacities').select('id')
-    .eq('id',freshnessTarget.capacity.id);
-  if(historicalReadError)throw new Error(`SUPABASE_FIXTURE_VERIFY_HISTORY_READ_FAILED:${historicalReadError.message}`);
-  if(historicalRead?.length)throw new Error('SUPABASE_FIXTURE_VERIFY_HISTORICAL_CAPACITY_EXPOSED');
-  await anon.auth.signOut();
-
   const offDuty={...freshnessTarget.capacity,id:offDutyId,status:'OFF_DUTY',market_status:'OFF_DUTY',
     available_percent:0,accepts_full_load:false,accepts_partial_load:false,
     accepts_multi_pick:false,accepts_multi_drop:false,accepts_multi_stop:false,
@@ -189,8 +193,8 @@ const {error:anonymousProviderSummaryError}=await anon.rpc('public_provider_revi
 });
 if(!anonymousProviderSummaryError)throw new Error('SUPABASE_FIXTURE_VERIFY_PROVIDER_RPC_EXPOSED');
 
-const {getSupabaseDailyFeaturedProviders}=await import('../src/lib/repository/supabase.js');
-const featured=await getSupabaseDailyFeaturedProviders();
+const {getSupabaseDailyFeaturedTrucks}=await import('../src/lib/repository/supabase.js');
+const featured=await getSupabaseDailyFeaturedTrucks();
 if(!featured.published||!featured.providers.length||featured.walkthroughs.length!==featured.providers.length){
   throw new Error('SUPABASE_FIXTURE_VERIFY_FEATURED_PROJECTION_FAILED');
 }

@@ -7,10 +7,10 @@ const outputDir=path.resolve('artifacts/stress-ui');
 const password='Loadgistic123!';
 
 const personas=[
-  {name:'fleet-transporter',email:'transporter@loadgistic.local',home:'/app/home',routes:['/app/home','/app/fleet','/app/fleet/veh-trans-1','/app/provider-shipments','/app/provider-shipments/new','/app/company-page','/app/verification','/app/support','/app/more']},
-  {name:'self-managed-driver',email:'driver@loadgistic.local',home:'/app/home',routes:['/app/home','/app/capacity','/app/provider-shipments','/app/provider-shipments/new','/app/company-page','/app/verification','/app/support','/app/more']},
-  {name:'company-driver',email:'company-driver@loadgistic.local',home:'/app/home',routes:['/app/home','/app/capacity','/app/provider-shipments','/app/verification','/app/support','/app/more']},
-  {name:'admin',email:'admin@loadgistic.local',home:'/app/home',routes:['/admin/operations','/admin/operations?view=WORKSPACES&page=2','/admin/operations?view=TRUCKS&page=2','/admin/operations?view=DRIVERS','/admin/operations?view=TRACKING','/admin/operations?view=CAPACITY&page=2','/admin/featured','/admin/reviews?tab=documents','/admin/reviews?tab=ratings','/admin/support']},
+  {name:'fleet-transporter',email:'transporter@loadgistic.local',home:'/app/home',routes:['/app/home','/app/fleet','/app/provider-shipments','/app/provider-shipments/new','/app/company-page','/app/verification','/app/support','/app/more']},
+  {name:'self-managed-driver',email:'driver@loadgistic.local',home:'/app/home',routes:['/app/home','/app/provider-shipments','/app/provider-shipments/new','/app/company-page','/app/verification','/app/support','/app/more']},
+  {name:'company-driver',email:'company-driver@loadgistic.local',home:'/app/home',routes:['/app/home','/app/provider-shipments','/app/verification','/app/support','/app/more']},
+  {name:'admin',email:'admin@loadgistic.local',home:'/admin',routes:['/admin/operations','/admin/operations?view=WORKSPACES&page=2','/admin/operations?view=TRUCKS&page=2','/admin/operations?view=DRIVERS','/admin/operations?view=TRACKING','/admin/operations?view=CAPACITY&page=2','/admin/featured','/admin/reviews?tab=documents','/admin/reviews?tab=ratings','/admin/support']},
   {name:'support-agent',email:'support@loadgistic.local',home:'/support',routes:['/support','/support?view=WAITING','/support?view=CLOSED']}
 ];
 
@@ -27,6 +27,7 @@ async function gotoReady(page,route){
     const started=Date.now();
     try{
       const response=await page.goto(`${baseURL}${route}`,{waitUntil:'domcontentloaded',timeout:30_000});
+      await page.waitForLoadState('load',{timeout:10_000});
       await page.locator('.loading-map').waitFor({state:'hidden',timeout:10_000}).catch(()=>{});
       await page.waitForTimeout(300);
       return {response,elapsedMs:Date.now()-started,navigationRetries:attempt};
@@ -41,9 +42,10 @@ async function gotoReady(page,route){
 async function login(page,persona){
   await gotoReady(page,'/login');
   await page.locator('details.auth-fixture-login>summary').click();
-  await page.getByLabel('Email').fill(persona.email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button',{name:'Log in'}).click();
+  const fixtureForm=page.getByTestId('login-form');
+  await fixtureForm.getByLabel('Email',{exact:true}).fill(persona.email);
+  await fixtureForm.getByLabel('Password').fill(password);
+  await fixtureForm.getByRole('button',{name:'Log in'}).click();
   await page.waitForURL(`**${persona.home}`,{timeout:30_000});
 }
 
@@ -73,43 +75,51 @@ try{
     publicPage.on('pageerror',error=>publicErrors.push(error.message));
     publicPage.on('console',message=>{if(message.type()==='error')publicErrors.push(message.text());});
     const publicNavigation=await gotoReady(publicPage,'/');
-    await publicPage.getByRole('button',{name:'List',exact:true}).click();
-    const firstPage=publicPage.locator('.public-capacity-card');
-    await firstPage.first().waitFor({state:'visible',timeout:15_000});
-    const firstIds=await firstPage.evaluateAll(cards=>cards.map(card=>card.textContent));
-    const next=publicPage.getByRole('button',{name:'Next',exact:true});
-    const nextEnabled=await next.isEnabled();
-    if(nextEnabled)await next.click();
-    await publicPage.getByText('Page 2',{exact:true}).waitFor({state:'visible',timeout:15_000}).catch(()=>{});
-    const secondIds=await firstPage.evaluateAll(cards=>cards.map(card=>card.textContent));
+    await publicPage.locator('.public-capacity-map').waitFor({state:'visible',timeout:15_000});
+    await publicPage.locator('.capacity-map-cluster,.capacity-truck-map-marker').first().waitFor({state:'visible',timeout:15_000});
     const publicMetrics=await metrics(publicPage);
-    await publicPage.screenshot({path:path.join(outputDir,`${viewport.name}-public-truck-market-page-2.png`),fullPage:false});
-    results.push({viewport:viewport.name,persona:'public',route:'/#capacity-market-list',status:publicNavigation.response?.status()||null,elapsedMs:publicNavigation.elapsedMs,...publicMetrics,horizontalOverflow:publicMetrics.scrollWidth>publicMetrics.clientWidth,paginationAdvanced:nextEnabled&&JSON.stringify(firstIds)!==JSON.stringify(secondIds),browserErrors:actionableBrowserErrors(publicErrors.splice(0))});
-    for(const route of ['/featured','/about','/track','/login','/apply','/@blueline-transport']){
+    await publicPage.screenshot({path:path.join(outputDir,`${viewport.name}-public-capacity-map.png`),fullPage:false});
+    results.push({viewport:viewport.name,persona:'public',route:'/#capacity-market-map',status:publicNavigation.response?.status()||null,elapsedMs:publicNavigation.elapsedMs,...publicMetrics,horizontalOverflow:publicMetrics.scrollWidth>publicMetrics.clientWidth,browserErrors:actionableBrowserErrors(publicErrors.splice(0))});
+    for(const route of ['/featured','/about','/track','/login','/apply','/providers/blueline-transport']){
       const navigation=await gotoReady(publicPage,route);const pageMetrics=await metrics(publicPage);
-      results.push({viewport:viewport.name,persona:'public',route,status:navigation.response?.status()||null,elapsedMs:navigation.elapsedMs,...pageMetrics,horizontalOverflow:pageMetrics.scrollWidth>pageMetrics.clientWidth,paginationAdvanced:true,browserErrors:actionableBrowserErrors(publicErrors.splice(0))});
+      results.push({viewport:viewport.name,persona:'public',route,status:navigation.response?.status()||null,elapsedMs:navigation.elapsedMs,...pageMetrics,horizontalOverflow:pageMetrics.scrollWidth>pageMetrics.clientWidth,browserErrors:actionableBrowserErrors(publicErrors.splice(0))});
     }
     await publicContext.close();
 
-    for(const persona of personas){
-      const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},isMobile:Boolean(viewport.isMobile)});
-      const page=await context.newPage();const browserErrors=[];
-      page.on('pageerror',error=>browserErrors.push(error.message));
-      page.on('console',message=>{if(message.type()==='error')browserErrors.push(message.text());});
-      await login(page,persona);
+    for(const [personaIndex,persona] of personas.entries()){
+      const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height},isMobile:Boolean(viewport.isMobile),extraHTTPHeaders:{'X-Forwarded-For':`127.0.${viewport.name==='desktop'?30:40}.${personaIndex+10}`}});
+      const loginPage=await context.newPage();
+      await login(loginPage,persona);
+      await loginPage.close();
       for(const route of persona.routes){
+        const page=await context.newPage();const browserErrors=[];
+        page.on('pageerror',error=>browserErrors.push(error.message));
+        page.on('console',message=>{if(message.type()==='error')browserErrors.push(message.text());});
         const navigation=await gotoReady(page,route);const pageMetrics=await metrics(page);
-        const expectsPageTwo=/[?&]page=2(?:&|$)/.test(route);
-        const secondPageVisible=!expectsPageTwo||await page.getByText(/Page 2 of/).count()>0;
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-${persona.name}-${slug(route)}.png`),fullPage:false});
-        results.push({viewport:viewport.name,persona:persona.name,route,status:navigation.response?.status()||null,elapsedMs:navigation.elapsedMs,...pageMetrics,horizontalOverflow:pageMetrics.scrollWidth>pageMetrics.clientWidth,paginationAdvanced:secondPageVisible,browserErrors:actionableBrowserErrors(browserErrors.splice(0))});
+        results.push({viewport:viewport.name,persona:persona.name,route,status:navigation.response?.status()||null,elapsedMs:navigation.elapsedMs,...pageMetrics,horizontalOverflow:pageMetrics.scrollWidth>pageMetrics.clientWidth,browserErrors:actionableBrowserErrors(browserErrors)});
+        await page.close();
+      }
+      if(persona.name==='fleet-transporter'){
+        const fleetPage=await context.newPage();
+        await gotoReady(fleetPage,'/app/fleet');
+        const truckDetailHref=await fleetPage.getByRole('link',{name:'View truck'}).first().getAttribute('href');
+        await fleetPage.close();
+        if(!truckDetailHref)throw new Error('The fleet stress audit could not find a truck detail link.');
+        const detailPage=await context.newPage();const browserErrors=[];
+        detailPage.on('pageerror',error=>browserErrors.push(error.message));
+        detailPage.on('console',message=>{if(message.type()==='error')browserErrors.push(message.text());});
+        const navigation=await gotoReady(detailPage,truckDetailHref);const pageMetrics=await metrics(detailPage);
+        await detailPage.screenshot({path:path.join(outputDir,`${viewport.name}-${persona.name}-truck-detail.png`),fullPage:false});
+        results.push({viewport:viewport.name,persona:persona.name,route:truckDetailHref,status:navigation.response?.status()||null,elapsedMs:navigation.elapsedMs,...pageMetrics,horizontalOverflow:pageMetrics.scrollWidth>pageMetrics.clientWidth,browserErrors:actionableBrowserErrors(browserErrors)});
+        await detailPage.close();
       }
       await context.close();
     }
   }
 }finally{await browser.close();}
 
-const failures=results.filter(result=>(result.status!==null&&result.status!==200)||result.horizontalOverflow||!result.paginationAdvanced||result.unlabeledControls||result.emptyActions||result.browserErrors.length||result.elapsedMs>30_000);
+const failures=results.filter(result=>(result.status!==null&&result.status!==200)||result.horizontalOverflow||result.unlabeledControls||result.emptyActions||result.browserErrors.length||result.elapsedMs>30_000);
 const summary={baseURL,generatedAt:new Date().toISOString(),screens:results.length,failures:failures.length,slowest:[...results].sort((a,b)=>b.elapsedMs-a.elapsedMs).slice(0,8).map(({viewport,persona,route,elapsedMs,domNodes})=>({viewport,persona,route,elapsedMs,domNodes})),results};
 await writeFile(path.join(outputDir,'report.json'),`${JSON.stringify(summary,null,2)}\n`);
 console.log(`Current-product stress audit captured ${results.length} viewport screens in ${outputDir}.`);

@@ -2,7 +2,6 @@
 
 import {Clock3,LogOut} from 'lucide-react';
 import React from 'react';
-import {useRouter} from 'next/navigation';
 import {
   SHARED_CAPACITY_IDLE_MS,
   sharedCapacitySessionExpired,
@@ -10,12 +9,12 @@ import {
 } from '@/lib/shared-capacity-session';
 
 export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initialExpiresAt:number;children:React.ReactNode}){
-  const router=useRouter();
   const lastActivityAt=React.useRef(Date.now());
   const lastRenewedAt=React.useRef(0);
   const serverExpiresAt=React.useRef(initialExpiresAt);
   const scheduleExpiry=React.useRef((()=>{}) as ()=>void);
   const renewalInFlight=React.useRef(null as Promise<void>|null);
+  const renewalAbort=React.useRef(null as AbortController|null);
   const ending=React.useRef(false);
   const [locked,setLocked]=React.useState(false);
 
@@ -23,20 +22,30 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
     if(ending.current)return;
     ending.current=true;
     setLocked(true);
-    try{await renewalInFlight.current;}catch{}
-    try{await fetch('/api/shared-capacity/session',{method:'DELETE',headers:{accept:'application/json'},keepalive:true});}catch{}
-    router.replace(`/shared-capacity?session=${reason}`);
-    router.refresh();
-  },[router]);
+    renewalAbort.current?.abort();
+    const controller=new AbortController();
+    const timer=window.setTimeout(()=>controller.abort(),5000);
+    try{
+      await fetch('/api/shared-capacity/session',{
+        method:'DELETE',headers:{accept:'application/json'},keepalive:true,signal:controller.signal
+      });
+    }catch{}finally{window.clearTimeout(timer);}
+    window.location.replace(`/shared-capacity?session=${reason}`);
+  },[]);
 
   const renew=React.useCallback(async()=>{
     const now=Date.now();
     if(ending.current||renewalInFlight.current||!sharedCapacitySessionNeedsRenewal(now,lastRenewedAt.current))return;
     lastRenewedAt.current=now;
     let expired=false;
+    const controller=new AbortController();
+    renewalAbort.current=controller;
+    const timer=window.setTimeout(()=>controller.abort(),8000);
     const renewal=(async()=>{
       try{
-        const response=await fetch('/api/shared-capacity/session',{method:'POST',headers:{accept:'application/json'},cache:'no-store'});
+        const response=await fetch('/api/shared-capacity/session',{
+          method:'POST',headers:{accept:'application/json'},cache:'no-store',signal:controller.signal
+        });
         if(response.status===401){expired=true;return;}
         if(!response.ok)return;
         const result=await response.json();
@@ -44,11 +53,12 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
           serverExpiresAt.current=Number(result.expiresAt);
           scheduleExpiry.current();
         }
-      }catch{}
+      }catch{}finally{window.clearTimeout(timer);}
     })();
     renewalInFlight.current=renewal;
     await renewal;
     if(renewalInFlight.current===renewal)renewalInFlight.current=null;
+    if(renewalAbort.current===controller)renewalAbort.current=null;
     if(expired)await endSession('inactive');
   },[endSession]);
 
@@ -88,9 +98,9 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
 
   if(locked)return <section className="container shared-capacity-session-ending" role="status"><Clock3 aria-hidden="true"/><strong>Closing private capacity…</strong></section>;
 
-  return <div className="shared-capacity-session-workspace">
+  return <div className="shared-capacity-session-workspace" aria-label="Private Transport Capacity session">
     <div className="container shared-capacity-session-bar">
-      <span><Clock3 aria-hidden="true"/>For your privacy, access ends after 30 minutes without activity.</span>
+      <span aria-label="Private capacity access ends after 30 minutes without activity."><Clock3 aria-hidden="true"/><span><strong>Private session</strong><small>30-minute idle limit</small></span></span>
       <button type="button" className="button secondary small" data-shared-capacity-logout onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/>Log out</button>
     </div>
     {children}

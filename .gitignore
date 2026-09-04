@@ -27,6 +27,7 @@ npm-debug.log*
 
 # Local Netlify folder
 .netlify
+deno.lock
 
 # Local Supabase CLI state
 supabase/.branches/

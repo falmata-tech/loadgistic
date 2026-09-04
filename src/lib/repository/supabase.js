@@ -3,7 +3,9 @@ import {randomUUID} from 'node:crypto';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
 import {capacityRouteAlignmentMatch,capacityRoutePointMatch,normalizePlace,serviceAreaGeometryMatch} from '../route-matching.js';
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
-import {providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
+import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
+import {featuredTruckTypeForDate,featuredTruckWeekForDate} from '../featured-trucks.js';
+import {loadFeaturedTruckCandidates} from '../featured-truck-candidates.js';
 import {capacityUpdatePresentation,distanceBetweenKm,normalizePrivateContactEmail} from '../domain.js';
 import {hashTrackingAccessCode,privateContactDigest,sharedCapacityOtpCode} from '../security.js';
 
@@ -208,11 +210,21 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
     area_lng:areaPlace?.center_lng??null,area_radius_km:boundedRadius(filters.currentAreaRadiusKm),
     near_lat:hasNear?nearLat:null,near_lng:hasNear?nearLng:null,near_radius_km:filters.nearRadiusKm||20
   };
-  const {data,error}=await client.rpc('public_capacity_page',{
-    query,cursor_updated_at:cursor?.updatedAt||null,cursor_id:cursor?.id||null,requested_page_size:pageSize
-  });
-  if(error)throw new Error('SUPABASE_PUBLIC_CAPACITY_FAILED',{cause:error});
-  const rows=(data||[]).map(row=>row.payload||row);
+  const rows=[];
+  let scanCursor=cursor,scanComplete=false,scanPages=0;
+  while(rows.length<=pageSize&&!scanComplete&&scanPages<25){
+    const {data,error}=await client.rpc('public_capacity_page',{
+      query,cursor_updated_at:scanCursor?.updatedAt||null,cursor_id:scanCursor?.id||null,requested_page_size:pageSize
+    });
+    if(error)throw new Error('SUPABASE_PUBLIC_CAPACITY_FAILED',{cause:error});
+    const batch=(data||[]).map(row=>row.payload||row);
+    rows.push(...batch.filter(row=>row.current_signal_geometry_visible!==false));
+    scanPages+=1;
+    scanComplete=batch.length<=pageSize;
+    const tail=batch.at(-1);
+    if(!scanComplete&&tail)scanCursor={updatedAt:tail.updated_at,id:tail.id};
+    else if(!tail)scanComplete=true;
+  }
   const hasMore=rows.length>pageSize;
   const selected=rows.slice(0,pageSize);
   const items=selected.map(row=>{
@@ -305,7 +317,7 @@ export async function requestSupabaseSharedCapacityOtp(value){
   if(error)throw managedCapacityError('SUPABASE_SHARED_CAPACITY_OTP_REQUEST_FAILED',error);
   return data
     ?{accepted:true,deliveryQueued:true,challengeId,accessCode}
-    :{accepted:true,deliveryQueued:false};
+    :{accepted:true,deliveryQueued:false,challengeId};
 }
 
 export async function verifySupabaseSharedCapacityAccess(value,code){
@@ -448,12 +460,49 @@ export async function listSupabasePendingAccessEmailDeliveries(limit=20){
   return (data||[]).map(row=>row.payload||row);
 }
 
-export async function recordSupabaseAccessEmailDeliveryAttempt(id,{sent,error}={}){
+export async function claimSupabaseAccessEmailDelivery(kind,entityId){
   const client=createSupabaseAdminClient();
-  const {error:queryError}=await client.rpc('record_access_email_delivery_attempt',{
-    delivery_id:id,was_sent:Boolean(sent),failure_message:sent?null:String(error||'DELIVERY_FAILED').slice(0,500)
+  const {data,error}=await client.rpc('claim_access_email_delivery',{
+    requested_kind:String(kind||''),requested_entity_id:String(entityId||'')
+  });
+  if(error)throw managedCapacityError('SUPABASE_ACCESS_EMAIL_TARGET_FAILED',error);
+  return data?.payload||data||null;
+}
+
+export async function recordSupabaseAccessEmailDeliveryAttempt(id,{leaseToken,sent,error}={}){
+  const client=createSupabaseAdminClient();
+  const {data,error:queryError}=await client.rpc('record_access_email_delivery_attempt',{
+    delivery_id:id,claimed_lease_token:String(leaseToken||''),was_sent:Boolean(sent),
+    failure_message:sent?null:String(error||'DELIVERY_FAILED').slice(0,500)
   });
   if(queryError)throw managedCapacityError('SUPABASE_ACCESS_EMAIL_RECORD_FAILED',queryError);
+  return Boolean(data);
+}
+
+export async function isSupabaseAccessEmailDeliveryDeliverable(id,leaseToken){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('access_email_delivery_is_deliverable',{
+    delivery_id:String(id||''),claimed_lease_token:String(leaseToken||'')
+  });
+  if(error)throw managedCapacityError('SUPABASE_ACCESS_EMAIL_DELIVERY_CHECK_FAILED',error);
+  return Boolean(data);
+}
+
+export async function purgeSupabaseSharedCapacityAccess(limit=100){
+  const client=createSupabaseAdminClient();
+  const requestedLimit=Math.max(1,Math.min(500,Number(limit)||100));
+  const [{data,error},{data:trackingData,error:trackingError}]=await Promise.all([
+    client.rpc('shared_capacity_access_cleanup',{requested_limit:requestedLimit}),
+    client.rpc('tracking_email_otp_cleanup',{requested_limit:requestedLimit})
+  ]);
+  if(error||trackingError)throw managedCapacityError('SUPABASE_SHARED_CAPACITY_CLEANUP_FAILED',error||trackingError);
+  return {
+    otpCount:Math.max(0,Number(data?.otpCount)||0),
+    deliveryCount:Math.max(0,Number(data?.deliveryCount)||0),
+    guestDeliveryCount:Math.max(0,Number(data?.guestDeliveryCount)||0),
+    trackingOtpCount:Math.max(0,Number(trackingData?.otpCount)||0),
+    trackingDeliveryCount:Math.max(0,Number(trackingData?.deliveryCount)||0)
+  };
 }
 
 function seededTransporterPortraitUrl(filename){
@@ -636,7 +685,7 @@ function assignFeaturedSponsors(schedule,sponsors){
   const names=sponsors.map(sponsor=>sponsor.name).filter(Boolean);
   let index=0;
   return {...schedule,entries:schedule.entries.map(entry=>{
-    if(entry.type!=='SPONSOR_BREAK'||!names.length)return entry;
+    if(entry.type!=='PROGRAMME_BREAK'||!names.length)return entry;
     const name=names[index%names.length];index+=1;
     return {...entry,sponsor_name:name,label:`Sponsor · ${name}`};
   })};
@@ -720,7 +769,46 @@ export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
   const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,providerKeys,aliases),sponsoredProviders);
   return {feature_date:featureDate,base_place:expo.title,expo_group:expo,week:regionalExpoWeekForDate(featureDate),
     headline:day.public_headline||'Daily Featured Transporters',
-    introduction:day.public_introduction||`Meet transporters based in ${expo.title}, then find their current trucks in the Truck Market.`,
+    introduction:day.public_introduction||`Meet transporters based in ${expo.title}, then find their current trucks in Open capacity.`,
     tiktok_url:day.tiktok_url,broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,
     schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers,published:true};
+}
+
+export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
+  const featureDate=String(date||'');const theme=featuredTruckTypeForDate(featureDate);const sponsorGroup=regionalExpoGroupForDate(featureDate);
+  const client=createSupabaseAdminClient();
+  const [dayResult,providerResult]=await Promise.all([
+    client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,schedule_mode,schedule_config_json,manual_schedule_json,target_count,status').eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
+    client.rpc('public_featured_provider_candidates',{requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)})
+  ]);
+  if(dayResult.error||providerResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error||providerResult.error});
+  const providers=(providerResult.data||[]).map(row=>decorateFeaturedCandidate(row.payload||row));
+  const providerByKey=new Map(providers.map(provider=>[provider.provider_organization_id?`organization:${provider.provider_organization_id}`:`profile:${provider.provider_profile_id}`,provider]));
+  const candidates=await loadFeaturedTruckCandidates(client,featureDate,providers);
+  const truckByKey=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
+  const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
+    headline:'Daily Featured Trucks',introduction:`Today’s ${theme.label.toLowerCase()} roster is being prepared.`,tiktok_url:null,
+    broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
+  const day=dayResult.data;if(!day||day.expo_group_key!==theme.key)return empty();
+  const {data:slots,error:slotError}=await client.from('featured_provider_slots').select('slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id').eq('day_id',day.id).order('slot_position');
+  if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});
+  const featured=[];const truckKeys=[];const aliases=new Map();
+  for(const slot of slots||[]){const key=`vehicle:${slot.vehicle_id}`;const candidate=truckByKey.get(key);if(!candidate?.eligible||candidate.driver_user_id!==slot.driver_user_id)continue;
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,driver_user_id:unusedDriver,vehicle_id:unusedVehicle,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,theme:unusedTheme,...safe}=candidate;
+    featured.push({...safe,position:slot.slot_position});truckKeys.push(key);aliases.set(key,key);
+  }
+  const {data:placements,error:placementError}=await client.from('sponsor_placements').select('sponsor_id,position').eq('expo_group_key',sponsorGroup.key).eq('active',true).lte('starts_on',featureDate).gte('ends_on',featureDate).order('position').limit(5);
+  if(placementError)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:placementError});
+  const sponsorIds=(placements||[]).map(item=>item.sponsor_id);const sponsorResult=sponsorIds.length?await client.from('sponsors').select('id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone').in('id',sponsorIds).eq('active',true):{data:[],error:null};
+  if(sponsorResult.error)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:sponsorResult.error});
+  const sponsorById=new Map((sponsorResult.data||[]).map(sponsor=>[sponsor.id,sponsor]));const sponsoredProviders=[];
+  for(const placement of placements||[]){const sponsor=sponsorById.get(placement.sponsor_id);if(!sponsor)continue;if(sponsor.sponsor_kind==='ADVERTISER'){sponsoredProviders.push({sponsor_kind:'ADVERTISER',name:sponsor.business_name,description:sponsor.description,website_url:sponsor.website_url||null,phone:sponsor.phone||null,sponsor_position:placement.position,sponsored:true});continue;}
+    const key=sponsor.provider_organization_id?`organization:${sponsor.provider_organization_id}`:`profile:${sponsor.provider_profile_id}`;const provider=providerByKey.get(key);if(!provider?.eligible)continue;
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,...safe}=provider;
+    sponsoredProviders.push({...safe,sponsor_kind:'TRANSPORTER',sponsor_position:placement.position,sponsored:true});
+  }
+  const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,truckKeys,aliases),sponsoredProviders);
+  return {feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
+    headline:day.public_headline||'Daily Featured Trucks',introduction:day.public_introduction||`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
+    tiktok_url:day.tiktok_url,broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers:featured,published:true};
 }

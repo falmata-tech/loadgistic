@@ -1,9 +1,11 @@
 import {
-  createSupabaseProviderShipment,disputeSupabaseProviderReview,getSupabaseProviderGuestTracking,
+  addSupabaseProviderTrackingRecipient,createSupabaseProviderShipment,disputeSupabaseProviderReview,getSupabaseProviderGuestTracking,
   getSupabaseProviderShipment,getSupabaseProviderTrackingWorkspace,listSupabasePendingProviderTrackingEmails,
   listSupabaseProviderReviewModeration,listSupabaseProviderShipments,purgeExpiredSupabaseProviderShipmentGuests,
+  purgeExpiredSupabaseProviderTrackingOtps,requestSupabaseProviderTrackingOtp,revokeSupabaseProviderTrackingRecipient,
   recordSupabaseProviderTrackingEmailAttempt,resolveSupabaseProviderReview,submitSupabaseProviderReview,
-  unlockSupabaseProviderReview,unlockSupabaseProviderTracking,updateSupabaseProviderShipmentLocation,
+  unlockSupabaseProviderReview,updateSupabaseProviderShipmentLocation,
+  verifySupabaseProviderTrackingOtp,
   updateSupabaseProviderShipmentStatus
 } from './provider-tracking/supabase.js';
 
@@ -35,20 +37,36 @@ export async function updateProviderShipmentLocation(user,id,input){
   return updateSupabaseProviderShipmentLocation(user,id,input);
 }
 
-export async function unlockProviderTracking(code){
-  return unlockSupabaseProviderTracking(code);
+export async function requestProviderTrackingOtp(email,code){
+  return requestSupabaseProviderTrackingOtp(email,code);
+}
+
+export async function verifyProviderTrackingOtp(email,code,challengeId,otp){
+  return verifySupabaseProviderTrackingOtp(email,code,challengeId,otp);
 }
 
 export async function unlockProviderReview(shipmentId,code){
   return unlockSupabaseProviderReview(shipmentId,code);
 }
 
-export async function getProviderGuestTracking(id,partyRole){
-  return getSupabaseProviderGuestTracking(id,partyRole);
+export async function getProviderGuestTracking(id,recipientDigest){
+  return getSupabaseProviderGuestTracking(id,recipientDigest);
+}
+
+export async function addProviderTrackingRecipient(user,shipmentId,email){
+  return addSupabaseProviderTrackingRecipient(user,shipmentId,email);
+}
+
+export async function revokeProviderTrackingRecipient(user,shipmentId,recipientId){
+  return revokeSupabaseProviderTrackingRecipient(user,shipmentId,recipientId);
 }
 
 export async function purgeExpiredProviderShipmentGuests(limit=100){
   return purgeExpiredSupabaseProviderShipmentGuests(limit);
+}
+
+export async function purgeExpiredProviderTrackingOtps(limit=100){
+  return purgeExpiredSupabaseProviderTrackingOtps(limit);
 }
 
 export async function listPendingEmailDeliveries(limit=20){

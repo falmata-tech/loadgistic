@@ -31,6 +31,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
+    { href: '/app/fleet', label: 'My trucks', icon: Truck },
     { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/network', label: 'Network', icon: Network },
     { href: '/app/support', label: 'Support', icon: Headphones },
@@ -38,13 +39,13 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   ADMIN: [
-    { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/admin/operations', label: 'Operations', icon: Database },
+    { href: '/admin', label: 'Overview', icon: Home },
+    { href: '/admin/operations', label: 'Records', icon: Database },
     { href: '/admin/featured', label: 'Featured', icon: Sparkles },
     { href: '/admin/capacity-network', label: 'Capacity network', icon: Network },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
-    { href: '/app/more', label: 'More', icon: MoreHorizontal }
+    { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   SUPPORT: [
     { href: '/support', label: 'Inbox', icon: Headphones }
@@ -56,7 +57,7 @@ const mobileNavigation: Record<string, string[]> = {
   RECEIVER: ['/app/home', '/app/more'],
   TRANSPORTER: ['/app/home', '/app/fleet', '/app/network', '/app/provider-shipments', '/app/menu'],
   DRIVER: ['/app/home', '/app/provider-shipments', '/app/network', '/app/support', '/app/menu'],
-  ADMIN: ['/app/home', '/admin/operations', '/admin/capacity-network', '/admin/reviews', '/app/menu'],
+  ADMIN: ['/admin', '/admin/operations', '/admin/capacity-network', '/admin/reviews', '/app/menu'],
   SUPPORT: ['/support']
 };
 
@@ -83,7 +84,8 @@ const mobileLabels: Record<string, string> = {
   '/app/network': 'Network',
   '/admin/capacity-network': 'Network',
   '/admin/reviews': 'Reviews',
-  '/admin/operations': 'Operations',
+  '/admin': 'Overview',
+  '/admin/operations': 'Records',
   '/admin/featured': 'Featured',
   '/admin/ratings': 'Rating Reviews',
   '/admin/billing': 'Billing',
@@ -97,11 +99,11 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
   if(user.role==='SUPPORT'){
     items=[];
     if(user.can_manage_support)items.push({href:'/support',label:'Inbox',icon:Headphones});
-    if(user.can_manage_customers||user.can_manage_operations)items.push({href:'/admin/operations',label:'Operations',icon:Database});
+    if(user.can_manage_customers||user.can_manage_operations)items.push({href:'/admin/operations',label:'Records',icon:Database});
     if(user.can_manage_trust||user.can_manage_billing)items.push({href:'/admin/reviews',label:'Review Center',icon:ClipboardCheck});
   }
   if (user.driver_kind === 'COMPANY') {
-    items = items.filter(item => item.href !== '/app/company-page');
+    items = items.filter(item => !['/app/company-page','/app/fleet'].includes(item.href));
   }
   if (user.billing_limited) {
     items = items
@@ -123,7 +125,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
   const workspaceRole=workspaceRoleLabel(user);
   const isSupport=user.role==='SUPPORT';
-  const homeHref=isSupport?(items[0]?.href||'/login'):'/app/home';
+  const homeHref=isSupport?(items[0]?.href||'/login'):user.role==='ADMIN'?'/admin':'/app/home';
   return (
     <div className="app-frame">
       <aside className="sidebar">
@@ -132,7 +134,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
           {items.map(item => {
             const Icon=item.icon;
             return (
-            <Link key={item.href} className={`nav-link ${activeHref === item.href ? 'active' : ''}`} href={item.href}>
+            <Link key={item.href} className={`nav-link ${activeHref === item.href ? 'active' : ''}`} href={item.href} aria-current={activeHref===item.href?'page':undefined}>
               <Icon aria-hidden="true"/><span>{item.label}</span>
             </Link>
           )})}
@@ -161,7 +163,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         {mobileItems.map(item => {
           const Icon=item.icon;
           return (
-          <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href}>
+          <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href} aria-current={activeHref===item.href?'page':undefined}>
             <Icon aria-hidden="true"/><span>{item.label}</span>
           </Link>
         )})}

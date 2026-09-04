@@ -20,6 +20,7 @@ jobs:
     env:
       CI: true
       SESSION_SECRET: ci-only-session-secret-not-for-production-123456
+      TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -75,6 +76,7 @@ jobs:
     env:
       CI: true
       SESSION_SECRET: ci-only-session-secret-not-for-production-123456
+      TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

@@ -52,3 +52,9 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 7. Preserve mobile-first simplicity.
 8. Add tests for every permission or workflow change.
 9. Update `docs/DECISIONS.md` and `docs/PROGRESS.md` when architecture changes.
+10. For OAuth, email, Storage, payments, or another external boundary, a unit
+    test or `curl` redirect is not completion evidence. Exercise the visible
+    browser control end to end, verify the intended user-visible destination
+    or inbox, and confirm the running process loaded the expected adapter. Log
+    only sanitized status/count evidence; never print mailbox bodies, OTPs,
+    callback secrets, tokens, or customer contact data.

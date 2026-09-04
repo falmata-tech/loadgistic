@@ -7,8 +7,7 @@ export async function createSupabaseServerClient() {
   const { url, publishableKey } = getSupabasePublicConfig();
   return createServerClient(url, publishableKey, {
     auth: {
-      flowType: 'pkce',
-      experimental: { appendPkceFlowIdToRedirects: true }
+      flowType: 'pkce'
     },
     cookies: {
       getAll() {

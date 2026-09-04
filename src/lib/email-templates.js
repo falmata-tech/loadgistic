@@ -19,25 +19,31 @@ function trackingMessage(payload){
   const intro=started
     ?`${text(shipment.providerName)||'Your transporter'} started a private Tracking session for your shipment.`
     :`${text(shipment.providerName)||'Your transporter'} marked your shipment complete.`;
+  const accessGuidance=started
+    ?'Use the link and Tracking code below with this approved email. Ask the transporter to add each other person who should follow the shipment.'
+    :'Use the separate review code below if you want to review the transporter.';
   const timeline=!started&&Array.isArray(shipment.events)
     ?shipment.events.map(event=>`${statusLabel(event.status)} · ${text(event.created_at)}${event.note?` · ${text(event.note)}`:''}`)
     :[];
   const lines=[intro,line('Tracking reference',shipment.code),line('From',shipment.origin),line('To',shipment.destination),line('Cargo',shipment.cargoSummary)];
   if(timeline.length)lines.push('Status timeline:',...timeline.map(item=>`- ${item}`));
-  lines.push('',started?'Open Tracking':'Open Tracking and review the transporter',text(access?.url),started?'Tracking code':'Review code',text(access?.code));
+  lines.push('',accessGuidance,started?'Open Tracking':'Open Tracking and review the transporter',text(access?.url),started?'Tracking code':'Review code',text(access?.code));
   const html=[`<p>${escapeHtml(intro)}</p>`,htmlLine('Tracking reference',shipment.code),htmlLine('From',shipment.origin),htmlLine('To',shipment.destination),htmlLine('Cargo',shipment.cargoSummary)];
   if(timeline.length)html.push(`<h2 style="font-size:18px">Status timeline</h2><ul>${timeline.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>`);
-  html.push(`<p><a href="${escapeHtml(access?.url)}">${started?'Open Tracking':'Open Tracking and review the transporter'}</a></p>`,htmlLine(started?'Tracking code':'Review code',access?.code));
+  html.push(`<p>${escapeHtml(accessGuidance)}</p>`,`<p><a href="${escapeHtml(access?.url)}">${started?'Open Tracking':'Open Tracking and review the transporter'}</a></p>`,htmlLine(started?'Tracking code':'Review code',access?.code));
   return {...payload,subject:title,text:lines.filter(value=>value!==null).join('\n'),html:emailHtml(title,html)};
 }
 
 function accessMessage(payload){
   const shared=payload.template==='shared-capacity-access';
-  const title=shared?'Your Shared capacity code':'Your Assisted matching recovery code';
+  const tracking=payload.template==='tracking-access-code';
+  const title=shared?'Your Private capacity code':tracking?'Your shipment Tracking code':'Your Assisted matching recovery code';
   const intro=shared
-    ?'Use this code to open the private truck capacity shared with your email.'
+    ?'Use this six-digit code within 10 minutes to open truck capacity privately shared with this email. This does not create a Loadgistic account.'
+    :tracking
+      ?'Use this six-digit code within 10 minutes to open the shipment updates shared with this email. This does not create a Loadgistic account.'
     :'Use this code to return to your private Assisted matching conversation.';
-  const label=shared?'Verification code':'Recovery code';
+  const label=shared||tracking?'Six-digit code':'Recovery code';
   return {
     ...payload,subject:title,
     text:[intro,'',payload.access?.url,label,payload.access?.code].map(text).join('\n'),
@@ -47,6 +53,6 @@ function accessMessage(payload){
 
 export function buildEmailMessage(payload){
   if(['tracking-started','tracking-completed'].includes(payload?.template))return trackingMessage(payload);
-  if(['shared-capacity-access','assisted-matching-access'].includes(payload?.template))return accessMessage(payload);
+  if(['shared-capacity-access','tracking-access-code','assisted-matching-access'].includes(payload?.template))return accessMessage(payload);
   throw new Error('UNKNOWN_EMAIL_TEMPLATE');
 }

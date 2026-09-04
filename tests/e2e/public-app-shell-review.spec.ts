@@ -9,15 +9,14 @@ test('capture focused public application shell review',async({page}:{page:any})=
   const project=test.info().project.name;
 
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Find capacity for local and long-distance freight.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Open Transport Capacity',includeHidden:true})).toHaveCount(1);
+  await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight+2)).toBe(true);
-  if((page.viewportSize()?.width||0)<=760){
-    const headingBottom=await page.locator('.public-workspace-heading').evaluate((element:any)=>element.getBoundingClientRect().bottom);
-    const controlsTop=await page.locator('.market-command-column').evaluate((element:any)=>element.getBoundingClientRect().top);
-    expect(controlsTop-headingBottom).toBeLessThan(24);
-  }
+  const controlsTop=await page.locator('.market-command-column').evaluate((element:any)=>element.getBoundingClientRect().top);
+  const headerBottom=await page.locator('.public-header').evaluate((element:any)=>element.getBoundingClientRect().bottom);
+  expect(controlsTop-headerBottom).toBeLessThan(32);
   await page.screenshot({path:path.join(output,`${project}-market.png`),fullPage:false});
 
   const navigation=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Public workspace navigation'}):page.getByRole('navigation',{name:'Public mobile navigation'});

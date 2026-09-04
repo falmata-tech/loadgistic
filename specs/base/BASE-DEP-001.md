@@ -21,7 +21,7 @@ Then specification integrity, source checks, tests, types, and production build 
 
 ### Scenario: unsafe configuration
 
-Given a production runtime lacks a session secret or durable production services\
+Given a production runtime lacks a session secret, a distinct Tracking code secret, or durable production services\
 When the application starts or receives health traffic\
 Then deployment is rejected or reported unhealthy without exposing secret values.
 
@@ -41,7 +41,7 @@ And scanner credentials, verdict details, original document content, and quarant
 ### Scenario: production readiness reports blockers truthfully
 
 Given health traffic reaches a production runtime\
-When durable database, private storage, session secret, or upload-scanning configuration is incomplete\
+When durable database, private storage, session secret, distinct Tracking code secret, or upload-scanning configuration is incomplete\
 Then readiness returns an unhealthy response with non-secret blocker names\
 And it never falls back to SQLite or local serverless files when Supabase is unavailable.
 
@@ -73,18 +73,35 @@ And application compatibility across the rollout window is documented.
 Given a managed Shared capacity, Assisted matching, Tracking-access, or Tracking-completion delivery is due\
 When the bounded delivery worker claims queue rows\
 Then each row is leased transactionally so concurrent workers do not claim it together\
-And the configured server-only email provider receives a stable idempotency key, verified sender, bounded subject, plain-text body, and escaped HTML body\
+And a serial worker claims at most one access-email row immediately before processing it so queued rows do not age inside a preclaimed batch\
+And a request-scoped Shared capacity delivery may claim only its newly committed delivery identifier after the HTTP response has completed rather than scanning the global queue\
+And targeted and global claims use the same row lease so they cannot send the same delivery concurrently\
+And every Shared capacity or Assisted matching delivery is re-fenced against its current lease immediately before provider submission\
+And the configured server-only email provider receives a stable idempotency key or deterministic Message-ID, verified sender, bounded subject, plain-text body, and escaped HTML body\
 And successful delivery becomes terminal while failure records only a bounded non-secret provider status and a future retry time\
-And no API key, access code, customer email, or message body is written to application logs.
+And a provider-accepted delivery whose success acknowledgement cannot be persisted is never rewritten as a provider failure\
+And Shared capacity and Tracking OTP leases and retry delays leave time for another attempt before their ten-minute challenges expire\
+And one matching partial index supports due queued or failed rows beneath the delivery-attempt limit\
+And no API key, SMTP credential, access code, customer email, or message body is written to application logs\
+And a temporary SMTP pilot uses authenticated TLS, bounded connection and socket timeouts, no connection pool, no protocol logger, and a visible readiness warning that delivery is at least once after an ambiguous provider timeout\
+And standard local configuration sends only to a loopback Mailpit HTTP endpoint with bounded requests while Production ignores that local adapter and continues to require a managed provider.
 
 ### Scenario: scheduled operations are bounded and observable
 
 Given the Production application is published on Netlify\
 When the managed-operations schedule runs every fifteen minutes in UTC\
-Then one worker processes bounded Tracking and access-email batches and invokes bounded expired-guest cleanup\
+Then the 30-second scheduled function only authenticates and dispatches one background invocation\
+And the background worker processes bounded Tracking and access-email batches and invokes bounded expired-guest cleanup within Netlify's background execution limit\
+And the two-minute access-email recovery schedule also dispatches authenticated background work rather than performing provider delivery inside the scheduled-function limit\
+And the dispatch uses a short-lived HMAC authorization derived from the server-only session secret rather than exposing that secret or accepting an unauthenticated public trigger\
+And the dispatcher derives the background target from the exact current invocation origin rather than a site-wide Production fallback and binds that origin into the signature\
 And its result contains counts and safe status names only\
-And an infrastructure failure returns a failed invocation for operator visibility without exposing private queue rows\
-And Preview or local execution can invoke the same application service explicitly without maintaining an in-memory timer.
+And an unsafe documented session-secret placeholder cannot sign or authorize a dispatch\
+And a dispatch or background infrastructure failure is visible in function logs without exposing private queue rows\
+And an operation-level queue failure remains durable for a later scheduled run and does not request a replay of the aging signed invocation\
+And bounded cleanup removes terminal Shared capacity and Assisted matching email-delivery rows after their reviewed retention periods without deleting active support conversations\
+And a separate two-minute schedule dispatches one authenticated background invocation whose worker claims at most two due access-email rows so Shared capacity and Tracking OTP retries remain inside their ten-minute challenge windows\
+And Preview or local execution invokes the dispatcher explicitly because Netlify runs schedules automatically only for the published deploy.
 
 ### Scenario: public abuse limits are shared and privacy preserving
 

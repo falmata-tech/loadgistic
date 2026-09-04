@@ -11,6 +11,29 @@ rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access com
 
 # Fleet driver access
 
+### Scenario: provider owners register the trucks they control
+
+Given an active Fleet transporter owner, Owner-operator, or Self-managed Driver has current workspace access\
+When they add a truck from My Fleet or My trucks\
+Then one active truck is created for only that organization or independent provider profile\
+And make, model, standardized cargo configuration, private plate, and a server-generated immutable Loadgistic truck number are recorded\
+And the standardized configuration catalogue offers cargo vans, pickups, mini, light, medium, heavy rigid, and heavy rigid-with-trailer trucks but not courier cars or motorcycles\
+And no Capacity signal, public location, Driver assignment, or document-verification outcome is inferred from registration\
+And the new truck opens in its owner-scoped detail workspace so Capacity and verification can be completed deliberately\
+And the command is atomic, validated, and audited with the authenticated owner as actor.
+
+Given a Company driver, unrelated provider, anonymous browser, or browser Supabase client attempts the same command\
+When the truck registration boundary rechecks authority\
+Then the command is denied without creating a truck, platform number, assignment, Capacity signal, or audit success.
+
+### Scenario: every authorized provider can reach truck management
+
+Given a Fleet transporter or independent provider opens its workspace on desktop or phone\
+When it needs to inspect or add a truck\
+Then My Fleet or My trucks provides an explicit Add truck action and every listed truck opens its owned detail view\
+And an independent Driver with no truck receives the same Add truck action instead of an unactionable empty Capacity screen\
+And a Company driver sees only the employer-assigned truck workflow and no truck-creation affordance.
+
 ### Scenario: large fleet management remains bounded
 
 Given a Fleet Transporter has many trucks or company Drivers\
@@ -122,7 +145,7 @@ And Dashboard returns to the authenticated workspace without requiring a new log
 
 ## Contract ownership
 
-- Application policy and services: dedicated managed Fleet, Tracking, and Capacity application ports
-- Inbound adapters: Driver Home, assignment detail, Fleet team controls, and related route handlers
-- Persistence adapter: Supabase PostgreSQL fleet-driver, permission, assignment, verification-summary, and audit functions; SQLite remains test-fixture history only during removal
+- Application policy and services: dedicated managed Fleet, truck-registration, Tracking, and Capacity application ports
+- Inbound adapters: Driver Home, My Fleet/My trucks, owned truck detail, assignment detail, Fleet team controls, and related route handlers
+- Persistence adapter: Supabase PostgreSQL truck-registration, fleet-driver, permission, assignment, verification-summary, and audit functions; SQLite remains test-fixture history only during removal
 - Tests: managed Fleet contract and live Supabase verifier, `tests/authorization.test.mjs`, `tests/repository.test.mjs`, `tests/e2e/smoke.spec.ts`

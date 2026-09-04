@@ -16,7 +16,7 @@ export default async function ProviderPage({params}:{params:Promise<{handle:stri
   const corridors=new Map<string,any>();
   for(const capacity of provider.capacities)for(const corridor of capacity.recurring_corridors||[])corridors.set(corridor.id,corridor);
   return <><PublicHeader/><main className="provider-microsite provider-microsite-v2">
-    <div className="container provider-site-back"><Link href={`/?q=${encodeURIComponent(provider.name)}`}><ArrowLeft aria-hidden="true"/>Back to Truck Market</Link></div>
+    <div className="container provider-site-back"><Link href={`/?q=${encodeURIComponent(provider.name)}`}><ArrowLeft aria-hidden="true"/>Back to Open capacity</Link></div>
     <section className="provider-site-hero"><div className="container provider-site-hero-grid">
       <img className="provider-site-mark provider-profile-image" src={provider.profile_image_url||'/marketing/default-transporter-profile.png'} alt={provider.profile_image_url?`${provider.name} transporter profile`:`Default transporter portrait for ${provider.name}`}/>
       <div className="provider-site-identity"><span className="provider-handle">{provider.provider_kind_label} · /@{provider.handle}</span><h1>{provider.name}</h1><p>{provider.headline||'Professional road-freight services across Ethiopia'}</p><div className="provider-hero-facts">{provider.city?<span><MapPin aria-hidden="true"/>{provider.city}</span>:null}<span><Truck aria-hidden="true"/>{provider.trucks.length} active {provider.trucks.length===1?'truck':'trucks'}</span><span><Star aria-hidden="true"/>{provider.review_count?`${provider.average_rating} · ${provider.review_count} verified shipment ${provider.review_count===1?'review':'reviews'}`:'New to Loadgistic'}</span></div></div>

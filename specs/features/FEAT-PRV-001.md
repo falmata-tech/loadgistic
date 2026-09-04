@@ -25,7 +25,7 @@ And account email, account phone, private plate, exact coordinates, and private 
 Given a provider owner edits public business information\
 When the base location is saved\
 Then one current regional state or Addis Ababa or Dire Dawa city administration is required together with the structured city or town\
-And the Daily Featured Transporters programme and transporter microsite may display that general base\
+And the Daily Featured Trucks programme and transporter microsite may display that general base\
 And an exact office, yard, home, or device coordinate is never requested or inferred from that profile field.
 
 ### Scenario: managed profile editing repeats provider ownership
@@ -40,7 +40,7 @@ And a failed update changes neither the public page nor its owner base.
 
 ### Scenario: public provider labels describe the operating model
 
-Given a provider appears in Daily Featured Transporters or its microsite\
+Given a provider appears in Daily Featured Trucks or its microsite\
 When Loadgistic presents the provider type\
 Then a transport-company organization is called a Fleet transporter\
 And an independent provider with approved truck ownership is called an Owner-operator\

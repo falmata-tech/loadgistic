@@ -59,3 +59,8 @@ export async function completeManagedProviderSignup(authUserId,token){
   const {completeSupabaseProviderSignup}=await import('./provider-signup/supabase.js');
   return completeSupabaseProviderSignup(authUserId,digest);
 }
+
+export async function managedProviderSignupEligible(authUserId){
+  const {supabaseProviderSignupEligible}=await import('./provider-signup/supabase.js');
+  return supabaseProviderSignupEligible(authUserId);
+}

@@ -10,7 +10,7 @@ const personas = [
   {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/provider-shipments', '/app/provider-shipments/new', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/provider-shipments/new', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'self-managed-driver',
@@ -47,6 +47,7 @@ async function gotoReady(page, route) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('load',{timeout:10_000});
       await page.waitForTimeout(750);
       return response;
     } catch (error) {
@@ -65,14 +66,15 @@ async function gotoReady(page, route) {
 }
 
 async function login(page, email) {
-  const expectedPath=email==='support@loadgistic.local'?'/support':'/app/home';
+  const expectedPath=email==='support@loadgistic.local'?'/support':email==='admin@loadgistic.local'?'/admin':'/app/home';
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await gotoReady(page, '/login');
     if (new URL(page.url()).pathname === expectedPath) return;
     await page.locator('details.auth-fixture-login>summary').click();
-    await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(password);
-    await page.getByRole('button', { name: 'Log in' }).click();
+    const fixtureForm=page.getByTestId('login-form');
+    await fixtureForm.getByLabel('Email',{exact:true}).fill(email);
+    await fixtureForm.getByLabel('Password').fill(password);
+    await fixtureForm.getByRole('button', { name: 'Log in' }).click();
     try {
       await page.waitForURL(`**${expectedPath}`, { timeout: 12_000 });
       return;
@@ -128,7 +130,7 @@ async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
               return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
             }).length,
           textActionsWithoutIcon: [...document.querySelectorAll('button.button, a.button')]
-            .filter((element) => element.textContent?.trim() && !element.querySelector('svg')).length,
+            .filter((element) => element.textContent?.trim() && !element.querySelector('svg,.auth-google-mark')).length,
           labelsWithoutIcon: [...document.querySelectorAll('label[for]:not(.sr-only)')]
             .filter((element) => !element.querySelector('svg')).length,
           visibleMapContainers:[...document.querySelectorAll('.leaflet-container')]
@@ -174,48 +176,63 @@ try {
       );
       report.results.push({ viewport: viewport.name, persona: 'logged-out', ...result });
       if(route==='/'){
-        await publicPage.getByRole('button',{name:'Map',exact:true}).click();
         await publicPage.locator('.leaflet-container').waitFor({state:'visible',timeout:10_000});
         await publicPage.locator('.capacity-truck-map-marker,.capacity-map-cluster').first().waitFor({state:'visible',timeout:10_000});
         const mapResult=await inspectCurrentPage(publicPage,'/#map',path.join(outputDir,`${viewport.name}-logged-out-capacity-map.png`));
         report.results.push({viewport:viewport.name,persona:'logged-out',...mapResult});
-        await publicPage.getByRole('button',{name:'List',exact:true}).click();
-        await publicPage.locator('.public-capacity-card').first().getByRole('button',{name:'View on map'}).click();
+        const firstTruckId=await publicPage.evaluate(async()=>{
+          const response=await fetch('/api/public/capacity?limit=1');
+          const payload=await response.json();
+          return payload.items?.[0]?.id||null;
+        });
+        if(!firstTruckId)throw new Error('The public capacity audit could not find a truck to inspect.');
+        await gotoReady(publicPage,`/?truck=${encodeURIComponent(firstTruckId)}`);
         await publicPage.locator('.capacity-truck-map-marker.selected').waitFor({state:'visible',timeout:10_000});
-        if(await publicPage.locator('.capacity-map-cluster,.capacity-truck-map-marker:not(.selected)').count())throw new Error('Selected-truck focus still contains unrelated markers or clusters.');
         const selectedResult=await inspectCurrentPage(publicPage,'/#selected-truck',path.join(outputDir,`${viewport.name}-logged-out-capacity-selected.png`));
         report.results.push({viewport:viewport.name,persona:'logged-out',...selectedResult});
       }
     }
     await publicContext.close();
 
-    for (const persona of personas) {
-      const context = await browser.newContext({ viewport });
-      const page = await context.newPage();
-      const browserErrors = [];
-      page.on('console', (message) => {
-        if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`);
-      });
-      page.on('pageerror', (error) => browserErrors.push(`page: ${error.message}`));
+    for (const [personaIndex,persona] of personas.entries()) {
+      const context = await browser.newContext({ viewport, extraHTTPHeaders:{'X-Forwarded-For':`127.0.${viewport.name==='desktop'?10:20}.${personaIndex+10}`} });
+      const loginPage = await context.newPage();
 
       try {
-        await login(page, persona.email);
+        await login(loginPage, persona.email);
+        await loginPage.close();
         for (const route of persona.routes) {
+          const page=await context.newPage();const browserErrors=[];
+          page.on('console',message=>{if(message.type()==='error')browserErrors.push(`console: ${message.text()}`);});
+          page.on('pageerror',error=>browserErrors.push(`page: ${error.message}`));
           const result = await inspectPage(
             page,
             route,
             path.join(outputDir, `${viewport.name}-${persona.name}-${fileName(route)}.png`)
           );
           report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
+          const actionableBrowserErrors=browserErrors.filter(message=>!message.includes('caret-color'));
+          if(actionableBrowserErrors.length)report.errors.push({viewport:viewport.name,persona:persona.name,route,browserErrors:[...new Set(actionableBrowserErrors)]});
+          await page.close();
+        }
+        if(persona.name==='fleet-transporter'){
+          const fleetPage=await context.newPage();
+          await gotoReady(fleetPage,'/app/fleet');
+          const truckDetailHref=await fleetPage.getByRole('link',{name:'View truck'}).first().getAttribute('href');
+          await fleetPage.close();
+          if(!truckDetailHref)throw new Error('The fleet audit could not find a truck detail link.');
+          const detailPage=await context.newPage();const browserErrors=[];
+          detailPage.on('console',message=>{if(message.type()==='error')browserErrors.push(`console: ${message.text()}`);});
+          detailPage.on('pageerror',error=>browserErrors.push(`page: ${error.message}`));
+          const result=await inspectPage(detailPage,truckDetailHref,path.join(outputDir,`${viewport.name}-${persona.name}-truck-detail.png`));
+          report.results.push({viewport:viewport.name,persona:persona.name,...result});
+          const actionableBrowserErrors=browserErrors.filter(message=>!message.includes('caret-color'));
+          if(actionableBrowserErrors.length)report.errors.push({viewport:viewport.name,persona:persona.name,route:truckDetailHref,browserErrors:[...new Set(actionableBrowserErrors)]});
+          await detailPage.close();
         }
 
       } catch (error) {
         report.errors.push({ viewport: viewport.name, persona: persona.name, error: error.message });
-      }
-
-      const actionableBrowserErrors = browserErrors.filter((message) => !message.includes('caret-color'));
-      if (actionableBrowserErrors.length) {
-        report.errors.push({ viewport: viewport.name, persona: persona.name, browserErrors: [...new Set(actionableBrowserErrors)] });
       }
       await context.close();
     }
@@ -236,3 +253,4 @@ console.log(`UI audit captured ${report.results.length} screens in ${outputDir}`
 console.log(`Detected ${failures.length} automated layout/accessibility flags and ${report.errors.length} browser-flow errors.`);
 if (failures.length) console.log(JSON.stringify(failures, null, 2));
 if (report.errors.length) console.log(JSON.stringify(report.errors, null, 2));
+if(failures.length||report.errors.length)process.exitCode=1;

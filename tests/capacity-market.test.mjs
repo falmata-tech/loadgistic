@@ -4,14 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {distanceBetweenKm} from '../src/lib/domain.js';
-import {serviceAreaGeometryMatch} from '../src/lib/route-matching.js';
+import {capacityRoutePointMatch,serviceAreaGeometryMatch} from '../src/lib/route-matching.js';
+import {applyManagedFixtureMarketPolicy} from '../scripts/fixture-market-policy.mjs';
 
 const root=process.cwd();
 const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources/fixtures/managed-market.json'),'utf8'));
 const tables=fixture.tables;
 const vehiclesById=new Map(tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
 const smallVehicleTypes=new Set([
-  'Courier motorcycle','Courier car','Cargo van','Pickup truck','Pickup stake body',
+  'Cargo van','Pickup truck','Pickup stake body',
   'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
 ]);
 
@@ -37,15 +38,26 @@ test('managed fixture presents a busy, supply-only Ethiopian freight market',()=
   assert.equal(tables.capacities.every(capacity=>['OPEN','SAVED_PARTNERS'].includes(capacity.visibility)),true);
 });
 
-test('small local vehicles make up seventy percent of fixture capacity',()=>{
+test('mini trucks lead the local vehicle mix without courier cars or motorcycles',()=>{
   const small=tables.vehicles.filter(vehicle=>smallVehicleTypes.has(vehicle.cargo_configuration));
   assert.equal(small.length,100);
   assert.ok(small.length/tables.vehicles.length>=0.69);
   for(const type of smallVehicleTypes){
     assert.ok(small.some(vehicle=>vehicle.cargo_configuration===type),type);
   }
-  assert.ok(fs.existsSync(path.join(root,'public/vehicle-configurations/courier-motorcycle.jpg')));
-  assert.ok(fs.existsSync(path.join(root,'public/vehicle-configurations/courier-car.jpg')));
+  const counts=Object.fromEntries([...new Set(tables.vehicles.map(vehicle=>vehicle.cargo_configuration))]
+    .map(configuration=>[configuration,tables.vehicles.filter(vehicle=>vehicle.cargo_configuration===configuration).length]));
+  assert.equal(counts['Mini Open Body Truck'],22);
+  assert.equal(counts['Mini Stake Body Truck'],21);
+  assert.equal(counts['Mini Box Truck'],22);
+  assert.equal(counts['Light Stake Body Truck'],9);
+  assert.equal(counts['Light Box Truck'],9);
+  assert.equal(counts['Medium Stake Body Truck'],5);
+  assert.equal(counts['Medium Box Truck'],6);
+  assert.equal(counts['Heavy Rigid Stake Body Truck'],7);
+  assert.equal(counts['Heavy Rigid Stake Body Truck + Trailer'],7);
+  assert.equal(counts['Courier motorcycle'],undefined);
+  assert.equal(counts['Courier car'],undefined);
 });
 
 test('Partial capacity is route-only while Empty capacity may use a route or Service area',()=>{
@@ -75,9 +87,11 @@ test('Partial capacity is route-only while Empty capacity may use a route or Ser
 });
 
 test('local-vehicle signals remain local to their truck and connected market',()=>{
-  for(const capacity of tables.capacities){
+  const managedCapacities=applyManagedFixtureMarketPolicy(tables.capacities,tables.vehicles);
+  for(const capacity of managedCapacities){
     const vehicle=vehiclesById.get(capacity.vehicle_id);
     if(!smallVehicleTypes.has(vehicle?.cargo_configuration))continue;
+    assert.ok(capacity.location_precision_km<=5,`${capacity.id} has an oversized local privacy area`);
     const points=capacity.availability_geometry==='ROUTE'
       ?json(capacity.current_route_points_json)
       :[{lat:capacity.capacity_area_center_lat,lng:capacity.capacity_area_center_lng}];
@@ -91,6 +105,86 @@ test('local-vehicle signals remain local to their truck and connected market',()
       assert.ok(routeDistance<=30,`${capacity.id} spans ${routeDistance.toFixed(1)} km`);
     }
   }
+});
+
+test('demo truck locations are distributed across real markets without diagonal generation',()=>{
+  const locationsByPlace=new Map();
+  for(const capacity of tables.capacities){
+    const currentPoints=json(capacity.current_route_points_json);
+    const anchor=capacity.availability_geometry==='ROUTE'
+      ?currentPoints[0]
+      :{lat:capacity.capacity_area_center_lat,lng:capacity.capacity_area_center_lng};
+    const distanceToNamedPlace=distanceBetweenKm(
+      {lat:capacity.location_lat,lng:capacity.location_lng},anchor
+    );
+    assert.ok(distanceToNamedPlace<=3.1,`${capacity.id} is ${distanceToNamedPlace.toFixed(1)} km from its named place`);
+    const rows=locationsByPlace.get(capacity.location_place_ref)||[];
+    rows.push(capacity);
+    locationsByPlace.set(capacity.location_place_ref,rows);
+  }
+
+  assert.ok(locationsByPlace.size>=40,`only ${locationsByPlace.size} distinct truck locations`);
+  assert.ok(Math.max(...[...locationsByPlace.values()].map(rows=>rows.length))<=6);
+  for(const [placeRef,rows] of locationsByPlace){
+    if(rows.length<3)continue;
+    const diagonalConstants=new Set(rows.map(row=>(row.location_lat+row.location_lng).toFixed(5)));
+    assert.ok(diagonalConstants.size>1,`${placeRef} uses one repeated diagonal offset`);
+  }
+
+  for(const organization of tables.organizations.filter(item=>item.id.startsWith('org-public-fleet-'))){
+    const distinct=new Set(tables.capacities
+      .filter(capacity=>capacity.provider_organization_id===organization.id)
+      .map(capacity=>capacity.location_place_ref));
+    assert.ok(distinct.size>=4,`${organization.name} repeats only ${distinct.size} nearby locations`);
+  }
+
+  const publicSignals=applyManagedFixtureMarketPolicy(tables.capacities,tables.vehicles)
+    .filter(capacity=>capacity.visibility==='OPEN');
+  const publicByPlace=new Map();
+  for(const capacity of publicSignals)publicByPlace.set(capacity.location_place_ref,(publicByPlace.get(capacity.location_place_ref)||0)+1);
+  assert.ok(publicByPlace.size>=20,`public demo capacity reaches only ${publicByPlace.size} locations`);
+  assert.ok(Math.max(...publicByPlace.values())<=6);
+});
+
+test('every truck location and current signal stays on or beside its regular service',()=>{
+  const regularByOwner=new Map(tables.profile_routes
+    .map(route=>[route.organization_id||route.provider_profile_id,route]));
+  for(const capacity of tables.capacities){
+    const regular=regularByOwner.get(capacity.provider_organization_id||capacity.provider_profile_id);
+    assert.ok(regular,capacity.id);
+    const distanceToRegular=point=>{
+      if(regular.geometry==='ROUTE')return capacityRoutePointMatch(point,json(regular.route_points_json),{radiusKm:10}).distance_km;
+      const match=serviceAreaGeometryMatch(point,json(regular.area_boundary_json),{searchRadiusKm:10});
+      return match.inside?0:match.distance_km;
+    };
+    const locationDistance=distanceToRegular({lat:capacity.location_lat,lng:capacity.location_lng});
+    assert.ok(locationDistance!==null&&locationDistance<=3.1,`${capacity.id} location is ${locationDistance} km from regular service`);
+    const currentPoints=capacity.availability_geometry==='ROUTE'
+      ?json(capacity.current_route_points_json)
+      :[{lat:capacity.capacity_area_center_lat,lng:capacity.capacity_area_center_lng}];
+    for(const point of currentPoints){
+      const currentDistance=distanceToRegular(point);
+      assert.ok(currentDistance!==null&&currentDistance<=3.1,`${capacity.id} current signal is ${currentDistance} km from regular service`);
+    }
+  }
+});
+
+test('primary Driver demo keeps location, current capacity, and regular work in one local market',()=>{
+  const capacity=tables.capacities.find(item=>item.vehicle_id==='veh-driver-1');
+  const regular=tables.profile_routes.find(item=>item.provider_profile_id==='provider-driver');
+  assert.ok(capacity&&regular);
+  const location={lat:capacity.location_lat,lng:capacity.location_lng};
+  const currentPoints=json(capacity.current_route_points_json);
+  assert.equal(capacity.location_place_ref,'builtin:sebeta');
+  assert.equal(capacity.location_precision_km,3);
+  assert.ok(distanceBetweenKm(location,currentPoints[0])<=5);
+  assert.ok(currentPoints.slice(1).reduce((total,point,index)=>
+    total+distanceBetweenKm(currentPoints[index],point),0)<=10);
+  assert.equal(currentPoints.at(-1).label,'Alem Gena, Ethiopia');
+  assert.equal(regular.geometry,'RADIUS');
+  assert.equal(regular.area_center_place_ref,'builtin:sebeta');
+  assert.ok(distanceBetweenKm(location,{lat:regular.area_center_lat,lng:regular.area_center_lng})<=5);
+  assert.equal(serviceAreaGeometryMatch(location,json(regular.area_boundary_json),{searchRadiusKm:0}).inside,true);
 });
 
 test('each transporter fixture has one regular route or Service area record',()=>{

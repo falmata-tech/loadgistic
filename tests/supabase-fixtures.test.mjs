@@ -3,6 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
+import {
+  applyManagedFixtureMarketPolicy,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
+  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS
+} from '../scripts/fixture-market-policy.mjs';
 
 const root=path.resolve(import.meta.dirname,'..');
 const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
@@ -13,6 +17,7 @@ test('local managed signup verification uses only the isolated mail sink and num
   const localConfig=fs.readFileSync(path.join(root,'supabase','config.toml'),'utf8');
   assert.match(configure,/INBUCKET_URL\|\|runtime\.MAILPIT_URL/);
   assert.match(configure,/SUPABASE_SEED_MAIL_URL:mailUrl/);
+  assert.match(configure,/\['LOADGISTIC_LOCAL_MAILPIT_URL',mailUrl\]/);
   assert.match(configure,/--verify-signup/);
   assert.match(configure,/APP_URL','http:\/\/127\.0\.0\.1:3100'/);
   assert.match(localConfig,/site_url = "http:\/\/127\.0\.0\.1:3100"/);
@@ -23,14 +28,22 @@ test('local managed signup verification uses only the isolated mail sink and num
 
 test('fixture importer uses a credential-free managed source and creates the current Ethiopia Featured day',()=>{
   const source=fs.readFileSync(importer,'utf8');
+  const verifier=fs.readFileSync(path.join(root,'scripts','verify-supabase-fixtures.mjs'),'utf8');
   const fixturePath=path.join(root,'resources','fixtures','managed-market.json');
   const fixtureText=fs.readFileSync(fixturePath,'utf8');
   const fixture=JSON.parse(fixtureText);
   assert.match(source,/managed-market\.json/);
   assert.match(source,/regionalExpoGroupForDate\(today\)/);
   assert.match(source,/buildFeaturedFixtureTables\(\)/);
+  assert.match(source,/provider_shipments: 1/);
   assert.match(source,/timeZone:'Africa\/Addis_Ababa'/);
+  assert.match(source,/public_headline:'Daily Featured Trucks'/);
+  assert.match(source,/vehicle_id:candidate\.vehicle\.id,driver_user_id:candidate\.assignment\.driver_user_id/);
+  assert.doesNotMatch(source,/find their current trucks in the Truck Market/);
   assert.doesNotMatch(source,/node:sqlite|DATABASE_PATH|db\.js|repository\.js/);
+  assert.match(source,/normalizeDemoSharedEmails\(process\.env\.LOADGISTIC_DEMO_SHARED_EMAILS\)/);
+  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_INCOMPLETE/);
+  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_INCOMPLETE/);
   assert.equal(fixture.schema_version,1);
   assert.equal(fixture.tables.users.length,154);
   assert.equal(fixture.tables.capacities.length,143);
@@ -40,6 +53,41 @@ test('fixture importer uses a credential-free managed source and creates the cur
   for(const retired of ['shipments','shipment_events','shipment_interests','partner_relationships','business_reviews']){
     assert.equal(Object.hasOwn(fixture.tables,retired),false,retired);
   }
+});
+
+test('existing Featured programme copy adopts current capacity language without replacing custom text',()=>{
+  const migration=fs.readFileSync(path.join(root,'supabase','migrations','064_current_capacity_language.sql'),'utf8');
+  assert.match(migration,/replace\(public_introduction,'Truck Market','Open capacity'\)/i);
+  assert.match(migration,/where public_introduction like '%Truck Market%'/i);
+  assert.doesNotMatch(migration,/delete|truncate|drop\s/i);
+});
+
+test('managed import keeps Open capacity larger than each explicitly shared demo map',()=>{
+  const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
+  const {capacities,vehicles}=fixture.tables;
+  const vehicleById=new Map(vehicles.map(vehicle=>[vehicle.id,vehicle]));
+  const managed=applyManagedFixtureMarketPolicy(capacities,vehicles);
+  assert.equal(managed.filter(capacity=>SMALL_LOCAL_VEHICLE_CONFIGURATIONS.has(
+    vehicleById.get(capacity.vehicle_id)?.cargo_configuration
+  )).every(capacity=>capacity.location_precision_km<=5),true);
+  const publicCapacity=managed.filter(capacity=>capacity.visibility==='OPEN');
+  const privateCapacity=managed.filter(capacity=>capacity.visibility==='PRIVATE');
+  const longHaul=managed.filter(capacity=>LONG_HAUL_VEHICLE_CONFIGURATIONS
+    .has(vehicleById.get(capacity.vehicle_id)?.cargo_configuration));
+  assert.equal(longHaul.length,25);
+  assert.equal(longHaul.every(capacity=>capacity.market_status==='EMPTY'&&capacity.status==='EMPTY'
+    &&capacity.available_percent===100&&capacity.visibility==='OPEN'),true);
+  assert.ok(publicCapacity.length>privateCapacity.length);
+  assert.equal(publicCapacity.filter(capacity=>capacity.market_status==='PARTIAL').length,35);
+  assert.ok(publicCapacity.filter(capacity=>capacity.market_status==='EMPTY').length>15);
+
+  const shared=selectSharedFixtureVehicleIds(managed);
+  assert.equal(shared.size,Math.ceil(vehicles.length*.25));
+  assert.ok(shared.size<publicCapacity.length);
+  assert.equal([...shared].every(vehicleId=>vehicleById.has(vehicleId)),true);
+  assert.deepEqual(normalizeDemoSharedEmails('TEST@example.com, test@example.com,second@example.com'),
+    ['test@example.com','second@example.com']);
+  assert.throws(()=>normalizeDemoSharedEmails('not-an-email'),/DEMO_SHARED_EMAIL_INVALID/);
 });
 
 test('Shared capacity verification chooses an unexpired market signal',()=>{
@@ -109,6 +157,24 @@ test('public capacity migration is bounded, server-only, and strips private curr
   assert.match(capacity,/capacity_area_matches\(signal->'area_boundary'/i);
   assert.match(capacity,/revoke all on function public\.public_capacity_page[\s\S]*from public,anon,authenticated/i);
   assert.match(capacity,/grant execute on function public\.public_capacity_page[\s\S]*to service_role/i);
+});
+
+test('public application adapter excludes private trucks instead of placing regular-service fallbacks',()=>{
+  const repository=fs.readFileSync(path.join(root,'src','lib','repository','supabase.js'),'utf8');
+  const projection=repository.slice(repository.indexOf('export async function listSupabasePublicCapacityCursor'),repository.indexOf('function managedCapacityError'));
+  assert.match(projection,/filter\(row=>row\.current_signal_geometry_visible!==false\)/);
+  assert.doesNotMatch(projection,/regularServicePoint|not current location/);
+});
+
+test('active capacity remains discoverable until an explicit Off Duty update',()=>{
+  const retention=fs.readFileSync(path.join(root,'supabase','migrations','063_active_capacity_until_off_duty.sql'),'utf8');
+  const verifier=fs.readFileSync(path.join(root,'scripts','verify-supabase-fixtures.mjs'),'utf8');
+  assert.match(retention,/coalesce\(new\.market_status,new\.status::text\) in \('EMPTY','PARTIAL'\)/i);
+  assert.match(retention,/new\.expires_at='infinity'::timestamptz/i);
+  assert.match(retention,/before insert or update of status,market_status,expires_at/i);
+  assert.match(retention,/revoke all on function public\.retain_active_capacity_until_off_duty\(\) from public,anon,authenticated/i);
+  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_EXPIRED_LATEST_HIDDEN/);
+  assert.doesNotMatch(verifier,/SUPABASE_FIXTURE_VERIFY_HISTORICAL_CAPACITY_EXPOSED/);
 });
 
 test('public provider review summary is aggregate-only and server-only',()=>{

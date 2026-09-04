@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, the Truck Market, transporter microsites, Daily Featured Transporters, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `057` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `069` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
 
 ## Current migration coverage
 
@@ -42,6 +42,31 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `055`: safely promotes only an exact inactive, unowned managed-Auth placeholder into a passwordless SUPPORT identity; active or already-owned identities remain rejected.
 - `056`: extends the shared platform-team permission helper to Customer, Operations, Trust, Billing, and Support responsibilities while retaining administrator authority.
 - `057`: adds service-role-only bounded Operations counts/pages, reversible audited platform commands, administrator Featured roster reads/saves, and Sponsor save/disable commands. PostgreSQL repeats responsibility, eligibility, date, overlap, and state checks and commits each mutation with its audit row atomically.
+- `058`: prevents leasing an expired, used, superseded, or attempt-locked Shared capacity OTP email, rechecks deliverability immediately before provider submission, and adds service-role-only bounded 24-hour cleanup for terminal Shared capacity challenges and delivery rows without affecting Assisted matching recovery mail.
+- `059`: adds exact-target claims, one-row just-in-time global leasing, a live-lease fence for both Shared capacity and Assisted matching, a 30-second final Shared-code validity margin, short challenge-aware retry timing, Shared-first queue priority, and bounded terminal Assisted matching email-metadata cleanup. The two-minute recovery schedule dispatches authenticated background work instead of performing provider I/O inside the scheduled-function limit.
+- `060`–`061`: prevents provider signup from repurposing active, suspended, platform-reserved, or already-owned identities and removes browser authority to mutate identity-role records.
+- `062`: adds provider-managed Tracking recipients and application-owned email OTP access with service-role-only commands and default-deny browser access.
+- `063`–`064`: keeps Empty and Partial capacity current until an explicit Off Duty update and aligns persisted programme language with Open capacity.
+- `065`: safely reconciles eligible confirmed Auth identities created before the managed profile bootstrap without touching platform or already-associated identities.
+- `066`–`068`: adds owner-scoped vehicle registration, secret-free administrator record details and overview counts, and the current vehicle catalogue after retiring courier cars and motorcycles.
+- `069`: changes Daily Featured to an exact truck-and-Driver morning roster, while preserving provider ownership and sponsor-break attribution.
+
+On 2026-09-04, a newly empty isolated local database replayed the complete
+`001`–`069` chain, rebuilt the managed fixture, and passed every guarded live
+verifier. The final verifiers proved invalid Shared challenges are not leased,
+exact-target/global claim exclusion, one-row and Shared-first claims, both-kind
+lease fencing, the near-expiry denial margin, lease-owned attempt recording,
+short retry timing, concurrent OTP supersession, bounded Shared and terminal
+Assisted matching cleanup, provider vehicle registration, Tracking recipients,
+Daily Featured truck selection, administrator detail access, and browser-role
+RPC denial.
+
+On 2026-09-04, a credential-free logical snapshot verified that the linked
+hosted Loadgistic project had no application tables. The reviewed `001`–`069`
+chain was then applied in numeric order and the local/remote migration histories
+matched. The seven required private Storage buckets were present and anonymous
+bucket discovery returned no records. No local fixture identities or demo market
+records were imported into Production.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -57,7 +82,7 @@ The managed fixture contains no demand rows. Any hosted legacy-demand purge rema
 
 ## Managed runtime contracts
 
-Managed identity has no runtime selector or SQLite fallback: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. The explicitly local fixture-password form authenticates the same isolated Supabase Auth fixture identities. Google PKCE and numeric email-code sign-in are implemented. Public provider signup first proves Google or six-digit email-code identity through a signed 15-minute HttpOnly handoff, then collects the short provider profile and uses the server-only provisioning intent to complete one fleet or independent-provider workspace, draft public page, approved signup record, and seven-day trial atomically. An incomplete or abandoned identity remains inactive and has no Loadgistic authority. Local Supabase defines separate numeric templates for existing-user magic-link login and new-user confirmation; Preview and Production must configure the equivalent hosted templates and verified SMTP.
+Managed identity has no runtime selector or SQLite fallback: login and logout use the SSR route-cookie adapter, every request validates `auth.getUser()`, and the identity RPC maps only the matching active account. The explicitly local fixture-password form authenticates the same isolated Supabase Auth fixture identities. Google PKCE and numeric email-code sign-in are implemented. Public provider signup first proves Google or six-digit email-code identity through a signed 15-minute HttpOnly handoff, then collects the short provider profile and uses the server-only provisioning intent to complete one fleet or independent-provider workspace, draft public page, approved signup record, and seven-day trial atomically. An incomplete or abandoned identity remains inactive and has no Loadgistic authority. Local Supabase defines separate numeric templates for existing-user magic-link login and new-user confirmation. A port-`3001` runtime probe verified generic login/signup requests each create one Mailpit message without exposing its body or code; the temporary signup identity was deleted. Local Google login/signup also reached the configured Web client through PKCE with minimum scopes and corrected host-preserving application callbacks. Hosted Production has the exact callback, Google provider, equivalent numeric templates, Gmail SMTP, and one successfully verified real account OTP. Preview must mirror that configuration, and hosted Google plus complete signup still require end-to-end proof after the hosted schema and application are deployed.
 
 Health and place search use PostgreSQL unconditionally. `/api/health` counts the managed profile projection and fails closed with a non-secret `database-unavailable` blocker if PostgreSQL cannot be reached. `/api/places` uses a bounded server-only Supabase query and returns the public place contract.
 
@@ -67,7 +92,7 @@ Published transporter microsites use a second application port with explicit Sup
 
 Daily Featured Transporters uses its own application port and the pure two-session scheduler. PostgreSQL returns only candidates from the date-derived regional group and rechecks every eligibility input at read time. The server joins the administrator-ordered published roster and at most five active Sponsor placements, strips owner IDs and eligibility internals, maps manual schedule keys to public handles, and safely projects either eligible transporters or bounded outside advertisements. Anonymous and ordinary authenticated clients cannot execute the candidate RPC.
 
-Shared capacity, provider Capacity, and provider-owned Tracking use dedicated Supabase-only application ports. Service-role-only commands repeat ownership, assignment, subscription, permission, guest-grant, transition, and review rules in PostgreSQL. Delivery workers lease rows with `FOR UPDATE SKIP LOCKED`, successful delivery is terminal, and the Netlify scheduled function invokes bounded Tracking email, access email, and expired-guest cleanup batches every 15 minutes. The managed email port prefers direct Resend delivery with stable idempotency keys and retains an HTTPS webhook adapter for private integrations. Clean local verification exercises all three slices with SQLite unavailable and proves browser-role denial.
+Shared capacity, provider Capacity, and provider-owned Tracking use dedicated Supabase-only application ports. Service-role-only commands repeat ownership, assignment, subscription, permission, guest-grant, transition, and review rules in PostgreSQL. Delivery workers lease rows with `FOR UPDATE SKIP LOCKED`, and successful delivery is terminal. The source-verified Netlify design uses a 15-minute managed dispatcher and a two-minute access-email recovery dispatcher, both invoking HMAC-authenticated bounded background work that rejects unsigned or stale calls and exposes no private operation result. The managed application-email port prefers direct Resend delivery with stable idempotency keys, accepts a bounded authenticated-SMTP pilot with stable Message-IDs and an at-least-once warning, and retains an HTTPS webhook adapter for private integrations. Supabase Auth email remains a separate adapter. Clean local verification exercises all three slices with SQLite unavailable and proves browser-role denial. The Production application-SMTP variables are configured and an authentication-only handshake passes, but the workers are not deployed and no remote application-email delivery is proved.
 
 Transporter-profile editing now selects a dedicated application port. Its PostgreSQL workspace and mutation functions deny Company drivers and browser roles, repeat current subscription/ownership rules, resolve the general base from the managed place catalog, bound public content and contacts, and audit only visibility flags and non-sensitive place/region identifiers. Profile images use the central quarantine/scanner/storage port before an atomic metadata command; failed metadata removes the new object and successful replacement removes the superseded object after commit.
 
@@ -82,13 +107,13 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `057` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `069` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
 3. Import the bundled place catalog with `npm run places:import:supabase`.
 4. Use the guarded deterministic local-Supabase Auth/PostgreSQL/Storage fixture, then run domain, authorization, RLS, cursor, guest-tracking, retention, scale, and E2E suites against the isolated stack.
-5. Configure the server-only managed scanner, verify clean/dirty/timeout/quota behavior against Preview, complete the privacy/vendor review, configure the verified email sender, authorized Supabase Realtime with polling fallback, Preview concurrency verification for shared rate limiting, and monitoring for scheduled email/cleanup jobs. The local EICAR-aware scanner is test-only and cannot satisfy Production readiness.
+5. Configure the server-only managed scanner, verify clean/dirty/timeout/quota behavior against Preview, complete the privacy/vendor review, separately configure and prove the application-email sender, deploy and monitor the signed scheduled/background worker, configure authorized Supabase Realtime with polling fallback, and complete Preview concurrency verification for shared rate limiting. Hosted Supabase Auth SMTP and one account OTP are already verified; that does not prove Shared capacity or Tracking application mail. The local EICAR-aware scanner is test-only and cannot satisfy Production readiness.
 6. Inventory any legacy cloud demand rows. After explicit approval, purge only the reviewed target rows and record counts/audit evidence.
 7. Deploy the managed backend to Preview, run `npm run launch:check`, and rehearse application and data rollback before Production promotion.
 

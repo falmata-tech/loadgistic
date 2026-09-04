@@ -39,17 +39,14 @@ export async function POST(request:NextRequest) {
       scheduleMode:text(form,'scheduleMode'),
       scheduleConfig:{
         dayStart:text(form,'scheduleDayStart'),
-        morningEnd:text(form,'scheduleMorningEnd'),
-        eveningStart:text(form,'scheduleEveningStart'),
         dayEnd:text(form,'scheduleDayEnd'),
-        targetPresentationMinutes:text(form,'targetPresentationMinutes'),
-        transitionMinutes:text(form,'transitionMinutes'),
         sponsorBreakEvery:text(form,'sponsorBreakEvery'),
         sponsorBreakMinutes:text(form,'sponsorBreakMinutes')
       },
+      targetCount:text(form,'targetCount'),
       manualSchedule:text(form,'manualSchedule'),
       publish:command==='PUBLISH',
-      providerKeys:form.getAll('providerKeys').map(value=>String(value)).filter(Boolean)
+      truckKeys:form.getAll('truckKeys').map(value=>String(value)).filter(Boolean)
     });
     return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success',command==='PUBLISH'?'Daily feature published.':'Draft saved.');
   }catch(error){

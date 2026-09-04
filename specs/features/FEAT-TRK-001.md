@@ -1,25 +1,39 @@
 ---
 id: FEAT-TRK-001
-title: Customer-owner tracking, completion email and retention
+title: Authorized-party tracking, email verification and retention
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-REV-001, FEAT-GEO-001]
-problem: The customer who owns an agreed shipment needs one simple tracking handoff and a durable emailed record without creating a Loadgistic account.
-behavior: A provider starts one Tracking session after agreeing work offline, issues one stable customer-owner code and Track link, emails both to that owner, exposes a customer-safe timeline after code entry, emails one idempotent completion summary, expires guest access 30 days after completion, and retains the provider-owned history.
-contracts: [CustomerTrackingCode, TrackingCodeDigest, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort, ManagedTrackingRepository]
-observability: [tracking_access_queued, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, tracking_location_saved, tracking_location_denied, completion_email_queued, completion_email_sent, completion_email_failed, completion_email_retry, guest_access_expired]
-rollout: Reuse the stable keyed-code contract, keep only its digest in persistence, preserve legacy provider-tracking rows during compatibility, send one owner delivery with bounded retries, and keep guest access disabled in production until sender configuration, private storage, scanning, retention cleanup and monitoring are verified.
+problem: Every party explicitly authorized for an agreed shipment needs a simple, private tracking handoff without creating a Loadgistic account or relying on a reusable code alone.
+behavior: A provider starts one Tracking session after agreeing work offline, assigns one stable shipment Tracking code, authorizes one owner plus any number of additional recipient emails, and exposes the customer-safe timeline only after an exact authorized email and Tracking-code match is confirmed with a short-lived email OTP. The provider can add or revoke recipients, one idempotent completion summary reaches the owner, guest access expires 30 days after completion, and the provider retains its operational history.
+contracts: [CustomerTrackingCode, TrackingCodeSecret, TrackingCodeDigest, TrackingRecipient, TrackingEmailOtp, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort, ManagedTrackingRepository]
+observability: [tracking_recipient_added, tracking_recipient_revoked, tracking_otp_requested, tracking_otp_verified, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, tracking_location_saved, tracking_location_denied, completion_email_queued, completion_email_sent, completion_email_failed, completion_email_retry, guest_access_expired]
+rollout: Require one server-only Tracking code secret before Production creates its first Tracking row, keep only keyed digests in persistence, and send one owner delivery with bounded retries. The empty hosted project may cut over without a data migration; a later Tracking-secret rotation requires an explicit code-reissue migration or a compatibility key window. Keep guest access disabled in production until sender configuration, private storage, scanning, retention cleanup and monitoring are verified.
 ---
 
 # Guest tracking
 
-### Scenario: one stable owner code and link are issued
+### Scenario: one stable shipment code and authorized recipient list are issued
 
-Given a provider owner, self-managed Driver, or company Driver assigned to the selected truck starts Tracking with one customer-owner email\
+Given a provider owner, self-managed Driver, or company Driver assigned to the selected truck starts Tracking with one customer-owner email and zero or more additional recipient emails\
 When tracking access is generated\
 Then one stable high-entropy code and the public Track link are shown to the provider\
-And the same code remains retrievable by the owning provider while guest access remains active\
+And the same shipment code remains retrievable by the owning provider while guest access remains active\
+And the owner code contains 80 deterministic bits formatted as four readable four-character groups after `LG-`\
+And the separate review code uses the same entropy in an `LG-RV-` format and a distinct derivation context\
+And code generation and code digests use only the dedicated server-side Tracking code secret, so rotating the login-session secret does not change either code or its persisted digest\
+And a browser grant invalidated by session-secret rotation can be reopened with the unchanged owner code\
 And only its keyed digest is stored\
-And one idempotent access email containing the link and code is queued to the customer owner\
-And the owner may share that link and code with a shipper, receiver, or other person it trusts.
+And one recipient record belongs to the customer owner while every distinct normalized additional email receives its own revocable recipient record\
+And the provider can inspect, add, or revoke recipients without changing the shipment code or another recipient\
+And one idempotent application email containing the link and shipment code is queued to each initial recipient through the managed application-email port rather than a Supabase Auth template\
+And the standard isolated local environment delivers application email to loopback Mailpit while Production requires a managed provider.
+
+### Scenario: an unsafe Tracking code secret blocks Production
+
+Given a Production runtime is missing the dedicated Tracking code secret, supplies fewer than 32 characters, uses the documented local fallback, or reuses the login-session secret\
+When readiness is evaluated or a Tracking code is derived\
+Then Production is rejected with a bounded non-secret configuration error\
+And local development alone may use the deterministic local fallback\
+And no code, digest, or secret value is returned by readiness output or written to logs.
 
 ### Scenario: Tracking submission gives an observable result
 
@@ -37,20 +51,33 @@ When it attempts to start Tracking\
 Then the command is denied\
 And no Tracking session, customer grant, email delivery, or audit success is created.
 
-### Scenario: guest unlock is private and temporary
+### Scenario: authorized email and Tracking code request a one-time code
 
-Given any person trusted by the customer owner enters the owner code on the public Track page\
-When the digest matches an unexpired party grant\
-Then a short-lived browser grant returns only the customer-safe tracking summary and public timeline events\
-And the code is not placed in the URL, logs, analytics, or clear-text storage\
-And inactivity clears the browser grant\
-And an invalid, expired, or rate-limited code reveals no Tracking session.
+Given an account-free visitor enters an exact authorized email and the shipment Tracking code on the public Track page\
+When both digests match the same active Tracking session and recipient\
+Then a cryptographically generated six-digit application OTP is queued only to that normalized email\
+And the visitor submits the OTP on the same compact form before receiving a five-minute browser grant bound to that shipment and recipient digest\
+And the authorized customer-safe Tracking view opens without creating a Loadgistic Auth identity, profile, or dashboard\
+And the Tracking code, email, OTP, and digests are absent from the URL, logs, analytics, and clear-text credential storage\
+And an unknown or revoked email, wrong Tracking code, invalid or expired OTP, or rate limit returns the same bounded outward response and reveals no Tracking session\
+And an ineligible request creates no OTP or delivery row and sends no email\
+And a valid OTP expires after ten minutes, is single-use, is superseded by the next eligible request, and allows no more than five failed attempts.
+
+### Scenario: provider controls multiple tracking parties
+
+Given the owning provider or assigned Driver has an active Tracking session\
+When an authorized provider actor adds or revokes a normalized recipient email\
+Then PostgreSQL rechecks ownership, assignment, and Tracking permission before the mutation\
+And duplicate active recipients are not created\
+And the customer-owner recipient remains visibly distinct from additional tracking parties\
+And revocation prevents the next OTP request and invalidates that recipient's next customer-safe read without affecting other recipients\
+And no unrelated provider, Driver, administrator without the required operational authority, or public visitor can list or mutate the recipient list.
 
 ### Scenario: customer-safe reads remain narrow in managed persistence
 
-Given a valid short-lived browser grant was created from an owner-code digest\
+Given a valid short-lived browser grant was created from an authorized recipient's email OTP\
 When the server requests the customer Tracking projection\
-Then a service-role-only PostgreSQL projection rechecks the unrevoked, unexpired shipment grant\
+Then a service-role-only PostgreSQL projection rechecks the unrevoked, unexpired recipient on that exact shipment\
 And returns only the public provider/truck summary, customer-safe Status events, and an eligible obscured travel location\
 And never returns customer email, code digest, private proof path, delivery error, actor identity, or unrelated shipment data\
 And a mismatched role, revoked grant, expired grant, or unknown shipment returns no row.
@@ -112,7 +139,7 @@ And a completion email includes the ordered customer-safe Status timeline withou
 Given a shipment is Complete\
 When fewer than 30 days have passed\
 Then the owner code remains available for corrections, delivery retries, and disputes\
-And when 30 days have passed the code and browser grants expire and guest-facing access is denied\
+And when 30 days have passed recipient access, OTP challenges, and browser grants expire and guest-facing access is denied\
 And the provider-owned authenticated history remains\
 And retention cleanup records counts and identifiers without logging party emails or codes.
 
@@ -137,5 +164,5 @@ And public capacity or provider-profile visibility never grants file access.
 - Provider controls: owned Tracking list, Tracking detail, and Driver action panel
 - Outbound adapter: idempotent completion-email delivery
 - Cleanup: scheduled 30-day guest-access expiry through the service-role-only managed command
-- Persistence: `044_provider_tracking_runtime.sql`, `046_managed_email_operations.sql`, and the server-only provider Tracking adapter
+- Persistence: `044_provider_tracking_runtime.sql`, `046_managed_email_operations.sql`, `062_tracking_recipient_email_otp.sql`, and the server-only provider Tracking adapter
 - Tests: domain, repository, managed Tracking authorization, E2E

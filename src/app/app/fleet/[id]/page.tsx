@@ -1,14 +1,16 @@
 import { notFound, redirect } from 'next/navigation';
-import { MapPin, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, MapPin, Truck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { CapacityForm } from '@/components/capacity-form';
+import { canManageProviderVehicles } from '@/lib/fleet.js';
 
 export default async function FleetTruckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser();
-  if(user.role!=='TRANSPORTER')redirect('/app/home');
+  if(!canManageProviderVehicles(user))redirect('/app/home');
   const {id}=await params;
   const query=await searchParams;
   const workspace=await getProviderCapacityWorkspace(user);
@@ -17,8 +19,9 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
   const current:any=workspace.capacities.find((item:any)=>item.vehicle_id===vehicle.id);
   const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),current:current?JSON.parse(JSON.stringify(current)):null};
   const corridors=JSON.parse(JSON.stringify(workspace.corridors));
-  return <div className="page"><PageHeader icon={Truck} title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`}/><Flash error={query.error} success={query.success}/>
-    <div className="permission-note"><MapPin aria-hidden="true"/><div><strong>Assigned driver updates location</strong><span>Capacity and public visibility can still be managed here. The latest approximate location and update time stay with this truck.</span></div></div>
-    <CapacityForm vehicles={[option]} initialVehicleId={vehicle.id} allowDeviceLocation={false} lockVehicleSelection corridors={corridors} returnTo={`/app/fleet/${vehicle.id}`} allowCorridors/>
+  const independent=user.role==='DRIVER';
+  return <div className="page"><PageHeader icon={Truck} title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`} action={<Link className="button secondary small" href="/app/fleet"><ArrowLeft aria-hidden="true"/>My trucks</Link>}/><Flash error={query.error} success={query.success}/>
+    {!independent?<div className="permission-note"><MapPin aria-hidden="true"/><div><strong>Assigned driver updates location</strong><span>Capacity and public visibility can still be managed here. The latest approximate location and update time stay with this truck.</span></div></div>:null}
+    <CapacityForm vehicles={[option]} initialVehicleId={vehicle.id} allowDeviceLocation={independent} lockVehicleSelection corridors={corridors} returnTo={`/app/fleet/${vehicle.id}`} allowCorridors renderedAt={Date.now()}/>
   </div>;
 }

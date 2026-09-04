@@ -3,6 +3,7 @@ import { resolveMapTileConfig } from './map-tiles.js';
 import { managedAuthCallbackUrl } from './auth-flow.js';
 import { emailDeliveryStatus } from './email-provider.js';
 import { rateLimitStatus } from './rate-limit.js';
+import { trackingCodeSecretConfigured } from './security.js';
 
 const unsafeSessionSecrets=new Set(['','local-development-secret-change-before-production-1234','ci-only-session-secret-not-for-production-123456']);
 
@@ -16,6 +17,7 @@ export function launchReadiness(environment=process.env){
   const rateLimits=rateLimitStatus(environment);
   const secret=String(environment.SESSION_SECRET||'');
   if(production&&(secret.length<32||unsafeSessionSecrets.has(secret)))blockers.push('strong-session-secret');
+  if(production&&!trackingCodeSecretConfigured(environment))blockers.push('strong-tracking-code-secret');
   if(production&&(storage.backend!=='supabase'||!storage.configured))blockers.push('durable-private-storage');
 
   const dataBackend='supabase';
@@ -29,6 +31,7 @@ export function launchReadiness(environment=process.env){
     if(!emailDelivery.configured)blockers.push('managed-email-delivery');
     if(!rateLimits.configured||!rateLimits.durable)blockers.push('shared-rate-limit-adapter');
     if(!storage.scannerConfigured||!storage.scannerProductionSafe)blockers.push('upload-malware-scanner');
+    if(emailDelivery.provider==='smtp')warnings.push('smtp-email-delivery-at-least-once');
     if(mapTiles.communityOsm)warnings.push('community-osm-tile-service');
   }else{
     if(!environment.SUPABASE_SERVICE_ROLE_KEY)warnings.push('supabase-service-config-missing');

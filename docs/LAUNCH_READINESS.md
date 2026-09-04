@@ -2,33 +2,64 @@
 
 ## Current verdict
 
-The repository supports local development, browser testing, controlled demonstrations, and continued product validation. It is not approved for public production. `npm run launch:check` must remain red until the managed-runtime blockers below are resolved.
+The repository and linked hosted database support a controlled production pilot. The clean local `001`–`069` replay and guarded live verifiers pass, the hosted project has the matching migration chain and seven private Storage buckets, local login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP delivery is verified. Production application-SMTP variables are configured in Netlify and their authentication handshake passes, but this is not remote delivery evidence. The application is not approved for unrestricted public production until the managed scanner, remote application-email, Preview concurrency, monitoring, backup/restore, and live deployment smoke gates below are resolved. `npm run launch:check` must remain red for real blockers rather than being weakened for deployment.
 
 ## Verified locally
 
 - Public account-free map with real tile rendering, clustering, provider details, and safe proximity behavior.
 - Busy supply-only fixture across fleet companies and self-managed owner-operators, with no local demand data.
 - Provider capacity/profile/fleet workflows and provider-owned shipment tracking.
-- One stable customer-owner code/link, governed transitions, 30-day guest expiry, access/completion email retry records, and provider reviews/disputes.
+- One stable 80-bit customer-owner code/link, separately derived 80-bit review code, dedicated Tracking-code secret boundary, governed transitions, 30-day guest expiry, access/completion email retry records, and provider reviews/disputes.
 - Truck-scoped private-capacity grants, email/code Shared capacity access, Operations-only Loadgistic sharing, and account-free Assisted matching with bounded local live-refresh behavior.
 - Specification/source checks, Node tests, TypeScript, production build, desktop/mobile E2E, and approved visual audit evidence as recorded in `docs/PROGRESS.md`.
 - Standalone Node build, private Supabase Storage adapter, PWA shell, and health endpoint.
-- Atomic Supabase request limits for login, signup, Shared capacity, Assisted matching, and member Support, including digest-only keys, browser-role denial, fail-closed behavior, and bounded cleanup.
+- Atomic Supabase request limits for login, signup, Shared capacity, Tracking and
+  review unlock, review submission, Assisted matching, and member Support,
+  including digest-only keys, browser-role denial, fail-closed behavior, and
+  bounded cleanup.
 - Server-only private-upload quarantine, signature checking, explicit clean release, EICAR rejection, cleanup, and anonymous list/download denial against the isolated local Supabase stack.
+- Local port-`3001` member login and signup issue generic numeric-code responses
+  through Mailpit without exposing codes, and local Google PKCE preserves the
+  browser origin through the application callback.
 
 ## Public-production blockers
 
-1. Replay and lint migrations `001`–`057` from an empty hosted Preview project, verify RLS/RPC behavior including concurrent request limits, private-quarantine isolation, provider-profile/Fleet ownership, Verification/Billing and Assisted-matching private-file scope, Support assignment/requeue, bounded Operations, atomic Featured/Sponsor administration, and terminal reviews; import place data; and rehearse encrypted logical backup/restore.
+1. The clean isolated local replay and linked hosted application of migrations
+   `001`–`069` are complete. Verify hosted RLS/RPC behavior including concurrent request limits,
+   expiry-aware Shared capacity delivery/cleanup, private-quarantine isolation,
+   provider-profile/Fleet ownership, Verification/Billing and
+   Assisted-matching private-file scope, Support assignment/requeue, bounded
+   Operations, atomic Featured/Sponsor administration, and terminal reviews;
+   import only approved Production place data; and rehearse encrypted logical
+   backup/restore. No local fixture identities or market rows were imported.
 2. Inventory and purge any hosted legacy demand data only after a verified backup and explicit approval. A new empty project requires no purge.
 3. Configure a server-only managed scanner, complete the privacy/vendor review, and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial upload proofs against Supabase Preview. The local test scanner does not satisfy this gate.
-4. Verify an email sending domain, configure the server-only provider values, test Supabase Auth SMTP plus application delivery, and monitor the existing 15-minute delivery/retry/guest-cleanup function.
-5. Verify the implemented shared PostgreSQL request limiter under Preview concurrency, add reviewed bot protection for high-risk anonymous entry points, and configure authorized Supabase Realtime subscriptions with polling fallback for active guest conversations. Public discovery and review submission still need explicit shared-limit coverage before launch.
-6. Configure strong Production secrets, HTTPS, rotation, central logging/alerts, deployment approval, and rollback monitoring.
+4. Production application-SMTP credentials are configured separately from the
+   already verified Supabase Auth SMTP, and an authentication-only handshake
+   passes. Deploy and monitor the 15-minute managed scheduler and two-minute
+   access-email recovery scheduler with their HMAC-authenticated background
+   workers, then test real Shared capacity, Tracking, and Assisted matching
+   delivery, expiry-aware retry/cleanup, and unsigned/stale-request rejection.
+   The personal-Gmail SMTP option is a bounded pilot warning, not the durable
+   sending-domain gate.
+5. Verify the implemented shared PostgreSQL request limiter under Preview
+   concurrency, add reviewed bot protection for high-risk anonymous entry
+   points, and configure authorized Supabase Realtime subscriptions with polling
+   fallback for active guest conversations. Tracking review submission is now
+   covered; public discovery still needs explicit shared-limit coverage before
+   launch.
+6. Strong distinct `SESSION_SECRET` and `TRACKING_CODE_SECRET` values are
+   configured. Complete HTTPS smoke, rotation, central logging/alerts, deployment
+   approval, and rollback monitoring. Production has no Tracking records from a
+   local fixture; after real Tracking records exist, rotate that
+   secret only with an explicit compatibility or code-reissue plan.
 7. Keep the low-traffic pilot's explicit bounded cursor loading and CPU-throttled phone limits under observation. Before the market approaches thousands of simultaneously discoverable trucks, replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering.
-8. Configure the exact Supabase Auth Site URL and `/api/auth/callback` Redirect
-   URL for each environment, Google identity credentials, the numeric-token
-   login and signup templates, and verified custom SMTP; repeat the managed
-   signup workflow against Preview before enabling it publicly.
+8. Hosted Production Supabase Auth now has the exact Site URL and
+   `/api/auth/callback`, Google identity credentials, numeric login/signup
+   templates, Gmail SMTP, and one successfully verified real account OTP.
+   Configure Preview independently; after the schema and application deploy,
+   prove Google and OTP login/signup end to end against the active-role and
+   atomic provider-provisioning boundaries before enabling them publicly.
 
 ## Bounded beta map warning
 
@@ -53,8 +84,10 @@ Netlify.
   bounded Realtime services.
 - Browsers request configured map tiles directly; Netlify does not relay or
   store them.
-- Resend Free provides verified-domain transactional SMTP/email within its
-  3,000-message monthly and 100-message daily limits.
+- Authenticated Gmail SMTP may provide the controlled pilot's low-volume Auth
+  and application mail through separate configurations. The application warns
+  that raw SMTP retry is at least once. Move to an owned-domain transactional
+  provider before higher-volume use.
 - Cloudflare Turnstile may protect anonymous and authentication entry points;
   transactional Supabase counters remain authoritative for shared rate limits.
 

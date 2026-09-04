@@ -2,9 +2,10 @@
 
 import React from 'react';
 import L from 'leaflet';
-import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { BaseMapTiles } from '@/components/base-map-tiles';
+import { buildCapacityMarkerGroups } from '@/lib/capacity-map-clustering';
 
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
@@ -29,6 +30,20 @@ function ResizeMap(){
   return null;
 }
 
+function ProgressiveCapacityLoader({onExplore}:{onExplore?:()=>void}){
+  const explore=React.useRef(onExplore);
+  const timer=React.useRef(0);
+  React.useEffect(()=>{explore.current=onExplore;},[onExplore]);
+  const schedule=React.useCallback(()=>{
+    window.clearTimeout(timer.current);
+    if(!explore.current)return;
+    timer.current=window.setTimeout(()=>explore.current?.(),350);
+  },[]);
+  useMapEvents({moveend:schedule});
+  React.useEffect(()=>{schedule();return()=>window.clearTimeout(timer.current);},[schedule]);
+  return null;
+}
+
 function OffsetPolyline({positions,offset,eventHandlers,pathOptions}:{positions:[number,number][];offset:number;eventHandlers:any;pathOptions:any}){
   const map=useMap();
   const [revision,setRevision]=React.useState(0);
@@ -50,7 +65,7 @@ function OffsetPolyline({positions,offset,eventHandlers,pathOptions}:{positions:
   return <Polyline positions={shifted} eventHandlers={eventHandlers} pathOptions={pathOptions}/>;
 }
 
-function Bounds({items,viewer,selectedId}:{items:Signal[];viewer:Point|null;selectedId:string|null}){
+function Bounds({items,viewer,selectedId,keepItemsInView}:{items:Signal[];viewer:Point|null;selectedId:string|null;keepItemsInView:boolean}){
   const map=useMap();
   const fittedInitial=React.useRef(false);
   const fittedSelected=React.useRef('');
@@ -58,21 +73,29 @@ function Bounds({items,viewer,selectedId}:{items:Signal[];viewer:Point|null;sele
   React.useEffect(()=>{
     if(!selectedId)fittedSelected.current='';
     const selected=items.find(item=>item.id===selectedId);
-    if(selected&&fittedSelected.current!==selected.id){
-      const selectedBounds=L.latLngBounds([]);
-      if(hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))selectedBounds.extend(L.latLng(Number(selected.location_lat),Number(selected.location_lng)).toBounds(Math.max(Number(selected.location_precision_km)||20,selected.availability_geometry==='RADIUS'?Number(selected.work_radius_km)||50:0)*2200));
-      (selected.current_route_points||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
-      (selected.capacity_area_boundary||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
-      (selected.recurring_corridors||[]).forEach(signal=>{
-        (signal.route_points||[]).forEach((point:PlacePoint)=>selectedBounds.extend([point.lat,point.lng]));
-        (signal.area_boundary||[]).forEach((point:PlacePoint)=>selectedBounds.extend([point.lat,point.lng]));
-        if(hasCoordinate(signal.area_center_lat)&&hasCoordinate(signal.area_center_lng))selectedBounds.extend([Number(signal.area_center_lat),Number(signal.area_center_lng)]);
-      });
-      if(viewer)selectedBounds.extend([viewer.lat,viewer.lng]);
-      if(selectedBounds.isValid()){fittedSelected.current=selected.id;map.fitBounds(selectedBounds,{padding:[48,48],maxZoom:10,animate:false});return;}
+    if(selected){
+      if(fittedSelected.current!==selected.id){
+        const selectedBounds=L.latLngBounds([]);
+        if(hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))selectedBounds.extend(L.latLng(Number(selected.location_lat),Number(selected.location_lng)).toBounds(Math.max(Number(selected.location_precision_km)||20,selected.availability_geometry==='RADIUS'?Number(selected.work_radius_km)||50:0)*2200));
+        (selected.current_route_points||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
+        (selected.capacity_area_boundary||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
+        if(viewer)selectedBounds.extend([viewer.lat,viewer.lng]);
+        if(selectedBounds.isValid()){fittedSelected.current=selected.id;map.fitBounds(selectedBounds,{padding:[48,48],maxZoom:12,animate:false});}
+      }
+      return;
     }
     const viewerKey=viewer?`${viewer.lat.toFixed(4)}:${viewer.lng.toFixed(4)}`:'';
-    if(viewer&&fittedViewer.current!==viewerKey){fittedViewer.current=viewerKey;map.fitBounds(L.latLng(viewer.lat,viewer.lng).toBounds(100_000),{padding:[28,28],maxZoom:9,animate:false});return;}
+    if(viewer){
+      if(fittedViewer.current!==viewerKey){
+        fittedViewer.current=viewerKey;
+        if(keepItemsInView){
+          const filteredBounds=L.latLngBounds([[viewer.lat,viewer.lng]]);
+          for(const item of items)if(hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng))filteredBounds.extend([Number(item.location_lat),Number(item.location_lng)]);
+          map.fitBounds(filteredBounds,{padding:[36,36],maxZoom:9,animate:false});
+        }else map.fitBounds(L.latLng(viewer.lat,viewer.lng).toBounds(100_000),{padding:[28,28],maxZoom:9,animate:false});
+      }
+      return;
+    }
     if(fittedInitial.current)return;
     const bounds=L.latLngBounds([]);
     for(const item of items){
@@ -90,26 +113,30 @@ function Bounds({items,viewer,selectedId}:{items:Signal[];viewer:Point|null;sele
       if(map.getSize().x<=620)map.setView([9.1,40.2],6,{animate:false});
       else map.fitBounds(bounds,{padding:[28,28],maxZoom:9,animate:false});
     }
-  },[items,map,selectedId,viewer]);
+  },[items,keepItemsInView,map,selectedId,viewer]);
   return null;
 }
 
-function truckMarker(item:Signal,selected=false,zoom=10){
+function truckMarker(item:Signal,selected=false,zoom=10,visualOffset:[number,number]=[0,0]){
   const partial=item.status==='PARTIAL';
   const statusClass=partial?'partial':'empty';
-  const statusLabel=partial?'Partial':'Empty';
-  const markerConfiguration=item.cargo_configuration==='Heavy Rigid Stake Body Truck + Trailer'?'Heavy Rigid Stake Body Truck':item.cargo_configuration;
-  const image=vehicleConfigurationImage(markerConfiguration);
-  const size:[number,number]=selected?[96,112]:zoom<=6?[56,66]:zoom<=8?[64,75]:[82,96];
-  return L.divIcon({className:`capacity-truck-map-marker vehicle-image-marker ${statusClass}${selected?' selected':''}`,html:`<span class="vehicle-marker-image"><span class="vehicle-marker-content"><img src="${image}" alt=""/><strong>${statusLabel}</strong></span></span>`,iconSize:size,iconAnchor:[size[0]/2,size[1]]});
+  const trailerConfiguration=item.cargo_configuration==='Heavy Rigid Stake Body Truck + Trailer';
+  const image=vehicleConfigurationImage(item.cargo_configuration);
+  const size:[number,number]=selected?[104,120]:zoom<=6?[64,75]:zoom<=8?[72,84]:[88,102];
+  return L.divIcon({className:`capacity-truck-map-marker vehicle-image-marker ${statusClass}${trailerConfiguration?' trailer-configuration':''}${selected?' selected':''}`,html:`<span class="vehicle-marker-image"><span class="vehicle-marker-content"><img src="${image}" alt=""/></span></span>`,iconSize:size,iconAnchor:[size[0]/2-visualOffset[0],size[1]-visualOffset[1]]});
 }
 
-function routeMidpoint(points:PlacePoint[]):[number,number]|null{
+function truckMarkerAccessibleLabel(item:Signal){
+  const status=item.status==='PARTIAL'?'Partial capacity':'Empty truck';
+  return `${item.cargo_configuration||'Truck'} · ${status} · ${item.provider_name}`;
+}
+
+function routePointAtFraction(points:PlacePoint[],fraction:number):[number,number]|null{
   if(points.length<2)return null;
   const lengths=points.slice(1).map((point,index)=>L.latLng(points[index].lat,points[index].lng).distanceTo(L.latLng(point.lat,point.lng)));
   const total=lengths.reduce((sum,length)=>sum+length,0);
   if(!total)return [points[0].lat,points[0].lng];
-  let remaining=total/2;
+  let remaining=total*Math.max(0,Math.min(1,fraction));
   for(let index=0;index<lengths.length;index+=1){
     if(remaining<=lengths[index]){const ratio=remaining/lengths[index];return [points[index].lat+(points[index+1].lat-points[index].lat)*ratio,points[index].lng+(points[index+1].lng-points[index].lng)*ratio];}
     remaining-=lengths[index];
@@ -117,98 +144,63 @@ function routeMidpoint(points:PlacePoint[]):[number,number]|null{
   return [points.at(-1)!.lat,points.at(-1)!.lng];
 }
 
-function regularServicePoint(item:Signal):[number,number]|null{
-  const signal=(item.recurring_corridors||[])[0];
-  if(!signal)return null;
-  if(signal.geometry==='ROUTE')return routeMidpoint(signal.route_points||[]);
-  if(hasCoordinate(signal.area_center_lat)&&hasCoordinate(signal.area_center_lng))return [Number(signal.area_center_lat),Number(signal.area_center_lng)];
-  const boundary=signal.area_boundary||[];
-  return boundary.length?[boundary.reduce((sum:number,point:PlacePoint)=>sum+point.lat,0)/boundary.length,boundary.reduce((sum:number,point:PlacePoint)=>sum+point.lng,0)/boundary.length]:null;
-}
+function routeMidpoint(points:PlacePoint[]):[number,number]|null{return routePointAtFraction(points,.5);}
 
 function markerPoint(item:Signal):[number,number]|null{
   if(item.current_signal_geometry_visible!==false&&hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng))return [Number(item.location_lat),Number(item.location_lng)];
   if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='ROUTE'&&(item.current_route_points||[]).length>=2)return routeMidpoint(item.current_route_points||[]);
-  if(item.current_signal_geometry_visible===false)return regularServicePoint(item);
   return null;
 }
 
 function CapacityMarkers({items,selectedId,onSelect}:{items:Signal[];selectedId:string|null;onSelect:(id:string)=>void}){
   const map=useMap();
-  const [,setRevision]=React.useState(0);
+  const [revision,setRevision]=React.useState(0);
   useMapEvents({zoomend:()=>setRevision((value:number)=>value+1),moveend:()=>setRevision((value:number)=>value+1)});
   const selected=items.find(item=>item.id===selectedId);
-  if(selected){const point=markerPoint(selected);return point?<Marker position={point} icon={truckMarker(selected,true)} zIndexOffset={2000}/>:null;}
   const zoom=map.getZoom();
-  type MarkerEntry={item:Signal;point:[number,number];pixel:L.Point;status:'EMPTY'|'PARTIAL'};
-  type MarkerGroup={point:[number,number];items:Signal[];status:'EMPTY'|'PARTIAL';cellKey:string;part:number;partCount:number};
-  const renderBounds=map.getBounds().pad(.35);
-  const entries:MarkerEntry[]=items.flatMap(item=>{const point=markerPoint(item);return point&&renderBounds.contains(point)?[{item,point,pixel:map.project(point,zoom),status:item.status==='PARTIAL'?'PARTIAL':'EMPTY'}]:[];});
-  const screenCellPx=zoom<=6?64:zoom<=8?58:zoom<=10?54:48;
-  const buckets=new Map<string,MarkerEntry[]>();
-  for(const entry of entries){
-    const key=[entry.status,Math.floor(entry.pixel.x/screenCellPx),Math.floor(entry.pixel.y/screenCellPx)].join(':');
-    const bucket=buckets.get(key);
-    if(bucket)bucket.push(entry);else buckets.set(key,[entry]);
-  }
-  const groups:MarkerGroup[]=[];
-  for(const [cellKey,bucket] of buckets){
-    const partCount=Math.ceil(bucket.length/8);
-    for(let part=0;part<partCount;part+=1){
-      const members=bucket.slice(part*8,(part+1)*8);
-      const averagePixel=members.reduce((sum,entry)=>sum.add(entry.pixel),L.point(0,0)).divideBy(members.length);
-      const averagePoint=map.unproject(averagePixel,zoom);
-      groups.push({point:[averagePoint.lat,averagePoint.lng],items:members.map(entry=>entry.item),status:members[0].status,cellKey,part,partCount});
-    }
-  }
-  const minSpacing=zoom<=6?72:zoom<=8?82:100;
-  const occupied=new Map<string,L.Point[]>();
-  const cellFor=(pixel:L.Point)=>`${Math.floor(pixel.x/minSpacing)}:${Math.floor(pixel.y/minSpacing)}`;
-  const isFree=(pixel:L.Point)=>{
-    const cellX=Math.floor(pixel.x/minSpacing),cellY=Math.floor(pixel.y/minSpacing);
-    for(let x=cellX-1;x<=cellX+1;x+=1)for(let y=cellY-1;y<=cellY+1;y+=1){
-      for(const placed of occupied.get(`${x}:${y}`)||[])if(placed.distanceTo(pixel)<minSpacing)return false;
-    }
-    return true;
-  };
-  const reserve=(pixel:L.Point)=>{const key=cellFor(pixel);const cell=occupied.get(key);if(cell)cell.push(pixel);else occupied.set(key,[pixel]);};
-  const candidateOffsets:[number,number][]=[[0,0]];
-  const separationRings=Math.max(4,Math.ceil(Math.sqrt(groups.length))+2);
-  for(let ring=1;ring<=separationRings;ring+=1){
-    for(let x=-ring;x<=ring;x+=1){candidateOffsets.push([x,-ring],[x,ring]);}
-    for(let y=-ring+1;y<ring;y+=1){candidateOffsets.push([-ring,y],[ring,y]);}
-  }
-  const displayedGroups=groups
-    .sort((first,second)=>{
-      const firstPoint=map.project(first.point,zoom),secondPoint=map.project(second.point,zoom);
-      return firstPoint.y-secondPoint.y||firstPoint.x-secondPoint.x||first.status.localeCompare(second.status)||first.cellKey.localeCompare(second.cellKey)||first.part-second.part;
-    })
-    .map(group=>{
-    const pixel=map.project(group.point,zoom);
-    const partOffset=(group.part-(group.partCount-1)/2)*minSpacing;
-    const singleMarkerHeight=zoom<=6?66:zoom<=8?75:96;
-    const visibleCenterOffsetY=group.items.length===1?-singleMarkerHeight/2:0;
-    const desired=L.point(pixel.x,pixel.y+partOffset+visibleCenterOffsetY);
-    const chosen=candidateOffsets.map(([x,y])=>L.point(desired.x+x*minSpacing,desired.y+y*minSpacing)).find(isFree)!;
-    reserve(chosen);
-    const separated=map.unproject(L.point(chosen.x,chosen.y-visibleCenterOffsetY),zoom);
-    return {group,point:[separated.lat,separated.lng] as [number,number]};
-  });
-  return <>{displayedGroups.map(({group,point:groupPoint})=>{
-    const key=`${group.cellKey}:${group.part}:${group.items.map(item=>item.id).sort().join(':')}`;
-    if(group.items.length===1){const item=group.items[0];const privatePlacement=item.current_signal_geometry_visible===false;return <Marker key={key} position={groupPoint} icon={truckMarker(item,false,zoom)} eventHandlers={{click:()=>onSelect(item.id)}}><Tooltip direction="top" offset={[0,zoom<=6?-76:-90]} opacity={1} className={`capacity-marker-tooltip ${item.status==='PARTIAL'?'partial':'empty'}`}>{item.cargo_configuration||'Truck'} · {item.status==='PARTIAL'?'Partial':'Empty'}<br/>{item.provider_name}<br/>{item.capacity_updated_label||'Capacity update unavailable'}<br/>{privatePlacement?'Regular service marker · not current location':item.location_updated_label||'Location update unavailable'}<br/>{privatePlacement?'Select to call or request Shared capacity':item.capacity_confirmation_needed?'Call to confirm availability':item.availability_geometry==='RADIUS'?'Service area · select for details':'Capacity route · select for details'}</Tooltip></Marker>;}
-    if(zoom>=15){const center=map.project(groupPoint,zoom);const radius=Math.max(34,Math.min(58,group.items.length*7));return <React.Fragment key={key}>{group.items.map((item,index)=>{const angle=(Math.PI*2*index)/group.items.length;const point=map.unproject(L.point(center.x+Math.cos(angle)*radius,center.y+Math.sin(angle)*radius),zoom);const privatePlacement=item.current_signal_geometry_visible===false;return <Marker key={item.id} position={point} icon={truckMarker(item,false,zoom)} eventHandlers={{click:()=>onSelect(item.id)}}><Tooltip direction="top" offset={[0,-90]} opacity={1} className={`capacity-marker-tooltip ${item.status==='PARTIAL'?'partial':'empty'}`}>{item.cargo_configuration||'Truck'} · {item.status==='PARTIAL'?'Partial':'Empty'}<br/>{item.provider_name}<br/>{item.capacity_updated_label||'Capacity update unavailable'}<br/>{privatePlacement?'Regular service marker · not current location':item.location_updated_label||'Location update unavailable'}<br/>{privatePlacement?'Select to call or request Shared capacity':item.capacity_confirmation_needed?'Call to confirm availability':item.availability_geometry==='RADIUS'?'Service area · select for details':'Capacity route · select for details'}</Tooltip></Marker>;})}</React.Fragment>;}
+  type MarkerGroup={key:string;status:'EMPTY'|'PARTIAL';memberIds:string[];anchor:{lat:number;lng:number};visualOffset:{x:number;y:number}};
+  const clusteredGroups:MarkerGroup[]=React.useMemo(()=>{
+    if(selected)return [] as MarkerGroup[];
+    const entries=items.flatMap(item=>{
+      const point=markerPoint(item);
+      if(!point)return [];
+      const pixel=map.project(point,zoom);
+      return[{id:item.id,status:item.status,lat:point[0],lng:point[1],x:pixel.x,y:pixel.y}];
+    });
+    return buildCapacityMarkerGroups(entries,zoom) as MarkerGroup[];
+  },[items,map,selected,zoom]) as MarkerGroup[];
+  const groups:MarkerGroup[]=React.useMemo(()=>{
+    const renderBounds=map.getBounds().pad(.35);
+    return clusteredGroups.filter(group=>renderBounds.contains([group.anchor.lat,group.anchor.lng]));
+  },[clusteredGroups,map,revision]) as MarkerGroup[];
+  const itemById:Map<string,Signal>=React.useMemo(()=>new Map(items.map(item=>[item.id,item])),[items]) as Map<string,Signal>;
+  if(selected){const point=markerPoint(selected);return point?<Marker position={point} icon={truckMarker(selected,true)} zIndexOffset={2000} title={truckMarkerAccessibleLabel(selected)} alt={truckMarkerAccessibleLabel(selected)}/>:null;}
+  return <>{groups.map(group=>{
+    const groupItems=group.memberIds.map(id=>itemById.get(id)).filter((item):item is Signal=>Boolean(item));
+    const groupPoint:[number,number]=[group.anchor.lat,group.anchor.lng];
+    const visualOffset:[number,number]=[group.visualOffset.x,group.visualOffset.y];
+    if(groupItems.length===1){const item=groupItems[0];const accessibleLabel=truckMarkerAccessibleLabel(item);return <Marker key={group.key} position={groupPoint} icon={truckMarker(item,false,zoom,visualOffset)} title={accessibleLabel} alt={accessibleLabel} eventHandlers={{click:()=>onSelect(item.id)}}><Tooltip direction="top" offset={[visualOffset[0],(zoom<=6?-84:-98)+visualOffset[1]]} opacity={1} className={`capacity-marker-tooltip ${item.status==='PARTIAL'?'partial':'empty'}`}>{item.cargo_configuration||'Truck'} · {item.status==='PARTIAL'?'Partial':'Empty'}<br/>{item.provider_name}<br/>{item.capacity_updated_label||'Capacity update unavailable'}<br/>{item.location_updated_label||'Location update unavailable'}<br/>{item.capacity_confirmation_needed?'Call to confirm availability':item.availability_geometry==='RADIUS'?'Service area · select for details':'Capacity route · select for details'}</Tooltip></Marker>;}
     const statusLabel=group.status==='PARTIAL'?'Partial':'Empty';
     const statusClass=group.status==='PARTIAL'?'partial':'empty';
-    const icon=L.divIcon({className:`capacity-map-cluster ${statusClass}`,html:`<span>${group.items.length}</span><small>${statusLabel}</small>`,iconSize:[58,58],iconAnchor:[29,29]});
-    return <Marker key={key} position={groupPoint} icon={icon} eventHandlers={{click:()=>map.setView(groupPoint,Math.min(15,zoom+2),{animate:false})}}><Tooltip direction="top" className={`capacity-marker-tooltip ${statusClass}`}>{group.items.length} {statusLabel} {group.items.length===1?'truck':'trucks'}<br/>Zoom in to see each truck</Tooltip></Marker>;
+    const icon=L.divIcon({className:`capacity-map-cluster ${statusClass}`,html:`<span>${groupItems.length}</span><small>${statusLabel}</small>`,iconSize:[58,58],iconAnchor:[29-visualOffset[0],29-visualOffset[1]]});
+    return <Marker key={group.key} position={groupPoint} icon={icon} eventHandlers={zoom<15?{click:()=>map.setView(groupPoint,Math.min(15,zoom+2),{animate:false})}:undefined}>
+      <Tooltip direction="top" offset={visualOffset} className={`capacity-marker-tooltip ${statusClass}`}>{groupItems.length} {statusLabel} trucks<br/>{zoom<15?'Zoom in to separate nearby trucks':'Select this group to choose a truck'}</Tooltip>
+      {zoom>=15?<Popup className={`capacity-cluster-picker ${statusClass}`} minWidth={240} maxWidth={300} autoPan={false}>
+        <div className="capacity-cluster-picker-content" role="group" aria-label={`${statusLabel} trucks in this area`}>
+          <strong>{groupItems.length} {statusLabel.toLowerCase()} trucks nearby</strong>
+          <span>Select a truck to inspect its capacity.</span>
+          <div>{groupItems.map(item=><button key={item.id} type="button" onClick={()=>onSelect(item.id)}><b>{item.cargo_configuration||'Truck'}</b><small>{item.provider_name}</small></button>)}</div>
+        </div>
+      </Popup>:null}
+    </Marker>;
   })}</>;
 }
 
-export function PublicCapacityMapLeaflet({items,viewer,selectedId,onSelect}:{items:Signal[];viewer:Point|null;selectedId:string|null;onSelect:(id:string)=>void}){
+export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInView=false,onSelect,onExplore}:{items:Signal[];viewer:Point|null;selectedId:string|null;keepItemsInView?:boolean;onSelect:(id:string)=>void;onExplore?:()=>void}){
   const selected=items.find(item=>item.id===selectedId)||null;
   const [hoveredInfo,setHoveredInfo]=React.useState(null as MapSignalInfo|null);
   const [pinnedInfo,setPinnedInfo]=React.useState(null as MapSignalInfo|null);
+  const [legendOpen,setLegendOpen]=React.useState(()=>typeof window!=='undefined'&&window.matchMedia('(min-width: 761px)').matches);
   React.useEffect(()=>{setHoveredInfo(null);setPinnedInfo(null);},[selectedId]);
   const availableLabel=selected?.status==='PARTIAL'?'Partial capacity':'Empty truck';
   const availabilityAccent:'empty'|'partial'=selected?.status==='PARTIAL'?'partial':'empty';
@@ -241,7 +233,8 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,onSelect}:{ite
     <MapContainer center={[9.1,40.2]} zoom={7} minZoom={5} maxZoom={15} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom>
       <BaseMapTiles/>
       <ResizeMap/>
-      <Bounds items={items} viewer={viewer} selectedId={selectedId}/>
+      <ProgressiveCapacityLoader onExplore={onExplore}/>
+      <Bounds items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={keepItemsInView}/>
       {viewer?<CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{className:'public-viewer-location-marker',color:'#6d28d9',fillColor:'#8b5cf6',fillOpacity:1,weight:3}}><Tooltip direction="top" offset={[0,-10]} opacity={1} className="capacity-location-tooltip">Your location</Tooltip></CircleMarker>:null}
       {items.filter(item=>item.id===selectedId).map(item=><React.Fragment key={item.id}>
         {locationInfo&&hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)?<Circle center={[Number(item.location_lat),Number(item.location_lng)]} radius={(Number(item.location_precision_km)||20)*1000} eventHandlers={signalEvents(locationInfo)} pathOptions={{className:'map-location-privacy-circle map-interactive-signal',color:'#7c3aed',weight:8,fill:false,dashArray:'7 7'}}/>:null}
@@ -251,8 +244,8 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,onSelect}:{ite
       </React.Fragment>)}
       <CapacityMarkers items={items} selectedId={selectedId} onSelect={onSelect}/>
     </MapContainer>
-    <div className="ethiopia-map-label">Ethiopia market · East Africa view</div>
+    <div className="ethiopia-map-label">Ethiopia capacity · East Africa view</div>
     {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<button type="button" onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</button>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}
-    <div className="public-map-legend" aria-label="Map key"><span className="empty-status">Empty truck</span><span className="partial-status">Partial truck</span><span className="privacy">Approximate location</span><span className="radius">Empty service area</span><span className="empty-route">Empty capacity route</span><span className="partial-route">Partial capacity route</span><span className="corridor">Regular service</span></div>
+    <details className="public-map-legend" open={legendOpen} onToggle={event=>setLegendOpen(event.currentTarget.open)}><summary>Map key</summary><div className="public-map-legend-items"><span className="empty-status">Empty truck</span><span className="partial-status">Partial truck</span><span className="privacy">Approximate location</span><span className="radius">Empty service area</span><span className="empty-route">Empty capacity route</span><span className="partial-route">Partial capacity route</span><span className="corridor">Regular service</span></div></details>
   </div>;
 }

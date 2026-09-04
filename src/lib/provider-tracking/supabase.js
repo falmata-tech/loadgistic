@@ -1,7 +1,11 @@
 import {randomUUID} from 'node:crypto';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
+import {normalizePrivateContactEmail} from '../domain.js';
 import {
+  hashProviderTrackingCode,
   hashTrackingAccessCode,
+  providerTrackingOtpCode,
+  providerTrackingRecipientDigest,
   randomCode,
   reviewAccessCode,
   trackingAccessCode
@@ -17,7 +21,9 @@ const TRACKING_ERRORS=[
   'TRACKING_LOCATION_NOT_ENABLED','INVALID_TRACKING_CODE','REVIEW_NOT_ALLOWED',
   'INVALID_RATING','REVIEW_ALREADY_SUBMITTED','REVIEW_DISPUTE_NOT_ALLOWED',
   'REVIEW_ALREADY_DISPUTED','REVIEW_DISPUTE_REASON_REQUIRED',
-  'INVALID_RATING_REVIEW_STATUS','RATING_REVIEW_NOTE_REQUIRED','RATING_ALREADY_REVIEWED'
+  'INVALID_RATING_REVIEW_STATUS','RATING_REVIEW_NOTE_REQUIRED','RATING_ALREADY_REVIEWED',
+  'INVALID_TRACKING_RECIPIENTS','TRACKING_RECIPIENTS_CLOSED','TRACKING_RECIPIENT_EXISTS',
+  'TRACKING_RECIPIENT_LIMIT','TRACKING_OWNER_RECIPIENT_REQUIRED','TRACKING_ACCESS_DENIED'
 ];
 
 function trackingError(fallback,error){
@@ -44,20 +50,28 @@ export async function createSupabaseProviderShipment(user,input){
   const code=randomCode('LGX');
   const ownerCode=trackingAccessCode(id);
   const reviewCode=reviewAccessCode(id);
+  const ownerEmail=normalizePrivateContactEmail(input.customerEmail);
+  const additionalEmails=[...new Set((Array.isArray(input.additionalRecipientEmails)?input.additionalRecipientEmails:[])
+    .map(normalizePrivateContactEmail))].filter(email=>email!==ownerEmail);
+  if(additionalEmails.length>20)throw new Error('INVALID_TRACKING_RECIPIENTS');
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('create_provider_tracking',{
+  const {data,error}=await client.rpc('create_provider_tracking_with_recipients',{
     actor_user_id:user.id,
     command:{
       id,code,vehicle_id:String(input.vehicleId||''),
       origin_place_ref:String(input.originPlaceRef||''),
       destination_place_ref:String(input.destinationPlaceRef||''),
       cargo_summary:String(input.cargoSummary||''),
-      customer_email:String(input.customerEmail||''),
+      customer_email:ownerEmail,
+      customer_email_digest:providerTrackingRecipientDigest(ownerEmail),
+      additional_recipients:additionalEmails.map(email=>({
+        email,digest:providerTrackingRecipientDigest(email)
+      })),
       expected_pickup_date:String(input.expectedPickupDate||''),
       expected_delivery_date:String(input.expectedDeliveryDate||''),
       tracking_mode:String(input.trackingMode||'STATUS_ONLY'),
-      tracking_code_hash:hashTrackingAccessCode(ownerCode),
-      review_code_hash:hashTrackingAccessCode(reviewCode)
+      tracking_code_hash:hashProviderTrackingCode(ownerCode),
+      review_code_hash:hashProviderTrackingCode(reviewCode)
     }
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_CREATE_FAILED',error);
@@ -78,8 +92,13 @@ export async function getSupabaseProviderShipment(user,id){
   if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_DETAIL_FAILED',error);
   if(!data)return null;
   const shipment=payload(data);
+  const {data:recipientRows,error:recipientError}=await client.rpc('list_provider_tracking_recipients',{
+    actor_user_id:user.id,target_shipment_id:String(shipment.id||'')
+  });
+  if(recipientError)throw trackingError('SUPABASE_PROVIDER_TRACKING_DETAIL_FAILED',recipientError);
   return {
     ...shipment,
+    tracking_recipients:(recipientRows||[]).map(payload),
     tracking_access_code:shipment.guest_access_active?trackingAccessCode(shipment.id):null,
     tracking_path:'/track'
   };
@@ -117,31 +136,84 @@ export async function updateSupabaseProviderShipmentLocation(user,id,input){
   return payload(data);
 }
 
-export async function unlockSupabaseProviderTracking(code){
+export async function requestSupabaseProviderTrackingOtp(emailValue,code){
+  const email=normalizePrivateContactEmail(emailValue);
+  const challengeId=randomUUID();
+  const accessCode=providerTrackingOtpCode(challengeId);
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('unlock_provider_tracking',{
-    tracking_code_hash:hashTrackingAccessCode(code)
+  const {data,error}=await client.rpc('request_provider_tracking_otp',{
+    challenge_id:challengeId,
+    normalized_recipient_email:email,
+    recipient_digest:providerTrackingRecipientDigest(email),
+    tracking_code_digest:hashProviderTrackingCode(code),
+    challenge_code_digest:hashTrackingAccessCode(accessCode),
+    challenge_expires_at:new Date(Date.now()+10*60*1000).toISOString()
   });
-  if(error)throw trackingError('INVALID_TRACKING_CODE',error);
+  if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_OTP_REQUEST_FAILED',error);
+  return data
+    ?{accepted:true,deliveryQueued:true,challengeId,accessCode}
+    :{accepted:true,deliveryQueued:false,challengeId};
+}
+
+export async function verifySupabaseProviderTrackingOtp(emailValue,code,challengeId,otp){
+  const email=normalizePrivateContactEmail(emailValue);
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('consume_provider_tracking_otp',{
+    challenge_id:String(challengeId||''),
+    recipient_digest:providerTrackingRecipientDigest(email),
+    tracking_code_digest:hashProviderTrackingCode(code),
+    submitted_code_digest:hashTrackingAccessCode(String(otp||'').trim())
+  });
+  if(error||!data)throw trackingError('TRACKING_ACCESS_DENIED',error);
   return payload(data);
 }
 
 export async function unlockSupabaseProviderReview(shipmentId,code){
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('unlock_provider_review',{
-    target_shipment_id:String(shipmentId||''),supplied_code_hash:hashTrackingAccessCode(code)
+    target_shipment_id:String(shipmentId||''),supplied_code_hash:hashProviderTrackingCode(code)
   });
   if(error)throw trackingError('REVIEW_NOT_ALLOWED',error);
   return payload(data);
 }
 
-export async function getSupabaseProviderGuestTracking(id,partyRole){
+export async function getSupabaseProviderGuestTracking(id,recipientDigest){
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('provider_guest_tracking',{
-    target_shipment_id:String(id||''),requested_party_role:String(partyRole||'')
+  const {data,error}=await client.rpc('provider_guest_tracking_for_recipient',{
+    target_shipment_id:String(id||''),requested_recipient_digest:String(recipientDigest||'')
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_GUEST_TRACKING_FAILED',error);
   return data?payload(data):null;
+}
+
+export async function addSupabaseProviderTrackingRecipient(user,shipmentId,emailValue){
+  const email=normalizePrivateContactEmail(emailValue);
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('add_provider_tracking_recipient',{
+    actor_user_id:user.id,target_shipment_id:String(shipmentId||''),
+    normalized_recipient_email:email,recipient_digest:providerTrackingRecipientDigest(email)
+  });
+  if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_RECIPIENT_ADD_FAILED',error);
+  return payload(data);
+}
+
+export async function revokeSupabaseProviderTrackingRecipient(user,shipmentId,recipientId){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('revoke_provider_tracking_recipient',{
+    actor_user_id:user.id,target_shipment_id:String(shipmentId||''),
+    target_recipient_id:String(recipientId||'')
+  });
+  if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_RECIPIENT_REVOKE_FAILED',error);
+  return Boolean(data);
+}
+
+export async function purgeExpiredSupabaseProviderTrackingOtps(limit=100){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('tracking_email_otp_cleanup',{
+    requested_limit:Math.max(1,Math.min(500,Number(limit)||100))
+  });
+  if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_OTP_CLEANUP_FAILED',error);
+  return payload(data)||{otpCount:0,deliveryCount:0};
 }
 
 export async function purgeExpiredSupabaseProviderShipmentGuests(limit=100){

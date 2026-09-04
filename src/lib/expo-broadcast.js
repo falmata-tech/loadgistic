@@ -1,12 +1,9 @@
 export const DEFAULT_FEATURED_SCHEDULE_CONFIG=Object.freeze({
-  dayStart:'08:00',
-  morningEnd:'13:00',
-  eveningStart:'17:00',
-  dayEnd:'22:00',
-  transitionMinutes:10,
-  sponsorBreakEvery:3,
-  sponsorBreakMinutes:15,
-  targetPresentationMinutes:30
+  dayStart:'07:30',
+  dayEnd:'09:00',
+  targetCount:8,
+  sponsorBreakEvery:2,
+  sponsorBreakMinutes:2
 });
 
 const TIME_PATTERN=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -28,21 +25,15 @@ function boundedInteger(value,fallback,min,max,errorCode){
 export function validateFeaturedScheduleConfig(input={}){
   const config={
     dayStart:String(input.dayStart||DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart),
-    morningEnd:String(input.morningEnd||DEFAULT_FEATURED_SCHEDULE_CONFIG.morningEnd),
-    eveningStart:String(input.eveningStart||DEFAULT_FEATURED_SCHEDULE_CONFIG.eveningStart),
     dayEnd:String(input.dayEnd||DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd),
-    transitionMinutes:boundedInteger(input.transitionMinutes,DEFAULT_FEATURED_SCHEDULE_CONFIG.transitionMinutes,5,30,'FEATURED_TRANSITION_INVALID'),
-    sponsorBreakEvery:boundedInteger(input.sponsorBreakEvery,DEFAULT_FEATURED_SCHEDULE_CONFIG.sponsorBreakEvery,2,6,'FEATURED_SPONSOR_BREAK_FREQUENCY_INVALID'),
-    sponsorBreakMinutes:boundedInteger(input.sponsorBreakMinutes,DEFAULT_FEATURED_SCHEDULE_CONFIG.sponsorBreakMinutes,10,45,'FEATURED_SPONSOR_BREAK_DURATION_INVALID'),
-    targetPresentationMinutes:boundedInteger(input.targetPresentationMinutes,DEFAULT_FEATURED_SCHEDULE_CONFIG.targetPresentationMinutes,15,60,'FEATURED_PRESENTATION_DURATION_INVALID')
+    targetCount:boundedInteger(input.targetCount,DEFAULT_FEATURED_SCHEDULE_CONFIG.targetCount,1,12,'FEATURED_TARGET_COUNT_INVALID'),
+    sponsorBreakEvery:boundedInteger(input.sponsorBreakEvery,DEFAULT_FEATURED_SCHEDULE_CONFIG.sponsorBreakEvery,2,4,'FEATURED_SPONSOR_BREAK_FREQUENCY_INVALID'),
+    sponsorBreakMinutes:boundedInteger(input.sponsorBreakMinutes,DEFAULT_FEATURED_SCHEDULE_CONFIG.sponsorBreakMinutes,1,2,'FEATURED_SPONSOR_BREAK_DURATION_INVALID')
   };
-  const dayStart=timeToMinutes(config.dayStart);
-  const morningEnd=timeToMinutes(config.morningEnd);
-  const eveningStart=timeToMinutes(config.eveningStart);
-  const dayEnd=timeToMinutes(config.dayEnd);
-  if(dayStart<8*60||dayEnd>22*60||!(dayStart<morningEnd&&morningEnd<eveningStart&&eveningStart<dayEnd))throw new Error('FEATURED_SCHEDULE_WINDOW_INVALID');
-  if(eveningStart-morningEnd!==4*60)throw new Error('FEATURED_INTERMISSION_INVALID');
-  return {...config,dayStartMinutes:dayStart,morningEndMinutes:morningEnd,eveningStartMinutes:eveningStart,dayEndMinutes:dayEnd};
+  const dayStartMinutes=timeToMinutes(config.dayStart);
+  const dayEndMinutes=timeToMinutes(config.dayEnd);
+  if(config.dayStart!=='07:30'||config.dayEnd!=='09:00'||dayEndMinutes-dayStartMinutes!==90)throw new Error('FEATURED_SCHEDULE_WINDOW_INVALID');
+  return {...config,dayStartMinutes,dayEndMinutes};
 }
 
 function validateDate(dateIso){
@@ -63,17 +54,10 @@ function timeLabel(epoch){
 }
 
 function interval(type,label,startAt,endAt,extra={}){
-  return {
-    type,
-    label,
-    starts_at:new Date(startAt).toISOString(),
-    ends_at:new Date(endAt).toISOString(),
-    time_label:`${timeLabel(startAt)}–${timeLabel(endAt)}`,
-    ...extra
-  };
+  return {type,label,starts_at:new Date(startAt).toISOString(),ends_at:new Date(endAt).toISOString(),time_label:`${timeLabel(startAt)}–${timeLabel(endAt)}`,...extra};
 }
 
-function providerKeys(value){
+function featuredKeys(value){
   if(Number.isSafeInteger(Number(value))&&!Array.isArray(value)){
     const count=Number(value);
     if(count<0)throw new Error('FEATURED_PROVIDER_COUNT_INVALID');
@@ -85,54 +69,30 @@ function providerKeys(value){
   return keys;
 }
 
-function sessionBreakMinutes(count,config){
-  if(count<=1)return 0;
-  const transitions=(count-1)*config.transitionMinutes;
-  const sponsorBreaks=Math.floor((count-1)/config.sponsorBreakEvery)*config.sponsorBreakMinutes;
-  return transitions+sponsorBreaks;
+function scheduledBreakCount(count,config){
+  return Math.min(4,Math.floor(Math.max(0,count-1)/config.sponsorBreakEvery));
 }
 
-function autoProviderMinutes(sessionCounts,config){
-  let duration=config.targetPresentationMinutes;
-  const blockMinutes=[config.morningEndMinutes-config.dayStartMinutes,config.dayEndMinutes-config.eveningStartMinutes];
-  sessionCounts.forEach((count,index)=>{
-    if(!count)return;
-    duration=Math.min(duration,Math.floor((blockMinutes[index]-sessionBreakMinutes(count,config))/count));
-  });
-  if(duration<5)throw new Error('FEATURED_SCHEDULE_CAPACITY_EXCEEDED');
-  return duration;
-}
-
-function buildAutoSession(dateIso,key,label,keys,windowStartMinutes,windowEndMinutes,providerMinutes,config,slotOffset){
-  if(!keys.length)return {session:{key,label,provider_count:0,starts_at:null,ends_at:null,time_label:'No presentations scheduled'},entries:[],walkthroughs:[]};
-  const durationMinutes=keys.length*providerMinutes+sessionBreakMinutes(keys.length,config);
-  const startsAt=dateEpoch(dateIso,'00:00')+(windowEndMinutes-durationMinutes)*MINUTE;
-  const windowStart=dateEpoch(dateIso,'00:00')+windowStartMinutes*MINUTE;
-  if(startsAt<windowStart)throw new Error('FEATURED_SCHEDULE_CAPACITY_EXCEEDED');
-  let cursor=startsAt;
+function buildAutomatic(date,keys,config){
+  if(!keys.length)return {entries:[],walkthroughs:[],sessions:[{key:'MORNING',label:'Morning programme',provider_count:0,starts_at:null,ends_at:null,time_label:'07:30–09:00'}]};
+  const breakCount=scheduledBreakCount(keys.length,config);
+  const presentationMinutes=config.dayEndMinutes-config.dayStartMinutes-breakCount*config.sponsorBreakMinutes;
+  if(presentationMinutes<keys.length*3)throw new Error('FEATURED_SCHEDULE_CAPACITY_EXCEEDED');
+  const baseMinutes=Math.floor(presentationMinutes/keys.length);
+  let remainder=presentationMinutes%keys.length;
+  let usedBreaks=0;
+  let cursor=dateEpoch(date,config.dayStart);
   const entries=[];
   const walkthroughs=[];
-  keys.forEach((providerKey,index)=>{
-    const endsAt=cursor+providerMinutes*MINUTE;
-    const providerEntry=interval('PROVIDER','Featured transporter',cursor,endsAt,{session:key,session_label:label,provider_key:providerKey,slot:slotOffset+index+1});
-    entries.push(providerEntry);
-    walkthroughs.push(providerEntry);
-    cursor=endsAt;
-    if(index===keys.length-1)return;
-    const transitionEnd=cursor+config.transitionMinutes*MINUTE;
-    entries.push(interval('TRANSITION','Changeover',cursor,transitionEnd,{session:key,session_label:label}));
-    cursor=transitionEnd;
-    if((index+1)%config.sponsorBreakEvery===0){
-      const sponsorEnd=cursor+config.sponsorBreakMinutes*MINUTE;
-      entries.push(interval('SPONSOR_BREAK','Sponsor break',cursor,sponsorEnd,{session:key,session_label:label}));
-      cursor=sponsorEnd;
-    }
+  keys.forEach((key,index)=>{
+    const duration=baseMinutes+(remainder>0?1:0);if(remainder>0)remainder-=1;
+    const end=cursor+duration*MINUTE;
+    const item=interval('PROVIDER','Featured truck',cursor,end,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
+    entries.push(item);walkthroughs.push(item);cursor=end;
+    const shouldBreak=index<keys.length-1&&(index+1)%config.sponsorBreakEvery===0&&usedBreaks<4;
+    if(shouldBreak){const breakEnd=cursor+config.sponsorBreakMinutes*MINUTE;entries.push(interval('PROGRAMME_BREAK','Programme pause',cursor,breakEnd,{session:'MORNING',session_label:'Morning programme'}));cursor=breakEnd;usedBreaks+=1;}
   });
-  return {
-    session:{key,label,provider_count:keys.length,starts_at:new Date(startsAt).toISOString(),ends_at:new Date(cursor).toISOString(),time_label:`${timeLabel(startsAt)}–${timeLabel(cursor)}`},
-    entries,
-    walkthroughs
-  };
+  return {entries,walkthroughs,sessions:[{key:'MORNING',label:'Morning programme',provider_count:keys.length,starts_at:new Date(dateEpoch(date,config.dayStart)).toISOString(),ends_at:new Date(cursor).toISOString(),time_label:'07:30–09:00'}]};
 }
 
 function normalizeManualSchedule(value){
@@ -141,94 +101,39 @@ function normalizeManualSchedule(value){
   try{const parsed=JSON.parse(String(value));return Array.isArray(parsed)?parsed:[];}catch{throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');}
 }
 
-function buildManual(dateIso,keys,config,manualValue){
+function buildManual(date,keys,config,manualValue){
   const manual=normalizeManualSchedule(manualValue);
   if(manual.length!==keys.length)throw new Error('FEATURED_MANUAL_SCHEDULE_INCOMPLETE');
   const byKey=new Map(manual.map(item=>[String(item?.providerKey||''),item]));
   if(byKey.size!==keys.length||keys.some(key=>!byKey.has(key)))throw new Error('FEATURED_MANUAL_SCHEDULE_INCOMPLETE');
-  const midnight=dateEpoch(dateIso,'00:00');
-  const providerEntries=keys.map((key,index)=>{
-    const item=byKey.get(key);
-    const startMinutes=timeToMinutes(item.startTime,'FEATURED_MANUAL_SCHEDULE_INVALID');
-    const endMinutes=timeToMinutes(item.endTime,'FEATURED_MANUAL_SCHEDULE_INVALID');
-    if(endMinutes<=startMinutes)throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');
-    let session;
-    let sessionLabel;
-    if(startMinutes>=config.dayStartMinutes&&endMinutes<=config.morningEndMinutes){session='MORNING';sessionLabel='Morning session';}
-    else if(startMinutes>=config.eveningStartMinutes&&endMinutes<=config.dayEndMinutes){session='EVENING';sessionLabel='Evening session';}
-    else throw new Error('FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION');
-    return interval('PROVIDER','Featured transporter',midnight+startMinutes*MINUTE,midnight+endMinutes*MINUTE,{session,session_label:sessionLabel,provider_key:key,slot:index+1});
+  const midnight=dateEpoch(date,'00:00');
+  const walkthroughs=keys.map((key,index)=>{
+    const item=byKey.get(key);const start=timeToMinutes(item.startTime,'FEATURED_MANUAL_SCHEDULE_INVALID');const end=timeToMinutes(item.endTime,'FEATURED_MANUAL_SCHEDULE_INVALID');
+    if(end<=start)throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');
+    if(start<config.dayStartMinutes||end>config.dayEndMinutes)throw new Error('FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION');
+    return interval('PROVIDER','Featured truck',midnight+start*MINUTE,midnight+end*MINUTE,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
   });
-  for(let index=1;index<providerEntries.length;index++){
-    if(Date.parse(providerEntries[index].starts_at)<Date.parse(providerEntries[index-1].ends_at))throw new Error('FEATURED_MANUAL_SCHEDULE_OVERLAP');
-  }
-  const entries=[];
-  const sessions=[];
-  for(const [sessionKey,sessionLabel] of [['MORNING','Morning session'],['EVENING','Evening session']]){
-    const sessionProviders=providerEntries.filter(item=>item.session===sessionKey);
-    sessionProviders.forEach((entry,index)=>{
-      entries.push(entry);
-      const next=sessionProviders[index+1];
-      if(!next)return;
-      const gapStart=Date.parse(entry.ends_at);
-      const gapEnd=Date.parse(next.starts_at);
-      if(gapEnd<=gapStart)return;
-      const sponsor=(index+1)%config.sponsorBreakEvery===0;
-      entries.push(interval(sponsor?'SPONSOR_BREAK':'TRANSITION',sponsor?'Sponsor break':'Changeover',gapStart,gapEnd,{session:sessionKey,session_label:sessionLabel}));
-    });
-    sessions.push(sessionProviders.length?{key:sessionKey,label:sessionLabel,provider_count:sessionProviders.length,starts_at:sessionProviders[0].starts_at,ends_at:sessionProviders.at(-1).ends_at,time_label:`${timeLabel(Date.parse(sessionProviders[0].starts_at))}–${timeLabel(Date.parse(sessionProviders.at(-1).ends_at))}`}:{key:sessionKey,label:sessionLabel,provider_count:0,starts_at:null,ends_at:null,time_label:'No presentations scheduled'});
-  }
-  return {sessions,entries,walkthroughs:providerEntries};
+  const entries=[];let breakCount=0;
+  walkthroughs.forEach((item,index)=>{
+    if(index&&Date.parse(item.starts_at)<Date.parse(walkthroughs[index-1].ends_at))throw new Error('FEATURED_MANUAL_SCHEDULE_OVERLAP');
+    if(index&&Date.parse(item.starts_at)>Date.parse(walkthroughs[index-1].ends_at)){
+      breakCount+=1;if(breakCount>4||Date.parse(item.starts_at)-Date.parse(walkthroughs[index-1].ends_at)>2*MINUTE)throw new Error('FEATURED_MANUAL_BREAK_INVALID');
+      entries.push(interval('PROGRAMME_BREAK','Programme pause',Date.parse(walkthroughs[index-1].ends_at),Date.parse(item.starts_at),{session:'MORNING',session_label:'Morning programme'}));
+    }
+    entries.push(item);
+  });
+  return {entries,walkthroughs,sessions:[{key:'MORNING',label:'Morning programme',provider_count:keys.length,starts_at:walkthroughs[0]?.starts_at||null,ends_at:walkthroughs.at(-1)?.ends_at||null,time_label:'07:30–09:00'}]};
 }
 
 export function buildFeaturedDaySchedule(dateIso,providers,options={},now=Date.now()){
-  const date=validateDate(dateIso);
-  const keys=providerKeys(providers);
-  const mode=String(options.mode||'AUTO').toUpperCase();
+  const date=validateDate(dateIso);const keys=featuredKeys(providers);const mode=String(options.mode||'AUTO').toUpperCase();
   if(!['AUTO','MANUAL'].includes(mode))throw new Error('FEATURED_SCHEDULE_MODE_INVALID');
   const config=validateFeaturedScheduleConfig(options.config||{});
-  let built;
-  if(mode==='MANUAL')built=buildManual(date,keys,config,options.manualSchedule);
-  else{
-    const morningCount=Math.ceil(keys.length/2);
-    const sessionCounts=[morningCount,keys.length-morningCount];
-    const presentationMinutes=keys.length?autoProviderMinutes(sessionCounts,config):config.targetPresentationMinutes;
-    const morning=buildAutoSession(date,'MORNING','Morning session',keys.slice(0,morningCount),config.dayStartMinutes,config.morningEndMinutes,presentationMinutes,config,0);
-    const evening=buildAutoSession(date,'EVENING','Evening session',keys.slice(morningCount),config.eveningStartMinutes,config.dayEndMinutes,presentationMinutes,config,morningCount);
-    built={sessions:[morning.session,evening.session],entries:[...morning.entries,...evening.entries],walkthroughs:[...morning.walkthroughs,...evening.walkthroughs]};
-  }
-  const intermission=interval('INTERMISSION','Midday intermission',dateEpoch(date,config.morningEnd),dateEpoch(date,config.eveningStart));
-  const entries=[...built.entries,intermission].sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at));
+  const built=mode==='MANUAL'?buildManual(date,keys,config,options.manualSchedule):buildAutomatic(date,keys,config);
   const value=now instanceof Date?now.getTime():Number(now);
-  const activeEntry=entries.find(entry=>value>=Date.parse(entry.starts_at)&&value<Date.parse(entry.ends_at))||null;
+  const activeEntry=built.entries.find(entry=>value>=Date.parse(entry.starts_at)&&value<Date.parse(entry.ends_at))||null;
   const walkthroughs=built.walkthroughs.map(item=>({...item,label:item.time_label,current:activeEntry?.type==='PROVIDER'&&activeEntry.provider_key===item.provider_key}));
-  const first=walkthroughs.length?Math.min(...walkthroughs.map(item=>Date.parse(item.starts_at))):dateEpoch(date,config.dayStart);
-  const last=walkthroughs.length?Math.max(...walkthroughs.map(item=>Date.parse(item.ends_at))):dateEpoch(date,config.dayEnd);
-  let phase='scheduled';
-  if(value>=last)phase='ended';
-  else if(activeEntry?.type==='INTERMISSION')phase='intermission';
-  else if(activeEntry?.session==='MORNING')phase='morning';
-  else if(activeEntry?.session==='EVENING')phase='evening';
-  else if(value>=first)phase='between';
-  const sessionLabels=built.sessions.filter(session=>session.provider_count).map(session=>`${session.label.replace(' session','')} ${session.time_label}`);
-  return {
-    mode,
-    config:{
-      dayStart:config.dayStart,
-      morningEnd:config.morningEnd,
-      eveningStart:config.eveningStart,
-      dayEnd:config.dayEnd,
-      transitionMinutes:config.transitionMinutes,
-      sponsorBreakEvery:config.sponsorBreakEvery,
-      sponsorBreakMinutes:config.sponsorBreakMinutes,
-      targetPresentationMinutes:config.targetPresentationMinutes
-    },
-    sessions:built.sessions,
-    entries,
-    walkthroughs,
-    intermission,
-    active_entry:activeEntry,
-    phase,
-    display_label:sessionLabels.join(' · ')||'Schedule pending'
-  };
+  const startsAt=dateEpoch(date,config.dayStart),endsAt=dateEpoch(date,config.dayEnd);
+  const phase=value<startsAt?'scheduled':value>=endsAt?'ended':activeEntry?.type==='PROVIDER'?'live':'break';
+  return {mode,config:{dayStart:config.dayStart,dayEnd:config.dayEnd,targetCount:config.targetCount,sponsorBreakEvery:config.sponsorBreakEvery,sponsorBreakMinutes:config.sponsorBreakMinutes},sessions:built.sessions,entries:built.entries,walkthroughs,intermission:null,active_entry:activeEntry,phase,display_label:'07:30–09:00'};
 }

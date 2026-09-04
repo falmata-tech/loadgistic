@@ -36,10 +36,13 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
     </nav>
     <section className="support-conversation-list">
       {result.items.map((item:any)=><article key={item.id}>
-        <Link className="support-conversation-main" href={item.status==='WAITING'?'#':`/support/${item.id}`}>
+        {item.status==='WAITING'?<div className="support-conversation-main">
           <span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span>
           <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
-        </Link>
+        </div>:<Link className="support-conversation-main" href={`/support/${item.id}`}>
+          <span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span>
+          <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
+        </Link>}
         <StatusPill status={item.status}/>
         {item.status==='WAITING'?<form action={`/api/support/conversations/${item.id}/claim`} method="post"><button className="button small"><UserCheck aria-hidden="true"/>Claim</button></form>:<Link className="button secondary small" href={`/support/${item.id}`}><Inbox aria-hidden="true"/>Open</Link>}
       </article>)}

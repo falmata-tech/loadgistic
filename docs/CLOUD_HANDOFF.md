@@ -10,29 +10,43 @@ commit must continue to produce the standalone Docker artifact for CI parity and
 a portable fallback; Netlify runs the maintained OpenNext adapter rather than
 the Docker image.
 
-The application is still approved only for local validation and controlled
-demonstration. Public Production remains blocked until hosted migration,
-email, upload-scanning, backup, Preview verification, and monitoring gates in
+The application is approved for a controlled hosted pilot, not unrestricted
+public Production. Broad launch remains blocked until remote application email,
+upload-scanning, backup/restore, Preview verification, and monitoring gates in
 `docs/LAUNCH_READINESS.md` pass. Public discovery, Shared capacity, provider
 Capacity, provider-owned Tracking, transporter-profile editing, managed signup,
 the authenticated workspace shell, Fleet management, Verification, Billing,
 member Support, Assisted matching, platform-team management, Operations, and
 Featured/Sponsor administration all use the unconditional managed runtime.
 
-## Provisioned control plane — 2026-08-17
+## Provisioned control plane — 2026-09-02
 
-- Netlify Free team: `loadgistic` (`falmatad97`)
-- Netlify site: `loadgistic` (`88fc3f4f-5bf4-479e-a4a3-08ab14a75111`)
-- Reserved URL: `https://loadgistic.netlify.app`
+- Netlify Free team: `Falmata Dawano` (`falmatad97`)
+- Netlify site: `loadgistic-473` (`dbb0fcec-9ec9-4511-9737-db0e32849af5`)
+- Reserved URL: `https://loadgistic-473.netlify.app`
 - Local repository link: `.netlify/state.json` (ignored by Git)
-- Required non-secret Netlify values: `APP_URL`,
-  `NEXT_PUBLIC_SUPABASE_URL`, and
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not yet configured remotely)
+- The reviewed Production application, Supabase, session/Tracking,
+  fixture-disable, and application-SMTP variables are configured in Netlify
+  without placing values in source. Session, Tracking, service-role, and SMTP
+  credentials are marked secret. On Netlify Free their supported secret scopes
+  necessarily include Builds, Functions, and Runtime; non-sensitive deployment
+  values use all available scopes.
+- Hosted Supabase Auth has the exact Site URL/callback, separate Production
+  Google client, six-digit templates, and Gmail SMTP configured. A real hosted
+  Auth OTP request and verification completed successfully.
 
-No deploy or Git continuous-deployment hook has been created. The service-role
-key is not configured. Supabase is the unconditional identity, data, request-limit,
-and private-Storage runtime; there are no backend selector variables to configure.
-Remote upload-scanning and rollout gates below remain red.
+The Netlify site is provisioned and ready for the reviewed release artifact;
+successful application deployment and live route smoke are recorded only after
+the current promotion completes. Application-owned
+Tracking, Shared capacity, and Assisted matching SMTP credentials are now
+configured separately in Netlify, and an authentication-only handshake passed
+without sending a message. A deployed provider/worker smoke test is still
+required; Supabase Auth cannot expose or reuse its saved SMTP password.
+Supabase is the unconditional identity, data, request-limit, and private-Storage
+runtime; there are no backend selector variables to configure. The hosted
+Loadgistic database has migrations `001`–`069`, and all seven application buckets
+are private. It intentionally has no local fixture import. Upload-scanning and
+the remaining rollout gates below remain red.
 
 ## Free-pilot operating envelope
 
@@ -60,7 +74,7 @@ an unencrypted dump in Git, a CI log, or a public artifact.
 
 1. Create a project in the intended region and verify backup/restore first.
 2. Apply all migrations from `001_loadgistic_schema.sql` through
-   `057_managed_platform_admin.sql` in numeric order.
+   `069_daily_featured_trucks.sql` in numeric order.
 3. Run SQL lint and review every RLS policy/default-deny private table.
 4. Import the reviewed place catalog with `npm run places:import:supabase` from a trusted operator machine.
 5. Confirm every purpose bucket plus the private `private-upload-quarantine` bucket, then configure and prove the managed scanner before serving uploads.
@@ -84,16 +98,36 @@ Production-disabled local fixture-password boundary are the only identity
 runtime. Managed provider onboarding now provisions an inactive
 Auth subject, collects the short provider profile after Google or email-code
 identity proof, and then provisions the matching provider workspace, draft page,
-signup record, seven-day trial, and active role projection atomically. It still requires the
-hosted Google, callback, and SMTP configuration below before public enablement.
+signup record, seven-day trial, and active role projection atomically.
+The hosted Production Auth callback, Google provider, numeric templates, and
+Gmail SMTP are configured, and one real account OTP was verified. Google login
+and the complete provider-signup path still require end-to-end verification
+after the application and schema are deployed; Preview requires its own exact
+configuration.
 The default Supabase SMTP service is demonstration-only and cannot deliver a
-public launch. Configure one verified sending domain through Resend Free (3,000
-messages per month and 100 per day) for Supabase Auth SMTP and the Loadgistic
-direct email adapter. Netlify invokes bounded delivery retries and guest cleanup
-every 15 minutes in UTC; monitor the daily email and function-credit ceilings.
+public launch. The controlled pilot currently uses authenticated Gmail SMTP for
+Supabase Auth. Application-owned Tracking, Shared capacity, and Assisted
+matching messages use a separate durable queue and Netlify email adapter. They
+currently use separately configured Netlify SMTP host, port, user, app password,
+From, and reply-to values. Their authentication handshake passes, but no message
+or deployed-worker delivery has been proved. This temporary SMTP adapter
+uses TLS and stable Message-IDs but remains at-least-once after an ambiguous
+timeout, so readiness reports a warning. Replace it with an owned sending domain
+and the Resend API adapter before higher-volume public use. The source-verified
+Netlify design invokes the general managed dispatcher every 15 minutes and the
+access-email recovery dispatcher every two minutes. Each sends a
+timestamped HMAC-SHA256 signed request to bounded background work. The workers
+reject unsigned or stale calls, expose no private operation result, and are not
+deployed or monitored yet; after deployment, monitor the mailbox and
+function-credit ceilings.
 Cloudflare Turnstile may provide the no-cost bot challenge, while the
 shared enforcement counters remain transactional Supabase records rather than
 process-local memory.
+
+Production has completed steps 1–4 below and basic Gmail SMTP account-OTP
+delivery. Repeat them independently for Preview. Expiry, unknown-address,
+rate-limit, Google login, and the full signup workflow still require hosted
+application smoke tests after the schema and site deploy.
 
 Configure Preview and Production independently:
 
@@ -120,7 +154,8 @@ Use Node 22.x and configure Preview/Production independently:
 
 ```text
 APP_URL
-SESSION_SECRET
+SESSION_SECRET # session signing and scheduled/background HMAC boundary
+TRACKING_CODE_SECRET # strong, distinct Tracking-code derivation secret
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_MAP_TILE_URL
@@ -133,12 +168,24 @@ UPLOAD_SCANNER_TIMEOUT_MS
 RESEND_API_KEY
 LOADGISTIC_EMAIL_FROM
 LOADGISTIC_EMAIL_REPLY_TO
+# Temporary authenticated SMTP application-email pilot:
+LOADGISTIC_SMTP_HOST
+LOADGISTIC_SMTP_PORT
+LOADGISTIC_SMTP_USER
+LOADGISTIC_SMTP_PASSWORD
 # Optional private fallback only:
 LOADGISTIC_EMAIL_WEBHOOK_URL
 LOADGISTIC_EMAIL_WEBHOOK_TOKEN
 NEXT_PUBLIC_TURNSTILE_SITE_KEY
 TURNSTILE_SECRET_KEY
 ```
+
+The current Netlify Free environment-variable model cannot narrow sensitive
+Production variables below the Builds, Functions, and Runtime scopes needed by
+this site. Keep them marked secret, keep Preview configuration separate, and do
+not copy them into deploy logs or client-prefixed variables. Harmless public or
+deployment values may retain all scopes. Reassess scope separation before
+moving beyond the bounded Free-plan pilot.
 
 Bucket identifiers are migration-owned: `shipment-proof`, `verification`,
 `capacity-photo`, `payment-proof`, `provider-profile`, and
@@ -167,7 +214,14 @@ npm audit --audit-level=high
 NODE_ENV=production npm run launch:check
 ```
 
-Then verify health, provider signup/login, capacity radius/route publication, public list/map and proximity, platform-managed microsite presentation and provider contacts, Tracking creation, the stable owner code/link, every valid transition, access/completion emails and retries, expiry cleanup, review/dispute, private image authorization, and denied cross-provider access.
+Then verify health, provider signup/login, capacity radius/route publication,
+public Map and proximity, platform-managed microsite presentation and provider
+contacts, Tracking creation, the stable 80-bit owner/review code formats and
+session-secret-rotation independence, every valid transition, application-owned
+Tracking access/completion emails and retries, the separate six-digit Shared
+capacity application OTP plus expiry cleanup, review/dispute, private image
+authorization, and denied cross-provider access. Supabase Auth's six-digit
+account OTP is a third, independent template and delivery path.
 
 Run the same smoke set against a Netlify Preview backed by Supabase Staging.
 After approval, promote the exact commit to Production, verify the Production

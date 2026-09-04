@@ -24,6 +24,6 @@ export default async function ProviderShipmentsPage({searchParams}:{searchParams
       <div><strong>{shipment.platform_number}</strong><div className="meta">{shipment.driver_name}</div></div>
       <StatusPill status={shipment.operational_status}/><ArrowRight aria-hidden="true"/>
     </Link>)}</div>
-    {!shipments.length?<div className="empty-state"><ClipboardList aria-hidden="true"/><strong>No Tracking sessions yet.</strong><span>After agreeing work offline, start Tracking and send the customer owner one private link and code.</span>{mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start Tracking</Link>:null}</div>:null}
+    {!shipments.length?<div className="empty-state"><ClipboardList aria-hidden="true"/><strong>No Tracking sessions yet.</strong><span>After agreeing work offline, start Tracking and approve the people who may follow the shipment.</span>{mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/>Start Tracking</Link>:null}</div>:null}
   </div>;
 }

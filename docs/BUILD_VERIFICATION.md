@@ -1,6 +1,100 @@
 # Build Verification
 
-Verified locally on 2026-08-11 with Node.js v22.16.0.
+Evidence is recorded through 2026-09-03 with Node.js v22.16.0. Each dated
+checkpoint is scoped to the code and environment verified at that time.
+
+## Demo market geography correction — 2026-09-04
+
+- The credential-free 143-truck fixture now distributes approximate locations
+  through weighted Ethiopian freight markets and 64 real named cities, towns,
+  or localities. No exact locality contains more than five source trucks, each
+  large demo fleet spans at least ten operating locations, and the former
+  repeated latitude-plus/longitude-minus diagonal offset is absent.
+- After the managed visibility policy, 33 trucks are Public Market supply
+  across 24 exact named locations with no more than three public trucks at one
+  locality; the remaining 110 exercise Private capacity. Current routes and
+  Service areas remain close to the declared approximate truck location.
+- Twenty-seven clustering, capacity-market, and fixture tests passed together.
+  Specification validation and TypeScript passed, and the focused map workflow
+  passed in desktop and mobile Chromium. A follow-up city-level correction made
+  clustering cells at least as wide as full markers, replaced the maximum-zoom
+  overlapping marker ring with a bounded truck chooser, and distributed private
+  fallback markers along their public regular-service geometry. A port-3001
+  phone probe reached an individual truck with zero remaining marker overlaps.
+- The isolated local Supabase fixture was rebuilt with 3,692 place rows and the
+  expected 143 Capacity signals. Fixture, Shared capacity, provider Capacity,
+  provider Tracking, and provider-signup live verifiers passed; the aggregate
+  verifier later stopped on pre-existing rate-limit cleanup residue unrelated
+  to fixture geography.
+- Focused screenshots are under `artifacts/demo-geography-v1/`. Expensive
+  full-suite, build, release, and remote gates remain pending visual approval.
+
+## Administration and truck-registration checkpoint — 2026-09-03
+
+- Additive local migrations `066_provider_vehicle_registration_and_admin_details.sql`
+  and `067_admin_overview_counts.sql` applied to the isolated Supabase stack.
+- The Fleet verifier created one fleet-owned and one independent-provider truck,
+  proved immutable owner scope and no inferred Capacity/location/assignment
+  state, denied a Company driver and anonymous browser roles, and removed its
+  test records. The platform verifier opened all eight bounded record-detail
+  projections, including a Tracking event timeline, and denied anonymous access.
+- Eighteen focused contract tests, TypeScript, specification validation, and
+  source validation passed. Desktop and phone browser workflows passed for
+  provider-owner truck registration, the compact Administration Overview, and
+  every Users/clients/trucks/Drivers/Tracking/Capacity/routes/plans detail route.
+- Focused screenshots are under `artifacts/admin-management-v1/`. Expensive
+  full-suite, optimized build, release, and remote migration gates remain
+  pending explicit visual approval.
+
+## Private capacity eligibility correction — 2026-09-03
+
+- `node --test tests/private-capacity-network.test.mjs`: five tests passed,
+  including the response contract that advances to code verification only for
+  a queued eligible challenge.
+- `npm run typecheck` and `npm run check:specs`: passed.
+- The focused Private capacity workflow passed on desktop Chromium and mobile
+  Chromium. An unshared email remained on the email step, showed the bounded
+  no-share result, rendered no one-time-code field, and then an actively shared
+  email completed the Mailpit OTP flow and opened the private map.
+- Focused no-share and active-session screenshots are under
+  `artifacts/private-capacity-assisted-chat-v1/`. Full release gates remain
+  visual-approval gated.
+
+## Account-access reconciliation — 2026-09-03
+
+- Recent local Supabase Auth evidence showed that Google PKCE and email OTP
+  succeeded upstream while exactly two confirmed pre-trigger test identities
+  were rejected by Loadgistic because they lacked a profile projection.
+- Guarded migration `065_reconcile_prebootstrap_auth_profiles.sql` applied to
+  isolated local Supabase and repaired exactly those two role-free,
+  association-free identities as inactive DRIVER bootstraps. Both now pass the
+  provider-signup eligibility boundary.
+- A sanitized browser probe completed the email-code flow for one repaired
+  account through local Mailpit and reached `/apply?step=details`; neither the
+  address nor code was printed.
+- Google initiation reached Google's standard identifier page, and the recent
+  provider log showed successful Google authorization and PKCE exchange. A
+  human account-selection pass remains required to prove the repaired browser
+  callback end to end.
+- The focused 23-test identity, signup, rate-limit, and Private capacity set,
+  TypeScript, and specification validation passed. Automated browser requests
+  now use a distinct local client bucket so test runs do not exhaust a
+  developer's manual OTP allowance.
+
+## Verification lessons that must not regress
+
+- A successful server-side OAuth redirect chain does not prove the browser
+  button works. The visible control must be clicked in a real browser because
+  CSP, cookie, navigation, and popup policies are browser-enforced.
+- Supabase Auth email and application-owned Shared-capacity/Tracking email are
+  separate delivery paths. Each path must prove delivery at its intended inbox;
+  configuration or SMTP authentication alone is not delivery evidence.
+- Shared-capacity OTP verification requires an active provider grant for the
+  tested email. Browser evidence must create or identify that precondition and
+  verify the code, not merely assert that the request endpoint responded.
+- Mailbox APIs contain contact data and live access codes. Diagnostics may emit
+  only sanitized counts, status, and pass/fail results—never raw messages,
+  recipients, links, codes, cookies, or provider credentials.
 
 ## Release evidence
 
@@ -25,9 +119,82 @@ Verified locally on 2026-08-11 with Node.js v22.16.0.
 - Managed platform-administration checkpoint (2026-08-29): additive migration `057` applied to the isolated Loadgistic stack. The live verifier exercised bounded counts and paginated projections across all eight Operations inventories, denied an ordinary member and the anonymous browser role, proved delegated Customer-only scope, and reversibly exercised account/truck activation, Driver permissions, route removal, subscription paid/expiry/sponsorship, Featured roster publication, Sponsor overlap denial, and Sponsor disable. Every command committed its audit atomically, and active Operations/Featured/Sponsor routes no longer import the SQLite repository.
 - Unconditional managed-runtime checkpoint (2026-08-29): active application facades, health, request limiting, private uploads, the scheduled worker, the browser-test server, and the standalone container now use Supabase without data or Storage backend selectors. Missing PostgreSQL, private Storage, or shared-counter configuration fails closed; local files, process-local counters, and SQLite health fallback cannot be selected. A clean guarded fixture refresh rebuilt 154 Auth identities, 143 current truck signals, 335 verification records, and 3,703 places, then every managed verifier passed. The complete quality gate passed 164 Node tests, the optimized 74-route build completed without a SQLite runtime warning, and 16 critical desktop/mobile browser checks passed across the public Market, location, provider profile, Tracking, and Driver Capacity workflows. The dormant monolithic repository/database and SQLite-derived fixture transformation remain the next isolated removal.
 - PostgreSQL-only development checkpoint (2026-08-29): the retired local database/repository, transformation, reset, place-import, stress, Tracking-fixture, and duplicate integration-test paths were removed. `resources/fixtures/managed-market.json` now supplies credential-free, demand-free, machine-path-free records directly to isolated Supabase Auth/PostgreSQL/Storage. A newly empty local Docker volume replayed migrations `001`–`057`; the guarded importer rebuilt 154 Auth identities, 143 current truck signals, 122 Drivers/assignments, 335 verification records, 3,703 places, and the current Ethiopia Featured/Sponsor programme. Every managed live verifier passed. The current quality gate passed 126 focused domain/managed-contract tests, the optimized standalone build passed, and all 16 critical desktop/mobile browser workflows passed on isolated port `3110` while the developer server remained untouched.
+- Guest-access and Tracking-security checkpoint (2026-09-01): a newly empty
+  isolated Supabase database replayed migrations `001`–`058` in order, rebuilt
+  the managed fixture, and passed every guarded live verifier. Migration `058`
+  excluded expired, used, superseded, and attempt-locked Shared capacity
+  challenges from delivery, rechecked them immediately before submission,
+  removed terminal challenge/delivery rows after the bounded retention window,
+  preserved Assisted matching recovery mail, and denied browser roles. Focused
+  checks also proved the six-digit, ten-minute, single-use Shared capacity
+  application OTP and the stable 80-bit Tracking owner/review codes derived from
+  a distinct `TRACKING_CODE_SECRET`; changing `SESSION_SECRET` does not change
+  those Tracking codes.
+- Application-email and managed-worker checkpoint (2026-09-01): tests proved
+  escaped Shared capacity and Tracking templates, preferred Resend delivery,
+  bounded authenticated SMTP with stable non-secret Message-IDs, the optional
+  HTTPS webhook, and fail-closed incomplete configuration. The 15-minute
+  Netlify dispatcher signs a timestamp-bounded HMAC request to a background
+  worker; unsigned and stale calls are rejected with a timing-safe comparison,
+  authorized work returns no private result body, and the worker runs the
+  bounded email and retention operations once. This is local source/test
+  evidence, not a deployed-worker or remote application-email claim.
+- Hosted-auth control-plane checkpoint (2026-09-01): the hosted Supabase Auth
+  Site URL/callback, separate Google client, numeric login/signup templates, and
+  Gmail SMTP are configured, and one real account Auth OTP was received and
+  verified. The Netlify application still returns `404`, the hosted application
+  database remains empty, and Netlify has no configured application-email SMTP;
+  therefore no deployed application, Google/signup workflow, Shared capacity
+  OTP, Tracking email, or Assisted matching email is claimed.
+- Targeted access-email hardening checkpoint (2026-09-01): additive migration
+  `059` was applied to the isolated local stack and the Shared capacity live
+  verifier passed. Focused tests prove one-row just-in-time claims, Shared-first
+  priority, live-lease fencing for Shared capacity and Assisted matching, a
+  30-second final OTP validity margin, truthful handling when provider success
+  cannot be acknowledged, and authenticated background dispatch for the
+  two-minute retry. A subsequent newly empty local reset replayed migrations
+  `001`–`059` in order, rebuilt the managed fixture, and passed every guarded
+  live verifier. This is not a remote application-email delivery claim.
+- Local Auth runtime checkpoint (2026-09-02): a live application on port `3001`
+  returned `200` for health, login, and signup entry points. One existing-login
+  and one temporary-signup numeric-code request each returned a generic `303`,
+  `Cache-Control: no-store`, and increased the isolated Mailpit count by exactly
+  one without reading or exposing a recipient, message, or code. The temporary
+  Auth identity was deleted. Login and signup Google routes used PKCE, loaded
+  the configured local Web client, requested only `openid email profile`, and
+  generated the expected local Supabase and same-origin application callbacks
+  after the host-preservation correction. A focused follow-up bound Login or
+  Signup to a signed, HTTP-only PKCE-flow intent, removed the flow selector from
+  the callback URL so the exact hosted allowlist remains valid, proved stale
+  Signup state is cleared when Login starts, and rejected a mismatched callback
+  with generic output while clearing both handoffs. The sanitized authorization
+  chain reached Google with no redirect, client, access-block, or deleted-client
+  error signal; completing consent with a real account remains a manual check.
+- Netlify configuration checkpoint (2026-09-02): the reviewed application,
+  Supabase, session/Tracking, fixture-disable, and application-SMTP variables
+  are present in the Production context. Sensitive values are marked secret;
+  the Netlify Free scope boundary necessarily includes Builds, Functions, and
+  Runtime for those secrets, while harmless values use all scopes. A bounded
+  authenticated-SMTP handshake passed without sending a message. The site still
+  returns `404`, the hosted database remains empty, and neither application
+  execution nor remote application-email delivery is claimed.
+- Visible external-flow correction (2026-09-02): clicking Continue with Google
+  in Chromium exposed a CSP failure that a server-only redirect check had
+  missed. The corrected policy permits only the validated Supabase origin and
+  fixed Google account origin, fails closed for insecure configuration, and a
+  fresh visible click reached Google's account screen with no failed browser
+  navigation. The standard local configurator now supplies a development-only
+  loopback Mailpit adapter for application-owned email. A real Shared-capacity
+  UI request created no Auth account, arrived in Mailpit, and its six-digit code
+  opened the private map. A separate account-code UI request also arrived in
+  Mailpit. The focused 38-test auth/header/email/private-capacity set,
+  TypeScript, specification validation, and diff checks passed. Selecting a
+  personal Google account and completing consent remains an owner interaction.
 
-- `npm run quality`: passed. Specification validation found 28 specs and 25 features with all links resolved; source validation found 264 files and every required route; all 126 Node tests passed; TypeScript completed with no errors.
-- `npm run build`: passed. Next.js 15.5.22 produced the optimized application, including all public capacity, provider, tracking, and authenticated provider routes.
+- The consolidated post-configuration specification/source, unit, type, and
+  production-build gates are being rerun. Their new aggregate counts belong in
+  this record only after that run completes; dated evidence above remains
+  historical evidence rather than a current-count claim.
 - `docker build --tag loadgistic:local-supabase-only .`: passed. The pinned
   Node 22.16.0 multi-stage image rebuilt all 74 routes and copied only the
   standalone runtime, public assets, and static chunks into the non-root runner.
@@ -88,4 +255,37 @@ Verified locally on 2026-08-11 with Node.js v22.16.0.
 
 ## Release boundary
 
-The historical evidence above is retained for chronology; the current application, local development, CI, fixtures, browser workflows, and scale gate all use Supabase/PostgreSQL. Production remains blocked on the exact hosted migration/backup rehearsal, a remotely proven managed upload scanner, live verified email delivery, public-discovery/review shared-limit coverage, monitoring, Preview smoke/concurrency evidence, and an approved Production promotion. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.
+The historical evidence above is retained for chronology; the current
+application, local development, CI, fixtures, browser workflows, and scale gate
+all use Supabase/PostgreSQL. The linked hosted project has the reviewed
+`001`–`069` migration chain and seven private Storage buckets, with no local
+fixture import. Unrestricted Production remains blocked on backup/restore
+rehearsal, a successful Netlify deploy and live smoke, a remotely proven managed upload scanner, live application-email delivery,
+remaining public-discovery abuse coverage, monitoring, Preview
+smoke/concurrency evidence, and an approved Production promotion. Supabase Auth
+OTP delivery is verified, but it does not satisfy the separate application-email
+gate. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.
+
+## Release-candidate checkpoint — 2026-09-04
+
+- A newly empty local Supabase stack replayed migrations `001`–`069`, rebuilt
+  the managed fixture, and passed every guarded live verifier with SQLite absent.
+- `npm run quality` passed 28 specifications, 25 features, 277 checked source
+  files, 199 Node tests, and TypeScript.
+- `npm run build` completed the optimized 77-page production build.
+- `npm audit --audit-level=high` reported zero known vulnerabilities.
+- The full Playwright run passed 86 workflows with eight intentional capture
+  skips. Four initial navigation timeouts were isolated; the corrected
+  DOM-content readiness assertion and the three unaffected workflows all passed
+  on controlled rerun, while the equivalent phone workflows had already passed.
+- `npm run test:ui-stress` checked 82 dense desktop/phone screens with zero
+  failures. `npm run test:ui-audit` checked 88 screens with zero layout,
+  accessibility, or browser-flow flags.
+- A credential-free logical snapshot confirmed the linked hosted Loadgistic
+  database had no application tables before migration. Migrations `001`–`069`
+  were applied in order and the local/remote histories match. All seven expected
+  Storage buckets are private and anonymous bucket discovery returned no rows.
+  Production demo fixtures were deliberately not imported.
+- No managed malware-scanner credential is configured. Production upload paths
+  therefore remain fail-closed; local EICAR-aware evidence is not represented as
+  hosted malware-scanning proof.

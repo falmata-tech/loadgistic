@@ -12,5 +12,5 @@ export default async function NewProviderShipmentPage(){
   const workspace=await getProviderTrackingWorkspace(user,{limit:1});
   if(workspace.access?.can_manage_tracking===false)redirect('/app/provider-shipments?error=Tracking+access+is+off.');
   const vehicles=workspace.vehicles||[];
-  return <div className="page"><PageHeader icon={ClipboardPlus} title="Start Tracking" subtitle="After agreeing the work offline, create one Tracking session and send its access to the customer owner." action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/>Tracking</Link>}/><ProviderShipmentForm vehicles={vehicles}/></div>;
+  return <div className="page"><PageHeader icon={ClipboardPlus} title="Start Tracking" subtitle="After agreeing the work offline, choose the truck and people authorized to follow the shipment." action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/>Tracking</Link>}/><ProviderShipmentForm vehicles={vehicles}/></div>;
 }

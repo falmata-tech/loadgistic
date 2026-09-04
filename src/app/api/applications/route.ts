@@ -3,7 +3,7 @@ import {NextRequest,NextResponse} from 'next/server.js';
 import {managedWorkspaceDestination} from '@/lib/auth-flow.js';
 import {getManagedCurrentUser} from '@/lib/identity/supabase';
 import {
-  completeManagedProviderSignup,MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,
+  completeManagedProviderSignup,managedProviderSignupEligible,MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_ERROR,
   normalizeProviderSignupInput,prepareManagedProviderSignup,readProviderSignupHandoff
 } from '@/lib/provider-signup.js';
 import {redirectUrl,text} from '@/lib/redirects';
@@ -49,6 +49,11 @@ export async function POST(request:NextRequest){
     if(handoff.email&&authenticatedEmail!==handoff.email)throw new Error('SIGNUP_IDENTITY_MISMATCH');
     if(projection.active){
       response.headers.set('Location',managedWorkspaceDestination(projection.role));
+      clearSignupCookie(response);
+      return response;
+    }
+    if(!await managedProviderSignupEligible(data.user.id)){
+      await client.auth.signOut();
       clearSignupCookie(response);
       return response;
     }

@@ -3,7 +3,7 @@ id: FEAT-IAM-001
 title: Identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
-behavior: Valid active provider users sign in through Supabase Google OAuth or a numeric email one-time code and receive an SSR-compatible HTTP-only session with role-scoped workspace access. New provider identities may use either method through a separate short-lived signup handoff before supplying provider facts. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
+behavior: Provider and platform-team identities begin at one account-access surface and prove identity through Supabase Google OAuth or a numeric email one-time code. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
 contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
@@ -11,33 +11,73 @@ rollout: Replace local signed-cookie identity with Supabase Auth in local develo
 
 # Identity and access
 
-### Scenario: active provider logs in with Google
+### Scenario: Google account access is bound to one flow
 
 Given an active managed Supabase user has a Loadgistic role projection and a linked Google identity\
 When the user chooses Continue with Google\
 Then Loadgistic requests only OpenID, email, and profile identity scopes\
 And Supabase Auth completes authorization-code PKCE through Loadgistic's fixed callback route\
+And Loadgistic stores a signed, HTTP-only, short-lived account-access intent bound to the exact Supabase PKCE flow identifier\
+And the callback exchanges a code only with the verifier selected by that one-time signed intent\
 And the callback accepts no visitor-controlled destination\
+And the browser security policy allows that top-level form redirect only through Loadgistic, the exact validated Supabase Auth origin, and the fixed Google Accounts origin, so the visible action reaches Google without weakening other form destinations\
 And Supabase Auth establishes an SSR-compatible HTTP-only session\
-And the response redirects relatively to `/app/home` on the current origin.
+And the response redirects relatively to the user's server-authorized role workspace on the current origin.
 
 ### Scenario: active provider logs in with an email code
 
 Given an active managed Supabase user has a Loadgistic role projection\
-When the user requests a sign-in code for their email\
-Then Supabase Auth is asked to send a six-digit, ten-minute one-time code without creating an unknown user\
-And the interface returns the same bounded response whether or not the address is eligible\
-And a valid numeric code establishes the same SSR-compatible HTTP-only session and role-scoped destination.
+When the user proves that identity with a valid six-digit email code from the shared account-access surface\
+Then Supabase Auth establishes an SSR-compatible HTTP-only session\
+And the server-validated role projection selects the user's role-scoped destination.
+
+### Scenario: one neutral login surface serves existing and new identities
+
+Given a signed-out visitor opens account access on desktop or mobile\
+When the public header, navigation, and account-access screen render\
+Then the customer-facing action and page name are simply Log in rather than Transporter login\
+And the Log in action remains in the public header at both widths while Dashboard replaces it after authentication\
+And one concise surface offers email-code and Google proof without asking the visitor to choose login versus signup first\
+And an existing active identity continues to its authorized workspace while an eligible new identity continues to the short provider-setup workflow\
+And operational explanations, implementation notes, environment details, and repeated marketing copy do not compete with the identity controls.
+
+### Scenario: email account access does not disclose account existence
+
+Given a visitor supplies any syntactically valid email at the shared account-access surface\
+When the visitor requests a six-digit, ten-minute one-time code\
+Then the interface returns the same bounded response and code-entry state whether the identity is active, inactive, new, suspended, or otherwise ineligible\
+And Supabase Auth may create at most one inactive identity with no Loadgistic workspace authority for a new address\
+And response copy, status, and the pre-verification interface do not disclose whether an account existed\
+And five email-scoped requests per ten-minute window permit ordinary correction and resend attempts before an exact approximate retry delay is shown.
 
 ### Scenario: a new provider proves identity without a password
 
-Given a visitor chooses to create a transporter account\
-When they continue with Google or request a six-digit email code\
+Given a visitor proves a Google or email-code identity through the shared account-access surface\
+And that identity has no active Loadgistic role projection and is eligible for provider setup\
+When the server resolves the verified identity\
 Then Loadgistic creates only a signed, HTTP-only, 15-minute signup handoff\
-And Supabase Auth may create one inactive identity that has no Loadgistic workspace authority\
-And a valid Google callback or email code returns the verified identity to the provider-details step\
+And Supabase Auth retains at most one inactive identity that has no Loadgistic workspace authority\
+And the verified identity continues to the provider-details step without another Google or email-code choice\
 And the login email is not published or reused as a public contact\
 And no password is requested, stored, or accepted.
+
+### Scenario: a confirmed pre-bootstrap identity is safely reconciled
+
+Given a confirmed Supabase Auth identity predates the Loadgistic profile-bootstrap trigger\
+And it has an email but no profile, application, provider profile, organization membership, Driver record, Driver permission, truck assignment, Support profile, platform role metadata, or provisioning metadata\
+When the guarded identity-reconciliation migration runs\
+Then exactly one inactive DRIVER bootstrap profile is created from that same Auth identity\
+And the user may complete the same Google or email-code provider setup flow as a newly verified identity\
+And an identity with a role reservation, provisioning metadata, or any existing workspace association is not changed.
+
+### Scenario: provider setup accepts only a pristine bootstrap identity
+
+Given a managed identity has completed Google or email-code proof\
+When Loadgistic evaluates eligibility for first-time provider setup\
+Then the identity must have a confirmed email and exactly one inactive DRIVER bootstrap profile\
+And it must have no application, provider profile, organization membership, fleet-Driver record, Driver permission, vehicle assignment, support profile, or platform-role reservation metadata\
+And an inactive ADMIN, SUPPORT user, suspended provider, company Driver, previously provisioned independent Driver, or platform-reserved identity is denied without changing its role, activation, associations, or signup intent\
+And the eligibility check and completion run through one service-role-only database boundary while the identity and profile are locked.
 
 Given a signup handoff is missing, expired, altered, or does not match the email-code flow\
 When provider details or a signup code is submitted\
@@ -46,10 +86,11 @@ And the response gives a generic restart message without exposing identity or up
 
 ### Scenario: callback and one-time-code failure stays generic
 
-Given an OAuth callback is denied, expired, malformed, replayed, or belongs to an identity without an active Loadgistic role projection\
+Given an OAuth callback is denied, expired, malformed, replayed, missing its signed flow intent, conflicts with a returned PKCE flow identifier, or resolves to an identity eligible for neither a role workspace nor provider setup\
 Or an email code is invalid, expired, malformed, or rate limited\
 When authentication completes or verification is attempted\
 Then no workspace session remains\
+And the OAuth flow intent and any stale signup handoff are cleared\
 And the visitor receives a generic retry message that does not disclose account existence, suspension, provider configuration, token details, or upstream error text.
 
 ### Scenario: callback origins are deployment-owned
@@ -58,23 +99,33 @@ Given managed authentication is enabled\
 When Loadgistic starts Google OAuth or an email-code flow\
 Then its callback is derived from the deployment-owned `APP_URL` and the fixed `/api/auth/callback` path in Production\
 And Production rejects a missing, invalid, or non-HTTPS callback origin\
-And Supabase's Site URL and Redirect URL allowlist must contain the exact Preview or Production callback before traffic is enabled.
+And local development uses the validated public browser origin, including its exact loopback host and port, so the PKCE verifier cookie and callback remain same-origin\
+And the form-action policy accepts HTTPS Supabase origins in Production, permits HTTP only for loopback Supabase during non-Production development, rejects embedded credentials or unsupported protocols, and otherwise remains self-only\
+And Supabase's Site URL and Redirect URL allowlist must contain the exact callback before traffic is enabled because the flow selector remains in the signed HTTP-only handoff rather than the redirect URL.
 
 ### Scenario: Google clients are isolated by environment
 
 Given Google identity is enabled for local development and hosted Production\
 When Supabase starts either Auth environment\
-Then local development uses a dedicated Google Web client whose only application origin is `http://127.0.0.1:3100` and whose Supabase callback is `http://127.0.0.1:55321/auth/v1/callback`\
+Then local development uses a dedicated Google Web client whose approved application origins include the supported `127.0.0.1` and `localhost` origins on the default `3100` and alternate `3001` ports, and whose single Supabase callback is `http://127.0.0.1:55321/auth/v1/callback`\
 And Production uses a separate Google Web client whose application origin is the canonical HTTPS Loadgistic origin and whose Supabase callback belongs to the exact hosted project\
 And each client requests only OpenID, email, and profile scopes\
 And local credentials come from an ignored mode-`0600` file while hosted credentials remain in Supabase Auth configuration\
 And no Google client secret is committed, printed, placed in Netlify browser variables, or copied between environments.
 
+### Scenario: local account email is testable without pretending Gmail delivery
+
+Given the isolated local Supabase stack captures Auth email in its local inbox\
+When a developer requests an account-access email code\
+Then the code is delivered only to the local Auth inbox rather than an external mailbox\
+And the local account-access request and code steps link to that inbox before a developer expects external delivery\
+And Preview and Production never render the local-inbox link.
+
 ### Scenario: local fixture password login is isolated
 
 Given deterministic fixture credentials are needed for local development or automated browser tests\
 When the non-Production runtime explicitly enables fixture password login\
-Then the local login form and password route authenticate those fixtures only through the isolated local Supabase Auth project\
+Then the local account-access disclosure and password route authenticate those fixtures only through the isolated local Supabase Auth project\
 And no signed-cookie or SQLite identity fallback exists\
 And managed Preview and Production never render or accept password login.
 
@@ -100,6 +151,13 @@ When a protected page or command is requested\
 Then access is denied or safely redirected\
 And the mutation does not occur.
 
+### Scenario: browser sessions cannot mutate identity authority
+
+Given any anonymous or authenticated browser session, including a newly created inactive identity\
+When it attempts to insert, update, delete, activate, or change the role of a Loadgistic profile directly\
+Then Postgres denies the mutation or affects zero rows\
+And only an authorized managed server command may change profile role or activation.
+
 ### Scenario: support staff remain isolated
 
 Given an active user has the SUPPORT role\
@@ -121,19 +179,20 @@ And an explicitly cross-site request remains denied.
 Given an active user has an authenticated workspace session\
 When they open a public provider page or revisit the login route\
 Then the public navigation offers a return to their workspace\
-And the login route redirects them to `/app/home` without requesting credentials again.
+And the account-access route redirects them to their server-authorized role workspace without requesting credentials again.
 
 ### Scenario: public account navigation follows session state
 
 Given the shared public navigation is rendered\
 When no valid session exists\
-Then it shows Transporter login and does not show Dashboard or a separate signup destination\
-And the login page offers the transporter-account signup action.
+Then it shows one transporter account-access destination and does not ask the visitor to choose Login or Join\
+And the account-access surface keeps Google and email-code identity proof directly reachable without presenting a Production password choice\
+And no separate public signup destination or pre-verification account-type choice is shown.
 
 Given the shared public navigation is rendered\
 When a valid provider session exists\
-Then Dashboard replaces Transporter login\
-And neither login nor signup is shown as another public-navigation destination.
+Then Dashboard replaces the transporter account-access destination\
+And neither account access nor signup is shown as another public-navigation destination.
 
 ### Scenario: anonymous access is projection-bound
 
@@ -175,4 +234,4 @@ And the service worker does not cache Next.js executable chunks, preventing a fr
 - Application boundary: `src/lib/auth.ts`, repository user lookups, managed-identity projection
 - Outbound adapters: Supabase SSR browser/server clients and Auth in local development, tests, Preview, and Production
 - External configuration: Supabase Google provider, exact Site URL/Redirect URL allowlists, numeric `{{ .Token }}` email template, and verified custom SMTP
-- Tests: `tests/auth-flow.test.mjs`, `tests/e2e/auth-role-language.spec.ts`, `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`
+- Tests: `tests/auth-flow.test.mjs`, `tests/security-headers.test.mjs`, `tests/provider-signup-supabase.test.mjs`, `scripts/verify-supabase-provider-signup.mjs`, `tests/e2e/auth-role-language.spec.ts`, `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`

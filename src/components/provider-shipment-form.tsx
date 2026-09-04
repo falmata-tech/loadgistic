@@ -32,12 +32,12 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
   }
 
   if(created)return <section className="tracking-code-reveal" aria-live="polite">
-    <div className="tracking-code-reveal-heading"><span><Check aria-hidden="true"/></span><div><p className="eyebrow">Tracking started</p><h1>{created.code}</h1><p>The Track link and code are queued for the customer owner email. The owner may share them with anyone who should follow the shipment.</p></div></div>
+    <div className="tracking-code-reveal-heading"><span><Check aria-hidden="true"/></span><div><p className="eyebrow">Tracking started</p><h1>{created.code}</h1><p>The Track link and code are queued for every approved tracking party.</p></div></div>
     <div className="party-code-grid single">
       <article><div><KeyRound aria-hidden="true"/><strong>Customer tracking code</strong></div><code>{created.trackingCode}</code><button type="button" className="button secondary" onClick={()=>copy('code',created.trackingCode)}>{copied==='code'?<Check aria-hidden="true"/>:<Clipboard aria-hidden="true"/>}{copied==='code'?'Copied':'Copy code'}</button></article>
       <article><div><Link2 aria-hidden="true"/><strong>Tracking link</strong></div><code>{created.trackingPath}</code><button type="button" className="button secondary" onClick={()=>copy('link',`${window.location.origin}${created.trackingPath}`)}>{copied==='link'?<Check aria-hidden="true"/>:<Clipboard aria-hidden="true"/>}{copied==='link'?'Copied':'Copy link'}</button></article>
     </div>
-    <div className="permission-note"><ShieldCheck aria-hidden="true"/><div><strong>One simple customer handoff</strong><span>The same code remains available inside this Tracking record while customer access is active.</span></div></div>
+    <div className="permission-note"><ShieldCheck aria-hidden="true"/><div><strong>Email-verified access</strong><span>Each approved person uses this shipment code with their own email and one-time code.</span></div></div>
     <Link className="button" href={`/app/provider-shipments/${created.id}`}>Open Tracking</Link>
   </section>;
 
@@ -53,8 +53,9 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
       <div className="form-group"><label htmlFor="expected-pickup"><CalendarDays aria-hidden="true"/>Expected pickup <span className="meta">(optional)</span></label><input id="expected-pickup" name="expectedPickupDate" type="date"/></div>
       <div className="form-group"><label htmlFor="expected-delivery"><CalendarDays aria-hidden="true"/>Expected delivery <span className="meta">(optional)</span></label><input id="expected-delivery" name="expectedDeliveryDate" type="date"/></div>
     </div></section>
-    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2>Customer owner</h2><p className="meta">This person receives the Track link, code, completion record, and verified review invitation. They may be the shipper or receiver.</p></div></div><div className="form-grid">
+    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2>Tracking parties</h2><p className="meta">The customer owner receives the completion record and review invitation. Add anyone else who should follow this shipment.</p></div></div><div className="form-grid">
       <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/>Customer owner email</label><input id="customer-email" name="customerEmail" type="email" required autoComplete="off"/></div>
+      <div className="form-group full"><label htmlFor="additional-recipient-emails"><Mail aria-hidden="true"/>Additional tracking emails <span className="meta">(optional)</span></label><textarea id="additional-recipient-emails" name="additionalRecipientEmails" rows={3} placeholder={'dispatch@example.com\nreceiver@example.com'} aria-describedby="additional-recipient-help"/><small id="additional-recipient-help" className="meta">Enter one email per line, up to 20. Each person verifies their own email before viewing updates.</small></div>
     </div></section>
     <fieldset className="tracking-mode-choice"><legend><LocateFixed aria-hidden="true"/>Updates shared with the customer</legend><label><input type="radio" name="trackingMode" value="STATUS_ONLY" defaultChecked/><span><strong>Status only</strong><small>Shares the shipment timeline without Driver location.</small></span></label><label><input type="radio" name="trackingMode" value="LOCATION_AND_STATUS"/><span><strong>Status and approximate location</strong><small>During travel to pickup and delivery, the assigned Driver shares an obscured area from their phone.</small></span></label></fieldset>
     <button className="button" disabled={submitting||!vehicles.length}>{submitting?<LoaderCircle className="spin" aria-hidden="true"/>:<KeyRound aria-hidden="true"/>}{submitting?'Starting Tracking…':'Start Tracking'}</button>

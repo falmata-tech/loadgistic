@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {regionalExpoGroupForDate} from '../src/lib/provider-regions.js';
+import {getAdminFeaturedProviderDay,saveFeaturedProviderDay} from '../src/lib/platform-admin/supabase.js';
 
 const url=String(process.env.SUPABASE_SEED_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
@@ -61,6 +62,16 @@ try{
     if(error||data.length>2)throw new Error(`PLATFORM_ADMIN_VERIFY_VIEW_FAILED:${view}:${error?.message||'UNBOUNDED'}`);
     const serialized=JSON.stringify(data);for(const key of forbiddenProjectionKeys)if(serialized.includes(`\"${key}\"`))throw new Error(`PLATFORM_ADMIN_PRIVATE_FIELD_EXPOSED:${view}:${key}`);
   }
+  for(const [view,id,kind] of [
+    ['USERS',customerId,''],['WORKSPACES',organizationId,'ORGANIZATION'],['TRUCKS',vehicleId,''],
+    ['DRIVERS',driverId,''],['ROUTES',routeId,'PROFILE_ROUTE'],['SUBSCRIPTIONS',subscriptionId,'']
+  ]){
+    const {data,error}=await service.rpc('managed_admin_operation_record',{
+      actor_user_id:admin.id,requested_view:view,record_id:id,requested_kind:kind
+    });
+    if(error||!data?.id||data.id!==id)throw new Error(`PLATFORM_ADMIN_VERIFY_DETAIL_FAILED:${view}:${error?.message||'EMPTY'}`);
+    const serialized=JSON.stringify(data);for(const key of forbiddenProjectionKeys)if(serialized.includes(`\"${key}\"`))throw new Error(`PLATFORM_ADMIN_DETAIL_PRIVATE_FIELD_EXPOSED:${view}:${key}`);
+  }
   const {error:customerViewError}=await service.rpc('managed_admin_operations_page',{actor_user_id:supportId,requested_view:'WORKSPACES',search_text:'Managed Admin',requested_offset:0,requested_limit:5});
   if(customerViewError)throw new Error(`PLATFORM_ADMIN_DELEGATED_CUSTOMER_DENIED:${customerViewError.message}`);
   await expectError(()=>service.rpc('managed_admin_operations_page',{actor_user_id:supportId,requested_view:'TRUCKS',search_text:'',requested_offset:0,requested_limit:5}),'FORBIDDEN');
@@ -80,23 +91,20 @@ try{
   await service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:'SUBSCRIPTION',record_id:subscriptionId,command:{action:'EXPIRE'}}).then(({error})=>{if(error)throw error;});
   await service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:'WORKSPACE_SPONSOR',record_id:organizationId,command:{action:'GRANT'}}).then(({error})=>{if(error)throw error;});
 
-  for(let offset=0;offset<28&&!featuredDate;offset++){
+  const adminUser={id:admin.id,role:'ADMIN'};
+  for(let offset=0;offset<7&&!featuredDate;offset++){
     const date=new Date(Date.UTC(2035,0,1+offset)).toISOString().slice(0,10);const group=regionalExpoGroupForDate(date);
-    const {data,error}=await service.rpc('managed_admin_featured_day',{actor_user_id:admin.id,requested_date:date,
-      requested_group_key:group.key,requested_region_codes:group.regionCodes});
-    if(error)throw error;const eligible=(data.candidates||[]).filter(candidate=>candidate.eligible);if(eligible.length)featuredDate={date,group,candidate:eligible[0]};
+    const state=await getAdminFeaturedProviderDay(adminUser,date);const eligible=state.candidates.filter(candidate=>candidate.eligible);
+    if(eligible.length)featuredDate={date,group,candidate:eligible[0]};
   }
   if(!featuredDate)throw new Error('PLATFORM_ADMIN_ELIGIBLE_FEATURED_FIXTURE_MISSING');
-  const providerKey=featuredDate.candidate.provider_organization_id
-    ?`organization:${featuredDate.candidate.provider_organization_id}`:`profile:${featuredDate.candidate.provider_profile_id}`;
-  const {data:savedDay,error:dayError}=await service.rpc('save_managed_featured_day',{actor_user_id:admin.id,command:{
-    feature_date:featuredDate.date,group_key:featuredDate.group.key,group_label:featuredDate.group.title,
-    region_codes:featuredDate.group.regionCodes,public_headline:'Managed transporter feature',
-    public_introduction:'Meet a reviewed transporter from this regional programme.',tiktok_url:null,schedule_mode:'AUTO',
-    schedule_config:{dayStart:'08:00',morningEnd:'13:00',eveningStart:'17:00',dayEnd:'22:00',transitionMinutes:10,
-      sponsorBreakEvery:3,sponsorBreakMinutes:15,targetPresentationMinutes:30},manual_schedule:[],provider_keys:[providerKey],publish:true
-  }});
-  if(dayError||!savedDay)throw new Error(`PLATFORM_ADMIN_FEATURED_SAVE_FAILED:${dayError?.message||'EMPTY'}`);featuredDayId=savedDay;
+  const savedFeatured=await saveFeaturedProviderDay(adminUser,{
+    featureDate:featuredDate.date,targetCount:1,truckKeys:[featuredDate.candidate.truck_key],
+    publicHeadline:'Managed truck feature',publicIntroduction:'Meet a featured truck and the Driver operating it.',
+    tiktokUrl:null,scheduleMode:'AUTO',scheduleConfig:{dayStart:'07:30',dayEnd:'09:00',targetCount:1,
+      sponsorBreakEvery:2,sponsorBreakMinutes:2},manualSchedule:[],publish:true
+  });
+  if(!savedFeatured?.day?.id)throw new Error('PLATFORM_ADMIN_FEATURED_SAVE_FAILED:EMPTY');featuredDayId=savedFeatured.day.id;
   const {data:savedPlacement,error:placementError}=await service.rpc('save_managed_sponsorship',{actor_user_id:admin.id,command:{
     feature_date:featuredDate.date,group_key:featuredDate.group.key,region_codes:featuredDate.group.regionCodes,sponsorship_id:'',
     sponsor_kind:'ADVERTISER',business_name:'Managed verifier',description:'Temporary advertiser for the managed platform verifier.',
@@ -114,8 +122,10 @@ try{
   for(const [name,args] of [
     ['managed_admin_operation_counts',{actor_user_id:admin.id}],
     ['managed_admin_operations_page',{actor_user_id:admin.id,requested_view:'USERS',search_text:'',requested_offset:0,requested_limit:1}],
+    ['managed_admin_operation_record',{actor_user_id:admin.id,requested_view:'USERS',record_id:customerId,requested_kind:''}],
     ['managed_admin_record_command',{actor_user_id:admin.id,record_type:'USER',record_id:customerId,command:{action:'SET_ACTIVE',active:true}}],
-    ['managed_admin_featured_day',{actor_user_id:admin.id,requested_date:featuredDate.date,requested_group_key:featuredDate.group.key,requested_region_codes:featuredDate.group.regionCodes}]
+    ['managed_admin_featured_day',{actor_user_id:admin.id,requested_date:featuredDate.date,requested_group_key:featuredDate.group.key,requested_region_codes:featuredDate.group.regionCodes}],
+    ['save_managed_featured_truck_day',{actor_user_id:admin.id,command:{}}]
   ]){
     const {error}=await anon.rpc(name,args);if(!error)throw new Error(`PLATFORM_ADMIN_ANONYMOUS_RPC_ALLOWED:${name}`);
   }

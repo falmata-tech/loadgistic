@@ -42,9 +42,23 @@ export async function hasTrackingGrant(shipmentId: string) {
 export async function getProviderTrackingGrant(shipmentId?:string) {
   const store=await cookies();
   const payload=verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  const match=String(payload?.sub||'').match(/^provider-tracking:([^:]+):(SHIPPER|RECEIVER)$/);
+  const match=String(payload?.sub||'').match(/^provider-tracking:([^:]+):([a-f0-9]{64})$/);
   if(!match||shipmentId&&match[1]!==shipmentId)return null;
-  return {shipmentId:match[1],partyRole:match[2] as 'SHIPPER'|'RECEIVER'};
+  return {shipmentId:match[1],recipientDigest:match[2]};
+}
+
+export async function setProviderTrackingGrant(shipmentId:string,recipientDigest:string) {
+  const store=await cookies();
+  store.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipmentId}:${recipientDigest}`,TRACKING_IDLE_SECONDS),{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:TRACKING_IDLE_SECONDS
+  });
+}
+
+export async function clearProviderTrackingGrant() {
+  const store=await cookies();
+  store.set(TRACKING_GRANT_COOKIE,'',{
+    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
+  });
 }
 
 export async function hasProviderReviewGrant(shipmentId:string) {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
 import { getBillingSummary, getDashboard, getWorkspaceAccess } from '@/lib/workspace.js';
 import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
@@ -44,6 +45,7 @@ function actionIcon(href:string):LucideIcon {
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(undefined,{allowLimited:true}); const query=await searchParams;
+  if(user.role==='ADMIN')redirect('/admin');
   const access=await getWorkspaceAccess(user);
   if(!access.granted){
     const billing:any=await getBillingSummary(user);
@@ -66,7 +68,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   if(user.role==='DRIVER') {
     const plain=(value:any)=>JSON.parse(JSON.stringify(value));
     const workspace=await getProviderCapacityWorkspace(user);
-    return <DriverCapacityHome vehicles={plain(workspace.vehicles)} capacities={plain(workspace.capacities)} corridors={plain(workspace.corridors)} access={plain(workspace.access)} query={query}/>;
+    return <DriverCapacityHome vehicles={plain(workspace.vehicles)} capacities={plain(workspace.capacities)} corridors={plain(workspace.corridors)} access={plain(workspace.access)} query={query} renderedAt={Date.now()}/>;
   }
   const data:any=await getDashboard(user);
   const greeting=user.organization_name||user.provider_business_name||user.name;

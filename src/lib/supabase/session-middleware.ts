@@ -7,8 +7,7 @@ export async function refreshSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, publishableKey, {
     auth: {
-      flowType: 'pkce',
-      experimental: { appendPkceFlowIdToRedirects: true }
+      flowType: 'pkce'
     },
     cookies: {
       getAll() {

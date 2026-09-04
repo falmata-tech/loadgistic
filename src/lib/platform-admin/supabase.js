@@ -1,7 +1,9 @@
 import {normalizeOptionalCallbackPhone} from '../domain.js';
 import {buildFeaturedDaySchedule,validateFeaturedScheduleConfig} from '../expo-broadcast.js';
-import {providerRegionLabel,regionalExpoGroupForDate} from '../provider-regions.js';
+import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate} from '../provider-regions.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
+import {featuredTruckTypeForDate} from '../featured-trucks.js';
+import {loadFeaturedTruckCandidates} from '../featured-truck-candidates.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
   CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT'
@@ -17,6 +19,8 @@ const MANAGED_ERRORS=[
   'ADMIN_SELF_SUSPENSION_DENIED','SPONSORED_ACCESS_BUSINESS_ONLY','FEATURED_DATE_INVALID','FEATURED_TIKTOK_URL_INVALID',
   'FEATURED_PROVIDER_REQUIRED','FEATURED_PROVIDER_DUPLICATE','FEATURED_PROVIDER_INVALID','FEATURED_PROVIDER_INELIGIBLE',
   'FEATURED_HEADLINE_INVALID','FEATURED_INTRODUCTION_INVALID','FEATURED_SCHEDULE_MODE_INVALID',
+  'FEATURED_TARGET_COUNT_INVALID','FEATURED_TARGET_COUNT_MISMATCH','FEATURED_TRUCK_THEME_INVALID',
+  'FEATURED_TRUCK_INVALID','FEATURED_TRUCK_DUPLICATE','FEATURED_TRUCK_INELIGIBLE','FEATURED_DRIVER_REQUIRED',
   'SPONSORSHIP_DATE_RANGE_INVALID','SPONSORSHIP_POSITION_INVALID','SPONSORSHIP_KIND_INVALID',
   'SPONSORSHIP_PROVIDER_INVALID','SPONSORSHIP_PROVIDER_INELIGIBLE','SPONSOR_NAME_INVALID',
   'SPONSOR_DESCRIPTION_INVALID','SPONSOR_WEBSITE_INVALID','SPONSOR_CONTACT_REQUIRED','SPONSORSHIP_OVERLAP',
@@ -105,7 +109,7 @@ function assignSponsors(schedule,sponsors,featureDate){
   const names=sponsors.filter(item=>item.eligible&&item.starts_on<=featureDate&&item.ends_on>=featureDate)
     .map(item=>item.sponsor_name).filter(Boolean);let index=0;
   return {...schedule,entries:schedule.entries.map(entry=>{
-    if(entry.type!=='SPONSOR_BREAK'||!names.length)return entry;
+    if(entry.type!=='PROGRAMME_BREAK'||!names.length)return entry;
     const name=names[index%names.length];index+=1;return {...entry,sponsor_name:name,label:`Sponsor · ${name}`};
   })};
 }
@@ -128,6 +132,16 @@ export async function getAdminOperations(user,query='',options={}){
   if(countsResult.error||pageResult.error)throw managedError('SUPABASE_ADMIN_OPERATIONS_FAILED',countsResult.error||pageResult.error);
   const pagination=pageFromRows(pageResult.data,page,pageSize);
   return {counts:countsResult.data||{},view,items:pagination.items,pagination,query:search};
+}
+
+export async function getAdminOperationRecord(user,view,id,kind=''){
+  const selectedView=String(view||'').toUpperCase();
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('managed_admin_operation_record',{
+    actor_user_id:user.id,requested_view:selectedView,record_id:String(id||''),requested_kind:String(kind||'').toUpperCase()
+  });
+  if(error)throw managedError('SUPABASE_ADMIN_OPERATION_RECORD_FAILED',error);
+  return data||null;
 }
 
 async function adminCommand(user,type,id,command){
@@ -157,12 +171,13 @@ export async function getAdminFeaturedProviderDay(user,date){
   assertAdministrator(user);const featureDate=validateDate(date);const expo=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('managed_admin_featured_day',{actor_user_id:user.id,requested_date:featureDate,
-    requested_group_key:expo.key,requested_region_codes:expo.regionCodes});
+    requested_group_key:expo.key,requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)});
   if(error)throw managedError('SUPABASE_ADMIN_FEATURED_FAILED',error);
-  const day=data?.day||null;const slots=data?.slots||[];const candidates=(data?.candidates||[]).map(decorateCandidate);
-  const byProvider=new Map(candidates.map(candidate=>[candidate.provider_key,candidate]));
-  const slotEvaluations=slots.map(slot=>{const key=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;
-    const candidate=byProvider.get(key)||null;return {...slot,candidate,eligible:Boolean(candidate?.eligible)};});
+  const day=data?.day||null;const slots=data?.slots||[];const providerCandidates=(data?.candidates||[]).map(decorateCandidate);
+  const candidates=await loadFeaturedTruckCandidates(client,featureDate,providerCandidates);
+  const byTruck=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
+  const byProvider=new Map(providerCandidates.map(candidate=>[candidate.provider_key,candidate]));
+  const slotEvaluations=slots.map(slot=>{const key=`vehicle:${slot.vehicle_id}`;const candidate=byTruck.get(key)||null;return {...slot,candidate,eligible:Boolean(candidate?.eligible&&candidate.driver_user_id===slot.driver_user_id)};});
   const sponsorships=(data?.sponsorships||[]).map(sponsorship=>{
     const provider_key=sponsorship.sponsor_kind==='TRANSPORTER'
       ?(sponsorship.provider_organization_id?`organization:${sponsorship.provider_organization_id}`:`profile:${sponsorship.provider_profile_id}`):null;
@@ -171,9 +186,9 @@ export async function getAdminFeaturedProviderDay(user,date){
       sponsor_name:sponsorship.sponsor_kind==='ADVERTISER'?sponsorship.business_name:candidate?.name||'Transporter unavailable',
       eligible:sponsorship.sponsor_kind==='ADVERTISER'||Boolean(candidate?.eligible)};
   });
-  const slotKeys=slots.map(slot=>slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`);
+  const slotKeys=slots.filter(slot=>slot.vehicle_id).map(slot=>`vehicle:${slot.vehicle_id}`);
   const schedule=assignSponsors(scheduleForDay(day,featureDate,slotKeys),sponsorships,featureDate);
-  return {day,slots,slotEvaluations,candidates,sponsorships,expo,schedule,walkthroughs:schedule.walkthroughs};
+  return {day,slots,slotEvaluations,candidates,providerCandidates,sponsorships,expo,schedule,walkthroughs:schedule.walkthroughs};
 }
 
 export async function listFeaturedProviderCandidates(user,date){
@@ -181,22 +196,22 @@ export async function listFeaturedProviderCandidates(user,date){
 }
 
 export async function saveFeaturedProviderDay(user,input={}){
-  assertAdministrator(user);const featureDate=validateDate(input.featureDate);const expo=regionalExpoGroupForDate(featureDate);
-  const providerKeys=(Array.isArray(input.providerKeys)?input.providerKeys:[]).map(String).filter(Boolean);
-  if(input.publish&&!providerKeys.length)throw new Error('FEATURED_PROVIDER_REQUIRED');
-  if(new Set(providerKeys).size!==providerKeys.length)throw new Error('FEATURED_PROVIDER_DUPLICATE');
+  assertAdministrator(user);const featureDate=validateDate(input.featureDate);const theme=featuredTruckTypeForDate(featureDate);
+  const truckKeys=(Array.isArray(input.truckKeys)?input.truckKeys:[]).map(String).filter(Boolean);
+  if(new Set(truckKeys).size!==truckKeys.length)throw new Error('FEATURED_TRUCK_DUPLICATE');
   const scheduleMode=String(input.scheduleMode||'AUTO').toUpperCase();
-  const scheduleConfig=validateFeaturedScheduleConfig(input.scheduleConfig||{});
+  const scheduleConfig=validateFeaturedScheduleConfig({...input.scheduleConfig,targetCount:input.targetCount});
+  if(input.publish&&truckKeys.length!==scheduleConfig.targetCount)throw new Error('FEATURED_TARGET_COUNT_MISMATCH');
   let manualSchedule=input.manualSchedule;
   if(typeof manualSchedule==='string'){try{manualSchedule=JSON.parse(manualSchedule||'[]');}catch{throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');}}
   if(!Array.isArray(manualSchedule))manualSchedule=[];
-  const schedule=buildFeaturedDaySchedule(featureDate,providerKeys,{mode:scheduleMode,config:scheduleConfig,manualSchedule});
-  const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_featured_day',{actor_user_id:user.id,command:{
-    feature_date:featureDate,group_key:expo.key,group_label:expo.title,region_codes:expo.regionCodes,
+  const schedule=buildFeaturedDaySchedule(featureDate,truckKeys,{mode:scheduleMode,config:scheduleConfig,manualSchedule});
+  const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_featured_truck_day',{actor_user_id:user.id,command:{
+    feature_date:featureDate,theme_key:theme.key,theme_label:theme.label,theme_configurations:theme.configurations,target_count:scheduleConfig.targetCount,
     public_headline:validateText(input.publicHeadline,3,90,'FEATURED_HEADLINE_INVALID'),
     public_introduction:validateText(input.publicIntroduction,10,240,'FEATURED_INTRODUCTION_INVALID'),
     tiktok_url:validateTikTokUrl(input.tiktokUrl),schedule_mode:scheduleMode,schedule_config:schedule.config,
-    manual_schedule:scheduleMode==='MANUAL'?manualSchedule:[],provider_keys:providerKeys,publish:Boolean(input.publish)
+    manual_schedule:scheduleMode==='MANUAL'?manualSchedule:[],truck_keys:truckKeys,publish:Boolean(input.publish)
   }});
   if(error)throw managedError('SUPABASE_FEATURED_SAVE_FAILED',error);
   return getAdminFeaturedProviderDay(user,featureDate);

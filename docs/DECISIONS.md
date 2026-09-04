@@ -86,7 +86,20 @@ Company drivers operate only assigned organization vehicles. Duty On and Off is 
 
 Model Business-provider relationships as three distinct meanings: a private Favorite owned by either side, a directional Pending request, and a mutual Connected relationship. Only Connected relationships authorize Partners-only loads and capacity. Existing saved relationships migrate compatibly to Connected. Company drivers do not mutate the company network.
 
-Customer tracking is an additional customer-safe view, not a bearer link. Its human-entered code is derived with the server secret, stored only as a keyed digest, and omitted from URLs. An account or non-account shipper or receiver who receives the code from the load owner may unlock a five-minute HTTP-only grant bound to the browser and load. Browser activity may refresh the grant; five minutes without activity clears it. Assigned providers continue to see the same real tracking events in their internal Tracking workspace and cannot unlock the customer view.
+Customer tracking is an additional customer-safe view, not a bearer link. Its
+human-entered owner and review codes each carry 80 deterministic bits in
+readable grouped formats. They and their stored keyed digests derive from one
+dedicated server-only Tracking code secret, never the login-session secret, and
+are omitted from URLs. Production rejects a missing, short, local-fallback, or
+session-reused Tracking secret. Session-secret rotation therefore does not
+change the code or persisted digest; it may expire a browser grant, which the
+unchanged owner code can reopen. Rotating the Tracking secret requires an
+explicit compatibility-key or code-reissue operation. An account or non-account shipper
+or receiver who receives the owner code may unlock a five-minute HTTP-only
+grant bound to the browser and load. Browser activity may refresh the grant;
+five minutes without activity clears it. Assigned providers continue to see the
+same real tracking events in their internal Tracking workspace and cannot
+unlock the customer view.
 
 Fleet owners edit capacity on one truck-specific Fleet page. They cannot declare or refresh the truck's current area, because the owner's phone or typed city does not establish the truck's position. An owner save preserves the latest assigned-Driver obscured area and its timestamp; no active signal may publish before that Driver has recorded one. Only an authorized assigned company Driver or self-managed Driver may submit an already obscured device area. Ethiopian nearest-city labels use the reviewed local place catalog, keeping exact coordinates and third-party API keys out of the request path.
 
@@ -820,9 +833,14 @@ unknown Auth identity. Both flows receive application authority only after the
 authenticated subject resolves to an active Loadgistic role projection.
 
 OAuth returns through the fixed `/api/auth/callback` path on the deployment-owned
-`APP_URL`; the callback accepts no arbitrary post-login destination. Preview and
-Production maintain exact Supabase Site URL and Redirect URL entries. Provider
-tokens and upstream error details are not persisted or shown. Password login is
+`APP_URL`; the callback accepts no arbitrary post-login destination. Each Google
+start stores a signed, HTTP-only, short-lived Login or Signup intent bound to the
+Supabase PKCE flow identifier. The callback exchanges only the matching flow and
+clears the one-time intent; starting Login also clears any abandoned Signup
+handoff so it cannot misclassify a later callback. Preview and Production keep a
+fixed exact Supabase Site URL and Redirect URL entry because the flow selector
+remains in the signed cookie rather than the callback query. Provider tokens and
+upstream error details are not persisted or shown. Password login is
 retained only behind an explicit non-Production fixture flag so deterministic
 local and browser tests remain available without creating a second Production
 credential system.
@@ -848,12 +866,36 @@ derived from the durable queue row. An HTTPS webhook remains an optional private
 integration adapter; neither adapter may expose credentials, recipient data,
 access codes, bodies, or provider responses in logs.
 
-Immediate request handling may attempt delivery, while a Netlify scheduled
-function runs every 15 minutes in UTC to process bounded Tracking and access
-email leases plus bounded 30-day guest cleanup. PostgreSQL `SKIP LOCKED` leases
-prevent concurrent claims, successful delivery is terminal, and worker output
-contains only provider names, safe status codes, and counts. Failure never
-rolls back the domain transaction that queued the message.
+Immediate request handling may attempt delivery. Every 15 minutes in UTC, a
+Netlify Scheduled Function performs only one authenticated dispatch so it stays
+inside Netlify's fixed 30-second scheduled limit. It sends a short-lived HMAC
+authorization derived from the server-only session secret to a separate
+Netlify Background Function; it never sends the secret itself and the
+background endpoint rejects an unsigned, stale, malformed, or documented
+placeholder-secret request. The dispatcher derives the background URL from
+the exact invocation origin and binds that origin into the HMAC, so an explicit
+Preview verification cannot fall through to the main Production site and a
+captured Preview authorization cannot be replayed against Production. The
+background worker processes bounded Tracking and access-email leases plus
+bounded guest cleanup inside the longer background limit. PostgreSQL
+`SKIP LOCKED` leases prevent concurrent claims, successful delivery is
+terminal, and worker output contains only provider names, safe status codes,
+and counts. Failure never rolls back the domain transaction that queued the
+message. An operation-level failure is logged and remains queued for a later
+schedule; it returns an empty terminal response instead of relying on Netlify
+to replay an aging signed request. Netlify automatically schedules only
+published deploys, so Preview and local verification invoke the dispatcher
+explicitly.
+
+Access-email recovery has an additional two-minute scheduled dispatcher for
+the ten-minute Shared capacity challenge window. Like the main schedule, it
+authenticates one background invocation and performs no provider I/O inside
+Netlify's 30-second scheduled limit. The access worker claims one row at a time
+immediately before processing it, rechecks the active lease for both Shared
+capacity and Assisted matching, and preserves at least a 30-second Shared-code
+validity margin at submission. A provider-accepted send whose terminal database
+acknowledgement fails remains an at-least-once acknowledgement failure; it is
+never rewritten as a provider failure.
 
 Supabase Auth SMTP and application delivery use the same verified domain but
 remain separate adapters. Rollback disables the schedule or restores the prior
@@ -919,3 +961,39 @@ development, browser tests, Preview, and Production. The explicitly enabled
 local fixture-password form remains a test convenience, but it authenticates
 the isolated Supabase Auth fixtures and never creates a separate signed-cookie
 or SQLite identity system. Missing managed Auth configuration fails closed.
+
+## ADR-047 — Pilot application email may use bounded authenticated SMTP
+
+Keep Supabase Auth email and application-owned email as separate adapters. Auth
+continues to send account login and signup codes through Supabase's configured
+SMTP boundary. Shared capacity remains a no-account six-digit application OTP,
+while Tracking retains its stable customer-owner and review codes with distinct
+customer-safe templates. Neither guest workflow creates a Supabase Auth user to
+reuse an Auth email template.
+
+The durable application-email port continues to prefer Resend's HTTPS API and
+its provider-enforced idempotency key. For the bounded launch pilot, it may use
+one explicitly configured authenticated SMTP transport before the existing
+HTTPS-webhook fallback. SMTP configuration is server-only and complete-or-off:
+host, port, user, password, From address, and optional Reply-To never enter
+client bundles, logs, queue errors, or health output. Port 465 requires TLS from
+connection start; port 587 requires STARTTLS. Connections use bounded DNS,
+connection, greeting, and socket timeouts, no pooling, no debug logger, and no
+file or URL content access.
+
+Every SMTP retry reuses a deterministic Message-ID and a non-secret
+`X-Loadgistic-Idempotency-Key` derived from the durable queue row. This helps
+receiving systems recognize retries but cannot provide provider-enforced
+exactly-once delivery after an ambiguous SMTP timeout. Production readiness
+therefore accepts a complete SMTP pilot configuration with an explicit
+at-least-once warning; queue leases still prevent concurrent sends and a later
+verified API provider removes that warning. Rollback removes the SMTP variables
+and leaves queued domain records untouched for Resend or webhook delivery.
+
+The standard isolated local configurator separately writes a loopback Mailpit
+URL for application-email verification. Development and tests prefer that sink
+over external providers, submit through its bounded HTTP API, and expose a
+direct local-inbox link without returning a code in the application response.
+The adapter rejects remote hosts, credentials, non-root source paths, and every
+Production runtime. Removing the ignored local variable restores the explicit
+unconfigured-development fallback without weakening Production readiness.

@@ -6,8 +6,8 @@ import { FileText, Info, LayoutDashboard, LockKeyhole, LogIn, MapPinned, Route, 
 import React from 'react';
 
 const destinations = [
-  { key: 'market', href: '/', label: 'Market', desktopLabel: 'Truck Market', icon: MapPinned },
-  { key: 'shared', href: '/shared-capacity', label: 'Shared', desktopLabel: 'Shared capacity', icon: LockKeyhole },
+  { key: 'market', href: '/', label: 'Open', desktopLabel: 'Open capacity', icon: MapPinned },
+  { key: 'shared', href: '/shared-capacity', label: 'Private', desktopLabel: 'Private capacity', icon: LockKeyhole },
   { key: 'featured', href: '/featured', label: 'Featured', desktopLabel: 'Featured', icon: Users },
   { key: 'track', href: '/track', label: 'Track', desktopLabel: 'Track', icon: Route },
   { key: 'about', href: '/about', label: 'About', desktopLabel: 'About', icon: Info }
@@ -54,7 +54,7 @@ export function PublicMobileNav({signedIn=false}:{signedIn?:boolean}) {
 
   const sessionDestination=signedIn
     ?{key:'dashboard',href:'/app/home',label:'Dashboard',desktopLabel:'Dashboard',icon:LayoutDashboard}
-    :{key:'login',href:'/login',label:'Log in',desktopLabel:'Transporter login',icon:LogIn};
+    :{key:'login',href:'/login',label:'Log in',desktopLabel:'Log in',icon:LogIn};
 
   return <>
     <nav className="public-workspace-nav" aria-label="Public workspace navigation">

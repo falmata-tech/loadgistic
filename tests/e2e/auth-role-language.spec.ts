@@ -2,30 +2,42 @@ import { expect, test } from '@playwright/test';
 
 async function login(page:any,email:string){
   await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill('Loadgistic123!');
-  await page.getByRole('button',{name:'Log in'}).click();
+  const fixtureLogin=page.locator('details.auth-fixture-login');
+  await fixtureLogin.locator('summary').click();
+  await fixtureLogin.getByLabel('Email').fill(email);
+  await fixtureLogin.getByLabel('Password').fill('Loadgistic123!');
+  await fixtureLogin.getByRole('button',{name:'Log in'}).click();
   await expect(page).toHaveURL(/\/app\/home/);
 }
 
-test('public account navigation and transporter signup follow session state',async({page}:{page:any})=>{
+test('public account access stays unified and follows session state',async({page}:{page:any})=>{
   await page.goto('/');
   const desktop=(page.viewportSize()?.width||0)>760;
   const publicNavigation=desktop
     ?page.getByRole('navigation',{name:'Public workspace navigation'})
     :page.locator('.public-session-compact');
-  await expect(publicNavigation.getByRole('link',{name:/Log in|Transporter login/,exact:true})).toBeVisible();
+  await expect(publicNavigation.getByRole('link',{name:/Account access|Log in|Transporter login/,exact:true})).toBeVisible();
   await expect(publicNavigation.getByRole('link',{name:'Dashboard',exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
 
   await page.goto('/login');
-  await expect(page.getByRole('heading',{name:'Transporter login'})).toBeVisible();
-  await page.getByRole('link',{name:'Create a transporter account'}).click();
-  await expect(page).toHaveURL(/\/apply$/);
-  await expect(page.getByText('First, confirm the email you will use to access your transporter workspace.')).toBeVisible();
+  await expect(page.locator('main h1')).toHaveCount(1);
+  await expect(page.locator('main h1')).toHaveText('Log in');
+  const emailForm=page.getByTestId('email-code-request-form');
+  const google=page.getByRole('button',{name:'Continue with Google'});
+  await expect(emailForm).toBeVisible();
+  await expect(google).toBeVisible();
+  await expect(page.getByText(/Existing account email|only if this address has a transporter account/i)).toHaveCount(0);
+  const [emailBox,googleBox]=await Promise.all([emailForm.boundingBox(),google.boundingBox()]);
+  expect(emailBox).not.toBeNull();
+  expect(googleBox).not.toBeNull();
+  expect(emailBox!.y).toBeLessThan(googleBox!.y);
+  await expect(page.getByRole('link',{name:/Create a transporter account|Join/i})).toHaveCount(0);
+  await expect(page.getByText(/New to Loadgistic\?|Already have an account\?/i)).toHaveCount(0);
+
+  await page.goto('/apply');
+  await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
   await expect(page.getByRole('radio')).toHaveCount(0);
-  await expect(page.getByText(/Transporter signup is temporarily unavailable|No password is needed/)).toBeVisible();
 
   await login(page,'driver@loadgistic.local');
   await page.goto('/');
@@ -33,7 +45,7 @@ test('public account navigation and transporter signup follow session state',asy
     ?page.getByRole('navigation',{name:'Public workspace navigation'})
     :page.locator('.public-session-compact');
   await expect(signedInNavigation.getByRole('link',{name:'Dashboard',exact:true})).toBeVisible();
-  await expect(signedInNavigation.getByRole('link',{name:/Log in|Transporter login/,exact:true})).toHaveCount(0);
+  await expect(signedInNavigation.getByRole('link',{name:/Account access|Log in|Transporter login/,exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
 });
 

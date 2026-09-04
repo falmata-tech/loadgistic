@@ -7,8 +7,7 @@ export function createSupabaseBrowserClient() {
   const { url, publishableKey } = getSupabasePublicConfig();
   return createBrowserClient(url, publishableKey, {
     auth: {
-      flowType: 'pkce',
-      experimental: { appendPkceFlowIdToRedirects: true }
+      flowType: 'pkce'
     }
   });
 }

@@ -17,10 +17,11 @@ export async function POST(request:NextRequest){
       origin:text(form,'origin'),originPlaceRef:text(form,'originPlaceRef'),
       destination:text(form,'destination'),destinationPlaceRef:text(form,'destinationPlaceRef'),
       cargoSummary:text(form,'cargoSummary'),customerEmail:text(form,'customerEmail'),
+      additionalRecipientEmails:text(form,'additionalRecipientEmails').split(/[\s,;]+/).filter(Boolean),
       expectedPickupDate:text(form,'expectedPickupDate'),expectedDeliveryDate:text(form,'expectedDeliveryDate'),
       trackingMode:text(form,'trackingMode')
     });
-    await deliverPendingShipmentEmails(10);
+    await deliverPendingShipmentEmails(25);
     return NextResponse.json(created,{status:201,headers:{'cache-control':'no-store'}});
   }catch(error){return NextResponse.json({error:errorMessage(error)},{status:400,headers:{'cache-control':'no-store'}});}
 }

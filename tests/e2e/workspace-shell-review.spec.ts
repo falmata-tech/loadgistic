@@ -1,6 +1,7 @@
 import {expect,test} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import {localMailpitNumericCode} from './mailpit-helper';
 
 async function login(page:any,email:string){
   await page.goto('/login');
@@ -86,7 +87,8 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await page.getByLabel('Cargo summary').fill('Workshop steel inputs');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
-  await page.getByLabel('Customer owner email').fill(`${project}@shell-review.test`);
+  const ownerEmail=`${project}@shell-review.test`;
+  await page.getByLabel('Customer owner email').fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   await page.getByRole('button',{name:'Start Tracking'}).click();
   const code=(await page.locator('.party-code-grid article').first().locator('code').textContent())!;
@@ -94,7 +96,11 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await page.getByRole('button',{name:'Save Going to pickup'}).click();
   await expect(page.getByText('Tracking status updated.')).toBeVisible();
   await page.goto('/track');
+  await page.getByLabel('Approved email').fill(ownerEmail);
   await page.getByLabel('Tracking code').fill(code);
+  const requestedAt=Date.now();
+  await page.getByRole('button',{name:'Email me a code'}).click();
+  await page.getByLabel('One-time code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your shipment Tracking code'));
   await page.getByRole('button',{name:'Open tracking'}).click();
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible({timeout:15_000});
   await waitForMapTiles(page,'.tracking-location-map');

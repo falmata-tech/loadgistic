@@ -24,9 +24,18 @@ export async function prepareSupabaseProviderSignup(input,tokenDigest,expiresAt)
 
 export async function completeSupabaseProviderSignup(authUserId,tokenDigest){
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('complete_provider_signup',{
+  const {data,error}=await client.rpc('complete_eligible_provider_signup',{
     actor_user_id:String(authUserId||''),requested_token_digest:tokenDigest
   });
   if(error||!data)throw signupError(error);
   return data;
+}
+
+export async function supabaseProviderSignupEligible(authUserId){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('managed_provider_signup_eligible',{
+    actor_user_id:String(authUserId||'')
+  });
+  if(error)throw new Error('SUPABASE_PROVIDER_SIGNUP_ELIGIBILITY_FAILED',{cause:error});
+  return data===true;
 }

@@ -16,14 +16,14 @@ rollout: Apply shared primitives before page-specific simplification; retain pri
 Given a capacity seeker opens Loadgistic\
 When the homepage renders\
 Then real public capacity is the dominant useful content on the default Market route\
-And one concise workspace welcome leads directly into the Truck Market while persistent navigation opens Daily Featured Transporters on `/featured`\
+And one concise workspace welcome leads directly into the Truck Market while persistent navigation opens Daily Featured Trucks on `/featured`\
 And detailed explanatory storytelling is linked through About rather than repeated between homepage tools\
 And the homepage itself contains an always-accessible truck search, dismissible filters, location controls, and the interactive Truck Map rather than separate listing pages\
 And no ranked Truck List competes with geographic discovery\
 And location permission is requested as soon as the Board becomes interactive so nearby supply can be shown without another setup step\
 And pointed pins with visible truck artwork, a complete green Empty ring, or a complete yellow Partial ring let visitors scan vehicle type and status before opening details without interpreting a percentage meter\
 And the map key stays visible while contextual map summaries appear only on hover or focus above the related marker\
-And Truck Market, Shared capacity, Daily Featured Transporters, Track, About, and transporter Login are easy to find while transporter signup remains directly available from Login\
+And Truck Market, Shared capacity, Daily Featured Trucks, Track, About, and transporter account access are easy to find while a new identity continues to provider setup only after proof\
 And no account prompt blocks browsing, filtering, map view, transporter details, or contact methods the transporter made public.
 
 ### Scenario: public visual system stays light
@@ -56,7 +56,7 @@ And the same command uses the same icon and label across pages.
 
 ### Scenario: public copy speaks to the market
 
-Given a visitor opens the homepage, About, provider Directory, provider page, Track, login, or provider signup\
+Given a visitor opens the homepage, About, provider Directory, provider page, Track, account access, or provider setup\
 When headings, supporting copy, labels, and calls to action render\
 Then they describe a clear customer or transport-provider benefit in professional freight language\
 And the core narrative connects Ethiopian producers and growing businesses with usable truck capacity while presenting independent providers as credible commercial operators\
@@ -81,7 +81,7 @@ And necessary permission, privacy, payment, verification, and irreversible-actio
 Given a visitor or provider opens a feed, map, editor, composer, or detail\
 When the page renders\
 Then the title and primary action are visually clear\
-And the public Truck Market uses one visible workspace heading rather than repeating a second market title above the Map controls\
+And map-first Open and Private capacity workspaces use selected navigation and accessible page names rather than repeating visible titles above Map controls\
 And one stable command area keeps search, filters, and location refresh available over the Map\
 And related choices follow the order needed\
 And supporting prose remains only when it explains a material rule, privacy boundary, or consequence.
@@ -132,7 +132,7 @@ And the compact selected-truck identity dock stays inside the fixed map canvas a
 
 ### Scenario: primary public workspaces fill the available phone viewport
 
-Given the Truck Market or Daily Featured Transporters route is rendered at a supported phone width\
+Given the Truck Market or Daily Featured Trucks route is rendered at a supported phone width\
 When its application workspace appears\
 Then the route uses the viewport remaining between its app bars rather than extending the page vertically\
 And the Market map or featured board receives the dominant remaining height with equal left and right gutters\
@@ -145,8 +145,8 @@ And List mode, expanded disclosures, or an unusually large featured roster scrol
 
 Given an authenticated Driver uses the dashboard\
 When workspace navigation renders\
-Then the authenticated workspace does not render a duplicate Truck Market or Daily Featured Transporters surface\
-And Truck Market and Daily Featured Transporters open their canonical public routes without signing the Driver out\
+Then the authenticated workspace does not render a duplicate Truck Market or Daily Featured Trucks surface\
+And Truck Market and Daily Featured Trucks open their canonical public routes without signing the Driver out\
 And retired authenticated capacity-market routes redirect safely to the canonical public Truck Market.
 
 ### Scenario: provider mobile navigation behaves like an application
@@ -168,8 +168,8 @@ Given an anonymous visitor opens any supported public workspace on a narrow view
 When the public shell renders\
 Then the desktop website header and multi-column footer are replaced by a compact branded app bar and one fixed bottom navigation bar\
 And the bar exposes Truck Market, Shared capacity, Featured, Track, and About as direct labeled destinations without a hamburger menu\
-And transporter login remains a direct app-bar action while an authenticated member sees Dashboard in its place\
-And transporter signup remains directly available from Login rather than consuming a primary navigation destination\
+And a Log in action remains directly visible in the app bar while an authenticated member sees Dashboard in its place\
+And no separate Login-versus-Join choice consumes a primary navigation destination\
 And Assisted matching is opened from the persistent Ask Loadgistic launcher rather than consuming a primary navigation destination\
 And the active destination is clear by icon, label, shape, and contrast rather than color alone\
 And each destination opens its own route-level workspace while legacy public anchors return to their equivalent current route\
@@ -218,13 +218,56 @@ Then an accessible page or workspace name identifies the destination without req
 And secondary descriptions and notices appear only when they communicate a permission, privacy, payment, verification, or irreversible consequence\
 And cards, controls, and map workspaces begin within the initial viewport without unnecessary blank space or oversized title decoration.
 
+### Scenario: administrator navigation uses a standard task hierarchy
+
+Given an administrator enters the authenticated application on desktop or phone\
+When primary navigation and the administrator overview render\
+Then Overview is the single landing destination\
+And Records opens searchable Users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans\
+And Review Center, private Capacity, Featured and sponsors, Support, and role-authorized More destinations use distinct task names\
+And no generic Home and vague Operations pair compete for the same administrative purpose.
+
 ### Scenario: public supporting pages use the same application shell
 
-Given a visitor opens About, Track, Login, Join, Privacy, Terms, or an unlocked Tracking view\
+Given a visitor opens About, Track, account access, provider setup, Privacy, Terms, or an unlocked Tracking view\
 When the page renders at desktop, phone, narrow reflow, or browser zoom\
 Then it uses the same centered white-space workspace, compact public application bars, type scale, colors, borders, and bounded content width as the primary public routes\
 And headings, badges, controls, contact values, profile handles, dates, and status text wrap without truncating essential information\
 And no section shifts sideways, hides behind fixed navigation, or introduces horizontal document scrolling.
+
+### Scenario: task headings preserve the working viewport
+
+Given a public, provider, support, or administrative task page renders on a supported desktop or phone\
+When a visible page-level heading is necessary\
+Then it uses the smallest established type and spacing that preserves a clear hierarchy\
+And a map-first or board-first workspace uses a compact heading variant rather than a marketing-scale title\
+And repeated headings, development explanations, or secondary descriptions do not displace the primary task\
+And About, Privacy, and Terms may use a modest editorial scale without exceeding the shared responsive type system.
+
+### Scenario: every visible navigation action reaches its named destination
+
+Given a visitor, provider, Driver, support agent, or administrator uses visible navigation or preview actions\
+When an action is activated\
+Then it reaches the route and task named by its label without a missing page, inert control, or unrelated fallback\
+And the administrator More destination opens the actual role-authorized menu on desktop and mobile\
+And the Featured administration preview opens the public Featured page rather than the Truck Market\
+And Account and plan remains distinctly named inside More instead of competing with a second ambiguous More destination.
+
+### Scenario: one transporter account-access flow stays focused across devices
+
+Given a signed-out visitor opens transporter account access or a verified new identity continues to provider setup\
+When the identity request, email-code confirmation, provider-details step, or a related feedback state renders\
+Then one consistent bounded account-access surface persists within the public application shell\
+And a supported wide viewport places one concise freight-context panel beside one account-task panel without duplicating the page task\
+And the account-task panel contains the only page-level heading, with the email-code form first and Google presented as an equally reachable alternative\
+And the interface does not ask whether the visitor is logging in or creating an account before identity proof\
+And provider setup replaces the identity controls after proof rather than duplicating them\
+And Back to Truck Market remains in a consistent footer associated with the task panel\
+And a supported narrow viewport or 200% browser zoom collapses to one form-first column without loading or displaying decorative artwork, clipping content, or placing an action behind fixed navigation\
+And every field's material instruction is programmatically associated with that field\
+And provider operating-model choices, recovery, local-development disclosures, and Back controls expose visible keyboard focus and touch targets of at least 44 CSS pixels\
+And control boundaries and focus indicators remain distinguishable against their actual backgrounds without relying on color alone\
+And any decorative freight image is absent from the accessibility tree and never carries required account guidance.
 
 ### Scenario: mobile controls remain easy to touch
 
@@ -296,6 +339,6 @@ And every confirmed defect is recorded with its affected actor, viewport, route,
 ## Contract ownership
 
 - Shared UI: public header, provider shell, page headers, actions, choices, cards, filters, and map state
-- Public pages: homepage, Capacity, Providers, Track, About, Login, and provider Sign up
+- Public pages: homepage, Capacity, Providers, Track, About, account access, and provider setup
 - Provider pages: `/app/**` excluding `/admin/**`
 - Tests: E2E and visual audit

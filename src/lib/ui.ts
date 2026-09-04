@@ -10,8 +10,8 @@ export function displayStatus(status: string) {
   return statusLabel(status);
 }
 
-export function relativeTime(value: string) {
-  const ms = Date.now() - new Date(value).getTime();
+export function relativeTime(value: string, referenceTime: number = Date.now()) {
+  const ms = referenceTime - new Date(value).getTime();
   const minutes = Math.max(0, Math.floor(ms / 60000));
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
