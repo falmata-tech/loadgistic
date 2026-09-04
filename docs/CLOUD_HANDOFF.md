@@ -35,18 +35,28 @@ Featured/Sponsor administration all use the unconditional managed runtime.
   Google client, six-digit templates, and Gmail SMTP configured. A real hosted
   Auth OTP request and verification completed successfully.
 
-The Netlify site is provisioned and ready for the reviewed release artifact;
-successful application deployment and live route smoke are recorded only after
-the current promotion completes. Application-owned
+Netlify Production deploy `6a9b4353c786527571b25051` published application
+commit `935772c` at `https://loadgistic-473.netlify.app` on 2026-09-05.
+Live desktop and phone smoke returned `200` for Open capacity, Daily Featured,
+Login, Private capacity, Tracking, and health with no page errors or horizontal
+overflow. The site-level Powered by Netlify badge is disabled because its
+bottom-right overlay obstructed the phone navigation. Application-owned
 Tracking, Shared capacity, and Assisted matching SMTP credentials are now
 configured separately in Netlify, and an authentication-only handshake passed
-without sending a message. A deployed provider/worker smoke test is still
-required; Supabase Auth cannot expose or reuse its saved SMTP password.
+without sending a message. A real application-message and scheduled-worker run
+still require observation; Supabase Auth cannot expose or reuse its saved SMTP
+password.
 Supabase is the unconditional identity, data, request-limit, and private-Storage
 runtime; there are no backend selector variables to configure. The hosted
 Loadgistic database has migrations `001`–`069`, and all seven application buckets
 are private. It intentionally has no local fixture import. Upload-scanning and
 the remaining rollout gates below remain red.
+
+Release-branch follow-up `174380e` corrects only the isolated local fixture and
+its current-product documentation. GitHub CI run `33926528912` passed validation,
+the full desktop/mobile browser suite, and the standalone container build. The
+live application remains the reviewed `935772c` runtime artifact because the
+follow-up contains no Production runtime or hosted-data change.
 
 ## Free-pilot operating envelope
 
@@ -109,17 +119,18 @@ public launch. The controlled pilot currently uses authenticated Gmail SMTP for
 Supabase Auth. Application-owned Tracking, Shared capacity, and Assisted
 matching messages use a separate durable queue and Netlify email adapter. They
 currently use separately configured Netlify SMTP host, port, user, app password,
-From, and reply-to values. Their authentication handshake passes, but no message
-or deployed-worker delivery has been proved. This temporary SMTP adapter
+From, and reply-to values. Their authentication handshake passes, but no remote
+application-email delivery has been proved. This temporary SMTP adapter
 uses TLS and stable Message-IDs but remains at-least-once after an ambiguous
 timeout, so readiness reports a warning. Replace it with an owned sending domain
 and the Resend API adapter before higher-volume public use. The source-verified
 Netlify design invokes the general managed dispatcher every 15 minutes and the
 access-email recovery dispatcher every two minutes. Each sends a
 timestamped HMAC-SHA256 signed request to bounded background work. The workers
-reject unsigned or stale calls, expose no private operation result, and are not
-deployed or monitored yet; after deployment, monitor the mailbox and
-function-credit ceilings.
+reject unsigned or stale calls and expose no private operation result. They are
+deployed but remote message delivery and scheduled execution have not yet been
+observed; monitor the mailbox and function-credit ceilings before relying on
+them.
 Cloudflare Turnstile may provide the no-cost bot challenge, while the
 shared enforcement counters remain transactional Supabase records rather than
 process-local memory.

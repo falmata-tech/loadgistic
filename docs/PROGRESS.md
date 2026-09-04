@@ -74,8 +74,8 @@
   Tracking, and Assisted matching are configured in Netlify, but their deployed
   delivery path has not been exercised. The hosted Loadgistic database now has
   migrations `001`–`069` and seven private Storage buckets, with no local
-  fixture import. Netlify deployment and live route smoke are the next release
-  step.
+  fixture import. Netlify Production deploy `6a9b4353c786527571b25051`
+  serves application commit `935772c`; desktop and phone live route smoke passed.
 - The complete reviewed Production variable set is now present in Netlify's
   Production context. Session, Tracking, service-role, and SMTP credentials are
   marked secret; Netlify Free necessarily exposes those secret variables to the
@@ -91,9 +91,10 @@
   `Falmata Dawano` team (`falmatad97`) and linked locally at
   `https://loadgistic-473.netlify.app`. The reviewed Production application,
   Supabase, session/Tracking, fixture-disable, and application-SMTP variables
-  are configured without recording their values in source. A successful
-  application deploy and live route smoke will be recorded only after the
-  current reviewed artifact is promoted.
+  are configured without recording their values in source. Production deploy
+  `6a9b4353c786527571b25051` is live. The Supabase-backed health endpoint returns
+  `200`; its truthful readiness projection remains blocked only by the missing
+  managed malware scanner and retains pilot warnings for SMTP and community OSM.
 
 - Active application routes use Supabase-only managed ports and fail closed after a managed error. Operations and Daily Featured/Sponsor administration join public discovery, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, managed provider signup, the authenticated workspace shell, Fleet management, Verification, Billing, member Support, Assisted matching, and platform-team management on that boundary. The retired local database modules and their duplicate tests/scripts have been removed; the managed JSON fixture now imports directly into isolated Supabase.
 - Provider owners now register trucks from My Fleet/My trucks through one owner-scoped PostgreSQL command. Fleet transporters, Owner-operators, and Self-managed Drivers receive the action; Company drivers do not. Registration creates only the immutable Loadgistic truck number and supplied truck facts, leaving Capacity, location, assignment, and verification unset until their deliberate workflows.
@@ -105,8 +106,15 @@
 - Published transporter microsites now use the Supabase application port without importing SQLite. The projection preserves active trucks with and without current capacity, provider-selected public contacts, fixture or protected profile images, operating-model labels, assigned Driver first name/callback, separate Driver/truck document badges, current safe geometry, regular service, the latest 20 review notes, and an all-review count/average computed by a service-role-only PostgreSQL aggregate. Managed Next.js checks returned fleet and Owner-operator pages, kept unknown handles at `404`, and rendered no private proof path or hidden account contact.
 - Daily Featured Transporters and Sponsors now use a Supabase application port without importing SQLite. The service-only regional candidate projection rechecks published profile, structured base, public contact, active fleet, current evidence, operating model, review summary, and available-now count. The application preserves administrator order, deterministic automatic/manual schedules, Sponsor-break attribution, eligible transporter Sponsors, and bounded outside ads while removing owner IDs and eligibility internals. A managed `/featured` request rendered the three-provider Addis Ababa programme and four Sponsors, including the outside advertiser.
 - The isolated Loadgistic Supabase CLI stack uses ports `55320`–`55324` so it can coexist with other projects. A newly empty local database replayed the complete `001`–`069` chain, rebuilt the managed fixture, and passed the live identity, Storage, public-projection, signup, Shared capacity, provider Capacity, provider Tracking, transporter-profile, workspace/Fleet, Verification/Billing, Support/Assisted-matching, platform-administration, shared-limit, private-upload, and browser-denial verifiers with SQLite unavailable. The linked hosted Loadgistic project now has the matching `001`–`069` history and seven private buckets; no local fixture identities or demo market records were imported.
+- Local fixture follow-up `174380e` assigns each independent truck to its owning
+  Driver identity at import time without changing an existing fleet assignment.
+  The 2026-09-05 reset imported 143 assignments and generated seven current
+  heavy-rigid Featured slots. GitHub CI run `33926528912` passed validation,
+  dependency audit, managed verifiers, 201 contract tests, the 5,000-truck
+  rollback scale check, TypeScript, the optimized build, all desktop/mobile
+  browser workflows, and the standalone container build.
 - Apply and validate the cloud migrations only after a backup and explicit rollout approval. The legacy-demand purge is destructive by design.
-- The managed application-email port sends escaped plain-text/HTML templates through preferred Resend delivery, a bounded authenticated-SMTP pilot, or the optional HTTPS webhook adapter. Supabase Auth email is a separate service and template set. The Netlify design uses a 15-minute managed dispatcher plus a two-minute access-email recovery dispatcher, each invoking bounded HMAC-authenticated background work without returning private operation data. Production SMTP variables are configured and their authentication handshake passed, but the worker has not been deployed or monitored and no remote Shared capacity, Tracking, or Assisted matching delivery is claimed.
+- The managed application-email port sends escaped plain-text/HTML templates through preferred Resend delivery, a bounded authenticated-SMTP pilot, or the optional HTTPS webhook adapter. Supabase Auth email is a separate service and template set. The deployed Netlify runtime includes a 15-minute managed dispatcher plus a two-minute access-email recovery dispatcher, each invoking bounded HMAC-authenticated background work without returning private operation data. Production SMTP variables are configured and their authentication handshake passed, but scheduled execution has not been observed and no remote Shared capacity, Tracking, or Assisted matching delivery is claimed.
 - Every Leaflet surface now uses one centralized HTTPS tile configuration with visible linked attribution and an exact-origin CSP. The bounded beta falls back to the direct OpenStreetMap community endpoint with a non-blocking launch warning; no proxy, prefetch, bulk copy, or Netlify-hosted tile set is used. Monitor traffic and select a reviewed provider before sustained use.
 - Tracking unlock, review unlock, and review submission now use the shared PostgreSQL limiter. Add the remaining public-discovery coverage and reviewed bot protection; configure and remotely prove the managed upload scanner; then complete backup/restore evidence, monitoring, and a tested rollback. The local EICAR-aware scanner is test-only.
-- Complete the reviewed Netlify promotion and live route smoke. Hosted schema publication is complete; managed upload scanning, remote application-email delivery, backup/restore rehearsal, Preview concurrency, and production monitoring remain rollout gates.
+- The reviewed Netlify promotion and live route smoke are complete. Hosted schema publication is complete; managed upload scanning, remote application-email delivery, backup/restore rehearsal, Preview concurrency, and production monitoring remain rollout gates.

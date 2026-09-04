@@ -260,7 +260,7 @@ application, local development, CI, fixtures, browser workflows, and scale gate
 all use Supabase/PostgreSQL. The linked hosted project has the reviewed
 `001`–`069` migration chain and seven private Storage buckets, with no local
 fixture import. Unrestricted Production remains blocked on backup/restore
-rehearsal, a successful Netlify deploy and live smoke, a remotely proven managed upload scanner, live application-email delivery,
+rehearsal, a remotely proven managed upload scanner, live application-email delivery,
 remaining public-discovery abuse coverage, monitoring, Preview
 smoke/concurrency evidence, and an approved Production promotion. Supabase Auth
 OTP delivery is verified, but it does not satisfy the separate application-email
@@ -289,3 +289,26 @@ gate. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.
 - No managed malware-scanner credential is configured. Production upload paths
   therefore remain fail-closed; local EICAR-aware evidence is not represented as
   hosted malware-scanning proof.
+- Production deploy `6a9b4353c786527571b25051` published application commit
+  `935772c` to `https://loadgistic-473.netlify.app`. Open capacity, Daily
+  Featured, Login, Private capacity, Tracking, and `/api/health` returned `200`.
+  The health response identified `supabase-postgres` and `supabase`, with the
+  managed scanner as its only blocker. Both Google controls reached the intended
+  hosted Supabase authorize endpoint and then Google Accounts without consent.
+  One account-code request returned the generic six-digit-code state; receipt was
+  not asserted. A Private-capacity request with no eligible grant returned
+  `verificationRequired:false`, proving it did not create an unnecessary OTP.
+- Desktop and phone Chromium checks found no page errors or horizontal overflow.
+  The initially collapsed no-roster Featured layout was corrected in `935772c`,
+  then measured at 915 px of copy width on desktop and 322 px on phone. Netlify's
+  Free-plan badge was disabled at project scope after it visibly overlapped the
+  phone navigation; a fresh browser context confirmed the frame was absent.
+- Follow-up `174380e` made the local fixture's Owner-operator and Self-managed
+  driver assignments date-independent. The exact CI reset command imported 143
+  active truck assignments and generated seven heavy-rigid Featured slots on
+  2026-09-05; every managed live verifier, 201 Node tests, TypeScript, and the
+  77-route optimized build passed locally. GitHub CI run `33926528912` then
+  passed its validation, 5,000-truck rollback scale check, full desktop/mobile
+  browser workflow, and standalone container jobs. This correction changes only
+  non-Production fixtures and documentation; no demo identity or vehicle was
+  added to the hosted database.

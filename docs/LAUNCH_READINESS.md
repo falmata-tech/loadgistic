@@ -2,7 +2,7 @@
 
 ## Current verdict
 
-The repository and linked hosted database support a controlled production pilot. The clean local `001`–`069` replay and guarded live verifiers pass, the hosted project has the matching migration chain and seven private Storage buckets, local login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP delivery is verified. Production application-SMTP variables are configured in Netlify and their authentication handshake passes, but this is not remote delivery evidence. The application is not approved for unrestricted public production until the managed scanner, remote application-email, Preview concurrency, monitoring, backup/restore, and live deployment smoke gates below are resolved. `npm run launch:check` must remain red for real blockers rather than being weakened for deployment.
+The repository, linked hosted database, and Netlify application support a controlled production pilot. The clean local `001`–`069` replay and guarded live verifiers pass, the hosted project has the matching migration chain and seven private Storage buckets, local login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP delivery is verified. Production deploy `6a9b4353c786527571b25051` serves application commit `935772c`; live desktop and phone checks passed the public routes and Supabase-backed health. Release follow-up `174380e` passed GitHub CI run `33926528912`, including managed-fixture verification, the 5,000-truck rollback scale check, desktop/mobile browser workflows, and the standalone container build. Production application-SMTP variables are configured in Netlify and their authentication handshake passes, but this is not remote delivery evidence. The application is not approved for unrestricted public production until the managed scanner, remote application-email, Preview concurrency, monitoring, and backup/restore gates below are resolved. `npm run launch:check` must remain red for real blockers rather than being weakened for deployment.
 
 ## Verified locally
 
@@ -36,9 +36,9 @@ The repository and linked hosted database support a controlled production pilot.
 3. Configure a server-only managed scanner, complete the privacy/vendor review, and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial upload proofs against Supabase Preview. The local test scanner does not satisfy this gate.
 4. Production application-SMTP credentials are configured separately from the
    already verified Supabase Auth SMTP, and an authentication-only handshake
-   passes. Deploy and monitor the 15-minute managed scheduler and two-minute
-   access-email recovery scheduler with their HMAC-authenticated background
-   workers, then test real Shared capacity, Tracking, and Assisted matching
+   passes. The 15-minute managed scheduler and two-minute access-email recovery
+   scheduler with their HMAC-authenticated background workers are deployed;
+   monitor their runs, then test real Shared capacity, Tracking, and Assisted matching
    delivery, expiry-aware retry/cleanup, and unsigned/stale-request rejection.
    The personal-Gmail SMTP option is a bounded pilot warning, not the durable
    sending-domain gate.
@@ -57,8 +57,10 @@ The repository and linked hosted database support a controlled production pilot.
 8. Hosted Production Supabase Auth now has the exact Site URL and
    `/api/auth/callback`, Google identity credentials, numeric login/signup
    templates, Gmail SMTP, and one successfully verified real account OTP.
-   Configure Preview independently; after the schema and application deploy,
-   prove Google and OTP login/signup end to end against the active-role and
+   Production route smoke reaches the intended Supabase project and Google
+   account endpoint, and one deployed email-code request returned the generic
+   code-sent state. Configure Preview independently; complete Google consent and
+   OTP login/signup end to end against the active-role and
    atomic provider-provisioning boundaries before enabling them publicly.
 
 ## Bounded beta map warning
