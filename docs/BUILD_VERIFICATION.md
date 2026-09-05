@@ -24,6 +24,13 @@ checkpoint is scoped to the code and environment verified at that time.
   `070`–`072` then applied in order. A second sanitized diagnostic found exactly
   one active Business, Transporter, and Driver plan and confirmed the failed
   identity is still clean and eligible to retry.
+- Commits `28d51a3` and `d2f185c` were pushed to the production-readiness
+  branch. Netlify manual Production deploy `6a9c4531a3128740b2261c13` completed
+  with the maintained Next.js runtime. Live requests returned `200` for health,
+  Login, and the new tractor asset; an unauthenticated `/apply` correctly
+  returned `307` to Login. Health confirms Supabase PostgreSQL and Storage but
+  still reports the managed Production upload-malware-scanner as a launch
+  blocker. The separately guarded synthetic Production-pilot import was not run.
 
 ### Deployment lesson
 
