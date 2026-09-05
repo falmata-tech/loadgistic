@@ -313,7 +313,7 @@ test('capacity Market is map-only and loads bounded truck batches',async({page}:
   await expect(commandColumn.getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
   await page.getByRole('button',{name:/Filters/}).click();
   await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier motorcycle'})).toHaveCount(0);
-  await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier car'})).toHaveCount(0);
+  await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier car'})).toHaveCount(1);
   await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Mini Open Body Truck'})).toHaveCount(1);
   await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Heavy Rigid Stake Body Truck + Trailer'})).toHaveCount(1);
   await page.getByRole('button',{name:'Close filters'}).click();

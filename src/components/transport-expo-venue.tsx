@@ -10,6 +10,15 @@ function ProviderIdentity({provider}:{provider:any}){
   return <img src={provider.profile_image_url||'/marketing/default-transporter-profile.png'} alt=""/>;
 }
 
+function DriverSteeringWheel(){
+  return <svg className="driver-steering-wheel" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="27"/><circle cx="32" cy="32" r="7"/><path d="M32 25V5M26 36 10 46M38 36l16 10"/></svg>;
+}
+
+function DriverPortrait({truck}:{truck:any}){
+  if(truck.driver_portrait_url)return <img src={truck.driver_portrait_url} alt=""/>;
+  return <span className="driver-portrait-fallback" aria-hidden="true"><UserRound/><DriverSteeringWheel/></span>;
+}
+
 function TruckPreview({truck,walkthrough,onClose}:{truck:any;walkthrough:any;onClose:()=>void}){
   const dialogRef=React.useRef(null as HTMLDialogElement|null);
   React.useEffect(()=>{const dialog=dialogRef.current;if(!dialog)return;dialog.showModal();return()=>{if(dialog.open)dialog.close();};},[]);
@@ -17,8 +26,8 @@ function TruckPreview({truck,walkthrough,onClose}:{truck:any;walkthrough:any;onC
   return <dialog ref={dialogRef} className="expo-provider-dialog featured-truck-dialog" aria-labelledby="featured-truck-dialog-title" onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{if(event.target===dialogRef.current)onClose();}}>
     <article>
       <button type="button" onClick={onClose} aria-label="Close featured truck details"><X aria-hidden="true"/></button>
-      <div className="featured-truck-dialog-visual"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt={`${truck.cargo_configuration} operated by ${truck.driver_first_name}`}/></div>
-      <div className="featured-truck-dialog-copy"><small>{truck.cargo_configuration}</small><h3 id="featured-truck-dialog-title">{truckName}</h3><p><UserRound aria-hidden="true"/>{truck.driver_first_name} · {truck.driver_kind_label}</p><p><Building2 aria-hidden="true"/>{truck.name}</p><p><MapPin aria-hidden="true"/>{truck.base_place}</p></div>
+      <div className="featured-truck-dialog-visual"><DriverPortrait truck={truck}/><span className="featured-dialog-truck"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></span></div>
+      <div className="featured-truck-dialog-copy"><small>{truck.driver_kind_label}</small><h3 id="featured-truck-dialog-title">{truck.driver_first_name}</h3><p><Truck aria-hidden="true"/>{truck.cargo_configuration} · {truckName}</p><p><Building2 aria-hidden="true"/>{truck.name}</p><p><MapPin aria-hidden="true"/>{truck.base_place}</p></div>
       <div className="featured-truck-dialog-time"><Clock3 aria-hidden="true"/><span><small>Programme time</small><strong>{walkthrough?.label||'07:30–09:00 EAT'}</strong></span></div>
       <div className="expo-dialog-actions"><Link className="button" href={`/@${encodeURIComponent(truck.handle)}`}><Building2 aria-hidden="true"/>Transporter profile</Link><Link className="button secondary" href={`/?q=${encodeURIComponent(truck.platform_number||truck.cargo_configuration)}`}><Truck aria-hidden="true"/>Find this truck</Link></div>
     </article>
@@ -65,7 +74,7 @@ export function TransportExpoVenue({providers,sponsoredProviders=[],featureDate,
       {tiktokUrl?<a className="featured-programme-action live" href={tiktokUrl} target="_blank" rel="noreferrer"><Play aria-hidden="true"/><span>Live</span><ExternalLink aria-hidden="true"/></a>:null}
       <Link className="featured-programme-action" href="/" aria-label="Find open transport capacity"><Truck aria-hidden="true"/><span>Capacity</span></Link>
     </div>
-    <div className="transport-expo-venue"><div className="featured-board-stage" aria-label={`${expoGroup.label} featured truck board`}><div className="featured-board-surface"><div className="featured-board-grid">{providers.map((truck,index)=>{const walkthrough=walkthroughs.find((item:any)=>item.provider_key===truck.truck_key);const isCurrent=Boolean(walkthrough?.current);const truckName=truck.vehicle_label||[truck.vehicle_make,truck.vehicle_model].filter(Boolean).join(' ')||truck.cargo_configuration;return <button key={truck.truck_key} type="button" className={`featured-provider-tile featured-truck-tile${isCurrent?' walkthrough-current':''}${selectedIndex===index?' selected':''}`} onClick={event=>{selectedTriggerRef.current=event.currentTarget;setSelectedIndex(index);}} aria-label={`${truck.cargo_configuration}, Driver ${truck.driver_first_name}, ${truck.name}, ${walkthrough?.label}`}><span className="featured-card-number">{String(index+1).padStart(2,'0')}</span><span className="featured-card-feature">{isCurrent?'Live':'View'}</span><span className="featured-card-photo"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></span><span className="featured-card-details"><small>{truck.cargo_configuration}</small><strong>{truckName}</strong><small><UserRound aria-hidden="true"/>{truck.driver_first_name} · {truck.driver_kind_label}</small><small><Building2 aria-hidden="true"/>{truck.name}</small><em>{walkthrough?.label}</em></span></button>;})}</div></div></div></div>
+    <div className="transport-expo-venue"><div className="featured-board-stage" aria-label={`${expoGroup.label} featured truck board`}><div className="featured-board-surface"><div className="featured-board-grid">{providers.map((truck,index)=>{const walkthrough=walkthroughs.find((item:any)=>item.provider_key===truck.truck_key);const isCurrent=Boolean(walkthrough?.current);const truckName=truck.vehicle_label||[truck.vehicle_make,truck.vehicle_model].filter(Boolean).join(' ')||truck.cargo_configuration;return <button key={truck.truck_key} type="button" className={`featured-provider-tile featured-truck-tile${isCurrent?' walkthrough-current':''}${selectedIndex===index?' selected':''}`} onClick={event=>{selectedTriggerRef.current=event.currentTarget;setSelectedIndex(index);}} aria-label={`Driver ${truck.driver_first_name}, ${truck.driver_kind_label}, ${truck.cargo_configuration}, ${truck.name}, ${walkthrough?.label}`}><span className="featured-card-number">{String(index+1).padStart(2,'0')}</span><span className="featured-card-feature">{isCurrent?'Live':'View'}</span><span className="featured-card-photo"><DriverPortrait truck={truck}/><span className="featured-card-truck"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></span></span><span className="featured-card-details"><small>{truck.driver_kind_label}</small><strong>{truck.driver_first_name}</strong><small><Truck aria-hidden="true"/>{truck.cargo_configuration} · {truckName}</small><small><Building2 aria-hidden="true"/>{truck.name}</small><em>{walkthrough?.label}</em></span></button>;})}</div></div></div></div>
     <SponsoredProviders providers={sponsoredProviders}/>
     {selectedIndex!==null?<TruckPreview truck={providers[selectedIndex]} walkthrough={walkthroughs.find((item:any)=>item.provider_key===providers[selectedIndex]?.truck_key)} onClose={closePreview}/>:null}
   </div>;

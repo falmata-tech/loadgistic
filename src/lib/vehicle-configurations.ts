@@ -1,4 +1,5 @@
 export const VEHICLE_CONFIGURATIONS = [
+  { name: 'Courier car', image: '/vehicle-configurations/courier-car.jpg' },
   { name: 'Cargo van', image: '/vehicle-configurations/cargo-van.jpg' },
   { name: 'Pickup truck', image: '/vehicle-configurations/pickup-truck.jpg' },
   { name: 'Pickup stake body', image: '/vehicle-configurations/pickup-stake-body.jpg' },
@@ -10,8 +11,23 @@ export const VEHICLE_CONFIGURATIONS = [
   { name: 'Medium Stake Body Truck', image: '/vehicle-configurations/medium-stake-body-truck.jpg' },
   { name: 'Medium Box Truck', image: '/vehicle-configurations/medium-box-truck.jpg' },
   { name: 'Heavy Rigid Stake Body Truck', image: '/vehicle-configurations/heavy-rigid-stake-body-truck.jpg' },
-  { name: 'Heavy Rigid Stake Body Truck + Trailer', image: '/vehicle-configurations/heavy-rigid-stake-body-truck-trailer.jpg' }
+  { name: 'Heavy Rigid Stake Body Truck + Trailer', image: '/vehicle-configurations/heavy-rigid-stake-body-truck-trailer.jpg' },
+  { name: 'Tractor + Container Trailer', image: '/vehicle-configurations/tractor-container-trailer.jpg' },
+  { name: 'Tractor + Dry Van Trailer', image: '/vehicle-configurations/tractor-dry-van-trailer.jpg' },
+  { name: 'Tractor + Heavy Equipment Trailer', image: '/vehicle-configurations/tractor-heavy-equipment-trailer.jpg' }
 ] as const;
+
+export const TRACTOR_TRAILER_CONFIGURATIONS = VEHICLE_CONFIGURATIONS.filter(configuration =>
+  configuration.name.startsWith('Tractor + ')
+);
+
+export function isTractorTrailerConfiguration(name?: string | null) {
+  return TRACTOR_TRAILER_CONFIGURATIONS.some(configuration => configuration.name === name);
+}
+
+export function isTrailerVehicleConfiguration(name?: string | null) {
+  return name === 'Heavy Rigid Stake Body Truck + Trailer' || isTractorTrailerConfiguration(name);
+}
 
 export function vehicleConfigurationImage(name?: string | null) {
   return VEHICLE_CONFIGURATIONS.find((configuration) => configuration.name === name)?.image

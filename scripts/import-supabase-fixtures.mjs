@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {
-  applyManagedFixtureMarketPolicy,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
   selectSharedFixtureVehicleIds
 } from './fixture-market-policy.mjs';
+import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 
 const localEnvironmentPath=path.join(process.cwd(),'.env.local');
 if(fs.existsSync(localEnvironmentPath)){
@@ -32,7 +33,7 @@ if(!localHosts.has(endpoint.hostname))throw new Error('REMOTE_FIXTURE_IMPORT_REF
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
 const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
-const {featuredTruckTypeForDate}=await import('../src/lib/featured-trucks.js');
+const {featuredTruckTypeForDate,selectBalancedFeaturedTruckRows}=await import('../src/lib/featured-trucks.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
 const {privateContactDigest}=await import('../src/lib/security.js');
@@ -60,11 +61,15 @@ function rebaseFixtureRow(row){
 
 const fixtureTables=Object.fromEntries(Object.entries(fixtureDocument.tables)
   .map(([table,rows])=>[table,Array.isArray(rows)?rows.map(rebaseFixtureRow):[]]));
-fixtureTables.capacities=applyManagedFixtureMarketPolicy(fixtureTables.capacities||[],fixtureTables.vehicles||[]);
+fixtureTables.users=assignFixtureDriverPortraits(fixtureTables.users||[]);
 fixtureTables.driver_vehicle_assignments=ensureIndependentVehicleAssignments(
   fixtureTables.vehicles||[],fixtureTables.provider_profiles||[],fixtureTables.driver_vehicle_assignments||[],
   {assignedAt:new Date(fixtureAnchor+fixtureOffset).toISOString()}
 );
+fixtureTables.vehicles=applyManagedFixtureVehicleCatalog(
+  fixtureTables.vehicles||[],fixtureTables.driver_vehicle_assignments||[],fixtureTables.users||[]
+);
+fixtureTables.capacities=applyManagedFixtureMarketPolicy(fixtureTables.capacities||[],fixtureTables.vehicles||[]);
 
 function buildFeaturedFixtureTables(){
   const iso=new Date().toISOString();
@@ -87,9 +92,10 @@ function buildFeaturedFixtureTables(){
     }).filter(candidate=>candidate.owner_user_id&&candidate.name).sort((first,second)=>first.name.localeCompare(second.name));
   const candidateByOwner=new Map(candidates.map(candidate=>[candidate.organization_id?`organization:${candidate.organization_id}`:`profile:${candidate.profile_id}`,candidate]));
   const assignmentByVehicle=new Map((fixtureTables.driver_vehicle_assignments||[]).filter(assignment=>Number(assignment.active)!==0).map(assignment=>[assignment.vehicle_id,assignment]));
-  const featured=(fixtureTables.vehicles||[]).filter(vehicle=>Number(vehicle.active)!==0&&theme.configurations.includes(vehicle.cargo_configuration))
+  const eligible=(fixtureTables.vehicles||[]).filter(vehicle=>Number(vehicle.active)!==0&&theme.configurations.includes(vehicle.cargo_configuration))
     .map(vehicle=>{const owner=candidateByOwner.get(vehicle.organization_id?`organization:${vehicle.organization_id}`:`profile:${vehicle.provider_profile_id}`);const assignment=assignmentByVehicle.get(vehicle.id);return owner&&assignment?{vehicle,owner,assignment}:null;})
-    .filter(Boolean).sort((first,second)=>String(first.vehicle.platform_number||first.vehicle.id).localeCompare(String(second.vehicle.platform_number||second.vehicle.id))).slice(0,8);
+    .filter(Boolean).sort((first,second)=>String(first.vehicle.platform_number||first.vehicle.id).localeCompare(String(second.vehicle.platform_number||second.vehicle.id)));
+  const featured=selectBalancedFeaturedTruckRows(eligible,theme.configurations,8);
   if(!featured.length)throw new Error('MANAGED_FIXTURE_FEATURED_CANDIDATES_MISSING');
   const dayId=`featured-demo-${today}`;
   const featuredDay={

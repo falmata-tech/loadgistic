@@ -13,7 +13,9 @@ process.env.SUPABASE_SERVICE_ROLE_KEY=serviceRoleKey;
 const service=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 const anon=createClient(url,anonKey,{auth:{autoRefreshToken:false,persistSession:false}});
 const {getSupabaseFleetDriverPage,updateSupabaseFleetDriverAccess}=await import('../src/lib/fleet/supabase.js');
-const {createSupabaseProviderVehicle}=await import('../src/lib/fleet/vehicles-supabase.js');
+const {
+  createSupabaseProviderVehicle,setSupabaseProviderVehicleAttachedTrailer
+}=await import('../src/lib/fleet/vehicles-supabase.js');
 
 async function expectRejected(action,code){
   try{await action();}
@@ -54,6 +56,29 @@ for(const [actor,expectedOwner] of [[owner,{organization_id:owner.organizationId
 }
 await expectRejected(()=>createSupabaseProviderVehicle(companyDriver,{make:'Test',model:'Denied',cargoConfiguration:'Cargo van',plate:'DENIED'}),'FORBIDDEN');
 await expectRejected(()=>createSupabaseProviderVehicle(owner,{make:'Test',model:'Invalid',cargoConfiguration:'Imaginary truck',plate:'INVALID'}),'INVALID_VEHICLE_CONFIGURATION');
+const tractorConfigurations=[
+  'Tractor + Container Trailer','Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer'
+];
+const tractor=await createSupabaseProviderVehicle(owner,{
+  make:'Test',model:'Tractor',plate:'VERIFY-TRACTOR',cargoConfiguration:tractorConfigurations[0],
+  trailerInterchangeable:true,supportedTrailerConfigurations:tractorConfigurations
+});
+createdVehicleIds.push(tractor.id);
+const switched=await setSupabaseProviderVehicleAttachedTrailer(owner,tractor.id,tractorConfigurations[1]);
+if(switched?.id!==tractor.id||switched?.cargo_configuration!==tractorConfigurations[1]){
+  throw new Error('SUPABASE_WORKSPACE_FLEET_TRAILER_SWITCH_INVALID');
+}
+const {data:storedTractor,error:storedTractorError}=await service.from('vehicles')
+  .select('id,platform_number,category,cargo_configuration,trailer_interchangeable,supported_trailer_configurations')
+  .eq('id',tractor.id).single();
+if(storedTractorError||storedTractor.platform_number!==tractor.platform_number||storedTractor.category!=='Tractor'
+  ||storedTractor.cargo_configuration!==tractorConfigurations[1]||!storedTractor.trailer_interchangeable
+  ||storedTractor.supported_trailer_configurations.length!==3){
+  throw new Error('SUPABASE_WORKSPACE_FLEET_TRACTOR_NOT_STORED');
+}
+await expectRejected(()=>setSupabaseProviderVehicleAttachedTrailer(owner,tractor.id,'Heavy Rigid Stake Body Truck + Trailer'),'INCOMPATIBLE_TRAILER_CONFIGURATION');
+await expectRejected(()=>setSupabaseProviderVehicleAttachedTrailer(owner,createdVehicleIds[0],tractorConfigurations[0]),'NOT_INTERCHANGEABLE_TRACTOR');
+await expectRejected(()=>setSupabaseProviderVehicleAttachedTrailer(companyDriver,tractor.id,tractorConfigurations[2]),'FORBIDDEN');
 const page=await getSupabaseFleetDriverPage(owner,{page:1,pageSize:10});
 if(!page.items.length||page.total<page.items.length)throw new Error('SUPABASE_WORKSPACE_FLEET_PAGE_INVALID');
 const driver=page.items.find(item=>item.assigned_vehicle_id)||page.items[0];
@@ -96,6 +121,10 @@ const {error:anonymousCreateError}=await anon.rpc('create_provider_vehicle',{
   actor_user_id:owner.id,command:{make:'Test',model:'Denied',cargo_configuration:'Cargo van',plate:'DENIED'}
 });
 if(!anonymousCreateError)throw new Error('SUPABASE_WORKSPACE_FLEET_ANONYMOUS_CREATE_ALLOWED');
+const {error:anonymousTrailerError}=await anon.rpc('set_provider_vehicle_attached_trailer',{
+  actor_user_id:owner.id,command:{vehicle_id:tractor.id,cargo_configuration:tractorConfigurations[2]}
+});
+if(!anonymousTrailerError)throw new Error('SUPABASE_WORKSPACE_FLEET_ANONYMOUS_TRAILER_UPDATE_ALLOWED');
 
 const {data:audit,error:auditError}=await service.from('audit_logs').select('id,details')
   .eq('actor_user_id',owner.id).eq('action','DRIVER_ACCESS_UPDATED').gte('created_at',startedAt);
@@ -107,4 +136,4 @@ if(auditText.includes('@')||driver.phone&&auditText.includes(driver.phone)){
 await service.from('audit_logs').delete().gte('created_at',startedAt);
 if(createdVehicleIds.length)await service.from('vehicles').delete().in('id',createdVehicleIds);
 
-process.stdout.write('Supabase workspace dashboard, bounded Fleet page, owner-scoped truck registration, atomic owner update, audit privacy, and browser denial checks passed.\n');
+process.stdout.write('Supabase workspace dashboard, bounded Fleet page, owner-scoped fixed and interchangeable-trailer registration, attached-trailer update, atomic owner update, audit privacy, and browser denial checks passed.\n');

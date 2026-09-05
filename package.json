@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "db:reset": "npm run supabase:local:configure",
     "db:supabase:fixtures": "node scripts/import-supabase-fixtures.mjs --reset-local",
+    "db:supabase:production-pilot": "node scripts/import-production-pilot.mjs",
+    "db:supabase:production-pilot:rollback": "node scripts/import-production-pilot.mjs --rollback",
     "db:supabase:verify": "node scripts/verify-supabase-fixtures.mjs",
     "db:supabase:verify:shared": "node scripts/verify-supabase-shared-capacity.mjs",
     "db:supabase:verify:capacity": "node scripts/verify-supabase-provider-capacity.mjs",

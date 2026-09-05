@@ -5,11 +5,24 @@ import path from 'node:path';
 
 import {distanceBetweenKm} from '../src/lib/domain.js';
 import {capacityRoutePointMatch,serviceAreaGeometryMatch} from '../src/lib/route-matching.js';
-import {applyManagedFixtureMarketPolicy} from '../scripts/fixture-market-policy.mjs';
+import {
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments
+} from '../scripts/fixture-market-policy.mjs';
+import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
 
 const root=process.cwd();
 const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources/fixtures/managed-market.json'),'utf8'));
-const tables=fixture.tables;
+const rawTables=fixture.tables;
+const projectedUsers=assignFixtureDriverPortraits(rawTables.users);
+const projectedAssignments=ensureIndependentVehicleAssignments(
+  rawTables.vehicles,rawTables.provider_profiles,rawTables.driver_vehicle_assignments
+);
+const projectedVehicles=applyManagedFixtureVehicleCatalog(
+  rawTables.vehicles,projectedAssignments,projectedUsers
+);
+const tables={...rawTables,users:projectedUsers,vehicles:projectedVehicles,
+  driver_vehicle_assignments:projectedAssignments};
+const originalVehiclesById=new Map(rawTables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
 const vehiclesById=new Map(tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
 const smallVehicleTypes=new Set([
   'Cargo van','Pickup truck','Pickup stake body',
@@ -38,26 +51,30 @@ test('managed fixture presents a busy, supply-only Ethiopian freight market',()=
   assert.equal(tables.capacities.every(capacity=>['OPEN','SAVED_PARTNERS'].includes(capacity.visibility)),true);
 });
 
-test('mini trucks lead the local vehicle mix without courier cars or motorcycles',()=>{
+test('mini trucks lead a compact-delivery mix that includes courier cars but no motorcycles',()=>{
   const small=tables.vehicles.filter(vehicle=>smallVehicleTypes.has(vehicle.cargo_configuration));
-  assert.equal(small.length,100);
-  assert.ok(small.length/tables.vehicles.length>=0.69);
+  const courier=tables.vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
+  assert.equal(small.length,91);
+  assert.equal(courier.length,12);
+  assert.ok((small.length+courier.length)/tables.vehicles.length>=0.7);
   for(const type of smallVehicleTypes){
     assert.ok(small.some(vehicle=>vehicle.cargo_configuration===type),type);
   }
   const counts=Object.fromEntries([...new Set(tables.vehicles.map(vehicle=>vehicle.cargo_configuration))]
     .map(configuration=>[configuration,tables.vehicles.filter(vehicle=>vehicle.cargo_configuration===configuration).length]));
-  assert.equal(counts['Mini Open Body Truck'],22);
-  assert.equal(counts['Mini Stake Body Truck'],21);
-  assert.equal(counts['Mini Box Truck'],22);
-  assert.equal(counts['Light Stake Body Truck'],9);
-  assert.equal(counts['Light Box Truck'],9);
-  assert.equal(counts['Medium Stake Body Truck'],5);
-  assert.equal(counts['Medium Box Truck'],6);
-  assert.equal(counts['Heavy Rigid Stake Body Truck'],7);
-  assert.equal(counts['Heavy Rigid Stake Body Truck + Trailer'],7);
+  assert.equal((counts['Light Stake Body Truck']||0)+(counts['Light Box Truck']||0),15);
+  assert.equal((counts['Medium Stake Body Truck']||0)+(counts['Medium Box Truck']||0),9);
+  assert.equal(counts['Heavy Rigid Stake Body Truck'],5);
+  assert.equal(counts['Heavy Rigid Stake Body Truck + Trailer'],5);
+  assert.equal(counts['Tractor + Container Trailer'],2);
+  assert.equal(counts['Tractor + Dry Van Trailer'],2);
+  assert.equal(counts['Tractor + Heavy Equipment Trailer'],2);
   assert.equal(counts['Courier motorcycle'],undefined);
-  assert.equal(counts['Courier car'],undefined);
+  assert.equal(counts['Courier car'],12);
+  assert.equal(JSON.stringify(tables).includes('Courier motorcycle'),false);
+  assert.equal(tables.vehicles.filter(vehicle=>vehicle.trailer_interchangeable).every(vehicle=>
+    /^(FAW J6P|Shacman X3000|Sinotruk HOWO)$/.test(`${vehicle.make} ${vehicle.model}`)
+  ),true);
 });
 
 test('Partial capacity is route-only while Empty capacity may use a route or Service area',()=>{
@@ -90,7 +107,9 @@ test('local-vehicle signals remain local to their truck and connected market',()
   const managedCapacities=applyManagedFixtureMarketPolicy(tables.capacities,tables.vehicles);
   for(const capacity of managedCapacities){
     const vehicle=vehiclesById.get(capacity.vehicle_id);
-    if(!smallVehicleTypes.has(vehicle?.cargo_configuration))continue;
+    const originalConfiguration=originalVehiclesById.get(vehicle?.id)?.cargo_configuration;
+    if(!smallVehicleTypes.has(vehicle?.cargo_configuration)
+      &&!(vehicle?.cargo_configuration==='Courier car'&&smallVehicleTypes.has(originalConfiguration)))continue;
     assert.ok(capacity.location_precision_km<=5,`${capacity.id} has an oversized local privacy area`);
     const points=capacity.availability_geometry==='ROUTE'
       ?json(capacity.current_route_points_json)
@@ -210,7 +229,7 @@ test('driver and truck evidence is attached to every published fixture vehicle',
   const assignedVehicleIds=new Set(tables.driver_vehicle_assignments
     .filter(assignment=>assignment.active===1)
     .map(assignment=>assignment.vehicle_id));
-  assert.equal(assignedVehicleIds.size,122);
+  assert.equal(assignedVehicleIds.size,143);
   assert.equal(tables.drivers.length,122);
   assert.equal(tables.driver_permissions.length,122);
   assert.equal(tables.verification_requests.some(request=>request.subject_type==='DRIVER'),true);

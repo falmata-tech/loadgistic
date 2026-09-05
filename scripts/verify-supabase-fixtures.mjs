@@ -23,6 +23,30 @@ for(const [table,minimum] of Object.entries(expectedMinimums)){
   if((count||0)<minimum)throw new Error(`SUPABASE_FIXTURE_VERIFY_COUNT_FAILED:${table}:${count||0}<${minimum}`);
 }
 
+const {data:vehicleCatalog,error:vehicleCatalogError}=await service.from('vehicles')
+  .select('id,cargo_configuration,trailer_interchangeable,supported_trailer_configurations').eq('active',true);
+if(vehicleCatalogError||vehicleCatalog.length!==143)throw new Error('SUPABASE_FIXTURE_VERIFY_VEHICLE_CATALOG_READ_FAILED');
+const vehicleCount=configuration=>vehicleCatalog.filter(vehicle=>vehicle.cargo_configuration===configuration).length;
+if(vehicleCount('Courier car')!==12
+  ||vehicleCount('Tractor + Container Trailer')!==2
+  ||vehicleCount('Tractor + Dry Van Trailer')!==2
+  ||vehicleCount('Tractor + Heavy Equipment Trailer')!==2
+  ||vehicleCatalog.some(vehicle=>/motorcycle/i.test(String(vehicle.cargo_configuration)))){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_VEHICLE_CATALOG_MIX_FAILED');
+}
+const tractors=vehicleCatalog.filter(vehicle=>String(vehicle.cargo_configuration).startsWith('Tractor + '));
+if(tractors.some(vehicle=>!vehicle.trailer_interchangeable
+  ||!Array.isArray(vehicle.supported_trailer_configurations)
+  ||!vehicle.supported_trailer_configurations.includes(vehicle.cargo_configuration))){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_TRACTOR_CONFIGURATION_FAILED');
+}
+const {data:driverPortraits,error:driverPortraitError}=await service.from('profiles')
+  .select('id,driver_portrait_preset').eq('role','DRIVER').eq('active',true);
+if(driverPortraitError||driverPortraits.length!==143
+  ||driverPortraits.filter(driver=>driver.driver_portrait_preset).length!==45){
+  throw new Error('SUPABASE_FIXTURE_VERIFY_DRIVER_PORTRAIT_MIX_FAILED');
+}
+
 const {privateContactDigest}=await import('../src/lib/security.js');
 const expectedSharedVehicles=Math.ceil(expectedMinimums.vehicles*.25);
 for(const email of normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS)){

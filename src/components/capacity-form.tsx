@@ -79,7 +79,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     return <div className="capacity-console capacity-summary-console" data-testid="capacity-summary">
       <section className="capacity-saved-summary driver-map-summary">
         <div className="capacity-summary-layout">{savedMap||<div className="capacity-map-empty"><MapPinned aria-hidden="true"/><strong>No Driver location</strong><span>Open Location and refresh this truck.</span></div>}</div>
-        <header className="capacity-summary-map-header">{truckBar}</header>
+        {lockVehicleSelection?null:<header className="capacity-summary-map-header">{truckBar}</header>}
         <nav className="capacity-summary-toolrail" aria-label="Edit capacity signals">
           <button type="button" onClick={()=>setEditSection('AVAILABILITY')} aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small>Capacity</small><strong>{availabilityValue}</strong></span></button>
           {current.status!=='OFF_DUTY'?<button type="button" onClick={()=>setEditSection('ROUTE')} aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small>Coverage</small><strong>{coverageValue}</strong></span></button>:null}

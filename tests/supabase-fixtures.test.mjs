@@ -4,9 +4,10 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
-  applyManagedFixtureMarketPolicy,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
   selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS
 } from '../scripts/fixture-market-policy.mjs';
+import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
 import {FEATURED_TRUCK_DAYS} from '../src/lib/featured-trucks.js';
 
 const root=path.resolve(import.meta.dirname,'..');
@@ -59,9 +60,11 @@ test('fixture importer uses a credential-free managed source and creates the cur
 
 test('managed import assigns every independent truck to its owning Driver and supports every Featured theme',()=>{
   const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
-  const {vehicles,provider_profiles:profiles,driver_vehicle_assignments:existing}=fixture.tables;
+  const users=assignFixtureDriverPortraits(fixture.tables.users);
+  const {vehicles:sourceVehicles,provider_profiles:profiles,driver_vehicle_assignments:existing}=fixture.tables;
   const assignedAt='2026-01-01T00:00:00.000Z';
-  const assignments=ensureIndependentVehicleAssignments(vehicles,profiles,existing,{assignedAt});
+  const assignments=ensureIndependentVehicleAssignments(sourceVehicles,profiles,existing,{assignedAt});
+  const vehicles=applyManagedFixtureVehicleCatalog(sourceVehicles,assignments,users);
   const activeByVehicle=new Map(assignments.filter(assignment=>Number(assignment.active)!==0)
     .map(assignment=>[assignment.vehicle_id,assignment]));
   const profileById=new Map(profiles.map(profile=>[profile.id,profile]));
@@ -77,6 +80,52 @@ test('managed import assigns every independent truck to its owning Driver and su
     assert.equal(vehicles.some(vehicle=>Number(vehicle.active)!==0
       &&theme.configurations.includes(vehicle.cargo_configuration)&&activeByVehicle.has(vehicle.id)),true,theme.key);
   }
+});
+
+test('managed vehicle policy reuses icon-only assignments for courier cars and interchangeable tractors',()=>{
+  const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
+  const users=assignFixtureDriverPortraits(fixture.tables.users);
+  const assignments=ensureIndependentVehicleAssignments(
+    fixture.tables.vehicles,fixture.tables.provider_profiles,fixture.tables.driver_vehicle_assignments,
+    {assignedAt:'2026-01-01T00:00:00.000Z'}
+  );
+  const originalById=new Map(fixture.tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
+  const vehicles=applyManagedFixtureVehicleCatalog(fixture.tables.vehicles,assignments,users);
+  const counts=Object.groupBy(vehicles,vehicle=>vehicle.cargo_configuration);
+  const assignmentByVehicle=new Map(assignments.filter(row=>Number(row.active)!==0)
+    .map(row=>[row.vehicle_id,row.driver_user_id]));
+  const userById=new Map(users.map(user=>[user.id,user]));
+  const courier=vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
+  const tractors=vehicles.filter(vehicle=>String(vehicle.cargo_configuration).startsWith('Tractor + '));
+  const changed=[...courier,...tractors];
+
+  assert.equal(vehicles.length,143);
+  assert.equal(courier.length,12);
+  assert.equal(tractors.length,6);
+  assert.equal((counts['Cargo van']||[]).length+(counts['Pickup truck']||[]).length
+    +(counts['Pickup stake body']||[]).length+(counts['Mini Open Body Truck']||[]).length
+    +(counts['Mini Stake Body Truck']||[]).length+(counts['Mini Box Truck']||[]).length,91);
+  assert.equal((counts['Light Box Truck']||[]).length+(counts['Light Stake Body Truck']||[]).length,15);
+  assert.equal((counts['Medium Box Truck']||[]).length+(counts['Medium Stake Body Truck']||[]).length,9);
+  assert.equal((counts['Heavy Rigid Stake Body Truck']||[]).length,5);
+  assert.equal((counts['Heavy Rigid Stake Body Truck + Trailer']||[]).length,5);
+  assert.equal((counts['Tractor + Container Trailer']||[]).length,2);
+  assert.equal((counts['Tractor + Dry Van Trailer']||[]).length,2);
+  assert.equal((counts['Tractor + Heavy Equipment Trailer']||[]).length,2);
+  assert.equal(courier.filter(vehicle=>SMALL_LOCAL_VEHICLE_CONFIGURATIONS.has(
+    originalById.get(vehicle.id)?.cargo_configuration
+  )).length,9);
+  assert.equal(courier.filter(vehicle=>String(originalById.get(vehicle.id)?.cargo_configuration)
+    .startsWith('Light ')).length,3);
+  assert.equal(changed.every(vehicle=>!userById.get(assignmentByVehicle.get(vehicle.id))
+    ?.driver_portrait_preset),true);
+  assert.equal(tractors.every(vehicle=>vehicle.trailer_interchangeable===true),true);
+  assert.equal(tractors.every(vehicle=>vehicle.supported_trailer_configurations
+    .includes(vehicle.cargo_configuration)),true);
+  assert.equal(vehicles.filter(vehicle=>!tractors.includes(vehicle))
+    .every(vehicle=>vehicle.trailer_interchangeable===false
+      &&vehicle.supported_trailer_configurations.length===0),true);
+  assert.equal(vehicles.some(vehicle=>/motorcycle/i.test(String(vehicle.cargo_configuration))),false);
 });
 
 test('existing Featured programme copy adopts current capacity language without replacing custom text',()=>{

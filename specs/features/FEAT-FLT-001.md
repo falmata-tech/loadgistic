@@ -3,9 +3,9 @@ id: FEAT-FLT-001
 title: Fleet driver access and owner controls
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-TRK-001]
 problem: Fleet owners need Drivers to publish assigned-truck capacity and operate assigned shipments without surrendering company ownership or unrestricted commercial authority.
-behavior: A fleet Driver works inside one provider organization, has at most one current truck assignment, and may manage assigned-truck capacity or tracking only when the fleet owner permits each capability. Fleet owners create shipment records and retain full history; self-managed Drivers retain full provider authority.
-contracts: [FleetDriverMembership, DriverPermissionPolicy, DriverVehicleAssignment, DutyCommand, OwnerOversightProjection]
-observability: [driver_permission_audit, driver_duty_audit, denied_driver_command, update_actor]
+behavior: A fleet Driver works inside one provider organization, has at most one current truck assignment, and may manage assigned-truck capacity or tracking only when the fleet owner permits each capability. Fleet owners create shipment records and retain full history; self-managed Drivers retain full provider authority. A rigid truck has one fixed cargo configuration, while one tractor may register a bounded compatible-trailer set and expose only its currently attached trailer as its active public and private configuration.
+contracts: [FleetDriverMembership, DriverPermissionPolicy, DriverVehicleAssignment, ProviderVehicle, InterchangeableTrailerSet, AttachedTrailerCommand, DutyCommand, OwnerOversightProjection]
+observability: [driver_permission_audit, driver_duty_audit, vehicle_configuration_audit, denied_driver_command, update_actor]
 rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access commands with conservative defaults, retain transporter-owner access, and roll back by hiding owner controls while preserving stored settings; local development, Preview, and Production never fall back to SQLite.
 ---
 
@@ -17,7 +17,12 @@ Given an active Fleet transporter owner, Owner-operator, or Self-managed Driver 
 When they add a truck from My Fleet or My trucks\
 Then one active truck is created for only that organization or independent provider profile\
 And make, model, standardized cargo configuration, private plate, and a server-generated immutable Loadgistic truck number are recorded\
-And the standardized configuration catalogue offers cargo vans, pickups, mini, light, medium, heavy rigid, and heavy rigid-with-trailer trucks but not courier cars or motorcycles\
+And the standardized configuration catalogue offers courier cars, cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations but not motorcycles\
+And a Courier car is described as small-shipment transport rather than a taxi or a passenger service\
+And a rigid vehicle records exactly one fixed configuration\
+And a tractor records one or more compatible trailer configurations from Container trailer, Dry van trailer, and Heavy equipment trailer\
+And the tractor's currently attached trailer must be one of that same registered compatible set\
+And the catalogue depicts tractors as clean unbranded Chinese/European-style cab-over vehicles rather than North American long-bonnet trucks\
 And no Capacity signal, public location, Driver assignment, or document-verification outcome is inferred from registration\
 And the new truck opens in its owner-scoped detail workspace so Capacity and verification can be completed deliberately\
 And the command is atomic, validated, and audited with the authenticated owner as actor.
@@ -25,6 +30,20 @@ And the command is atomic, validated, and audited with the authenticated owner a
 Given a Company driver, unrelated provider, anonymous browser, or browser Supabase client attempts the same command\
 When the truck registration boundary rechecks authority\
 Then the command is denied without creating a truck, platform number, assignment, Capacity signal, or audit success.
+
+### Scenario: provider changes only the tractor's currently attached trailer
+
+Given an authorized provider owns a tractor registered with more than one compatible trailer configuration\
+When the provider changes the attached trailer from the owned truck detail\
+Then the selected trailer must belong to that tractor's registered compatible set\
+And the same vehicle identity, platform number, private plate, Driver assignment, documents, Capacity history, and approximate location are preserved\
+And current public and authorized private projections show only the newly attached trailer configuration\
+And the compatible set remains private provider-operating data\
+And the change is atomic and audited with the authenticated provider as actor.
+
+Given a rigid vehicle, an incompatible trailer, a Company driver, an unrelated provider, or a browser Supabase client attempts that change\
+When the attached-trailer boundary rechecks vehicle type and authority\
+Then the command is denied without changing the active configuration or emitting a success audit.
 
 ### Scenario: every authorized provider can reach truck management
 

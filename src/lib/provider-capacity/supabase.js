@@ -55,7 +55,14 @@ export async function getSupabaseProviderCapacityWorkspace(user){
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('provider_capacity_workspace',{actor_user_id:user.id});
   if(error)throw managedError('SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED',error);
-  return projectSupabaseProviderCapacityWorkspace(data);
+  const workspace=projectSupabaseProviderCapacityWorkspace(data);
+  const vehicleIds=workspace.vehicles.map(vehicle=>vehicle.id).filter(Boolean);
+  if(!vehicleIds.length)return workspace;
+  const {data:trailerDetails,error:trailerError}=await client.from('vehicles')
+    .select('id,trailer_interchangeable,supported_trailer_configurations').in('id',vehicleIds);
+  if(trailerError)throw managedError('SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED',trailerError);
+  const detailsById=new Map((trailerDetails||[]).map(vehicle=>[vehicle.id,vehicle]));
+  return {...workspace,vehicles:workspace.vehicles.map(vehicle=>({...vehicle,...detailsById.get(vehicle.id)}))};
 }
 
 function placeCommands(values){

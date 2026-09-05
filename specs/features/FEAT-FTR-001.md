@@ -3,7 +3,7 @@ id: FEAT-FTR-001
 title: Daily Featured Trucks programme
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001]
 problem: Capacity seekers need a concise daily introduction to useful truck types and the Drivers operating them, while Loadgistic needs a manageable live programme that does not consume the entire day or turn provider eligibility into an endorsement.
-behavior: Each Ethiopia calendar day has one truck-type theme and one administrator-curated ordered roster of exact active trucks with assigned Drivers. The default target is eight entries and may be changed by an administrator before publication. The deterministic 07:30–09:00 Ethiopia-time schedule divides the remaining airtime equally between selected trucks and inserts no more than four interludes of at most two minutes, naming an active sponsor when available. Public cards lead with the selected truck and Driver; the owning transporter is shown when applicable. Sponsors remain a separately managed presentation surface.
+behavior: Each Ethiopia calendar day has one truck-type theme and one administrator-curated ordered roster of exact active trucks with assigned Drivers. The default target is eight entries and may be changed by an administrator before publication. The deterministic 07:30–09:00 Ethiopia-time schedule divides the remaining airtime equally between selected trucks and inserts no more than four interludes of at most two minutes, naming an active sponsor when available. Public cards lead with the assigned Driver's first name, role, and portrait while keeping the exact selected truck and owning transporter unmistakable. Sponsors remain a separately managed presentation surface.
 contracts: [FeaturedTruckTypeRotation, FeaturedTruckCandidate, FeaturedTruckDay, FeaturedTruckSlot, FeaturedTruckAdminCommand, PublicFeaturedTruckProjection, FeaturedTruckBoardLayout, FeaturedDaySchedule, FeaturedScheduleEntry, FeaturedScheduleConfig, DailyTikTokBroadcast]
 observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, administrator roster-gap state]
 rollout: Add exact truck-and-Driver slot references additively, migrate the disposable demonstration roster to current truck candidates, retain historical provider-slot identifiers only for rollback integrity, and publish the new projection only after local Supabase, authorization, schedule, and responsive board checks pass.
@@ -20,8 +20,8 @@ And Tuesday features cargo vans\
 And Wednesday features pickups, including open and stake configurations\
 And Thursday features light-duty trucks\
 And Friday features medium-duty trucks\
-And Saturday features heavy rigid trucks\
-And Sunday features heavy rigid trucks with trailers\
+And Saturday features all heavy configurations: rigid trucks, fixed-trailer rigid trucks, and tractors with Container, Dry van, or Heavy equipment trailers\
+And Sunday features courier cars for small-shipment capacity\
 And the rotation describes the vehicle configuration being discussed rather than ranking regions, transporters, or Drivers.
 
 ### Scenario: an administrator selects exact truck-and-Driver entries
@@ -30,6 +30,8 @@ Given an administrator prepares a featured day\
 When candidates are listed\
 Then each candidate is an active truck matching that day's theme with one active assigned Driver\
 And each candidate includes the truck configuration and image, Driver first name and role label, general operating place, and owning transporter when one exists\
+And each candidate includes a safe public Driver portrait preset when the account has one\
+And a Driver without a portrait uses a clear person silhouette with a three-spoke steering wheel in front rather than a generic disc\
 And the administrator chooses an ordered set of exact candidates rather than selecting a transporter and allowing the public projection to guess a truck\
 And the default publication target is eight entries while an administrator may set a bounded target from one through twelve\
 And publication requires the selected count to equal the saved target\
@@ -93,15 +95,16 @@ And during an interlude no truck or Driver is falsely marked live\
 And the state advances without a page refresh\
 And before or after the programme the board shows Scheduled or Ended without claiming a live event.
 
-### Scenario: the truck and Driver lead every public card
+### Scenario: the Driver leads every public card without losing the truck
 
 Given a published roster has eligible slots\
 When the dedicated Featured workspace renders\
 Then it names the daily truck-type theme once in a compact programme command\
-And each numbered card leads with the exact cargo-configuration image rather than a transporter portrait\
-And each card shows the truck configuration, Driver first name, Driver role, general operating place, and scheduled interval before selection\
+And each numbered card leads with the assigned Driver portrait and first name rather than a transporter portrait or generic truck catalogue image\
+And each card shows the Driver role, exact truck configuration, truck identity, general operating place, owning transporter, and scheduled interval before selection\
 And a fleet-owned truck also shows its owning transporter while an Owner-operator or Self-managed Driver keeps the corresponding role label\
-And selecting a card opens concise truck, Driver, document-review, ownership, service, and schedule details\
+And selecting a card opens a Driver-led summary with concise truck, document-review, ownership, service, and schedule details\
+And a missing or invalid portrait preset falls back to a neutral person-and-steering-wheel profile icon without exposing a private upload path\
 And separate actions open the owning transporter profile when one exists or locate the exact truck in Open capacity\
 And the board uses one clean warm-white display surface without a second page title, nested frame, booth, hall, pinboard, or baked roster data\
 And responsive rows preserve readable vehicle artwork and text without horizontal page scrolling.
@@ -127,8 +130,8 @@ And each independently loaded map, schedule, card collection, or dialog owns its
 
 ## Contract ownership
 
-- Public page: dedicated Featured route, daily theme, compact schedule, selected truck detail, and separate Sponsors panel
+- Public page: dedicated Featured route, daily theme, compact schedule, Driver-led selected-truck detail, and separate Sponsors panel
 - Administrator: day-derived truck theme, bounded target count, ordered exact truck-and-Driver roster, public message, TikTok reference, automatic/manual schedule, and interlude settings
-- Application services: candidate eligibility, Driver assignment resolution, Ethiopia-day activation, deterministic 07:30–09:00 schedule, sponsor interlude assignment, and public safe projection
+- Application services: candidate eligibility, Driver assignment and safe portrait resolution, Ethiopia-day activation, deterministic 07:30–09:00 schedule, sponsor interlude assignment, and public safe projection
 - Persistence: additive day configuration and ordered slot references to exact vehicle and Driver identities, with service-role-only commands and audit
 - Tests: schedule boundaries and equality, candidate ownership/assignment, authorization, projection privacy, responsive board/loading geometry, and focused desktop/mobile visual review

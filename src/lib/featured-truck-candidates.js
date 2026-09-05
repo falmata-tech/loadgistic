@@ -1,4 +1,5 @@
 import {featuredTruckTypeForDate} from './featured-trucks.js';
+import {driverPortraitUrl} from './driver-portraits.js';
 
 function providerKey(candidate){return candidate.provider_organization_id?`organization:${candidate.provider_organization_id}`:`profile:${candidate.provider_profile_id}`;}
 
@@ -18,7 +19,7 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
   const driverIds=[...new Set([...assignmentByVehicle.values()].map(item=>item.driver_user_id))];
   if(!driverIds.length)return [];
   const [{data:profiles,error:profileError},{data:fleetDrivers,error:fleetDriverError}]=await Promise.all([
-    client.from('profiles').select('id,full_name,active').in('id',driverIds),
+    client.from('profiles').select('id,full_name,active,driver_portrait_preset').in('id',driverIds),
     client.from('drivers').select('user_id,name,active').in('user_id',driverIds)
   ]);
   if(profileError||fleetDriverError)throw new Error('SUPABASE_FEATURED_DRIVERS_FAILED',{cause:profileError||fleetDriverError});
@@ -38,6 +39,7 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
       vehicle_id:vehicle.id,
       driver_user_id:assignment.driver_user_id,
       driver_first_name:driverName.split(/\s+/)[0]||'Driver',
+      driver_portrait_url:driverPortraitUrl(profile.driver_portrait_preset),
       driver_kind:driverKind,
       driver_kind_label:driverKind==='COMPANY_DRIVER'?'Company driver':provider.provider_kind_label,
       platform_number:vehicle.platform_number,

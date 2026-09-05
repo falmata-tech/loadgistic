@@ -3,7 +3,7 @@
 import React from 'react';
 import L from 'leaflet';
 import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
-import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
+import { isTrailerVehicleConfiguration, vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { BaseMapTiles } from '@/components/base-map-tiles';
 import { buildCapacityMarkerGroups } from '@/lib/capacity-map-clustering';
 
@@ -120,7 +120,7 @@ function Bounds({items,viewer,selectedId,keepItemsInView}:{items:Signal[];viewer
 function truckMarker(item:Signal,selected=false,zoom=10,visualOffset:[number,number]=[0,0]){
   const partial=item.status==='PARTIAL';
   const statusClass=partial?'partial':'empty';
-  const trailerConfiguration=item.cargo_configuration==='Heavy Rigid Stake Body Truck + Trailer';
+  const trailerConfiguration=isTrailerVehicleConfiguration(item.cargo_configuration);
   const image=vehicleConfigurationImage(item.cargo_configuration);
   const size:[number,number]=selected?[104,120]:zoom<=6?[64,75]:zoom<=8?[72,84]:[88,102];
   return L.divIcon({className:`capacity-truck-map-marker vehicle-image-marker ${statusClass}${trailerConfiguration?' trailer-configuration':''}${selected?' selected':''}`,html:`<span class="vehicle-marker-image"><span class="vehicle-marker-content"><img src="${image}" alt=""/></span></span>`,iconSize:size,iconAnchor:[size[0]/2-visualOffset[0],size[1]-visualOffset[1]]});

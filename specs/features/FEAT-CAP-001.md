@@ -75,8 +75,8 @@ Given public capacity contains more results than one response\
 When any visitor opens the Map or requests another result batch\
 Then the server returns a stable cursor page of 12 through 16 independently actionable cards\
 And the Market does not duplicate those signals in a ranked truck-list mode\
-And an explicit Load more trucks action fetches the next bounded map batch\
-And a Load more capacity fallback remains keyboard accessible\
+And the map automatically requests the next bounded batch without a manual Load more control\
+And loading, end-of-results, and retry states remain keyboard-readable without becoming a ranked list\
 And filters, loaded cursor state, and scroll position survive a profile/detail round trip\
 And the end of results is stated plainly.
 
@@ -119,7 +119,8 @@ When demonstration capacity geometry is rebuilt\
 Then every current Capacity route contains two through five distinct cities in a plausible road-travel sequence\
 And the route passes through or immediately beside the truck's approximate current city rather than jumping to an unrelated part of Ethiopia\
 And every Service area uses a center near the truck's approximate current city and a boundary that contains that center\
-And cargo vans, pickups, and mini trucks expose current capacity geography within 30 kilometres of their base city or town\
+And cargo vans, pickups, mini trucks, and most courier cars expose current capacity geography within 30 kilometres of their base city or town\
+And a bounded minority of courier cars demonstrate small-shipment service on plausible intercity or regional road corridors\
 And every provider regular-service signal contains or closely approaches the approximate current location of every one of that provider's demonstration trucks\
 And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a nearby center and enclosing boundary\
 And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
@@ -143,7 +144,8 @@ And clustering uses a screen cell at least as wide as the corresponding unselect
 And a cluster that remains crowded at maximum zoom stays a single bounded cluster and opens an accessible truck chooser instead of exploding its members into an overlapping ring\
 And the complete map key remains visible without another action and uses pointed pins for capacity status, a polygon for Service area, and solid or dashed polylines for Capacity routes rather than repeating same-shaped color bars\
 And each unclustered truck marker is a sufficiently large pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types before selecting it\
-And the truck artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while a heavy rigid truck with trailer keeps its own artwork framed on the cab and a clearly visible part of the trailer\
+And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
+And a tractor marker and detail use only its currently attached trailer configuration rather than combining every compatible trailer into one public signal\
 And the marker uses a complete green ring and tail for Empty or a complete bright-yellow ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
 And no percentage or percentage-progress ring appears in a public truck marker\
 And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
@@ -164,7 +166,7 @@ And on narrow screens the selected truck information card follows directly below
 And the selected information card has no internal scrollbar or full-screen takeover\
 And an explicit close icon dismisses the selected card and restores the full clustered map\
 And the map shows the visitor's browser-only You marker when permitted\
-And list and map selection remain synchronized.
+And no hidden list-view state is required to select or revisit a truck.
 
 ### Scenario: selected-truck map language is reused safely on provider microsites
 
