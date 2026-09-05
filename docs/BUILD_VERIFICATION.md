@@ -1,7 +1,37 @@
 # Build Verification
 
-Evidence is recorded through 2026-09-03 with Node.js v22.16.0. Each dated
+Evidence is recorded through 2026-09-05 with Node.js v22.16.0. Each dated
 checkpoint is scoped to the code and environment verified at that time.
+
+## Hosted signup plan-catalogue correction — 2026-09-05
+
+- A real hosted signup reached verified provider details but the atomic
+  provisioning command rejected it. A sanitized read-only diagnostic proved the
+  confirmed identity remained inactive, association-free, and retry-eligible;
+  it also found zero active Business, Transporter, or Driver plans. No partial
+  workspace, application, or provider profile was created.
+- `072_required_plan_catalog.sql` installs the three minimum plans independently
+  of optional demo fixtures and uses `ON CONFLICT DO NOTHING`, so replay neither
+  duplicates a plan nor reactivates one deliberately disabled by an operator.
+- Five focused signup contracts and TypeScript passed. A clean isolated local
+  reset replayed migrations through `072`, rebuilt 154 profiles and 143 trucks,
+  and passed every managed Auth/signup, capacity, Tracking, Storage,
+  Verification/Billing, Support, Fleet, and administrator verifier. The complete
+  spec/source, unit, TypeScript, and optimized 77-route build gate also passed.
+- Before the hosted change, an encrypted AES-256-GCM logical backup of the
+  linked public/Auth/Storage data was created, decrypted in memory for integrity,
+  and checksummed without printing its contents or key. Hosted migrations
+  `070`–`072` then applied in order. A second sanitized diagnostic found exactly
+  one active Business, Transporter, and Driver plan and confirmed the failed
+  identity is still clean and eligible to retry.
+
+### Deployment lesson
+
+- A production schema can be structurally complete while a required domain
+  catalogue is empty. Provider signup and release smoke checks must verify the
+  active Transporter and Driver plan preconditions independently of demo-market
+  import; optional fixture data must never be the only source of an operational
+  signup dependency.
 
 ## Demo market geography correction — 2026-09-04
 

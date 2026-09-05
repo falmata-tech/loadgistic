@@ -6,6 +6,7 @@ const migration=fs.readFileSync('supabase/migrations/045_managed_provider_signup
 const eligibilityMigration=fs.readFileSync('supabase/migrations/060_provider_signup_eligibility.sql','utf8');
 const profileAuthorityMigration=fs.readFileSync('supabase/migrations/061_lock_profile_authority.sql','utf8');
 const reconciliationMigration=fs.readFileSync('supabase/migrations/065_reconcile_prebootstrap_auth_profiles.sql','utf8');
+const requiredPlanMigration=fs.readFileSync('supabase/migrations/072_required_plan_catalog.sql','utf8');
 const route=fs.readFileSync('src/app/api/applications/route.ts','utf8');
 const google=fs.readFileSync('src/app/api/applications/google/route.ts','utf8');
 const otpRequest=fs.readFileSync('src/app/api/applications/email-otp/request/route.ts','utf8');
@@ -86,6 +87,18 @@ test('signup intent and provisioning commands are server-only and authority acti
     assert.match(reconciliationMigration,new RegExp(`not exists\\(select 1 from public\\.${association}`,'i'));
   }
   assert.match(reconciliationMigration,/'DRIVER'::public\.user_role[\s\S]*false/i);
+});
+
+test('fresh managed databases receive the minimum idempotent signup plan catalogue',()=>{
+  for(const [code,audience] of [
+    ['BUSINESS_CAPACITY','BUSINESS'],
+    ['FLEET_DEMAND','TRANSPORTER'],
+    ['SELF_MANAGED_DRIVER','DRIVER']
+  ]){
+    assert.match(requiredPlanMigration,new RegExp(`'${code}'[\\s\\S]*?'${audience}'`));
+  }
+  assert.match(requiredPlanMigration,/on conflict\(code\) do nothing/i);
+  assert.doesNotMatch(requiredPlanMigration,/on conflict[\s\S]*do update/i);
 });
 
 test('public signup proves identity first and provisions only after an authenticated details submission',()=>{

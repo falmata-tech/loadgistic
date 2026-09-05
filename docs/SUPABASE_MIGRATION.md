@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `069` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `072` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
 
 ## Current migration coverage
 
@@ -50,6 +50,8 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `065`: safely reconciles eligible confirmed Auth identities created before the managed profile bootstrap without touching platform or already-associated identities.
 - `066`–`068`: adds owner-scoped vehicle registration, secret-free administrator record details and overview counts, and the current vehicle catalogue after retiring courier cars and motorcycles.
 - `069`: changes Daily Featured to an exact truck-and-Driver morning roster, while preserving provider ownership and sponsor-break attribution.
+- `070`–`071`: adds bounded Driver portrait presets and interchangeable tractor-trailer configuration while retaining one truck identity and history.
+- `072`: installs the minimum Business, Fleet transporter, and Independent Driver plan catalogue independently of optional demo data; an existing or deliberately disabled plan is never overwritten.
 
 On 2026-09-04, a newly empty isolated local database replayed the complete
 `001`–`069` chain, rebuilt the managed fixture, and passed every guarded live
@@ -63,10 +65,13 @@ RPC denial.
 
 On 2026-09-04, a credential-free logical snapshot verified that the linked
 hosted Loadgistic project had no application tables. The reviewed `001`–`069`
-chain was then applied in numeric order and the local/remote migration histories
-matched. The seven required private Storage buckets were present and anonymous
-bucket discovery returned no records. No local fixture identities or demo market
-records were imported into Production.
+chain was then applied in numeric order. On 2026-09-05, an encrypted logical
+backup was created and verified before additive migrations `070`–`072` were
+applied; local and remote migration histories then matched through `072`. The
+three required active plan rows are present, the seven required private Storage
+buckets remain present, and anonymous bucket discovery returns no records. No
+local fixture identities or demo market records have been imported into
+Production.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -86,7 +91,7 @@ Managed identity has no runtime selector or SQLite fallback: login and logout us
 
 Health and place search use PostgreSQL unconditionally. `/api/health` counts the managed profile projection and fails closed with a non-secret `database-unavailable` blocker if PostgreSQL cannot be reached. `/api/places` uses a bounded server-only Supabase query and returns the public place contract.
 
-The public Truck Market uses a dedicated managed application port. Its service-role RPC returns only 12–16 rows plus one cursor look-ahead, evaluates every multi-city route segment and complete Service-area polygon in PostgreSQL, keeps text search literal, enriches only the bounded result set, and strips all private current geometry before returning a row. The server then produces the established safe badge, approximate-distance, regular-service, and geographic-match labels. Clean reset plus live fixture verification covers cursor uniqueness, status and route filters, private fallback, badge shape, and anonymous RPC denial.
+The public Truck Market uses a dedicated managed application port. Its service-role RPC returns only 12–16 rows plus one cursor look-ahead, evaluates every multi-city route segment and complete Service-area polygon in PostgreSQL, keeps text search literal, enriches only the bounded result set, and excludes every Private-network truck before returning a row. The server then produces the established safe badge, approximate-distance, regular-service, and geographic-match labels only for Public Market records. Clean reset plus live fixture verification covers cursor uniqueness, status and route filters, complete Private-network exclusion, badge shape, and anonymous RPC denial.
 
 Published transporter microsites use a second application port with explicit Supabase selections for the public page, active fleet, assigned Driver first name and callback, separate Driver/truck evidence badges, current safe Capacity projection, independently visible contacts, fixture portrait, and the latest 20 published review notes. PostgreSQL calculates the all-review count and average through a service-role-only aggregate. Hidden contacts, exact coordinates, private proof paths, surnames, and unknown or unpublished handles remain excluded.
 

@@ -6,7 +6,7 @@ problem: Transport providers need low-friction operating accounts while capacity
 behavior: A public user first proves a Google or numeric email-code identity through the shared account-access surface. An active identity enters its authorized workspace, while a new or signup-eligible inactive provider identity continues to one concise provider-setup step and chooses Fleet transporter, Owner-operator, or Self-managed driver; only then are the selected operating model, active provider workspace, draft public page, approved signup record, and seven-day trial provisioned atomically. Capacity-seeker, password, and company-Driver signup are absent, and signup never implies document verification.
 contracts: [SignupIdentityHandoff, SignupIntent, SignupOperatingModel, ManagedIdentityProof, SignupRecord, WorkspaceProvisioner, TrialProvisioner]
 observability: [signup_audit, workspace_provisioned, trial_provisioned, rate_limit_outcome]
-rollout: Add the managed signup-intent table, inactive Auth-profile bootstrap, and transactional provisioning command additively. Keep signup disabled if Google, callback, database, or trial-plan configuration is unavailable. Roll back by disabling new signup initiation and allowing already provisioned accounts to keep signing in; never reactivate Production passwords or delete completed signup records.
+rollout: Add the managed signup-intent table, inactive Auth-profile bootstrap, transactional provisioning command, and minimum trial-plan catalogue additively. Keep signup disabled if Google, callback, database, or an operator-disabled trial plan is unavailable. Roll back by disabling new signup initiation and allowing already provisioned accounts to keep signing in; never reactivate Production passwords or delete completed signup records.
 ---
 
 # Account signup
@@ -84,9 +84,18 @@ And the Loadgistic profile remains inactive\
 And no partially usable workspace or orphan approved signup record remains\
 And retrying cannot create a second workspace for the same authenticated identity.
 
+### Scenario: a fresh managed deployment can provision a trial
+
+Given the ordered database migrations are applied to an empty hosted project\
+When an eligible fleet transporter, Owner-operator, or Self-managed driver completes signup\
+Then the minimum Business, Fleet transporter, and Independent Driver plan catalogue already exists without depending on demo fixtures\
+And Fleet transporter signup selects the active Transporter plan\
+And Owner-operator or Self-managed driver signup selects the active Driver plan\
+And replaying the catalogue migration does not duplicate plans or reactivate a plan an operator deliberately disabled.
+
 ## Contract ownership
 
 - Inbound adapter: `/apply`, `/api/applications`, `/api/applications/google`, `/api/applications/email-otp/*`, and the fixed managed-auth callback
 - Application service: provider signup-intent and completion commands
-- Persistence: `045_managed_provider_signup.sql`, `060_provider_signup_eligibility.sql`, and `061_lock_profile_authority.sql` behind the service-role-only Supabase adapter
+- Persistence: `045_managed_provider_signup.sql`, `060_provider_signup_eligibility.sql`, `061_lock_profile_authority.sql`, and `072_required_plan_catalog.sql` behind the service-role-only Supabase adapter
 - Tests: managed signup contract, local Supabase eligibility and role-escalation verification, and browser handoff coverage
