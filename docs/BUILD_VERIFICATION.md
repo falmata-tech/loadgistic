@@ -3,6 +3,35 @@
 Evidence is recorded through 2026-09-05 with Node.js v22.16.0. Each dated
 checkpoint is scoped to the code and environment verified at that time.
 
+## Production pilot import — 2026-09-05
+
+- The operator explicitly approved an additive hosted import of 152 synthetic
+  Transporter/Driver identities, 143 trucks with current Capacity signals, and
+  eight current Daily Featured slots. The importer initially failed closed
+  because Production had no active administrator. After separate operator
+  confirmation, one existing confirmed, association-free operator identity was
+  promoted to the sole active administrator; no synthetic administrator or
+  Support identity was created.
+- The exact-project-confirmed importer wrote 3,691 places, 152 profiles, nine
+  fleet organizations, 21 independent provider profiles, 30 public provider
+  pages, 143 trucks, 143 active Driver assignments and current Capacity
+  records, 335 verification records, one published Featured day with eight
+  truck/Driver slots, and four current Sponsor placements. Pilot identities use
+  the deterministic `loadgistic-production-pilot-v1` namespace, reserved
+  non-deliverable addresses, and random unrecoverable credentials.
+- An independent service-role verifier found exactly 152 namespaced Auth
+  identities: nine Transporters and 143 Drivers, with zero pilot Admin, Support,
+  or unknown roles. It also confirmed 152 active pilot profiles, 143 trucks, 143
+  Capacity records, one published Featured day, eight slots, and the private
+  pilot Storage object. The live bounded Capacity endpoint returned 14 items and
+  `/featured` rendered all eight cards, both with HTTP `200`.
+- Headless Chromium verified the live Netlify desktop and 390-by-844 phone
+  states. Both rendered map signals and all eight Featured cards with zero
+  broken truck, marker, or portrait images. The pre-change encrypted backup and
+  deterministic exact rollback remain available. Production health still
+  truthfully reports the managed upload-malware-scanner as the remaining launch
+  blocker.
+
 ## Hosted signup plan-catalogue correction — 2026-09-05
 
 - A real hosted signup reached verified provider details but the atomic
@@ -30,7 +59,8 @@ checkpoint is scoped to the code and environment verified at that time.
   Login, and the new tractor asset; an unauthenticated `/apply` correctly
   returned `307` to Login. Health confirms Supabase PostgreSQL and Storage but
   still reports the managed Production upload-malware-scanner as a launch
-  blocker. The separately guarded synthetic Production-pilot import was not run.
+  blocker. The separately guarded synthetic Production-pilot import remained
+  gated at this checkpoint and was completed in the rollout recorded above.
 
 ### Deployment lesson
 

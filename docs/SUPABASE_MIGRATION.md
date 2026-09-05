@@ -69,9 +69,13 @@ chain was then applied in numeric order. On 2026-09-05, an encrypted logical
 backup was created and verified before additive migrations `070`–`072` were
 applied; local and remote migration histories then matched through `072`. The
 three required active plan rows are present, the seven required private Storage
-buckets remain present, and anonymous bucket discovery returns no records. No
-local fixture identities or demo market records have been imported into
-Production.
+buckets remain present, and anonymous bucket discovery returns no records. After
+explicit operator approval, the exact-project-confirmed additive pilot importer
+created 152 namespaced synthetic Transporter/Driver identities, 143 trucks and
+current Capacity signals, one published current-day roster with eight Featured
+slots, and one private verification placeholder in Production. It created no
+synthetic Admin or Support identity. An encrypted pre-import backup and the
+deterministic namespaced rollback are retained.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
