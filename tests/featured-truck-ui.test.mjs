@@ -15,6 +15,8 @@ test('public featured cards lead with the assigned Driver portrait and retain th
   assert.match(venue,/truck\.cargo_configuration/);
   assert.match(venue,/truck\.name/);
   assert.match(venue,/truck\.truck_key/);
+  assert.match(venue,/truck\.public_capacity_available/);
+  assert.match(venue,/Find this truck/);
   assert.match(venue,/driver-portrait-fallback/);
   assert.match(venue,/driver-steering-wheel/);
   assert.doesNotMatch(venue,/Disc3/);

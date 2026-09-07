@@ -11,11 +11,18 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
   if(vehicleError)throw new Error('SUPABASE_FEATURED_TRUCKS_FAILED',{cause:vehicleError});
   const vehicleIds=(vehicles||[]).map(vehicle=>vehicle.id);
   if(!vehicleIds.length)return [];
-  const {data:assignments,error:assignmentError}=await client.from('driver_vehicle_assignments')
-    .select('id,vehicle_id,driver_user_id,assigned_at,active').eq('active',true).in('vehicle_id',vehicleIds).order('assigned_at',{ascending:false});
+  const [{data:assignments,error:assignmentError},{data:capacities,error:capacityError}]=await Promise.all([
+    client.from('driver_vehicle_assignments')
+      .select('id,vehicle_id,driver_user_id,assigned_at,active').eq('active',true).in('vehicle_id',vehicleIds).order('assigned_at',{ascending:false}),
+    client.from('capacities')
+      .select('id,vehicle_id,visibility,market_status,status,updated_at').in('vehicle_id',vehicleIds).order('updated_at',{ascending:false}).order('id',{ascending:false})
+  ]);
   if(assignmentError)throw new Error('SUPABASE_FEATURED_DRIVERS_FAILED',{cause:assignmentError});
+  if(capacityError)throw new Error('SUPABASE_FEATURED_CAPACITY_FAILED',{cause:capacityError});
   const assignmentByVehicle=new Map();
   for(const assignment of assignments||[])if(!assignmentByVehicle.has(assignment.vehicle_id))assignmentByVehicle.set(assignment.vehicle_id,assignment);
+  const capacityByVehicle=new Map();
+  for(const capacity of capacities||[])if(!capacityByVehicle.has(capacity.vehicle_id))capacityByVehicle.set(capacity.vehicle_id,capacity);
   const driverIds=[...new Set([...assignmentByVehicle.values()].map(item=>item.driver_user_id))];
   if(!driverIds.length)return [];
   const [{data:profiles,error:profileError},{data:fleetDrivers,error:fleetDriverError}]=await Promise.all([
@@ -32,6 +39,8 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
     if(!provider?.eligible||!assignment||!profile?.active||(vehicle.organization_id&&!fleetDriver?.active))return [];
     const driverName=String(fleetDriver?.name||profile.full_name||'Driver').trim();
     const driverKind=vehicle.organization_id?'COMPANY_DRIVER':provider.provider_kind;
+    const capacity=capacityByVehicle.get(vehicle.id);
+    const capacityStatus=String(capacity?.market_status||capacity?.status||'').toUpperCase();
     return [{
       ...provider,
       provider_key:ownerKey,
@@ -48,6 +57,7 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
       vehicle_make:vehicle.make,
       vehicle_model:vehicle.model,
       cargo_configuration:vehicle.cargo_configuration,
+      public_capacity_available:capacity?.visibility==='OPEN'&&['EMPTY','PARTIAL'].includes(capacityStatus),
       eligible:true,
       theme
     }];

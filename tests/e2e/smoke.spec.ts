@@ -12,7 +12,8 @@ async function login(page:any,email:string){
 }
 
 async function choosePlace(page:any,label:string,query:string,option:RegExp){
-  const input=page.getByLabel(label);
+  const accessibleLabel=new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?: \\(optional\\))?$`,'i');
+  const input=page.getByRole('combobox',{name:accessibleLabel});
   await input.fill(query);
   await expect(page.getByRole('option',{name:option}).first()).toBeVisible({timeout:10_000});
   await page.getByRole('option',{name:option}).first().click();
@@ -43,31 +44,36 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(page.getByRole('button',{name:'Providers',exact:true})).toHaveCount(0);
   await expect(page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
   await page.getByRole('button',{name:'Filters'}).click();
-  const filterDialog=page.getByRole('dialog',{name:'Truck filters'});
+  const filterDialog=page.getByRole('dialog',{name:'Filters'});
   await expect(filterDialog).toBeVisible();
-  await expect(filterDialog.locator('#capacity-status-filter')).toBeVisible();
-  await expect(filterDialog.getByLabel('Shipment origin')).toBeVisible();
-  await expect(filterDialog.getByLabel('Shipment destination')).toBeVisible();
-  await choosePlace(filterDialog,'Shipment origin','Adama',/Adama, Ethiopia/i);
-  await choosePlace(filterDialog,'Shipment destination','Hawassa',/Hawassa, Ethiopia/i);
-  await expect(filterDialog.getByLabel('Origin tolerance')).toBeVisible();
-  await expect(filterDialog.getByLabel('Destination tolerance')).toBeVisible();
-  await expect(filterDialog.getByLabel('Capacity signal type')).toBeVisible();
-  await filterDialog.getByLabel('Capacity signal type').selectOption('RADIUS');
+  await expect(filterDialog.getByRole('radio',{name:'Empty Full truck available'})).toBeVisible();
+  await expect(filterDialog.getByRole('combobox',{name:/^Origin(?: \(optional\))?$/})).toBeVisible();
+  await expect(filterDialog.getByRole('combobox',{name:/^Destination(?: \(optional\))?$/})).toBeVisible();
+  await choosePlace(filterDialog,'Origin','Adama',/Adama, Ethiopia/i);
+  await choosePlace(filterDialog,'Destination','Hawassa',/Hawassa, Ethiopia/i);
+  await expect(filterDialog.getByLabel('Origin range')).toBeVisible();
+  await expect(filterDialog.getByLabel('Destination range')).toBeVisible();
+  await filterDialog.getByText('Service area',{exact:true}).click();
   await expect(filterDialog.getByLabel('Service area place')).toBeVisible();
-  await expect(filterDialog.getByLabel('Area tolerance')).toBeVisible();
+  await expect(filterDialog.getByLabel('Area range')).toBeVisible();
   await choosePlace(filterDialog,'Service area place','Addis',/Addis Ababa, Ethiopia/i);
-  await expect(filterDialog.getByLabel('Travel direction')).toBeVisible();
+  await expect(filterDialog.getByLabel('Direction')).toBeVisible();
+  await filterDialog.getByText('Partial',{exact:true}).click();
+  await expect(filterDialog.getByRole('radio',{name:'Service area Empty trucks only'})).toBeDisabled();
+  await expect(filterDialog.getByRole('radio',{name:'Capacity route Empty or Partial'})).toBeChecked();
+  await expect(filterDialog.locator('.capacity-vehicle-picker')).not.toHaveAttribute('open','');
+  await filterDialog.locator('.capacity-vehicle-picker>summary').click();
+  await expect(filterDialog.getByRole('radio',{name:'Cargo van'})).toBeVisible();
   await expect(filterDialog.getByLabel('Truck configuration')).toBeVisible();
   await expect(filterDialog.getByLabel('Load type')).toBeVisible();
   await expect(filterDialog.getByLabel('Minimum available space')).toHaveCount(0);
-  await expect(filterDialog.getByLabel('Stop options')).toBeVisible();
-  await expect(filterDialog.getByLabel('Last updated')).toBeVisible();
-  const nearToggle=filterDialog.getByLabel('Limit results to trucks near my current area');
+  await expect(filterDialog.getByLabel('Stops')).toBeVisible();
+  await expect(filterDialog.getByLabel('Updated')).toBeVisible();
+  const nearToggle=filterDialog.getByLabel('Show trucks near my area');
   await expect(nearToggle).toBeVisible();
   if(await nearToggle.isEnabled()){
     await nearToggle.check();
-    await expect(filterDialog.getByLabel('Truck location within')).toBeVisible();
+    await expect(filterDialog.getByLabel('Distance')).toBeVisible();
   }
   await filterDialog.getByRole('button',{name:'Close filters'}).click();
   await expect(filterDialog).toBeHidden();
@@ -145,12 +151,17 @@ test('public entry makes capacity immediately usable without an account',async({
   const featuredProfile=providerDialog.getByRole('link',{name:'Transporter profile'});
   await expect(featuredProfile).toHaveAttribute('href',/^\/@[a-z0-9-]+$/);
   const featuredMap=providerDialog.getByRole('link',{name:'Find this truck'});
-  await expect(featuredMap).toHaveAttribute('href',/^\/?\?q=.+$/);
-  await featuredMap.click();
-  await expect(page).toHaveURL(/\?q=.+$/);
-  await expect(providerDialog).toBeHidden();
-  await expect(page.locator('.public-capacity-map')).toBeVisible();
-  await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+  if(await featuredMap.count()){
+    await expect(featuredMap).toHaveAttribute('href',/^\/?\?q=.+$/);
+    await featuredMap.click();
+    await expect(page).toHaveURL(/\?q=.+$/);
+    await expect(providerDialog).toBeHidden();
+    await expect(page.locator('.public-capacity-map')).toBeVisible();
+    await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+  }else{
+    await expect(providerDialog.getByRole('link')).toHaveCount(1);
+    await providerDialog.getByRole('button',{name:'Close featured truck details'}).click();
+  }
   await page.goto('/capacity?q=Fuso');
   await expect(page).toHaveURL(/\?q=Fuso$/);
   await expect(page.getByRole('combobox',{name:'Search published truck capacity'})).toHaveValue('Fuso');
@@ -231,6 +242,21 @@ test('public search and filters use every multi-city route and Service-area poin
   expect(routeMatchResponse.ok()).toBeTruthy();
   expect((await routeMatchResponse.json()).items.some((item:any)=>item.id===routeSignal.id)).toBe(true);
 
+  const combinedRouteQuery=new URLSearchParams(routeQuery);
+  combinedRouteQuery.set('status',routeSignal.status);
+  combinedRouteQuery.set('vehicleCategory',routeSignal.cargo_configuration);
+  if(routeSignal.accepts_full_load)combinedRouteQuery.set('loadType','FTL');
+  else if(routeSignal.accepts_partial_load)combinedRouteQuery.set('loadType','PTL');
+  if(routeSignal.accepts_multi_pick)combinedRouteQuery.set('stopOption','MULTI_PICK');
+  else if(routeSignal.accepts_multi_drop)combinedRouteQuery.set('stopOption','MULTI_DROP');
+  const combinedRouteResponse=await page.request.get(`/api/public/capacity?${combinedRouteQuery.toString()}`);
+  expect(combinedRouteResponse.ok()).toBeTruthy();
+  expect((await combinedRouteResponse.json()).items.some((item:any)=>item.id===routeSignal.id)).toBe(true);
+  combinedRouteQuery.set('status',routeSignal.status==='EMPTY'?'PARTIAL':'EMPTY');
+  const contradictoryRouteResponse=await page.request.get(`/api/public/capacity?${combinedRouteQuery.toString()}`);
+  expect(contradictoryRouteResponse.ok()).toBeTruthy();
+  expect((await contradictoryRouteResponse.json()).items.some((item:any)=>item.id===routeSignal.id)).toBe(false);
+
   const areaSignal=await findCapacitySignal(page,{geometry:'RADIUS'},(item:any)=>item.capacity_area_boundary.length>=3);
   expect(areaSignal).toBeTruthy();
   const boundary=areaSignal.capacity_area_boundary[1];
@@ -250,9 +276,9 @@ test('public search and filters use every multi-city route and Service-area poin
 test('route filters accept either endpoint without requiring the other',async({page}:{page:any})=>{
   await page.goto('/capacity');
   await page.getByRole('button',{name:'Filters'}).click();
-  const filterDialog=page.getByRole('dialog',{name:'Truck filters'});
-  await choosePlace(filterDialog,'Shipment origin','Adama',/Adama, Ethiopia/i);
-  await filterDialog.getByRole('button',{name:'Apply filters'}).click();
+  const filterDialog=page.getByRole('dialog',{name:'Filters'});
+  await choosePlace(filterDialog,'Origin','Adama',/Adama, Ethiopia/i);
+  await filterDialog.getByRole('button',{name:'Show matching trucks'}).click();
   await expect(filterDialog).toBeHidden();
   await expect(page).toHaveURL(/originPlaceRef=/);
   expect(new URL(page.url()).searchParams.get('destinationPlaceRef')).toBe('');
@@ -261,8 +287,8 @@ test('route filters accept either endpoint without requiring the other',async({p
 
   await page.goto('/capacity');
   await page.getByRole('button',{name:'Filters'}).click();
-  await choosePlace(filterDialog,'Shipment destination','Hawassa',/Hawassa, Ethiopia/i);
-  await filterDialog.getByRole('button',{name:'Apply filters'}).click();
+  await choosePlace(filterDialog,'Destination','Hawassa',/Hawassa, Ethiopia/i);
+  await filterDialog.getByRole('button',{name:'Show matching trucks'}).click();
   await expect(filterDialog).toBeHidden();
   await expect(page).toHaveURL(/destinationPlaceRef=/);
   expect(new URL(page.url()).searchParams.get('originPlaceRef')).toBe('');
@@ -312,10 +338,12 @@ test('capacity Market is map-only and loads bounded truck batches',async({page}:
   await expect(page.getByRole('navigation',{name:'Truck list pagination'})).toHaveCount(0);
   await expect(commandColumn.getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
   await page.getByRole('button',{name:/Filters/}).click();
-  await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier motorcycle'})).toHaveCount(0);
-  await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Courier car'})).toHaveCount(1);
-  await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Mini Open Body Truck'})).toHaveCount(1);
-  await expect(page.getByLabel('Truck configuration').locator('option',{hasText:'Heavy Rigid Stake Body Truck + Trailer'})).toHaveCount(1);
+  const vehiclePicker=page.locator('.capacity-vehicle-picker');
+  await vehiclePicker.locator('summary').click();
+  await expect(vehiclePicker.getByRole('radio',{name:'Courier motorcycle'})).toHaveCount(0);
+  await expect(vehiclePicker.getByRole('radio',{name:'Courier car'})).toHaveCount(1);
+  await expect(vehiclePicker.getByRole('radio',{name:'Mini Open Body Truck'})).toHaveCount(1);
+  await expect(vehiclePicker.getByRole('radio',{name:'Heavy Rigid Stake Body Truck + Trailer'})).toHaveCount(1);
   await page.getByRole('button',{name:'Close filters'}).click();
   const response=await page.request.get('/api/public/capacity');
   expect(response.ok()).toBeTruthy();
@@ -520,13 +548,13 @@ test('visitor location is requested on entry, centers the map, and may be refres
   expect(proximityRequests).toBe(0);
   if((page.viewportSize()?.width||0)>760)await expect(page.getByText('Your precise location remains on this device.',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:/Filters/}).evaluate((button:any)=>button.click());
-  await expect(page.getByRole('dialog',{name:'Truck filters'})).toBeVisible();
-  const nearby=page.getByLabel('Limit results to trucks near my current area');
+  await expect(page.getByRole('dialog',{name:'Filters'})).toBeVisible();
+  const nearby=page.getByLabel('Show trucks near my area');
   await expect(nearby).toBeEnabled();
   await nearby.check();
-  await page.getByLabel('Truck location within').selectOption('50');
-  const filterDialog=page.getByRole('dialog',{name:'Truck filters'});
-  await page.getByRole('button',{name:'Apply filters'}).click();
+  await page.getByLabel('Distance').selectOption('50');
+  const filterDialog=page.getByRole('dialog',{name:'Filters'});
+  await page.getByRole('button',{name:'Show matching trucks'}).click();
   await expect(filterDialog).toBeHidden();
   await expect(page).toHaveURL(/nearLat=.*nearLng=.*nearRadiusKm=50/);
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');

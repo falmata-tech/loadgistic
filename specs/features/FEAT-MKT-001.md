@@ -3,7 +3,7 @@ id: FEAT-MKT-001
 title: Frictionless public capacity marketplace
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FTR-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Manufacturers, workshops, growers, producers, and other capacity seekers need to discover legitimate road-freight options immediately without creating an account or posting demand.
-behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical map-only Open Transport Capacity workspace, `/shared-capacity` is the email-verified Private Transport Capacity map, `/featured` is the seven-day Daily Featured Trucks programme, and Track and About retain their own routes. Together they present Loadgistic as a public and private transport-capacity sharing and shipment-collaboration platform without exposing internal product terminology in interface copy. Public navigation uses the concise Open capacity and Private capacity labels; map-first workspaces rely on that persistent selected navigation and an accessible page name instead of repeating a visible title and explanation above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the public map to that transporter's current trucks; there is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
+behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical map-only Open Transport Capacity workspace, `/shared-capacity` is the email-verified Private Transport Capacity map, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Open capacity, Private capacity, Track, Featured, then About; map-first workspaces rely on that persistent selected navigation and an accessible page name instead of repeating a visible title and explanation above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the public map to that transporter's current trucks; there is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
 contracts: [PublicAppShell, PublicWorkspaceNavigation, PublicMarketplaceView, PublicCapacityProjection, PublicTrackingEntry, LocationConsentPrompt, ProgressiveCapacityMap]
 observability: [public_workspace_navigation, public_capacity_query, public_tracking_entry, location_consent_outcome, anonymous_projection_review]
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
@@ -88,6 +88,19 @@ And truck facts and browser-location proximity may be combined with either geogr
 And public availability filtering remains categorical as Empty or Partial, with no remaining-space percentage or minimum-space filter\
 And every result remains one truck's latest Empty or Partial signal rather than a provider card or demand post.
 
+### Scenario: every supplied filter contributes to truck eligibility
+
+Given a visitor supplies any combination of free text, exact transporter, Empty or Partial status, signal geometry, truck configuration, load type, stop option, signal age, shipment endpoint, Service-area place, or explicit nearby radius\
+When the public capacity query is evaluated\
+Then each supplied criterion must match and each omitted criterion remains neutral\
+And Partial prevents Service area because Partial capacity is route-only\
+And one shipment endpoint matches its selected tolerance against every segment of each eligible current or regular Capacity route or against an eligible complete Empty Service-area polygon\
+And two shipment endpoints must both match the same eligible route or Service area\
+And a directional Capacity-route match compares the projected position of both endpoints along the complete ordered polyline, including routes with intermediate points\
+And Either direction permits the reverse projected order without changing the stored route\
+And search geometry, truck facts, freshness, and explicit nearby location are combined as eligibility checks rather than converted into a provider rank\
+And results retain stable cursor order only, with no suitability score or ranked list exposed.
+
 ### Scenario: the Market distinguishes signal age from availability status
 
 Given an Empty or Partial truck was not updated recently\
@@ -147,7 +160,8 @@ And filters constrain the map without creating a ranked result list.
 
 Given any public page is rendered\
 When the shared public application navigation and calls to action appear\
-Then Truck Market, Daily Featured Trucks, Track, About, and the session-appropriate Log in or Dashboard action are available as route links\
+Then Open capacity, Private capacity, Track, Featured, About, and the session-appropriate Log in or Dashboard action are available as route links\
+And Track appears immediately before Featured in both desktop and phone public navigation\
 And one current destination is communicated visually and with `aria-current="page"`\
 And desktop uses a compact floating workspace rail while phones use the persistent bottom navigation\
 And an anonymous visitor reaches transporter setup through the unified Log in flow rather than a separate Market navigation item\

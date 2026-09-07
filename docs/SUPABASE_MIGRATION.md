@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `072` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `073` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
 
 ## Current migration coverage
 
@@ -52,6 +52,7 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `069`: changes Daily Featured to an exact truck-and-Driver morning roster, while preserving provider ownership and sponsor-break attribution.
 - `070`–`071`: adds bounded Driver portrait presets and interchangeable tractor-trailer configuration while retaining one truck identity and history.
 - `072`: installs the minimum Business, Fleet transporter, and Independent Driver plan catalogue independently of optional demo data; an existing or deliberately disabled plan is never overwritten.
+- `073`: aligns the bounded Open-capacity projection with the application filter contract: only explicitly Open signals qualify, omitted filters remain neutral, selected criteria combine conjunctively, and route or Service-area evidence comes only from the selected capacity geometry.
 
 On 2026-09-04, a newly empty isolated local database replayed the complete
 `001`–`069` chain, rebuilt the managed fixture, and passed every guarded live
@@ -76,6 +77,11 @@ current Capacity signals, one published current-day roster with eight Featured
 slots, and one private verification placeholder in Production. It created no
 synthetic Admin or Support identity. An encrypted pre-import backup and the
 deterministic namespaced rollback are retained.
+
+The isolated local stack replayed and verified migration `073` on 2026-09-07.
+The linked Production project remains at `072` until the approved rollout
+applies `073` after a fresh encrypted backup and immediately verifies the
+bounded Open-capacity projection.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and

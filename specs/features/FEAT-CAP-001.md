@@ -80,6 +80,18 @@ And loading, end-of-results, and retry states remain keyboard-readable without b
 And filters, loaded cursor state, and scroll position survive a profile/detail round trip\
 And the end of results is stated plainly.
 
+### Scenario: matching uses every supplied capacity fact
+
+Given an anonymous visitor supplies one or more capacity filters\
+When the managed public projection evaluates eligible trucks\
+Then free text, exact transporter, capacity status, geometry, configuration, load type, stop option, freshness, route or area geometry, and explicit nearby location are each enforced only when supplied\
+And every supplied filter must match the same truck while omitted filters remain neutral\
+And one endpoint is projected against every segment of each eligible current or regular Capacity route\
+And two endpoints must fall within their independent tolerances on one route in the selected direction, based on projected progress along the complete ordered polyline\
+And an Empty Service area tests one supplied endpoint or both supplied endpoints against the complete polygon and selected tolerances\
+And no distance, freshness, verification, or provider fact produces a public rank or suitability score\
+And the managed projection returns only stable cursor order.
+
 ### Scenario: public projection is deliberately safe
 
 Given a visitor has no Loadgistic account\
@@ -255,5 +267,5 @@ And selecting the managed backend never falls back to SQLite after a Supabase er
 - Public pages: `/capacity`, `/capacity/[id]`
 - Provider editors: Driver Home and truck-specific Fleet page
 - Application services: provider-capacity workspace and commands, current-capacity, regular-capacity-route, public projection, cursor and proximity functions
-- Persistence adapters: server-only Supabase provider-capacity RPCs in migration `043_provider_capacity_runtime.sql`; the legacy SQLite adapter remains isolated from managed execution during cutover
+- Persistence adapters: server-only Supabase provider-capacity RPCs in migrations `043_provider_capacity_runtime.sql` and `073_public_capacity_filter_alignment.sql`; the legacy SQLite adapter remains isolated from managed execution during cutover
 - Tests: domain, provider-capacity Supabase authorization, repository, authorization, E2E, visual audit

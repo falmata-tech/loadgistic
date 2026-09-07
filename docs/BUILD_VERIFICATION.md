@@ -333,6 +333,38 @@ smoke/concurrency evidence, and an approved Production promotion. Supabase Auth
 OTP delivery is verified, but it does not satisfy the separate application-email
 gate. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.
 
+## Release-candidate checkpoint — 2026-09-07
+
+- `npm run quality` passed 28 specifications, 25 feature records, 280 checked
+  source files, 213 Node tests, and TypeScript.
+- `npm run build` completed the optimized 77-page Next.js production build;
+  `npm audit --audit-level=high` remained at zero known vulnerabilities.
+- The complete desktop/phone Playwright run executed 86 workflows successfully
+  and skipped eight opt-in capture workflows. It exposed two deterministic
+  contract drifts in both viewports: the truck-registration assertion retained
+  the superseded Cargo configuration label, and single-truck Driver Home hid
+  the required selected-truck identity zone. The product defect and stale
+  assertion were corrected; the four focused desktop/phone workflows then
+  passed. No failing application workflow remains from that run.
+- `npm run test:ui-stress` captured 82 dense desktop/phone screens with zero
+  failures. `npm run test:ui-audit` captured 88 screens with zero automated
+  layout/accessibility flags and zero browser-flow errors.
+- `npm run test:scale` inserted 5,000 extra trucks and current signals inside
+  one isolated PostgreSQL transaction. The general and multi-point route
+  projections returned bounded 15-row pages in 394.764 ms and 872.611 ms,
+  then the transaction rolled back with zero scale rows left.
+- A fresh Production logical backup was encrypted with an independent key and
+  verified by authenticated decryption before promotion. The encrypted artifact
+  is 1,251,625 bytes with SHA-256
+  `7322e32f60ac15420c94f7114dc7b11078e16b59d088170ee3b4685dfcd27084`;
+  neither the artifact nor its key is tracked.
+- The exact Netlify site `loadgistic-473` and all required Production runtime
+  variable names/scopes were rechecked without printing values. Migration `073`
+  and the application artifact are approved for the existing controlled pilot;
+  the managed scanner, application-email delivery, monitoring, and Preview
+  concurrency limits documented in `docs/LAUNCH_READINESS.md` still prevent an
+  unrestricted-production claim.
+
 ## Release-candidate checkpoint — 2026-09-04
 
 - A newly empty local Supabase stack replayed migrations `001`–`069`, rebuilt

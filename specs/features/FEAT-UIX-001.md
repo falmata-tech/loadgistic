@@ -23,7 +23,7 @@ And no ranked Truck List competes with geographic discovery\
 And location permission is requested as soon as the Board becomes interactive so nearby supply can be shown without another setup step\
 And pointed pins with visible truck artwork, a complete green Empty ring, or a complete yellow Partial ring let visitors scan vehicle type and status before opening details without interpreting a percentage meter\
 And the map key stays visible while contextual map summaries appear only on hover or focus above the related marker\
-And Truck Market, Shared capacity, Daily Featured Trucks, Track, About, and transporter account access are easy to find while a new identity continues to provider setup only after proof\
+And Open capacity, Private capacity, Track, Featured, About, and transporter account access are easy to find while a new identity continues to provider setup only after proof\
 And no account prompt blocks browsing, filtering, map view, transporter details, or contact methods the transporter made public.
 
 ### Scenario: public visual system stays light
@@ -59,6 +59,7 @@ And the same command uses the same icon and label across pages.
 Given a visitor opens the homepage, About, provider Directory, provider page, Track, account access, or provider setup\
 When headings, supporting copy, labels, and calls to action render\
 Then they describe a clear customer or transport-provider benefit in professional freight language\
+And Capacity Sharing and Shipment Tracking are presented as the platform's two primary jobs\
 And the core narrative connects Ethiopian producers and growing businesses with usable truck capacity while presenting independent providers as credible commercial operators\
 And it explains that transporters may publish capacity to the public Market or share it privately with trusted contacts\
 And capacity seekers can find local, regional, or long-distance transport for full trucks or smaller Partial loads before using private Tracking after a direct agreement\
@@ -119,6 +120,17 @@ And applying a filter closes the sheet and shows compact active values\
 And the single shared Map remains prominent without creating a second ranked result surface\
 And every ordered city in each regular Capacity route is always visible on each result card rather than hidden behind a disclosure.
 
+### Scenario: the capacity filter is visually scannable and bounded
+
+Given a visitor opens Filters on a desktop or supported phone\
+When route, capacity, truck, and nearby choices render\
+Then each section starts with a familiar icon and a short task label\
+And Empty, Partial, Service area, and Capacity route are presented as clear categorical choices rather than dense explanatory text\
+And the truck-configuration control shows the selected vehicle artwork and keeps its complete illustrated option set collapsed until requested\
+And opening that chooser provides keyboard-operable radio choices with each matching configuration image and name\
+And selecting Partial immediately prevents Service area without requiring submission\
+And the modal remains within the available viewport, keeps Apply and Clear reachable, and avoids clipped labels or horizontal document overflow at desktop, phone, and 200% reflow widths.
+
 ### Scenario: map signal explanations feel connected to their geometry
 
 Given a visitor has selected one truck on the Capacity Map\
@@ -167,7 +179,7 @@ And page content reserves safe-area space so the bar never covers the final acti
 Given an anonymous visitor opens any supported public workspace on a narrow viewport\
 When the public shell renders\
 Then the desktop website header and multi-column footer are replaced by a compact branded app bar and one fixed bottom navigation bar\
-And the bar exposes Truck Market, Shared capacity, Featured, Track, and About as direct labeled destinations without a hamburger menu\
+And the bar exposes Open capacity, Private capacity, Track, Featured, and About in that order as direct labeled destinations without a hamburger menu\
 And a Log in action remains directly visible in the app bar while an authenticated member sees Dashboard in its place\
 And no separate Login-versus-Join choice consumes a primary navigation destination\
 And Assisted matching is opened from the persistent Ask Loadgistic launcher rather than consuming a primary navigation destination\
@@ -179,7 +191,7 @@ And all public content reserves top and safe-area bottom space so neither app ba
 
 Given a visitor opens a public route on a supported wide viewport\
 When the floating workspace rail renders\
-Then Market, Shared capacity, Featured, and Track remain the prominent discovery destinations\
+Then Open capacity, Private capacity, Track, and Featured remain the prominent discovery destinations in that order\
 And a quieter Account group exposes Log in or Dashboard according to session state\
 And a quieter Loadgistic group exposes About, Privacy, and Terms\
 And Assisted matching is opened from the persistent Ask Loadgistic launcher rather than the rail\

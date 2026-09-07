@@ -4,7 +4,7 @@ import {PublicCapacityFeed} from '@/components/public-capacity-feed';
 import {listPublicCapacityCursor} from '@/lib/capacity-market.js';
 
 export const dynamic='force-dynamic';
-export const metadata:Metadata={title:'Open Transport Capacity',description:'Find public truck capacity for local, regional, long-distance, full-truck, and Partial-load freight across Ethiopia.'};
+export const metadata:Metadata={title:'Open Transport Capacity',description:'Find transport capacity by route, service area, truck configuration, and load type across Ethiopia.'};
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const raw=await searchParams;

@@ -232,6 +232,20 @@ test('public capacity migration is bounded, server-only, and strips private curr
   assert.match(capacity,/grant execute on function public\.public_capacity_page[\s\S]*to service_role/i);
 });
 
+test('public capacity filter alignment is public-only and keeps geography evidence consistent',()=>{
+  const alignment=fs.readFileSync(path.join(root,'supabase','migrations','073_public_capacity_filter_alignment.sql'),'utf8');
+  assert.match(alignment,/where candidate\.visibility='OPEN'/i);
+  assert.match(alignment,/input\.geometry is null or input\.geometry='ROUTE'/i);
+  assert.match(alignment,/input\.geometry is null or input\.geometry='RADIUS'/i);
+  assert.match(alignment,/capacity_route_matches/i);
+  assert.match(alignment,/capacity_route_point_matches/i);
+  assert.match(alignment,/candidate\.availability_geometry='RADIUS'/i);
+  assert.match(alignment,/regular_area text/i);
+  assert.match(alignment,/gated_regular_area text/i);
+  assert.match(alignment,/revoke all on function public\.public_capacity_page[\s\S]*from public,anon,authenticated/i);
+  assert.match(alignment,/grant execute on function public\.public_capacity_page[\s\S]*to service_role/i);
+});
+
 test('public application adapter excludes private trucks instead of placing regular-service fallbacks',()=>{
   const repository=fs.readFileSync(path.join(root,'src','lib','repository','supabase.js'),'utf8');
   const projection=repository.slice(repository.indexOf('export async function listSupabasePublicCapacityCursor'),repository.indexOf('function managedCapacityError'));

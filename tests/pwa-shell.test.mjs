@@ -12,7 +12,7 @@ test('PWA launches into public discovery and keeps private pages network-first',
   assert.equal(manifest.display, 'standalone');
   assert.deepEqual(
     manifest.shortcuts.map(shortcut => shortcut.url),
-    ['/', '/shared-capacity', '/featured', '/track', '/app/home']
+    ['/', '/shared-capacity', '/track', '/featured', '/app/home']
   );
   assert.match(worker, /event\.request\.mode === 'navigate'/);
   assert.doesNotMatch(worker, /pathname\.startsWith\('\/_next\/'\)/);

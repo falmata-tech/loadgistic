@@ -142,16 +142,19 @@ function boundedRadius(value){
 }
 
 function geographicMatchLabel(item,filters,originPlace,destinationPlace,areaPlace){
+  const selectedGeometry=String(filters.geometry||'').toUpperCase();
+  const routesAllowed=!selectedGeometry||selectedGeometry==='ROUTE';
+  const areasAllowed=!selectedGeometry||selectedGeometry==='RADIUS';
   if(originPlace&&destinationPlace){
     const query={origin_lat:originPlace.center_lat,origin_lng:originPlace.center_lng,destination_lat:destinationPlace.center_lat,destination_lng:destinationPlace.center_lng};
     const routes=[];
-    if(item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
-    for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Regular capacity route',directionMode:'EITHER'});
+    if(routesAllowed&&item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
+    if(routesAllowed)for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Regular capacity route',directionMode:'EITHER'});
     const routeMatch=routes.map(route=>({...route,...capacityRouteAlignmentMatch(query,route.points,{originRadiusKm:filters.originRadiusKm,destinationRadiusKm:filters.destinationRadiusKm,directionMode:route.directionMode})}))
       .filter(route=>route.matched).sort((first,second)=>first.origin_distance_km+first.destination_distance_km-(second.origin_distance_km+second.destination_distance_km))[0];
     const areas=[];
-    if(item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current Service area'});
-    if(item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular Service area'});
+    if(areasAllowed&&item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current Service area'});
+    if(areasAllowed&&item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular Service area'});
     const areaMatch=areas.map(area=>{
       const origin=serviceAreaGeometryMatch({lat:originPlace.center_lat,lng:originPlace.center_lng},area.points,{searchRadiusKm:filters.originRadiusKm});
       const destination=serviceAreaGeometryMatch({lat:destinationPlace.center_lat,lng:destinationPlace.center_lng},area.points,{searchRadiusKm:filters.destinationRadiusKm});
@@ -164,12 +167,12 @@ function geographicMatchLabel(item,filters,originPlace,destinationPlace,areaPlac
     const point=originPlace||destinationPlace;
     const radius=originPlace?filters.originRadiusKm:filters.destinationRadiusKm;
     const routes=[];
-    if(item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route'});
-    for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Regular capacity route'});
+    if(routesAllowed&&item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route'});
+    if(routesAllowed)for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Regular capacity route'});
     const routeMatch=routes.map(route=>({...route,...capacityRoutePointMatch({lat:point.center_lat,lng:point.center_lng},route.points,{radiusKm:radius})})).find(route=>route.matched);
     const areas=[];
-    if(item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current Service area'});
-    if(item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular Service area'});
+    if(areasAllowed&&item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current Service area'});
+    if(areasAllowed&&item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular Service area'});
     const areaMatch=areas.map(area=>({...area,...serviceAreaGeometryMatch({lat:point.center_lat,lng:point.center_lng},area.points,{searchRadiusKm:radius})}))
       .filter(area=>area.matched).sort((first,second)=>Number(first.distance_km||0)-Number(second.distance_km||0))[0];
     if(routeMatch)return `${routeMatch.source} passes within ${Math.round(routeMatch.distance_km)} km of ${point.place_label}`;
@@ -177,8 +180,8 @@ function geographicMatchLabel(item,filters,originPlace,destinationPlace,areaPlac
   }
   if(areaPlace){
     const areas=[];
-    if(item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current Service area'});
-    if(item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular Service area'});
+    if(areasAllowed&&item.status==='EMPTY'&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current Service area'});
+    if(areasAllowed&&item.status==='EMPTY')for(const signal of item.recurring_corridors.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular Service area'});
     const match=areas.map(area=>({...area,...serviceAreaGeometryMatch({lat:areaPlace.center_lat,lng:areaPlace.center_lng},area.points,{searchRadiusKm:filters.currentAreaRadiusKm})}))
       .filter(area=>area.matched).sort((first,second)=>first.distance_km-second.distance_km)[0];
     if(match)return `${match.source} reaches ${areaPlace.place_label}${match.inside?'':' nearby'}`;

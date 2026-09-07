@@ -35,8 +35,8 @@ export default async function LoginPage({
         ?`We sent a six-digit code to ${maskedProviderSignupEmail(handoff?.email||'')}.`
         :'Use a one-time email code or Google.'}
       contextKicker="Loadgistic"
-      contextTitle="Share capacity. Find trucks. Track freight."
-      contextDescription="One account for independent drivers, owner-operators, and transport companies."
+      contextTitle="Share capacity. Track agreed shipments."
+      contextDescription="One account for self-managed drivers, owner-operators, and fleet transporters."
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <div className="managed-login-stack">

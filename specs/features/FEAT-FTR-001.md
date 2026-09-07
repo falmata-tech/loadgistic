@@ -105,7 +105,8 @@ And each card shows the Driver role, exact truck configuration, truck identity, 
 And a fleet-owned truck also shows its owning transporter while an Owner-operator or Self-managed Driver keeps the corresponding role label\
 And selecting a card opens a Driver-led summary with concise truck, document-review, ownership, service, and schedule details\
 And a missing or invalid portrait preset falls back to a neutral person-and-steering-wheel profile icon without exposing a private upload path\
-And separate actions open the owning transporter profile when one exists or locate the exact truck in Open capacity\
+And a separate action opens the owning transporter profile when one exists\
+And the exact truck receives a Locate in Open capacity action only while its latest signal is publicly visible Empty or Partial capacity, so a private or Off Duty truck never leads to an empty public search\
 And the board uses one clean warm-white display surface without a second page title, nested frame, booth, hall, pinboard, or baked roster data\
 And responsive rows preserve readable vehicle artwork and text without horizontal page scrolling.
 

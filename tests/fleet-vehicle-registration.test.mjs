@@ -58,9 +58,10 @@ test('an owner can switch only a registered tractor to a compatible attached tra
 test('a fixed truck detail keeps map tools but omits its redundant selected-truck overlay',()=>{
   const capacity=fs.readFileSync(path.join(root,'src/components/capacity-form.tsx'),'utf8');
   const detail=fs.readFileSync(path.join(root,'src/app/app/fleet/[id]/page.tsx'),'utf8');
-  assert.match(capacity,/lockVehicleSelection\?null:<header className="capacity-summary-map-header">/);
+  assert.match(capacity,/showTruckIdentity\?<header className="capacity-summary-map-header">\{truckBar\}<\/header>:null/);
   assert.match(detail,/capacity-home-page fleet-truck-capacity-workspace/);
   assert.match(detail,/lockVehicleSelection/);
+  assert.match(detail,/showTruckIdentity=\{false\}/);
 });
 
 test('the public catalogue has courier cars and distinct attached tractor trailers but no motorcycle',()=>{

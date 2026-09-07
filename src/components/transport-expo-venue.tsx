@@ -29,7 +29,7 @@ function TruckPreview({truck,walkthrough,onClose}:{truck:any;walkthrough:any;onC
       <div className="featured-truck-dialog-visual"><DriverPortrait truck={truck}/><span className="featured-dialog-truck"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></span></div>
       <div className="featured-truck-dialog-copy"><small>{truck.driver_kind_label}</small><h3 id="featured-truck-dialog-title">{truck.driver_first_name}</h3><p><Truck aria-hidden="true"/>{truck.cargo_configuration} · {truckName}</p><p><Building2 aria-hidden="true"/>{truck.name}</p><p><MapPin aria-hidden="true"/>{truck.base_place}</p></div>
       <div className="featured-truck-dialog-time"><Clock3 aria-hidden="true"/><span><small>Programme time</small><strong>{walkthrough?.label||'07:30–09:00 EAT'}</strong></span></div>
-      <div className="expo-dialog-actions"><Link className="button" href={`/@${encodeURIComponent(truck.handle)}`}><Building2 aria-hidden="true"/>Transporter profile</Link><Link className="button secondary" href={`/?q=${encodeURIComponent(truck.platform_number||truck.cargo_configuration)}`}><Truck aria-hidden="true"/>Find this truck</Link></div>
+      <div className="expo-dialog-actions"><Link className="button" href={`/@${encodeURIComponent(truck.handle)}`}><Building2 aria-hidden="true"/>Transporter profile</Link>{truck.public_capacity_available?<Link className="button secondary" href={`/?q=${encodeURIComponent(truck.platform_number||truck.cargo_configuration)}`}><Truck aria-hidden="true"/>Find this truck</Link>:null}</div>
     </article>
   </dialog>;
 }

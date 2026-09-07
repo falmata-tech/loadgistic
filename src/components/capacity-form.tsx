@@ -29,7 +29,7 @@ function PlaceSequenceEditor({title,help,items,setItems,name,refName,min,max,lab
   </div>;
 }
 
-export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true,lockVehicleSelection=false,corridors=[],returnTo='/app/home',allowCorridors=false,renderedAt}:{vehicles:VehicleOption[];initialVehicleId?:string;allowDeviceLocation?:boolean;lockVehicleSelection?:boolean;corridors?:any[];returnTo?:string;allowCorridors?:boolean;renderedAt:number}){
+export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true,lockVehicleSelection=false,showTruckIdentity=true,corridors=[],returnTo='/app/home',allowCorridors=false,renderedAt}:{vehicles:VehicleOption[];initialVehicleId?:string;allowDeviceLocation?:boolean;lockVehicleSelection?:boolean;showTruckIdentity?:boolean;corridors?:any[];returnTo?:string;allowCorridors?:boolean;renderedAt:number}){
   const initialId=vehicles.some(vehicle=>vehicle.id===initialVehicleId)?initialVehicleId:vehicles[0]?.id;
   const [vehicleId,setVehicleId]=React.useState(initialId||'');
   const selectedVehicle=vehicles.find(vehicle=>vehicle.id===vehicleId);const current=selectedVehicle?.current;
@@ -79,7 +79,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     return <div className="capacity-console capacity-summary-console" data-testid="capacity-summary">
       <section className="capacity-saved-summary driver-map-summary">
         <div className="capacity-summary-layout">{savedMap||<div className="capacity-map-empty"><MapPinned aria-hidden="true"/><strong>No Driver location</strong><span>Open Location and refresh this truck.</span></div>}</div>
-        {lockVehicleSelection?null:<header className="capacity-summary-map-header">{truckBar}</header>}
+        {showTruckIdentity?<header className="capacity-summary-map-header">{truckBar}</header>:null}
         <nav className="capacity-summary-toolrail" aria-label="Edit capacity signals">
           <button type="button" onClick={()=>setEditSection('AVAILABILITY')} aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small>Capacity</small><strong>{availabilityValue}</strong></span></button>
           {current.status!=='OFF_DUTY'?<button type="button" onClick={()=>setEditSection('ROUTE')} aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small>Coverage</small><strong>{coverageValue}</strong></span></button>:null}

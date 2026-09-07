@@ -61,7 +61,7 @@ export default async function ApplyPage({
       description="Tell us how you operate. Add trucks, public contacts, and documents from your workspace next."
       contextKicker="Build your presence"
       contextTitle="Put your truck capacity where customers can find it."
-      contextDescription="Publish current capacity, share selected signals with trusted contacts, and keep transport work organized."
+      contextDescription="Publish capacity, share selected signals with trusted contacts, and start private Tracking after an agreement."
       contextNoteTitle="Identity confirmed"
       contextNote="Your account remains inactive until this short transporter setup is complete."
       footerNote="Creating an account does not mark any Driver, truck, or document as reviewed."

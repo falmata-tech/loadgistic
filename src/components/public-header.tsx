@@ -12,7 +12,7 @@ export async function PublicHeader() {
       <header className="public-header">
         <div className="container public-nav">
           <Logo />
-          <span className="public-app-context">Capacity sharing &amp; tracking</span>
+          <span className="public-app-context">Capacity sharing · Shipment tracking</span>
           <div className="public-session-compact" data-testid="public-session-action">
             {user
               ? <Link className="button public-dashboard-action" href="/app/home" aria-label="Dashboard" title="Dashboard"><LayoutDashboard aria-hidden="true"/><span>Dashboard</span></Link>

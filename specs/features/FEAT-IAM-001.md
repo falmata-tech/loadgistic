@@ -222,7 +222,7 @@ Given a supported mobile browser opens public or authenticated Loadgistic over a
 When the browser evaluates the web app manifest and service worker\
 Then Loadgistic can be installed in standalone display mode and launches at the public Truck Market workspace\
 And its manifest, browser favicon, Apple touch icon, and installable icons use the current Loadgistic brand mark\
-And manifest shortcuts expose `/`, `/featured`, `/track`, and the transporter workspace as distinct application destinations\
+And manifest shortcuts expose `/`, `/shared-capacity`, `/track`, `/featured`, and the transporter workspace as distinct application destinations\
 And authenticated application pages remain network-first rather than being persisted in a shared offline page cache\
 And first installation does not reload a login or application form while the user is entering data\
 And the service-worker script is served with no-store update headers and a self-only script policy\

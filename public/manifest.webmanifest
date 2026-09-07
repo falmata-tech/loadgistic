@@ -1,7 +1,7 @@
 {
   "name": "Loadgistic",
   "short_name": "Loadgistic",
-  "description": "Find available road-freight capacity and manage transporter operations across Ethiopia.",
+  "description": "Share transport capacity and track agreed shipments across Ethiopia.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -12,10 +12,10 @@
   "theme_color": "#0c2a43",
   "categories": ["business", "productivity", "navigation"],
   "shortcuts": [
-    { "name": "Truck Market", "short_name": "Market", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Shared capacity", "short_name": "Shared", "url": "/shared-capacity", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Daily Featured Transporters", "short_name": "Featured", "url": "/featured", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Open transport capacity", "short_name": "Open", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Private transport capacity", "short_name": "Private", "url": "/shared-capacity", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Track a shipment", "short_name": "Track", "url": "/track", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Daily Featured Trucks", "short_name": "Featured", "url": "/featured", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Transporter workspace", "short_name": "Workspace", "url": "/app/home", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ],
   "icons": [

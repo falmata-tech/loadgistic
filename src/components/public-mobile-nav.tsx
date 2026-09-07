@@ -8,8 +8,8 @@ import React from 'react';
 const destinations = [
   { key: 'market', href: '/', label: 'Open', desktopLabel: 'Open capacity', icon: MapPinned },
   { key: 'shared', href: '/shared-capacity', label: 'Private', desktopLabel: 'Private capacity', icon: LockKeyhole },
-  { key: 'featured', href: '/featured', label: 'Featured', desktopLabel: 'Featured', icon: Users },
   { key: 'track', href: '/track', label: 'Track', desktopLabel: 'Track', icon: Route },
+  { key: 'featured', href: '/featured', label: 'Featured', desktopLabel: 'Featured', icon: Users },
   { key: 'about', href: '/about', label: 'About', desktopLabel: 'About', icon: Info }
 ] as const;
 

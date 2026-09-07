@@ -3,7 +3,7 @@ id: FEAT-MAT-001
 title: Coordinate-authoritative marketplace matching
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-PLC-001, FEAT-GEO-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-LST-001]
 problem: Public capacity discovery needs useful proximity and route matching without treating labels as coordinates or exposing exact visitor or Driver positions.
-behavior: Public filters use only the criteria a visitor actually supplies: either shipment-route endpoint or both, Service-area proximity, truck facts, and opt-in visitor proximity may operate independently or combine conjunctively. Shipment origin and destination remain first-class visible controls rather than being hidden behind a signal-type choice. Selected catalog coordinates, adjustable tolerances, explicit route direction when both endpoints exist, every-segment multi-city Capacity-route evidence, and complete Service-area polygon proximity remain authoritative. A visitor's exact browser location remains client-only while a separately displaced search point reaches the server. The Market filters rather than ranks results.
+behavior: Public filters use only the criteria a visitor actually supplies: free text, exact transporter, Empty or Partial status, signal geometry, truck configuration, load type, stop capability, freshness, either shipment-route endpoint or both, Service-area proximity, and opt-in visitor proximity may operate independently or combine conjunctively. Shipment origin and destination remain first-class visible controls rather than being hidden behind a signal-type choice. Selected catalog coordinates, independent tolerances, explicit route direction when both endpoints exist, every-segment multi-city Capacity-route evidence, and complete Service-area polygon proximity remain authoritative. A visitor's exact browser location remains client-only while a separately displaced search point reaches the server. The Market filters rather than ranks results.
 contracts: [CapacityPlaceSequence, CapacityAreaBoundary, GeographicRouteQuery, RouteSegmentAlignmentMatch, ServiceAreaPolygonMatch, DirectionMode, CurrentAreaFit, VisitorSearchArea, GeographicMatchExplanation]
 observability: [geographic_filter_radius, geographic_direction_mode, geographic_candidate_count, geographic_match_count, best_route_source, unresolved_legacy_endpoint_count]
 rollout: Replace all pre-customer demo endpoint-pair and circle fixtures with valid multi-city geometry; local and managed Supabase store indexed JSONB place collections and use the same PostGIS matching contract.
@@ -52,6 +52,7 @@ Given a visitor supplies any supported subset of availability, geometry, truck f
 When the filter is applied\
 Then every supplied criterion constrains the result and every omitted criterion remains neutral\
 And applying one field produces matching results without requiring unrelated fields\
+And a selected signal geometry constrains geographic evidence to that same geometry rather than qualifying through another signal type on the same truck\
 And the result remains an unranked geographic set of current trucks.
 
 ### Scenario: current and regular Capacity routes remain distinct
@@ -87,11 +88,10 @@ And the evidence does not claim rank, dispatch suitability, road distance, or gu
 
 Given a Board query includes the visitor's separately displaced search center and a bounded search radius\
 When a truck has a Driver-obscured latest reported radius\
-Then Prefer mode raises overlapping trucks without excluding other route matches\
-And Require mode keeps only trucks whose uncertainty circle overlaps the requested area\
+Then the explicitly enabled nearby filter keeps only trucks whose uncertainty circle overlaps the requested area\
 And the result says Current area overlaps rather than exposing or implying an exact truck position\
-And missing current-area coordinates cannot satisfy Require mode\
-And an older coordinate that satisfies Require mode is labeled with its actual update age and never described as a live position.
+And missing current-area coordinates cannot satisfy the filter\
+And an older coordinate that satisfies it is labeled with its actual update age and never described as a live position.
 
 ### Scenario: Service-area matching stays polygon based
 
@@ -105,6 +105,8 @@ And the two-endpoint intercity matcher is not applied.
 Given a visitor opens the Truck Market filter\
 When the filter is expanded\
 Then the visitor may combine transporter or truck search, Empty or Partial, current Service area or Capacity route, cargo configuration, Full or Partial load acceptance, multi-pick or multi-drop capability, update freshness, and geographic matching\
+And familiar section icons, categorical status and geometry choices, and matching cargo-configuration artwork make those inputs visually distinguishable\
+And the complete illustrated configuration set stays collapsed until the visitor opens its keyboard-operable chooser\
 And no remaining-space percentage is accepted as a filter because Empty and Partial are categorical market signals\
 And independently optional structured shipment origin and destination inputs are visible without first choosing a signal type\
 And each shipment endpoint has an adjustable tolerance while direction applies only when both exist\
@@ -135,7 +137,7 @@ And the application does not reconstruct missing new geometry from the retired e
 ## Contract ownership
 
 - Domain: coordinate distance, every-segment route matching, polygon proximity, direction, uncertainty overlap, and explainable evidence selection without transporter ranking
-- Persistence: structured place collections and area boundaries in local and managed Supabase PostgreSQL migrations
+- Persistence: structured place collections and area boundaries plus geometry-consistent eligibility in managed Supabase PostgreSQL migration `073_public_capacity_filter_alignment.sql`
 - Application services: public Capacity Board and provider-profile projections
 - Frontend: browser-only visitor location, structured route controls, adjustable radii, direction, and match explanations
 - Tests: domain, capacity-market, E2E, and UI audit

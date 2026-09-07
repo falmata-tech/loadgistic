@@ -21,7 +21,7 @@ test('independent driver reaches truck registration from My trucks',async({page}
   await expect(page.getByRole('heading',{name:'Add truck'})).toBeVisible();
   await expect(page.getByLabel('Make')).toBeVisible();
   await expect(page.getByLabel('Model')).toBeVisible();
-  await expect(page.getByLabel('Cargo configuration')).toBeVisible();
+  await expect(page.getByLabel('Vehicle configuration')).toBeVisible();
   await expect(page.getByLabel('Plate number')).toBeVisible();
   await expect(page.getByRole('button',{name:'Add truck'})).toBeVisible();
 });
