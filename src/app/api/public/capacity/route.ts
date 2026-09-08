@@ -16,5 +16,9 @@ export async function GET(request:NextRequest){
     nearLat:params.get('nearLat')||'',nearLng:params.get('nearLng')||'',nearRadiusKm:params.get('nearRadiusKm')||''
   };
   const result=await listPublicCapacityCursor(filters,{cursor:params.get('cursor')||'',pageSize:14});
-  return NextResponse.json(result,{headers:{'Cache-Control':'public, max-age=15, stale-while-revalidate=45'}});
+  return NextResponse.json(result,{headers:{
+    'Cache-Control':'private, no-store, max-age=0',
+    'CDN-Cache-Control':'no-store',
+    'Netlify-CDN-Cache-Control':'no-store'
+  }});
 }

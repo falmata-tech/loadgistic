@@ -29,6 +29,14 @@ And the page does not render the entire catalog in HTML\
 And public Market place suggestions do not require an account\
 And no third-party request or API key is required.
 
+### Scenario: each place query keeps its own results
+
+Given the place endpoint receives different bounded search queries\
+When a shared delivery layer handles those requests\
+Then each response is evaluated from its own query\
+And the response is not stored in a shared cache unless the complete place query is part of that cache key\
+And a prior Addis Ababa result cannot replace later Adama, Hawassa, Mekelle, or other matching catalog results.
+
 ### Scenario: local search preserves locality hierarchy
 
 Given a reviewed Addis Ababa sub-city, district, or neighbourhood exists in the catalog\

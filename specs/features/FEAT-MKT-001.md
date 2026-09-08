@@ -101,6 +101,14 @@ And Either direction permits the reverse projected order without changing the st
 And search geometry, truck facts, freshness, and explicit nearby location are combined as eligibility checks rather than converted into a provider rank\
 And results retain stable cursor order only, with no suitability score or ranked list exposed.
 
+### Scenario: one visitor's filter response cannot replace another
+
+Given the public capacity endpoint accepts query-sensitive filters or cursors\
+When Netlify or another shared delivery layer handles two different query strings\
+Then each response is evaluated from its own complete query\
+And the response is not stored in a shared cache unless that cache key includes every accepted filter and cursor parameter\
+And Empty, Partial, geometry, route, place, truck, freshness, provider, search, and cursor queries cannot reuse an unfiltered or differently filtered response body.
+
 ### Scenario: the Market distinguishes signal age from availability status
 
 Given an Empty or Partial truck was not updated recently\
