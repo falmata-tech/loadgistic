@@ -1,7 +1,49 @@
 # Build Verification
 
-Evidence is recorded through 2026-09-05 with Node.js v22.16.0. Each dated
+Evidence is recorded through 2026-09-09 with Node.js v22.16.0. Each dated
 checkpoint is scoped to the code and environment verified at that time.
+
+## Production cache, roster, and infrastructure audit — 2026-09-08/09
+
+- Commit `e880764` passed 215 Node tests, specification/source validation,
+  TypeScript, the optimized 77-route build, and a zero-high-vulnerability npm
+  audit. Netlify Production deploy `6aa06084e223ccf14c9bb72a` published that
+  exact commit at `https://loadgistic-473.netlify.app`.
+- Live place searches for Addis Ababa, Adama, Hawassa, Mekelle, and Bahir Dar
+  returned independent matching suggestions. Open-capacity base and selected
+  filter queries returned independent bounded results; query-sensitive place
+  and capacity responses were private and non-storable rather than shared CDN
+  hits. Anonymous admin/member access redirected to Login, private-file probes
+  returned `404`, retired Directory search returned `410`, and the public
+  response included CSP, HSTS, clickjacking, MIME, referrer, and permissions
+  headers.
+- A fresh AES-256-GCM logical backup was authenticated before the current-day
+  Featured repair. Its encrypted artifact is 1,252,753 bytes with SHA-256
+  `be2772cbc7ab0e43723d8a7b87716d1daf8d513e3daaf1dcbc620e85d7e290b8`;
+  neither artifact nor key is tracked. The exact-project-guarded transaction
+  published eight eligible truck/Driver slots for the current Ethiopia day.
+  Live desktop and phone Chromium then rendered all eight cards, portrait
+  slots, and public map signals without broken images, browser errors, or
+  horizontal overflow.
+- The linked Supabase project matches the isolated stack through migration
+  `073`. A read-only Production audit confirmed PostgreSQL 17, seven private
+  Storage buckets, custom Auth SMTP, six-digit ten-minute OTPs, refresh-token
+  rotation, Google enabled, and no anonymous Auth. It also found SSL enforcement
+  disabled, direct-database allow-all IPv4/IPv6 network ranges, CAPTCHA disabled,
+  one Security Advisor error plus warnings, and 252 Performance Advisor items
+  dominated by unindexed foreign keys and RLS-policy planning/duplication.
+- Both Netlify scheduled dispatchers and both background workers are deployed
+  and invoked. A real pending application-email delivery is still unproved.
+  The Netlify site remains manually deployed rather than Git-linked. Production
+  health truthfully stays `readyForPublicProduction:false` because no managed
+  malware scanner is configured; every upload fails closed. The application's
+  10 MB file promise also exceeds Netlify's effective buffered binary request
+  limit and must be lowered or redesigned before uploads are enabled.
+- The database backup protects PostgreSQL/Auth/Storage metadata but not Storage
+  object bytes. A separate encrypted object export and an isolated restore
+  rehearsal remain required. Daily Featured also needs a deliberate next-day
+  publishing operation; Production does not silently substitute an automatic
+  roster. Assisted matching currently reports zero available team members.
 
 ## Production pilot import — 2026-09-05
 
@@ -325,8 +367,8 @@ checkpoint is scoped to the code and environment verified at that time.
 The historical evidence above is retained for chronology; the current
 application, local development, CI, fixtures, browser workflows, and scale gate
 all use Supabase/PostgreSQL. The linked hosted project has the reviewed
-`001`–`069` migration chain and seven private Storage buckets, with no local
-fixture import. Unrestricted Production remains blocked on backup/restore
+`001`–`073` migration chain, seven private Storage buckets, and the explicitly
+approved synthetic Production pilot. Unrestricted Production remains blocked on backup/restore
 rehearsal, a remotely proven managed upload scanner, live application-email delivery,
 remaining public-discovery abuse coverage, monitoring, Preview
 smoke/concurrency evidence, and an approved Production promotion. Supabase Auth

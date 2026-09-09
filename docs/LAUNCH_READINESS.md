@@ -2,7 +2,23 @@
 
 ## Current verdict
 
-The repository, linked hosted database, and Netlify application support a controlled production pilot. The clean local `001`–`069` replay and guarded live verifiers pass, the hosted project has the matching migration chain and seven private Storage buckets, local login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP delivery is verified. Production deploy `6a9b4353c786527571b25051` serves application commit `935772c`; live desktop and phone checks passed the public routes and Supabase-backed health. Release follow-up `174380e` passed GitHub CI run `33926528912`, including managed-fixture verification, the 5,000-truck rollback scale check, desktop/mobile browser workflows, and the standalone container build. Production application-SMTP variables are configured in Netlify and their authentication handshake passes, but this is not remote delivery evidence. The application is not approved for unrestricted public production until the managed scanner, remote application-email, Preview concurrency, monitoring, and backup/restore gates below are resolved. `npm run launch:check` must remain red for real blockers rather than being weakened for deployment.
+The repository, linked hosted database, and Netlify application support a
+controlled production pilot. The clean local `001`–`073` replay and guarded
+verifiers pass; the hosted project matches through `073`, retains seven private
+Storage buckets, and contains the explicitly approved synthetic pilot. Local
+login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP
+delivery is verified. Production deploy `6aa06084e223ccf14c9bb72a` serves
+application commit `e880764`; live desktop and phone checks passed Open
+capacity, Daily Featured, query-isolated place search, and Supabase-backed
+health. The full quality/build gate passed 215 Node tests, TypeScript, 77 routes,
+and a zero-high-vulnerability dependency audit. Production application-SMTP
+credentials authenticate and both scheduled/background worker pairs are
+invoked, but a real queued application email has not been proved end to end.
+The application is not approved for unrestricted public production until the
+managed scanner, upload-size boundary, application-email, database hardening,
+monitoring, and database-plus-Storage restore gates below are resolved.
+`npm run launch:check` must remain red for real blockers rather than being
+weakened for deployment.
 
 ## Verified locally
 
@@ -24,35 +40,37 @@ The repository, linked hosted database, and Netlify application support a contro
 
 ## Public-production blockers
 
-1. The clean isolated local replay and linked hosted application of migrations
-   `001`–`069` are complete. Verify hosted RLS/RPC behavior including concurrent request limits,
-   expiry-aware Shared capacity delivery/cleanup, private-quarantine isolation,
-   provider-profile/Fleet ownership, Verification/Billing and
-   Assisted-matching private-file scope, Support assignment/requeue, bounded
-   Operations, atomic Featured/Sponsor administration, and terminal reviews;
-   import only approved Production place data; and rehearse encrypted logical
-   backup/restore. No local fixture identities or market rows were imported.
+1. The clean isolated replay, hosted migrations `001`–`073`, approved pilot
+   import, and fresh encrypted logical backup are complete. Rehearse an
+   isolated database restore. Database dumps contain Storage metadata but not
+   object bytes, so add an encrypted Storage-object export and restore proof.
 2. Inventory and purge any hosted legacy demand data only after a verified backup and explicit approval. A new empty project requires no purge.
-3. Configure a server-only managed scanner, complete the privacy/vendor review, and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial upload proofs against Supabase Preview. The local test scanner does not satisfy this gate.
+3. Configure a server-only managed scanner, complete the privacy/vendor review,
+   and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial
+   upload proofs against Supabase Preview. Production currently fails every
+   upload closed. Also align the user-facing/app 10 MB file limit with Netlify's
+   roughly 4.5 MB effective buffered binary-request boundary, or adopt a
+   reviewed direct-to-quarantine upload design. The local test scanner does not
+   satisfy this gate.
 4. Production application-SMTP credentials are configured separately from the
    already verified Supabase Auth SMTP, and an authentication-only handshake
    passes. The 15-minute managed scheduler and two-minute access-email recovery
-   scheduler with their HMAC-authenticated background workers are deployed;
-   monitor their runs, then test real Shared capacity, Tracking, and Assisted matching
-   delivery, expiry-aware retry/cleanup, and unsigned/stale-request rejection.
+   scheduler with their HMAC-authenticated background workers are deployed and
+   observed invoking. Test a real queued Shared capacity, Tracking, and Assisted
+   matching delivery, expiry-aware retry/cleanup, and unsigned/stale-request rejection.
    The personal-Gmail SMTP option is a bounded pilot warning, not the durable
    sending-domain gate.
-5. Verify the implemented shared PostgreSQL request limiter under Preview
-   concurrency, add reviewed bot protection for high-risk anonymous entry
-   points, and configure authorized Supabase Realtime subscriptions with polling
-   fallback for active guest conversations. Tracking review submission is now
-   covered; public discovery still needs explicit shared-limit coverage before
-   launch.
+5. Review and resolve the live Supabase advisor findings before scale: one
+   Security Advisor error, SECURITY DEFINER/extension warnings, 93 unindexed
+   foreign keys, 58 RLS init-plan warnings, and 48 multiple-permissive-policy
+   warnings. Enable SSL enforcement, replace the effective allow-all direct
+   database IPv4/IPv6 ranges with the narrowest operational access, and enable
+   reviewed CAPTCHA/bot protection for anonymous and Auth entry points. Do not
+   drop currently unused indexes solely from low-pilot traffic evidence.
 6. Strong distinct `SESSION_SECRET` and `TRACKING_CODE_SECRET` values are
-   configured. Complete HTTPS smoke, rotation, central logging/alerts, deployment
-   approval, and rollback monitoring. Production has no Tracking records from a
-   local fixture; after real Tracking records exist, rotate that
-   secret only with an explicit compatibility or code-reissue plan.
+   configured. Complete central logging/alerts, account MFA, credential-rotation
+   rehearsal, and rollback monitoring. After real Tracking records exist,
+   rotate the Tracking secret only with an explicit compatibility or code-reissue plan.
 7. Keep the low-traffic pilot's explicit bounded cursor loading and CPU-throttled phone limits under observation. Before the market approaches thousands of simultaneously discoverable trucks, replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering.
 8. Hosted Production Supabase Auth now has the exact Site URL and
    `/api/auth/callback`, Google identity credentials, numeric login/signup
@@ -62,6 +80,14 @@ The repository, linked hosted database, and Netlify application support a contro
    code-sent state. Configure Preview independently; complete Google consent and
    OTP login/signup end to end against the active-role and
    atomic provider-provisioning boundaries before enabling them publicly.
+9. Link the Netlify site to the reviewed GitHub repository/branch so Production
+   and Preview deploys are traceable to pushed commits and required checks. The
+   current site has no repository or branch association and is deployed manually.
+10. Publish or schedule each next Ethiopia-day Featured roster deliberately;
+    Production correctly shows no automatic replacement when a day is missing.
+    Configure real Support availability before presenting Assisted matching as
+    immediate help; the live presence projection currently reports zero
+    available team members.
 
 ## Bounded beta map warning
 

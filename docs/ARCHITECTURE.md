@@ -57,4 +57,19 @@ Public current-capacity projection is privacy aware: a Private network signal, t
 
 Query-sensitive public capacity and place-search JSON stays outside shared CDN caches unless the cache key varies on every accepted query parameter. The current Netlify adapter sends both responses as private and non-storable.
 
-Replay `supabase/migrations/001` through `057` from an empty local stack and the linked Preview project, complete the remaining compatibility-port retirement, run repository/RLS/identity tests, configure and prove the managed upload scanner and verified email sender, configure Supabase Realtime and shared-limit monitoring, rehearse backup and rollback, then deploy the Next.js application through Netlify's maintained OpenNext adapter. Managed Auth/signup, health, place search, public discovery, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, authenticated workspace/Fleet management, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Daily Featured/Sponsor administration, shared request limits, server-only upload quarantine, and the bounded scheduled email/retention/limit-cleanup worker already use isolated adapter ports; dormant compatibility modules stay production-blocked until removed. CI also builds the standalone Docker artifact from the same commit for reproducibility and host portability. No application runtime falls back to SQLite or local serverless files.
+Replay `supabase/migrations/001` through `073` from an empty isolated stack and
+the linked Preview project, run repository/RLS/identity tests, configure and
+prove the managed upload scanner and verified email sender, review the live
+Supabase Security and Performance Advisor findings, configure monitoring,
+rehearse database and Storage-object restore, and then deploy the Next.js
+application through Netlify's maintained OpenNext adapter. Managed Auth/signup,
+health, place search, public discovery, Shared capacity, provider Capacity,
+provider-owned Tracking, transporter-profile editing, authenticated
+workspace/Fleet management, Verification/Billing, member Support, Assisted
+matching, platform-team management, Operations, Daily Featured/Sponsor
+administration, shared request limits, server-only upload quarantine, and the
+bounded scheduled email/retention/limit-cleanup worker use isolated adapter
+ports. The SQLite runtime and compatibility modules have been removed. CI also
+builds the standalone Docker artifact from the same commit for reproducibility
+and host portability. No application runtime falls back to SQLite or local
+serverless files.

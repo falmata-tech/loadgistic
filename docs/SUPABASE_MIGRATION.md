@@ -68,7 +68,9 @@ On 2026-09-04, a credential-free logical snapshot verified that the linked
 hosted Loadgistic project had no application tables. The reviewed `001`–`069`
 chain was then applied in numeric order. On 2026-09-05, an encrypted logical
 backup was created and verified before additive migrations `070`–`072` were
-applied; local and remote migration histories then matched through `072`. The
+applied. On 2026-09-08, a fresh encrypted logical backup was verified before
+`073` was applied; local and remote migration histories now match through
+`073`. The
 three required active plan rows are present, the seven required private Storage
 buckets remain present, and anonymous bucket discovery returns no records. After
 explicit operator approval, the exact-project-confirmed additive pilot importer
@@ -78,10 +80,10 @@ slots, and one private verification placeholder in Production. It created no
 synthetic Admin or Support identity. An encrypted pre-import backup and the
 deterministic namespaced rollback are retained.
 
-The isolated local stack replayed and verified migration `073` on 2026-09-07.
-The linked Production project remains at `072` until the approved rollout
-applies `073` after a fresh encrypted backup and immediately verifies the
-bounded Open-capacity projection.
+The linked Production projection was verified after `073`: omitted filters
+remain neutral, selected filters combine correctly, and query-sensitive Open
+capacity and place-search responses are private and non-storable at the CDN
+boundary.
 
 The local configurator reads the isolated CLI stack without printing keys,
 writes only the ignored mode-`0600` `.env.local`, imports the fake market, and
@@ -107,7 +109,7 @@ Published transporter microsites use a second application port with explicit Sup
 
 Daily Featured Transporters uses its own application port and the pure two-session scheduler. PostgreSQL returns only candidates from the date-derived regional group and rechecks every eligibility input at read time. The server joins the administrator-ordered published roster and at most five active Sponsor placements, strips owner IDs and eligibility internals, maps manual schedule keys to public handles, and safely projects either eligible transporters or bounded outside advertisements. Anonymous and ordinary authenticated clients cannot execute the candidate RPC.
 
-Shared capacity, provider Capacity, and provider-owned Tracking use dedicated Supabase-only application ports. Service-role-only commands repeat ownership, assignment, subscription, permission, guest-grant, transition, and review rules in PostgreSQL. Delivery workers lease rows with `FOR UPDATE SKIP LOCKED`, and successful delivery is terminal. The source-verified Netlify design uses a 15-minute managed dispatcher and a two-minute access-email recovery dispatcher, both invoking HMAC-authenticated bounded background work that rejects unsigned or stale calls and exposes no private operation result. The managed application-email port prefers direct Resend delivery with stable idempotency keys, accepts a bounded authenticated-SMTP pilot with stable Message-IDs and an at-least-once warning, and retains an HTTPS webhook adapter for private integrations. Supabase Auth email remains a separate adapter. Clean local verification exercises all three slices with SQLite unavailable and proves browser-role denial. The Production application-SMTP variables are configured and an authentication-only handshake passes, but the workers are not deployed and no remote application-email delivery is proved.
+Shared capacity, provider Capacity, and provider-owned Tracking use dedicated Supabase-only application ports. Service-role-only commands repeat ownership, assignment, subscription, permission, guest-grant, transition, and review rules in PostgreSQL. Delivery workers lease rows with `FOR UPDATE SKIP LOCKED`, and successful delivery is terminal. The deployed Netlify design uses a 15-minute managed dispatcher and a two-minute access-email recovery dispatcher, both invoking HMAC-authenticated bounded background work that rejects unsigned or stale calls and exposes no private operation result. Netlify logs confirm both schedules and their background functions are invoked without reported operation failures. The managed application-email port prefers direct Resend delivery with stable idempotency keys, accepts a bounded authenticated-SMTP pilot with stable Message-IDs and an at-least-once warning, and retains an HTTPS webhook adapter for private integrations. Supabase Auth email remains a separate adapter. Clean local verification exercises all three slices with SQLite unavailable and proves browser-role denial. The Production application-SMTP variables are configured and an authentication-only handshake passes, but a real pending Shared capacity, Tracking, or Assisted matching delivery still requires monitored end-to-end proof.
 
 Transporter-profile editing now selects a dedicated application port. Its PostgreSQL workspace and mutation functions deny Company drivers and browser roles, repeat current subscription/ownership rules, resolve the general base from the managed place catalog, bound public content and contacts, and audit only visibility flags and non-sensitive place/region identifiers. Profile images use the central quarantine/scanner/storage port before an atomic metadata command; failed metadata removes the new object and successful replacement removes the superseded object after commit.
 
@@ -122,7 +124,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `069` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `073` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
