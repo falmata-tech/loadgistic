@@ -3,12 +3,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { privateStorageStatus,readPrivateUpload,storePrivateUpload } from '../src/lib/private-storage.js';
+import {PRIVATE_UPLOAD_MAX_BYTES,privateUploadMaxBytes} from '../src/lib/upload-policy.js';
 
 const pngBytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00]);
 
-function upload(name,type,bytes){
-  return {name,type,size:bytes.length,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
+function upload(name,type,bytes,size=bytes.length){
+  return {name,type,size,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
 }
+
+test('private uploads stay beneath the Netlify buffered binary boundary',async()=>{
+  assert.equal(PRIVATE_UPLOAD_MAX_BYTES,4*1024*1024);
+  assert.equal(privateUploadMaxBytes({}),4*1024*1024);
+  assert.equal(privateUploadMaxBytes({FILE_MAX_MB:'10'}),4*1024*1024);
+  assert.equal(privateUploadMaxBytes({FILE_MAX_MB:'2'}),2*1024*1024);
+  await assert.rejects(
+    ()=>storePrivateUpload(upload('too-large.png','image/png',pngBytes,PRIVATE_UPLOAD_MAX_BYTES+1),'capacity'),
+    /FILE_TOO_LARGE/
+  );
+});
 
 test('private storage is Supabase-only and validates bytes before managed writes',async()=>{
   const previousUrl=process.env.NEXT_PUBLIC_SUPABASE_URL;

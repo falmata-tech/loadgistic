@@ -94,6 +94,14 @@ test('operations rows use real record routes and active UI contains no fake hash
   }
 });
 
+test('admin and Support lint correction removes retired storage and preserves bounded assignment',()=>{
+  const source=fs.readFileSync(path.join(root,'supabase/migrations/076_admin_support_lint_corrections.sql'),'utf8');
+  assert.match(source,/RETIRED_ADMIN_BRANCH_NOT_FOUND/);
+  assert.match(source,/position\('member_favorites' in patched\)>0/);
+  assert.match(source,/greatest\(1::bigint,agent\.max_open_conversations-open_count\)::integer/);
+  assert.match(source,/SUPPORT_ASSIGNMENT_CALL_NOT_REPLACED/);
+});
+
 test('the guarded local Supabase verification chain includes platform administration',()=>{
   const source=fs.readFileSync(path.join(root,'scripts/configure-local-supabase.mjs'),'utf8');
   assert.match(source,/runScript\('scripts\/verify-supabase-platform-admin\.mjs'\)/);

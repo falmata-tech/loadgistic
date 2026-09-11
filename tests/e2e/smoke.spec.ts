@@ -803,8 +803,13 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
     await expect(page.getByRole('button',{name:'Log out'})).toBeVisible();
     await page.goto('/app/home');
   }
-  await page.getByRole('link',{name:'Tracking',exact:true}).first().click();
-  await expect(page).toHaveURL(/\/app\/provider-shipments$/);
+  const primaryNavigation=(page.viewportSize()?.width||0)<=760
+    ?page.getByRole('navigation',{name:'Mobile navigation'})
+    :page.getByRole('navigation',{name:'Workspace navigation'});
+  await Promise.all([
+    page.waitForURL(/\/app\/provider-shipments$/),
+    primaryNavigation.getByRole('link',{name:'Tracking',exact:true}).click()
+  ]);
   await expect(page.getByText(trackingCode)).toBeVisible();
 });
 

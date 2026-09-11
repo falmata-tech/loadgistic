@@ -27,6 +27,7 @@ Given multiple available customer-service agents and queued conversations\
 When automatic assignment runs\
 Then an agent at the configured open-conversation limit receives no additional conversation\
 And closing a conversation frees one assignment slot\
+And an availability change passes only the bounded remaining integer capacity into automatic assignment\
 And equal-load agents are selected by the oldest assignment time\
 And assignment, claim, availability, and closure remain visible in the support audit trail.
 

@@ -118,6 +118,7 @@ When the service-role-only managed command function receives the verified actor 
 Then PostgreSQL independently verifies the actor's current Customer, Operations, or Billing permission\
 And account, Driver permission, truck, Capacity, regular-service, or plan changes complete atomically with their audit record\
 And an unsupported command, missing record, self-suspension attempt, or insufficient permission changes nothing\
+And a retired record command is rejected without referencing or recreating retired storage\
 And suspending a Support team member safely returns their open conversations to the waiting queue.
 
 ### Scenario: administrator manages support agents

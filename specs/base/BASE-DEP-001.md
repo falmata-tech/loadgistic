@@ -30,6 +30,7 @@ Then deployment is rejected or reported unhealthy without exposing secret values
 Given an authorized route accepts proof, verification, payment, or capacity media\
 When it validates and stores the upload\
 Then the file's actual signature agrees with its permitted MIME type\
+And the complete multipart upload is limited to four mebibytes so it remains below Netlify's effective buffered binary-request boundary\
 And the untrusted object is first written to a dedicated private quarantine boundary\
 And a configured scanner returns an explicit clean verdict before the object is copied into its purpose-specific private bucket\
 And an infected, malformed, timed-out, quota-limited, unavailable, or unexpected scanner result deletes the quarantined object and returns no storage reference\
@@ -159,6 +160,13 @@ And Preview deploys carry validation traffic before a bounded Production promoti
 And the operator maintains encrypted off-platform logical database backups because the Supabase Free plan has no downloadable automatic backups\
 And the application presents a truthful temporary-unavailable state if either provider pauses service rather than falling back to local serverless files or SQLite\
 And the deployment contract remains portable to Vercel Pro or a container host without changing domain behavior.
+
+### Scenario: common relational lookups stay indexed
+
+Given the zero-cost pilot reads or removes records through frequently traversed foreign keys\
+When PostgreSQL plans Fleet, Tracking, Featured, Support, Verification, Sponsor, or audit work\
+Then the active owner, assignment, parent-record, and reviewer foreign keys have covering indexes\
+And indexes are additive and selected from observed hosted advisor findings rather than speculative unused-index removal.
 
 ### Scenario: beta tile fallback is reported without blocking the pilot
 

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {scanPrivateUpload,uploadScannerStatus} from './upload-scanner.js';
+import {privateUploadMaxBytes} from './upload-policy.js';
 
 const MIME_CONFIG={
   'image/jpeg':{extension:'.jpg',matches:(bytes)=>bytes.length>=3&&bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff},
@@ -69,8 +70,7 @@ export function privateStorageStatus(environment=process.env){
 export async function storePrivateUpload(file,purpose='file'){
   if(!file||typeof file.arrayBuffer!=='function'||!file.size)return null;
   validatePurpose(purpose);
-  const maxMb=Math.max(1,Number(process.env.FILE_MAX_MB||10));
-  if(file.size>maxMb*1024*1024)throw new Error('FILE_TOO_LARGE');
+  if(file.size>privateUploadMaxBytes())throw new Error('FILE_TOO_LARGE');
   const mimeType=String(file.type||'').toLowerCase();
   const config=MIME_CONFIG[mimeType];
   if(!config)throw new Error('UNSUPPORTED_FILE_TYPE');
