@@ -2,7 +2,7 @@
 
 ## Product invariant
 
-Loadgistic connects businesses looking for road-freight capacity with fleet transporters and self-managed drivers looking for reviewed B2B demand.
+Loadgistic gives account-free capacity seekers a public view of road-freight supply from fleets, owner-operators, and self-managed Drivers. Providers publish current capacity and own shipment tracking after the parties agree offline; Loadgistic does not publish demand or handle transactions.
 
 Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
 
@@ -32,20 +32,29 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 
 - `src/app`: Next.js App Router pages and route handlers
 - `src/lib/domain.js`: pure domain rules
-- `src/lib/repository.js`: local persistence adapter and domain services
-- `src/lib/db.js`: Node SQLite schema and deterministic seed
+- `src/lib/repository/supabase.js`: server-only Supabase/PostgreSQL adapter
+- `src/lib/*/supabase.js`: bounded application ports for managed workflows
 - `src/lib/auth.ts`: signed session cookie boundary
-- `supabase/`: cloud PostgreSQL/RLS target
-- `tests/`: domain, repository, and browser workflows
+- `supabase/`: PostgreSQL schema, RLS, RPCs, Auth, and Storage configuration
+- `resources/fixtures/managed-market.json`: credential-free local managed fixture
+- `tests/`: domain, managed-contract, and browser workflows
 
 ## Rules
 
 1. Keep state transitions explicit in `domain.js`.
-2. Authorize every mutation in server-side repository services.
+2. Authorize every mutation in server-side application services and PostgreSQL commands.
 3. Do not expose proof files without shipment authorization.
-4. Do not show expired, full, or off-duty capacity in marketplace discovery.
+4. Do not show full or Off Duty capacity in marketplace discovery. An older
+   Empty or Partial signal may remain visible only with explicit capacity and
+   location age labels that tell visitors to confirm availability directly.
 5. Use ETB or Quote Requested; do not introduce USD marketplace prices.
 6. Show only data derived from actual records or verified inputs.
 7. Preserve mobile-first simplicity.
 8. Add tests for every permission or workflow change.
 9. Update `docs/DECISIONS.md` and `docs/PROGRESS.md` when architecture changes.
+10. For OAuth, email, Storage, payments, or another external boundary, a unit
+    test or `curl` redirect is not completion evidence. Exercise the visible
+    browser control end to end, verify the intended user-visible destination
+    or inbox, and confirm the running process loaded the expected adapter. Log
+    only sanitized status/count evidence; never print mailbox bodies, OTPs,
+    callback secrets, tokens, or customer contact data.

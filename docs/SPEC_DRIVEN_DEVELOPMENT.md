@@ -6,15 +6,15 @@ Loadgistic uses executable specifications to connect intent, behavior, contracts
 
 The proposal is adopted with one refinement: architecture principles are constraints, not ceremony. Given/When/Then captures externally meaningful scenarios. Hexagonal ports isolate identity, persistence, files, audit, and transport. SOLID guides responsibility and dependency direction. DDD names aggregates, entities, value objects, and invariants. None of these requires a class when a pure function or module expresses the contract more directly.
 
-The current code already has the beginnings of these boundaries:
+The current code uses these boundaries:
 
 - `src/app` is the inbound HTTP and UI adapter.
-- `src/lib/repository.js` is currently both application service and SQLite repository facade.
 - `src/lib/domain.js` contains pure domain policy.
-- `src/lib/db.js` is the local persistence adapter.
-- `supabase/` is the production PostgreSQL/RLS adapter target.
+- Focused facades under `src/lib/` expose narrow application contracts.
+- `src/lib/repository/supabase.js` and focused `*/supabase.js` modules are server-only outbound adapters.
+- `supabase/` owns PostgreSQL schema, PostGIS matching, RLS, transactional commands, Auth, and Storage configuration.
 
-New work should reduce the mixed responsibility in `repository.js` incrementally. Do not rewrite working features solely to produce class-shaped architecture.
+New work should preserve dependency direction toward domain/application contracts. Do not manufacture class-shaped architecture when a typed function or cohesive module expresses the port more directly.
 
 ## Spec hierarchy
 

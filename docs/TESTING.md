@@ -1,84 +1,62 @@
 # Testing
 
-## Pure domain and repository tests
-
-```bash
-npm test
-```
-
-These tests use Node's test runner and an isolated SQLite file.
-
-`tests/authorization.test.mjs` is the negative contract suite for role, tenant, record-party, Connected-partner, tracking-code, proof-file, terminal-review, and expired-subscription boundaries. Add denial coverage there whenever a protected service changes.
-
-## Type and source checks
-
-```bash
-npm run check:specs
-npm run check:source
-npm run typecheck
-```
-
-Run the standard local gate with:
+## Standard gate
 
 ```bash
 npm run quality
+npm run build
+npm run test:e2e
+npm run test:a11y
 ```
 
-The specification check validates required front matter, stable unique IDs, linked related IDs, base linkage, contracts, observability, and Given/When/Then coverage.
+`npm run quality` validates linked specifications and source constraints, runs the Node test suite against isolated SQLite databases, and typechecks the application. The production build uses an isolated Next.js output directory.
 
-`tsconfig.offline.json` is used only in the artifact build environment where npm dependencies are unavailable. Normal development uses `tsconfig.json` and installed framework types.
+Focused Node coverage includes:
 
-## Browser tests
+- explicit provider-Tracking transitions and image restrictions;
+- provider ownership and assigned-Driver scope;
+- one stable customer-owner code digest and guest grant;
+- access/completion email idempotency and 30-day cleanup;
+- provider business-information updates that preserve platform-managed microsite presentation;
+- all-score review publication and low-rating disputes;
+- supply-only deterministic reset, full 47-signal cursor traversal, current and regular Service-area/Capacity-route integrity, maximum-one regular service, public contact controls, and optional proximity privacy;
+- remaining pure domain rules used by the active provider workflows.
+
+## Browser workflows
 
 ```bash
+npm run test:e2e:critical
 npm run test:e2e
 ```
 
-Playwright resets `data/test-e2e.db`, writes generated Next.js artifacts to `.next-e2e`, and starts a dedicated application server on port `3100`. Normal development and production builds retain the standard `.next` path, and the parent E2E runner restores Next's generated TypeScript metadata after Playwright exits. Browser scenarios therefore cannot mutate developer business records or remove generated files from the live application. Fixture credentials stay in the test source and local setup documentation; they are not rendered by the public login page.
+`test:e2e:critical` is the fast changed-behavior layer for the canonical public market, selected-truck focus, automatic visitor location and retry, persisted Driver location, stable owner Tracking handoff/action state, and the provider presentation boundary. It asserts default view state, regional centering, resulting markers, compact-card dimensions, cluster removal/restoration, location API responses, distance evidence, persisted summary state, status-action availability, and absent provider design controls rather than accepting visible controls as proof. `test:e2e` remains the release-wide workflow suite.
 
-Covered workflows:
+Playwright resets `data/test-e2e.db`, uses `.next-e2e`, and runs a dedicated server on port `3100`, so it does not mutate the developer database or live development build. Current workflows cover:
 
-- Public homepage switches between live Shipment Board and Truck Board projections, exposes useful structured facts, and withholds member identity and contact fields
-- Business opens the rich Post Shipment workflow
-- Fleet Transporter lands on a management dashboard and updates an individual truck inside My Fleet
-- Self-managed Driver uses the simplified capacity Home and receives automatic obscured device location with manual fallback
-- Provider searches marketplace demand by truck route but sees only involved loads in Tracking
-- Business ranks Truck Board trucks against an owned open shipment
-- Signed-in members browse Business and transporter profiles with declared regions but without private account contacts
-- Members and administrators open their role-specific verification workflows
-- Assigned-provider tracking enforces the load's selected mode
-- Transporter opens loads and capacity
-- Authenticated public-company navigation retains its session and preselects the requested provider
-- Expired workspaces retain Home and Plan & billing while operating navigation and deep links are denied
-- Self-service signup creates an active unverified workspace with a seven-day trial, Business-only sponsorship remains admin-controlled, and payment approval creates a 30-day period
-- Public login does not expose local fixture credentials
-- A Fleet Transporter starts one private support conversation, immediately sees
-  its sent message and conversation preview, reads the assigned SUPPORT agent's
-  reply from selectable closed history, and an Administrator supervises the team
+- public capacity Map-first entry, East Africa exploration bounds, over-map search, a bounded illustrated modal whose optional filters combine conjunctively, always-visible map key, hover/focus-only marker summaries, automatic/retry visitor location, regional visitor centering, pointed cargo-configuration pins, categorical Empty/Partial rings, every-segment multi-city Capacity-route matching, full-polygon Service-area matching, cursor loading, status-specific map clusters, responsive non-scrolling selected details, and provider details;
+- canonical public Market access from authenticated workspaces, safe redirects from retired dashboard-market routes, explicit Exit/Dashboard navigation, and persisted Driver capacity-location refresh with manual retry;
+- provider Directory and canonical `/@handle` microsites;
+- provider-only signup and retired demand-route redirects;
+- fleet and self-managed capacity editing, manual approximate-location refresh, the unified collapsed summary, focused current/regular-service editors, maximum-one enforcement, and absence of future-trip or standalone planning controls;
+- provider Tracking creation, stable owner code/link, ordered action panel including Going to pickup, assigned-Driver-only approximate travel location, customer location-map projection, guest unlock, timeline transitions, completion, and review behavior;
+- verification warnings/badges, Support, administration, and desktop/mobile navigation.
+- anonymous mobile app navigation across Open capacity, Private capacity, Track, Featured, and About, plus role-specific provider navigation and a public-first standalone manifest whose cache boundary excludes private navigation and framework chunks.
 
-Add tests for every permission or state-transition change.
+## Visual audit
 
-## Comprehensive data and dense UI audit
+With the development server running:
 
 ```bash
-npm run db:stress
-npm run dev
+npm run test:ui-audit
 npm run test:ui-stress
 ```
 
-The stress generator validates all 34 application tables, foreign keys, entity
-ownership, fleet assignments, rating eligibility, Local/Long-distance/Both
-movement coverage, support queues, and material workflow-state coverage.
-`tests/stress-data.test.mjs` runs the same generator against an isolated
-database and proves that Production execution is rejected before any database
-change.
+The standard audit captures current logged-out, fleet-provider, self-managed Driver, company Driver, Support, and administrator screens at desktop and mobile sizes. It waits for real Leaflet containers, rendered tiles, and truck/cluster markers before map capture, then checks response status, browser errors, horizontal overflow, touch targets, unlabeled fields, empty actions, and icon coverage. The stress audit repeats current-product routes with dense deterministic data and proves bounded Truck List pagination advances. These are release-wide layout regression sweeps, not substitutes for workflow assertions. Evidence is written to ignored `artifacts/ui-audit/` and `artifacts/stress-ui/` files.
 
-The dense UI audit signs in as Business, Fleet Transporter, generated fleet
-owner, generated Self-managed Driver, expired Business, and Administrator
-personas. It captures 74 desktop/mobile screens, including Connected, Requests,
-Favorites, Partners and Direct visibility, second-page Board, Directory, and
-Operations results, route comparison, and the limited billing experience. It
-checks expected cohort content, response
-status, browser errors, horizontal overflow, render time, DOM size, and card
-density. Local evidence is written to the ignored `artifacts/stress-ui/`
-directory.
+`npm run test:a11y` is the standards-based accessibility gate. It scans serious and critical WCAG violations across public and authenticated roles, tests keyboard operation and focus restoration for dialogs, and checks narrow 320-pixel reflow. Leaflet marker positions are spatial and can overlap or cross the active viewport even though each marker is 82×96 pixels; the marker pane is therefore excluded only from the automated target-size rule, with the equivalent keyboard-operable Truck List retained. All other accessibility rules still inspect the map.
+
+Run visual inspection only when the user has approved it. During iteration inspect the changed states first; reserve the full multi-role sweep for a release boundary. Inspect at least the public homepage, public capacity list/map, a provider microsite, the collapsed provider capacity summary, and provider shipment creation when those surfaces changed.
+
+## Production boundary
+
+Tests use the isolated local Supabase PostgreSQL/Auth/Storage stack and the credential-free managed fixture. Guarded live verifiers establish local adapter, authorization, RLS/RPC, Storage, Auth, and queue parity, but they do not establish hosted email delivery, hosted malware scanning, sustained third-party tile capacity, backup/restore, Preview concurrency, or a Production rollout. The community-tile fallback is a monitored bounded-beta warning; the remaining concerns stay launch gates in `docs/PROGRESS.md` and `docs/SUPABASE_MIGRATION.md`.

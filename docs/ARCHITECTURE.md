@@ -1,53 +1,75 @@
 # Architecture
 
-## Runtime
-
-Loadgistic is a Next.js App Router application running on the Node.js runtime. Pages are server-rendered by default. Mutations use Route Handlers and HTML forms, keeping client JavaScript small.
+Loadgistic is a Next.js App Router application on the Node runtime. Server-rendered pages and Route Handlers adapt HTTP to explicit repository/domain commands.
 
 ## Layers
 
-1. **UI and routing** — `src/app` and `src/components`
-2. **Authentication boundary** — `src/lib/auth.ts` and signed HTTP-only cookies
-3. **Domain rules** — `src/lib/domain.js`
-4. **Application services and authorization** — `src/lib/repository.js`
-5. **Local data adapter** — `src/lib/db.js` using Node SQLite
-6. **Cloud target** — Supabase PostgreSQL, Auth, Storage, and RLS
+1. UI/routing — `src/app`, `src/components`.
+2. Authentication and guest-grant boundary — `src/lib/auth.ts`, managed PKCE/email-code adapters under `src/app/api/auth`, and fixed callback policy in `src/lib/auth-flow.js`.
+3. Pure state/validation rules — `src/lib/domain.js`, `src/lib/security.js`.
+4. Application services, authorization, and projections — explicit managed ports under `src/lib`, including `platform-admin.js`.
+5. Persistence — Supabase PostgreSQL behind explicit repository ports; local work uses the isolated Supabase CLI stack.
+6. Identity and files — Supabase Auth SSR sessions and private Supabase Storage buckets.
+7. External adapters — managed email delivery, malware scanning, and bounded operational jobs.
 
-## Hexagonal interpretation
+Dependency direction is HTTP/UI → application authorization/services → domain rules → outbound adapters. UI code never queries Supabase directly; repository, identity, and storage ports keep tenant authorization testable while local, Preview, and Production use the same managed-service contracts.
 
-The dependency direction is UI/HTTP adapters → application services and authorization → pure domain rules → outbound ports and adapters. The current `repository.js` combines application services with the local repository facade; it is an intentional MVP seam, not a target for further coupling. Extract a port when a second adapter is introduced or a contract needs isolated testing.
+## Active entities and invariants
 
-DDD vocabulary is used where it clarifies invariants: Shipment, Capacity Update, Network Relationship, Business Application, and Payment Proof are aggregates; ETB Amount, Capacity Percentage, Shipment Code, Tracking Access Code, and Expiry are value objects. Implementations may remain pure functions and modules. Classes are not an architectural requirement.
+- Provider organization or self-managed provider profile.
+- Vehicle and exclusive active Driver assignment.
+- Latest current Service-area or two-to-five-city Capacity-route signal and no more than one provider-level regular Service area or Capacity route.
+- Anonymous Truck Market query with full-polygon Service-area proximity, every-segment multi-city route alignment, route/area label search, safe truck-fact predicates, browser-only map centering, and explicitly enabled browser-displaced visitor proximity.
+- Published provider microsite with a shared presentation template, safe contact projection, and nested active-truck/current-capacity projection.
+- Administrator-published Daily Featured Transporters day, ordered variable slots, deterministic automatic or validated manual two-session timeline, unified transporter/outside-advertiser sponsor catalogue, and separately disclosed sponsorship placements.
+- Provider-owned Tracking and immutable execution events behind the service-role-only managed Tracking repository; PostgreSQL independently rechecks workspace ownership, Driver permission, assignment, transition, and location consent.
+- One active customer-owner code digest, a separate review-code digest, customer-safe guest projection, and private idempotent access/completion delivery attempts.
+- Provider review and low-rating dispute, with completion/expiry/uniqueness and owning-provider checks repeated inside managed commands.
+- Verification request, subscription/payment proof, Support conversation, notification, and audit log.
+- Truck-scoped Capacity access grant, short-lived Shared capacity email OTP,
+  30-minute rolling-idle restricted visitor session with explicit logout, and account-free Assisted matching conversation
+  with private attachments and explicit guest/team closure.
 
-Behavioral and adapter contracts are governed by the linked specifications under `specs/`. See `docs/SPEC_DRIVEN_DEVELOPMENT.md`.
+Identity-bearing records enforce one provider owner scope. Current routes and transitions are explicit. Public projections are separate from private email- and platform-audience capacity projections. No active domain aggregate represents public shipment demand, interests, Business profiles, or demand-side member networks. The provider Network is truck-scoped access control, not a demand relationship graph.
 
-## Why local SQLite exists
+Managed provider identity uses Supabase Auth with SSR cookies. Google login asks
+only for OpenID, email, and profile identity, while login email OTP requests set
+`shouldCreateUser:false`; neither login flow grants application authority until the
+authenticated subject resolves through `current_user_projection()`. OAuth
+returns only through the deployment-owned `/api/auth/callback` URL and never
+accepts a dynamic post-login destination. A signed, HTTP-only intent binds Login
+or Signup to the exact PKCE verifier slot without placing the flow selector in
+the callback URL; the callback clears that intent after one terminal attempt.
+Password authentication is an
+explicit non-Production fixture tool, not a managed customer login method.
+Public signup proves Google or numeric email-code identity through a signed
+15-minute HTTP-only handoff before asking for provider facts. The signup-only
+email request may create one Auth subject, but the database trigger keeps it
+inactive. A service-role-only provisioning intent then creates the selected
+provider workspace, draft page, signup record, and trial in one PostgreSQL
+transaction before the profile becomes active.
 
-The environment used to build this artifact cannot reach npm or cloud registries and does not provide Supabase CLI/Docker. Node's built-in SQLite allows the Next.js source to include a deterministic, persistent local adapter without adding a native database dependency.
+The installable shell is public-first: `/` is the manifest identity and Open capacity launch URL, while `/shared-capacity`, `/track`, `/featured`, `/about`, and `/apply` are distinct public route workspaces. The shared public header and route-aware navigation persist visually across client-side `Link` transitions in the order Open capacity, Private capacity, Track, Featured, and About, and its persistent chat launcher restores one authorized guest conversation across public route changes. `/help` remains a recovery fallback rather than a primary navigation destination. Market and Featured remain separate Server Component trees so each route loads only its own projection and client modules. Desktop uses a floating public workspace rail; public and authenticated phone layouts provide their own role-appropriate fixed navigation. The service worker ignores navigation requests, private workspace pages, and framework chunks; only stable brand and vehicle artwork may use cache-first delivery.
 
-This is an adapter choice, not a second product model. The Supabase migration mirrors the core entities and constraints.
-
-## Core entities
-
-- User
-- Organization or independent provider profile
-- Company Page
-- Privacy-obscured capacity and shipment-tracking location
-- Vehicle and driver
-- Shipment and immutable events
-- Provider interest
-- Capacity update
-- Business tracking grant and proof
-- Application
-- Plan, subscription, and payment proof
-- Notification and audit log
+Public current-capacity projection is privacy aware: a Private network signal, truck identity, current geometry, approximate location, and regular-service geometry are absent from anonymous discovery. A provider must publish the truck to Open capacity for that truck to appear publicly; an explicit grant may additionally expose the same Open or Private signal to an authorized email recipient.
 
 ## Deployment path
 
-1. Create a Supabase project.
-2. Apply the ordered files under `supabase/migrations/`.
-3. Configure Supabase Auth and private buckets.
-4. Replace the local repository adapter with Supabase queries/RPCs.
-5. Move local files to private Storage paths.
-6. Run authorization and RLS tests.
-7. Deploy the Next.js standalone output to a Node-compatible host.
+Query-sensitive public capacity and place-search JSON stays outside shared CDN caches unless the cache key varies on every accepted query parameter. The current Netlify adapter sends both responses as private and non-storable.
+
+Replay `supabase/migrations/001` through `073` from an empty isolated stack and
+the linked Preview project, run repository/RLS/identity tests, configure and
+prove the managed upload scanner and verified email sender, review the live
+Supabase Security and Performance Advisor findings, configure monitoring,
+rehearse database and Storage-object restore, and then deploy the Next.js
+application through Netlify's maintained OpenNext adapter. Managed Auth/signup,
+health, place search, public discovery, Shared capacity, provider Capacity,
+provider-owned Tracking, transporter-profile editing, authenticated
+workspace/Fleet management, Verification/Billing, member Support, Assisted
+matching, platform-team management, Operations, Daily Featured/Sponsor
+administration, shared request limits, server-only upload quarantine, and the
+bounded scheduled email/retention/limit-cleanup worker use isolated adapter
+ports. The SQLite runtime and compatibility modules have been removed. CI also
+builds the standalone Docker artifact from the same commit for reproducibility
+and host portability. No application runtime falls back to SQLite or local
+serverless files.

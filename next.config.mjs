@@ -1,14 +1,34 @@
-/** @type {import('next').NextConfig} */
-const scriptPolicy = process.env.NODE_ENV !== 'production'
-  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  : "script-src 'self' 'unsafe-inline'";
+import { contentSecurityPolicy } from './src/lib/security-headers.js';
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
   poweredByHeader: false,
+  devIndicators: false,
+  async redirects() {
+    return [
+      {source:'/app/loads/:path*',destination:'/',permanent:false},
+      {source:'/app/shipments/:path*',destination:'/app/provider-shipments',permanent:false},
+      {source:'/app/providers',destination:'/',permanent:false},
+      {source:'/app/providers/:handle',destination:'/providers/:handle',permanent:false},
+      {source:'/companies',destination:'/',permanent:false},
+      {source:'/companies/:handle',destination:'/providers/:handle',permanent:false}
+    ];
+  },
+  async rewrites() {
+    return [{source:'/@:handle',destination:'/providers/:handle'}];
+  },
   async headers() {
     return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" }
+        ]
+      },
       {
         source: '/(.*)',
         headers: [
@@ -18,7 +38,7 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
           {
             key: 'Content-Security-Policy',
-            value: `default-src 'self'; img-src 'self' data: blob: https://*.tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; ${scriptPolicy}; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`
+            value: contentSecurityPolicy(process.env)
           }
         ]
       }

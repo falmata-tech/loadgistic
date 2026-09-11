@@ -2,11 +2,11 @@
 id: FEAT-VER-001
 title: Entity and truck verification
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-CAP-001]
-problem: Marketplace participants need visible, evidence-based trust signals for people, Businesses, transporters, drivers, and trucks without treating a workspace approval as document verification.
-behavior: Authorized users submit private verification documents for an owned entity or Driver-truck pairing, administrators review each request and its expiry, and profiles or Boards derive colorful category-specific trust badges only from current approvals while every marketplace surface reminds members to perform their own checks.
+problem: Public capacity seekers need visible, evidence-based trust signals for providers, Drivers, and truck authority without treating account access or a badge as a guarantee.
+behavior: Authorized providers submit private verification documents for an owned organization, Driver, or Driver-truck pairing. Administrators review each request and expiry. Public Capacity Board cards and provider microsites derive vivid category-specific badges only from current approvals and always tell visitors to perform their own checks.
 contracts: [VerificationSubject, VerificationTypePolicy, VerificationSubmission, VerificationReview, VerificationExpiry, DriverTruckAuthorization, VerificationBadgeSummary, VerificationBadgeMeaning, VerificationRiskNotice, VerificationFileAuthorization]
 observability: [verification_submitted_audit, verification_reviewed_audit, verification_denied_outcome]
-rollout: Document names remain extensible; keep files private, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history.
+rollout: Document names remain extensible; use private Supabase Storage plus actor-scoped PostgreSQL commands in every runtime, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history; never fall back to SQLite.
 ---
 
 # Verification
@@ -20,10 +20,26 @@ And every matching request remains reachable without exposing private documents 
 
 ### Scenario: owner submits supported evidence
 
-Given an authenticated Business, fleet transporter, or self-managed driver\
+Given an authenticated fleet transporter or self-managed Driver\
 When they choose an owned profile or Driver-truck pairing, a supported verification type, and a valid private document\
 Then one Pending verification request is created\
 And only the owner and an administrator may read its metadata.
+
+### Scenario: independent truck evidence follows operating model
+
+Given an independent provider signed up as an Owner-operator\
+When the provider opens Verification after adding a truck\
+Then that truck offers Truck ownership evidence\
+And Truck authorization is not presented as the Owner-operator&apos;s required truck document.
+
+Given an independent provider signed up as a Self-managed driver\
+When the provider opens Verification after adding a truck\
+Then the Driver-truck pairing offers expiring Truck authorization evidence\
+And Truck ownership is not presented as the Self-managed driver&apos;s required truck document.
+
+Given a Driver belongs to a fleet transporter\
+When account or verification identity is shown\
+Then the role is Company driver and the employing fleet name remains visible.
 
 ### Scenario: subject and type must match
 
@@ -53,7 +69,7 @@ When no approved request exists\
 Then the category badge is neutral gray and states Not verified.
 
 Given an administrator approves the category\
-When an authenticated user opens the directory profile, Shipment Board, Truck Board, or truck roster\
+When a visitor opens the public Capacity Board, provider microsite, or public truck detail\
 Then that category badge uses a vivid, high-contrast category treatment designed to draw attention and states Verified\
 And identity, license, address, Driver, truck, and reputation categories use distinct bright colors such as blue, orange, green, violet, cyan, and gold\
 And color is paired with an icon and visible text rather than carrying meaning alone\
@@ -75,31 +91,29 @@ Then it identifies that Driver, that owned or assigned truck, and a required exp
 And approval produces Truck authorization only for that pairing\
 And reassignment or expiry cannot verify a different Driver-truck pairing.
 
-### Scenario: marketplace cards explain entity trust
+### Scenario: public capacity cards explain provider trust
 
-Given an authenticated user opens the Shipment Board\
-When a shipment owner has approved identity or Business-license evidence and published reviews\
-Then the card shows the corresponding verified owner badges and review summary\
-And absent evidence is shown as Not verified rather than omitted or inferred.
-
-Given an authenticated user opens the Truck Board\
+Given a visitor opens the public Capacity Board\
 When a truck belongs to a fleet or self-managed driver\
 Then the card separately shows owner or company evidence, truck authority evidence, and the assigned driver's approved driver-license evidence where an assignment exists\
+And the truck detail identifies only the Driver's first name, operating-model label, and public callback phone\
+And every required Driver and truck category remains visible as Verified, Not verified, or Expired\
 And a self-managed owner-operator receives the relevant combined owner and driver evidence without duplicate claims.
 
 ### Scenario: verification does not gate account access
 
-Given a newly signed-up workspace has no approved verification requests\
+Given a newly signed-up provider workspace has no approved verification requests\
 When its trial or paid access is current\
-Then its authorized user can use the workspace and marketplace\
+Then its authorized user can use the provider workspace and publish capacity\
 And gray Not verified badges encourage evidence submission without blocking access.
 
-### Scenario: marketplace trust warning remains visible
+### Scenario: public marketplace trust warning remains visible
 
-Given a member opens the Directory, a member profile, Shipment Board, Truck Board, or an agreement action\
+Given an anonymous visitor opens a public transporter microsite, Truck Market card, or selected-truck detail\
 When trust evidence is displayed\
-Then a concise notice tells the member to confirm current identity, authority, truck, Driver, and documents before agreeing\
-And explains that badges describe reviewed evidence rather than guaranteeing payment, performance, cargo safety, or continuing legal authority.
+Then a concise notice tells the visitor to confirm current identity, authority, truck, Driver, and documents before agreeing\
+And explains that badges describe reviewed evidence rather than guaranteeing payment, performance, cargo safety, or continuing legal authority\
+And authenticated Home, capacity management, Tracking, Support, Account, verification-management, and administration pages do not repeat that marketplace warning.
 
 ### Scenario: verification document remains private
 
@@ -108,19 +122,30 @@ When an unrelated authenticated user or anonymous visitor requests the file\
 Then access is denied\
 And only the submitting owner or an administrator can read it.
 
+### Scenario: managed verification is actor scoped and durable
+
+Given local development, Preview, or Production uses the managed runtime\
+When a workspace reads its verification center, submits evidence, opens its private file, or an authorized Trust actor reviews it\
+Then the active application route uses the dedicated Verification port, Supabase PostgreSQL, and private Supabase Storage\
+And PostgreSQL repeats current actor, workspace or Trust permission, subject ownership, evidence type, Driver-truck pairing, expiry, duplicate, and terminal-review checks\
+And a failed metadata command removes a newly released upload instead of leaving an unowned evidence object\
+And every private-file read repeats submitter or Trust authorization without returning its storage reference to the browser\
+And browser roles cannot execute the service-only commands or read the private bucket directly\
+And managed failure never falls back to SQLite or a serverless local file.
+
 ## Supported categories
 
-- Business organization: National ID, Business license, and Business address
 - Fleet transporter organization: National ID, Business license, and Business address
+- Owner-operator: National ID, Driver license, and Truck ownership for each owned truck
 - Self-managed driver: National ID, Driver license, and pairing-specific Truck authorization
-- Fleet driver: National ID, Driver license, and pairing-specific Truck authorization
-- Truck: legacy Vehicle ownership or Owner authorization evidence remains historical; current Driver-facing authority is pairing-specific
+- Company driver: National ID, Driver license, and pairing-specific Truck authorization under the named fleet transporter
+- Truck: Truck ownership for an Owner-operator; historical Vehicle ownership or Owner authorization names remain inert record values only
 
 The catalog may add country- or actor-specific document names in a later accepted update without changing approved historical records.
 
 ## Contract ownership
 
-- Pages: `/app/verification`, `/admin/verifications`, Public Profiles, truck rosters
-- Application services: verification functions in `src/lib/repository.js`
-- Private file adapter: `/api/files/verification/[id]`
-- Tests: `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
+- Pages: `/app/verification`, `/admin/verifications`, public Capacity Board, provider microsites, and truck rosters
+- Application services: dedicated managed Verification application port
+- Private file adapter: `/api/files/verification/[id]` backed by actor-scoped PostgreSQL authorization and private Storage
+- Tests: managed Verification contract and live Supabase verifier, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`

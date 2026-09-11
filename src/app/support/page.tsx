@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { CheckCircle2, Clock3, Headphones, Inbox, PauseCircle, PlayCircle, UserCheck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { listSupportInbox } from '@/lib/repository.js';
+import { listSupportInbox } from '@/lib/support.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { Pagination } from '@/components/pagination';
@@ -19,13 +19,14 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
   const query=await searchParams;
   const requested=String(query.view||'ASSIGNED').toUpperCase();
   const view=views.some(item=>item.id===requested)?requested:'ASSIGNED';
-  const result:any=listSupportInbox(user,view,{page:query.page,pageSize:15});
+  const result:any=await listSupportInbox(user,view,{page:query.page,pageSize:15});
   const available=Boolean(result.agent?.available);
 
   return <div className="page support-page">
     <SupportRefresh/>
     <PageHeader icon={Headphones} title="Support Inbox" subtitle="Help one customer at a time." action={<form action="/api/support/availability" method="post">{!available?<input type="hidden" name="available" value="on"/>:null}<button className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/>Pause</>:<><PlayCircle aria-hidden="true"/>Go available</>}</button></form>}/>
     <Flash error={query.error} success={query.success}/>
+    <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/>Assisted matching</Link>
     <section className="support-agent-strip">
       <span className={`live-dot ${available?'':'off'}`} aria-hidden="true"/>
       <div><strong>{available?'Available':'Paused'}</strong><small>{result.agent.open_count} of {result.agent.max_open_conversations} assigned</small></div>
@@ -35,10 +36,13 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
     </nav>
     <section className="support-conversation-list">
       {result.items.map((item:any)=><article key={item.id}>
-        <Link className="support-conversation-main" href={item.status==='WAITING'?'#':`/support/${item.id}`}>
+        {item.status==='WAITING'?<div className="support-conversation-main">
           <span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span>
           <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
-        </Link>
+        </div>:<Link className="support-conversation-main" href={`/support/${item.id}`}>
+          <span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span>
+          <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
+        </Link>}
         <StatusPill status={item.status}/>
         {item.status==='WAITING'?<form action={`/api/support/conversations/${item.id}/claim`} method="post"><button className="button small"><UserCheck aria-hidden="true"/>Claim</button></form>:<Link className="button secondary small" href={`/support/${item.id}`}><Inbox aria-hidden="true"/>Open</Link>}
       </article>)}

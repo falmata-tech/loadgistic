@@ -1,48 +1,52 @@
-# Loadgistic Next.js MVP
+# Loadgistic
 
-Loadgistic is a B2B road-freight platform connecting businesses looking for truck capacity with fleet transporters and self-managed drivers looking for reviewed demand.
+Loadgistic is a mobile-first Ethiopian freight-capacity market. Transporters,
+Owner-operators, and Self-managed drivers publish Empty or Partial truck
+capacity publicly or share more sensitive signals with trusted email contacts.
+Capacity seekers can search the public map without an account, contact a
+transporter directly, open a transporter microsite, track an agreed shipment,
+or ask the Loadgistic team for assisted matching.
 
-This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a Node.js web framework; this codebase is not the previous bare Node.js static application.
+Loadgistic publishes supply, not shipment demand. It does not rank trucks,
+handle freight payments, or replace direct document, cargo-fit, and commercial
+term checks between the parties.
 
-## Included working workflows
+## Current architecture
 
-- Signed HTTP-only local sessions and seeded role accounts
-- Business workspaces for shipment demand
-- Transport company workspace
-- Independent owner-operator workspace
-- Platform administrator workspace
-- Immediate Business and transporter signup with a seven-day trial
-- Role-aware desktop and mobile navigation
-- Authenticated transporter directory and company pages
-- Lightweight B2B road-freight shipment creation, with tracking configured after agreement
-- Shipper- or receiver-owned shipments with account or external shipment parties
-- Separate My Shipments, Shipment Board, and execution-only Tracking workspaces
-- Virtual pooled shared truckload (PSTL) discovery for compatible PTL demand
-- Direct, Connected-Partners, and open freight visibility
-- My Network with private Favorites, connection requests, and mutual Connected relationships
-- Fixed ETB, target ETB, and Quote Requested pricing
-- Simple freight status workflow
-- Empty, Partial, Busy, and Off Duty truck signals, with no public Full status
-- Partial capacity percentage and live route tied directly to truck status, plus update attribution, freshness, expiry, and optional photo
-- Provider interest and direct-request acceptance
-- Enforced Status timeline or Approximate location + status tracking
-- Account or external-party secret-code tracking with a five-minute idle lock
-- Privacy-obscured device location: 40 km capacity/PTL and 20 km FTL tracking
-- Searchable local OpenStreetMap catalog of Ethiopian settlements
-- Local service-area circles, intercity route lines, and mixed geography matching
-- Private local-shipment map points disclosed to non-owner parties only after agreement
-- Loading, delivery, and issue proof uploads
-- Manual subscription payment-proof submission and admin review
-- Native member support with bounded agent queues and admin supervision
-- Audit records and deterministic demo data
-- Installable PWA with responsive, app-like mobile layout and PNG install icons
-- Supabase PostgreSQL/RLS migration target
-- Playwright and Browserbase-ready smoke-test structure
+- Next.js App Router on Node.js 22
+- Supabase PostgreSQL with PostGIS, RLS, and server-only transactional RPCs
+- Supabase Auth for Google, numeric email-code, and local fixture-password login
+- Supabase private Storage with quarantine-before-release scanning
+- Netlify-compatible Next.js output and scheduled managed-operations worker
+- Leaflet with bounded cursor loading and configurable attributed map tiles
+- Playwright desktop/mobile workflows plus managed PostgreSQL verification
+
+SQLite, local private-file storage, process-local request limits, and alternate
+data backends are not part of the application runtime.
+
+## Working product surfaces
+
+- Account-free, map-only Truck Market with provider, vehicle, status, route,
+  Service-area, proximity, and freshness filters
+- Public transporter microsites with fleet, Driver, evidence-category, review,
+  contact, and truck-capacity details
+- Daily Featured Transporters with regional rotation, Sponsor placements, and
+  an administrator-managed broadcast schedule
+- Email-OTP Shared capacity map for trusted contacts
+- Transporter Capacity management, fleet assignment, and Driver permissions
+- Provider-owned Tracking sessions with status or consented approximate location
+- Customer review and transporter dispute workflow
+- Account-free Assisted matching and authenticated member Support
+- Verification, private proof, subscription, Operations, team, Featured, and
+  Sponsor administration
+- Installable responsive PWA shell
 
 ## Requirements
 
-- Node.js **22.x**. The local data adapter uses Node's built-in `node:sqlite` module.
+- Node.js 22.x (`.nvmrc` pins the supported line)
 - npm 10 or newer
+- Docker Desktop or another Docker Engine compatible with the Supabase CLI
+- Supabase CLI 2.111.0 for the reproducible local/CI workflow
 
 ## Run locally
 
@@ -50,103 +54,83 @@ This rebuild uses **Next.js App Router on the Node.js runtime**. Next.js is a No
 nvm use
 cp .env.example .env.local
 npm install
-npm run db:reset
+supabase start
+npm run supabase:local:configure
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Open `http://127.0.0.1:3100`.
 
-The database is created at `data/loadgistic.db` and seeded automatically. Reset imports the bundled OpenStreetMap-derived catalog of 3,575 Ethiopian cities, towns, villages, hamlets, suburbs, and neighbourhoods. `npm run places:setup` is optional and refreshes that catalog from Overpass when the service is available. Osmium can alternatively import a local Geofabrik Ethiopia PBF.
-After the first setup, the only command needed to start the app is `npm run dev`.
-This command explicitly uses Turbopack. In development, the first visit to a route compiles that route and is expected to be slower; repeat visits should be fast. Use `npm run build && npm start` when measuring production behavior.
+The isolated Loadgistic Supabase project uses ports `55320`–`55324`, so it can
+run beside other local projects. The configurator writes ignored local values
+without printing them, resets only this loopback project, imports the
+credential-free supply fixture, creates Supabase Auth fixture identities,
+uploads one private verification fixture, and runs every managed verifier.
 
-To add five Assigned-through-Completed tracking scenarios without resetting any
-current local data:
+Local email codes arrive in Mailpit at `http://127.0.0.1:55324`; local
+development does not send them to Gmail. Fixture-password login is enabled only
+by the ignored local environment and is rejected in Production.
+
+`npm run db:reset` is an alias for the same guarded local Supabase configure
+workflow. It does not create a second database engine.
+
+## Managed fixture and scale evidence
+
+`resources/fixtures/managed-market.json` contains no passwords, access-code
+digests, demand records, or machine-local paths. A normal reset creates 30
+published transporters, 143 current truck signals, 122 assigned Drivers, 335
+verification records, and the bundled Ethiopia place catalog. Daily Featured
+and Sponsor dates are generated for the current Ethiopia calendar day.
+
+Run the PostgreSQL-only scale audit after local Supabase is configured:
 
 ```bash
-npm run db:fixtures:tracking
+npm run test:scale
 ```
 
-To validate the standalone image locally, keep a strong local `SESSION_SECRET`
-in `.env.local` and run:
+The audit inserts at least 5,000 synthetic trucks in one local PostgreSQL
+transaction, records bounded search and route-filter measurements, and rolls
+the transaction back. It refuses any project other than `loadgistic-local` and
+asserts that zero scale trucks remain.
+
+## Verification
 
 ```bash
-docker compose up --build
-```
-
-The container is a reproducible local/demo artifact. It does not remove the
-public-production blockers in `docs/LAUNCH_READINESS.md`.
-
-## Comprehensive local data
-
-To replace the local development database with a deterministic, high-volume
-dataset for UI and workflow testing:
-
-```bash
-npm run db:stress
-```
-
-The standard profile creates more than 8,000 related records across every
-application table while preserving the documented demo accounts. It includes
-Businesses, fleet transporters, company Drivers, self-managed Drivers, trucks,
-shipments, capacity, tracking, network, billing, verification, moderation, and
-administrative states. This command resets the configured local database and is
-refused when `NODE_ENV=production`.
-
-Use `STRESS_SCALE=2 npm run db:stress` for a larger profile. Supported scales are
-1 through 5. Return to the small fixture with `npm run db:reset`.
-
-## Local fixture accounts
-
-Development-only fixture credentials are documented in `docs/LOCAL_SETUP.md`. They are kept in repository-local setup and automated test code, not presented in the public login UI.
-
-## Quality commands
-
-```bash
-npm run check:specs
-npm run check:source
-npm test
-npm run typecheck
+npm run quality
 npm run build
+npm run test:scale
 npm run test:e2e
+npm run test:a11y
+```
+
+Visual-audit and stress-capture suites are intentionally separate because they
+are expensive:
+
+```bash
 npm run test:ui-audit
 npm run test:ui-stress
 ```
 
-`npm run test:ui-audit` audits logged-out, Business, Fleet Transporter, Self-managed Driver, and Administrator screens at desktop and mobile sizes. Screenshots and a machine-readable report are written to `artifacts/ui-audit/`.
+See `specs/README.md` for the specification workflow,
+`docs/BUILD_VERIFICATION.md` for recorded evidence, and
+`docs/GUARDRAILS.md` for security and release gates.
 
-After `npm run db:stress`, `npm run test:ui-stress` audits dense all-role boards,
-fleet screens, Directory results, and administrator queues against the running
-app. Its screenshots and report are written to `artifacts/stress-ui/`.
+## Production handoff
 
-The linked specification system lives in `specs/`. Start with `specs/README.md`, use `specs/templates/feature-spec.md` for new behavior, and follow the major-action controls in `docs/GUARDRAILS.md`. Pull requests run the same checks and a production build through GitHub Actions.
+Ordered migrations are under `supabase/migrations/`; application runtime and
+CI use the same PostgreSQL/Auth/Storage architecture. Never run the local
+fixture importer against a hosted project. Hosted rollout applies migrations,
+configures private buckets/Auth/email/scanning separately, and verifies the
+empty Production project before traffic is enabled.
 
-`npm run test:e2e:browserbase` remains optional and skips when Browserbase is disabled.
+Netlify and Supabase configuration, callbacks, environment names, backup,
+rollback, and smoke steps are documented in `docs/CLOUD_HANDOFF.md` and
+`docs/SUPABASE_MIGRATION.md`. Secrets belong in the provider dashboards or
+ignored local environment only; never commit or paste them into documentation.
 
-## Supabase migration
+The standalone Docker image packages only the Next.js application. PostgreSQL,
+Auth, Storage, email, and scanning remain external managed services:
 
-The runnable local adapter uses built-in SQLite so the project can operate without Docker or cloud credentials. The target Supabase schema and RLS policies are in:
-
-```text
-supabase/migrations/001_loadgistic_schema.sql
-supabase/migrations/002_fleet_driver_routes.sql
-supabase/migrations/003_network_tracking_truck_details.sql
-supabase/migrations/004_rating_moderation.sql
-supabase/migrations/005_subscription_access.sql
-supabase/migrations/006_local_geography_and_board_indexes.sql
-supabase/migrations/007_coordinate_route_matching.sql
-supabase/migrations/008_native_support.sql
-supabase/migrations/009_launch_storage_places_and_capacity.sql
-supabase/migrations/010_driver_capacity_authority.sql
+```bash
+docker compose up --build
 ```
-
-The adapter boundary is documented in `docs/SUPABASE_MIGRATION.md`, and the
-credential-free Vercel/Supabase setup sequence is in `docs/CLOUD_HANDOFF.md`.
-Private files can already use Supabase Storage, but the business repository and
-identity adapters are not yet Supabase-backed. `npm run launch:check` therefore
-refuses to approve the current runtime for public production traffic. See
-`docs/LAUNCH_READINESS.md`.
-
-## Important security note
-
-The local authentication and SQLite adapters are suitable for development, an offline pilot, and a controlled single-machine demo. They are not approved for a high-traffic public launch. Before public deployment, use Supabase Auth or another managed identity provider, finish the Supabase repository adapter, configure a strong `SESSION_SECRET`, add shared rate limiting and malware scanning, and complete the deployment checklist in `docs/LAUNCH_READINESS.md`.

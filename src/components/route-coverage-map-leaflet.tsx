@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Circle, CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { Circle, CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
+import { BaseMapTiles } from '@/components/base-map-tiles';
 
 function FitCoverage({points}:{points:{lat:number;lng:number;radiusKm?:number}[]}) {
   const map=useMap();
@@ -51,7 +52,7 @@ export function LeafletRouteMap({ routes, comparisonRoutes = [],areas=[],compari
   return <div className="route-map-block">
     <div className="route-map" aria-label="Approximate coverage map">
       <MapContainer center={[9.1,39.7]} zoom={6} minZoom={5} maxZoom={10} scrollWheelZoom={false}>
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>
+        <BaseMapTiles/>
         {visible.map((route:any,index:number)=><Polyline key={`${route.group}-${route.id||index}`} positions={[[route.from.lat,route.from.lng],[route.to.lat,route.to.lng]]} pathOptions={routeStyle(route)}/>)}
         {visibleAreas.map((area:any,index:number)=><Circle key={`${area.group}-area-${area.id||index}`} center={[area.center_lat,area.center_lng]} radius={Number(area.radius_km)*1000} pathOptions={area.group==='viewer'?{color:'#c45116',weight:4,opacity:.96,dashArray:'10 7',fillColor:'#c45116',fillOpacity:.12}:{color:'#1769e0',weight:3,opacity:.86,fillColor:'#1769e0',fillOpacity:.15}}><Tooltip permanent direction="center">{area.place_label}<br/>{area.radius_km} km</Tooltip></Circle>)}
         {[...markers.entries()].map(([name,marker]:any)=><CircleMarker key={name} center={[marker.lat,marker.lng]} radius={6} pathOptions={{color:'#0b3f91',fillColor:'#ffffff',fillOpacity:1,weight:3}}><Tooltip permanent direction="top" offset={[0,-5]}>{name}</Tooltip></CircleMarker>)}

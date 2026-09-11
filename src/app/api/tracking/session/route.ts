@@ -1,26 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { hasTrackingGrant, TRACKING_GRANT_COOKIE, TRACKING_IDLE_SECONDS } from '@/lib/auth';
-import { getBusinessTracking } from '@/lib/repository.js';
-import { createSessionToken } from '@/lib/security.js';
+import {clearProviderTrackingGrant,getProviderTrackingGrant,setProviderTrackingGrant} from '@/lib/auth';
+import { getProviderGuestTracking } from '@/lib/provider-tracking.js';
 import { text } from '@/lib/redirects';
 
 export async function POST(request:NextRequest) {
   const form=await request.formData();
   const shipmentId=text(form,'shipmentId');
-  if(!getBusinessTracking(null,shipmentId)||!await hasTrackingGrant(shipmentId))return NextResponse.json({ok:false},{status:403});
-  const response=NextResponse.json({ok:true});
-  response.cookies.set(TRACKING_GRANT_COOKIE,createSessionToken(`tracking:${shipmentId}`,TRACKING_IDLE_SECONDS),{
-    httpOnly:true,
-    sameSite:'lax',
-    secure:process.env.NODE_ENV==='production',
-    path:'/',
-    maxAge:TRACKING_IDLE_SECONDS
-  });
-  return response;
+  const grant=await getProviderTrackingGrant(shipmentId);
+  if(!grant||!await getProviderGuestTracking(shipmentId,grant.recipientDigest))return NextResponse.json({ok:false},{status:403});
+  await setProviderTrackingGrant(shipmentId,grant.recipientDigest);
+  return NextResponse.json({ok:true});
 }
 
 export async function DELETE() {
-  const response=NextResponse.json({ok:true});
-  response.cookies.set(TRACKING_GRANT_COOKIE,'',{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0});
-  return response;
+  await clearProviderTrackingGrant();
+  return NextResponse.json({ok:true});
 }

@@ -1,119 +1,121 @@
-# Local Setup
+# Local setup
 
-## Requirements
-
-- Node.js 22.5+
-- npm 10+
-
-## Steps
+## Requirements and start
 
 ```bash
 nvm use
 cp .env.example .env.local
 npm install
-npm run db:reset
+npm run supabase:start
+npm run supabase:local:configure
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Open `http://127.0.0.1:3100`. Development uses `.next-dev`; production builds use `.next`. Loadgistic reserves port `3100` so it does not collide with the separate MirtPage workspace on port `3000`. The configurator selects the isolated local Supabase PostgreSQL/Auth/Storage stack and writes ignored local credentials without printing them.
 
-The app creates `data/loadgistic.db` and local upload files under `data/uploads/`. Reset automatically imports the bundled 3,575-place Ethiopia OpenStreetMap settlement catalog. `npm run places:setup` is only needed to attempt a network refresh.
+Local Supabase Auth login and signup codes are delivered to the isolated Mailpit
+inbox at `http://127.0.0.1:55324`; they are not sent to Gmail. That account OTP
+does not authorize guest product features. Shared capacity uses a separate
+six-digit, ten-minute, single-use application OTP and creates no Auth account.
+The local configurator connects that application-email port to the same
+loopback-only Mailpit inbox, so Shared capacity and Tracking messages are
+actually captured there without contacting a real recipient. Tracking is
+deliberately not an OTP-request flow: a provider creates one stable 80-bit
+customer-owner code and a separate review code, delivered through
+Tracking-specific templates. Shared capacity and Tracking both use the
+application-email adapter rather than Supabase Auth SMTP.
+Fixture-password login remains available only when the explicit non-Production
+fixture flag is enabled. Preview and Production expose only Google and numeric
+email-code authentication for member accounts.
 
-Development writes generated Next.js files to `.next-dev`, while `npm run build` writes to `.next`. This keeps an always-on local dev server healthy while a production build runs.
+Local Google login uses a separate Google **Web application** client. Copy
+`supabase/google-oauth.env.example` to the ignored
+`.local/google-oauth.env`, make the copy readable only by the current user, and
+enter the Local Development client ID and secret there. The local Google client
+uses `http://127.0.0.1:3100` as its default authorized JavaScript origin. Add
+both `http://127.0.0.1:3001` and `http://localhost:3001` to the same local client
+when intentionally running the app on port `3001`; the browser callback preserves
+the exact host used to open the app, while both origins return through
+`http://127.0.0.1:55321/auth/v1/callback` as its authorized redirect URI.
+Restart with `supabase stop` followed by `npm run supabase:start`. The starter
+never prints either value. When the ignored file is absent, Supabase still
+starts for deterministic email-code and fixture testing, but Google login is
+truthfully unavailable.
 
-## Local fixture accounts
+A 2026-09-02 diagnostic run on port `3001` verified both member-login and
+provider-signup numeric-code requests against Mailpit without reading or
+printing message content or codes. It also verified that local Google login and
+signup load the configured client, use PKCE and minimum identity scopes, and
+preserve either supported browser host through `/api/auth/callback`.
 
-The deterministic development and test database includes the following active accounts. These credentials are developer fixtures only and are intentionally not shown in the public application UI.
+All maps use the shared tile configuration. Leaving
+`NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` blank uses the
+direct attributed OpenStreetMap community endpoint. A custom source must be a
+single HTTPS template containing `{z}`, `{x}`, and `{y}` (not `{s}`) plus
+linked provider attribution. Invalid pairs fail back to the direct community
+endpoint. Tiles are requested by the browser; the application never proxies,
+prefetches, or copies them.
 
-All accounts use the local password `Loadgistic123!`.
+`npm run db:reset` aliases the same guarded Supabase configuration workflow. `npm run supabase:local:configure` refuses remote hosts and Production, imports the bundled Ethiopia place catalog, clears the isolated local project, and creates a supply-first market with:
+
+- 30 published provider pages;
+- nine fleet companies and 21 self-managed provider profiles;
+- 143 active current-capacity signals;
+- exactly one regular Service area or Capacity route for each of the 30 published providers in the standard fixture;
+- no Business/capacity-seeker accounts, shipment-demand rows, network relationships, or Business reviews.
+
+## Base provider fixtures
+
+Credentials are local-only and never rendered in the public application.
 
 | Workspace | Email |
 |---|---|
-| Business looking for capacity | `shipper@loadgistic.local` |
-| Business receiving shipments | `receiver@loadgistic.local` |
-| Fleet Transporter | `transporter@loadgistic.local` |
+| Fleet owner | `transporter@loadgistic.local` |
 | Fleet company Driver | `company-driver@loadgistic.local` |
-| Self-managed Driver / Owner-Operator | `driver@loadgistic.local` |
-| Expired Business trial (billing-limit fixture) | `expired@loadgistic.local` |
-| Customer Support agent | `support@loadgistic.local` |
-| Platform Administrator | `admin@loadgistic.local` |
+| Self-managed Driver / owner-operator | `driver@loadgistic.local` |
+| Support agent | `support@loadgistic.local` |
+| Platform administrator | `admin@loadgistic.local` |
 
-## Reset
+Use the development password stored in the local seed-credentials file. Generated public-market provider accounts use deterministic `@providers.loadgistic.test` addresses and are fixtures, not customer data.
+
+## Supabase cutover stack
+
+The isolated Supabase CLI stack uses ports `55320`–`55324`. After a local `supabase db reset`, run `npm run supabase:local:configure`; it replays the complete `001`–`069` chain, refreshes the current Ethiopia Featured fixture, imports the market, and verifies identity, public projections, Shared capacity targeted/recovery delivery and retention, provider Capacity, provider-owned Tracking, customer-safe completion email data, signup, Storage, request limits, Fleet, Verification/Billing, Support, and platform administration. Lower-level verification scripts remain available for CI. Every configurator and importer refuses remote Supabase hosts and fixture reset is rejected in Production. Do not paste keys into tracked files or shell history. See `docs/SUPABASE_MIGRATION.md` for the guarded workflow and hosted rollout boundary.
+
+## Useful checks
 
 ```bash
-npm run db:reset
+npm run quality
+npm run build
+npm run test:e2e
 ```
 
-After this first setup, start the app with the single command:
-
-```bash
-npm run dev
-```
-
-## Comprehensive UI and workflow data
-
-`npm run db:stress` replaces the configured local database with a deterministic
-dataset containing more than 8,000 related rows. It covers all 34 application
-tables and material states, including 80 Businesses, 20 six-truck fleets, their
-company Drivers, 40 self-managed Drivers, applicant accounts, loads, tracking
-events, capacity history, relationships, verification requests, billing
-evidence, sponsored/trial/paid/under-review/expired subscription states,
-ratings, support conversations, notifications, audit records, local service
-areas, and Local/Between
-cities/Both freight records.
-
-Generated accounts use the same development-only password documented above.
-Representative emails include:
-
-| Workspace | Email |
-|---|---|
-| Generated Business | `business-001@stress.loadgistic.local` |
-| Generated Fleet Transporter | `fleet-001@stress.loadgistic.local` |
-| Generated company Driver | `fleet-001-driver-1@stress.loadgistic.local` |
-| Generated Self-managed Driver | `driver-001@stress.loadgistic.local` |
-| Generated Administrator | `admin-01@stress.loadgistic.local` |
-
-### Network test cohort
-
-The following generated accounts are intentionally connected so visibility can
-be tested without first creating relationships by hand:
-
-| Actor | Relationship to Business 001 |
-|---|---|
-| Fleet 001 | Connected |
-| Driver 001 | Connected |
-| Fleet 002 | Pending request sent by Business 001 |
-| Driver 002 | Favorite only |
-
-Fleet 001 is also Connected to Business 002. Its Requests view includes an
-incoming request from Business 003 and an outgoing request to Business 006.
-Business 007 has a Declined relationship with Fleet 001.
-
-The cohort includes clearly titled records:
-
-- `LGX-NET-PARTNERS` is visible only to Connected transport partners.
-- `LGX-NET-DIRECT-FLEET` is addressed only to Fleet 001.
-- `LGX-NET-DIRECT-DRIVER` is addressed only to Driver 001.
-- `LG-TRK-S00101` publishes Partners capacity from Fleet 001.
-- `LG-TRK-S00102` has hidden capacity and must not appear on any member Board.
-- `LG-TRK-S00104` publishes Public capacity for comparison.
-
-The small `npm run db:reset` fixture connects Business
-`shipper@loadgistic.local` with both `transporter@loadgistic.local` and
-`driver@loadgistic.local`. It includes Public and Partners capacity, a
-Partners-only shipment, provider-specific Direct shipments, saved interests,
-one pending network request, and active tracking examples across those original
-accounts.
-
-The command is destructive to the configured local database and refuses to run
-with `NODE_ENV=production`. Set `STRESS_SCALE` from 1 through 5 to increase the
-profile, for example `STRESS_SCALE=2 npm run db:stress`. Run `npm run db:reset`
-to restore the small fixture.
+Run `npm run test:ui-audit` only after explicit approval and while the development server is running.
 
 ## Troubleshooting
 
-- `node:sqlite` missing: update Node.js to 22.5 or newer.
-- Session errors: set a long random `SESSION_SECRET` in `.env.local`.
-- No company data: run `npm run db:reset`.
-- Few place suggestions: run `npm run places:setup`.
-- Browserbase missing: leave `BROWSERBASE_ENABLED=false` for normal local development.
+- Supabase CLI cannot start: confirm Docker is running. The verified clean replay
+  used the official `2.116.0` CLI; if a global launcher is missing its companion
+  binary, reinstall it or invoke that pinned CLI through `npm exec`.
+- Session failures: set a long random `SESSION_SECRET` in `.env.local`. The same
+  secret authenticates local Netlify scheduled-to-background worker calls; it
+  must never equal `TRACKING_CODE_SECRET`.
+- Production-style Tracking code checks: set a separate long random
+  `TRACKING_CODE_SECRET`. Local development alone has a deterministic fallback;
+  changing `SESSION_SECRET` must not change an existing Tracking owner or review
+  code. After changing from the former session-derived local codes, run
+  `npm run db:reset` to rebuild disposable Tracking fixtures with the new digest.
+- Empty/stale local market: run `npm run db:reset`; it refreshes only the isolated loopback Supabase project.
+- Map remains blank: confirm the response CSP names the exact configured tile origin, verify the URL/linked-attribution pair, and inspect browser tile errors.
+- Tracking or Shared capacity email remains queued locally: rerun
+  `npm run supabase:local:configure` and restart the development server. The
+  configurator writes the ignored loopback Mailpit URL; it does not reuse or
+  expose Supabase Auth SMTP credentials. A manually unconfigured development
+  environment may still show an eligible recipient a labelled local test code,
+  but the standard isolated setup sends the message to Mailpit. The email must
+  first have an active truck share in the provider Network.
+- Production email remains queued: configure the preferred `RESEND_API_KEY` and
+  `LOADGISTIC_EMAIL_FROM`, all four `LOADGISTIC_SMTP_*` pilot values plus the
+  From address, or the optional HTTPS webhook adapter. Production ignores the
+  local Mailpit variable, never returns OTP plaintext to the browser, and fails
+  closed when its managed adapter is absent or incomplete.

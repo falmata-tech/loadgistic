@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { updateSupportAgent } from '@/lib/repository.js';
+import { updateSupportAgent } from '@/lib/support.js';
 import { errorMessage } from '@/lib/errors';
 import { checked, redirectWith, text } from '@/lib/redirects';
 
@@ -10,7 +10,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try {
-    updateSupportAgent(user,id,{
+    await updateSupportAgent(user,id,{
       active:checked(form,'active'),
       available:checked(form,'available'),
       maxOpenConversations:text(form,'maxOpenConversations'),

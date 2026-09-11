@@ -1,80 +1,139 @@
-# Launch Readiness
+# Launch readiness
 
 ## Current verdict
 
-The repository is ready for local development, browser testing, a controlled
-single-machine demonstration, and continued product validation. It is not yet
-approved for high-traffic public production. `npm run launch:check` enforces
-that distinction and must remain red until the blockers below are implemented.
+The repository, linked hosted database, and Netlify application support a
+controlled production pilot. The clean local `001`–`073` replay and guarded
+verifiers pass; the hosted project matches through `073`, retains seven private
+Storage buckets, and contains the explicitly approved synthetic pilot. Local
+login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP
+delivery is verified. Production deploy `6aa06084e223ccf14c9bb72a` serves
+application commit `e880764`; live desktop and phone checks passed Open
+capacity, Daily Featured, query-isolated place search, and Supabase-backed
+health. The full quality/build gate passed 215 Node tests, TypeScript, 77 routes,
+and a zero-high-vulnerability dependency audit. Production application-SMTP
+credentials authenticate and both scheduled/background worker pairs are
+invoked, but a real queued application email has not been proved end to end.
+The application is not approved for unrestricted public production until the
+managed scanner, upload-size boundary, application-email, database hardening,
+monitoring, and database-plus-Storage restore gates below are resolved.
+`npm run launch:check` must remain red for real blockers rather than being
+weakened for deployment.
 
-## Working now
+## Verified locally
 
-- Production compilation, TypeScript, specifications, repository tests, and
-  desktop/mobile Playwright workflows.
-- Private JPEG, PNG, WebP, and PDF validation with opaque file references.
-- Local private storage and a Supabase private-storage backend.
-- Secret-code tracking, five-minute idle lock, approximate location privacy,
-  status actions, and optional shipment-action proof.
-- Bundled searchable Ethiopia place data and bounded server/client queries.
-- Server pagination on the main marketplace, Directory, My Shipments, billing,
-  verification, support, fleet, network, and administration surfaces.
-- Installable PWA shell and deterministic launch/test fixtures.
-- Driver-authoritative truck location with retry controls, owner timestamp
-  preservation, and Local Partial route support.
-- Reproducible Node 22 standalone Docker image, non-root runtime, persistent
-  local-data volume, and liveness health check.
-- Credential-free Vercel and Supabase setup checklist in
-  `docs/CLOUD_HANDOFF.md`.
+- Public account-free map with real tile rendering, clustering, provider details, and safe proximity behavior.
+- Busy supply-only fixture across fleet companies and self-managed owner-operators, with no local demand data.
+- Provider capacity/profile/fleet workflows and provider-owned shipment tracking.
+- One stable 80-bit customer-owner code/link, separately derived 80-bit review code, dedicated Tracking-code secret boundary, governed transitions, 30-day guest expiry, access/completion email retry records, and provider reviews/disputes.
+- Truck-scoped private-capacity grants, email/code Shared capacity access, Operations-only Loadgistic sharing, and account-free Assisted matching with bounded local live-refresh behavior.
+- Specification/source checks, Node tests, TypeScript, production build, desktop/mobile E2E, and approved visual audit evidence as recorded in `docs/PROGRESS.md`.
+- Standalone Node build, private Supabase Storage adapter, PWA shell, and health endpoint.
+- Atomic Supabase request limits for login, signup, Shared capacity, Tracking and
+  review unlock, review submission, Assisted matching, and member Support,
+  including digest-only keys, browser-role denial, fail-closed behavior, and
+  bounded cleanup.
+- Server-only private-upload quarantine, signature checking, explicit clean release, EICAR rejection, cleanup, and anonymous list/download denial against the isolated local Supabase stack.
+- Local port-`3001` member login and signup issue generic numeric-code responses
+  through Mailpit without exposing codes, and local Google PKCE preserves the
+  browser origin through the application callback.
 
 ## Public-production blockers
 
-1. Implement the Supabase/PostgreSQL repository and parity tests for every
-   domain command currently backed by synchronous SQLite.
-2. Replace local account authentication with Supabase Auth or another managed
-   identity adapter, preserving role and workspace authorization.
-3. Move rate limits from process memory to a shared store so multiple server
-   instances enforce one policy.
-4. Add malware scanning and quarantine before uploaded documents become
-   downloadable, including private Supabase objects.
-5. Configure a unique 32-character-or-longer `SESSION_SECRET`, private buckets,
-   backups, monitoring, retention, and restore/rollback drills.
+1. The clean isolated replay, hosted migrations `001`–`073`, approved pilot
+   import, and fresh encrypted logical backup are complete. Rehearse an
+   isolated database restore. Database dumps contain Storage metadata but not
+   object bytes, so add an encrypted Storage-object export and restore proof.
+2. Inventory and purge any hosted legacy demand data only after a verified backup and explicit approval. A new empty project requires no purge.
+3. Configure a server-only managed scanner, complete the privacy/vendor review,
+   and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial
+   upload proofs against Supabase Preview. Production currently fails every
+   upload closed. Also align the user-facing/app 10 MB file limit with Netlify's
+   roughly 4.5 MB effective buffered binary-request boundary, or adopt a
+   reviewed direct-to-quarantine upload design. The local test scanner does not
+   satisfy this gate.
+4. Production application-SMTP credentials are configured separately from the
+   already verified Supabase Auth SMTP, and an authentication-only handshake
+   passes. The 15-minute managed scheduler and two-minute access-email recovery
+   scheduler with their HMAC-authenticated background workers are deployed and
+   observed invoking. Test a real queued Shared capacity, Tracking, and Assisted
+   matching delivery, expiry-aware retry/cleanup, and unsigned/stale-request rejection.
+   The personal-Gmail SMTP option is a bounded pilot warning, not the durable
+   sending-domain gate.
+5. Review and resolve the live Supabase advisor findings before scale: one
+   Security Advisor error, SECURITY DEFINER/extension warnings, 93 unindexed
+   foreign keys, 58 RLS init-plan warnings, and 48 multiple-permissive-policy
+   warnings. Enable SSL enforcement, replace the effective allow-all direct
+   database IPv4/IPv6 ranges with the narrowest operational access, and enable
+   reviewed CAPTCHA/bot protection for anonymous and Auth entry points. Do not
+   drop currently unused indexes solely from low-pilot traffic evidence.
+6. Strong distinct `SESSION_SECRET` and `TRACKING_CODE_SECRET` values are
+   configured. Complete central logging/alerts, account MFA, credential-rotation
+   rehearsal, and rollback monitoring. After real Tracking records exist,
+   rotate the Tracking secret only with an explicit compatibility or code-reissue plan.
+7. Keep the low-traffic pilot's explicit bounded cursor loading and CPU-throttled phone limits under observation. Before the market approaches thousands of simultaneously discoverable trucks, replace national cursor accumulation with viewport-scoped PostGIS queries and server-side or tile-based clustering.
+8. Hosted Production Supabase Auth now has the exact Site URL and
+   `/api/auth/callback`, Google identity credentials, numeric login/signup
+   templates, Gmail SMTP, and one successfully verified real account OTP.
+   Production route smoke reaches the intended Supabase project and Google
+   account endpoint, and one deployed email-code request returned the generic
+   code-sent state. Configure Preview independently; complete Google consent and
+   OTP login/signup end to end against the active-role and
+   atomic provider-provisioning boundaries before enabling them publicly.
+9. Link the Netlify site to the reviewed GitHub repository/branch so Production
+   and Preview deploys are traceable to pushed commits and required checks. The
+   current site has no repository or branch association and is deployed manually.
+10. Publish or schedule each next Ethiopia-day Featured roster deliberately;
+    Production correctly shows no automatic replacement when a day is missing.
+    Configure real Support availability before presenting Assisted matching as
+    immediate help; the live presence projection currently reports zero
+    available team members.
 
-The service-role key is server-only. No browser bundle or `NEXT_PUBLIC_*`
-variable may contain it.
+## Bounded beta map warning
 
-`/api/health` returning HTTP 200 proves only that the process and configured
-database are reachable. Its `readyForPublicProduction` field remains false
-while the blockers above exist; `npm run launch:check` is the release gate.
+Every Leaflet surface resolves one exact HTTPS tile origin through
+`NEXT_PUBLIC_MAP_TILE_URL` and `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION`, with linked
+attribution and matching Content Security Policy. If both values are absent or
+invalid, the beta uses the direct OpenStreetMap community endpoint and
+`launch:check` reports `community-osm-tile-service` as a warning, not a blocker.
+This is acceptable only for the low-traffic pilot: monitor use, retain visible
+attribution, and switch to a reviewed provider before sustained traffic.
+Loadgistic does not proxy, prefetch, bulk-copy, or self-host map tiles on
+Netlify.
+
+## Approved pilot topology
+
+- GitHub is the source of truth and required-check boundary.
+- GitHub CI runs quality, build, browser workflows, and the non-root Docker
+  build from the same lockfile and commit.
+- Netlify Free runs the Next.js application through its maintained OpenNext
+  adapter. It does not run the Docker image or persist local files.
+- Supabase Free provides the managed Postgres, Auth, private Storage, and
+  bounded Realtime services.
+- Browsers request configured map tiles directly; Netlify does not relay or
+  store them.
+- Authenticated Gmail SMTP may provide the controlled pilot's low-volume Auth
+  and application mail through separate configurations. The application warns
+  that raw SMTP retry is at least once. Move to an owned-domain transactional
+  provider before higher-volume use.
+- Cloudflare Turnstile may protect anonymous and authentication entry points;
+  transactional Supabase counters remain authoritative for shared rate limits.
+
+This is a deliberately bounded commercial pilot. Netlify's 300 monthly credits
+and Supabase's Free quotas are hard availability boundaries. The release must
+fail closed when managed services are unavailable; it must never fall back to
+SQLite or a serverless filesystem. Upgrade hosting or database capacity before
+traffic approaches those limits.
 
 ## Deployment gates
 
 ```bash
 npm ci
-npm run check
-npm test
-npm run typecheck
+npm run quality
 npm run build
 npm run test:e2e
 npm audit --audit-level=high
 npm run launch:check
 ```
 
-The final command must pass in the selected production environment. A passing
-build by itself is not evidence that the persistence and security architecture
-can handle public traffic.
-
-## Product simplification guidance
-
-- Keep Status timeline as the default. Offer approximate location only after
-  agreement, when the Business and provider know who must operate it.
-- Keep exact local pickup/drop-off pins optional and private; city, town, and
-  locally recognized area text should remain enough to post.
-- Keep route comparison under Public Profiles and Network. It is useful during
-  partner selection but too advanced for Driver Home.
-- Keep temporary shipment-size proof contextual to an interested provider.
-  Avoid a permanent documents workspace for routine shipment negotiation.
-- Keep ratings after completed shipments and verification badges visible on
-  Boards. Early users are more likely to understand trust evidence than a
-  separate reputation-management workflow.
-- Keep native text Support. Avoid attachments, typing indicators, and complex
-  omnichannel routing until actual support volume proves they are needed.
+Run the approved visual audit for a release candidate after the same immutable artifact and backing services are configured. `/api/health` returning HTTP 200 proves process/database reachability only; it does not assert public-production readiness.

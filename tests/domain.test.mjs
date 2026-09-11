@@ -1,21 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
-import { bestGeographicRouteMatch, geographicRouteMatch, normalizePlace, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
+import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityUpdateStage, capacityUpdatePresentation, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
+import { bestGeographicRouteMatch, capacityRouteAlignmentMatch, corridorAlignmentMatch, geographicRouteMatch, normalizePlace, serviceAreaGeometryMatch, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
 import { accessPeriodEnd, subscriptionAccess } from '../src/lib/subscription-access.js';
 import { capacityPrivacyRadii, obscureCoordinate, possibleDistanceRange, validateCapacityPrivacyRadius } from '../src/lib/location-privacy.js';
 
 test('capacity rules are simple and strict',()=>{
- assert.equal(validateCapacity('EMPTY',''),100);
- assert.equal(validateCapacity('BUSY',''),0);
- assert.equal(validateCapacity('OFF_DUTY',''),0);
- assert.equal(validateCapacity('PARTIAL','40'),40);
- assert.throws(()=>validateCapacity('FULL',''),/INVALID_CAPACITY_STATUS/);
- assert.throws(()=>validateCapacity('PARTIAL','0'),/CAPACITY_PERCENT_REQUIRED/);
- assert.throws(()=>validateCapacity('PARTIAL','100'),/CAPACITY_PERCENT_REQUIRED/);
+ assert.equal(validateCapacity('EMPTY'),100);
+ assert.throws(()=>validateCapacity('BUSY'),/INVALID_CAPACITY_STATUS/);
+ assert.equal(validateCapacity('OFF_DUTY'),0);
+ assert.equal(validateCapacity('PARTIAL'),50);
+ assert.throws(()=>validateCapacity('FULL'),/INVALID_CAPACITY_STATUS/);
 });
 
 test('direct requests accept both current and legacy pending operational states',()=>{
@@ -32,7 +30,7 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
  assert.deepEqual(validateAcceptedLoads('EMPTY','PTL'),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('EMPTY','BOTH'),{acceptsFullLoad:true,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('OFF_DUTY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
- assert.deepEqual(validateAcceptedLoads('BUSY',''),{acceptsFullLoad:false,acceptsPartialLoad:false});
+ assert.throws(()=>validateAcceptedLoads('BUSY',''),/ACCEPTED_LOADS_REQUIRED/);
  assert.deepEqual(validateAcceptedLoads('PARTIAL',''),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.deepEqual(validateAcceptedLoads('PARTIAL','BOTH'),{acceptsFullLoad:false,acceptsPartialLoad:true});
  assert.equal(validateCapacityServiceRadius('10'),10);
@@ -163,10 +161,29 @@ test('capacity freshness labels expired data honestly',()=>{
  assert.equal(capacityFreshness(new Date(now-60_000).toISOString(),new Date(now-1).toISOString(),12),'EXPIRED');
 });
 
-test('cargo-space freshness stays visible while Busy expires by ready date',()=>{
+test('cargo-space freshness is based on the current signal update',()=>{
  assert.equal(capacitySignalFreshness('EMPTY','2026-07-28T09:00:00.000Z',null,12,'2026-07-30'),'UPDATE_NEEDED');
- assert.equal(capacitySignalFreshness('BUSY',new Date().toISOString(),'2026-07-30',12,'2026-07-30'),'FRESH');
- assert.equal(capacitySignalFreshness('BUSY','2026-07-30T09:00:00.000Z','2026-07-29',12,'2026-07-30'),'EXPIRED');
+ assert.equal(capacitySignalFreshness('PARTIAL',new Date().toISOString(),null,12),'FRESH');
+});
+
+test('capacity and location update ages use readable non-overlapping stages',()=>{
+ const now=new Date('2026-08-24T12:00:00.000Z');
+ assert.equal(capacityUpdateStage('2026-08-24T00:00:01.000Z',now),'TODAY');
+ assert.equal(capacityUpdateStage('2026-08-22T12:00:00.000Z',now),'FEW_DAYS');
+ assert.equal(capacityUpdateStage('2026-08-19T12:00:00.000Z',now),'WEEK');
+ assert.equal(capacityUpdateStage('2026-08-10T12:00:00.000Z',now),'MONTH');
+ assert.equal(capacityUpdateStage('2026-07-01T12:00:00.000Z',now),'OLDER');
+ assert.equal(capacityUpdateStage('not-a-time',now),'UNKNOWN');
+ assert.equal(capacityUpdateStage(null,now),'UNKNOWN');
+ assert.equal(capacityUpdateStage('  ',now),'UNKNOWN');
+ assert.equal(capacityUpdatePresentation(null,{kind:'location',now}).label,'Location update unavailable');
+ assert.deepEqual(capacityUpdatePresentation('2026-08-22T12:00:00.000Z',{now}),{
+   stage:'FEW_DAYS',label:'Capacity updated 2 days ago',confirmAvailability:false,lastReported:false
+ });
+ assert.deepEqual(capacityUpdatePresentation('2026-08-10T12:00:00.000Z',{kind:'location',now}),{
+   stage:'MONTH',label:'Location updated within the past month',confirmAvailability:false,lastReported:true
+ });
+ assert.equal(capacityUpdatePresentation('2026-08-19T12:00:00.000Z',{now}).confirmAvailability,true);
 });
 
 test('legacy capacity expiry utility remains deterministic for historical records',()=>{
@@ -220,6 +237,47 @@ test('coordinate route matching supports radii, direction, and best truck route'
  const best=bestGeographicRouteMatch(query,[distant,nearby],{originRadiusKm:50,destinationRadiusKm:50});
  assert.equal(best.id,'nearby');
  assert.match(best.label,/Route match/);
+});
+
+test('corridor alignment matches freight points along a longer directional route',()=>{
+ const truck={origin_lat:9.03,origin_lng:38.74,destination_lat:7.06,destination_lng:38.48};
+ const alongRoute={origin_lat:8.60,origin_lng:38.68,destination_lat:7.55,destination_lng:38.54};
+ const reverse={origin_lat:7.55,origin_lng:38.54,destination_lat:8.60,destination_lng:38.68};
+ assert.equal(corridorAlignmentMatch(alongRoute,truck,{originRadiusKm:30,destinationRadiusKm:30}).matched,true);
+ assert.equal(corridorAlignmentMatch(reverse,truck,{originRadiusKm:30,destinationRadiusKm:30}).matched,false);
+ assert.equal(corridorAlignmentMatch(reverse,truck,{originRadiusKm:30,destinationRadiusKm:30,directionMode:'EITHER'}).matched,true);
+});
+
+test('multi-city capacity matching follows every ordered route segment',()=>{
+ const route=[
+  {lat:9.03,lng:38.74,label:'Addis Ababa'},
+  {lat:8.75,lng:38.99,label:'Bishoftu'},
+  {lat:8.54,lng:39.27,label:'Adama'},
+  {lat:8.59,lng:39.12,label:'Mojo'}
+ ];
+ const alongMiddle=capacityRouteAlignmentMatch(
+  {origin_lat:8.75,origin_lng:38.99,destination_lat:8.54,destination_lng:39.27},route,
+  {originRadiusKm:10,destinationRadiusKm:10,directionMode:'DIRECT'}
+ );
+ assert.equal(alongMiddle.matched,true);
+ assert.equal(alongMiddle.origin_segment_index>=0,true);
+ assert.equal(capacityRouteAlignmentMatch(
+  {origin_lat:8.54,origin_lng:39.27,destination_lat:8.75,destination_lng:38.99},route,
+  {originRadiusKm:10,destinationRadiusKm:10,directionMode:'DIRECT'}
+ ).matched,false);
+ assert.equal(capacityRouteAlignmentMatch(
+  {origin_lat:8.54,origin_lng:39.27,destination_lat:8.75,destination_lng:38.99},route,
+  {originRadiusKm:10,destinationRadiusKm:10,directionMode:'EITHER'}
+ ).matched,true);
+});
+
+test('Service area matching uses the polygon interior and boundary tolerance',()=>{
+ const boundary=[
+  {lat:9.15,lng:38.60},{lat:9.15,lng:38.90},{lat:8.90,lng:38.90},{lat:8.90,lng:38.60}
+ ];
+ assert.equal(serviceAreaGeometryMatch({lat:9.03,lng:38.74},boundary,{searchRadiusKm:10}).inside,true);
+ assert.equal(serviceAreaGeometryMatch({lat:9.03,lng:38.96},boundary,{searchRadiusKm:10}).matched,true);
+ assert.equal(serviceAreaGeometryMatch({lat:9.03,lng:39.40},boundary,{searchRadiusKm:10}).matched,false);
 });
 
 test('obscured current areas compare by circle overlap',()=>{

@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/auth';
-import { getVerificationCenter, paginateResults } from '@/lib/repository.js';
+import { getVerificationCenter } from '@/lib/verification.js';
+import { paginateResults } from '@/lib/pagination.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
@@ -8,12 +9,21 @@ import { VerificationForm } from '@/components/verification-form';
 import { BadgeCheck } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 
+const verificationLabels:Record<string,string>={
+  IDENTITY:'National ID',
+  BUSINESS_LICENSE:'Business license',
+  BUSINESS_ADDRESS:'Business address',
+  DRIVER_IDENTITY:'Driver license',
+  VEHICLE_OWNERSHIP:'Truck ownership',
+  VEHICLE_AUTHORIZATION:'Truck authorization'
+};
+
 export default async function VerificationPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser(['SHIPPER','RECEIVER','TRANSPORTER','DRIVER']);
   const query=await searchParams;
-  const center:any=getVerificationCenter(user);
-  const subjectResult:any=paginateResults(center.subjects,{page:query.subjectPage,pageSize:10});
-  const requestResult:any=paginateResults(center.requests,{page:query.requestPage,pageSize:10});
+  const center:any=await getVerificationCenter(user);
+  const subjectResult:any=await paginateResults(center.subjects,{page:query.subjectPage,pageSize:10});
+  const requestResult:any=await paginateResults(center.requests,{page:query.requestPage,pageSize:10});
   const formSubjects=center.subjects.map((subject:any)=>({
     subject_type:String(subject.subject_type),
     subject_id:String(subject.subject_id),
@@ -23,7 +33,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
     vehicles:(subject.vehicles||[]).map((vehicle:any)=>({id:String(vehicle.id),label:String(vehicle.label)}))
   }));
   return <div className="page">
-    <PageHeader icon={BadgeCheck} title="Verification" subtitle="Specific document signals—not a guarantee about a person, company, truck, or shipment."/>
+    <PageHeader icon={BadgeCheck} title="Verification" subtitle="Manage submitted documents and review status."/>
     <Flash error={query.error} success={query.success}/>
     <div className="two-col">
       <div className="stack">
@@ -33,7 +43,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
         </section>
         <VerificationForm subjects={formSubjects}/>
       </div>
-      <aside className="card verification-history"><h2>Request history</h2><div className="stack">{requestResult.items.map((request:any)=><div className="request-history-row" key={request.id}><div><strong>{request.document_name}</strong><div className="meta">{request.verification_type.replaceAll('_',' ')} · {new Date(request.submitted_at).toLocaleString()}{request.expires_on?` · expires ${request.expires_on}`:''}</div></div><StatusPill status={request.status}/>{request.review_note?<p>{request.review_note}</p>:null}<a href={`/api/files/verification/${request.id}`} target="_blank">Open document</a></div>)}{!requestResult.items.length?<p className="muted">No verification requests submitted yet.</p>:null}</div><Pagination path="/app/verification" query={{subjectPage:query.subjectPage}} page={requestResult.page} pageCount={requestResult.pageCount} total={requestResult.total} pageParam="requestPage"/></aside>
+      <aside className="card verification-history"><h2>Request history</h2><div className="stack">{requestResult.items.map((request:any)=><div className="request-history-row" key={request.id}><div><strong>{request.document_name}</strong><div className="meta">{verificationLabels[request.verification_type]||request.verification_type.replaceAll('_',' ')} · {new Date(request.submitted_at).toLocaleString()}{request.expires_on?` · expires ${request.expires_on}`:''}</div></div><StatusPill status={request.status}/>{request.review_note?<p>{request.review_note}</p>:null}<a href={`/api/files/verification/${request.id}`} target="_blank">Open document</a></div>)}{!requestResult.items.length?<p className="muted">No verification requests submitted yet.</p>:null}</div><Pagination path="/app/verification" query={{subjectPage:query.subjectPage}} page={requestResult.page} pageCount={requestResult.pageCount} total={requestResult.total} pageParam="requestPage"/></aside>
     </div>
   </div>;
 }

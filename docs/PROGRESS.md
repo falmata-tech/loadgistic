@@ -1,108 +1,129 @@
 # Progress
 
-## Complete
+## Current verified product
 
-- Next.js App Router source structure
-- Local persistent database and deterministic seed
-- Signed local authentication
-- Role-aware navigation and workspaces
-- Immediate self-service signup with atomic workspace creation and seven-day trial
-- Authenticated Business and Transporter Directory with Public Profiles
-- Workspace-contained Directory and Public Profile navigation with authenticated legacy redirects
-- My Network with private Favorites, directional requests, mutual Connected relationships, and profile/directory actions
-- B2B shipment creation with independent shipment owner and shipper/receiver roles
-- Account or external shipment counterpart
-- Universal My Shipments navigation for Businesses, fleet owners, company Drivers, and owner-operators, with role-specific Posted, Interested, Direct requests, Tracking, and History categories
-- Shared Shipments workspace with pairwise-compatible PTL pooling and forward, deadline-aware Along the route sequences
-- Road-freight workflows
-- Shipment discovery and provider interest
-- Decision-first Self-managed Driver capacity Home with compact truck identity, Empty/Partial/Busy/Off Duty status, Partial percentage and required live route inside status, Empty-only Full Truckload/Partial Truckload choice, stop choices, automatic obscured location, and one final publish action
-- Persistent stale Empty/Partial Truck Board signals with explicit relative-age warnings, plus Busy signals that separate the Driver's current device area from a structured future city and leave discovery after their ready date until refreshed
-- Device-resolved Local and Both capacity areas with a 10–50 km service radius; Local Partial remains valid only with a live route
-- Fleet Transporter management Home with company summaries, recent Tracking, and network route coverage
-- My Fleet roster with truck-specific detail/capacity pages, complete Business Truck Board cards, and one identity-safe read-only provider card per competing truck
-- Permanent Loadgistic truck numbers used in member discovery, with private operational plates retained for owners and administrators
-- Ordered fleet Driver management with exclusive current truck assignment plus owner-controlled Shipment Board, Business contact, shipment agreement, and rich capacity permissions
-- Restricted company Driver duty-only Home with assigned-truck On Duty and Off Duty control
-- One authoritative paired profile-route model, labeled Freight Routes for Businesses and Preferred Routes for transport providers
-- Approximate OpenStreetMap route lines, record-derived evidence counts, fresh all-truck route projections, and member-to-member comparison
-- Ownership-only route maps that consolidate all viewer Preferred/Freight, current-partial, and planned routes into one high-contrast warm-brown dashed layer above solid blue viewed-profile routes
-- Real truck identity fields: make, model, cargo configuration, and plate; generic tonnage labels removed
-- Ten-image standardized cargo-configuration catalog used by freight creation, driver Home, Fleet, and Capacity
-- Freight FTL/PTL requirement and recipient-specific temporary shipment-size proof sharing
-- Business-designated shipment-phone opt in, party-only receiver contact, and a real driver-backed truck pair required before Freight assignment
-- Separate city-pair route controls across freight and capacity forms
-- Coordinate-authoritative Shipment and Truck Boards with adjustable endpoint radii, direct/either direction, all-truck-route ranking, and rounded distance evidence
-- Privacy-aware Truck Board current-area Prefer/Require filtering without coordinate disclosure
-- Collapsible Board filters for price/deadline/recency and capacity space/date/visibility/freshness/flexibility/proof
-- Structured profile base locations, proximity-ranked Directory filtering, and Business operating regions on authenticated Public Profiles and directory cards
-- Connected-network route coverage using structured intercity routes and local service-area circles without exposing exact shipment pins
-- Short Ethiopian road-freight purpose banner followed by live Shipment Board and Truck Board previews
-- Anonymous server projection that shows structured route, timing, price, truck, capacity, flexibility, proof, and freshness facts while excluding identities, contacts, handles, raw IDs, coordinates, files, and free text
-- Status timeline by default at posting, Business-selected automatic tracking after agreement and before assignment, one ordered five-action panel with state-aware disabling, optional inline proof for operational actions, and throttled assigned-Driver location events when enabled
-- Secret-code customer tracking for account or non-account shipper/receiver parties with a five-minute idle lock
-- Party-only Tracking separated from Shipment Board discovery
-- Rich icon-led Post Shipment composer with operational deadline labels
-- Completed-shipment shipper/receiver Business reviews with immediate four- and five-star publication, private low-rating moderation, and published-only profile summaries
-- Evidence-specific National ID, Business License, Business Address, Driver License, and expiring Driver-truck authorization submissions; private documents; admin review; colorful expandable badges; and a persistent member due-diligence warning
-- Separate private account and explicit Public Profile phone/email fields
-- Driver-selected 1, 3, 5, 10, 20, or 40 km capacity privacy areas for every movement scope, with a stronger warning for precise long-distance Partial signals; Tracking remains fixed at 40 km PTL and 20 km FTL
-- Business Local Near me truck discovery using a browser-displaced 1 km search point, overlap-aware matching, possible distance ranges, and a client-only exact Business map point against truck privacy circles
-- Automatic Driver-only device location while capacity or required Tracking controls are open, with an always-visible manual permission/request/refresh action; neither capacity nor Tracking accepts a manual current-location substitute, and fleet-owner edits preserve the assigned Driver's location and timestamp
-- Local OpenStreetMap Ethiopia settlement catalog with 3,575 imported records, including Addis Ababa sub-city localities
-- Country-qualified settlement, region, route, and general-area labels with legacy Ethiopian record normalization
-- Bounded async place and member search without large HTML option lists
-- Local, Long-distance routes, and Both movement scopes across shipment posting, capacity publishing, Boards, profiles, and route comparison
-- Empty capacity may be Local, Long-distance, or Both and may accept Full Truckload, Partial Truckload, or both; Partial capacity is always Partial Truckload and requires a live route in every movement scope
-- Repeatable profile service areas with 5–100 km coverage radii and mixed circle/route comparison evidence
-- Optional local pickup/drop-off map points, including a Use my location convenience, excluded from discovery and administrative projections and disclosed to non-owner shipment parties only after agreement
-- Tracking and proof kept as separate contracts
-- Seven-day workspace trials, Business-only sponsored access, manually approved 30-day access, and billing-only expired-account mode without public plan prices
-- Installable PWA with PNG normal/maskable icons and responsive app-like UI
-- Versioned PWA visual-asset cache with automatic worker handoff and stale Next.js executable-chunk prevention
-- Supabase migrations `001` through `011`, including PostGIS geography/GiST matching, native Support isolation, private payment media, Busy capacity, place indexes, Driver-controlled capacity privacy, expiring pairing evidence, and the RLS target
-- Unit and repository tests
-- Playwright workflow definitions
-- Browserbase configuration boundary
-- Linked frontend, backend, and deployment base specifications
-- End-to-end feature specifications for all implemented capability areas
-- Executable specification integrity and traceability checks
-- Major-action engineering guardrails and pull-request evidence template
-- GitHub Actions CI and Dependabot configuration
-- Explicit actor/tenant/record authorization matrix
-- Default-deny shipment-party policy shared by status, note, and proof services
-- Connected-relationship filtering for Partners freight and capacity discovery
-- Immutable terminal payment-proof reviews
-- Negative authorization contract suite and browse-only E2E coverage
-- Session-aware public navigation and authenticated provider-request continuity
-- Public login credential-fixture removal and active self-signup seed record
-- Separate `.next-dev`, `.next`, and `.next-e2e` artifacts for the live dev server, production build, and isolated Playwright runtime
-- Freight-only shipment creation with FTL/PTL requirements
-- Complete mobile workspace menu and role-friendly Business/transporter labels
-- Reversible deep-detail Back controls with safe direct-link fallbacks
-- Searchable, tabbed admin Operations inventory spanning clients, users, trucks, driver authority, shipments, capacity, network, routes/service areas, and plans, with audited management controls
-- Unified admin Review Center for documents, low ratings, and payments, with server-side queue filtering and pagination
-- Board trust strips for National ID, Business License, Business Address, published reviews, Driver License, and current pairing-specific truck authorization evidence
-- Server-owned pagination for Boards, Directory, My Shipments/Tracking, Network, Fleet, profile and shipment histories, administration, verification, and billing views
-- Native authenticated member Support with persistent New chat, Continue chat, and Past chats states; member-owned End chat and immediate restart; immediate sent-message rendering; direct active-chat lookup; paginated closed history; six visual topics; text-only bounded messages; least-loaded assignment; waiting queue; agent availability/capacity; permissioned platform-team responsibilities; filtered admin triage; and safe agent requeue
-- Opt-in comprehensive local dataset covering all 34 application tables, all user types, fleets, local/intercity movement scopes, subscription and workflow states, support queues, integrity checks, and a named cross-market network cohort
-- Reusable all-role visual audit with 228 automated desktop/mobile screenshots and zero layout, accessibility-label, or browser-flow flags, including the producer-focused homepage and About page
-- Local Node evidence: 92 tests passed, including LGX-F2009 Direct acceptance from commercial Sent/operational Posted, single-use Direct denial, pairing-specific expiry, Driver-selected capacity privacy, Local Near me uncertainty matching, canonical cross-user completion, additive and idempotent tracking scenarios, Driver-only capacity and shipment location, owner location preservation, Local Partial routes, provider-safe Truck Board aggregation, immediate self-service signup, Board trust projection, Support isolation/routing/member closure, shared-shipment matching, bounded-list behavior, and Production-denial coverage
-- Local Playwright E2E evidence: 49 passing scenarios and seven expected viewport/state skips across desktop and mobile, including LGX-F2009 acceptance, complete pooled/along-route Shipment Board cards, manual location refresh, privacy-aware Business Near me discovery, anonymous per-truck provider discovery, professional public copy, loop-free Back navigation, immediate signup, seven-day trial access, Board trust labels, and the application-free Review Center
-- Dense-data visual evidence: 74 desktop/mobile screens passed with zero failures across network relationship views, Partners and Direct visibility, first and second result pages, ownership-only route comparison, and expired billing mode
-- Optimized Next.js production build passed
-- Stress-dataset warm-query evidence: Directory 5.19 ms median, Shipment Board 1.33 ms, Truck Board 1.42 ms, direct capacity detail 0.63 ms, and PSTL grouping 3.58 ms
-- Turbopack development evidence on the stress database: ready in 2.2 seconds, first homepage compilation/request 5.09 seconds, repeated homepage 0.27 seconds, and repeated login 0.23 seconds; direct repository measurements were 23 ms for Shipment Board and 14 ms for Truck Board
-- Production and development npm dependency audit: zero vulnerabilities
+- Loadgistic presents Capacity Sharing and Shipment Tracking as its two primary jobs. The canonical Open capacity workspace at `/` uses bounded cursor loading, one unranked Map result surface, live Transporter/Truck suggestions, and conjunctive advanced filters. The public navigation order is Open capacity, Private capacity, Track, Featured, and About. Desktop uses a floating workspace rail and phones use the fixed five-destination public navigation. The Map progressively appends bounded batches; there is no public List view, manual Load more action, or ranking surface. Browser geolocation centers the Map without mutating results; proximity is a separate opt-in filter. Current and regular Capacity routes contain two through five ordered cities, while current and regular Service areas use a center plus three through five boundary cities rendered as polygons. Each transporter has at most one regular-service signal. Search covers every stored route and area city. Visible shipment origin and destination inputs can be applied independently or together: Capacity routes evaluate every ordered segment and eligible Empty Service areas evaluate their complete polygons. Approximate truck location remains an independent violet circle. Panning is bounded to practical East Africa context while phones without location start at a useful Ethiopia camera. Status-specific bounded clusters use linear screen buckets at least as wide as their markers, never combine Empty with Partial, never exceed eight trucks, and separate nearby labels in screen space. A crowded maximum-zoom cluster opens a bounded truck chooser rather than an overlapping marker ring. Private-network trucks are absent from anonymous markers, search, filters, and regular-service projection. `/capacity` is compatibility-only.
+- Busy deterministic supply market: 30 published providers, comprising nine fleet companies and 21 independent provider profiles, with 143 active trucks distributed through weighted Ethiopian freight markets and 64 real named cities, towns, or localities rather than equal regional quotas, repeated centers, identical fleet patterns, or diagonal offsets. No exact locality holds more than five source trucks; the 33-truck public subset spans 24 exact named locations with at most three at one locality. One hundred local-delivery motorcycles, cars, vans, pickups, and mini trucks use routes or Service areas within 30 kilometres; light trucks cover wider local networks and only occasional medium/heavy trucks use regional corridors. Every public truck projects one Driver first name, callback phone, operating model, and separate Driver/truck document-category status without exposing proof files or private account data.
+- Uniform white-space Loadgistic `/@handle` microsites are reached only from Truck Market details. They show provider identity and facts, independently visible contacts, colorful verification badges, verified reviews, and one detailed card for every active truck. A truck's latest published Empty/Partial signal lazily opens a selected-truck map that compares its reported public geometry with a browser-only visitor point and labels capacity age separately from approximate-location age; Off Duty trucks expose no old map location. There is no Provider Market, provider list/map, or Area Market; provider-name search returns only that provider's published trucks.
+- Fleet-owner and self-managed provider workspaces for trucks, current Service-area/Capacity-route publication, one regular Service area or Capacity route, profile editing, verification, billing, and support. Authenticated workspaces do not duplicate the public Market or Featured workspaces; role-aware More navigation links to their canonical public routes while retaining a direct Exit dashboard action.
+- Truck-scoped Private capacity networks let an assigned Driver share the Driver-selected approximate location and current Empty/Partial signal with approved emails; the fleet owner can inspect and revoke all owned-truck grants. One ten-minute single-use email OTP opens a restricted browser session and one Shared capacity map containing every active truck shared with that address, without a member profile or dashboard. The session ends after 30 minutes without deliberate visitor activity, background map traffic does not renew it, and a visible Log out clears access immediately. A distinct Share with Loadgistic audience supplies the Operations-authorized private matching map without a pretend platform email.
+- Account-free Assisted matching starts from a persistent floating launcher with required email, required callback phone, and a short message instead of a shipment form. Available team members are assigned immediately, availability is visible, and active guest threads refresh every two seconds while visible. The chat survives public-route changes, exposes a clear attachment control, and gives guest and team explicit End chat; a closed transcript is retained and the guest can start a distinct new session. `/help` is recovery-only rather than public navigation. The workflow creates no demand, ranking, transaction, or account and makes no service guarantee.
+- Unified capacity console with Empty or Partial status, Service area or Capacity route, Off Duty, a collapsed map-centered summary, focused editors for stored facts, an automatic and manual Driver location refresh, and direct approximate-location controls. Service areas and all routes use the same ordered place geometry as the public Market.
+- Provider-owned Tracking created after offline agreement by an owner, self-managed Driver, or assigned company Driver, with one customer-owner email/code/link, one ordered status action panel from Going to pickup through completion, optional images only at Loading/Unloading/Issue, optional assigned-Driver approximate location projected only during travel, 30-day guest access after completion, provider history retention, and idempotent access/completion email delivery.
+- All-score provider reviews from the emailed customer owner; one- to three-star provider disputes remain visible and counted pending review.
+- Evidence-specific National ID, Business License, Business Address, Driver License, and pairing-specific expiring truck-authorization review with vivid category colors. Due-diligence warnings remain attached to public truck and transporter review surfaces rather than authenticated workspace pages.
+- Provider-only signup separately offers Fleet transporter, Owner-operator, and Self-managed driver accounts; Company drivers remain attached to their named fleet. Capacity-seeker signup, public Business profiles, Shipment Board, demand posting, interests, Direct requests, pooled/along-route demand, and demand-side member networks are retired and blocked or redirected. The current provider Network is only truck-scoped private-capacity access.
+- Local deterministic migration purges fake legacy demand records, Business workspaces, relationships, favorites, and Business reviews while retaining provider supply and provider-owned operational history.
+- The About workspace carries the detailed story centered on manufacturers, workshops, growers, producers, owner-operators, self-managed Drivers, and small fleets without delaying the Truck Market.
+- Dedicated `/featured` Daily Featured Transporters workspace with one fixed seven-day Ethiopia programme, a compact region/date introduction, variable administrator-ordered transporter roster, a dynamically growing public-feature billboard with numbered provider portraits, evidence-based Fleet transporter/Owner-operator/Self-managed driver labels, and an automatic/manual two-session Ethiopia-time timeline. Automatic mode shares provider time equally, keeps a four-hour midday intermission, inserts separate changeovers and Sponsor breaks, and shortens low-participation days toward late morning and late evening. Admin can configure bounded defaults, regenerate the schedule, or edit validated provider intervals; the public live state distinguishes providers from every break. The compact transporter detail and separately disclosed Sponsored transporters panel remain independent. Its single-perimeter photorealistic display asset supplies physical realism only to the featured board while provider cards, numbers, schedule, live state, and interactions remain dynamic HTML. The responsive grid adds real rows and section height without a fixed stage, nested frame, pan, or zoom. The Sponsored panel is a solid right rail on wide screens and a compact above-board horizontal collection on narrow screens. Featured and sponsored transporter actions open the provider microsite or filter the Truck Market to current trucks.
+- One public-first installable PWA launches into account-free Open capacity and provides Open capacity, Private capacity, Track, Featured, and workspace shortcuts without caching navigation responses or framework chunks. Public navigation shows Log in while signed out and Dashboard while signed in; transporter signup is reached from the login page. Drivers and fleet transporters retain their role-specific five-destination bars and branded workspace top bars.
+- Managed transporter login presents Google OAuth and a six-digit email code through Supabase SSR PKCE. The fixed deployment callback rechecks the active Loadgistic role projection, never accepts a dynamic destination, and keeps all upstream failures generic. Password login is available only when an explicit non-Production fixture flag is enabled. Public signup offers the same Google or six-digit email-code choices through a signed 15-minute handoff, asks for provider facts only after identity proof, and atomically creates the selected provider workspace, draft public page, approved signup record, and seven-day trial without treating signup as verification.
 
-## Public-production work still required
+## Verification evidence — August 2026
 
-- Apply Supabase migrations `001` through `011` through Supabase CLI.
-- Implement and parity-test the Supabase business repository and managed identity adapter.
-- Add shared rate limiting plus uploaded-file malware scanning and quarantine.
-- Complete backup, restore, monitoring, and production rollback evidence.
+- The managed sign-in slice passes specification/source validation, seven
+  focused auth/readiness tests, TypeScript, and four desktop/mobile local-fixture
+  browser workflows. Tests prove the fixed HTTPS Production callback, minimum
+  Google identity scopes, non-creating email OTP request, numeric-code bounds,
+  role destinations, and Production denial of the fixture-password flag. Google
+  console, exact hosted Redirect URLs, verified SMTP, and hosted numeric email
+  template configuration remain owner actions before remote login testing.
 
-## Repository administration still required
+- Private capacity and Assisted matching currently pass 28-spec validation, TypeScript, the optimized production build, and focused repository/domain tests. Focused desktop/mobile Shared capacity coverage proves the email gate, 30-minute cookie boundary, non-renewing map reads, visible logout, cookie clearing, and required re-verification. Tests also prove public/private projection separation, Driver/owner grant authority, immediate revocation, Operations-only Loadgistic sharing, guest/team chat isolation, absence of demand records, and managed recovery-email templates. Focused screenshots are under `artifacts/private-capacity-assisted-chat-v1/`; visual approval remains pending.
 
-- Enable branch protection for `main` and require the GitHub Actions `validate`, `e2e`, and `container` jobs.
-- Configure production environment secrets and deployment approval rules in the selected hosting platform.
+- The current map-only Market, route/area filtering, East Africa panning, status-specific clustering, and phone-camera correction pass specification validation, TypeScript, all 21 capacity-market tests, and six focused desktop/mobile browser workflows. Origin and destination work alone or together, Empty Service areas participate without ranking, loaded results remain bounded, clusters contain only Empty or only Partial trucks with no more than eight members, and visible status labels do not overlap. Focused screenshots are under `artifacts/focused-2026-08-15-market-final/`; the expensive full-site visual audit remains approval-gated.
+- The unified mobile application shell passed its public desktop/mobile workflow test, PWA manifest/cache-boundary test, TypeScript, and two complete 82-screen desktop/mobile multi-role visual sweeps. The correction sweep finished with zero layout/accessibility flags, zero horizontal overflow, and zero browser-flow errors across logged-out, fleet transporter, self-managed Driver, company Driver, administrator, and support views. Evidence is under `artifacts/ui-audit/`.
+- The final release-wide Playwright regression passed 34 desktop/mobile workflows with two opt-in capture-only scenarios skipped. It covers public Market entry and mobile app navigation, search/filter/multi-city matching, map clusters and contained hover summaries, visitor location, transporter microsites, featured scheduling, provider profile editing, provider-owned Tracking, Driver Home, capacity editing, retired-route redirects, and credential-safe login.
+- The maximum-one regular-service change passes specification/source checks, 66 automated tests, TypeScript, the optimized production build, and the affected public List and Driver summary/editor browser workflows on desktop and mobile. Tests prove both regular Service-area and Capacity-route persistence/projection, second-signal rejection in application and database layers, current-location-related demo geometry, and route/area search matching. Focused screenshots are under `artifacts/regular-service-v1/`; the expensive full-site visual audit remains unrun.
+- `npm run check`: specification and source validation passed.
+- `npm run quality`: specification/source checks, 39 automated tests, and TypeScript passed.
+- `npm run build`: optimized Next.js production build passed.
+- A prior `npm run test:e2e` release gate passed 22 desktop/mobile workflows covering Map-first entry, visitor location, selected-truck focus, responsive List cards, stable owner Tracking access, capacity editing, and platform-managed microsite presentation. Later simplification replaced its maximum-two regular-corridor behavior with one regular Service area or Capacity route and moved Market access to the canonical public route; the current batch requires fresh focused browser evidence before release-wide claims are updated.
+- `npm run test:ui-audit`: 82 current desktop/mobile screens passed with zero automated layout/accessibility flags and zero browser-flow errors across public, fleet-owner, self-managed Driver, company Driver, administrator, and support-agent views.
+- Automated browser verification and visual capture covered the map key, vehicle-image markers, selected approximate-location/current/two-way-regular-corridor layers, overlapping-truck separation, responsive detail and List cards, cluster restoration, the capacity summary, Tracking, and provider presentation.
+- Production and development dependency audit previously reported zero vulnerabilities; dependency state was not changed by this feature.
+- Current focused verification passed specification/source checks, TypeScript, 67 domain/repository/layout tests, explicit Truck List pagination, and the capacity-only Driver Home on desktop and mobile. List pages retain 14 bounded records without horizontal overflow; Driver Home exposes one Capacity management page title, no embedded Tracking section, and direct Tracking navigation.
+- The latest focused verification passed TypeScript, specification/source checks, the optimized production build, 16 capacity/featured-board tests, and four desktop/mobile browser checks covering current Transporter/Truck suggestions, exact truck selection, selected-signal focus summaries, and preservation of the selected truck card. The preceding focused public-entry check also passed on both layouts. A full visual audit has not been run.
+- The corrected billboard review passed seven featured schedule/repository tests and the focused public-entry browser workflow on desktop and mobile. That browser check temporarily expands the real responsive grid to eleven portrait tiles, proves full available width, multiple natural rows, no overlaps, no fixed-stage scrolling, and complete billboard containment, then removes the test-only clones. Focused screenshots are under `artifacts/featured-billboard-v2/`; the full visual audit remains unrun.
+- The two-session featured schedule review passes specification/source checks, 65 domain and repository tests, TypeScript, the optimized production build, and four focused public/admin browser workflows across desktop and mobile. Two focused capture workflows record the public timeline and administrator scheduler under `artifacts/featured-schedule-v1/`. The expensive full-site visual audit remains unrun.
+- The selected-truck layout and sponsorship correction passed TypeScript, specification/source checks, and focused desktop/mobile browser workflows. The checks prove the desktop detail rail does not overlap the resized Leaflet canvas, the mobile card follows below a full-width map, close restores the original map width, capacity signals use one contained high-contrast hover/focus summary without a second click card, and Sponsored transporters remain a separate right panel or compact above-board mobile collection. Focused screenshots are under `artifacts/selected-truck-rail-v1/`; the full visual audit remains unrun.
+- The location-aligned demonstration geography and map-centering correction passed the complete 60-test quality gate plus six focused desktop/mobile browser workflows. Automated checks prove current routes touch each truck's approximate city, Service-area polygons contain their nearby center and truck point, regular routes remain relevant to the provider base, permission refresh does not apply proximity, and the nearby-truck filter remains explicit. Focused inspection confirmed a representative Addis Ababa–Bishoftu–Mojo–Adama signal and the compact unchecked proximity control; the expensive full visual audit remains unrun.
+- Focused review captures under `artifacts/focused-list-driver-review/` cover Truck List pages 1 and 2 plus the one-title, capacity-only Driver Home at desktop and phone sizes. They report no horizontal overflow and await visual approval before the current batch is committed.
+
+## Verification evidence — September 2026
+
+- A newly empty isolated Loadgistic Supabase stack replayed migrations `001`
+  through `059` in order, rebuilt the managed fixture, and passed every guarded
+  live verifier. Migration `058` hardens expiry and retention for Shared
+  capacity credentials; migration `059` adds exact-target claims, lease fencing,
+  challenge-aware retry timing, Shared-first recovery, and bounded terminal
+  Assisted matching email-metadata cleanup. The current consolidated release
+  gate is being rerun, so no replacement aggregate test count is recorded here.
+- A live local application check on port `3001` returned healthy
+  Supabase/PostgreSQL status. Existing-account login and temporary-account
+  signup each returned the same bounded, non-cacheable code-sent response and
+  created exactly one message in the isolated Mailpit sink; no message body or
+  code was read, and the temporary Auth identity was removed. Google login and
+  signup both traversed the local Supabase PKCE route with the configured Web
+  client, minimum identity scopes, the local Supabase callback, and the
+  corrected same-origin application callback for either supported local host.
+- Hosted Supabase Auth has the exact Production callback, Google provider,
+  numeric login/signup templates, and Gmail SMTP configured; one real hosted
+  Auth OTP was received and verified. This proves account authentication mail
+  only. The separate application-email credentials for Shared capacity,
+  Tracking, and Assisted matching are configured in Netlify, but their deployed
+  delivery path has not been exercised with a real pending message. The hosted
+  Loadgistic database now has migrations `001`–`073`, seven private Storage
+  buckets, and the explicitly approved synthetic Production pilot. Netlify
+  Production deploy `6aa06084e223ccf14c9bb72a` serves application commit
+  `e880764`; desktop and phone live route smoke passed.
+- The complete reviewed Production variable set is now present in Netlify's
+  Production context. Session, Tracking, service-role, and SMTP credentials are
+  marked secret; Netlify Free necessarily exposes those secret variables to the
+  Builds, Functions, and Runtime scopes, while non-sensitive deployment values
+  use all available scopes. An authenticated application-SMTP handshake passed
+  without sending a message. This proves credential acceptance only, not a
+  deployed worker or remote application-email delivery.
+
+## Production work still required
+
+- The Netlify Free site `loadgistic-473`
+  (`dbb0fcec-9ec9-4511-9737-db0e32849af5`) is provisioned under the
+  `Falmata Dawano` team (`falmatad97`) and linked locally at
+  `https://loadgistic-473.netlify.app`. The reviewed Production application,
+  Supabase, session/Tracking, fixture-disable, and application-SMTP variables
+  are configured without recording their values in source. Production deploy
+  `6aa06084e223ccf14c9bb72a` is live. The Supabase-backed health endpoint returns
+  `200`; its truthful readiness projection remains blocked only by the missing
+  managed malware scanner and retains pilot warnings for SMTP and community OSM.
+
+- Active application routes use Supabase-only managed ports and fail closed after a managed error. Operations and Daily Featured/Sponsor administration join public discovery, Shared capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, managed provider signup, the authenticated workspace shell, Fleet management, Verification, Billing, member Support, Assisted matching, and platform-team management on that boundary. The retired local database modules and their duplicate tests/scripts have been removed; the managed JSON fixture now imports directly into isolated Supabase.
+- Provider owners now register trucks from My Fleet/My trucks through one owner-scoped PostgreSQL command. Fleet transporters, Owner-operators, and Self-managed Drivers receive the action; Company drivers do not. Registration creates only the immutable Loadgistic truck number and supplied truck facts, leaving Capacity, location, assignment, and verification unset until their deliberate workflows.
+- Administration now opens on a compact Overview rather than the client Home. Users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans link into bounded Records inventories; every row opens a real server-rendered record page, Tracking exposes its bounded status timeline, and related owner/truck/public-profile links keep investigations connected. Review Center, private Capacity, Featured/Sponsors, and Support/team remain distinct named work queues. User-facing navigation no longer presents competing Home and Operations labels.
+- The Supabase identity slice now has a parameter-free `auth.uid()` role projection plus SSR Google PKCE, numeric email-code verification, refresh, current-user, logout, and managed signup adapters. Managed completion and workspace-access evaluation no longer import the SQLite repository; both sign-in methods deny a missing or inactive Loadgistic role projection. Google Login and Signup now carry separate signed, HTTP-only flow intents that select the exact PKCE verifier slot, clear after callback, and prevent an abandoned Signup handoff from misclassifying a later Login. Signup uses a signed handoff, separate numeric confirmation template, and the same inactive bootstrap before atomic Owner-operator or fleet workspace/page/application/trial provisioning. Hosted Production Google credentials, exact callback allowlists, numeric login/signup templates, and Gmail SMTP are configured, and one real account OTP was verified. Migration `072` now installs the minimum signup plan catalogue independently of demo data; it repaired the hosted zero-plan provisioning failure without activating or associating the failed identity, which remains eligible to retry. Google login and the complete hosted provider-signup workflow still require human end-to-end confirmation; Preview requires its own exact Auth configuration.
+- Managed health and place search now use bounded server-only Supabase projections. A live local check returned `200`, `supabase-postgres`, 154 profiles, and Addis Ababa suggestions without loading SQLite. Database failure returns `503` with non-secret blocker names.
+- Active application facades, health, request limiting, private uploads, the scheduled worker, browser-server setup, and the standalone container use Supabase unconditionally. Backend selectors, local private-file storage, process-local abuse counters, and local-database fallback are removed; missing managed services fail closed. Local development, CI, fixtures, browser workflows, and the rolled-back 5,000-truck scale audit use isolated Supabase PostgreSQL.
+- The canonical public Truck Market now has its own Supabase application port and server-only PostgreSQL RPC. It retains 12–16-row stable cursors, literal truck/transporter/location search, exact provider and status filters, every-segment Capacity-route matching, complete Service-area matching, opt-in proximity, safe contacts, and Driver/truck badges while excluding an entire Private-network truck from anonymous discovery. Anonymous/authenticated browser roles cannot execute the RPC. A managed Next.js smoke returned the homepage and two duplicate-free Partial cursor pages without loading SQLite.
+- Published transporter microsites now use the Supabase application port without importing SQLite. The projection preserves active trucks with and without current capacity, provider-selected public contacts, fixture or protected profile images, operating-model labels, assigned Driver first name/callback, separate Driver/truck document badges, current safe geometry, regular service, the latest 20 review notes, and an all-review count/average computed by a service-role-only PostgreSQL aggregate. Managed Next.js checks returned fleet and Owner-operator pages, kept unknown handles at `404`, and rendered no private proof path or hidden account contact.
+- Daily Featured Transporters and Sponsors now use a Supabase application port without importing SQLite. The service-only regional candidate projection rechecks published profile, structured base, public contact, active fleet, current evidence, operating model, review summary, and available-now count. The application preserves administrator order, deterministic automatic/manual schedules, Sponsor-break attribution, eligible transporter Sponsors, and bounded outside ads while removing owner IDs and eligibility internals. The live Production `/featured` request now renders the explicitly approved eight-truck current-day programme and its current Sponsor placements.
+- The isolated Loadgistic Supabase CLI stack uses ports `55320`–`55324` so it can coexist with other projects. A newly empty local database replayed the complete migration chain, rebuilt the managed fixture, and passed the live identity, Storage, public-projection, signup, Shared capacity, provider Capacity, provider Tracking, transporter-profile, workspace/Fleet, Verification/Billing, Support/Assisted-matching, platform-administration, shared-limit, private-upload, and browser-denial verifiers with SQLite unavailable. The linked hosted Loadgistic project matches through migration `073` and retains seven private buckets.
+- Local fixture follow-up `174380e` assigns each independent truck to its owning
+  Driver identity at import time without changing an existing fleet assignment.
+  The 2026-09-05 reset imported 143 assignments and generated seven current
+  heavy-rigid Featured slots. GitHub CI run `33926528912` passed validation,
+  dependency audit, managed verifiers, 201 contract tests, the 5,000-truck
+  rollback scale check, TypeScript, the optimized build, all desktop/mobile
+  browser workflows, and the standalone container build.
+- The explicitly approved Production pilot import is live under the isolated
+  `loadgistic-production-pilot-v1` namespace: 152 non-privileged synthetic
+  Transporter/Driver identities, 143 trucks and Capacity signals, 30 public
+  provider pages, and eight current Daily Featured truck/Driver slots. An
+  independent database/API check/browser verifier confirmed exact counts, zero
+  synthetic Admin or Support roles, working private Storage, visible public map
+  signals, all eight Featured cards, and zero broken pilot images on desktop and
+  phone. The pre-import encrypted backup and deterministic rollback are retained.
+- Apply and validate the cloud migrations only after a backup and explicit rollout approval. The legacy-demand purge is destructive by design.
+- The managed application-email port sends escaped plain-text/HTML templates through preferred Resend delivery, a bounded authenticated-SMTP pilot, or the optional HTTPS webhook adapter. Supabase Auth email is a separate service and template set. The deployed Netlify runtime includes a 15-minute managed dispatcher plus a two-minute access-email recovery dispatcher, each invoking bounded HMAC-authenticated background work without returning private operation data. Production SMTP variables are configured and their authentication handshake passed. Netlify logs confirm both schedules and background workers are invoked; a real pending Shared capacity, Tracking, or Assisted matching delivery has not yet been monitored end to end.
+- Every Leaflet surface now uses one centralized HTTPS tile configuration with visible linked attribution and an exact-origin CSP. The bounded beta falls back to the direct OpenStreetMap community endpoint with a non-blocking launch warning; no proxy, prefetch, bulk copy, or Netlify-hosted tile set is used. Monitor traffic and select a reviewed provider before sustained use.
+- Tracking unlock, review unlock, and review submission now use the shared PostgreSQL limiter. Add the remaining public-discovery coverage and reviewed bot protection; configure and remotely prove the managed upload scanner; then complete backup/restore evidence, monitoring, and a tested rollback. The local EICAR-aware scanner is test-only.
+- The reviewed Netlify promotion and live route smoke are complete. Hosted schema publication is complete; managed upload scanning, remote application-email delivery, backup/restore rehearsal, Preview concurrency, and production monitoring remain rollout gates.

@@ -22,7 +22,7 @@ type LocationState='idle'|'requesting'|'saving'|'saved'|'denied'|'error';
 
 const trackingActions=[
   {status:'ASSIGNED',label:'Loading',hint:'Truck is being loaded',Icon:PackageCheck,acceptsProof:true},
-  {status:'IN_TRANSIT',label:'En route',hint:'Shipment is moving',Icon:Navigation,acceptsProof:true},
+  {status:'IN_TRANSIT',label:'En route',hint:'Shipment is moving',Icon:Navigation,acceptsProof:false},
   {status:'DELIVERED',label:'Unloading',hint:'Shipment reached delivery',Icon:PackageOpen,acceptsProof:true},
   {status:'COMPLETED',label:'Complete',hint:'Shipment is finished',Icon:CircleCheckBig,acceptsProof:false},
   {status:'ISSUE',label:'Problem',hint:'Report before unloading',Icon:TriangleAlert,acceptsProof:true}
@@ -113,7 +113,7 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
   return <section className="card tracking-control-panel">
     <div className="control-panel-title"><div className="panel-title-copy"><PackageSearch aria-hidden="true"/><div><h2>Shipment update</h2><p>Choose one available action</p></div></div></div>
 
-    {requiresLocation?<div className={`automatic-location ${locationFinished?'saved':allowDeviceLocation?locationState:'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{locationFinished?'Location finished':allowDeviceLocation?locationTitle:'Driver location'}</strong><small>{locationFinished?'Stopped after Unloading.':allowDeviceLocation?`${privacyRadius} km privacy area · automatic while this screen is open`:'The assigned Driver sends this automatically from their phone.'}</small></span>{allowDeviceLocation&&!locationFinished&&['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setLocationAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>:null}
+    {requiresLocation?<div className={`automatic-location ${locationFinished?'saved':allowDeviceLocation?locationState:'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{locationFinished?'Location finished':allowDeviceLocation?locationTitle:'Driver location'}</strong><small>{locationFinished?'Stopped after Unloading.':allowDeviceLocation?`Approximate location within ${privacyRadius} km · updates while this screen is open`:'The assigned Driver sends this automatically from their phone.'}</small></span>{allowDeviceLocation&&!locationFinished&&['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setLocationAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>:null}
 
     <form action={`/api/shipments/${shipmentId}/status`} method="post" encType="multipart/form-data" className="tracking-action-form">
       <fieldset className="form-group tracking-action-fieldset"><legend><Check aria-hidden="true"/>Shipment actions</legend><div className="tracking-action-grid">{trackingActions.map(action=>{

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { moderateAdminRecord, setAdminRecordActive, updateFleetDriverPermissions } from '@/lib/repository.js';
+import { moderateAdminRecord, setAdminRecordActive, updateFleetDriverPermissions } from '@/lib/platform-admin.js';
 import { errorMessage } from '@/lib/errors';
 import { checked, redirectWith, text } from '@/lib/redirects';
 
@@ -9,20 +9,18 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{type:st
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {type,id}=await params;
   const form=await request.formData();
+  const requestedReturnTo=text(form,'returnTo');
+  const returnTo=requestedReturnTo.startsWith('/admin/operations')?requestedReturnTo:'/admin/operations';
   try{
     const command=text(form,'command');
-    if(type.toUpperCase()==='DRIVER_PERMISSIONS')updateFleetDriverPermissions(user,id,{
-      canBrowseLoadBoard:checked(form,'canBrowseLoadBoard'),
-      canContactBusinesses:checked(form,'canContactBusinesses'),
-      canNegotiateLoads:checked(form,'canNegotiateLoads'),
-      canManageCapacity:checked(form,'canManageCapacity')
+    if(type.toUpperCase()==='DRIVER_PERMISSIONS')await updateFleetDriverPermissions(user,id,{
+      canManageCapacity:checked(form,'canManageCapacity'),
+      canManageTracking:checked(form,'canManageTracking')
     });
-    else if(command)moderateAdminRecord(user,type.toUpperCase(),id,command);
-    else setAdminRecordActive(user,type.toUpperCase(),id,checked(form,'active'));
-    const returnTo=text(form,'returnTo');
-    const target=returnTo.startsWith('/admin/operations')?returnTo:'/admin/operations';
-    return redirectWith(request,target,'success','Platform record updated.');
+    else if(command)await moderateAdminRecord(user,type.toUpperCase(),id,command);
+    else await setAdminRecordActive(user,type.toUpperCase(),id,checked(form,'active'));
+    return redirectWith(request,returnTo,'success','Platform record updated.');
   }catch(error){
-    return redirectWith(request,'/admin/operations','error',errorMessage(error));
+    return redirectWith(request,returnTo,'error',errorMessage(error));
   }
 }

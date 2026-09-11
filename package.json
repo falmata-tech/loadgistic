@@ -6,19 +6,37 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "NEXT_DIST_DIR=${NEXT_DIST_DIR:-.next-dev} next dev --turbopack",
+    "dev": "NEXT_DIST_DIR=${NEXT_DIST_DIR:-.next-dev} next dev --turbopack --hostname 127.0.0.1 --port ${PORT:-3100}",
     "build": "node scripts/run-next-build.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "db:reset": "node scripts/reset-db.mjs",
-    "db:stress": "node scripts/seed-stress-db.mjs",
-    "db:fixtures:tracking": "node scripts/add-tracking-fixtures.mjs",
+    "db:reset": "npm run supabase:local:configure",
+    "db:supabase:fixtures": "node scripts/import-supabase-fixtures.mjs --reset-local",
+    "db:supabase:production-pilot": "node scripts/import-production-pilot.mjs",
+    "db:supabase:production-pilot:rollback": "node scripts/import-production-pilot.mjs --rollback",
+    "db:supabase:verify": "node scripts/verify-supabase-fixtures.mjs",
+    "db:supabase:verify:shared": "node scripts/verify-supabase-shared-capacity.mjs",
+    "db:supabase:verify:capacity": "node scripts/verify-supabase-provider-capacity.mjs",
+    "db:supabase:verify:tracking": "node scripts/verify-supabase-provider-tracking.mjs",
+    "db:supabase:verify:signup": "node scripts/verify-supabase-provider-signup.mjs",
+    "db:supabase:verify:rate-limit": "node scripts/verify-supabase-rate-limit.mjs",
+    "db:supabase:verify:uploads": "node scripts/verify-supabase-upload-scanning.mjs",
+    "db:supabase:verify:profile": "node scripts/verify-supabase-provider-profile.mjs",
+    "db:supabase:verify:fleet": "node scripts/verify-supabase-workspace-fleet.mjs",
+    "db:supabase:verify:trust-billing": "node scripts/verify-supabase-verification-billing.mjs",
+    "db:supabase:verify:support": "node scripts/verify-supabase-support.mjs",
+    "db:supabase:verify:admin": "node scripts/verify-supabase-platform-admin.mjs",
+    "supabase:start": "node scripts/start-local-supabase.mjs",
+    "supabase:local:configure": "node scripts/configure-local-supabase.mjs --write-env --fixtures --verify",
+    "test:scale": "node scripts/market-scale-audit.mjs",
     "places:download": "node scripts/download-ethiopia-places.mjs",
-    "places:import": "node scripts/import-ethiopia-places.mjs",
-    "places:import:supabase": "node scripts/import-ethiopia-places-supabase.mjs",
+    "places:import": "node scripts/import-ethiopia-places-supabase.mjs",
+    "places:import:supabase": "npm run places:import",
     "places:setup": "npm run places:download && npm run places:import",
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
+    "test:e2e:critical": "node scripts/run-e2e.mjs --grep \"public entry|map clusters|visitor location|capacity summary|provider starts Tracking|provider edits business facts\"",
+    "test:a11y": "node scripts/run-e2e.mjs tests/e2e/accessibility.spec.ts",
     "test:ui-audit": "node scripts/ui-audit.mjs",
     "test:ui-stress": "node scripts/stress-ui-audit.mjs",
     "test:e2e:server": "node scripts/e2e-server.mjs",
@@ -33,16 +51,19 @@
     "typecheck:offline": "tsc -p tsconfig.offline.json"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.112.0",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
-    "next": "15.5.22",
+    "next": "15.5.25",
+    "nodemailer": "9.1.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-leaflet": "^5.0.0",
     "zod": "3.24.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "1.62.1",
     "@types/leaflet": "1.9.22",
     "@types/node": "22.13.10",
@@ -51,8 +72,8 @@
     "typescript": "5.8.2"
   },
   "overrides": {
-    "postcss": "8.5.18",
-    "sharp": "0.35.0"
+    "postcss": "8.5.26",
+    "sharp": "0.35.4"
   },
   "type": "module"
 }

@@ -10,13 +10,4 @@ services:
         required: false
     environment:
       NODE_ENV: production
-      DATA_BACKEND: sqlite
-      PRIVATE_STORAGE_BACKEND: local
-      DATABASE_PATH: /app/data/loadgistic.db
-      PRIVATE_UPLOAD_DIR: /app/data/uploads
-    volumes:
-      - loadgistic-data:/app/data
     restart: unless-stopped
-
-volumes:
-  loadgistic-data:

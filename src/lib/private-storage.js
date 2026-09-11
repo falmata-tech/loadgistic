@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import {scanPrivateUpload,uploadScannerStatus} from './upload-scanner.js';
+import {privateUploadMaxBytes} from './upload-policy.js';
 
 const MIME_CONFIG={
   'image/jpeg':{extension:'.jpg',matches:(bytes)=>bytes.length>=3&&bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff},
@@ -17,18 +18,11 @@ const PURPOSE_BUCKET={
   proof:'shipment-proof',
   'tracking-proof':'shipment-proof',
   'load-proof':'shipment-proof',
+  'provider-profile':'provider-profile',
+  'guest-support':'support-attachment',
   file:'shipment-proof'
 };
-
-function storageBackend(environment=process.env){
-  const backend=String(environment.PRIVATE_STORAGE_BACKEND||'local').toLowerCase();
-  if(!['local','supabase'].includes(backend))throw new Error('INVALID_PRIVATE_STORAGE_BACKEND');
-  return backend;
-}
-
-function uploadRoot(){
-  return path.resolve(process.cwd(),process.env.PRIVATE_UPLOAD_DIR||'data/uploads');
-}
+const QUARANTINE_BUCKET='private-upload-quarantine';
 
 function supabaseClient(){
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -50,34 +44,33 @@ function cleanOriginalName(value){
   return cleaned||'upload';
 }
 
-function localPathForReference(reference){
-  const root=uploadRoot();
-  const relative=reference.startsWith('local://')?reference.slice('local://'.length):path.relative(root,path.resolve(reference));
-  const resolved=path.resolve(root,relative);
-  if(resolved!==root&&!resolved.startsWith(`${root}${path.sep}`))throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
-  return resolved;
-}
-
 function supabaseParts(reference){
   const match=/^supabase:\/\/([^/]+)\/(.+)$/.exec(reference);
   if(!match)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
   return {bucket:match[1],objectPath:match[2]};
 }
 
+async function removeSupabaseObject(client,bucket,objectPath){
+  const {error}=await client.storage.from(bucket).remove([objectPath]);
+  if(error)throw new Error('PRIVATE_STORAGE_DELETE_FAILED');
+}
+
 export function privateStorageStatus(environment=process.env){
-  const backend=storageBackend(environment);
+  const scanner=uploadScannerStatus(environment);
   return {
-    backend,
-    durable:backend==='supabase',
-    configured:backend==='local'||Boolean(environment.NEXT_PUBLIC_SUPABASE_URL&&environment.SUPABASE_SERVICE_ROLE_KEY)
+    backend:'supabase',
+    durable:true,
+    configured:Boolean(environment.NEXT_PUBLIC_SUPABASE_URL&&environment.SUPABASE_SERVICE_ROLE_KEY),
+    scannerBackend:scanner.backend,
+    scannerConfigured:scanner.configured,
+    scannerProductionSafe:scanner.productionSafe
   };
 }
 
 export async function storePrivateUpload(file,purpose='file'){
   if(!file||typeof file.arrayBuffer!=='function'||!file.size)return null;
   validatePurpose(purpose);
-  const maxMb=Math.max(1,Number(process.env.FILE_MAX_MB||10));
-  if(file.size>maxMb*1024*1024)throw new Error('FILE_TOO_LARGE');
+  if(file.size>privateUploadMaxBytes())throw new Error('FILE_TOO_LARGE');
   const mimeType=String(file.type||'').toLowerCase();
   const config=MIME_CONFIG[mimeType];
   if(!config)throw new Error('UNSUPPORTED_FILE_TYPE');
@@ -86,56 +79,48 @@ export async function storePrivateUpload(file,purpose='file'){
 
   const date=new Date().toISOString().slice(0,10);
   const objectPath=`${purpose}/${date}/${crypto.randomUUID()}${config.extension}`;
-  const backend=storageBackend();
-  let reference;
-  if(backend==='supabase'){
-    const bucket=PURPOSE_BUCKET[purpose];
-    const {error}=await supabaseClient().storage.from(bucket).upload(objectPath,bytes,{
-      contentType:mimeType,
-      cacheControl:'0',
-      upsert:false
+  const quarantinePath=`incoming/${date}/${crypto.randomUUID()}${config.extension}`;
+  const bucket=PURPOSE_BUCKET[purpose];
+  const client=supabaseClient();
+  let quarantined=false;let released=false;let reference;
+  try{
+    const {error:quarantineError}=await client.storage.from(QUARANTINE_BUCKET).upload(quarantinePath,bytes,{
+      contentType:mimeType,cacheControl:'0',upsert:false
     });
-    if(error)throw new Error('PRIVATE_STORAGE_WRITE_FAILED');
+    if(quarantineError)throw new Error('PRIVATE_STORAGE_QUARANTINE_FAILED');
+    quarantined=true;
+    await scanPrivateUpload(bytes,mimeType);
+    const {error:releaseError}=await client.storage.from(bucket).upload(objectPath,bytes,{
+      contentType:mimeType,cacheControl:'0',upsert:false
+    });
+    if(releaseError)throw new Error('PRIVATE_STORAGE_WRITE_FAILED');
+    released=true;
+    await removeSupabaseObject(client,QUARANTINE_BUCKET,quarantinePath);
+    quarantined=false;
     reference=`supabase://${bucket}/${objectPath}`;
-  }else{
-    const target=localPathForReference(`local://${objectPath}`);
-    await fs.mkdir(path.dirname(target),{recursive:true});
-    await fs.writeFile(target,bytes,{flag:'wx'});
-    reference=`local://${objectPath}`;
+  }catch(error){
+    if(released)await removeSupabaseObject(client,bucket,objectPath).catch(()=>undefined);
+    if(quarantined)await removeSupabaseObject(client,QUARANTINE_BUCKET,quarantinePath).catch(()=>undefined);
+    throw error;
   }
   return {path:reference,name:path.basename(objectPath),originalName:cleanOriginalName(file.name),mimeType,size:bytes.length};
 }
 
 export async function readPrivateUpload(reference){
   if(!reference)return null;
-  if(String(reference).startsWith('supabase://')){
-    const {bucket,objectPath}=supabaseParts(String(reference));
-    const {data,error}=await supabaseClient().storage.from(bucket).download(objectPath);
-    if(error){
-      if(String(error.statusCode||'')==='404')return null;
-      throw new Error('PRIVATE_STORAGE_READ_FAILED');
-    }
-    return Buffer.from(await data.arrayBuffer());
+  const {bucket,objectPath}=supabaseParts(String(reference));
+  if(bucket===QUARANTINE_BUCKET)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+  const {data,error}=await supabaseClient().storage.from(bucket).download(objectPath);
+  if(error){
+    if(String(error.statusCode||'')==='404')return null;
+    throw new Error('PRIVATE_STORAGE_READ_FAILED');
   }
-  try{
-    return await fs.readFile(localPathForReference(String(reference)));
-  }catch(error){
-    if(error&&typeof error==='object'&&error.code==='ENOENT')return null;
-    throw error;
-  }
+  return Buffer.from(await data.arrayBuffer());
 }
 
 export async function removePrivateUpload(reference){
   if(!reference)return;
-  if(String(reference).startsWith('supabase://')){
-    const {bucket,objectPath}=supabaseParts(String(reference));
-    const {error}=await supabaseClient().storage.from(bucket).remove([objectPath]);
-    if(error)throw new Error('PRIVATE_STORAGE_DELETE_FAILED');
-    return;
-  }
-  try{
-    await fs.unlink(localPathForReference(String(reference)));
-  }catch(error){
-    if(!error||typeof error!=='object'||error.code!=='ENOENT')throw error;
-  }
+  const {bucket,objectPath}=supabaseParts(String(reference));
+  if(bucket===QUARANTINE_BUCKET)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+  await removeSupabaseObject(supabaseClient(),bucket,objectPath);
 }

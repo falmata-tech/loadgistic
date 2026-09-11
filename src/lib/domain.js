@@ -29,6 +29,19 @@ export function validateSupportMessage(body) {
   return value;
 }
 
+export function normalizePrivateContactEmail(value) {
+  const email=String(value||'').trim().toLowerCase();
+  if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('INVALID_PRIVATE_CONTACT_EMAIL');
+  return email;
+}
+
+export function normalizeOptionalCallbackPhone(value) {
+  const phone=String(value||'').trim();
+  if(!phone)return null;
+  if(phone.length>30||!/^\+?[0-9][0-9 ()-]{6,28}$/.test(phone))throw new Error('INVALID_CALLBACK_PHONE');
+  return phone;
+}
+
 export function validateSupportAgentLimit(value) {
   const limit=Number(value);
   if (!Number.isInteger(limit)||limit<1||limit>20) throw new Error('INVALID_SUPPORT_AGENT_LIMIT');
@@ -60,7 +73,6 @@ export const PRICE_MODES = Object.freeze({
 export const CAPACITY_STATUSES = Object.freeze({
   EMPTY: 'EMPTY',
   PARTIAL: 'PARTIAL',
-  BUSY: 'BUSY',
   OFF_DUTY: 'OFF_DUTY'
 });
 
@@ -112,19 +124,18 @@ export function validatePriceMode({ priceMode, priceEtb, targetPriceEtb }) {
   };
 }
 
-export function validateCapacity(status, availablePercent) {
+export function validateCapacity(status) {
   if (!Object.values(CAPACITY_STATUSES).includes(status)) throw new Error('INVALID_CAPACITY_STATUS');
   if (status === CAPACITY_STATUSES.EMPTY) return 100;
-  if ([CAPACITY_STATUSES.BUSY,CAPACITY_STATUSES.OFF_DUTY].includes(status)) return 0;
-  const percentage = Number(availablePercent);
-  if (!Number.isInteger(percentage) || percentage < 1 || percentage > 99) {
-    throw new Error('CAPACITY_PERCENT_REQUIRED');
-  }
-  return percentage;
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return 0;
+  // The current SQLite adapter still has a non-null legacy percentage column.
+  // Partial is a categorical product signal; this private placeholder is never
+  // requested from a Driver or exposed as remaining-space information.
+  return 50;
 }
 
 export function validateAcceptedLoads(status, acceptedLoads) {
-  if ([CAPACITY_STATUSES.BUSY,CAPACITY_STATUSES.OFF_DUTY].includes(status)) return { acceptsFullLoad: false, acceptsPartialLoad: false };
+  if (status === CAPACITY_STATUSES.OFF_DUTY) return { acceptsFullLoad: false, acceptsPartialLoad: false };
   if (status === CAPACITY_STATUSES.PARTIAL) return { acceptsFullLoad: false, acceptsPartialLoad: true };
   if (acceptedLoads === 'FTL') return { acceptsFullLoad: true, acceptsPartialLoad: false };
   if (acceptedLoads === 'PTL') return { acceptsFullLoad: false, acceptsPartialLoad: true };
@@ -217,9 +228,50 @@ export function capacityFreshness(updatedAt, expiresAt, freshHours = 12) {
 }
 
 export function capacitySignalFreshness(status, updatedAt, availableAgainDate, freshHours = 12, todayDate = null) {
-  const today = todayDate || new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  if (status === CAPACITY_STATUSES.BUSY && (!availableAgainDate || availableAgainDate < today)) return 'EXPIRED';
   return capacityFreshness(updatedAt,null,freshHours);
+}
+
+export const CAPACITY_UPDATE_STAGES = Object.freeze({
+  TODAY:'TODAY',
+  FEW_DAYS:'FEW_DAYS',
+  WEEK:'WEEK',
+  MONTH:'MONTH',
+  OLDER:'OLDER',
+  UNKNOWN:'UNKNOWN'
+});
+
+export function capacityUpdateStage(updatedAt, now = Date.now()) {
+  if(updatedAt===null||updatedAt===undefined||String(updatedAt).trim()==='')return CAPACITY_UPDATE_STAGES.UNKNOWN;
+  const updated=new Date(updatedAt).getTime();
+  const current=now instanceof Date?now.getTime():new Date(now).getTime();
+  if(!Number.isFinite(updated)||!Number.isFinite(current))return CAPACITY_UPDATE_STAGES.UNKNOWN;
+  const age=Math.max(0,current-updated);
+  const day=24*60*60*1000;
+  if(age<day)return CAPACITY_UPDATE_STAGES.TODAY;
+  if(age<4*day)return CAPACITY_UPDATE_STAGES.FEW_DAYS;
+  if(age<8*day)return CAPACITY_UPDATE_STAGES.WEEK;
+  if(age<31*day)return CAPACITY_UPDATE_STAGES.MONTH;
+  return CAPACITY_UPDATE_STAGES.OLDER;
+}
+
+export function capacityUpdatePresentation(updatedAt,{kind='capacity',now=Date.now()}={}) {
+  const stage=capacityUpdateStage(updatedAt,now);
+  const subject=kind==='location'?'Location':'Capacity';
+  const updated=updatedAt===null||updatedAt===undefined||String(updatedAt).trim()===''?Number.NaN:new Date(updatedAt).getTime();
+  const current=now instanceof Date?now.getTime():new Date(now).getTime();
+  const days=Number.isFinite(updated)&&Number.isFinite(current)?Math.max(0,Math.floor((current-updated)/(24*60*60*1000))):null;
+  const label=stage===CAPACITY_UPDATE_STAGES.TODAY?`${subject} updated today`
+    :stage===CAPACITY_UPDATE_STAGES.FEW_DAYS?`${subject} updated ${Math.max(1,days)} ${Math.max(1,days)===1?'day':'days'} ago`
+    :stage===CAPACITY_UPDATE_STAGES.WEEK?`${subject} updated within the past week`
+    :stage===CAPACITY_UPDATE_STAGES.MONTH?`${subject} updated within the past month`
+    :stage===CAPACITY_UPDATE_STAGES.OLDER?`${subject} last updated over a month ago`
+    :`${subject} update unavailable`;
+  return {
+    stage,
+    label,
+    confirmAvailability:kind==='capacity'&&[CAPACITY_UPDATE_STAGES.WEEK,CAPACITY_UPDATE_STAGES.MONTH,CAPACITY_UPDATE_STAGES.OLDER,CAPACITY_UPDATE_STAGES.UNKNOWN].includes(stage),
+    lastReported:kind==='location'&&![CAPACITY_UPDATE_STAGES.TODAY,CAPACITY_UPDATE_STAGES.FEW_DAYS].includes(stage)
+  };
 }
 
 export const CAPACITY_EXPIRY_WARNING_HOURS = 2;
@@ -242,11 +294,10 @@ export function loadBoardDeadlineState(deliveryDate, todayDate, graceDays = LOAD
   return today <= deadline + graceDays * 86_400_000 ? 'PAST_DUE' : 'EXPIRED';
 }
 
-export function capacityLabel(status, percent) {
-  if (status === CAPACITY_STATUSES.EMPTY) return 'Empty · 100% available';
-  if (status === CAPACITY_STATUSES.BUSY) return 'Busy · Available soon';
+export function capacityLabel(status) {
+  if (status === CAPACITY_STATUSES.EMPTY) return 'Empty';
   if (status === CAPACITY_STATUSES.OFF_DUTY) return 'Off duty · Not shown';
-  return `Partial · ${percent}% available`;
+  return 'Partial';
 }
 
 export function roleCanCreateShipment(role) {
@@ -262,6 +313,12 @@ export function roleCanBrowseLoads(role) {
 }
 
 export function statusLabel(value) {
+  const labels = {
+    TO_PICKUP: 'Going to pickup',
+    IN_TRANSIT: 'En route'
+  };
+  const normalized = String(value || '').toUpperCase();
+  if (labels[normalized]) return labels[normalized];
   return String(value || '')
     .toLowerCase()
     .split('_')

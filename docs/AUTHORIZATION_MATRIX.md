@@ -1,68 +1,57 @@
-# Authorization contract matrix
+# Authorization matrix
 
-This matrix defines the application-service boundary. Route handlers authenticate callers, but repository services remain authoritative for every mutation and protected read.
+The active product is supply-first. Capacity seekers are anonymous visitors; only transport providers and platform-team users authenticate.
 
-| Capability | Allowed actor and scope | Denial behavior |
+| Action | Allowed actor and scope | Denial behavior |
 |---|---|---|
-| Post shipment | Active Shipper or Receiver with its organization | `FORBIDDEN`; no shipment or event |
-| Read Tracking workspace | Shipper, receiver, directly addressed or assigned provider; Admin oversight | Discoverable unrelated Shipment Board records are excluded |
-| View shipment party data | Admin or shipment shipper, receiver, assigned provider organization, or assigned provider profile | Return no record |
-| Set receiver contact | Business that owns an Agreed shipment, or Admin; first name and phone are required | `NOT_FOUND`, `RECEIVER_CONTACT_NOT_READY`, or `RECEIVER_CONTACT_REQUIRED`; no contact update |
-| Browse open freight | Authenticated Transporter or self-managed Driver; company Driver only with Shipment Board permission; Freight, Posted, Open Market only | Return no record |
-| Browse Partners freight | Transporter or self-managed Driver with a mutual Connected relationship; company Driver additionally requires Shipment Board permission for that transporter organization | Return no record |
-| View designated load phone | Transporter or self-managed Driver allowed to view the load; company Driver additionally requires Business contact permission; owning Business must opt in | Return a null phone |
-| Express load interest or request load proof | Transporter or self-managed Driver allowed to browse; company Driver additionally requires negotiation and Business contact permission | `NOT_FOUND` or `FORBIDDEN`; no interest, request, notification, or audit |
-| Accept direct freight | The specifically addressed Transporter or self-managed Driver while the request is `SENT`; company Driver additionally requires negotiation and Business contact permission for the addressed organization | `FORBIDDEN`, `NOT_FOUND`, or `DIRECT_REQUEST_NOT_PENDING`; no state change |
-| Transition shipment | Admin or the assigned Transporter/Driver; only a currently valid Loading, En route, Unloading, Complete, or Problem transition is accepted | `FORBIDDEN`, `NOT_FOUND`, or `INVALID_STATUS_TRANSITION`; no status event or proof |
-| Publish automatic tracking location | Assigned Driver only, after assignment and before a terminal state, while Automatic location + status is active; obscured device point and required privacy radius only | `FORBIDDEN`, `TRACKING_LOCATION_NOT_ENABLED`, `TRACKING_DEVICE_LOCATION_REQUIRED`, `TRACKING_LOCATION_REQUIRED`, or invalid approximate-location denial; no event |
-| Reduce tracking mode | Shipper Business, receiver Business, or Admin; only Automatic location + status to Status only | `NOT_FOUND` or invalid mode; no mode change |
-| Unlock customer tracking | Authenticated shipper or receiver Business on that load, using its secret code; grant is user/load bound and expires after five idle minutes | `TRACKING_ACCESS_DENIED`; no summary, party, or event disclosure |
-| Upload/download proof | Admin or an actual shipment party; file read reauthorizes each request | Upload throws `NOT_FOUND`; download returns no record or bytes |
-| Request load-size proof | Transporter or Driver with its own recorded interest in that visible Freight load | `NOT_FOUND`; no request or notification |
-| Share temporary load-size proof | Business that owns the load, to one selected recorded interest | `NOT_FOUND` or `INVALID_INTEREST`; no file grant |
-| Download temporary load-size proof | Owning Business, Admin, or the exact selected interested provider while the grant is active and compatible with assignment | Return no record or bytes |
-| View marketplace capacity | Authenticated Business, Transporter, Driver, or Admin; Open Empty/Partial capacity, plus Partners capacity for a Connected Business-provider pair | Return no record |
-| Publish capacity | Transporter for its organization vehicle; self-managed Driver for its provider-profile vehicle; company Driver with rich capacity permission for an assigned organization vehicle. Active capacity requires the assigned Driver's obscured device location. Drivers submit a fresh in-session reading; an owner may change non-location facts only while preserving that Driver reading and its timestamp. Partial always implies PTL and requires a live route, including Local; Empty alone chooses FTL, PTL, or Both and Anywhere or a dated specific route. Off Duty is hidden. | `FORBIDDEN`, `INVALID_VEHICLE`, `CAPACITY_DRIVER_LOCATION_REQUIRED`, `INVALID_ROUTE`, `INVALID_ROUTE_DATE`, or `DEVICE_LOCATION_DRIVER_ONLY`; no visible capacity |
-| Change company-truck duty | Transporter owner may set Off Duty; assigned company Driver may set Off Duty or restore active capacity with a fresh obscured device location. On Duty restores the last owner-configured active facts but never fabricates location freshness. | `FORBIDDEN`, `INVALID_VEHICLE`, `CAPACITY_CONFIGURATION_REQUIRED`, or `CAPACITY_DRIVER_LOCATION_REQUIRED`; no capacity record |
-| Manage fleet-driver permissions | Transporter owner for an active Driver in its own organization | `FORBIDDEN` or `NOT_FOUND`; no permission change |
-| Browse member directory/profile | Any authenticated user; profile must be published | Redirect to login or return no record |
-| Favorite or request network connection | Business owner targeting a transport provider, or Fleet Transporter/Self-managed Driver targeting a Business | `FORBIDDEN` or `INVALID_NETWORK_TARGET`; no relationship or notification |
-| Accept or decline network request | Recipient owner for the exact Pending cross-market relationship | `NETWORK_REQUEST_NOT_ACTIONABLE`; no relationship change |
-| Update profile | User with its own organization or provider profile; public contacts remain separate from account contacts | `FORBIDDEN`; no cross-tenant update |
-| Submit Business participant review | Shipper or receiver organization after Completed; one per direction and load; 4–5 stars publish immediately, while 1–3 require a note and remain private Pending | `REVIEW_NOT_ALLOWED`, `LOW_RATING_NOTE_REQUIRED`, or `REVIEW_ALREADY_SUBMITTED`; no review |
-| Read or decide low-rating moderation | Admin reads safe Pending/Published/Dismissed projections; only a Pending rating may receive one Publish or Dismiss decision with a required investigation note | `FORBIDDEN`, `RATING_REVIEW_NOTE_REQUIRED`, or `RATING_ALREADY_REVIEWED`; no rating change |
-| Submit verification | Authenticated owner of the organization, provider profile, driver, or truck; type must apply | `FORBIDDEN` or `INVALID_VERIFICATION_TYPE`; no request |
-| Read verification document | Submitting user or Admin | Return no record or bytes |
-| Review verification | Admin only; terminal decisions are immutable | `FORBIDDEN` or `VERIFICATION_ALREADY_REVIEWED`; no badge change |
-| Review application | Admin; only non-terminal Pending/More Info application | `FORBIDDEN` or `APPLICATION_ALREADY_REVIEWED`; no provisioning |
-| Submit payment proof | User with a subscription belonging to its organization or provider profile | `SUBSCRIPTION_NOT_FOUND`; no proof |
-| Review payment proof | Admin; only non-terminal Pending/More Info proof; approval opens 30 days from review | `FORBIDDEN` or `PAYMENT_PROOF_ALREADY_REVIEWED`; no subscription change |
-| Use operating workspace | Admin, sponsored Business, or member of a workspace with an unexpired seven-day trial or 30-day paid period; company Drivers inherit fleet access | `SUBSCRIPTION_ACCESS_REQUIRED`; Home, Account, billing submission, and logout remain available |
-| Grant sponsored free access during application review | Admin approving a Business application only | `SPONSORED_ACCESS_BUSINESS_ONLY`; no workspace or subscription |
-| Read platform Operations | Admin only; bounded user, workspace, truck, load, and latest-capacity projections exclude credentials, sessions, tracking secrets, exact coordinates, and proof paths | `FORBIDDEN`; no records or read audit |
-| Start support conversation | Active Shipper, Receiver, Transporter, or Driver for their own user account; one open conversation maximum | `FORBIDDEN` or `SUPPORT_CONVERSATION_ALREADY_OPEN`; no conversation or assignment |
-| Read/send support conversation | Owning member, assigned SUPPORT agent, or Admin; messages only while open and at most 50 returned per read | `NOT_FOUND`, `SUPPORT_CONVERSATION_CLOSED`, or rate/validation denial; no message |
-| Claim waiting support conversation | Available active SUPPORT agent below configured open limit; oldest waiting record only | `FORBIDDEN`, `SUPPORT_AGENT_UNAVAILABLE`, `SUPPORT_AGENT_AT_CAPACITY`, or `SUPPORT_CONVERSATION_NOT_WAITING`; no assignment |
-| Close support conversation | Owning member, assigned SUPPORT agent, or Admin | `NOT_FOUND` or `SUPPORT_CONVERSATION_CLOSED`; no lifecycle change |
-| Manage support agents | Admin only; SUPPORT role, availability, capacity, and active state; disabling safely requeues assigned work | `FORBIDDEN` or validation denial; no account, profile, or queue change |
-| Suspend/restore user | Admin only; reversible; administrator cannot suspend their own account | `FORBIDDEN`, `NOT_FOUND`, or `ADMIN_SELF_SUSPENSION`; no status change |
-| Deactivate/reactivate truck | Admin only; reversible; inactive trucks are excluded from marketplace capacity and active fleet counts | `FORBIDDEN` or `NOT_FOUND`; no status change |
+| Browse public capacity | Anyone; only the latest published Empty or Partial provider signal, with separate capacity and approximate-location age labels | Off Duty, inactive, unpublished, and unauthorized private records are omitted; older active signals stay visible with confirmation guidance |
+| Use visitor proximity | Anyone who grants browser geolocation; exact visitor point stays in browser and only a bounded query point is sent | No prompt loop; normal Board remains usable |
+| View provider microsite | Anyone; published provider-selected fields and contact channels only | `NOT_FOUND` for unpublished/unknown handle |
+| Read Shared capacity | Anonymous browser with a valid email-OTP session that has not been idle for 30 minutes; only trucks actively shared with that normalized email | Generic invalid-code or expired-session response; no grant or truck existence leak |
+| Manage truck Capacity access | Assigned Driver for that truck or owning fleet/provider; owner may view/revoke all owned-truck grants | `FORBIDDEN` or `NOT_FOUND`; no grant mutation |
+| Read Loadgistic private capacity map | Platform administrator with Operations permission; only trucks explicitly shared with Loadgistic | `FORBIDDEN`; no private-capacity projection |
+| Publish or edit current capacity | Fleet owner for owned truck; assigned company Driver with capacity permission; self-managed Driver for owned truck | `FORBIDDEN`, `INVALID_VEHICLE`, or validation error; no mutation |
+| Refresh truck location | Assigned company Driver or self-managed Driver from its current device | `DEVICE_LOCATION_DRIVER_ONLY`; fleet owner cannot replace the Driver point |
+| Manage regular service | Provider owner only; one Service area or Capacity route per provider | `FORBIDDEN` or `REGULAR_CAPACITY_LIMIT`; no mutation |
+| Read or change Fleet Driver access | Active fleet owner for Drivers and trucks in the same owned organization; assignment and Capacity/Tracking permissions change in one transaction | `FORBIDDEN`, `NOT_FOUND`, or `SUBSCRIPTION_ACCESS_REQUIRED`; no partial assignment/permission change and no browser RPC access |
+| Register a truck | Active Fleet transporter owner for its organization; active Owner-operator or Self-managed Driver for its own provider profile | `FORBIDDEN`, `SUBSCRIPTION_ACCESS_REQUIRED`, or bounded validation error; Company drivers, unrelated providers, anonymous callers, and browser RPC clients create no truck or successful audit |
+| Manage sponsors and placements | Platform administrator only; transporter sponsors recheck feature eligibility and outside advertisers require bounded public copy plus HTTPS website and/or public phone | `FORBIDDEN` or validation error; no sponsor or placement mutation |
+| Manage provider business information | Active provider owner for its organization/profile with current workspace access; theme, hero, and video fields are outside this command | `FORBIDDEN` or `SUBSCRIPTION_ACCESS_REQUIRED`; Company drivers and browser RPC callers receive no owner editor, mutation, hidden-contact disclosure, storage reference, or presentation overwrite |
+| Start Tracking | Provider owner, self-managed Driver, or company Driver assigned to the selected truck with Tracking updates enabled | `FORBIDDEN` or `INVALID_VEHICLE`; no session, grant, email, or success audit created |
+| Read provider Tracking | Owning provider and assigned company Driver with Tracking updates enabled | No provider history is returned to an unrelated or restricted actor |
+| Manage Tracking parties | Owning provider or assigned Driver with Tracking permission for one active shipment | An unrelated actor cannot list, add, or revoke recipients; the customer owner cannot be removed; revocation supersedes outstanding OTPs |
+| Add tracking event | Owning provider/authorized Driver; explicit state transition only | `INVALID_TRANSITION` or `FORBIDDEN`; no event |
+| Share Tracking location | Assigned Driver for a location-enabled session, only during Going to pickup or En route | `ASSIGNED_DRIVER_LOCATION_REQUIRED`, `TRACKING_LOCATION_NOT_ENABLED`, or a throttled no-op; no unauthorized location event |
+| Upload status proof | Same provider scope, and only Loading, Unloading, or Issue events | `PROOF_NOT_ALLOWED`; no file record |
+| Request guest Tracking OTP | Anonymous visitor supplies one exact active recipient email and the matching shipment Tracking code | Generic outward response; an unknown or revoked email or wrong code creates no challenge or email delivery |
+| Unlock guest Tracking | Anonymous visitor supplies the same approved email and Tracking code plus its unexpired single-use OTP | Generic denial; no customer detail leak or Auth account creation |
+| Read guest Tracking | Browser session holding the short recipient-bound Tracking grant | Revoked/expired recipient or mismatched shipment returns no projection and the visitor must verify again |
+| Submit provider review | Emailed customer owner for completed Tracking, once | `FORBIDDEN` or `REVIEW_ALREADY_SUBMITTED` |
+| Dispute review | Rated provider, only for one- to three-star review | `REVIEW_NOT_DISPUTABLE`; rating stays visible/counted |
+| Review evidence, ratings, billing, support | Platform role with the corresponding server-side permission | `FORBIDDEN`; action audited when allowed |
+| Start Assisted matching | Account-free visitor with valid email, optional phone, and bounded message | Rate-limited generic validation response; no public demand or account |
+| Read or reply to Assisted matching | Signed guest session or matching email/recovery code; assigned Support actor; administrator with Support permission | `NOT_FOUND` or generic access denial; no contact, message, assignment, or file leak |
+| Read Assisted matching attachment | Same guest-conversation session, assigned Support actor, or Support-authorized administrator | `NOT_FOUND`; every read reauthorizes the conversation |
 
-## Default-deny rules
+## Privacy invariants
 
-- Public or browse visibility never implies mutation or protected-file access.
-- Anonymous visitors cannot read Public Profiles, the member directory, capacity, loads, or marketplace information.
-- Interest in a shipment does not make the provider an execution party.
-- Receiver first name and phone are never returned to marketplace-only viewers and are required before a Freight shipment moves from Agreed to Assigned.
-- A provider becomes an execution party only when its organization/profile is assigned on the shipment.
-- Providers cannot reduce a load's tracking obligation. Device coordinates are obscured in the browser and never written to audits.
-- Current truck location is never manually entered. Fleet-owner capacity edits preserve the assigned Driver's last device location and timestamp; only that Driver may refresh it.
-- Public and member-facing truck views use the permanent Loadgistic platform number. License plates remain limited to owning fleet/self-managed workspaces and administrators.
-- Transport providers cannot unlock the customer tracking view; their involved loads and real events remain in the internal Tracking workspace.
-- Favorites and Pending or declined network requests never authorize Partners-only marketplace records.
-- Terminal approval/rejection is immutable in this MVP.
-- Expired, unpaid, or payment-under-review workspaces cannot bypass subscription limits through direct route or command calls.
-- Pending low ratings are visible only to their submitting Business and administrators; the reviewed Business and public summary receive no pending or dismissed rating data.
-- Denied operations do not write success audits. HTTP adapters return generic safe messages and do not expose protected record details.
-- SUPPORT authority never implies marketplace, shipment, tracking, verification,
-  billing-review, Operations, user-edit, or private-file access.
+- Public capacity returns the provider-selected obscured truck point, not an exact visitor point or private shipment location.
+- Contact phone, WhatsApp, email, and website are independently opt-in.
+- The shipment Tracking code is stable and retrievable by the owning provider, but persistence stores only its keyed digest; the code never grants access without an active shipment recipient and email OTP.
+- The owner grant expires 30 days after completion.
+- The customer-owner email is private and is scrubbed with expired guest access; the provider retains the operational record.
+- Verification files and tracking proof paths are never included in public projections.
+- Private current-capacity grants are truck-scoped and revocable. Current
+  geometry and approximate location are excluded from the public Market; only
+  categorical status and the provider's separate public regular Service area
+  or Capacity route may retain a clearly labeled non-location marker. A Shared capacity guest receives the Driver-selected
+  approximate radius, never an exact device point or another email's grants.
+  Background map traffic cannot renew the 30-minute idle boundary, and logout
+  clears the restricted cookie immediately.
+- Guest Assisted matching is private support. It creates no Load, demand post,
+  ranking record, transaction, or account, and access codes are never stored or
+  logged in plaintext.
+- Guest Tracking projects only the Driver's already-obscured point and selected uncertainty radius, and only during Going to pickup or En route; no exact device coordinate is stored.
+- Retired demand-side member-network and Business-profile routes do not
+  authorize reads or writes. The current provider `Network` is a distinct,
+  truck-scoped private-capacity access feature.

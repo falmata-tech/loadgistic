@@ -8,7 +8,7 @@ import { ArrowRight, Banknote, Boxes, CalendarClock, CircleDotDashed, Clock3, Ey
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 
 type ShipmentPreview={movement_scope:string;origin?:string|null;destination?:string|null;local_place_label?:string|null;pickup_area_label?:string|null;dropoff_area_label?:string|null;load_type?:string|null;vehicle_category?:string|null;pickup_label?:string|null;delivery_label?:string|null;price_mode?:string|null;price_minor?:number|null;distribution_mode?:string|null;posted_label?:string|null};
-type TruckPreview={status:string;available_percent?:number|null;available_again_date?:string|null;available_again_place_label?:string|null;movement_scope?:string|null;local_place_label?:string|null;local_radius_km?:number|null;location_area?:string|null;location_precision_km?:number|null;current_route_origin?:string|null;current_route_destination?:string|null;origin?:string|null;destination?:string|null;travel_date?:string|null;planned_space_status?:string|null;cargo_configuration?:string|null;accepts_full_load:boolean;accepts_partial_load:boolean;accepts_multi_pick:boolean;accepts_multi_drop:boolean;open_to_contract_lanes:boolean;proof_available:boolean;freshness?:string|null;updated_label?:string|null};
+type TruckPreview={status:string;movement_scope?:string|null;local_place_label?:string|null;local_radius_km?:number|null;location_area?:string|null;location_precision_km?:number|null;current_route_origin?:string|null;current_route_destination?:string|null;origin?:string|null;destination?:string|null;travel_date?:string|null;planned_space_status?:string|null;cargo_configuration?:string|null;accepts_full_load:boolean;accepts_partial_load:boolean;accepts_multi_pick:boolean;accepts_multi_drop:boolean;proof_available:boolean;freshness?:string|null;updated_label?:string|null};
 type SharedPreview={pool:{member_count:number;origin:string|null;destination:string|null;origin_spread_km:number;destination_spread_km:number;earliest_pickup:string|null;latest_delivery:string|null}|null;along:{member_count:number;origin:string|null;destination:string|null;loaded_distance_km:number;connector_distance_km:number;stops:{origin:string|null;destination:string|null}[]}|null};
 type PublicBoard='SHIPMENTS'|'TRUCKS';
 
@@ -33,7 +33,7 @@ function stopPolicy(truck:TruckPreview){
   if(truck.accepts_multi_pick&&truck.accepts_multi_drop)return 'Multi pick + drop';
   if(truck.accepts_multi_pick)return 'Multi pick';
   if(truck.accepts_multi_drop)return 'Multi drop';
-  return 'Direct only';
+  return 'No additional stops';
 }
 
 function capacityStatus(status:string){
@@ -42,7 +42,7 @@ function capacityStatus(status:string){
 
 function truckRoute(truck:TruckPreview){
   if(truck.status==='PARTIAL'&&truck.current_route_origin)return `${truck.current_route_origin} → ${truck.current_route_destination}`;
-  if(truck.origin)return `${truck.origin} → ${truck.destination}`;
+  if(truck.origin){const day=truck.travel_date?new Intl.DateTimeFormat('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(`${truck.travel_date}T12:00:00Z`)):null;return `${truck.origin} → ${truck.destination}${day?` · ${day}`:''}`;}
   if(truck.movement_scope==='LOCAL')return `Local in ${truck.local_place_label||truck.location_area||'selected city'}`;
   if(truck.movement_scope==='BOTH'&&truck.local_place_label)return `Local + long-distance · ${truck.local_place_label}`;
   return truck.status==='EMPTY'?'Willing to go anywhere':'Route not specified';
@@ -80,9 +80,9 @@ export function PublicBoardPreview({initialBoard,shipments,trucks,shared}:{initi
           <div className="preview-tags"><span>{shipment.movement_scope==='LOCAL'?'Local':'Long-distance route'}</span><span>{shipment.distribution_mode==='OPEN_MARKET'?'Public':'Limited'}</span><span>Posted {shipment.posted_label||'recently'}</span></div>
           <div className="preview-card-actions"><Link href="/login" className="button secondary"><Eye aria-hidden="true"/>Details</Link><Link href="/login" className="button"><UserRound aria-hidden="true"/>Contact<ArrowRight aria-hidden="true"/></Link></div>
         </article>)}</>:(trucks as TruckPreview[]).map((truck,index)=><article className="locked-board-card rich-preview-card" key={index}>
-          <div className="preview-card-main truck-preview-main"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt={truck.cargo_configuration||'Truck configuration'} width={120} height={120}/><div><div className="preview-card-title"><span className="status green">{capacityStatus(truck.status)}{truck.status!=='BUSY'?` · ${truck.available_percent||0}%`:''}</span><h3>{truck.cargo_configuration||'Available truck'}</h3></div><p className="preview-route"><Route aria-hidden="true"/>{truckRoute(truck)}</p></div></div>
+          <div className="preview-card-main truck-preview-main"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt={truck.cargo_configuration||'Truck configuration'} width={120} height={120}/><div><div className="preview-card-title"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}>{capacityStatus(truck.status)}</span><h3>{truck.cargo_configuration||'Available truck'}</h3></div><p className="preview-route"><Route aria-hidden="true"/>{truckRoute(truck)}</p></div></div>
           <div className="locked-card-facts"><div><MapPin aria-hidden="true"/><span><small>Current area</small><strong>{truck.location_area||truck.local_place_label||'Area not set'}</strong></span></div><div><Boxes aria-hidden="true"/><span><small>Shipment size</small><strong>{acceptedLoads(truck)}</strong></span></div><div><Route aria-hidden="true"/><span><small>Stops</small><strong>{stopPolicy(truck)}</strong></span></div><div><Clock3 aria-hidden="true"/><span><small>Updated</small><strong>{truck.updated_label||truck.freshness||'Recently updated'}</strong></span></div></div>
-          <div className="preview-tags"><span>{truck.movement_scope==='BOTH'?'Local + long-distance':truck.movement_scope==='LOCAL'?'Local':'Long-distance route'}</span><span>{truck.proof_available?'Photo recorded':'No photo'}</span><span>{truck.open_to_contract_lanes?'Contract routes':'Single trip'}</span>{truck.status==='BUSY'&&truck.available_again_place_label?<span>Available near {truck.available_again_place_label}</span>:null}{truck.status==='BUSY'&&truck.available_again_date?<span>Ready {truck.available_again_date}</span>:null}</div>
+          <div className="preview-tags"><span>{truck.movement_scope==='BOTH'?'Local + long-distance':truck.movement_scope==='LOCAL'?'Local':'Long-distance route'}</span><span>{truck.proof_available?'Photo recorded':'No photo'}</span></div>
           <div className="preview-card-actions"><Link href="/login" className="button secondary"><Eye aria-hidden="true"/>Details</Link><Link href="/login" className="button"><UserRound aria-hidden="true"/>Contact<ArrowRight aria-hidden="true"/></Link></div>
         </article>)}
         {!rows.length?<div className="empty-state"><Gauge aria-hidden="true"/><strong>No listings right now.</strong><span>Check again soon.</span></div>:null}

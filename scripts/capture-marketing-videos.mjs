@@ -3,7 +3,7 @@ import { mkdir, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 
-const baseURL=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3000';
+const baseURL=process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3100';
 const outputDir=path.resolve('artifacts/marketing');
 const workDir=path.join(outputDir,'.recording');
 const password='Loadgistic123!';
@@ -23,6 +23,7 @@ async function loginState(browser,email){
   const context=await browser.newContext({viewport});
   const page=await context.newPage();
   await page.goto(`${baseURL}/login`,{waitUntil:'domcontentloaded'});
+  await page.locator('details.auth-fixture-login>summary').click();
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button',{name:'Log in'}).click();
@@ -113,7 +114,7 @@ try{
     await scroll(page,360,'Matching is a discovery aid. Each original shipment remains independent.',3500);
     await open(page,'/app/fleet','4. Fleet owners manage trucks and Drivers from My Fleet.',4000);
     await open(page,'/app/fleet/veh-trans-1','Each truck gets its own clear capacity workflow.',4000);
-    await scroll(page,520,'Empty, Partial, Busy, and Off Duty are direct operational choices.',3500);
+    await scroll(page,520,'Empty, Partial, and Off Duty are direct operational choices.',3500);
   });
 
   const driver=await record(browser,'long-driver',driverState,async page=>{

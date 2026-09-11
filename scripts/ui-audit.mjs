@@ -2,45 +2,35 @@ import { chromium } from '@playwright/test';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
 const outputDir = path.resolve('artifacts/ui-audit');
 const password = 'Loadgistic123!';
 
 const personas = [
   {
-    name: 'business-shipper',
-    email: 'shipper@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-tracking-setup', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=FAVORITES', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/support?new=1', '/app/more']
-  },
-  {
-    name: 'business-receiver',
-    email: 'receiver@loadgistic.local',
-    routes: ['/app/home', '/app/shipments/new', '/app/shipments?view=MY_LOADS', '/app/shipments', '/app/shipments/shp-freight-active', '/track', '/app/providers', '/app/providers?type=BUSINESS', '/app/network', '/app/network?view=REQUESTS', '/app/capacity', '/app/company-page', '/app/verification', '/app/support', '/app/support?conversation=support-demo-open', '/app/more']
-  },
-  {
     name: 'fleet-transporter',
     email: 'transporter@loadgistic.local',
-    routes: ['/app/home', '/app/fleet', '/app/fleet/veh-trans-1', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=DIRECT', '/app/loads?mode=PARTNERS', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/provider-shipments/new', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'self-managed-driver',
     email: 'driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/loads?board=POOLED', '/app/loads?mode=INTERESTED', '/app/loads?mode=OPEN', '/app/capacity', '/app/shipments', '/app/providers', '/app/network', '/app/company-page', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/provider-shipments', '/app/provider-shipments/new', '/app/company-page', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'company-driver',
     email: 'company-driver@loadgistic.local',
-    routes: ['/app/home', '/app/loads', '/app/capacity', '/app/shipments', '/app/providers', '/app/verification', '/app/support', '/app/more']
+    routes: ['/app/home', '/app/provider-shipments', '/app/verification', '/app/support', '/app/more']
   },
   {
     name: 'admin',
     email: 'admin@loadgistic.local',
-    routes: ['/app/home', '/admin/operations', '/admin/operations?view=USERS', '/admin/operations?view=TRUCKS', '/admin/operations?view=DRIVERS', '/admin/operations?view=LOADS', '/admin/operations?view=CAPACITY', '/admin/operations?view=NETWORK', '/admin/operations?view=ROUTES', '/admin/operations?view=SUBSCRIPTIONS', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/reviews?tab=payments', '/admin/support', '/admin/support?view=WAITING', '/admin/support?view=CLOSED', '/support/support-demo-open', '/app/shipments', '/app/providers', '/app/more']
+    routes: ['/app/home', '/admin/operations', '/admin/operations?view=TRUCKS', '/admin/operations?view=DRIVERS', '/admin/operations?view=TRACKING', '/admin/operations?view=CAPACITY', '/admin/reviews?tab=documents', '/admin/reviews?tab=ratings', '/admin/support', '/app/more']
   },
   {
     name:'support-agent',
     email:'support@loadgistic.local',
-    routes:['/support','/support?view=WAITING','/support?view=CLOSED','/support/support-demo-open']
+    routes:['/support','/support?view=WAITING','/support?view=CLOSED']
   }
 ];
 
@@ -57,6 +47,7 @@ async function gotoReady(page, route) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const response = await page.goto(`${baseURL}${route}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('load',{timeout:10_000});
       await page.waitForTimeout(750);
       return response;
     } catch (error) {
@@ -75,13 +66,15 @@ async function gotoReady(page, route) {
 }
 
 async function login(page, email) {
-  const expectedPath=email==='support@loadgistic.local'?'/support':'/app/home';
+  const expectedPath=email==='support@loadgistic.local'?'/support':email==='admin@loadgistic.local'?'/admin':'/app/home';
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await gotoReady(page, '/login');
     if (new URL(page.url()).pathname === expectedPath) return;
-    await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(password);
-    await page.getByRole('button', { name: 'Log in' }).click();
+    await page.locator('details.auth-fixture-login>summary').click();
+    const fixtureForm=page.getByTestId('login-form');
+    await fixtureForm.getByLabel('Email',{exact:true}).fill(email);
+    await fixtureForm.getByLabel('Password').fill(password);
+    await fixtureForm.getByRole('button', { name: 'Log in' }).click();
     try {
       await page.waitForURL(`**${expectedPath}`, { timeout: 12_000 });
       return;
@@ -100,9 +93,22 @@ async function inspectPage(page, route, screenshotPath) {
 }
 
 async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
-  if (await page.getByText('Loading route map...').count()) {
+  if (await page.getByText(/Loading (?:route|capacity|location) map/).count()) {
     await page.locator('.leaflet-container').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
   }
+  const visibleMaps=await page.locator('.leaflet-container:visible').count();
+  if(visibleMaps){
+    await page.locator('.leaflet-container:visible .leaflet-tile-loaded').first().waitFor({state:'visible',timeout:12_000}).catch(()=>{});
+  }
+  await page.evaluate(async()=>{
+    if(document.fonts?.ready)await document.fonts.ready;
+    const images=[...document.images].filter(image=>image.getBoundingClientRect().width>0&&image.getBoundingClientRect().height>0);
+    await Promise.race([
+      Promise.all(images.map(image=>image.complete?Promise.resolve():new Promise(resolve=>{image.addEventListener('load',resolve,{once:true});image.addEventListener('error',resolve,{once:true});}))),
+      new Promise(resolve=>setTimeout(resolve,5_000))
+    ]);
+  });
+  await page.waitForTimeout(150);
   let metrics;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -124,9 +130,13 @@ async function inspectCurrentPage(page, route, screenshotPath, status = 200) {
               return box.width > 0 && box.height > 0 && (box.width < 44 || box.height < 44);
             }).length,
           textActionsWithoutIcon: [...document.querySelectorAll('button.button, a.button')]
-            .filter((element) => element.textContent?.trim() && !element.querySelector('svg')).length,
+            .filter((element) => element.textContent?.trim() && !element.querySelector('svg,.auth-google-mark')).length,
           labelsWithoutIcon: [...document.querySelectorAll('label[for]:not(.sr-only)')]
-            .filter((element) => !element.querySelector('svg')).length
+            .filter((element) => !element.querySelector('svg')).length,
+          visibleMapContainers:[...document.querySelectorAll('.leaflet-container')]
+            .filter((element)=>{const box=element.getBoundingClientRect();return box.width>0&&box.height>0;}).length,
+          loadedMapTiles:[...document.querySelectorAll('.leaflet-tile-loaded')]
+            .filter((element)=>{const box=element.getBoundingClientRect();return box.width>0&&box.height>0;}).length
         };
       });
       if (metrics) break;
@@ -158,118 +168,71 @@ try {
   for (const viewport of viewports) {
     const publicContext = await browser.newContext({ viewport });
     const publicPage = await publicContext.newPage();
-    for (const route of ['/', '/about', '/login', '/apply']) {
+    for (const route of ['/', '/featured', '/about', '/providers', '/providers/blueline-transport', '/track', '/login', '/apply']) {
       const result = await inspectPage(
         publicPage,
         route,
         path.join(outputDir, `${viewport.name}-logged-out-${fileName(route)}.png`)
       );
       report.results.push({ viewport: viewport.name, persona: 'logged-out', ...result });
+      if(route==='/'){
+        await publicPage.locator('.leaflet-container').waitFor({state:'visible',timeout:10_000});
+        await publicPage.locator('.capacity-truck-map-marker,.capacity-map-cluster').first().waitFor({state:'visible',timeout:10_000});
+        const mapResult=await inspectCurrentPage(publicPage,'/#map',path.join(outputDir,`${viewport.name}-logged-out-capacity-map.png`));
+        report.results.push({viewport:viewport.name,persona:'logged-out',...mapResult});
+        const firstTruckId=await publicPage.evaluate(async()=>{
+          const response=await fetch('/api/public/capacity?limit=1');
+          const payload=await response.json();
+          return payload.items?.[0]?.id||null;
+        });
+        if(!firstTruckId)throw new Error('The public capacity audit could not find a truck to inspect.');
+        await gotoReady(publicPage,`/?truck=${encodeURIComponent(firstTruckId)}`);
+        await publicPage.locator('.capacity-truck-map-marker.selected').waitFor({state:'visible',timeout:10_000});
+        const selectedResult=await inspectCurrentPage(publicPage,'/#selected-truck',path.join(outputDir,`${viewport.name}-logged-out-capacity-selected.png`));
+        report.results.push({viewport:viewport.name,persona:'logged-out',...selectedResult});
+      }
     }
     await publicContext.close();
 
-    for (const persona of personas) {
-      const context = await browser.newContext({ viewport });
-      const page = await context.newPage();
-      const browserErrors = [];
-      page.on('console', (message) => {
-        if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`);
-      });
-      page.on('pageerror', (error) => browserErrors.push(`page: ${error.message}`));
+    for (const [personaIndex,persona] of personas.entries()) {
+      const context = await browser.newContext({ viewport, extraHTTPHeaders:{'X-Forwarded-For':`127.0.${viewport.name==='desktop'?10:20}.${personaIndex+10}`} });
+      const loginPage = await context.newPage();
 
       try {
-        await login(page, persona.email);
+        await login(loginPage, persona.email);
+        await loginPage.close();
         for (const route of persona.routes) {
+          const page=await context.newPage();const browserErrors=[];
+          page.on('console',message=>{if(message.type()==='error')browserErrors.push(`console: ${message.text()}`);});
+          page.on('pageerror',error=>browserErrors.push(`page: ${error.message}`));
           const result = await inspectPage(
             page,
             route,
             path.join(outputDir, `${viewport.name}-${persona.name}-${fileName(route)}.png`)
           );
           report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
+          const actionableBrowserErrors=browserErrors.filter(message=>!message.includes('caret-color'));
+          if(actionableBrowserErrors.length)report.errors.push({viewport:viewport.name,persona:persona.name,route,browserErrors:[...new Set(actionableBrowserErrors)]});
+          await page.close();
+        }
+        if(persona.name==='fleet-transporter'){
+          const fleetPage=await context.newPage();
+          await gotoReady(fleetPage,'/app/fleet');
+          const truckDetailHref=await fleetPage.getByRole('link',{name:'View truck'}).first().getAttribute('href');
+          await fleetPage.close();
+          if(!truckDetailHref)throw new Error('The fleet audit could not find a truck detail link.');
+          const detailPage=await context.newPage();const browserErrors=[];
+          detailPage.on('console',message=>{if(message.type()==='error')browserErrors.push(`console: ${message.text()}`);});
+          detailPage.on('pageerror',error=>browserErrors.push(`page: ${error.message}`));
+          const result=await inspectPage(detailPage,truckDetailHref,path.join(outputDir,`${viewport.name}-${persona.name}-truck-detail.png`));
+          report.results.push({viewport:viewport.name,persona:persona.name,...result});
+          const actionableBrowserErrors=browserErrors.filter(message=>!message.includes('caret-color'));
+          if(actionableBrowserErrors.length)report.errors.push({viewport:viewport.name,persona:persona.name,route:truckDetailHref,browserErrors:[...new Set(actionableBrowserErrors)]});
+          await detailPage.close();
         }
 
-        if (['business-shipper', 'business-receiver'].includes(persona.name)) {
-          await gotoReady(page, '/app/providers?q=Blue');
-          const companyHref = await page.locator('.directory-grid').getByRole('link', { name: 'Profile' }).first().getAttribute('href');
-          if (companyHref) {
-            const result = await inspectPage(
-              page,
-              companyHref,
-              path.join(outputDir, `${viewport.name}-${persona.name}-company-detail.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-            const comparisonHref = persona.name === 'business-shipper' ? '/app/providers/blueline-transport?compare=coverage' : '/app/providers/blue-nile-trading?compare=coverage';
-            const comparisonResult = await inspectPage(
-              page,
-              comparisonHref,
-              path.join(outputDir, `${viewport.name}-${persona.name}-company-route-comparison.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...comparisonResult });
-          }
-          const result = await inspectPage(
-            page,
-            '/app/capacity/cap-empty',
-            path.join(outputDir, `${viewport.name}-${persona.name}-capacity-detail.png`)
-          );
-          report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-        }
-
-        await gotoReady(page, '/app/shipments');
-        const trackingRows = page.locator('a[href^="/app/shipments/"]:not([href="/app/shipments/new"])');
-        const shipmentHref = ['business-shipper', 'business-receiver'].includes(persona.name)
-          ? '/app/shipments/shp-freight-active'
-          : await trackingRows.count() ? await trackingRows.first().getAttribute('href') : null;
-        if (shipmentHref) {
-          const result = await inspectPage(
-            page,
-            shipmentHref,
-            path.join(outputDir, `${viewport.name}-${persona.name}-shipment-detail.png`)
-          );
-          report.results.push({ viewport: viewport.name, persona: persona.name, ...result });
-          const trackingCode = await page.locator('.tracking-secret strong').textContent().catch(() => null);
-          if (trackingCode) {
-            await gotoReady(page,'/track');
-            await page.getByLabel('Secret shipment code').fill(trackingCode.trim());
-            await page.getByRole('button',{name:'Open tracking'}).click();
-            await page.waitForLoadState('domcontentloaded');
-            const trackingResult = await inspectCurrentPage(
-              page,
-              '/track/[unlocked]',
-              path.join(outputDir, `${viewport.name}-${persona.name}-tracking-view.png`)
-            );
-            report.results.push({ viewport: viewport.name, persona: persona.name, ...trackingResult });
-          }
-        }
-
-        if (persona.name === 'fleet-transporter') {
-          await gotoReady(page, '/app/shipments/shp-freight-active');
-          const activeResult = await inspectCurrentPage(
-            page,
-            '/app/shipments/shp-freight-active#assigned-tracking',
-            path.join(outputDir, `${viewport.name}-${persona.name}-assigned-tracking-controls.png`)
-          );
-          report.results.push({ viewport: viewport.name, persona: persona.name, ...activeResult });
-        }
-
-        if (['fleet-transporter','self-managed-driver'].includes(persona.name)) {
-          await gotoReady(page,'/app/loads?board=POOLED');
-          const poolHref=await page.locator('a[href^="/app/loads/pstl/"]').first().getAttribute('href').catch(()=>null);
-          if(poolHref){
-            const poolResult=await inspectPage(
-              page,
-              poolHref,
-              path.join(outputDir,`${viewport.name}-${persona.name}-pooled-load-detail.png`)
-            );
-            report.results.push({viewport:viewport.name,persona:persona.name,...poolResult});
-          }
-        }
       } catch (error) {
         report.errors.push({ viewport: viewport.name, persona: persona.name, error: error.message });
-      }
-
-      const actionableBrowserErrors = browserErrors.filter((message) => !message.includes('caret-color'));
-      if (actionableBrowserErrors.length) {
-        report.errors.push({ viewport: viewport.name, persona: persona.name, browserErrors: [...new Set(actionableBrowserErrors)] });
       }
       await context.close();
     }
@@ -282,10 +245,12 @@ await writeFile(path.join(outputDir, 'report.json'), `${JSON.stringify(report, n
 
 const failures = report.results.filter((result) =>
   result.status >= 400 || result.horizontalOverflow || result.emptyButtons || result.unlabeledInputs ||
-  (result.persona !== 'admin' && (result.smallActionTargets || result.textActionsWithoutIcon || result.labelsWithoutIcon))
+  (result.visibleMapContainers > 0 && result.loadedMapTiles === 0) ||
+  (result.persona !== 'admin' && (result.smallActionTargets || result.textActionsWithoutIcon))
 );
 
 console.log(`UI audit captured ${report.results.length} screens in ${outputDir}`);
 console.log(`Detected ${failures.length} automated layout/accessibility flags and ${report.errors.length} browser-flow errors.`);
 if (failures.length) console.log(JSON.stringify(failures, null, 2));
 if (report.errors.length) console.log(JSON.stringify(report.errors, null, 2));
+if(failures.length||report.errors.length)process.exitCode=1;

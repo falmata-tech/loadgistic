@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, BadgeCheck, CircleHelp, CreditCard, Headphones, History, MessageCircle, MessagesSquare, PackageSearch, Plus, Send, Truck, UserRound } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getOpenMemberSupportConversation, getSupportConversation, listMemberSupportConversations } from '@/lib/repository.js';
+import { getOpenMemberSupportConversation, getSupportConversation, listMemberSupportConversations } from '@/lib/support.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { SupportThread } from '@/components/support-thread';
@@ -21,11 +21,11 @@ const categories=[
 export default async function MemberSupportPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser(['SHIPPER','RECEIVER','TRANSPORTER','DRIVER'],{allowLimited:true});
   const query=await searchParams;
-  const result:any=listMemberSupportConversations(user,{page:query.page,pageSize:10,status:'CLOSED'});
-  const open:any=getOpenMemberSupportConversation(user);
+  const result:any=await listMemberSupportConversations(user,{page:query.page,pageSize:10,status:'CLOSED'});
+  const open:any=await getOpenMemberSupportConversation(user);
   let conversation:any=null;
   try {
-    conversation=query.conversation?getSupportConversation(user,query.conversation):null;
+    conversation=query.conversation?await getSupportConversation(user,query.conversation):null;
   } catch(error) {
     if(String((error as Error)?.message).includes('NOT_FOUND'))notFound();
     throw error;
