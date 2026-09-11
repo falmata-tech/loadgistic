@@ -9,7 +9,11 @@ npm run test:e2e
 npm run test:a11y
 ```
 
-`npm run quality` validates linked specifications and source constraints, runs the Node test suite against isolated SQLite databases, and typechecks the application. The production build uses an isolated Next.js output directory.
+`npm run quality` validates linked specifications and source constraints, runs
+the Node contract suite, and typechecks the application. Managed integration,
+browser, and scale gates use the isolated Supabase PostgreSQL/Auth/Storage
+stack; no active test or runtime falls back to SQLite. The production build uses
+an isolated Next.js output directory.
 
 Focused Node coverage includes:
 
@@ -31,7 +35,9 @@ npm run test:e2e
 
 `test:e2e:critical` is the fast changed-behavior layer for the canonical public market, selected-truck focus, automatic visitor location and retry, persisted Driver location, stable owner Tracking handoff/action state, and the provider presentation boundary. It asserts default view state, regional centering, resulting markers, compact-card dimensions, cluster removal/restoration, location API responses, distance evidence, persisted summary state, status-action availability, and absent provider design controls rather than accepting visible controls as proof. `test:e2e` remains the release-wide workflow suite.
 
-Playwright resets `data/test-e2e.db`, uses `.next-e2e`, and runs a dedicated server on port `3100`, so it does not mutate the developer database or live development build. Current workflows cover:
+Playwright resets the isolated Supabase fixture, uses `.next-e2e`, and runs a
+dedicated server on port `3100`, so it does not mutate the linked hosted project
+or live development build. Current workflows cover:
 
 - public capacity Map-first entry, East Africa exploration bounds, over-map search, a bounded illustrated modal whose optional filters combine conjunctively, always-visible map key, hover/focus-only marker summaries, automatic/retry visitor location, regional visitor centering, pointed cargo-configuration pins, categorical Empty/Partial rings, every-segment multi-city Capacity-route matching, full-polygon Service-area matching, cursor loading, status-specific map clusters, responsive non-scrolling selected details, and provider details;
 - canonical public Market access from authenticated workspaces, safe redirects from retired dashboard-market routes, explicit Exit/Dashboard navigation, and persisted Driver capacity-location refresh with manual retry;

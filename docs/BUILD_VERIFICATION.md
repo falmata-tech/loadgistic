@@ -1,7 +1,43 @@
 # Build Verification
 
-Evidence is recorded through 2026-09-09 with Node.js v22.16.0. Each dated
+Evidence is recorded through 2026-09-12 with Node.js v22.16.0. Each dated
 checkpoint is scoped to the code and environment verified at that time.
+
+## GitHub Production promotion and infrastructure hardening — 2026-09-11/12
+
+- Release commit `b3a17c2` upgraded Next.js to `15.5.25`, Nodemailer to `9.1.1`,
+  and Sharp to `0.35.4`; `npm audit --audit-level=high` reported zero known
+  vulnerabilities. `npm run quality` passed 28 specifications, 25 feature
+  records, 281 source checks, 218 Node tests, and TypeScript. The optimized
+  77-page build and focused desktop/mobile Tracking-navigation regression also
+  passed locally.
+- GitHub PR `#11` passed CI run `34643293438` for the exact release commit:
+  clean Supabase replay and managed verification, the rolled-back 5,000-truck
+  PostgreSQL fixture, optimized build, full desktop/mobile Playwright suite, and
+  standalone container build. It merged to `main` as `787b5526`; post-merge CI
+  run `34647400977` passed the same validation, browser, and container jobs.
+- The existing Netlify site now uses GitHub continuous deployment through a
+  read-only deploy key and push/PR webhook. `main` is the Production branch.
+  Production deploy `6aa46d24c2d4c6876a354c13` published merge commit
+  `787b5526` at `https://loadgistic-473.netlify.app`. Live health returned `200`
+  on `supabase-postgres`; Open capacity returned data; Featured returned `200`;
+  and independent Adama/Hawassa place searches returned the requested city
+  first.
+- A fresh encrypted logical backup and independent encrypted Storage-object
+  export preceded the hosted changes. The Storage export restored into the
+  isolated stack and matched its source object checksum. The database backup
+  authenticated successfully but an actual isolated database restore remains a
+  release gate.
+- Hosted migrations `074`–`076` applied cleanly and local/remote histories match
+  through `076`. All seven buckets remain private and enforce 4 MiB. Database
+  SSL enforcement is enabled. Nineteen hot-path indexes reduced observed
+  unindexed foreign keys from 93 to 74. Remote error-level SQL lint reports zero
+  Loadgistic application-function findings; six remaining diagnostics are from
+  installed PostGIS extension functions.
+- Production health truthfully retains `upload-malware-scanner` as its only
+  readiness blocker and keeps bounded-pilot warnings for SMTP delivery and the
+  community OpenStreetMap tile service. Application uploads remain fail-closed
+  until a hosted scanner is configured and proved.
 
 ## Production cache, roster, and infrastructure audit — 2026-09-08/09
 
@@ -367,11 +403,13 @@ checkpoint is scoped to the code and environment verified at that time.
 The historical evidence above is retained for chronology; the current
 application, local development, CI, fixtures, browser workflows, and scale gate
 all use Supabase/PostgreSQL. The linked hosted project has the reviewed
-`001`–`073` migration chain, seven private Storage buckets, and the explicitly
-approved synthetic Production pilot. Unrestricted Production remains blocked on backup/restore
-rehearsal, a remotely proven managed upload scanner, live application-email delivery,
+`001`–`076` migration chain, seven private 4 MiB Storage buckets, and the explicitly
+approved synthetic Production pilot. The encrypted Storage export passed an
+isolated restore; an actual database restore remains outstanding. Unrestricted
+Production remains blocked on a remotely proven managed upload scanner, live application-email delivery,
 remaining public-discovery abuse coverage, monitoring, Preview
-smoke/concurrency evidence, and an approved Production promotion. Supabase Auth
+smoke/concurrency evidence, and database-restore evidence. The reviewed
+GitHub-to-Netlify Production promotion is complete. Supabase Auth
 OTP delivery is verified, but it does not satisfy the separate application-email
 gate. See `docs/LAUNCH_READINESS.md` and `docs/SUPABASE_MIGRATION.md`.
 

@@ -57,7 +57,7 @@ Public current-capacity projection is privacy aware: a Private network signal, t
 
 Query-sensitive public capacity and place-search JSON stays outside shared CDN caches unless the cache key varies on every accepted query parameter. The current Netlify adapter sends both responses as private and non-storable.
 
-Replay `supabase/migrations/001` through `073` from an empty isolated stack and
+Replay `supabase/migrations/001` through `076` from an empty isolated stack and
 the linked Preview project, run repository/RLS/identity tests, configure and
 prove the managed upload scanner and verified email sender, review the live
 Supabase Security and Performance Advisor findings, configure monitoring,

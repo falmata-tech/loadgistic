@@ -3,20 +3,23 @@
 ## Current verdict
 
 The repository, linked hosted database, and Netlify application support a
-controlled production pilot. The clean local `001`–`073` replay and guarded
-verifiers pass; the hosted project matches through `073`, retains seven private
-Storage buckets, and contains the explicitly approved synthetic pilot. Local
-login/signup OTP and Google routing are verified, and hosted Supabase Auth OTP
-delivery is verified. Production deploy `6aa06084e223ccf14c9bb72a` serves
-application commit `e880764`; live desktop and phone checks passed Open
-capacity, Daily Featured, query-isolated place search, and Supabase-backed
-health. The full quality/build gate passed 215 Node tests, TypeScript, 77 routes,
-and a zero-high-vulnerability dependency audit. Production application-SMTP
+controlled production pilot. The clean local `001`–`076` replay and guarded
+verifiers pass; the hosted project matches through `076`, retains seven private
+Storage buckets each enforcing the 4 MiB object boundary, and contains the explicitly
+approved synthetic pilot. Local login/signup OTP and Google routing are
+verified, and hosted Supabase Auth OTP delivery is verified. GitHub `main` is
+the Production source: merge commit `787b5526` passed CI run `34647400977`, and
+Netlify deploy `6aa46d24c2d4c6876a354c13` published that exact commit. Live
+smoke passed Supabase-backed health, Open capacity, Daily Featured, and
+query-isolated Adama and Hawassa search. The release gate passed 218 Node tests,
+TypeScript, the optimized 77-page build, the rolled-back 5,000-truck scale
+fixture, full desktop/mobile browser workflows, the standalone container, and
+a zero-high-vulnerability dependency audit. Production application-SMTP
 credentials authenticate and both scheduled/background worker pairs are
 invoked, but a real queued application email has not been proved end to end.
-The application is not approved for unrestricted public production until the
-managed scanner, upload-size boundary, application-email, database hardening,
-monitoring, and database-plus-Storage restore gates below are resolved.
+The runtime truthfully reports the managed upload scanner as its only readiness
+blocker. Database restore, application-email, monitoring, bot protection, and
+Preview evidence remain operational gates before unrestricted public launch.
 `npm run launch:check` must remain red for real blockers rather than being
 weakened for deployment.
 
@@ -40,18 +43,18 @@ weakened for deployment.
 
 ## Public-production blockers
 
-1. The clean isolated replay, hosted migrations `001`–`073`, approved pilot
-   import, and fresh encrypted logical backup are complete. Rehearse an
-   isolated database restore. Database dumps contain Storage metadata but not
-   object bytes, so add an encrypted Storage-object export and restore proof.
+1. The clean isolated replay, hosted migrations `001`–`076`, approved pilot
+   import, and fresh encrypted logical backup are complete. The separate
+   encrypted Storage-object export was restored into the isolated stack and its
+   object checksum verified. Rehearse an actual isolated database restore; the
+   logical backup has been authenticated but not restored.
 2. Inventory and purge any hosted legacy demand data only after a verified backup and explicit approval. A new empty project requires no purge.
 3. Configure a server-only managed scanner, complete the privacy/vendor review,
    and repeat clean, malicious, unavailable, quota, cleanup, and browser-denial
    upload proofs against Supabase Preview. Production currently fails every
-   upload closed. Also align the user-facing/app 10 MB file limit with Netlify's
-   roughly 4.5 MB effective buffered binary-request boundary, or adopt a
-   reviewed direct-to-quarantine upload design. The local test scanner does not
-   satisfy this gate.
+   upload closed. The application, Storage buckets, and user-facing contract now
+   share a 4 MiB limit below Netlify's buffered-request boundary. The local test
+   scanner does not satisfy the hosted-scanner gate.
 4. Production application-SMTP credentials are configured separately from the
    already verified Supabase Auth SMTP, and an authentication-only handshake
    passes. The 15-minute managed scheduler and two-minute access-email recovery
@@ -60,11 +63,12 @@ weakened for deployment.
    matching delivery, expiry-aware retry/cleanup, and unsigned/stale-request rejection.
    The personal-Gmail SMTP option is a bounded pilot warning, not the durable
    sending-domain gate.
-5. Review and resolve the live Supabase advisor findings before scale: one
-   Security Advisor error, SECURITY DEFINER/extension warnings, 93 unindexed
-   foreign keys, 58 RLS init-plan warnings, and 48 multiple-permissive-policy
-   warnings. Enable SSL enforcement, replace the effective allow-all direct
-   database IPv4/IPv6 ranges with the narrowest operational access, and enable
+5. Database SSL enforcement is enabled. Migration `075` added 19 observed
+   hot-path foreign-key indexes, reducing the current unindexed-FK advisor count
+   from 93 to 74. Migration `076` removed both Loadgistic application-function
+   SQL-lint errors; six remaining error-level diagnostics belong to installed
+   PostGIS extension functions. Continue the SECURITY DEFINER/RLS-policy review,
+   narrow the effective allow-all direct database IPv4/IPv6 ranges, and enable
    reviewed CAPTCHA/bot protection for anonymous and Auth entry points. Do not
    drop currently unused indexes solely from low-pilot traffic evidence.
 6. Strong distinct `SESSION_SECRET` and `TRACKING_CODE_SECRET` values are
@@ -80,10 +84,7 @@ weakened for deployment.
    code-sent state. Configure Preview independently; complete Google consent and
    OTP login/signup end to end against the active-role and
    atomic provider-provisioning boundaries before enabling them publicly.
-9. Link the Netlify site to the reviewed GitHub repository/branch so Production
-   and Preview deploys are traceable to pushed commits and required checks. The
-   current site has no repository or branch association and is deployed manually.
-10. Publish or schedule each next Ethiopia-day Featured roster deliberately;
+9. Publish or schedule each next Ethiopia-day Featured roster deliberately;
     Production correctly shows no automatic replacement when a day is missing.
     Configure real Support availability before presenting Assisted matching as
     immediate help; the live presence projection currently reports zero
@@ -106,6 +107,9 @@ Netlify.
 - GitHub is the source of truth and required-check boundary.
 - GitHub CI runs quality, build, browser workflows, and the non-root Docker
   build from the same lockfile and commit.
+- The existing Netlify site uses its read-only GitHub deploy key and push/PR
+  webhook. Only `main` is the Production branch; deployed commits retain their
+  Git SHA and Preview changes remain reviewable before merge.
 - Netlify Free runs the Next.js application through its maintained OpenNext
   adapter. It does not run the Docker image or persist local files.
 - Supabase Free provides the managed Postgres, Auth, private Storage, and

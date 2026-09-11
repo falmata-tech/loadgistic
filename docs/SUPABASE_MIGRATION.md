@@ -1,6 +1,6 @@
 # Supabase runtime cutover
 
-The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `073` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
+The runnable application uses Supabase for managed identity, managed provider signup, health, place search, Open capacity, transporter microsites, Daily Featured Trucks, Private capacity, provider Capacity, provider-owned Tracking, transporter-profile editing, the authenticated workspace/Fleet runtime, Verification/Billing, member Support, Assisted matching, platform-team management, Operations, Featured/Sponsor administration, shared abuse counters, and private upload quarantine. Active ports have no data/storage backend selector: PostgreSQL counters and private Supabase Storage fail closed when unavailable. Ordered SQL migrations `001` through `076` and the credential-free managed fixture are the only database sources. The guarded local importer creates the complete fake market directly in isolated Supabase Auth, PostgreSQL, and private Storage without opening or transforming another database engine.
 
 ## Current migration coverage
 
@@ -53,6 +53,13 @@ The runnable application uses Supabase for managed identity, managed provider si
 - `070`–`071`: adds bounded Driver portrait presets and interchangeable tractor-trailer configuration while retaining one truck identity and history.
 - `072`: installs the minimum Business, Fleet transporter, and Independent Driver plan catalogue independently of optional demo data; an existing or deliberately disabled plan is never overwritten.
 - `073`: aligns the bounded Open-capacity projection with the application filter contract: only explicitly Open signals qualify, omitted filters remain neutral, selected criteria combine conjunctively, and route or Service-area evidence comes only from the selected capacity geometry.
+- `074`: aligns every private Storage bucket and upload surface to the 4 MiB
+  Netlify-safe object boundary, including provider profile images.
+- `075`: adds 19 indexes for observed application foreign-key hot paths without
+  removing low-traffic indexes.
+- `076`: removes the retired favorites branch from the administrator detail
+  projection and narrows the support-assignment bound to its integer contract,
+  clearing the remaining application-function error-level SQL lint findings.
 
 On 2026-09-04, a newly empty isolated local database replayed the complete
 `001`–`069` chain, rebuilt the managed fixture, and passed every guarded live
@@ -69,10 +76,14 @@ hosted Loadgistic project had no application tables. The reviewed `001`–`069`
 chain was then applied in numeric order. On 2026-09-05, an encrypted logical
 backup was created and verified before additive migrations `070`–`072` were
 applied. On 2026-09-08, a fresh encrypted logical backup was verified before
-`073` was applied; local and remote migration histories now match through
-`073`. The
-three required active plan rows are present, the seven required private Storage
-buckets remain present, and anonymous bucket discovery returns no records. After
+`073` was applied. On 2026-09-11, a fresh encrypted logical backup and separate
+encrypted Storage-object export were created before migrations `074`–`076` were
+applied. The Storage export was restored into the isolated stack and its object
+checksum verified; the logical database backup was authenticated but has not
+yet completed an actual isolated restore. Local and remote migration histories
+now match through `076`. The three required active plan rows are present, all
+seven private Storage buckets enforce the 4 MiB limit, and anonymous bucket
+discovery returns no records. After
 explicit operator approval, the exact-project-confirmed additive pilot importer
 created 152 namespaced synthetic Transporter/Driver identities, 143 trucks and
 current Capacity signals, one published current-day roster with eight Featured
@@ -80,7 +91,7 @@ slots, and one private verification placeholder in Production. It created no
 synthetic Admin or Support identity. An encrypted pre-import backup and the
 deterministic namespaced rollback are retained.
 
-The linked Production projection was verified after `073`: omitted filters
+The linked Production projection was verified after `076`: omitted filters
 remain neutral, selected filters combine correctly, and query-sensitive Open
 capacity and place-search responses are private and non-storable at the CDN
 boundary.
@@ -124,7 +135,7 @@ Use RLS-protected queries or transactional RPCs. Never place a service-role key 
 ## Rollout sequence
 
 1. Back up the target database and prove restore into an isolated environment.
-2. Apply `001` through `073` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
+2. Apply `001` through `076` to an empty/staging project and run Supabase SQL lint plus schema/RLS review.
    Migration `030` enforces callback phone on new Assisted matching rows with a
    `NOT VALID` compatibility constraint; remediate any retained pre-`030` null
    phone rows before validating that constraint in a later reviewed migration.
