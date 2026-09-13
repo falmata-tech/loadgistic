@@ -101,6 +101,16 @@ try{
   if(refreshed.capacityId!==capacityId||refreshed.vehicleId!==selfVehicle.id)throw new Error('SUPABASE_PROVIDER_CAPACITY_REFRESH_FAILED');
   const after=await getProviderCapacityWorkspace(selfDriver);
   if(after.capacities[0]?.id!==capacityId||after.capacities[0]?.location_source!=='DEVICE_OBSCURED')throw new Error('SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED');
+  const focusedId=await publishProviderCapacity(selfDriver,{
+    ...publishInput(after.capacities[0],selfVehicle.id),locationSource:'PRESERVE_DRIVER',
+    approximateLat:3,approximateLng:33,locationPrecisionKm:40
+  });
+  selfCreated.push(focusedId);
+  const focused=(await getProviderCapacityWorkspace(selfDriver)).capacities.find(capacity=>capacity.id===focusedId);
+  const confirmed=after.capacities[0];
+  for(const field of ['location_lat','location_lng','location_precision_km','location_updated_at']){
+    if(focused?.[field]!==confirmed[field])throw new Error(`SUPABASE_FOCUSED_CAPACITY_CHANGED_LOCATION:${field}`);
+  }
 }finally{
   await restoreVehicleCapacity(selfSnapshot,selfCreated);
 }
@@ -137,6 +147,7 @@ const {data:originalRoutes,error:routeError}=await service.from('profile_routes'
   .eq('provider_profile_id',selfWorkspace.capacities[0].provider_profile_id);
 if(routeError)throw routeError;
 let createdRouteId=null;
+const createdRouteIds=[];
 try{
   if(originalRoutes?.length)await service.from('profile_routes').delete().in('id',originalRoutes.map(route=>route.id)).throwOnError();
   const source=originalRoutes?.[0]||selfWorkspace.corridors[0];
@@ -148,13 +159,22 @@ try{
     geometry:'ROUTE',routePlaces:(source.route_points_json||source.route_points).map(point=>({placeRef:point.place_ref,label:point.label}))
   };
   createdRouteId=await addProviderRegularCapacity(selfDriver,input);
+  createdRouteIds.push(createdRouteId);
   if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_ADD_FAILED');
+  await expectRejected(()=>addProviderRegularCapacity(transporter,input,createdRouteId),'NOT_FOUND');
+  await expectRejected(()=>addProviderRegularCapacity(selfDriver,{geometry:'ROUTE',routePlaces:[]},createdRouteId),'CAPACITY_ROUTE_POINTS_REQUIRED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_ROLLBACK_FAILED');
+  const {error:anonReplaceError}=await anon.rpc('replace_provider_regular_capacity',{actor_user_id:selfDriver.id,target_route_id:createdRouteId,command:{}});
+  if(!anonReplaceError)throw new Error('SUPABASE_REGULAR_REPLACE_ANONYMOUS_ALLOWED');
+  createdRouteId=await addProviderRegularCapacity(selfDriver,input,createdRouteId);
+  createdRouteIds.push(createdRouteId);
+  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_FAILED');
   await removeProviderRegularCapacity(selfDriver,createdRouteId);
   if((await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_REMOVE_FAILED');
 }finally{
-  if(createdRouteId){
-    await service.from('profile_routes').delete().eq('id',createdRouteId);
-    await service.from('audit_logs').delete().eq('entity_id',createdRouteId);
+  if(createdRouteIds.length){
+    await service.from('profile_routes').delete().in('id',createdRouteIds);
+    await service.from('audit_logs').delete().in('entity_id',createdRouteIds);
   }
   if(originalRoutes?.length)await service.from('profile_routes').upsert(originalRoutes).throwOnError();
 }

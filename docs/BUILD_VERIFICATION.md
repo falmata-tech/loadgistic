@@ -1,7 +1,40 @@
 # Build Verification
 
-Evidence is recorded through 2026-09-12 with Node.js v22.16.0. Each dated
+Evidence is recorded through 2026-09-13 with Node.js v22.16.0. Each dated
 checkpoint is scoped to the code and environment verified at that time.
+
+## Focused capacity dialogs — 2026-09-13
+
+- `FEAT-CAP-001` / `FEAT-UIX-001`: Driver Home and Fleet truck details keep
+  their map mounted behind native Current capacity, Current coverage, Regular
+  service, and Approximate location dialogs. Edit all is removed; the dock's
+  radius shortcut opens the Location dialog and quick refresh stays on the map.
+- `npm run quality`: 28 specs, 25 features, 284 source files, 219 Node tests,
+  and TypeScript passed. The optimized build generated all 77 pages.
+- Focused desktop/phone browser scenarios passed for modal semantics, retained
+  map nodes, discarded drafts, focus restoration, JSON saves, retry after a
+  simulated failed response, unchanged pickup/drop-off preferences, saved regular
+  service inputs, real location updates, first publication, Empty-area-to-Partial
+  conversion, owner-only capacity editing, and anonymous mutation denial. The
+  existing capacity-summary regression passed on desktop and phone. The narrow
+  regular-service dialog was additionally checked at 320×640 with visible footer
+  controls and no horizontal document overflow. Screenshots are produced by
+  `tests/e2e/capacity-signal-dialogs.spec.ts` under ignored `test-results/`.
+- Local migration `077` is applied and recorded. The real, local-only provider
+  capacity verifier passed timestamp/coordinate preservation, owner isolation,
+  anonymous RPC denial, successful regular-service replacement, rollback on
+  invalid replacement, and fixture restoration. Only the error-retry browser
+  case uses an injected response; successful saves use actual local Supabase.
+- Rollout remains pending: no Production schema or Netlify deployment was changed
+  for this task. Apply `077` before publishing the client through the reviewed
+  GitHub promotion pipeline. Existing native POST redirects remain compatible.
+
+Regression lessons: `role="dialog"` on a replacement page is not a modal; keep
+the map in one stable render tree and use the native top layer. Read a form's
+action with `getAttribute('action')` because a named action input shadows the DOM
+property. Never treat a whole-record save as a focused edit without preserving
+unopened flags and the actual Driver-location timestamp. Validate real browser
+saves, not just button appearance or compilation.
 
 ## GitHub Production promotion and infrastructure hardening — 2026-09-11/12
 

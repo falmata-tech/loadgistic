@@ -110,12 +110,14 @@ export async function setSupabaseProviderAssignedVehicleDuty(user,vehicleId,onDu
   return data;
 }
 
-export async function addSupabaseProviderRegularCapacity(user,input){
+export async function addSupabaseProviderRegularCapacity(user,input,replaceId=/** @type {string|null} */(null)){
   const command={geometry:String(input.geometry||''),route_places:placeCommands(input.routePlaces),
     area_center_place_ref:String(input.areaCenterPlaceRef||''),
     area_boundary_places:placeCommands(input.areaBoundaryPlaces)};
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('add_provider_regular_capacity',{actor_user_id:user.id,command});
+  const {data,error}=await client.rpc(replaceId?'replace_provider_regular_capacity':'add_provider_regular_capacity',{
+    actor_user_id:user.id,command,...(replaceId?{target_route_id:String(replaceId)}:{})
+  });
   if(error)throw managedError('SUPABASE_PROVIDER_REGULAR_CAPACITY_ADD_FAILED',error);
   return data;
 }

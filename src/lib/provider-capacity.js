@@ -20,8 +20,8 @@ export async function setProviderAssignedVehicleDuty(user,vehicleId,onDuty,input
   return setSupabaseProviderAssignedVehicleDuty(user,vehicleId,onDuty,input);
 }
 
-export async function addProviderRegularCapacity(user,input){
-  return addSupabaseProviderRegularCapacity(user,input);
+export async function addProviderRegularCapacity(user,input,replaceId=/** @type {string|null} */(null)){
+  return addSupabaseProviderRegularCapacity(user,input,replaceId);
 }
 
 export async function removeProviderRegularCapacity(user,id){

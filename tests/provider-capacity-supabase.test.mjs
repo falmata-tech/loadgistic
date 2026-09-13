@@ -87,3 +87,14 @@ test('active provider Capacity pages and routes use the application port, not SQ
   assert.match(application,/provider-capacity\/supabase\.js/);
   assert.doesNotMatch(application,/DATA_BACKEND|repository\.js|catch\s*\(/);
 });
+
+test('focused edits preserve Driver fixes and regular service replacements remain atomic and private',()=>{
+  const migration=fs.readFileSync(path.join(root,'supabase/migrations/077_focused_capacity_editing.sql'),'utf8');
+  assert.match(migration,/PRESERVE_DRIVER/);
+  assert.match(migration,/perform public\.remove_provider_regular_capacity\(actor_user_id,target_route_id\);\s+return public\.add_provider_regular_capacity\(actor_user_id,command\)/);
+  assert.match(migration,/revoke all on function public\.replace_provider_regular_capacity\(uuid,uuid,jsonb\) from public,anon,authenticated/);
+  const editor=fs.readFileSync(path.join(root,'src/components/capacity-signal-editor.tsx'),'utf8');
+  assert.match(editor,/name="acceptsMultiPick" value=\{multiPick\?'on':''\}/);
+  assert.match(editor,/name="acceptsMultiDrop" value=\{multiDrop\?'on':''\}/);
+  assert.match(editor,/captured\?'DEVICE_OBSCURED':'PRESERVE_DRIVER'/);
+});

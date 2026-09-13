@@ -96,9 +96,9 @@ And one summary shows how the truck appears publicly together with the same curr
 And the privacy-obscured truck-area marker remains obvious above overlapping area polygons and routes\
 And each summary section has a focused Edit action that opens only that section\
 And regular Capacity route controls live inside that same capacity console rather than in a second planning block\
-And Edit current capacity opens the full ordered current-capacity workflow\
+And each edit opens only the selected signal's inputs over the still-mounted map, with no Edit all action\
 And the selected truck, focused Edit actions, visible map key, and combined location controls occupy distinct top-left, top-right, bottom-left, and bottom-right map zones\
-And location refresh and approximate-location accuracy remain directly available from that combined dock without opening the capacity editor.
+And location refresh remains a direct action while the radius shortcut opens the focused Location modal.
 
 ### Scenario: Tracking uses one ordered status control
 
@@ -218,7 +218,8 @@ And one compact selected-truck control stays at top-left while one aligned icon-
 And the complete map key stays visible at bottom-left while one combined approximate-location, radius, and refresh dock stays at bottom-right\
 And these floating zones do not overlap one another, required attribution, or essential capacity geometry\
 And automatic location refresh is silent while manual refresh feedback appears transiently beside the location dock\
-And focused or complete editing opens in an accessible modal whose Save or Cancel action returns to the map summary\
+And focused editing opens in a viewport-bounded native modal whose Save, Cancel, Close, or Escape action returns to the map summary with focus restored\
+And failed saves stay in that modal with the entered values and a readable error while successful saves refresh the server-owned map without page navigation\
 And no Tracking list, Tracking action panel, or Start Tracking prompt is embedded in Home\
 And the fixed Tracking navigation destination remains directly available.
 

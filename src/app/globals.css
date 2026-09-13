@@ -2809,6 +2809,55 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
   .capacity-home-page .capacity-editor-shell-header .focused-summary-return{width:44px;padding:0}.capacity-home-page .capacity-editor-shell-header .focused-summary-return span{display:none}
 }
 
+/* Focused Driver signal dialogs live in the browser top layer; the map stays mounted. */
+.capacity-signal-dialog{position:fixed;inset:0;width:min(560px,calc(100% - 24px));max-width:none;max-height:calc(100dvh - 48px);margin:auto;padding:0;overflow:hidden;border:1px solid #cedddb;border-radius:18px;background:#fff;color:#0b1d3a;box-shadow:0 24px 80px #0b1d3a38}
+.capacity-signal-dialog[open]{display:flex;flex-direction:column}
+.capacity-signal-dialog::backdrop{background:rgba(11,29,58,.28)}
+.capacity-signal-dialog-header{display:flex;flex-shrink:0;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #e1e9e7}
+.capacity-signal-dialog-header>div{min-width:0}.capacity-signal-dialog-header h2{margin:0;font-size:1.05rem;line-height:1.3}.capacity-signal-dialog-header p{margin:4px 0 0;color:#5d6f76;font-size:.72rem;overflow-wrap:anywhere}
+.capacity-signal-dialog-header .icon-button{display:grid;flex:0 0 44px;width:44px;height:44px;place-items:center;border:1px solid #dbe5e2;border-radius:10px;background:#f8fbfa;color:#36505a;cursor:pointer}
+.capacity-signal-dialog-header .icon-button:focus-visible{outline:3px solid #97cdca;outline-offset:2px}
+.capacity-signal-form{display:flex;min-height:0;flex-direction:column;margin:0;overflow:hidden}
+.capacity-signal-dialog-body{display:grid;min-height:0;gap:16px;padding:18px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.capacity-signal-fields{display:grid;min-width:0;gap:20px;margin:0;padding:0;border:0}
+.capacity-signal-group{display:grid;min-width:0;gap:12px}.capacity-signal-group h3{margin:0;font-size:.83rem;line-height:1.3}
+.capacity-signal-dialog .meta{margin:0;color:#536a71;font-size:.75rem;line-height:1.5}
+.capacity-signal-dialog .segmented-control{gap:7px;background:transparent;padding:0;border:0}
+.capacity-signal-dialog .segmented-control button{min-width:0;min-height:48px;padding:10px 8px;border:1px solid #cddcd9;border-radius:10px;background:#fff;box-shadow:none;color:#36505a;white-space:normal}
+.capacity-signal-dialog .segmented-control button[aria-pressed="true"]{border-color:#0d6b6e;background:#e8f5f2;color:#075d61;box-shadow:inset 0 0 0 1px #0d6b6e}
+.capacity-signal-dialog .segmented-control button:focus-visible{outline:3px solid #97cdca;outline-offset:2px}
+.capacity-signal-dialog .segmented-control button strong{font-size:.8rem}.capacity-signal-dialog .segmented-control button small{font-size:.67rem;line-height:1.3}
+.capacity-signal-dialog .capacity-status-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.capacity-signal-dialog .capacity-visibility-choices,.capacity-signal-dialog .geometry-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.capacity-signal-dialog .capacity-visibility-choices button{display:grid;gap:4px;text-align:left}
+.capacity-signal-dialog .geometry-choice button{display:grid;justify-items:start;gap:5px;text-align:left}
+.capacity-signal-dialog .capacity-status-choices button{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px}
+.capacity-signal-dialog .segmented-control svg{width:20px;height:20px}
+.capacity-signal-dialog input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),.capacity-signal-dialog select{width:100%;min-width:0;min-height:46px;font-size:16px}
+.capacity-signal-dialog .form-group{min-width:0;margin:0}.capacity-signal-dialog label{font-size:.78rem}
+.capacity-signal-dialog .multi-place-editor,.capacity-signal-dialog .planning-editor-form{display:grid;gap:12px;margin:0;padding:0;border:0;background:transparent}
+.capacity-signal-dialog .multi-place-heading{gap:10px}.capacity-signal-dialog .multi-place-heading strong{font-size:.8rem}.capacity-signal-dialog .multi-place-heading span{font-size:.7rem}
+.capacity-signal-dialog .multi-place-row{grid-template-columns:20px minmax(0,1fr) auto;gap:8px;padding:0;border:0;background:transparent}
+.capacity-signal-dialog .multi-place-row>.icon-button{width:44px;min-height:44px;align-self:end}
+.capacity-signal-dialog .place-results{position:relative;top:auto;max-height:200px;margin-top:5px;box-shadow:0 6px 12px #0b1d3a12}
+.capacity-signal-dialog .place-result{min-height:48px}.capacity-signal-dialog .place-result strong{font-size:.78rem}
+.capacity-load-choices{display:flex;min-width:0;flex-wrap:wrap;gap:4px 14px;margin:0;padding:8px 12px;border-color:#dbe5e2}.capacity-load-choices legend{font-size:.78rem}
+.capacity-load-choices label,.capacity-stop-choices label{display:flex;min-height:44px;align-items:center;gap:8px}
+.capacity-signal-dialog input[type="radio"],.capacity-signal-dialog input[type="checkbox"]{width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:#0d6b6e}
+.capacity-stop-choices{display:flex;flex-wrap:wrap;gap:6px 20px}
+.capacity-signal-dialog-footer{display:flex;flex-shrink:0;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid #e1e9e7;background:#f8fbfa}
+.capacity-signal-dialog .button{min-width:0;min-height:44px;font-size:.8rem;white-space:normal}
+.capacity-signal-dialog .alert{margin:0;padding:10px 12px;font-size:.8rem}
+.capacity-summary-toolrail button:disabled{opacity:.65;cursor:wait}
+.capacity-location-dock .capacity-radius-action{min-height:44px;padding:6px;border:1px solid #c9d6f6;border-radius:8px;background:#fff;color:#0b1d3a;font-size:.72rem;font-weight:750;cursor:pointer}
+@media(max-width:600px){
+  .capacity-signal-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));border-radius:15px}
+  .capacity-signal-dialog-header{padding:12px}.capacity-signal-dialog-header h2{font-size:1rem}
+  .capacity-signal-dialog-body{padding:14px 12px}.capacity-signal-dialog-footer{padding:10px 12px}
+  .capacity-signal-dialog-footer>.button{flex:1}
+  .capacity-location-dock .capacity-radius-action{grid-column:1/3}
+}
+
 /* Final public-market workspace placement: controls persist while results swap. */
 .public-market-console .market-list-view{display:grid;grid-template-columns:320px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;height:100%;min-height:0;overflow:hidden}
 .public-market-console .market-list-view>.market-command-column{position:relative;top:auto;grid-column:1;grid-row:1/-1;display:flex;align-items:stretch;justify-content:flex-start;flex-direction:column;background:#0d6b6e;color:#fff}

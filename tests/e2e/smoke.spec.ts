@@ -869,12 +869,16 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(summary.locator('.capacity-setting-truck-marker-halo')).toHaveAttribute('stroke',expectedCapacityColor);
   await expect(summary.locator('path[stroke="#7c3aed"]').first()).toBeVisible();
   await expect(summary.locator('.capacity-map-key')).toContainText(emptyAvailability?'Empty availability':'Partial availability');
-  const privacy=page.getByLabel('Approximate location radius');
+  await page.getByRole('button',{name:'Edit approximate location radius',exact:true}).click();
+  const privacyDialog=page.getByRole('dialog',{name:'Approximate location',exact:true});
+  const privacy=privacyDialog.getByLabel('Approximate location radius');
   const currentPrivacy=await privacy.inputValue();
   const nextPrivacy=currentPrivacy==='5'?'10':'5';
   const privacySave=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location')&&response.request().method()==='POST');
   await privacy.selectOption(nextPrivacy);
+  await privacyDialog.getByRole('button',{name:'Save location'}).click();
   expect((await privacySave).ok()).toBe(true);
+  await expect(privacyDialog).toHaveCount(0);
   await expect(summary).toContainText(`${nextPrivacy} km radius`);
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
   const save=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location')&&response.request().method()==='POST');
@@ -892,8 +896,8 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
   await page.getByRole('button',{name:/^Edit regular service:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
-  await expect(page.getByTestId('capacity-planning-editor')).toContainText('one undated Service area or Capacity route');
-  await page.getByTestId('capacity-planning-editor').getByRole('button',{name:'Back to summary'}).click();
+  await expect(page.getByTestId('capacity-planning-editor')).toContainText('The area or two-way route you serve regularly');
+  await page.getByRole('button',{name:'Close editor'}).click();
   await page.getByRole('button',{name:/^Edit current capacity:/}).click();
   await expect(page.getByRole('heading',{name:'Capacity now'})).toBeVisible();
   await page.getByRole('button',{name:'Partial',exact:true}).click();

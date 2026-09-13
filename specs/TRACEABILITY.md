@@ -1,5 +1,19 @@
 # Specification traceability
 
+## 2026-09-13 focused capacity editing evidence
+
+`FEAT-CAP-001` / `FEAT-UIX-001`: `capacity-form.tsx` keeps the map mounted;
+`capacity-edit-dialog.tsx` supplies the native modal/focus boundary;
+`capacity-signal-editor.tsx` and `capacity-market-planning.tsx` isolate drafts.
+The existing authenticated capacity routes negotiate JSON or native redirects.
+Migration `077` preserves confirmed Driver fixes and atomically replaces regular
+service. Mapped verification: `tests/e2e/capacity-signal-dialogs.spec.ts`, the
+capacity-summary scenario in `tests/e2e/smoke.spec.ts`,
+`tests/provider-capacity-supabase.test.mjs`, and
+`scripts/verify-supabase-provider-capacity.mjs`. Responsive screenshots, quality,
+build results, and the pending Production rollout are recorded in
+`docs/BUILD_VERIFICATION.md`.
+
 | Feature | Frontend | Backend/domain | Deployment concern | Primary tests |
 |---|---|---|---|---|
 | `FEAT-IAM-001` | Google and numeric email-code transporter login and signup, safe reconciliation of confirmed pre-bootstrap identities, private account contacts, and public-first installable PWA shell with distinct Open capacity, Private capacity, Track, Featured, and workspace shortcuts | Supabase-only SSR PKCE session, fixed callback, signed flow-bound OAuth intent, signed 15-minute signup handoff, guarded inactive DRIVER bootstrap, active provider-role projection, Production-disabled Supabase-fixture password boundary, no signed-cookie/SQLite identity fallback, and explicit anonymous projection boundaries | `065_reconcile_prebootstrap_auth_profiles.sql`, exact Site URL/Redirect URL allowlists, browser-enforced CSP OAuth destinations, Google identity scopes, numeric email template, verified SMTP, session secret, proxy-safe redirects, service-worker cache boundary | `tests/auth-flow.test.mjs`, `tests/provider-signup-supabase.test.mjs`, `tests/security-headers.test.mjs`, visible-browser OAuth check, managed runtime boundary, managed identity, launch readiness, authorization, PWA manifest test, E2E |

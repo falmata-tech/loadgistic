@@ -997,3 +997,21 @@ direct local-inbox link without returning a code in the application response.
 The adapter rejects remote hosts, credentials, non-root source paths, and every
 Production runtime. Removing the ignored local variable restores the explicit
 unconfigured-development fallback without weakening Production readiness.
+
+## ADR-048 — Focused capacity edits retain the map
+
+`FEAT-CAP-001` and `FEAT-UIX-001` use a native dialog per signal group instead
+of rendering a replacement editor page or an Edit all workflow. Local drafts
+exist only for the lifetime of the dialog; confirmed server facts drive the
+background map. Existing HTTP form routes also accept JSON response negotiation,
+so successful saves can refresh server-rendered data without document navigation.
+Native POST redirects remain supported and every mutation retains its existing
+server and PostgreSQL actor/ownership checks.
+
+Migration `077` lets non-location Driver edits preserve the last confirmed fix
+and its timestamp through the same branch used by fleet owners. Regular-service
+replacement composes the existing scoped removal and addition commands in one
+PostgreSQL transaction; invalid input or denial restores the original signal
+and audit state. No new service or browser database authority is introduced.
+Deploy the migration before the client. Rollback can restore the former client
+without deleting capacity history or dropping the additive RPC.
