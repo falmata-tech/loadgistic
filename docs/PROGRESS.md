@@ -2,7 +2,12 @@
 
 ## Deployment preparation — active, 2026-09-14
 
-The owner authorized deployment. Hosted Loadgistic is verified at migration 076
+The owner authorized deployment. Audit candidate `b22bc3a` is committed and pushed
+in draft [PR #15](https://github.com/falmata-tech/loadgistic/pull/15); required CI
+is running and no production promotion has occurred. The preserved untracked
+`.next-upload-audit/` directory is outside this release.
+
+Hosted Loadgistic is verified at migration 076
 and Netlify commit `451edd1f`; migrations 077–095 and the new account-security
 callback still need rollout. The dependency audit is clean. The full 166-case
 browser release suite finished with 139 passes, 19 failures and eight opt-in
@@ -19,8 +24,8 @@ concurrency and context-canary gates.
 Automatic approval review rejected the proposed hosted database backup because
 explicit permission for the data export and local destination is required.
 A concrete encrypted-backup/isolated-restore question is pending. No export,
-hosted mutation or deployment has occurred. The verified candidate is being
-packaged for required CI; do not promote it while the release gates remain unresolved.
+production mutation or deployment has occurred. The candidate is in draft review
+for required CI; do not promote it while the release gates remain unresolved.
 
 ## Recorded audit — verified locally, 2026-09-14
 

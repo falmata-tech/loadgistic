@@ -2,7 +2,10 @@
 
 The owner authorized deployment on 2026-09-14 ("should we deploy? lets go").
 Release preparation is active; promotion still depends on the required gates.
-The audit candidate follows baseline `a86f4f9`; earlier changes are preserved. Work is limited to Loadgistic. See AUDIT_COMPLETION_2026-09-14.md.
+Audit implementation commit `b22bc3a` follows baseline `a86f4f9`. It is pushed
+in draft [PR #15](https://github.com/falmata-tech/loadgistic/pull/15); required CI
+is running. The pre-existing `.next-upload-audit/` remains untracked and excluded.
+Work is limited to Loadgistic. See AUDIT_COMPLETION_2026-09-14.md.
 
 ## Preconditions and exact targets
 

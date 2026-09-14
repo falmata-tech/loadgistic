@@ -274,5 +274,8 @@ row, not a proven source mismatch; it was inspected read-only and left unchanged
 Clean migration replay remains required. Automatic approval review rejected the
 hosted database export because the data/destination need explicit permission.
 Encrypted database/private-file backup and isolated-restore approval is pending.
-No hosted mutation, data export or deployment occurred. The verified candidate
-is being packaged for CI; promotion remains blocked by the listed release gates.
+No production mutation, data export or production deployment occurred. The
+verified audit candidate is committed as `b22bc3a` and pushed in draft
+[PR #15](https://github.com/falmata-tech/loadgistic/pull/15). Required remote CI
+is running; promotion remains blocked by the listed release gates. The preserved
+`.next-upload-audit/` is the only untracked item and was excluded from the commit.
