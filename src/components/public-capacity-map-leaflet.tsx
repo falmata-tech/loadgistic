@@ -30,16 +30,20 @@ function ResizeMap(){
   return null;
 }
 
-function ProgressiveCapacityLoader({onExplore}:{onExplore?:()=>void}){
+function ProgressiveCapacityLoader({onExplore}:{onExplore?:(bounds:number[])=>void}){
+  const map=useMap();
   const explore=React.useRef(onExplore);
   const timer=React.useRef(0);
   React.useEffect(()=>{explore.current=onExplore;},[onExplore]);
   const schedule=React.useCallback(()=>{
     window.clearTimeout(timer.current);
     if(!explore.current)return;
-    timer.current=window.setTimeout(()=>explore.current?.(),350);
-  },[]);
-  useMapEvents({moveend:schedule});
+    timer.current=window.setTimeout(()=>{
+      const bounds=map.getBounds().pad(0.1);
+      explore.current?.([Math.max(-180,bounds.getWest()),Math.max(-85,bounds.getSouth()),Math.min(180,bounds.getEast()),Math.min(85,bounds.getNorth())]);
+    },350);
+  },[map]);
+  useMapEvents({moveend:schedule,resize:schedule});
   React.useEffect(()=>{schedule();return()=>window.clearTimeout(timer.current);},[schedule]);
   return null;
 }
@@ -196,7 +200,19 @@ function CapacityMarkers({items,selectedId,onSelect}:{items:Signal[];selectedId:
   })}</>;
 }
 
-export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInView=false,onSelect,onExplore}:{items:Signal[];viewer:Point|null;selectedId:string|null;keepItemsInView?:boolean;onSelect:(id:string)=>void;onExplore?:()=>void}){
+type OverviewCell={id:string;status:string;count:number;lat:number;lng:number;bounds:number[]};
+function CapacityOverview({cells,onOpen}:{cells:OverviewCell[];onOpen:()=>void}){
+ const map=useMap();
+ return <>{cells.map(cell=><Marker key={cell.id} position={[cell.lat,cell.lng]} title={`${cell.count} ${cell.status==='PARTIAL'?'Partial':'Empty'} trucks`}
+  icon={L.divIcon({className:`capacity-overview-cell ${cell.status==='PARTIAL'?'partial':'empty'}`,iconSize:[48,42],iconAnchor:[cell.status==='PARTIAL'?-2:50,21],
+   html:`<strong>${Number(cell.count)||0}</strong><small>${cell.status==='PARTIAL'?'Partial':'Empty'}</small>`})}>
+  <Popup><strong>{cell.count} {cell.status==='PARTIAL'?'Partial':'Empty'} trucks in this area</strong><p>Last published capacity. Confirm availability directly.</p><button type="button" onClick={()=>{
+   onOpen();map.fitBounds([[cell.bounds[1],cell.bounds[0]],[cell.bounds[3],cell.bounds[2]]],{padding:[20,20],maxZoom:14});
+  }}>Show trucks</button></Popup>
+ </Marker>)}</>;
+}
+
+export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInView=false,onSelect,onExplore,clusters=null,onOpenCluster}:{items:Signal[];viewer:Point|null;selectedId:string|null;keepItemsInView?:boolean;onSelect:(id:string)=>void;onExplore?:(bounds:number[])=>void;clusters?:OverviewCell[]|null;onOpenCluster?:()=>void}){
   const selected=items.find(item=>item.id===selectedId)||null;
   const [hoveredInfo,setHoveredInfo]=React.useState(null as MapSignalInfo|null);
   const [pinnedInfo,setPinnedInfo]=React.useState(null as MapSignalInfo|null);
@@ -242,7 +258,8 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
         {routeInfo&&item.availability_geometry==='ROUTE'&&(item.current_route_points||[]).length>=2?<OffsetPolyline positions={(item.current_route_points||[]).map(point=>[point.lat,point.lng])} offset={-6} eventHandlers={signalEvents(routeInfo)} pathOptions={{className:`map-current-route map-interactive-signal capacity-${availabilityAccent}`,color:currentSignalColor,weight:8,opacity:.95}}/>:null}
         {(item.recurring_corridors||[]).slice(0,1).map((signal,index)=>{const info=regularInfos[index];if(!info)return null;if(signal.geometry==='RADIUS'){const points=signal.area_boundary||[];if(points.length<3)return null;return <Polygon key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#2563eb',weight:8,dashArray:'5 9',fill:false}}/>;}const points=signal.route_points||[];if(points.length<2)return null;return <OffsetPolyline key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} offset={6} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#2563eb',weight:7,dashArray:'5 9',opacity:.9}}/>;})}
       </React.Fragment>)}
-      <CapacityMarkers items={items} selectedId={selectedId} onSelect={onSelect}/>
+      {clusters?<CapacityOverview cells={clusters} onOpen={()=>onOpenCluster?.()}/>:null}
+      <CapacityMarkers items={clusters?(selected?[selected]:[]):items} selectedId={selectedId} onSelect={onSelect}/>
     </MapContainer>
     <div className="ethiopia-map-label">Ethiopia capacity · East Africa view</div>
     {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<button type="button" onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</button>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}

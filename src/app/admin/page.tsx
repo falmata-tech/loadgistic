@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {Activity,ArrowRight,BadgeDollarSign,Building2,ClipboardCheck,Gauge,Headphones,Network,Route,Sparkles,Truck,UserRoundCog,Users} from 'lucide-react';
+import {Activity,ArrowRight,BadgeDollarSign,Building2,ClipboardCheck,Gauge,Headphones,Network,Route,Settings2,Sparkles,Truck,UserRoundCog,Users} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
 import {getAdminOperations} from '@/lib/platform-admin.js';
 import {PageHeader} from '@/components/page-header';
@@ -16,6 +16,7 @@ const records=[
 ] as const;
 
 const workAreas=[
+  {href:'/admin/settings',label:'Settings',detail:'Free access, trials, and payment activation',Icon:Settings2},
   {href:'/admin/reviews',label:'Review Center',detail:'Documents, ratings, and payment evidence',Icon:ClipboardCheck},
   {href:'/admin/capacity-network',label:'Private capacity',detail:'Availability shared with Loadgistic for matching',Icon:Network},
   {href:'/admin/featured',label:'Featured & sponsors',detail:'Programme, schedule, and sponsor management',Icon:Sparkles},

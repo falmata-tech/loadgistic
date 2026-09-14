@@ -64,7 +64,13 @@ function separateNearbyGroups(groups){
           const deltaX=centerX-otherX,deltaY=centerY-otherY;
           if(Math.abs(deltaX)>=collisionSize||Math.abs(deltaY)>=collisionSize)continue;
           const distance=Math.hypot(deltaX,deltaY);
-          if(distance<nearestDistance){nearest={deltaX,deltaY,groupStatus:candidate.status,groupKey:candidate.key};nearestDistance=distance;}
+          // Prefer the other status: repelling a closer same-status group can
+          // otherwise move this label directly into an Empty/Partial neighbor.
+          const opposite=candidate.status!==group.status;
+          const nearestOpposite=nearest?.groupStatus!==undefined&&nearest.groupStatus!==group.status;
+          if(!nearest||(opposite&&!nearestOpposite)||(opposite===nearestOpposite&&distance<nearestDistance)){
+            nearest={deltaX,deltaY,groupStatus:candidate.status,groupKey:candidate.key};nearestDistance=distance;
+          }
         }
       }
     }

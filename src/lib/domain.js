@@ -325,3 +325,9 @@ export function statusLabel(value) {
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+/** Recovery never rewinds terminal Tracking or changes location consent. */
+export function trackingRecoveryActions(status){
+  return ['CREATED','TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING','ISSUE'].includes(status)
+    ?['CORRECT','REASSIGN','CANCEL']:[];
+}

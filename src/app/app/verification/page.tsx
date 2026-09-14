@@ -33,7 +33,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
     vehicles:(subject.vehicles||[]).map((vehicle:any)=>({id:String(vehicle.id),label:String(vehicle.label)}))
   }));
   return <div className="page">
-    <PageHeader icon={BadgeCheck} title="Verification" subtitle="Manage submitted documents and review status."/>
+    <PageHeader icon={BadgeCheck} title="Verification" subtitle="Documents are optional. Add them when you’re ready for review."/>
     <Flash error={query.error} success={query.success}/>
     <div className="two-col">
       <div className="stack">

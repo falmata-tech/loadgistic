@@ -1,7 +1,7 @@
 ---
 id: FEAT-PRV-001
 title: Truck-linked public transporter microsites
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001, FEAT-LST-001]
 problem: Transport providers need to be represented as credible businesses, while visitors need rich public context before making contact.
 behavior: Fleet transporters and self-managed providers with current public trucks receive canonical `/@handle` microsites reached from truck details rather than a Provider Market, provider map, Area Market, or provider list. Providers manage accurate public contacts, business content, one general base region or federal city, and one validated profile image. Every microsite uses one Loadgistic-controlled white-space template and presents each active truck through a detailed safe card with a lazily opened relative map when that truck has current public capacity.
 contracts: [ProviderMicrosite, MicrositeTruckCard, MicrositeTruckMap, PublicProviderHandle, ProviderBaseRegion, ProviderOperatingModel, ProviderProfileImage, SeededTransporterPortrait, SharedProviderTemplate, PublicContactPolicy, YouTubeVideoReference, ProviderPageCommand, PublicFleetProjection]
@@ -158,3 +158,56 @@ And arbitrary embed HTML or non-allowlisted hosts are rejected.
 - Compatibility: legacy profile URLs redirect to canonical provider handles
 - Application services: safe public provider/fleet projection, provider operating model, and owner-scoped page update
 - Tests: repository, authorization, truck-linked microsite and truck-map E2E, focused visual review, and release visual audit
+
+## Complete bounded public fleet (verified locally; rollout pending)
+
+Given a published transporter owns more than 96 active trucks\
+When a visitor opens its canonical microsite and follows fleet page navigation\
+Then each response renders at most 12 trucks ordered by platform number and ID\
+And every active owned truck remains reachable through numbered pages\
+And the header reports the whole active-fleet count while capacity counts describe
+only the displayed page\
+And page-specific capacity reads select those vehicle IDs before latest-state
+selection, retaining existing Open/Empty/Partial/active-Driver privacy rules\
+And a truck beyond the previous 96-capacity boundary still shows its current
+public capacity and can open its map\
+And private, Full, Off Duty and unassigned capacity never becomes a public signal.
+
+Given a visitor changes fleet page or requests an invalid or now-empty page\
+When the server resolves the public provider\
+Then invalid page syntax starts at page one and an out-of-range positive page
+clamps to the last available page\
+And provider type, aggregate truck evidence, business details and review totals
+remain independent of the selected fleet page\
+And aggregate truck evidence uses each truck's latest approval, including expiry,
+before selecting the fleet summary\
+And page navigation uses /@handle with browser Back support\
+And unpublished/unknown providers remain unavailable and no private plate, account
+contact, proof path or exact location is added to the public projection.
+
+Contracts: service-only `public_provider_fleet_page` returns a 12-row owner-scoped
+page, exact count and bounded aggregate evidence; `public_capacity_page` accepts
+an optional server-owned vehicle ID restriction before its latest-state query.
+No public API exposes that internal filter. Apply additive migration 088 before
+app rollout. The migration is read-only apart from function/index definitions;
+rollback hides pagination while retaining schema. No remote apply is authorized.
+Tests: `tests/public-provider-paging.test.mjs`, `tests/sql/public-provider-paging.sql`,
+`tests/e2e/public-provider-paging.spec.ts`; SQL, browser, quality and build gates
+passed locally. Final counts, screenshots and limits are in
+`docs/BUILD_VERIFICATION.md`.
+
+### Scenario: public rendering receives no hidden intermediate data (F19)
+
+Given a published provider hides a contact and a Driver has a private surname\
+When its public profile is rendered, including development RSC serialization\
+Then PostgreSQL projects hidden contacts as null before the application receives them\
+And public Driver-name reads contain only the first name\
+And image presence is a boolean, never a private Storage object path.
+
+Contracts: migration 095 adds service-only bounded public metadata/name queries.
+Publication and exactly-one-owner scope are checked before metadata projection.
+Observability remains generic read failures without private values. Apply 095
+before the public-page adapter; rollback removes the adapter exposure while
+retaining additive RPCs. Regression evidence: rollback SQL
+`tests/sql/public-provider-privacy.sql` and desktop/phone full-paging HTML privacy
+assertions in `tests/e2e/public-provider-paging.spec.ts`.

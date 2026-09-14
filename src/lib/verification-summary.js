@@ -4,6 +4,11 @@ function ethiopiaDate(){
   }).format(new Date());
 }
 
+export function documentReviewSummary(badges=[]){
+  const reviewed=badges.filter(badge=>badge.verified&&!badge.expired).length;
+  return {reviewed,total:badges.length,complete:badges.length>0&&reviewed===badges.length};
+}
+
 export function verificationBadgesFromApproved(subjectType,records=[]){
   const latestByType=new Map();
   for(const record of records||[]){

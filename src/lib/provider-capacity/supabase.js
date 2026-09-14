@@ -13,6 +13,13 @@ const MANAGED_ERRORS=[
 function managedError(code,error){
   const message=String(error?.message||'');
   const known=MANAGED_ERRORS.find(candidate=>message.includes(candidate));
+  if(!known){
+    // Never log database messages/details: they can include submitted coordinates
+    // or contacts. An operation and bounded SQL/PostgREST code are sufficient
+    // to distinguish a database outage, stale schema, and validation defect.
+    const databaseCode=/^(?:[0-9A-Z]{5}|PGRST\d{3})$/.test(String(error?.code||''))?String(error.code):'UNAVAILABLE';
+    console.error('[provider-capacity]',{operation:code,databaseCode});
+  }
   return new Error(known||code,{cause:error});
 }
 

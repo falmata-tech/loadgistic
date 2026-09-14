@@ -36,6 +36,32 @@ select
   'SCALE-'||lpad(series::text,5,'0'),true,'LG-SCALE-'||lpad(series::text,5,'0')
 from generate_series(1,:scale_count) series cross join scale_owner owner;
 
+-- Publication now requires an active Driver. These no-password identities,
+-- memberships, and one-to-one assignments exist only inside this rollback.
+insert into auth.users(id,email,raw_user_meta_data)
+select md5('loadgistic-scale-driver-'||series)::uuid,
+  'scale-driver-'||series||'@example.invalid','{}'::jsonb
+from generate_series(1,:scale_count) series;
+
+insert into public.profiles(id,email,full_name,role,active)
+select md5('loadgistic-scale-driver-'||series)::uuid,
+  'scale-driver-'||series||'@example.invalid','Scale driver '||series,'DRIVER',true
+from generate_series(1,:scale_count) series
+on conflict(id) do update set full_name=excluded.full_name,role=excluded.role,active=true;
+
+insert into public.organization_members(user_id,organization_id,membership_role)
+select md5('loadgistic-scale-driver-'||series)::uuid,owner.organization_id,'DRIVER'
+from generate_series(1,:scale_count) series cross join scale_owner owner;
+
+insert into public.drivers(user_id,organization_id,name,active)
+select md5('loadgistic-scale-driver-'||series)::uuid,owner.organization_id,'Scale driver '||series,true
+from generate_series(1,:scale_count) series cross join scale_owner owner;
+
+insert into public.driver_vehicle_assignments(driver_user_id,vehicle_id,assigned_by)
+select md5('loadgistic-scale-driver-'||series)::uuid,
+  md5('loadgistic-scale-vehicle-'||series)::uuid,owner.owner_user_id
+from generate_series(1,:scale_count) series cross join scale_owner owner;
+
 insert into public.capacities(
   id,provider_organization_id,vehicle_id,status,available_percent,visibility,
   location_area,location_updated_at,location_lat,location_lng,location_precision_km,location_source,
@@ -57,12 +83,17 @@ from generate_series(1,:scale_count) series cross join scale_owner owner;
 
 analyze public.vehicles;
 analyze public.capacities;
+analyze public.profiles;
+analyze public.drivers;
+analyze public.organization_members;
+analyze public.driver_vehicle_assignments;
 
 do $audit$
 declare
   started_at timestamptz;
   query_ms numeric;
   route_ms numeric;
+  overview_ms numeric; overview_rows integer; overview_trucks bigint; overview_bytes bigint;
   result_rows integer;
   route_rows integer;
   payload_bytes bigint;
@@ -81,6 +112,15 @@ begin
   );
   route_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
 
+  started_at:=clock_timestamp();
+  select count(*),coalesce(sum((payload->>'count')::bigint),0),coalesce(sum(octet_length(payload::text)),0)
+    into overview_rows,overview_trucks,overview_bytes
+  from public.public_capacity_clusters('{"q":"lg-scale","viewport":[38,8,40,10]}'::jsonb);
+  overview_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
+  if overview_rows>200 or overview_trucks<>${requested} or overview_bytes>100000 then raise exception 'SCALE_OVERVIEW_BOUND_FAILED';end if;
+  if overview_ms>5000 then raise exception 'SCALE_OVERVIEW_TOO_SLOW:%',overview_ms;end if;
+  raise notice 'LOADGISTIC_OVERVIEW_RESULT cells=% trucks=% bytes=% query_ms=%',overview_rows,overview_trucks,overview_bytes,round(overview_ms,3);
+
   if result_rows<>15 or route_rows<>15 then
     raise exception 'SCALE_BOUNDED_PAGE_FAILED:%,%',result_rows,route_rows;
   end if;
@@ -95,10 +135,15 @@ begin
 end
 $audit$;
 
+explain (analyze,buffers,format json)
+select count(*) from public.capacities where map_envelope && public.capacity_viewport_envelope('{"viewport":[38,8,40,10]}'::jsonb);
+
 rollback;
 
 select 'LOADGISTIC_SCALE_REMAINING='||count(*)
 from public.vehicles where platform_number like 'LG-SCALE-%';
+select 'LOADGISTIC_SCALE_DRIVERS_REMAINING='||count(*)
+from auth.users where email like 'scale-driver-%@example.invalid';
 `;
 
 const result=spawnSync('docker',[
@@ -111,5 +156,13 @@ const combined=`${result.stdout||''}\n${result.stderr||''}`;
 if(result.status!==0)throw new Error(`POSTGRES_SCALE_AUDIT_FAILED:${combined.slice(-2000)}`);
 if(!/LOADGISTIC_SCALE_RESULT/.test(combined))throw new Error('POSTGRES_SCALE_RESULT_MISSING');
 if(!/LOADGISTIC_SCALE_REMAINING=0/.test(combined))throw new Error('POSTGRES_SCALE_ROLLBACK_FAILED');
+if(!/LOADGISTIC_SCALE_DRIVERS_REMAINING=0/.test(combined))throw new Error('POSTGRES_SCALE_DRIVER_ROLLBACK_FAILED');
+const planStart=combined.indexOf('[\n');
+if(planStart>=0){
+ const planEnd=combined.indexOf('\n]',planStart);
+ if(planEnd>=0)fs.writeFileSync(path.join(root,'.local','audit-viewport-explain.json'),combined.slice(planStart,planEnd+2));
+}
+const overview=combined.split(/\r?\n/).find(line=>line.includes('LOADGISTIC_OVERVIEW_RESULT'))?.trim();
+if(overview)process.stdout.write(overview+'\n');
 const summary=combined.split(/\r?\n/).find(line=>line.includes('LOADGISTIC_SCALE_RESULT'))?.trim();
 process.stdout.write(`${summary}\nPostgreSQL scale transaction rolled back with zero synthetic trucks remaining.\n`);

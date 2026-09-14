@@ -6,8 +6,13 @@ import {
   recordSupabaseProviderTrackingEmailAttempt,resolveSupabaseProviderReview,submitSupabaseProviderReview,
   unlockSupabaseProviderReview,updateSupabaseProviderShipmentLocation,
   verifySupabaseProviderTrackingOtp,
+  readSupabaseProviderTrackingProof,
   updateSupabaseProviderShipmentStatus
 } from './provider-tracking/supabase.js';
+
+export function readProviderTrackingProof(user,shipmentId,eventId,recipientDigest=/** @type {string|null} */(null)){
+  return readSupabaseProviderTrackingProof(user,shipmentId,eventId,recipientDigest);
+}
 
 export async function getProviderTrackingWorkspace(user,options={}){
   return getSupabaseProviderTrackingWorkspace(user,options);

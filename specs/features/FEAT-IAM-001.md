@@ -1,15 +1,33 @@
 ---
+
 id: FEAT-IAM-001
 title: Identity, sessions, and role access
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001, FEAT-FLT-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
 behavior: Provider and platform-team identities begin at one account-access surface and prove identity through Supabase Google OAuth or a numeric email one-time code. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
-contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact]
+contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact, AccountDetailsInput]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
 ---
 
 # Identity and access
+
+## Company-driver invitation acceptance (verified locally; remote rollout pending)
+
+FEAT-FLT-001 defines the invitation lifecycle. Existing email OTP and Google
+verification remain the only identity proof. A pending fleet invitation for the
+verified email takes a pristine identity to a focused Join fleet confirmation
+before independent-provider setup. The recipient explicitly accepts; knowing an
+invitation ID or submitting an email never grants membership. Acceptance repeats
+confirmed-email, expiry, cancellation, account eligibility, and fleet checks in
+one locked database command. Existing independent providers or other fleet/staff
+identities cannot be repurposed. Offboarding revokes driver workspace authority
+without deleting authentication, shipment, document, or assignment history.
+
+Evidence: fleet onboarding unit/security tests and the desktop/phone new-fleet
+browser flow, including local Auth OTP email and invitation notification delivery.
+The Google callback uses the same verified-ID invitation decision; new real
+Google consent and hosted delivery remain separate rollout checks.
 
 ### Scenario: Google account access is bound to one flow
 
@@ -216,6 +234,57 @@ When any profile or directory view is rendered\
 Then those values are never used as public contact fallbacks\
 And public contact fields are maintained separately with explicit profile intent.
 
+## Account details maintenance (verified locally; remote rollout pending)
+
+The existing Account & plan surface allows active providers (including Company
+drivers) and administrators to edit their own name and optional account phone,
+including during limited subscription access. The name is the existing shared
+display identity and may appear with Driver activity or Support messages; it is
+not advertised as private. Company-driver name copies stay consistent. Public
+callback phones and business contacts remain separate. Email proof/change,
+account closure (specified separately below), role changes and administrator editing of other users are outside
+this command.
+
+### Scenario: save account details without changing public contacts
+
+Given an active eligible account opens Account & plan, even with expired access\
+When it saves a trimmed name of 2–100 characters and an optional phone of 7–32
+characters containing at least seven digits and only phone punctuation\
+Then only that authenticated actor's display name and private phone change\
+And a Company driver's active fleet name copy follows the name change\
+And blank phone removes the private account phone\
+And email, Auth identity, role, activity, memberships, permissions, business
+contacts and fleet callback phones are unchanged\
+And the visible form confirms persistence and survives reload\
+And the native POST fallback saves without putting contacts in the URL.
+
+### Scenario: account mutation fails safely
+
+Given a signed-out, inactive or unsupported-role actor, malformed input, extra
+authority fields, or a cross-origin request\
+When account details are submitted\
+Then no account or public contact changes\
+And the response is generic and contains no upstream database errors\
+And the enhanced form keeps rejected input available for correction\
+And browser roles cannot execute the managed command or mutate profiles directly.
+
+### Scenario: fleet contact editing preserves account phone ownership
+
+Given a Company driver has a private account phone\
+When the fleet owner corrects the fleet Driver name and callback phone\
+Then the callback and shared display name change\
+And the private account phone is retained.
+
+Contract: `updateOwnAccountDetails` accepts the verified session actor and strict
+`{name,phone}` input; service-only `update_own_account_details` repeats active
+role and input checks under row locks and records `ACCOUNT_DETAILS_UPDATED`
+without names or contacts in audit details. Migration 086 is additive for account
+editing and narrowly replaces the fleet contact command. Deploy schema before
+UI; application rollback hides editing while retaining saved values and the
+phone-isolation fix. No remote apply is authorized. Tests:
+`tests/account-details.test.mjs`, `tests/sql/account-details.sql`,
+`tests/e2e/account-details.spec.ts`.
+
 ### Scenario: public and authenticated surfaces are installable
 
 Given a supported mobile browser opens public or authenticated Loadgistic over a secure origin\
@@ -235,3 +304,56 @@ And the service worker does not cache Next.js executable chunks, preventing a fr
 - Outbound adapters: Supabase SSR browser/server clients and Auth in local development, tests, Preview, and Production
 - External configuration: Supabase Google provider, exact Site URL/Redirect URL allowlists, numeric `{{ .Token }}` email template, and verified custom SMTP
 - Tests: `tests/auth-flow.test.mjs`, `tests/security-headers.test.mjs`, `tests/provider-signup-supabase.test.mjs`, `scripts/verify-supabase-provider-signup.mjs`, `tests/e2e/auth-role-language.spec.ts`, `tests/e2e/smoke.spec.ts`, `tests/repository.test.mjs`
+
+## Public portrait control (FEAT-FTR-001; verified locally, rollout pending)
+
+Given an active Driver opens Account & plan, including limited access\
+When they manage their own portrait\
+Then the distinct Public Driver photo card explains publication, requires consent
+for each upload and offers removal. Company drivers control their own photo;
+account phone and fleet callback editing remain separate. FEAT-FTR-001 owns
+image normalization, storage, public reads and cleanup contracts.
+
+## Verified email change and account deactivation (F09, implementation)
+
+Owner decision, 2026-09-14: deactivate access and retain history; block closure
+until active work is resolved. This is not a deletion or erasure workflow.
+
+Given an active provider requests an email change or deactivation from Account\
+When the server validates the action and rate limits\
+Then a fresh numeric Supabase Auth code is sent to the current login email with
+account creation disabled\
+And a short-lived signed HttpOnly handoff binds the actor, operation and target\
+And an expired, mismatched or invalid proof performs no account mutation.
+
+Given the current email code was verified for the same actor\
+When an email change is requested\
+Then the actor's own Supabase Auth session requests the new email and the user
+follows the provider's confirmation links\
+And existing secure-email-change settings remain unchanged\
+And only a confirmed Auth email update synchronizes the private profile email\
+And roles, memberships, public contacts and historical actor IDs remain unchanged\
+And neither an admin email-replacement shortcut nor a new Auth identity is used.
+
+Given the owner has explicitly confirmed deactivation and verified their current email\
+When the locked deactivation command runs\
+Then active Tracking, active owned trucks, current Driver assignments, active
+fleet colleagues, pending fleet invitations and open member Support block closure
+with concrete next steps\
+And otherwise the profile becomes inactive, public business visibility is removed,
+current sessions lose workspace authority and the browser is signed out\
+And shipment/audit/message/file/assignment history remains retained\
+And inactive owners cannot activate or create trucks through a concurrent request\
+And platform-team accounts and other users cannot be closed through this command.
+
+Contracts: migration 092, confirmed Auth email synchronization, service-only
+closure blockers/deactivation, private signed operation handoff, own-session
+Supabase Auth update and global logout. Closure requires recent Auth proof and
+explicit confirmation; SQL repeats active role and blockers. A blocked closure
+keeps the account active. Reopening is an authorized Support/admin operation,
+not a public signup shortcut. No data deletion, ownership transfer or hosted Auth
+configuration change. Apply SQL before clients; rollback hides controls while
+retaining deactivation and history. Require unit, SQL and real local inbox/browser
+evidence before completion. Supabase own-session email update/confirmation:
+https://supabase.com/docs/reference/javascript/auth-updateuser
+and https://supabase.com/docs/guides/auth/auth-email-templates .

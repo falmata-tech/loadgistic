@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import {NativeFormFeedback} from '@/components/native-form-feedback';
 
 export const runtime = 'nodejs';
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         {children}
+        <NativeFormFeedback/>
         <script src="/register-sw.js" defer />
       </body>
     </html>

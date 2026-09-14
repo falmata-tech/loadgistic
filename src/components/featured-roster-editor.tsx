@@ -5,7 +5,7 @@ import {ArrowDown,ArrowUp,CalendarClock,Clock3,Plus,RefreshCw,Trash2,Truck,UserR
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '@/lib/expo-broadcast.js';
 import {vehicleConfigurationImage} from '@/lib/vehicle-configurations';
 
-type Candidate={truck_key:string;vehicle_id:string;platform_number?:string;cargo_configuration:string;driver_first_name:string;driver_kind_label:string;name:string;base_place:string};
+type Candidate={truck_key:string;vehicle_id:string;driver_user_id:string;platform_number?:string;cargo_configuration:string;driver_first_name:string;driver_kind_label:string;name:string;base_place:string};
 type ManualInterval={providerKey:string;startTime:string;endTime:string};
 type Sponsor={sponsor_name?:string;eligible?:boolean;starts_on?:string;ends_on?:string};
 
@@ -20,7 +20,8 @@ export function FeaturedRosterEditor({candidates,selectedProviderKeys,featureDat
   const [manual,setManual]=React.useState(defaultManualSchedule as ManualInterval[]);
   React.useEffect(()=>setReady(true),[]);
   const byKey=React.useMemo(()=>new Map(candidates.map(candidate=>[candidate.truck_key,candidate])),[candidates]);
-  const available=candidates.filter(candidate=>!selected.includes(candidate.truck_key));
+  const selectedDrivers=new Set(selected.map((key:string)=>byKey.get(key)?.driver_user_id).filter(Boolean));
+  const available=candidates.filter(candidate=>!selected.includes(candidate.truck_key)&&!selectedDrivers.has(candidate.driver_user_id));
   let schedule:any=null;let scheduleError='';
   try{
     schedule=buildFeaturedDaySchedule(featureDate,selected,{mode,config,manualSchedule:manual});

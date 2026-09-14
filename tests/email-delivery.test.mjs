@@ -447,9 +447,12 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
     deliverAccess:async limit=>{limits.push(limit);throw new Error('recipient guest@example.test failed');},
     purgeGuests:async limit=>{limits.push(limit);return {count:4,shipmentIds:['private-shipment-id']};},
     purgeSharedCapacity:async limit=>{limits.push(limit);return {otpCount:2,deliveryCount:3,recipientEmails:['private@example.test']};},
-    purgeRateLimits:async limit=>{limits.push(limit);return 6;}
+    purgeRateLimits:async limit=>{limits.push(limit);return 6;},
+    prepareFeatured:async()=>({created:3,skipped:4,empty:0,driverIds:['private-driver']}),
+    purgeAttachments:async limit=>{limits.push(limit);return {attempted:0,deleted:0,failed:0};},
+    purgePortraits:async limit=>{limits.push(limit);return {attempted:3,deleted:2,failed:1,filePaths:['secret']};}
   });
-  assert.deepEqual(limits,[7,7,9,9,9]);
+  assert.deepEqual(limits,[7,7,9,9,9,9,20]);
   assert.equal(result.ok,false);
   assert.deepEqual(result.operations[0],{
     name:'tracking-email',ok:true,result:{configured:true,provider:'resend',attempted:3,sent:2,failed:1,skipped:0}
@@ -458,6 +461,9 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
   assert.deepEqual(result.operations[2],{name:'tracking-guest-cleanup',ok:true,result:{count:4}});
   assert.deepEqual(result.operations[3],{name:'shared-capacity-cleanup',ok:true,result:{otpCount:2,deliveryCount:3}});
   assert.deepEqual(result.operations[4],{name:'rate-limit-cleanup',ok:true,result:{count:6}});
+  assert.deepEqual(result.operations[5],{name:'featured-rosters',ok:true,result:{created:3,skipped:4,empty:0}});
+  assert.deepEqual(result.operations[6],{name:'driver-portrait-cleanup',ok:true,result:{attempted:3,deleted:2,failed:1}});
+  assert.deepEqual(result.operations[7],{name:'support-attachment-cleanup',ok:true,result:{attempted:0,deleted:0,failed:0}});
   assert.doesNotMatch(JSON.stringify(result),/guest@example|private-shipment|secret/);
 });
 

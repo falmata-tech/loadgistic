@@ -2,10 +2,40 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import ts from 'typescript';
 
-import {projectSupabaseProviderCapacityWorkspace} from '../src/lib/provider-capacity/supabase.js';
+import {projectSupabaseProviderCapacityWorkspace,publishSupabaseProviderCapacity} from '../src/lib/provider-capacity/supabase.js';
 
 const root=path.resolve(import.meta.dirname,'..');
+const errorSource=fs.readFileSync(path.join(root,'src/lib/errors.ts'),'utf8');
+const {errorMessage}=await import(`data:text/javascript,${encodeURIComponent(ts.transpileModule(errorSource,{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText)}`);
+
+test('capacity validation errors explain the required correction without exposing internal details',()=>{
+  for(const code of ['INVALID_CAPACITY_INPUT','INVALID_AVAILABILITY_GEOMETRY','PARTIAL_CAPACITY_ROUTE_REQUIRED','DRIVER_REQUIRED_FOR_CAPACITY','INVALID_APPROXIMATE_LOCATION','CAPACITY_DRIVER_LOCATION_REQUIRED','LOCALITY_REQUIRED']){
+    assert.notEqual(errorMessage(new Error(code)),'Something went wrong. Please try again.',code);
+    assert.doesNotMatch(errorMessage(new Error(code)),new RegExp(code));
+  }
+  assert.match(errorMessage(new Error('PARTIAL_CAPACITY_ROUTE_REQUIRED')),/at least two cities/);
+  assert.doesNotMatch(errorMessage(new Error('SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED')),/SUPABASE|SQL|schema/);
+});
+
+test('unexpected capacity database failures retain only safe diagnostic codes',async()=>{
+  const originalFetch=globalThis.fetch,originalLog=console.error;
+  const originalUrl=process.env.NEXT_PUBLIC_SUPABASE_URL,originalKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const logs=[];
+  process.env.NEXT_PUBLIC_SUPABASE_URL='https://capacity-test.invalid';
+  process.env.SUPABASE_SERVICE_ROLE_KEY='test-key';
+  console.error=(...values)=>logs.push(values);
+  globalThis.fetch=async()=>new Response(JSON.stringify({code:'PGRST202',message:'private database details',details:'sensitive submitted value'}),{status:400,headers:{'Content-Type':'application/json'}});
+  try{
+    await assert.rejects(()=>publishSupabaseProviderCapacity({id:'test-user'},{vehicleId:'test-vehicle',status:'EMPTY'}),/SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED/);
+    assert.deepEqual(logs,[['[provider-capacity]',{operation:'SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED',databaseCode:'PGRST202'}]]);
+  }finally{
+    globalThis.fetch=originalFetch;console.error=originalLog;
+    if(originalUrl===undefined)delete process.env.NEXT_PUBLIC_SUPABASE_URL;else process.env.NEXT_PUBLIC_SUPABASE_URL=originalUrl;
+    if(originalKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=originalKey;
+  }
+});
 
 test('provider Capacity workspace projection keeps only canonical current geometry',()=>{
   const workspace=projectSupabaseProviderCapacityWorkspace({

@@ -7,6 +7,8 @@ import { Flash } from '@/components/flash';
 import { featuredTruckTypeForDate,featuredTruckWeekForDate } from '@/lib/featured-trucks.js';
 import { FeaturedRosterEditor } from '@/components/featured-roster-editor';
 import { SponsorAdminForm } from '@/components/sponsor-admin-form';
+import {getPlatformControls} from '@/lib/platform-controls.js';
+import {FeaturedControlsForm} from '@/components/platform-controls-form';
 
 export const dynamic='force-dynamic';
 
@@ -20,6 +22,7 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const date=query.date||today;
   const stored=await getAdminFeaturedProviderDay(user,date);
+  const controls=await getPlatformControls(user);
   const theme=featuredTruckTypeForDate(date);
   const featuredWeek=featuredTruckWeekForDate(date);
   const candidates:any[]=stored.candidates;
@@ -30,6 +33,7 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   return <div className="page featured-admin-page">
     <PageHeader title="Daily Featured Trucks" subtitle="Choose the trucks and Drivers for the 07:30–09:00 programme."/>
     <Flash error={query.error} success={query.success}/>
+    <FeaturedControlsForm controls={controls}/>
     <section className="panel featured-admin-picker">
       <form method="get" className="featured-day-filter regional-expo-admin-filter">
         <div className="form-group"><label htmlFor="feature-date"><CalendarDays aria-hidden="true"/>Feature date</label><input id="feature-date" name="date" type="date" defaultValue={date} required/></div>

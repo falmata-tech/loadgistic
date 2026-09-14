@@ -1,5 +1,30 @@
 # Loadgistic Product Master Prompt
 
+## Locally verified audit contracts
+
+The implementation under review adds explicit truck retirement/restoration and
+reasoned nonterminal Tracking recovery; bounded administrator business-name
+correction and approximate Tracking maps; fresh-code login-email confirmation
+and retained-history account deactivation; public map overview cells with
+bounded detailed windows and database-filtered private viewports; and
+incremental Support polling that retrieves changed conversations only.
+Account closure follows the owner's decision: resolve active work, deactivate
+access and public visibility, retain shipment, audit and file history.
+
+These contracts (ADRs 058–062) are verified locally and remain unpublished.
+Migrations 090–095, seven SQL suites, six concurrency cases, the 5,000-truck
+scale audit and 34 affected desktop/phone cases passed across focused runs.
+Final quality passed 290 tests; BUILD_VERIFICATION records final build evidence.
+Cancelled Tracking shows its actual terminal label/history without status or
+location controls. Public metadata masks hidden contacts, private image paths
+and Driver surnames before rendering. Viewport commands occupy the command
+panel rather than map grid rows. Selected location/loading/failure feedback
+occupies its own summary row, retaining readable identity, contact, close and
+retry actions. Narrow summaries reserve the left zoom-control column. Both
+contracts have desktop/phone and 320px reflow evidence (F22/F24).
+Foreground browser GPS is the supported location contract;
+phone-background GPS has not been implemented or promised.
+
 Loadgistic is Ethiopia's transport-capacity sharing and shipment-tracking platform. Its two core jobs are clear: transport providers publish capacity publicly or share it with trusted contacts, and authorized parties follow agreed shipments through private Tracking. Capacity seekers can find suitable local, regional, and long-distance transport without creating an account. Fleet transporters, owner-operators, and self-managed Drivers control their capacity, business presentation, and provider-owned Tracking updates.
 
 ## Audience and promise
@@ -11,6 +36,12 @@ The capacity-seeking audience includes workshops, growers, farmers, processors, 
 Query-sensitive capacity and place-search responses remain outside shared CDN caches unless every accepted filter or cursor is included in the cache key, so one visitor's query can never replace another query's results.
 
 Public navigation follows the two core jobs before promotion: Open capacity, Private capacity, Track, Featured, then About on the five-destination phone bar. Desktop keeps those first four destinations in the same order and places About with the quieter Loadgistic links.
+
+Open and unlocked Private capacity reserve the navigation rail's actual inset
+and width on wide screens. Both maps occupy the space remaining below the header
+and tablet navigation, or above phone navigation. The private session bar remains
+above its map. Search and dismissible Filters stay usable across these layouts,
+including 320-by-640 reflow, without document overflow.
 
 Loadgistic's public surface is a route-level application shell rather than one scrolling marketing page. `/` opens the complete account-free **Open Transport Capacity** workspace with one map-only market, one search control, location context, and bounded cursor loading. `/shared-capacity` opens **Private Transport Capacity** after verifying a trusted email; navigation uses the shorter **Private capacity** label. Map-first capacity workspaces rely on selected persistent navigation and an accessible page name rather than repeating a visible title and explanatory header above the map. `/featured` opens the complete Daily Featured Trucks workspace without loading either capacity map. Track, About, Privacy, Terms, transporter signup, provider microsites, and login retain shareable routes. Desktop uses a floating workspace rail grouped into primary discovery, account, and Loadgistic information destinations; phones use fixed primary navigation while Log in or Dashboard remains in the header. A persistent Ask Loadgistic launcher opens a compact assisted-matching dialog or phone sheet on every public route and restores the authorized conversation after navigation or refresh. The public navigation shows Log in while signed out and Dashboard while signed in; transporter signup is offered from the login page rather than as a separate Market navigation item. Next.js route links keep transitions app-like while the primary routes remain independently server rendered and code split. Searching a transporter name returns only that transporter's current trucks. There is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. The legacy `/capacity` and `/providers` addresses redirect to Open Transport Capacity while preserving useful search input. No member login is required for public filters, bounded Ethiopia place suggestions, capacity details, transporter microsites, Private capacity email verification, Assisted matching, Daily Featured Trucks, or email-and-code Tracking verification. Shipment Board, Post shipment, Business signup, capacity-seeker accounts, and Business public profiles are absent.
 
@@ -26,6 +57,23 @@ Without a visitor location, the phone Market opens at a useful Ethiopia-level ca
 
 Every public filter is an eligibility rule, not a ranking input. Each supplied criterion must match and each omitted criterion stays neutral. Free text, exact transporter, Empty or Partial status, signal geometry, truck configuration, load type, stop options, signal age, shipment endpoints, Service-area proximity, and explicit visitor proximity can be used independently or together. Current and regular Capacity routes project each supplied endpoint onto every segment of the complete ordered two-to-five-point polyline; with both endpoints, direction is evaluated from their positions along that same polyline. Empty Service areas evaluate each supplied endpoint against the complete polygon and its selected tolerance. The filter dialog uses recognizable section icons, short categorical choices, and a collapsed vehicle-configuration chooser with matching truck artwork while remaining bounded and operable on phones, desktops, and reflow layouts.
 
+Daily Featured selection is automatic by default. The existing signed scheduled
+worker prepares unscheduled dates through the next seven days, using active
+truck/Driver pairs matching each day's truck-type theme. An administrator chooses
+one through twelve Drivers per day, switches to Manual only, or edits a specific
+day. Selection rotates by recent appearances and configuration without repeating
+a Driver in the same roster. A smaller eligible pool produces a smaller honest
+roster. Saved drafts and published days are never overwritten; public reads never
+create a roster. Selection is separate from the existing airtime controls.
+
+Route and component loading preserves the surrounding shell. Shared neutral
+skeletons cover records, forms, maps, and chat; Featured keeps its own board-shaped
+placeholder. Updates retain an existing map behind compact feedback. Native POST
+buttons show pending feedback and guard duplicate submits without removing the
+button's submitted command. Decorative loading shapes are hidden from assistive
+technology, one status describes progress, and reduced-motion preferences are
+respected. These states report real pending work, never simulated progress.
+
 ## Capacity signals
 
 Every public signal has one explicit meaning:
@@ -40,9 +88,15 @@ Local development data represents the intended dense city-and-town fleet: 143 ac
 
 Capacity freshness comes from the latest capacity update, while approximate-location freshness comes independently from the latest Driver location update. Empty and Partial signals remain visible during early-market rollout until the provider explicitly selects Off Duty. Each timestamp is presented in one plain-language stage—Today, Past few days, Past week, Past month, or Older—and older signals tell visitors to confirm availability directly. The Map remains unranked. An older location is the last reported approximate area, not a live position. Fleet capacity requires an assigned Driver location; fleet owners may preserve but never replace the assigned Driver's obscured point.
 
-The capacity editor keeps status and geography simple: Empty may use a Service area or Capacity route, while Partial always uses a Capacity route. Its map stays mounted behind focused native dialogs for Current capacity, Current coverage, Regular service, and Approximate location; there is no Edit all action. Each dialog contains only that group's inputs, with missing required route or location inputs included when creating or changing a signal. Save updates server-owned facts without document navigation; Cancel, Close, and Escape discard the draft and restore focus. Failed saves retain inputs and explain the error in the dialog. Editing another group preserves pickup/drop-off preferences and the Driver's last confirmed location timestamp. Regular service opens with existing values and is replaced atomically so a failed edit cannot remove the saved signal. Four reserved floating zones keep the selected truck at top left, compact edit rail at top right, map key at bottom left, and location-radius shortcut plus direct refresh at bottom right. The radius shortcut opens the Location dialog. Automatic refresh is silent and pauses while editing; manual refresh produces short-lived feedback beside the dock. Dialogs keep a scrollable input body and fixed actions within the phone viewport while the map remains visible behind them.
+The capacity editor keeps status and geography simple: Empty may use a Service area or Capacity route, while Partial always uses a Capacity route. Its map stays mounted behind focused native dialogs for Current capacity, Current coverage, Capacity sharing, Load preferences, Regular service, and Approximate location; there is no Edit all action. Current capacity contains status only; Sharing owns visibility, and Loads owns accepted load types plus pickup/drop-off preferences. New signals start Private until the provider explicitly opens them through Sharing. Each dialog contains only that group's inputs, with missing required route or location inputs included when creating or changing a signal. Save updates server-owned facts without document navigation and waits for the data refresh before another editor opens; Cancel, Close, and Escape discard the draft and restore focus. Failed saves retain inputs and explain the error in the dialog. Editing another group preserves pickup/drop-off preferences and the Driver's last confirmed location timestamp. Regular service opens with existing values and is replaced atomically so a failed edit cannot remove the saved signal. Four reserved floating zones keep the selected truck at top left, compact edit rail at top right, map key at bottom left, and location-radius shortcut plus direct refresh at bottom right. The radius shortcut opens the Location dialog. Automatic refresh is silent and pauses while editing; manual refresh produces short-lived feedback beside the dock. Dialogs keep a scrollable input body and fixed actions within the phone viewport while the map remains visible behind them.
 
 ## Location privacy and maps
+
+Open, Private, and team capacity maps enforce every supplied geographic
+criterion. Both shipment endpoints must match the same eligible signal; an
+additional Service-area search remains a separate requirement. A missing or
+unrecognized selected place returns an actionable filter correction, not a
+broader result set. Match explanation text is not eligibility authority.
 
 The assigned Driver chooses a permitted location privacy radius. The browser displaces the exact coordinate before application state or submission. Only the displaced center, privacy radius, source, timestamp, and general-area label reach the server. No public surface receives a private plate, exact truck coordinate, raw proof path, tracking secret, or account contact.
 
@@ -52,13 +106,25 @@ Map meaning never relies on color alone. A selected signal always shows a violet
 
 Only trucks appear in the public Market. Transporter is the public umbrella term. A transport-company organization is a Fleet transporter; an independent operator with reviewed truck ownership is an Owner-operator; and an independent operator using another owner's truck is a Self-managed driver. Truck ownership or authorization is shown separately as reviewed, unreviewed, or expired evidence and is never implied by the type label. Each published transporter has a unique canonical handle such as `/@abebetransport1`, but visitors reach it from Transporter details on one of that transporter's truck cards or selected-truck details. `/providers` redirects to the Truck Market, and no standalone provider list, provider map, or provider-led discovery mode exists. Capacity-seeking Businesses never receive public Market entries or profiles.
 
-A provider microsite uses one clean white-space Loadgistic template with a compact identity and contact header followed immediately by the provider's active fleet. Company context, reviewed documents, optional introduction media, one regular-service signal, reviews, and the final safety reminder follow in distinct, ordered sections. Every active truck receives a detailed full-width card instead of a compressed tile. One current Empty or Partial truck at a time can lazily open a full-width Capacity Market map directly below its summary, with approximate location, current Service area or Capacity route, regular service, and an optional browser-only visitor point; a truck without current public capacity shows Ask about this truck and exposes no old map location. Phone, WhatsApp, email, and website visibility are independent; hidden values are absent from public HTML and projections. Account contacts never become public fallbacks.
+A provider microsite uses one clean white-space Loadgistic template with a compact identity and contact header followed immediately by the provider's active fleet. Company context, reviewed documents, optional introduction media, one regular-service signal, reviews, and the final safety reminder follow in distinct, ordered sections. Every active truck is reachable through server-rendered fleet pages of at most 12 detailed full-width cards, ordered by truck number and ID. The header reports the total active fleet; the fleet section labels its displayed truck and capacity counts by page. Each page resolves current public capacity for exactly its trucks, including fleets beyond 96 capacity signals. Provider identity and aggregate credentials remain stable across pages. One current Empty or Partial truck at a time can lazily open a full-width Capacity Market map directly below its summary, with approximate location, current Service area or Capacity route, regular service, and an optional browser-only visitor point; a truck without current public capacity shows Ask about this truck and exposes no old map location. Phone, WhatsApp, email, and website visibility are independent; hidden values are absent from public HTML and projections. Account contacts never become public fallbacks.
 
 The emailed customer owner for completed provider-owned Tracking may submit one verified review of the transport provider without creating an account. Providers never rate the guest customer or people with whom the owner shared access. Every valid one- through five-star rating publishes immediately and contributes to the provider's public count and average. A provider may dispute a one-, two-, or three-star rating, but the rating stays public and counted while that dispute is pending; only an audited terminal removal excludes it.
 
 Legacy per-provider primary/accent colors are not rendered. Loadgistic controls the shared theme, hero treatment, safety copy, attribution, and any optional allowlisted YouTube introduction so providers edit facts and contacts without designing a website. Provider update commands cannot inject CSS, HTML, JavaScript, external styles, or hide Loadgistic safety and attribution elements. A configured introduction uses a thumbnail-first, click-to-load privacy-aware embed.
 
 ## Verification and safety
+
+Documents and verification are optional during signup, truck registration,
+capacity publication, and other authorized software use. Publication does
+require a current active Driver: a same-company assignment for fleet trucks,
+or the owning independent provider's active Driver identity. Truck management
+names that Driver explicitly, or shows No driver assigned with an assignment
+action. The server rechecks this link when publishing and when reading Open
+or Private capacity; removing or deactivating it excludes the truck without
+deleting its history. Driver and truck document summaries expand independently.
+Only current approvals receive reviewed emphasis; missing or expired approvals
+remain unverified. No reviewed evidence is not a claim that the person lacks
+the document, and no-document records never count as fully reviewed.
 
 Bright category-specific badges make reviewed evidence inviting to inspect while retaining explicit meaning. Fleet transporters use National ID, Business License, and Business Address; Owner-operators use National ID, Driver License, and Truck ownership for each truck; Self-managed and Company drivers use National ID, Driver License, and pairing-specific expiring Truck authorization. Public badges expose only safe review metadata, never files.
 
@@ -70,7 +136,7 @@ Loadgistic does not accept shipment-demand posts. After agreeing outside the pla
 
 The provider retains its authenticated Tracking history. Capacity seekers do not create accounts or profiles. Each Tracking session creates one stable 80-bit shipment code in the readable `LG-XXXX-XXXX-XXXX-XXXX` format and one public Track link. Completion uses a separately derived 80-bit `LG-RV-XXXX-XXXX-XXXX-XXXX` review code. Both derivations and their stored digests use a dedicated server-side Tracking code secret rather than the login-session secret, so session-secret rotation cannot change the codes or persisted digests. The shipment code and link are emailed through the managed application-email adapter to the initial authorized parties and remain retrievable by the owning provider while active. To open Tracking, a visitor submits both the stable code and its exact authorized email, then enters a cryptographically generated six-digit, ten-minute, single-use application OTP delivered only to that email. An unknown or revoked email, wrong shipment code, or invalid OTP receives the same bounded outward response; an ineligible request creates no challenge and causes no provider submission. A successful OTP creates a five-minute browser grant bound to that shipment and recipient digest. This guest flow is not Supabase Auth and creates no account. PostgreSQL rechecks the recipient on each customer-safe projection and omits recipient emails, code and OTP digests, private proof paths, delivery failures, and unrelated records. Codes and emails never appear in URLs, logs, analytics, or clear-text credential storage.
 
-The provider or assigned Driver uses one compact ordered action panel: Going to pickup, Loading, En route, Unloading, Complete, and Problem remain visible together while only valid next transitions are enabled. Loading, Unloading, and Problem may include one optional private photo; the two travel actions and Complete do not show an upload. When Status and approximate location was explicitly selected, only the assigned Driver publishes a browser-obscured point during Going to pickup and En route; the customer map shows the uncertainty radius and stops projecting that location outside those travel states.
+The provider or assigned Driver uses one compact ordered action panel: Going to pickup, Loading, En route, Unloading, Complete, and Problem remain visible together while only valid next transitions are enabled. Loading, Unloading, and Problem may include one optional private photo; the two travel actions and Complete do not show an upload. When Status and approximate location was explicitly selected, only the assigned Driver publishes a browser-obscured point during Going to pickup and En route; the customer map shows the uncertainty radius and stops projecting that location outside those travel states. The Driver chooses a 1, 3, 5, 10, 20 or 40 km privacy radius for the next saved update; the selected value is distinguished from the last confirmed radius. Updates are limited to once every ten minutes, and skipped/throttled requests show waiting rather than a saved-location claim. Driver and recipient guidance explains that location updates require an open, visible Tracking screen and pause when the phone locks or that screen closes. Pending sensor callbacks are cancelled when the screen hides or unmounts; a request already received by the server cannot be recalled. Background GPS is not implemented.
 
 Driver Home is a focused Capacity management workspace. It contains the established selected-truck card, map, visible map key, aligned floating edit rail, direct approximate-location controls, and focused editors without embedding Tracking lists or Tracking update controls. Tracking remains a dedicated, directly reachable workspace destination. On phones, Drivers use Home, Network, Tracking, Support, and More in a fixed five-destination bottom bar; fleet transporters use Home, Fleet, Network, Tracking, and More. Account remains a private account-and-plan page reachable from More. More contains role-authorized account, profile, verification, Support, public Market/Featured shortcuts, and logout. Provider mobile navigation has no hamburger menu, preserves a direct Exit dashboard action, and reserves safe-area space above the bar.
 
@@ -78,20 +144,90 @@ Creation uses one server-only PostgreSQL command that independently verifies pro
 
 ## Fleet truth and provider accounts
 
+Tracking proof images open from their individual status events for the current
+owning provider, assigned permitted Driver, Operations-authorized team, or
+verified active shipment recipient. Each download repeats shipment and event
+authorization before reading private Storage. Revoked/expired guest access and
+unrelated actors receive no file; browser projections contain no Storage path.
+
+Creating a platform team identity requires active administrator authority in
+persisted profiles before any Supabase Auth mutation. The database command
+independently repeats that check.
+
+My Fleet places Invite driver beside Add truck. An owner supplies a name,
+callback phone, and email; the driver verifies that email with the normal OTP or
+Google login and explicitly accepts a seven-day invitation before receiving
+Company-driver membership. Pending invitations show delivery state and offer
+retry/cancel actions. Email delivery failure retains the invitation, reports the
+failure, and allows acceptance after login with the invited email. New drivers
+start unassigned with Capacity and Tracking permissions off until the owner
+chooses them. An invitation never transfers an independent provider, another
+fleet's driver, or a reserved platform identity.
+
+Driver management separates assignment/permissions, contact editing, and
+confirmed removal. A truck's Assign driver action retains that exact truck;
+paginated Driver saves keep their list context. Removal ends assignments,
+membership and operating access while retaining shipment, document and
+assignment history. A removed driver may rejoin the same fleet through a new
+invitation. Truck details support correcting make, model, private plate and a
+fixed cargo configuration without changing the immutable truck number or
+ownership; tractors retain their separate compatible attached-trailer control.
+Empty Tracking and Network screens link owners to setup and tell Company drivers
+to ask their fleet owner. Documents remain optional throughout.
+
 Fleet size comes from active vehicle rows. Fleet transporter owners, Owner-operators, and Self-managed Drivers can register trucks they control from a directly reachable My Fleet or My trucks workspace; Company drivers cannot create company trucks. Registration atomically records make, model, standardized cargo configuration, private plate, and a server-generated immutable Loadgistic platform number without inventing a Capacity signal, assignment, location, or verification result. Every owned truck opens a real detail workspace. A company Driver and truck each have at most one active assignment. Self-managed providers own and operate their own truck without a separate company assignment.
 
-Only provider and platform-team accounts are part of the active product. Managed users sign in with Google or a numeric email one-time code through Supabase Auth; Google access is limited to basic identity scopes, an email-code request may create only an inactive role-free provider bootstrap for a new address, confirmed pre-trigger identities are reconciled only when they remain role-free and association-free, and every completed identity must resolve to an authorized Loadgistic projection before workspace access or provider setup. Public transporter signup uses the same Google or six-digit email-code choices through a signed 15-minute handoff, asks for the short provider profile only after identity proof, and leaves an abandoned new Auth identity inactive and without operating authority. Password login is a visibly separated local-fixture tool and is never offered or accepted in Preview or Production. Public signup distinguishes Fleet transporter, Owner-operator, and Self-managed driver and retains that operating choice without treating it as verification. Fleet owners manage trucks, Company drivers, capacity, public business information, Tracking, verification, support, and billing. Managed public-business edits use one owner-scoped PostgreSQL command that repeats active workspace, structured base, bounded content, public-contact visibility, and Company-driver denial rules; profile images and every other private upload are limited to four mebibytes and pass through quarantine and scanning before release. A Company driver is always labelled with the employing fleet. Owner-operators submit Truck ownership; Self-managed and Company drivers submit Truck authorization. Loadgistic controls microsite presentation. Company drivers receive owner-controlled duty, capacity, assignment, and Tracking permissions. Obsolete Shipment Board, Business-contact, and demand-negotiation permissions are not shown or honored by current routes.
+Only provider and platform-team accounts are part of the active product. Managed users sign in with Google or a numeric email one-time code through Supabase Auth; Google access is limited to basic identity scopes, an email-code request may create only an inactive role-free provider bootstrap for a new address, confirmed pre-trigger identities are reconciled only when they remain role-free and association-free, and every completed identity must resolve to an authorized Loadgistic projection before workspace access or provider setup. Public transporter signup uses the same Google or six-digit email-code choices through a signed 15-minute handoff, asks for the short provider profile only after identity proof, and leaves an abandoned new Auth identity inactive and without operating authority. Password login is a visibly separated local-fixture tool and is never offered or accepted in Preview or Production. Public signup distinguishes Fleet transporter, Owner-operator, and Self-managed driver and retains that operating choice without treating it as verification. Fleet owners manage trucks, Company drivers, capacity, public business information, Tracking, verification, support, and billing. Managed public-business edits use one owner-scoped PostgreSQL command that repeats active workspace, structured base, bounded content, public-contact visibility, and Company-driver denial rules; profile images and every other private upload are limited to four mebibytes and pass through private quarantine and the explicitly configured upload inspection policy before release. Managed antivirus requires a clean verdict; the owner-approved validation-only pilot retains size, MIME/signature and authorization checks but does not virus-scan files and exposes that limitation in readiness (BASE-DEP-001, ADR-052). A Company driver is always labelled with the employing fleet. Owner-operators submit Truck ownership; Self-managed and Company drivers submit Truck authorization. Loadgistic controls microsite presentation. Company drivers receive owner-controlled duty, capacity, assignment, and Tracking permissions. Obsolete Shipment Board, Business-contact, and demand-negotiation permissions are not shown or honored by current routes.
+
+Active Drivers can manage their own public photo in Account & plan, including
+Company drivers and accounts with limited plan access. Each upload requires
+explicit public-photo consent. JPG, PNG and WebP inputs are decoded within size
+and pixel limits, oriented and cropped to a 512-square JPEG with embedded metadata
+removed before the configured private-upload inspection. Eligible Featured cards
+use the current photo. Replacement/removal revokes the old opaque image URL on
+subsequent no-store reads; removal also clears demo artwork to the neutral Driver
+icon. Already downloaded copies cannot be recalled. Fleet owners and admins cannot
+edit another Driver's photo. Failed deletion and interrupted uploads are retried
+by the existing signed operations worker (FEAT-FTR-001, ADR-054).
+
+Account & plan supports self-service name and optional private account-phone
+editing for active providers, Company drivers and administrators, including
+limited plan access. The name remains the shared display identity used in Driver
+activity and Support; it is not a private contact. Company-driver name copies
+stay consistent, while public business and fleet callback numbers are separate.
+Fleet contact editing preserves the Driver's private phone. Email change and
+account closure are not implemented (FEAT-IAM-001).
 
 ## Plans, support, PWA and administration
 
-Fleet transporter and self-managed provider plans use trial, paid, sponsored where explicitly authorized, or expired access periods. The minimum Business, Fleet transporter, and Independent Driver plan catalogue is installed by managed schema migration rather than optional demo data; a deliberately disabled plan remains disabled. Company Drivers inherit their fleet plan. Manual ETB payment proof remains private and never asks for bank passwords, PINs, or OTPs.
+Member Support and guest Assisted matching retain navigable message history.
+Older messages opens the preceding window of at most 50 messages; Latest
+messages returns to current replies. While reading history, updates pause and
+new replies remain unread. The public chat launcher keeps an unsent reply and
+selected attachment across history navigation and failed reads. Member, guest,
+assigned-team and administrator reads repeat their existing access checks;
+an unassigned Support actor must claim a guest conversation before reading,
+replying, closing it or opening its attachments. No history projection exposes
+private Storage references. Member attachments and Realtime push remain planned.
+
+Platform Settings controls Free access or Trial, then payment. Free access is the
+launch default: authorized providers have no countdown or payment prompt, and new
+payment-proof submissions are rejected. Activating payment requires administrator
+confirmation and starts a fresh seven-day window for existing unpaid providers;
+new providers retain their normal seven-day trial. Active paid and sponsored
+periods are preserved. Re-saving the same mode never resets the trial; switching
+back to Free preserves account and payment history without charging anyone.
+Application access and PostgreSQL authorization use the same policy. Company
+Drivers inherit their fleet's access. The minimum plan catalogue is installed by
+managed migration rather than demo data; disabled plans remain disabled. Manual
+ETB payment proof remains private and never asks for bank passwords, PINs, or OTPs.
 
 Standard isolated local configuration routes application-owned Shared capacity,
 Tracking, and Assisted matching messages to loopback Mailpit and links developers
 to that inbox without returning a code in the application response. Production
 ignores the local sink and requires its managed application-email provider.
 
-Signed-in providers retain bounded native text support. Account-free visitors may start a private Assisted matching live-chat experience from the persistent public launcher with a required email, required callback phone, and one short message. It immediately uses the least-loaded available Support agent, shows truthful team availability, and refreshes an active local conversation every two seconds while visible. The launcher follows the visitor between routes; minimizing it does not end the stored conversation. Guest and team End chat actions make the retained transcript read-only, after which the guest may start a distinct new session. Assisted matching is not a primary public navigation destination; `/help` remains a recovery fallback. The conversation creates no Load, demand post, ranking, transaction, or member account and never promises a transporter or outcome. A guest may attach a requested private image or PDF. Managed deployment uses Supabase Realtime with bounded polling fallback, while PostgreSQL remains authoritative. Recovery codes use the idempotent managed application-email adapter. A Shared capacity recipient requests one six-digit, ten-minute, single-use application OTP and receives a restricted rolling session covering every active truck grant for that normalized email. An address without an active grant creates no challenge or email-delivery row and causes no external provider work; the visitor stays on the email step and sees that no transporter has shared capacity with that email, without identifying any transporter, truck, or prior grant. This guest OTP uses its own template and never creates or reuses a Supabase Auth identity. Access ends after 30 minutes without deliberate pointer, keyboard, touch, scroll, or map interaction; background map reads and rendering never renew it. A visible Log out command clears access immediately, while an active visitor receives bounded rolling renewal before expiry. Expiry and logout return to email verification. This is an authentication boundary but creates no profile, password, member workspace, or visitor dashboard. An unconfigured non-production environment labels and displays an eligible recipient's local test code instead of falsely claiming email delivery; production never returns OTP plaintext to the browser and requires the managed application-email adapter. Expired, used, superseded, or attempt-locked challenges are not delivered, and bounded cleanup removes terminal guest credentials. The PWA installs from either public or authenticated pages, launches into Open Transport Capacity, and exposes shortcuts for Open capacity, Shared capacity, Daily Featured Trucks, Track, and the transporter workspace. Public and provider phone surfaces use standalone-safe app bars, bottom navigation, and safe-area spacing. Authenticated pages remain network-first, and the service worker caches only stable visual assets rather than navigation responses or Next.js executable chunks. Administrators enter a compact `/admin` Overview instead of the provider Home. Direct record cards lead to searchable Users, clients, trucks, Drivers, Tracking, Capacity, regular service, and plan inventories; separate named work areas lead to Featured and sponsors, private Capacity shared with Loadgistic, Review Center, Support, and platform-team controls. The searchable inventory is called Records so a vague Home and Operations pair do not compete for the same job. Administrators retain audited, bounded verification, billing, support, capacity, provider, truck, Driver, shipment, private-capacity access, guest Assisted matching, email-delivery, and retention-cleanup views without credentials, OTPs, code digests, exact coordinates, unrelated private files, or hidden contacts. Each Records row that represents a user-authored or provider-owned entity opens a permission-checked record detail; Tracking detail includes a bounded status timeline, and waiting support rows never masquerade as openable links before the actor may inspect them.
+Signed-in providers retain bounded native Support messages with one optional private JPEG, PNG, WebP or PDF attachment per reply, subject to the configured four-MiB ceiling and existing inspection policy. Assigned Support staff and administrators can attach replies through the same composer. Recent, older and closed conversation history offers authorized downloads; current ownership, staff assignment and Support permission are rechecked on every file read. Failed or stale unattached uploads have bounded durable cleanup. Account-free visitors may start a private Assisted matching live-chat experience from the persistent public launcher with a required email, required callback phone, and one short message. It immediately uses the least-loaded available Support agent, shows truthful team availability, and refreshes an active local conversation every two seconds while visible. The launcher follows the visitor between routes; minimizing it does not end the stored conversation. Guest and team End chat actions make the retained transcript read-only, after which the guest may start a distinct new session. Assisted matching is not a primary public navigation destination; `/help` remains a recovery fallback. The conversation creates no Load, demand post, ranking, transaction, or member account and never promises a transporter or outcome. A guest may attach a requested private image or PDF. Both local and managed deployments currently use bounded polling, not Realtime push. Polling pauses on hidden or unsupported routes, stops for closed chats and minimized launchers without a conversation, slows while minimized, and backs off after failures. Successful sends clear only the submitted form; a failed refresh never claims the saved message failed. PostgreSQL remains authoritative. Recovery codes use the idempotent managed application-email adapter. A Shared capacity recipient requests one six-digit, ten-minute, single-use application OTP and receives a restricted rolling session covering every active truck grant for that normalized email. An address without an active grant creates no challenge or email-delivery row and causes no external provider work; the visitor stays on the email step and sees that no transporter has shared capacity with that email, without identifying any transporter, truck, or prior grant. This guest OTP uses its own template and never creates or reuses a Supabase Auth identity. Access ends after 30 minutes without deliberate pointer, keyboard, touch, scroll, or map interaction; background map reads and rendering never renew it. A visible Log out command clears access immediately, while an active visitor receives bounded rolling renewal before expiry. Expiry and logout return to email verification. This is an authentication boundary but creates no profile, password, member workspace, or visitor dashboard. Local testing uses its isolated Mailpit inbox; the application response does not reveal the OTP. Production requires the managed application-email adapter. Expired, used, superseded, or attempt-locked challenges are not delivered, and bounded cleanup removes terminal guest credentials. The PWA installs from either public or authenticated pages, launches into Open Transport Capacity, and exposes shortcuts for Open capacity, Shared capacity, Daily Featured Trucks, Track, and the transporter workspace. Public and provider phone surfaces use standalone-safe app bars, bottom navigation, and safe-area spacing. Authenticated pages remain network-first, and the service worker caches only stable visual assets rather than navigation responses or Next.js executable chunks. Administrators enter a compact `/admin` Overview instead of the provider Home. Direct record cards lead to searchable Users, clients, trucks, Drivers, Tracking, Capacity, regular service, and plan inventories; separate named work areas lead to Featured and sponsors, private Capacity shared with Loadgistic, Review Center, Support, and platform-team controls. The searchable inventory is called Records so a vague Home and Operations pair do not compete for the same job. Administrators retain audited, bounded verification, billing, support, capacity, provider, truck, Driver, shipment, private-capacity access, guest Assisted matching, email-delivery, and retention-cleanup views without credentials, OTPs, code digests, exact coordinates, unrelated private files, or hidden contacts. Each Records row that represents a user-authored or provider-owned entity opens a permission-checked record detail; Tracking detail includes a bounded status timeline, and waiting support rows never masquerade as openable links before the actor may inspect them.
 
 Shared capacity session controls occupy a stable row outside the interactive map so every pointer and keyboard user can reach Log out without a Leaflet layer covering or intercepting it.
 

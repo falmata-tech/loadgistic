@@ -2,12 +2,14 @@ import {normalizeOptionalCallbackPhone,normalizePrivateContactEmail} from '../do
 import {removePrivateUpload,readPrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {guestSupportAccessCode,privateContactDigest,verifyPrivateAccessCode} from '../security.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
+import {requireTeamCreator} from './team-authorization.js';
+import {supportHistoryCursor,supportMessageWindow} from '../support-history.js';
 
 const ERRORS=['FORBIDDEN','NOT_FOUND','INVALID_SUPPORT_CATEGORY','INVALID_SUPPORT_MESSAGE','SUPPORT_CONVERSATION_ALREADY_OPEN',
   'SUPPORT_MESSAGE_RATE_LIMITED','SUPPORT_CONVERSATION_CLOSED','SUPPORT_AGENT_UNAVAILABLE','SUPPORT_AGENT_AT_CAPACITY',
   'SUPPORT_CONVERSATION_NOT_WAITING','INVALID_SUPPORT_VIEW','CALLBACK_PHONE_REQUIRED','GUEST_CONVERSATION_ALREADY_OPEN',
   'GUEST_SUPPORT_ACCESS_DENIED','INVALID_SUPPORT_AGENT_LIMIT','MISSING_REQUIRED_FIELDS','EMAIL_ALREADY_EXISTS',
-  'MANAGED_IDENTITY_NOT_FOUND','INVALID_PRIVATE_STORAGE_REFERENCE'];
+  'MANAGED_IDENTITY_NOT_FOUND','INVALID_PRIVATE_STORAGE_REFERENCE','INVALID_SUPPORT_CURSOR'];
 
 function managedError(fallback,error){
   const message=String(error?.message||'');
@@ -54,10 +56,12 @@ export async function getOpenMemberSupportConversation(user){
 }
 
 export async function getSupportConversation(user,conversationId,options={}){
-  const client=createSupabaseAdminClient();const {data,error}=await client.rpc('managed_support_conversation',{
-    actor_user_id:user.id,conversation_id:conversationId,requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),mark_read:options.markRead!==false
+  const before=supportHistoryCursor(options.beforeMessageId);
+  const client=createSupabaseAdminClient();const {data,error}=await client.rpc(before?'managed_support_history':'managed_support_conversation',{
+    actor_user_id:user.id,conversation_id:conversationId,requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),
+    ...(before?{requested_before:before}:{mark_read:options.markRead!==false})
   });
-  if(error)throw managedError('SUPABASE_SUPPORT_CONVERSATION_FAILED',error);return data;
+  if(error)throw managedError('SUPABASE_SUPPORT_CONVERSATION_FAILED',error);return supportMessageWindow(data);
 }
 
 export async function listSupportInbox(user,view='ASSIGNED',options={}){
@@ -112,11 +116,13 @@ export async function verifyGuestSupportAccess(email,code){
 }
 
 async function getGuestConversation(actor,conversationId,emailDigest,options={}){
-  const client=createSupabaseAdminClient();const {data,error}=await client.rpc('managed_guest_support_conversation',{
+  const before=supportHistoryCursor(options.beforeMessageId);
+  const client=createSupabaseAdminClient();const {data,error}=await client.rpc(before?'managed_guest_support_history':'managed_guest_support_conversation',{
     actor_user_id:actor?.id||null,conversation_id:conversationId,requested_email_digest:emailDigest||null,
-    requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),mark_read:options.markRead!==false
+    requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),
+    ...(before?{requested_before:before}:{mark_read:options.markRead!==false})
   });
-  if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CONVERSATION_FAILED',error);return data;
+  if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CONVERSATION_FAILED',error);return supportMessageWindow(data);
 }
 
 export function getGuestSupportConversationForGuest(conversationId,emailDigest,options={}){return getGuestConversation(null,conversationId,emailDigest,options);}
@@ -175,8 +181,10 @@ function agentCommand(input){return {
 };}
 
 export async function createSupportAgent(user,input){
+  const client=createSupabaseAdminClient();
+  await requireTeamCreator(client,user);
   const command=agentCommand({...input,active:true,available:true});if(!command.name||!command.email)throw new Error('MISSING_REQUIRED_FIELDS');
-  const client=createSupabaseAdminClient();const {data:created,error:createError}=await client.auth.admin.createUser({
+  const {data:created,error:createError}=await client.auth.admin.createUser({
     email:command.email,email_confirm:true,user_metadata:{full_name:command.name},app_metadata:{role:'SUPPORT',provisioned_by:'loadgistic-admin'}
   });
   if(createError||!created.user)throw managedError('SUPABASE_SUPPORT_IDENTITY_CREATE_FAILED',createError);

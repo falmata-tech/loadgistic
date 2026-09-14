@@ -1,14 +1,283 @@
 # Progress
 
+## Deployment preparation — active, 2026-09-14
+
+The owner authorized deployment. Hosted Loadgistic is verified at migration 076
+and Netlify commit `451edd1f`; migrations 077–095 and the new account-security
+callback still need rollout. The dependency audit is clean. The full 166-case
+browser release suite finished with 139 passes, 19 failures and eight opt-in
+visual skips (52.8 minutes). It exposed test-readiness/selector drift (F25),
+expired local sponsor placements (F27), and late phone navigation/timeouts.
+The fresh-server retry passed 14 cases; all six final desktop/phone checks
+passed after correcting handle and Tracking navigation readiness. All 158 enabled
+cases now have passing evidence across runs; this is not one clean full-suite run. Release review also found and fixed
+missing Docker context exclusions for local credentials and deployment state
+(F26). A scratch build proved context exclusion; the normal production container
+build hit Docker Hub DNS timeouts on both attempts. CI now includes the audit SQL,
+concurrency and context-canary gates.
+
+Automatic approval review rejected the proposed hosted database backup because
+explicit permission for the data export and local destination is required.
+A concrete encrypted-backup/isolated-restore question is pending. No export,
+hosted mutation or deployment has occurred. The verified candidate is being
+packaged for required CI; do not promote it while the release gates remain unresolved.
+
+## Recorded audit — verified locally, 2026-09-14
+
+The recorded F04/F05/F06/F09/F10 work and additional F16–F21 repairs have local
+verification. Migrations 090–095 implement recovery, bounded admin correction,
+confirmed-email/retained account deactivation, spatial capacity windows,
+incremental Support polling and public metadata privacy. Closure resolves active
+work, deactivates access and retains shipment, audit and file history.
+
+All 34 affected desktop/phone browser cases passed across focused runs, including
+real local Auth/Mailpit and private Storage workflows. Seven rollback SQL suites,
+six observed-lock concurrency cases, the 5,000-truck scale audit, 290 tests,
+TypeScript, 28 specs, 349 source checks and the final 86-page production build
+passed. BUILD_VERIFICATION records the evidence. Temporary audit identities and
+scale trucks were cleaned.
+
+[AUDIT_COMPLETION_2026-09-14.md](AUDIT_COMPLETION_2026-09-14.md) records the exact
+checks and remaining limits. F22/F24 are now repaired: selected truck feedback
+occupies its own summary row, and narrow summaries leave zoom controls clear.
+All 10 related desktop/phone cases passed across focused runs, including 320px
+refresh failure/retry; corrected screenshots were inspected. F23 removes stale
+runtime-pending headings from the already verified spatial/polling specs.
+Owner visual approval is not claimed. Local Auth auto-confirm does not prove hosted
+two-link enforcement; phone-background GPS remains unsupported. Hosted rollout
+and its upload verification remain separate. No commit, push or deployment.
+
+Earlier sections below are dated checkpoints; they do not override this status.
+
+## Member Support attachments — 2026-09-14 (verified locally)
+
+Scope: F05 attachment parity, FEAT-SUP-001 / BASE-BE-001 / BASE-DEP-001.
+
+- [x] Specify actor scope, private-file lifecycle and retained history.
+- [x] Add reservation/attachment/read/cleanup contracts and Storage adapter.
+- [x] Wire member/staff reply upload and authorized download links.
+- [x] Verify SQL denial, real Storage, historical files and failed uploads.
+- [x] Run quality/build and record local evidence and rollout limits.
+
+Evidence: 277 tests, TypeScript, 28 specs/334 source files and the 85-page build.
+Final desktop/phone attachment workflows passed both cases; all six existing
+Support history cases passed. Rollback SQL covers authority, atomic messages,
+history, lost responses and grace-period cleanup. Six final screenshots are in
+`artifacts/support-attachments-2026-09-14/`; visual approval is not claimed.
+Synthetic attachment rows, test profiles and member-support Storage objects are
+all zero after cleanup. Migration 089 is applied locally only; it must precede
+UI/worker rollout. No commit, push or deployment. F05 push delivery and the
+remaining F04/F06/F09/F10 audit work stay open.
+
+
+## Tracking location controls — 2026-09-14 (verified locally)
+
+Scope: F11 Driver radius selection and honest foreground-location status,
+FEAT-TRK-001 / BASE-FE-001 / BASE-BE-001. Background GPS remains unsupported.
+
+- [x] Specify radius, cooldown feedback and cancellation boundaries.
+- [x] Add Driver radius controls, accurate state feedback and single-flight updates.
+- [x] Prove hidden/unmounted callback cancellation and real location persistence.
+- [x] Run desktop/phone workflows, quality/build and update evidence.
+
+Evidence: 272 tests, TypeScript, 28 specs/332 source files and the 85-page build.
+The combined location/proof browser run passed four cases; both final delayed-
+GPS radius cases passed after the initial-selection timing fix. Four screenshots
+are in `artifacts/tracking-location-controls-2026-09-14/`; visual approval is
+not claimed. Synthetic Tracking and outbox cleanup counts are zero. No schema,
+commit, hosted change or deployment. F04/F05/F06/F09/F10 remain separate audit
+work; F11 background GPS remains an explicit operational limit.
+
+
+## Public fleet paging — 2026-09-14 (verified locally)
+
+Scope: the public-profile fleet portion of F06, FEAT-PRV-001 / FEAT-LST-001,
+BASE-BE-001. Spatial map loading remains separate.
+
+- [x] Specify bounded fleet pages, complete capacity lookup and stable summaries.
+- [x] Add owner-scoped fleet paging and narrow capacity before latest-state selection.
+- [x] Wire canonical public page navigation and accurate count labels.
+- [x] Verify fleets beyond 96 trucks, privacy/visibility and desktop/phone navigation.
+- [x] Run quality/build and record local evidence and rollout limits.
+
+Evidence: 265 tests, TypeScript, 28 specs/331 source files, 85-page build,
+rollback SQL including final migration replay, unchanged ordinary-query results
+and four desktop/phone browser cases. Six screenshots are retained in
+`artifacts/public-fleet-paging-2026-09-14/`; visual approval is not claimed.
+Synthetic fixture cleanup returned zero remaining records. Migration 088 is
+local only; no commit, hosted apply or deployment occurred. National viewport
+queries and private spatial scaling remain the next separate F06 work. Other
+open audit items are retained in CURRENT_FEATURE_AUDIT_2026-09-13.
+
+
+## Driver portrait audit repair — 2026-09-14 (verified locally)
+
+Scope: F08, FEAT-FTR-001 / FEAT-IAM-001 / BASE-DEP-001, ADR-054.
+
+- [x] Specify Driver ownership, public consent, normalization and cleanup states.
+- [x] Add portrait schema, reserved private uploads and bounded deletion retries.
+- [x] Add Account controls and Featured image projection with revocable reads.
+- [x] Verify permission/cleanup SQL and real desktop/phone Storage workflows.
+- [x] Run quality/build and update audit, traceability and evidence.
+
+Evidence: 262 tests, TypeScript, 28-spec/330-source checks, 85-page build,
+rollback SQL and four final portrait desktop/phone workflows passed. The combined
+account/portrait run also passed all six cases. Eight screenshots are in
+`artifacts/driver-portraits-2026-09-14/`; visual approval is not claimed.
+Migration 087 is recorded locally only. No remote deployment or commit occurred.
+F04 recovery administration, F06 spatial scaling, F09 email-change/closure,
+F10 lifecycle actions, F05 member attachments/push and F11 foreground GPS limits
+remain separate audit work. Hosted migration/native-artifact/worker validation
+remains required before portrait rollout; see BUILD_VERIFICATION.
+
+## Remaining account audit repair — 2026-09-14 (verified locally)
+
+Scope: F09 name/account-phone editing and fleet phone isolation (FEAT-IAM-001,
+FEAT-FLT-001). Name remains a shared display identity. Email change and closure
+remain deferred; F08 portraits remain a separate subsequent item.
+
+- [x] Inspect actor/data boundaries and specify privacy, denial and rollback.
+- [x] Implement strict self-edit command and account form; isolate fleet callbacks.
+- [x] Verify SQL permissions and real desktop/phone save, clear and denial flows.
+- [x] Run quality/build and record evidence, scope and outstanding work.
+
+No commit, remote publication or deployment is authorized by this checklist.
+Evidence: 256 tests, TypeScript, 28-spec/source checks, 84-page build, rollback
+SQL and four passing account/fleet desktop/phone workflow cases. Migration 086
+is recorded locally only. Four screenshots are in
+`artifacts/account-details-2026-09-14/`; visual approval is not claimed.
+F08 real Driver portraits are now verified in the checkpoint above. F09 email-change and
+closure, F04 recovery administration, F06 spatial scaling, F10 lifecycle actions,
+and F05 member attachments/push remain open. See BUILD_VERIFICATION for the
+native-form test scope and existing JavaScript-disabled shell limitation.
+
+## Chat-history audit repair — 2026-09-14 (local)
+
+Scope: F05 retained-message access and its discovered unassigned-agent denial
+edge case (`FEAT-SUP-001`, `FEAT-GST-001`). Loadgistic only.
+
+- [x] Inspect existing contracts and record the bounded-window design in specs.
+- [x] Add NULL-safe guest assignment checks and rollback-only denial tests.
+- [x] Add service-only, conversation-scoped history cursors and ordering tests.
+- [x] Wire member, staff, recovery and launcher history navigation; preserve drafts.
+- [x] Run real local database/browser workflows and capture desktop/phone states.
+- [x] Run quality/build and update master prompt, audit and traceability evidence.
+
+No remote publication is authorized by this checklist. The remaining F04/F06/
+F08/F09/F10 capabilities and F05 member attachments/push transport remain open.
+Evidence: `BUILD_VERIFICATION.md`, `tests/sql/support-history.sql` (rollback),
+252 quality tests and 12 focused desktop/phone chat cases. Migrations 084–085
+are local only. The focused screenshot pass is not user visual approval.
+
+## 2026-09-14 — resumed map/navigation overlap fix (local)
+
+The interrupted `FEAT-UIX-001` fix now has focused evidence: shared desktop
+rail measurements keep the map/search panel beside navigation, and remaining
+flex height accounts for the header and tablet navigation. Four Open/Private
+desktop/phone browser cases pass at ten widths from 320 through 2560, including
+320-by-640 reflow, Filters open/close, About navigation, real local private email
+OTP entry, and logout. Synthetic grants are revoked after each private case.
+All 248 tests, 28-spec validation, source checks, TypeScript and the production
+build (83 generated pages) pass.
+Sixteen map/filter captures are in `artifacts/map-shell-2026-09-14/`.
+User visual approval and deployment are not claimed. Earlier audit gaps and
+the existing uncommitted audit work remain; see `BUILD_VERIFICATION.md` for the
+exact gate status and scope.
+
+## 2026-09-13 — first audit repair batch
+
+Fixed F01 private geographic eligibility, F03 chat success/reset errors, F07
+unknown-location broadening, F12 pre-Auth team authorization, and F02 Tracking
+proof retrieval on provider/guest/admin timelines. Reduced F05 polling overhead
+and corrected known documentation drift. Migration 083 is local only.
+Evidence: 248 tests, TypeScript/build, rollback SQL authorization and 10 focused
+desktop/phone browser cases. Proof tests used real local Storage and Mailpit;
+chat tests mocked transport. Remaining admin/account/lifecycle/portrait and
+large-map/history work remains explicitly open in the current audit. No deploy.
+
+## 2026-09-13 — current-feature audit and explicit upload policy
+
+The current feature inventory and concrete gaps are recorded in
+`CURRENT_FEATURE_AUDIT_2026-09-13.md`. The read-only audit verified eight admin
+record types on desktop/phone, seven public phone entry pages, and reproduced
+private-filter false positives and the anonymous chat post-success reset error.
+Those functional defects are documented, not silently claimed fixed.
+
+The owner's subsequent instruction approved antivirus-optional uploads. The
+explicit validation-only mode retains private storage/file checks and reports
+that files are not virus-scanned; see ADR-052 and BASE-DEP-001. No production
+configuration or deployment has been changed in this task.
+
+## 2026-09-13 — fleet onboarding gaps repaired (local)
+
+- My Fleet now exposes Invite driver beside Add truck. Owners can send/retry or
+  cancel an email invitation; a recipient verifies email using normal account
+  access, explicitly accepts, then appears in Driver access for assignment.
+- Assignment retains the selected truck and permission saves retain list
+  context. Driver name/phone editing and confirmed removal are separate actions.
+  Removal immediately ends operating access and assignments without deleting
+  shipment/document history. Truck details can be corrected independently.
+- Tracking and Network empty states now lead owners to Add truck/Manage drivers;
+  Company drivers receive employer-assignment guidance instead of owner links.
+- Local migrations 081–082 enforce email proof, membership, expiry, cancellation,
+  conservative permissions, same-fleet rejoin, contact-safe audit, and no silent
+  account transfers. Both migrations are applied and recorded locally only.
+- New-fleet desktop and phone tests created owner and driver through real local
+  Auth OTP, verified invitation delivery in Mailpit, assigned and published a
+  truck, edited details and revoked access. SQL and existing Fleet/trailer checks
+  passed. Final gate details are recorded in BUILD_VERIFICATION.md.
+- No Production database, deployment, external email recipient, or other project
+  was changed. Hosted release must apply pending migrations 077–082 first and
+  verify actual hosted invitation email, OTP/Google acceptance and revocation.
+
+## 2026-09-13 — launch controls and automatic Featured (local)
+
+- Platform Settings now offers Free access (default) or confirmed Trial, then
+  payment. Free hides expiry/payment prompts and rejects new payment proofs;
+  activation gives unpaid existing providers seven days without changing paid
+  history. Company Drivers inherit the same fleet policy.
+- Featured supports Automatic selection (default eight, adjustable one through
+  twelve) and Manual only. The existing scheduled worker prepares missing dates
+  for the next seven days using distinct eligible Drivers and the daily truck
+  theme. Manual days and already published days are preserved. Admin can prepare
+  immediately or continue selecting/publishing a specific day.
+- Shared neutral skeletons cover route transitions, records, forms, map modules,
+  and initial chat; Featured retains a board-shaped neutral placeholder. Native
+  POST actions show pending feedback without losing submitted button commands.
+- Local Supabase has `079` and `080` applied and recorded. SQL regressions and
+  verification/billing checks passed; Free and Auto remain selected locally.
+  No remote migration, deployment, payment activation, or other-project change
+  occurred. Deployment must include pending `077`–`080` before client/worker
+  publication. See the dated build-verification checkpoint for final gates.
+
 ## Current verified product
 
+- Local 2026-09-13 Driver linkage is explicit in Fleet rows, owned truck details,
+  and the selected-truck map header. Migration `078` requires a current active
+  independent Driver or same-company assignment for publication and both capacity
+  maps; missing documents are not a gate. Review summaries distinguish Driver
+  and truck evidence, with neutral missing/expired categories and emphasized
+  current approvals. Local rollback SQL, desktop/phone workflows, 223 Node tests,
+  TypeScript, optimized build, and a 5,000-truck/Driver scale transaction passed.
+  No production deployment or remote migration was performed for this change.
+
 - Local 2026-09-13 capacity editing uses focused native dialogs over the retained
-  map, with no Edit all. Capacity, Coverage, Regular service, and Location save
+  map, with no Edit all. Capacity, Coverage, Sharing, Loads, Regular service, and Location save
   through authorized Supabase commands without document navigation. Migration
   `077` preserves the last actual Driver fix on non-location edits and makes
   regular-service replacement atomic. Desktop/phone workflows, the local managed
   verifier, quality gate, and optimized build are recorded in
   `docs/BUILD_VERIFICATION.md`. This change is not yet deployed to Production.
+
+- Follow-up capacity-action verification separates status from visibility and
+  load preferences, adds readable phone action labels, and reserves map/header
+  space for the six-button rail. A reproduced rapid-edit race is fixed by waiting
+  for refreshed server facts before opening another editor. Known validation
+  errors now explain the correction; unknown database failures retain safe codes
+  only. First publication defaults to Private until Sharing is explicitly opened.
+  The user's exact generic save failure has not reproduced on the verified local
+  fixture; confirming local versus hosted origin remains necessary before
+  attributing it to a specific backend failure.
 
 - Loadgistic presents Capacity Sharing and Shipment Tracking as its two primary jobs. The canonical Open capacity workspace at `/` uses bounded cursor loading, one unranked Map result surface, live Transporter/Truck suggestions, and conjunctive advanced filters. The public navigation order is Open capacity, Private capacity, Track, Featured, and About. Desktop uses a floating workspace rail and phones use the fixed five-destination public navigation. The Map progressively appends bounded batches; there is no public List view, manual Load more action, or ranking surface. Browser geolocation centers the Map without mutating results; proximity is a separate opt-in filter. Current and regular Capacity routes contain two through five ordered cities, while current and regular Service areas use a center plus three through five boundary cities rendered as polygons. Each transporter has at most one regular-service signal. Search covers every stored route and area city. Visible shipment origin and destination inputs can be applied independently or together: Capacity routes evaluate every ordered segment and eligible Empty Service areas evaluate their complete polygons. Approximate truck location remains an independent violet circle. Panning is bounded to practical East Africa context while phones without location start at a useful Ethiopia camera. Status-specific bounded clusters use linear screen buckets at least as wide as their markers, never combine Empty with Partial, never exceed eight trucks, and separate nearby labels in screen space. A crowded maximum-zoom cluster opens a bounded truck chooser rather than an overlapping marker ring. Private-network trucks are absent from anonymous markers, search, filters, and regular-service projection. `/capacity` is compatibility-only.
 - Busy deterministic supply market: 30 published providers, comprising nine fleet companies and 21 independent provider profiles, with 143 active trucks distributed through weighted Ethiopian freight markets and 64 real named cities, towns, or localities rather than equal regional quotas, repeated centers, identical fleet patterns, or diagonal offsets. No exact locality holds more than five source trucks; the 33-truck public subset spans 24 exact named locations with at most three at one locality. One hundred local-delivery motorcycles, cars, vans, pickups, and mini trucks use routes or Service areas within 30 kilometres; light trucks cover wider local networks and only occasional medium/heavy trucks use regional corridors. Every public truck projects one Driver first name, callback phone, operating model, and separate Driver/truck document-category status without exposing proof files or private account data.

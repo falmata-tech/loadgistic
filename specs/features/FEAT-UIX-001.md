@@ -11,6 +11,48 @@ rollout: Apply shared primitives before page-specific simplification; retain pri
 
 # Low-friction interface
 
+### Scenario: map workspaces reserve navigation space
+
+Given a visitor opens Open capacity or an unlocked Private capacity map\
+When the viewport is resized across phone, tablet, desktop, or wide desktop sizes\
+Then the map and search panel remain beside the desktop navigation rail, never over it\
+And the map uses the remaining height below the header and tablet navigation\
+And phone navigation stays below the map without clipping its controls\
+And opening and closing Filters leaves the navigation and workspace geometry intact\
+And the unlocked Private capacity session bar and Log out remain above its map\
+And both maps retain at least 300 CSS pixels of height at 320 by 640\
+And the document has no horizontal overflow or forced vertical scrolling.
+
+Implementation plan: derive desktop content spacing from the same rail inset and
+width as navigation; let the map shell consume actual remaining flex height rather
+than subtracting a fixed header estimate. Verify bounding boxes, navigation clicks,
+and filter dialog dismissal in `tests/e2e/public-map-shell-layout.spec.ts`.
+No data, authorization, or deployment contracts change.
+Focused verification includes real local email-code entry for Private capacity,
+revocation of the synthetic access grant afterward, and Open/Private map and
+Filters screenshots at 320, 390, 1024, and 1920 CSS pixels. Release-wide visual
+audits remain a separate gate; these checks do not authorize deployment.
+
+### Scenario: loading stays local to the pending task
+
+Given a route, map module, conversation, search, or save is pending\
+When loading feedback appears\
+Then a shared neutral, geometry-matched skeleton or compact progress indicator
+occupies only that task's space\
+And authenticated navigation remains available during nested route loading\
+And existing map results remain visible while additional results load\
+And no fake percentage, full-screen blocking overlay, or large loading headline appears\
+And skeleton decoration is hidden from assistive technology with one concise status\
+And reduced-motion preference disables decorative animation\
+And a pending native POST form preserves its submitted button command and prevents
+duplicate submissions while announcing progress.
+
+Implementation plan: shared lightweight skeleton/status components, nested route
+fallbacks for provider/admin/support and public workflows, map-module and chat
+fallbacks, and a document-level native-form pending enhancement. Retain existing
+fetch-driven form state and errors. Verify phone/desktop layout, reduced motion,
+delayed navigation, and actual form payloads before claiming completion.
+
 ### Scenario: public value is usable immediately
 
 Given a capacity seeker opens Loadgistic\
@@ -97,6 +139,7 @@ And the privacy-obscured truck-area marker remains obvious above overlapping are
 And each summary section has a focused Edit action that opens only that section\
 And regular Capacity route controls live inside that same capacity console rather than in a second planning block\
 And each edit opens only the selected signal's inputs over the still-mounted map, with no Edit all action\
+And Capacity, Coverage, Sharing, Loads, Regular service, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
 And the selected truck, focused Edit actions, visible map key, and combined location controls occupy distinct top-left, top-right, bottom-left, and bottom-right map zones\
 And location refresh remains a direct action while the radius shortcut opens the focused Location modal.
 

@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {normalizePrivateContactEmail} from '../domain.js';
+import {readPrivateUpload} from '../private-storage.js';
 import {
   hashProviderTrackingCode,
   hashTrackingAccessCode,
@@ -184,6 +185,18 @@ export async function getSupabaseProviderGuestTracking(id,recipientDigest){
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_GUEST_TRACKING_FAILED',error);
   return data?payload(data):null;
+}
+
+export async function readSupabaseProviderTrackingProof(user,shipmentId,eventId,recipientDigest=/** @type {string|null} */(null)){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('provider_tracking_proof_file',{
+    actor_user_id:user?.id||null,target_shipment_id:shipmentId,target_event_id:eventId,
+    requested_recipient_digest:recipientDigest
+  });
+  if(error)throw trackingError('SUPABASE_TRACKING_PROOF_READ_FAILED',error);
+  if(!data)return null;
+  const bytes=await readPrivateUpload(data.storage_path);
+  return bytes?{bytes,mimeType:data.mime_type,originalName:data.original_name}:null;
 }
 
 export async function addSupabaseProviderTrackingRecipient(user,shipmentId,emailValue){

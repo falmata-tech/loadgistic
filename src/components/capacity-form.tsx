@@ -2,8 +2,9 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gauge, MapPinned, RefreshCw, Repeat2, Route, Save, Truck } from 'lucide-react';
+import { Boxes, Gauge, MapPinned, RefreshCw, Repeat2, Route, Save, Shield, Truck } from 'lucide-react';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { capacityPrivacyRadii } from '@/lib/location-privacy.js';
 import { relativeTime } from '@/lib/ui';
@@ -13,9 +14,9 @@ import { CapacityMarketPlanning } from './capacity-market-planning';
 import { CapacityEditDialog } from './capacity-edit-dialog';
 import { CapacitySignalEditor, type CapacitySnapshot, type RegularSignal } from './capacity-signal-editor';
 
-type VehicleOption={id:string;label:string;make:string;model:string;cargoConfiguration:string;plate:string;platformNumber?:string;current?:CapacitySnapshot|null};
-type EditSection='AVAILABILITY'|'ROUTE'|'RECURRING'|'LOCATION';
-const editorTitles={AVAILABILITY:'Current capacity',ROUTE:'Current coverage',RECURRING:'Regular service',LOCATION:'Approximate location'};
+type VehicleOption={id:string;label:string;make:string;model:string;cargoConfiguration:string;plate:string;platformNumber?:string;driver?:{id:string;name:string}|null;current?:CapacitySnapshot|null};
+type EditSection='AVAILABILITY'|'ROUTE'|'SHARING'|'LOADS'|'RECURRING'|'LOCATION';
+const editorTitles={AVAILABILITY:'Current capacity',ROUTE:'Current coverage',SHARING:'Capacity sharing',LOADS:'Load preferences',RECURRING:'Regular service',LOCATION:'Approximate location'};
 
 function snapshotLocation(current?:CapacitySnapshot|null):DriverLocation|null{
   return current?.location_lat!=null&&current.location_lng!=null?{lat:Number(current.location_lat),lng:Number(current.location_lng),radius:Number(current.location_precision_km)||20,area:current.location_area||'',updatedAt:current.location_updated_at||''}:null;
@@ -44,6 +45,7 @@ function LocationEditor({vehicleId,location,canUpdate,onBusyChange,onSaved,onCan
 
 export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true,lockVehicleSelection=false,showTruckIdentity=true,corridors=[],returnTo='/app/home',allowCorridors=false,renderedAt}:{vehicles:VehicleOption[];initialVehicleId?:string;allowDeviceLocation?:boolean;lockVehicleSelection?:boolean;showTruckIdentity?:boolean;corridors?:RegularSignal[];returnTo?:string;allowCorridors?:boolean;renderedAt:number}){
   const router=useRouter();
+  const [syncing,startSync]=React.useTransition();
   const [vehicleId,setVehicleId]=React.useState(initialVehicleId||vehicles[0]?.id||'');
   const selectedVehicle=vehicles.find(vehicle=>vehicle.id===vehicleId)||vehicles[0];
   const selectedId=selectedVehicle?.id||'';
@@ -94,28 +96,32 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
 
   function close(){if(!busy)setEditSection(null);}
   function saved(message='Capacity saved.'){
-    setBusy(false);setEditSection(null);setNotice({text:message});router.refresh();
+    setBusy(false);setEditSection(null);setNotice({text:message});startSync(()=>router.refresh());
   }
   if(!selectedVehicle)return <div className="empty-state">No active truck is assigned to this account.</div>;
   const availabilityValue=!current?'Not set':current.status==='OFF_DUTY'?'Off Duty':current.status==='EMPTY'?'Empty':'Partial';
   const coverageValue=current?.availability_geometry==='ROUTE'?'Route':current?.availability_geometry==='RADIUS'?'Area':'Not set';
   const regularValue=regularSignals[0]?(regularSignals[0].geometry==='RADIUS'?'Area':'Route'):'None';
+  const sharingValue=current?.visibility==='PRIVATE'?'Private':'Open';
+  const loadsValue=current?.status==='PARTIAL'||!current?.accepts_full_load?'Partial':current?.accepts_partial_load?'Either':'Full';
   const truckLabel=`${selectedVehicle.make} ${selectedVehicle.model} · ${selectedVehicle.platformNumber||selectedVehicle.label}`;
   return <div className="capacity-console capacity-summary-console" data-testid="capacity-summary">
     <section className="capacity-saved-summary driver-map-summary">
       <div className="capacity-summary-layout">{savedMap||<div className="capacity-map-empty"><MapPinned aria-hidden="true"/><strong>{current?'No Driver location':'No capacity published yet'}</strong><span>{current?'Use the Location control to check this truck.':'Choose Capacity to add this truck’s first signal.'}</span></div>}</div>
-      {showTruckIdentity?<header className="capacity-summary-map-header"><section className="capacity-truck-bar"><Image src={vehicleConfigurationImage(selectedVehicle.cargoConfiguration)} alt={selectedVehicle.cargoConfiguration||'Truck'} width={112} height={88}/><div className="capacity-truck-copy"><small>Current truck</small><strong>{selectedVehicle.make} {selectedVehicle.model}</strong><span>{selectedVehicle.platformNumber} · {selectedVehicle.cargoConfiguration} · {current?.visibility==='PRIVATE'?'Private capacity':'Open capacity'}</span></div>{lockVehicleSelection?null:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/>Truck</label><select id="capacity-vehicle" value={selectedId} disabled={refreshing} onChange={event=>{setVehicleId(event.target.value);setNotice(null);}}>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} {vehicle.model}</option>)}</select></div>}</section></header>:null}
+      {showTruckIdentity?<header className="capacity-summary-map-header"><section className="capacity-truck-bar"><Image src={vehicleConfigurationImage(selectedVehicle.cargoConfiguration)} alt={selectedVehicle.cargoConfiguration||'Truck'} width={112} height={88}/><div className="capacity-truck-copy"><small>Current truck</small><strong>{selectedVehicle.make} {selectedVehicle.model}</strong><span>{selectedVehicle.platformNumber} · {selectedVehicle.cargoConfiguration} · {current?.visibility==='PRIVATE'?'Private capacity':'Open capacity'}</span><span className="capacity-assigned-driver">{selectedVehicle.driver?`Driver: ${selectedVehicle.driver.name}`:<Link href="/app/fleet#driver-access">No driver assigned · Assign driver</Link>}</span></div>{lockVehicleSelection?null:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/>Truck</label><select id="capacity-vehicle" value={selectedId} disabled={refreshing||syncing} onChange={event=>{setVehicleId(event.target.value);setNotice(null);}}>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} {vehicle.model}</option>)}</select></div>}</section></header>:null}
       <nav className="capacity-summary-toolrail" aria-label="Edit capacity signals">
-        <button type="button" onClick={()=>setEditSection('AVAILABILITY')} disabled={refreshing} aria-haspopup="dialog" aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small>Capacity</small><strong>{availabilityValue}</strong></span></button>
-        {onDuty?<button type="button" onClick={()=>setEditSection('ROUTE')} disabled={refreshing} aria-haspopup="dialog" aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small>Coverage</small><strong>{coverageValue}</strong></span></button>:null}
-        {allowCorridors?<button type="button" onClick={()=>setEditSection('RECURRING')} disabled={refreshing} aria-haspopup="dialog" aria-label={`Edit regular service: ${regularValue}`} title={`Regular service · ${regularValue}`}><Repeat2 aria-hidden="true"/><span><small>Regular</small><strong>{regularValue}</strong></span></button>:null}
-        <button type="button" onClick={()=>setEditSection('LOCATION')} disabled={refreshing} aria-haspopup="dialog" aria-label="Edit approximate location" title="Approximate location"><MapPinned aria-hidden="true"/><span><small>Location</small><strong>{location?`${location.radius} km`:'Not set'}</strong></span></button>
+        <button type="button" onClick={()=>setEditSection('AVAILABILITY')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small>Capacity</small><strong>{availabilityValue}</strong></span></button>
+        {onDuty?<button type="button" onClick={()=>setEditSection('ROUTE')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small>Coverage</small><strong>{coverageValue}</strong></span></button>:null}
+        {onDuty?<button type="button" onClick={()=>setEditSection('SHARING')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit capacity sharing: ${sharingValue}`} title={`Capacity sharing · ${sharingValue}`}><Shield aria-hidden="true"/><span><small>Sharing</small><strong>{sharingValue}</strong></span></button>:null}
+        {onDuty?<button type="button" onClick={()=>setEditSection('LOADS')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit load preferences: ${loadsValue}`} title={`Load preferences · ${loadsValue}`}><Boxes aria-hidden="true"/><span><small>Loads</small><strong>{loadsValue}</strong></span></button>:null}
+        {allowCorridors?<button type="button" onClick={()=>setEditSection('RECURRING')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit regular service: ${regularValue}`} title={`Regular service · ${regularValue}`}><Repeat2 aria-hidden="true"/><span><small>Regular</small><strong>{regularValue}</strong></span></button>:null}
+        <button type="button" onClick={()=>setEditSection('LOCATION')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label="Edit approximate location" title="Approximate location"><MapPinned aria-hidden="true"/><span><small>Location</small><strong>{location?`${location.radius} km`:'Not set'}</strong></span></button>
       </nav>
-      {allowDeviceLocation&&onDuty?<section className="capacity-location-dock" aria-label="Approximate truck location controls"><MapPinned aria-hidden="true"/><span className="capacity-location-dock-copy"><strong>{location?.area||'Location not refreshed'}</strong><small>{location?.updatedAt?`${location.radius} km radius · updated ${relativeTime(location.updatedAt,renderedAt)}`:'Refresh to update'}</small></span><button type="button" className="capacity-radius-action" aria-haspopup="dialog" aria-label="Edit approximate location radius" title="Edit approximate location radius" onClick={()=>setEditSection('LOCATION')} disabled={refreshing}>{location?.radius||20} km</button><button type="button" className="button secondary" onClick={()=>void refreshLocation()} disabled={refreshing} aria-label="Refresh truck location" title="Refresh truck location"><RefreshCw aria-hidden="true"/><span>{refreshing?'Updating…':'Refresh'}</span></button></section>:null}
+      {allowDeviceLocation&&onDuty?<section className="capacity-location-dock" aria-label="Approximate truck location controls"><MapPinned aria-hidden="true"/><span className="capacity-location-dock-copy"><strong>{location?.area||'Location not refreshed'}</strong><small>{location?.updatedAt?`${location.radius} km radius · updated ${relativeTime(location.updatedAt,renderedAt)}`:'Refresh to update'}</small></span><button type="button" className="capacity-radius-action" aria-haspopup="dialog" aria-label="Edit approximate location radius" title="Edit approximate location radius" onClick={()=>setEditSection('LOCATION')} disabled={refreshing||syncing}>{location?.radius||20} km</button><button type="button" className="button secondary" onClick={()=>void refreshLocation()} disabled={refreshing||syncing} aria-label="Refresh truck location" title="Refresh truck location"><RefreshCw aria-hidden="true"/><span>{refreshing?'Updating…':'Refresh'}</span></button></section>:null}
       {notice?<div className={`capacity-location-toast ${notice.error?'warning':'success'}`} role={notice.error?'alert':'status'} data-testid="capacity-location-state">{notice.text}</div>:null}
     </section>
     {editSection?<CapacityEditDialog title={editorTitles[editSection as EditSection]} truck={truckLabel} busy={busy} onClose={close}>
-      {editSection==='RECURRING'?<CapacityMarketPlanning corridors={corridors} returnTo={returnTo} onBusyChange={setBusy} onSaved={()=>saved('Regular service saved.')} onRemoved={()=>router.refresh()} onCancel={close}/>:editSection==='LOCATION'?<LocationEditor vehicleId={selectedId} location={location} canUpdate={allowDeviceLocation&&onDuty} onBusyChange={setBusy} onCancel={close} onSaved={value=>{setLocalLocation({vehicleId:selectedId,value});saved('Approximate truck location saved.');}}/>:<CapacitySignalEditor section={editSection} vehicleId={selectedId} current={current} location={location} allowDeviceLocation={allowDeviceLocation} onBusyChange={setBusy} onSaved={()=>saved()} onCancel={close}/>}
+      {editSection==='RECURRING'?<CapacityMarketPlanning corridors={corridors} returnTo={returnTo} onBusyChange={setBusy} onSaved={()=>saved('Regular service saved.')} onRemoved={()=>router.refresh()} onCancel={close}/>:editSection==='LOCATION'?<LocationEditor vehicleId={selectedId} location={location} canUpdate={allowDeviceLocation&&onDuty} onBusyChange={setBusy} onCancel={close} onSaved={value=>{setLocalLocation({vehicleId:selectedId,value});saved('Approximate truck location saved.');}}/>:<CapacitySignalEditor section={editSection} hasAssignedDriver={Boolean(selectedVehicle.driver)} vehicleId={selectedId} current={current} location={location} allowDeviceLocation={allowDeviceLocation} onBusyChange={setBusy} onSaved={()=>saved()} onCancel={close}/>}
     </CapacityEditDialog>:null}
   </div>;
 }

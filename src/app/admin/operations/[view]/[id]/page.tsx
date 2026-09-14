@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import {getTrackingRecovery,adminTrackingLocation} from '@/lib/lifecycle.js';
+import {TrackingRecoveryControls} from '@/components/lifecycle-controls';
+import {TrackingLocationMap} from '@/components/tracking-location-map';
+import {TrackingProofLink} from '@/components/tracking-proof-link';
 import {notFound,redirect} from 'next/navigation';
 import {ArrowLeft,Building2,CalendarClock,ExternalLink,Gauge,PackageSearch,Route,Save,Truck,UserRoundCog} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
@@ -51,6 +55,7 @@ function factsFor(record:any){
 }
 
 function RecordActions({record,returnTo,actorId}:{record:any;returnTo:string;actorId:string}){
+  if(record.view==='WORKSPACES')return <form className="stack" action={`/api/admin/workspaces/${record.id}/details`} method="post"><input type="hidden" name="kind" value={record.record_kind}/><input type="hidden" name="previous_name" value={record.name}/><label>Business name<input name="name" defaultValue={record.name} minLength={2} maxLength={120} required/></label><label>Reason<textarea name="reason" minLength={5} maxLength={500} required/></label><button className="button secondary">Save business name</button></form>;
   if(record.view==='USERS')return <form action={`/api/admin/records/user/${record.id}`} method="post"><input type="hidden" name="returnTo" value={returnTo}/>{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button ${record.active?'danger':'success'}`} disabled={record.id===actorId} title={record.id===actorId?'Administrators cannot suspend their own account.':undefined}>{record.id===actorId?'Current account':record.active?'Suspend account':'Restore account'}</button></form>;
   if(record.view==='TRUCKS')return <form action={`/api/admin/records/vehicle/${record.id}`} method="post"><input type="hidden" name="returnTo" value={returnTo}/>{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button ${record.active?'danger':'success'}`}>{record.active?'Deactivate truck':'Reactivate truck'}</button></form>;
   if(record.view==='DRIVERS')return <div className="admin-record-action-stack"><form action={`/api/admin/records/driver_permissions/${record.id}`} method="post" className="admin-record-permissions"><input type="hidden" name="returnTo" value={returnTo}/><label><input name="canManageCapacity" type="checkbox" defaultChecked={Boolean(record.can_manage_capacity)}/>Capacity updates</label><label><input name="canManageTracking" type="checkbox" defaultChecked={Boolean(record.can_manage_tracking)}/>Tracking updates</label><button className="button"><Save aria-hidden="true"/>Save permissions</button></form><form action={`/api/admin/records/driver/${record.id}`} method="post"><input type="hidden" name="returnTo" value={returnTo}/>{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button ${record.active?'danger':'success'}`}>{record.active?'Suspend Driver':'Restore Driver'}</button></form></div>;
@@ -70,6 +75,8 @@ export default async function AdminOperationRecordPage({params,searchParams}:{pa
   const Icon=config.icon;const listHref=`/admin/operations?view=${view}`;const returnTo=`/admin/operations/${view.toLowerCase()}/${record.id}${record.record_kind?`?kind=${record.record_kind}`:''}`;
   const events=Array.isArray(record.events)?record.events:[];
   const actions=RecordActions({record,returnTo,actorId:user.id});
+  const recovery=view==='TRACKING'?await getTrackingRecovery(user,id):null;
+  const trackingMap=view==='TRACKING'?await adminTrackingLocation(user,id):null;
   return <div className="page admin-operation-record-page">
     <PageHeader icon={Icon} title={titleFor(record)} subtitle={`${config.label} record`} action={<Link className="button secondary small" href={listHref}><ArrowLeft aria-hidden="true"/>{config.label} list</Link>}/>
     <Flash error={query.error} success={query.success}/>
@@ -83,7 +90,9 @@ export default async function AdminOperationRecordPage({params,searchParams}:{pa
         {record.owner_id?<Link className="button secondary" href={`/admin/operations/workspaces/${record.owner_id}?kind=${record.owner_kind}`}><Building2 aria-hidden="true"/>Open owner</Link>:null}
       </div>
     </section>
-    {view==='TRACKING'?<section className="admin-operation-timeline"><h2><CalendarClock aria-hidden="true"/>Status timeline</h2>{events.length?<ol>{events.map((event:any)=><li key={event.id}><span/><div><strong>{String(event.status).replaceAll('_',' ')}</strong><p>{event.note||'Status updated'}</p><small>{date(event.created_at)}{event.has_proof?' · Proof recorded':''}</small></div></li>)}</ol>:<div className="empty-state">No status events recorded.</div>}</section>:null}
-    <aside className="admin-operation-actions"><h2>Management</h2>{actions||<p>This record is read-only. Its related records and history remain available for investigation.</p>}</aside>
+    {view==='TRACKING'?<section className="admin-operation-timeline"><h2><CalendarClock aria-hidden="true"/>Status timeline</h2>{events.length?<ol>{events.map((event:any)=><li key={event.id}><span/><div><strong>{String(event.status).replaceAll('_',' ')}</strong><p>{event.note||'Status updated'}</p><small>{date(event.created_at)}</small>{event.has_proof?<TrackingProofLink shipmentId={id} eventId={event.id}/>:null}</div></li>)}</ol>:<div className="empty-state">No status events recorded.</div>}</section>:null}
+    {trackingMap?<TrackingLocationMap shipment={trackingMap}/>:null}
+    {view==='TRACKING'?<TrackingRecoveryControls context={recovery}/>:null}
+    <aside className="admin-operation-actions"><h2>Management</h2>{actions||(view==='TRACKING'?<p>{recovery?.actions?.length?'Use the recovery controls above for corrections, reassignment or cancellation.':'This terminal record retains its history; recovery cannot change it.'}</p>:<p>This record is read-only. Its related records and history remain available for investigation.</p>)}</aside>
   </div>;
 }

@@ -4,7 +4,7 @@ import { canManageProviderVehicles } from '@/lib/fleet.js';
 import { getWorkspaceAccess } from '@/lib/workspace.js';
 import { LogoutButton } from '@/components/logout-button';
 import { PageHeader } from '@/components/page-header';
-import { Activity, BadgeCheck, ClipboardCheck, CreditCard, Database, ExternalLink, Headphones, LayoutGrid, MapPinned, Network, Sparkles, Truck, UserRound } from 'lucide-react';
+import { Activity, BadgeCheck, ClipboardCheck, CreditCard, Database, ExternalLink, Headphones, LayoutGrid, MapPinned, Network, Settings2, Sparkles, Truck, UserRound } from 'lucide-react';
 
 export default async function WorkspaceMenuPage(){
   const user=await requireUser(undefined,{allowLimited:true});
@@ -18,6 +18,7 @@ export default async function WorkspaceMenuPage(){
     ...(ownsProfile?[{href:'/app/company-page',label:'Public profile',detail:'Manage the transporter page customers see.',Icon:UserRound}]:[]),
     ...(provider?[{href:'/app/verification',label:'Verification',detail:'Review document status and submit updates.',Icon:BadgeCheck}]:[]),
     ...(administrator?[
+      {href:'/admin/settings',label:'Settings',detail:'Control free access, trials, and payment activation.',Icon:Settings2},
       {href:'/admin',label:'Administration overview',detail:'Open platform records and current work queues.',Icon:Activity},
       {href:'/admin/operations',label:'Platform records',detail:'Find users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans.',Icon:Database},
       {href:'/admin/reviews',label:'Review Center',detail:'Review documents, ratings, and payment evidence.',Icon:ClipboardCheck},

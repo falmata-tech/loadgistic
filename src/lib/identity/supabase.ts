@@ -43,6 +43,7 @@ export type ManagedCurrentUser = {
   can_manage_billing:boolean;
   can_manage_support:boolean;
   workspace_subscription:WorkspaceSubscription|null;
+  access_policy?:{mode:'FREE'|'TRIAL_PAYMENT';activated_at:string|null};
 };
 
 function isManagedCurrentUser(value:unknown):value is ManagedCurrentUser{

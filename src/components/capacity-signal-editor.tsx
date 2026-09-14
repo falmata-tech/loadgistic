@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { Boxes, CircleDotDashed, MapPin, Plus, PowerOff, RefreshCw, Route, Save, Trash2, Truck } from 'lucide-react';
 import { capacityPrivacyRadii } from '@/lib/location-privacy.js';
 import { readDriverLocation, submitCapacityForm, type DriverLocation } from '@/lib/capacity-editor-client';
@@ -21,9 +22,9 @@ function PlaceSequenceEditor({items,setItems,name,refName,min,label}:{items:Edit
   </div>;
 }
 
-export function CapacitySignalEditor({section,vehicleId,current,location,allowDeviceLocation,onBusyChange,onSaved,onCancel}:{section:'AVAILABILITY'|'ROUTE';vehicleId:string;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
+export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,onBusyChange,onSaved,onCancel}:{section:'AVAILABILITY'|'ROUTE'|'SHARING'|'LOADS';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
-  const [visibility,setVisibility]=React.useState(current?.visibility==='PRIVATE'?'PRIVATE':'OPEN');
+  const [visibility,setVisibility]=React.useState(current?.visibility==='OPEN'?'OPEN':'PRIVATE');
   const [geometry,setGeometry]=React.useState(current?.status==='PARTIAL'?'ROUTE':current?.availability_geometry||'RADIUS');
   const [acceptedLoads,setAcceptedLoads]=React.useState(current?.accepts_partial_load?(current.accepts_full_load?'BOTH':'PTL'):'FTL');
   const [multiPick,setMultiPick]=React.useState(Boolean(current?.accepts_multi_pick));
@@ -68,24 +69,31 @@ export function CapacitySignalEditor({section,vehicleId,current,location,allowDe
   return <form action="/api/capacity" method="post" onSubmit={save} className="capacity-signal-form" data-testid="capacity-form">
     <input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="status" value={status}/><input type="hidden" name="acceptedLoads" value={status==='PARTIAL'?'PTL':acceptedLoads}/><input type="hidden" name="availabilityGeometry" value={geometry}/><input type="hidden" name="visibility" value={visibility}/>
     <input type="hidden" name="locationSource" value={captured?'DEVICE_OBSCURED':'PRESERVE_DRIVER'}/><input type="hidden" name="approximateLat" value={captured?.lat??''}/><input type="hidden" name="approximateLng" value={captured?.lng??''}/><input type="hidden" name="locationPrecisionKm" value={captured?.radius??''}/>
+    <input type="hidden" name="acceptsMultiPick" value={multiPick?'on':''}/><input type="hidden" name="acceptsMultiDrop" value={multiDrop?'on':''}/>
     <div className="capacity-signal-dialog-body">
       <fieldset disabled={busy} className="capacity-signal-fields">
+        {onDuty&&!hasAssignedDriver?<p className="alert warning">Assign a driver before publishing this truck. <Link href="/app/fleet#driver-access">Assign driver</Link></p>:null}
         {section==='AVAILABILITY'?<section className="capacity-signal-group">
           <h3>Capacity now</h3>
           <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong>{label}</strong></button>)}</div>
-          {onDuty?<><h3>Who can see it?</h3><div className="segmented-control capacity-visibility-choices"><button type="button" aria-pressed={visibility==='OPEN'} onClick={()=>setVisibility('OPEN')}><strong>Open capacity</strong><small>Anyone browsing the map</small></button><button type="button" aria-pressed={visibility==='PRIVATE'} onClick={()=>setVisibility('PRIVATE')}><strong>Private capacity</strong><small>Your approved contacts</small></button></div></>:null}
-          {status==='EMPTY'?<fieldset className="capacity-load-choices"><legend>Loads you accept</legend>{[{value:'FTL',label:'Full truckload'},{value:'PTL',label:'Partial truckload'},{value:'BOTH',label:'Either'}].map(({value,label})=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/>{label}</label>)}</fieldset>:null}
+          {!current&&onDuty?<p className="meta">Private until you choose Open in Sharing.</p>:null}
           {status==='PARTIAL'?<p className="meta">Some space available. Confirm the actual fit directly.</p>:null}
           {!onDuty?<p className="meta">Off Duty hides this truck from capacity maps. Your regular service stays saved.</p>:null}
+        </section>:null}
+        {section==='SHARING'?<section className="capacity-signal-group">
+          <h3>Who can see your capacity?</h3><div className="segmented-control capacity-visibility-choices"><button type="button" aria-pressed={visibility==='OPEN'} onClick={()=>setVisibility('OPEN')}><strong>Open capacity</strong><small>Anyone browsing the map</small></button><button type="button" aria-pressed={visibility==='PRIVATE'} onClick={()=>setVisibility('PRIVATE')}><strong>Private capacity</strong><small>Your approved contacts</small></button></div>
+          <p className="meta">Manage approved contacts in Network. Your location keeps the same approximate radius.</p>
+        </section>:null}
+        {section==='LOADS'?<section className="capacity-signal-group">
+          {status==='EMPTY'?<fieldset className="capacity-load-choices"><legend>Loads you accept</legend>{[{value:'FTL',label:'Full truckload'},{value:'PTL',label:'Partial truckload'},{value:'BOTH',label:'Either'}].map(({value,label})=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/>{label}</label>)}</fieldset>:<p className="meta">Partial capacity accepts partial truckloads. Confirm the available space directly.</p>}
+          <div className="capacity-stop-choices"><label><input type="checkbox" checked={multiPick} onChange={event=>setMultiPick(event.target.checked)}/>Multiple pickups</label><label><input type="checkbox" checked={multiDrop} onChange={event=>setMultiDrop(event.target.checked)}/>Multiple drop-offs</label></div>
         </section>:null}
         {showCoverage?<section className="capacity-signal-group">
           <h3>{geometry==='ROUTE'?'Availability route':'Availability area'}</h3>
           {section==='AVAILABILITY'?<p className="meta">{status==='PARTIAL'?'Partial capacity needs a route. Choose the cities below.':'Add where this truck is available to publish this signal.'}</p>:null}
           <div className="segmented-control geometry-choice">{status==='EMPTY'?<button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong>Service area</strong></button>:null}<button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong>Capacity route</strong></button></div>
           {geometry==='RADIUS'?<><div className="form-group"><label htmlFor="capacity-area-center"><MapPin aria-hidden="true"/>Area center</label><EthiopiaPlaceInput id="capacity-area-center" name="capacityAreaCenter" placeRefName="capacityAreaCenterPlaceRef" defaultPlaceRef={areaCenter.place_ref} defaultValue={areaCenter.label} onChange={event=>setAreaCenter({place_ref:'',label:event.target.value})} onPlaceSelect={place=>setAreaCenter({place_ref:place.id,label:place.display_name})} required/></div><PlaceSequenceEditor items={areaBoundary} setItems={setAreaBoundary} name="capacityAreaBoundary" refName="capacityAreaBoundaryPlaceRef" min={3} label="Boundary city"/></>:<PlaceSequenceEditor items={routePoints} setItems={setRoutePoints} name="currentRoutePlace" refName="currentRoutePlaceRef" min={2} label="City"/>}
-          <div className="capacity-stop-choices"><label><input name="acceptsMultiPick" type="checkbox" checked={multiPick} onChange={event=>setMultiPick(event.target.checked)}/>Multiple pickups</label><label><input name="acceptsMultiDrop" type="checkbox" checked={multiDrop} onChange={event=>setMultiDrop(event.target.checked)}/>Multiple drop-offs</label></div>
         </section>:<>
-          <input type="hidden" name="acceptsMultiPick" value={multiPick?'on':''}/><input type="hidden" name="acceptsMultiDrop" value={multiDrop?'on':''}/>
           {(current?.current_route_points||[]).map(point=><React.Fragment key={point.place_ref}><input type="hidden" name="currentRoutePlace" value={point.label}/><input type="hidden" name="currentRoutePlaceRef" value={point.place_ref}/></React.Fragment>)}
           <input type="hidden" name="capacityAreaCenter" value={current?.capacity_area_center_label||''}/><input type="hidden" name="capacityAreaCenterPlaceRef" value={current?.capacity_area_center_place_ref||''}/>
           {(current?.capacity_area_boundary||[]).map(point=><React.Fragment key={point.place_ref}><input type="hidden" name="capacityAreaBoundary" value={point.label}/><input type="hidden" name="capacityAreaBoundaryPlaceRef" value={point.place_ref}/></React.Fragment>)}
@@ -94,6 +102,6 @@ export function CapacitySignalEditor({section,vehicleId,current,location,allowDe
       </fieldset>
       {error?<p className="alert error" role="alert">{error}</p>:null}
     </div>
-    <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}>Cancel</button><button className="button" disabled={busy||Boolean(invalidCoverage)||(needsLocation&&!draftLocation)}><Save aria-hidden="true"/>{busy?'Saving…':'Save'}</button></footer>
+    <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}>Cancel</button><button className="button" disabled={busy||(onDuty&&!hasAssignedDriver)||Boolean(invalidCoverage)||(needsLocation&&!draftLocation)}><Save aria-hidden="true"/>{busy?'Saving…':'Save'}</button></footer>
   </form>;
 }

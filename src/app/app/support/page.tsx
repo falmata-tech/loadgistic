@@ -25,9 +25,9 @@ export default async function MemberSupportPage({searchParams}:{searchParams:Pro
   const open:any=await getOpenMemberSupportConversation(user);
   let conversation:any=null;
   try {
-    conversation=query.conversation?await getSupportConversation(user,query.conversation):null;
+    conversation=query.conversation?await getSupportConversation(user,query.conversation,{beforeMessageId:query.before}):null;
   } catch(error) {
-    if(String((error as Error)?.message).includes('NOT_FOUND'))notFound();
+    if(['NOT_FOUND','INVALID_SUPPORT_CURSOR'].includes(String((error as Error)?.message)))notFound();
     throw error;
   }
   const viewingHistory=Boolean(query.conversation&&conversation?.status==='CLOSED');

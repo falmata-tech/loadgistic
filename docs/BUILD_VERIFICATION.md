@@ -1,7 +1,620 @@
 # Build Verification
 
-Evidence is recorded through 2026-09-13 with Node.js v22.16.0. Each dated
-checkpoint is scoped to the code and environment verified at that time.
+## Deployment preflight and F25–F29 — 2026-09-14
+
+- Full diagnostic browser run: 139 passed, 19 failed, eight opt-in visual captures
+  skipped (52.8 minutes). Fresh-server retry: 14 passed, five failed (8.9 minutes).
+  After the final handle/rewrite and Tracking-navigation test corrections, all six
+  desktop/phone cases passed (3.4 minutes). Every enabled case (158) has passing
+  evidence across runs; this does not claim a single clean full-suite run.
+- Test repairs retain permission, accessibility, content and reflow assertions.
+  Exact traces and failure classification are summarized in AUDIT_COMPLETION.
+  Local sponsor fixtures were refreshed by exact ID; hosted placements and
+  production expiry behavior were unchanged.
+- Quality: 290 tests, TypeScript, 28 specs and 349 source checks. Fresh dependency
+  audit: zero advisories. The earlier 86-page production build covers unchanged
+  application source; this preflight changes tests, packaging, CI and docs.
+- F26 scratch Docker context proof: application present among 877 entries;
+  credential/backup/deployment/generated state absent. Normal container build
+  failed twice on Docker Hub DNS before building; required container CI remains.
+- CI now runs all 14 rollback SQL audit suites and six concurrency cases against
+  clean migrations, and adds container canaries. All 19 release migration hashes
+  match the manifest. Hosted ledger remains 076 and Netlify remains `451edd1f`.
+- No hosted mutation/export/deployment. Backup and isolated-restore approval,
+  required remote CI, migrations/configuration and hosted browser verification
+  remain deployment gates. See AUDIT_RELEASE_CANDIDATE_2026-09-14.md.
+
+Logs are ignored local evidence: `.local/deploy-browser-suite.log`,
+`.local/deploy-focused-retry.log`, `.local/deploy-final-browser.log`,
+`.local/deploy-quality-final.log`, `.local/deploy-context-evidence.json`.
+
+## Map feedback and narrow zoom continuation — 2026-09-14
+
+F22 feedback now occupies a normal grid row in the selected truck summary;
+location, loading and failure messages no longer cover identity or contact/close
+actions. Retry remains readable and at least 44px. F24 reserves the left zoom
+column when sizing phone summaries. No API, database or authorization change.
+
+- The new feedback regression failed before the fix on actual identity overlap.
+  A subsequent 320px refresh test exposed a zoom click intercepted by the summary.
+  Both were fixed without forced clicks or weakening geometry assertions.
+- All 10 related desktop/phone cases passed across focused runs: feedback/retry,
+  dense-map selection, denied-location retry, public shell breakpoints and real
+  email-unlocked private shell breakpoints. Final focused run passed all four
+  feedback/dense-map cases in 47.9s (`.local/audit-f22-f24-final.log`). The other
+  six passes are in `.local/audit-f22-regressions.log`; that earlier run also
+  records the pre-F24 failure and one tile-readiness timeout. The unchanged tile
+  assertion passed on its controlled retry.
+- New feedback tests cover widths 320, 390, 760, 761, 1024 and 1280; they prove one
+  live region, no feedback/identity intersection, map containment, no document
+  overflow, reachable zoom targets, real failed-refresh recovery and summary
+  closure. Device denial and the 503 response are simulated; capacity comes from
+  the real local adapter. Private shell tests use local Auth/Mailpit and revoke
+  their exact synthetic grant in cleanup.
+- Corrected desktop and 320px phone screenshots were inspected, including the
+  visible failed-refresh retry: `artifacts/map-feedback-2026-09-14/`.
+  Automated/agent review does not imply owner visual approval.
+- Quality passed 290 tests, TypeScript, 28 specs/25 features and 349 source checks
+  (`.local/audit-f22-quality.log`). Final production build passed with 86 pages
+  (`.local/audit-f22-build.log`); generated Next metadata was restored.
+- F23 reconciles three stale pending-runtime spec headings with existing evidence.
+  Hosted rollout, Auth two-link enforcement and background GPS limits remain.
+  No commit, push, schema/configuration change or deployment.
+
+## Recorded-audit runtime verification — 2026-09-14
+
+The usage-limit interruption is resolved. Migrations 090–095 are applied only to
+`supabase_db_loadgistic-local`; 092–094 were applied together after a protected
+backup, and 095 after its own backup. Ledger entries match their reviewed source.
+
+- Seven rollback SQL suites passed: account security, capacity viewport, Support
+  polling, lifecycle recovery, Support history, Support attachments and public
+  provider metadata privacy.
+- Six concurrency cases passed with observed lock waits: former-Driver status
+  and location writes, and closure versus new truck, Support, assignment and
+  invitation writes. Temporary fixtures were cleaned.
+- The rollback-only 5,000-truck scale audit passed: overview 1 cell / 137 bytes /
+  4,636.881 ms; public cursor 15 rows / 49,230 bytes / 1,243.724 ms; route query
+  2,277.494 ms. Dense envelope EXPLAIN chose a sequential scan, execution 4.989 ms.
+  This does not certify selective-index use, national scale or concurrent users.
+- All 34 affected browser cases passed across focused desktop/phone runs, rather
+  than one combined invocation. They cover account security, lifecycle recovery,
+  map performance, Support polling/history/files, public fleet paging/privacy,
+  geographic filter validation, five market/Tracking smoke workflows and
+  foreground Tracking controls. The map checks use six-times CPU throttling,
+  bounded cells, viewport replacement, no cursor draining and heap below 96 MiB.
+- F18 terminal Tracking copy/layout, F19 raw public metadata privacy, F20 phone
+  map row sizing and F21 opposite-status label collisions have passing browser
+  regressions. F21 also has a unit reproduction that failed before the fix.
+- Final quality passed: 290 tests, TypeScript, 28 specs/25 features and 349 source
+  checks (`.local/audit-runtime-quality-final.log`). Final production build passed
+  with 86 pages (`.local/audit-runtime-build-final.log`); generated Next metadata
+  was restored and matches the pre-task state.
+
+Passing browser evidence is retained in `.local/audit-runtime-browser-final.log`,
+`audit-runtime-regressions.log`, `audit-runtime-final-retry.log`,
+`audit-runtime-map-privacy-final.log`, `audit-runtime-cluster-final.log` and
+`audit-runtime-cluster-desktop.log`. Some earlier invocations contain failures
+subsequently fixed and retested; the final desktop dense-map case passed in 53.4s.
+SQL/concurrency/scale logs are ignored under `.local/`. Cleanup confirms zero
+synthetic audit identities and zero scale trucks. Screenshots are ignored under
+`artifacts/account-security-2026-09-14/`, `lifecycle-recovery-2026-09-14/` and
+`capacity-viewport-2026-09-14/` (plus the existing Support evidence directories).
+Desktop/phone selected-map screenshots were inspected; owner visual approval is
+not claimed. Their location-notice/heading overlap (F22) was subsequently fixed
+and explicitly tested as described in the continuation below.
+
+Auth retains local auto-confirm: tests verify the fresh current-email OTP,
+delivery to both exact synthetic inboxes and new-inbox confirmation, following
+the current-inbox link if Auth still requires it. Hosted two-link enforcement
+remains a rollout check. Tracking sensor/visibility events are simulated; local
+SQL persistence and Mailpit access are real. Browser GPS remains foreground-only.
+No hosted configuration, commit, push or deployment was performed.
+
+Evidence uses Node.js v22.16.0. Earlier dated sections describe their own verified
+code/environment checkpoints.
+
+## Member Support attachments — 2026-09-14 (local)
+
+- F05 attachment parity: signed-in members, assigned Support staff and admins
+  can send required text with one private JPG/PNG/WebP/PDF reply attachment.
+  Current permission is checked before Storage and again at atomic message
+  attachment. Every recent/older/closed-history download repeats current scope,
+  returns a download disposition and disables caching/content sniffing.
+- Migration 089 registers an object reference before upload, caps pending work
+  per actor, and retains retryable cleanup state. Unacknowledged Storage writes
+  wait one hour for late arrival; acknowledged uploads whose commit failed may
+  clean immediately. Cleanup claims at most 20 and removes metadata only after
+  bytes. An ATTACHED record survives a lost commit response; the UI asks the
+  user to check the conversation before retrying an unconfirmed attachment.
+- Five input/cleanup tests and the extended managed-worker test passed. Rollback
+  SQL proves ownership, assignment, Support permission/activation, anonymous and
+  cross-conversation denial, atomic sends, idempotent retry, safe history
+  projections, closed downloads, pending limits, cleanup grace/retry and
+  browser-role table/RPC denial.
+- Final attachment browser run: 2/2 desktop/phone cases passed against real local
+  Auth, PostgreSQL and private Storage. Visible member PNG and staff PDF uploads
+  led to byte-identical browser downloads. Invalid-content failure retained
+  safe grace metadata and cleanup removed it; reassigned staff, other members,
+  anonymous and wrong-conversation reads were denied. Both files remained
+  downloadable in older closed history. Existing Support history regression:
+  6/6 cases passed, including guest file reads and launcher draft preservation.
+- Final gates: 277 tests; TypeScript; 28 specs/334 source files; production build
+  generated 85 pages. Six final screenshots are in
+  `artifacts/support-attachments-2026-09-14/`; desktop/phone review found and fixed
+  a cramped file-picker row. Owner visual approval is not claimed.
+- Cleanup verification: zero attachment rows, synthetic attachment profiles and
+  `member-support/` objects remained. The local two-function definition backup
+  is ignored under `.local/`; migration 089 and its local ledger include the
+  timeout cleanup refinement. No hosted mutation, commit, push or deployment.
+  Apply 089 before publishing UI/worker. Retain attachment metadata/cleanup on
+  UI rollback; future conversation/account deletion must drain private files.
+  Existing upload inspection policy and polling remain unchanged; push delivery
+  and the remaining audit work are not marked complete.
+
+## Tracking location controls — 2026-09-14 (local)
+
+- F11 controls: the assigned Driver can choose the existing 1, 3, 5, 10, 20 or
+  40 km privacy radius for the next saved travel location. The selection and last
+  confirmed radius are distinct. The browser obscures coordinates before POST;
+  previous location events are unchanged by radius selection. Initial browser
+  setup cannot reset an early choice: the selector waits for its handlers, and
+  each Tracking identity owns its initial control state. Travel submission
+  snapshots the selected action before GPS and disables status/radius edits
+  while that request is in progress.
+- The browser handles `recorded:false / THROTTLED` as waiting and records a local
+  cooldown only after an acknowledged save. Error, acquisition, saving, paused
+  and waiting states no longer all appear as finding/shared location. The Driver
+  can retry permission or save failures; server cooldown still applies.
+- A single-flight runner invalidates late sensor callbacks and aborts fetches
+  on hide/unmount. It cannot undo a request already received by the server.
+  Driver and recipient guidance explicitly describes the open/visible-screen
+  requirement and pauses on phone lock or screen closure. Background GPS remains
+  unsupported; no schema, authorization, provider or frequency rule changed.
+- Seven focused runner/result tests passed: allowed radii, result validation,
+  hidden-callback denial, visibility recheck, overlapping requests, stale
+  completion ownership, fetch abort, acquisition/save failure and retry. Browser tests use simulated
+  coordinates and visibility events with real local Auth, Tracking SQL and
+  Mailpit. This proves browser lifecycle handling, not physical phone-lock or
+  background-device operation.
+- The combined location/proof run passed all four desktop/phone cases. The
+  final delayed-GPS location run passed both cases after preventing the initial
+  radius-selection timing race. It proved 40 km travel persistence, later 5 km
+  refresh, honest server/client cooldown, pending status/radius lock, visibility
+  cancellation, permission-denied retry, recipient OTP guidance and status-only
+  control omission. Four screenshots are retained in
+  `artifacts/tracking-location-controls-2026-09-14/`; owner visual approval is
+  not claimed. Synthetic Tracking/proof records and both test email outboxes
+  were independently confirmed empty after teardown.
+- `npm run quality` passed: 272 tests, TypeScript, 28 specs and 332 source
+  files. `npm run build` passed with 85 generated pages. Browser/build wrappers
+  restored Next's generated type references, and whitespace checks passed.
+- No commit, deployment, hosted configuration or other-project change occurred.
+  UI rollback retains all historical Tracking events. Remaining F04/F05/F06/F09/
+  F10 work stays listed in the current audit.
+
+## Public provider fleet paging — 2026-09-14 (local)
+
+- F06 profile-fleet portion: canonical transporter pages now render at most 12
+  active owned trucks, with deterministic truck-number/ID order, exact total and
+  explicit page counts. Native Previous/Next links preserve browser history.
+  Invalid page syntax starts at one; out-of-range pages clamp to the last page.
+- Capacity reads select the displayed vehicle IDs before latest-state selection,
+  removing the six-batch/96-signal ceiling. Existing public visibility, active
+  Driver and publication checks are retained. Related vehicle/Driver evidence
+  reads use the same page IDs; provider operating-model and aggregate evidence
+  are independent of page position. Latest approvals take precedence over older
+  documents, including a newer expired approval.
+- Migration 088 is applied and recorded only in `supabase_db_loadgistic-local`
+  (API 55321). It adds an owner-scoped service-only read function, active-fleet
+  page indexes and a guarded single-fragment capacity-query change. No business
+  rows or browser grants are changed. The final migration and SQL assertions
+  replayed from the saved prior function inside a rolled-back transaction.
+- `tests/sql/public-provider-paging.sql` passed with all fixture writes rolled
+  back: 105 active trucks across nine pages, no duplicate/missing truck, capacity
+  beyond truck 96, private/partner/Off Duty/inactive/unpublished denial, empty and
+  Company fleet pages, owner-scope validation, page clamping, stable ownership
+  and authorization evidence, latest-expired precedence and browser RPC denial.
+  Five ordinary capacity queries matched the saved pre-088 function exactly.
+- All four final independent/Company fleet browser cases passed on desktop/phone
+  (1.7 minutes), using real local Auth/SQL and public pages. They traversed 105-
+  and 13-truck fleets, opened truck 101's capacity map, checked private fields,
+  invalid/duplicate/out-of-range page input, browser Back and unpublishing.
+  Unpublished profiles render the existing 404 view with no fleet data; the
+  streamed layout can send HTTP 200 before that denial, so a strict HTTP 404
+  response is not claimed. The initial test's status-only assertion was corrected
+  after confirming the rendered denial, rather than changing product access.
+- Six focused screenshots are retained in
+  `artifacts/public-fleet-paging-2026-09-14/`. Desktop map and phone pagination
+  were reviewed; owner visual approval and hosted map-tile delivery are not
+  claimed. All synthetic test profiles, provider organizations/profiles and
+  trucks were removed; independent count checks returned zero.
+- `npm run quality` passed: 265 tests, 28 specs, 331 source files and
+  TypeScript. `npm run build` passed with 85 generated pages. Browser/build
+  wrappers restored Next's generated type-reference files; whitespace checks
+  passed. Prior uncommitted work remains preserved.
+- Rollout requires 088 before application publication; application rollback can
+  retain the additive read function/indexes. National viewport/cluster discovery
+  and private spatial scaling remain open F06 work. No commit, hosted apply,
+  deployment, dependency or other-project change occurred.
+
+## Driver portraits — 2026-09-14 (local)
+
+- F08: active Drivers, including Company drivers and limited-plan accounts, can
+  upload, replace and remove their own explicitly public photo from Account &
+  plan. Fleet owners/admins have no portrait editor for another person. Featured
+  uses the current uploaded image; removal clears demo artwork and restores the
+  neutral icon. Public photo IDs are distinct from private account identity.
+- Inputs accept still JPEG/PNG/WebP up to the configured four-MiB ceiling, with
+  a 25-million-pixel decode limit and five-second processing limit. Sharp applies
+  orientation and crops a 512-square JPEG while stripping embedded metadata.
+  Normalized bytes pass the current quarantine/inspection policy. Original file
+  names and camera metadata never become public image metadata.
+- Migration 087 is applied and recorded only in `supabase_db_loadgistic-local`
+  (API 55321). References are reserved before Storage writes; activation and
+  removal serialize per Driver. Removal cancels pending activation, but cleanup
+  waits for an in-flight write to settle or age out. The final DELETING state
+  prevents revival; failed deletion retries through the existing signed worker.
+  Portrait Storage requests have a 30-second timeout. Active photos survive an
+  ambiguous activation response, and removed/replaced/inactive URLs return 404
+  with no-store and nosniff. Previously downloaded copies cannot be recalled.
+- `tests/sql/driver-portraits.sql` passed with all writes rolled back: actor and
+  consent denial, unchanged account fields, preset clearing, active-only reads,
+  idempotent activation, replacement/removal, inactive identity, ambiguous-result
+  preservation, stale-upload/cleanup limits, in-flight cancellation, retry timing,
+  no reactivation after claim, and browser table/RPC denial.
+- Six focused image/cleanup tests and existing private-Storage tests passed.
+  The real default-upload verifier passed quarantine, clean release, dirty-file
+  rejection, byte retrieval, cleanup and browser denial. Its local scanner mode
+  was confined to that test process and did not change runtime configuration.
+- Six desktop/phone account/portrait cases passed using real local Auth, Storage
+  and Featured routes. Test photos are synthetic solid-colour images, not real
+  people. Exact synthetic provider/truck/evidence rows and one temporary test
+  slot are added for each Featured check; existing day/slot rows are preserved.
+  The final bounded-request portrait rerun passed all four independent/Company
+  Driver desktop/phone cases. Eight Account/Featured screenshots are retained in
+  `artifacts/driver-portraits-2026-09-14/`; visual approval is not claimed.
+- `npm run quality` passed: all 262 tests, 28 specs, 330 source files and
+  TypeScript. `npm run build` passed with 85 generated pages. Next's generated
+  type-reference files were restored after the browser and build wrappers.
+  Independent cleanup counts found zero synthetic portrait-test profiles,
+  portrait metadata rows and objects under the private driver-portrait prefix.
+- Sharp 0.35.4 was already installed through Next and is now explicitly pinned.
+  The lock retains all original platform/libc metadata; no package versions were
+  upgraded and no bucket or vendor was added. Hosted/Linux artifact and worker
+  rollout remain separate checks; no remote migration, commit or deploy occurred.
+- Rollout requires 087 before UI/worker publication. UI rollback retains upload
+  metadata and cleanup; any future account deletion must drain portraits first.
+
+## Account details and fleet phone isolation — 2026-09-14 (local)
+
+- F09 name and private-phone editing is implemented through the current Account
+  & plan page for active providers, Company drivers and administrators. The name
+  remains a shared display identity; the UI explains this. Blank phone clears
+  the private value. Public callback fields and login email remain separate.
+- Migration 086 applied transactionally, with its ledger entry, only to
+  `supabase_db_loadgistic-local` (API port 55321). It adds one strict self-only
+  command and changes exactly the private-phone assignment in the existing
+  fleet-contact command. No table/data migration or Auth configuration change.
+- `tests/sql/account-details.sql` passed with all writes rolled back: own save
+  and clear; shared fleet-name consistency; both directions of phone isolation;
+  unchanged other account, Auth identity, memberships, permissions and business
+  contact snapshots; malformed/extra fields, missing/inactive/Support actor
+  denial; permitted owner/admin edits; audit privacy; browser table/RPC denial.
+- `npm run quality` passed: 28 specs, 325 source files, all 256 tests and
+  TypeScript. `npm run build` passed with 84 generated pages. The final browser
+  runs passed two desktop/phone account cases and two fleet onboarding/contact
+  cases. Account tests exercise all three provider identities with real local
+  persistence, plus clear/reload, invalid-draft retention, forged actor/role,
+  inactive and anonymous denial, cross-origin denial and native POST/303.
+- All synthetic account users and organizations were removed; independent
+  count checks returned zero for both. The timed-out JavaScript-disabled probe
+  required completing teardown of two exact synthetic groups. No demo account
+  data was changed by browser tests. SQL fixture edits rolled back in full.
+  Next's generated type-reference files were restored after both wrappers.
+- Focused screenshots under `artifacts/account-details-2026-09-14/` cover
+  Company-driver and independent-provider Account on desktop/phone. Synthetic
+  identities have no subscription, proving account maintenance during limited
+  access. Screenshot review is not owner visual approval.
+- Native POST fallback is scoped to the rendered Account form. A separate
+  all-JavaScript-disabled navigation attempt stayed on the existing streamed
+  loading shell; this change does not claim whole-app no-JavaScript navigation.
+- Rollout: apply 086 before app publication. Application rollback may hide the
+  editor without discarding names or private phones; retain the fleet privacy
+  fix. Email-change/closure, Driver portraits, spatial map scaling and lifecycle
+  recovery remain separate audit items. No commit, remote apply or deploy.
+
+## Retained chat history and unassigned-agent denial — 2026-09-14 (local)
+
+- Audit F05: member Support, assigned staff, guest recovery, and the public
+  launcher now offer Older messages / Latest messages with at most 50 messages
+  per response/window. Same-timestamp ordering is deterministic; new replies
+  do not shift historical windows. History pauses refresh and leaves new
+  replies unread; the launcher retains its draft and file selection.
+- Audit F15: four guest Support commands now use NULL-safe assignment denial.
+  An unassigned Support actor cannot read, reply, close, or open attachments
+  before claim. Current guest/admin and assigned-agent authority is preserved.
+- Migrations 084–085 applied in one transaction and recorded only in
+  `supabase_db_loadgistic-local` (local API port 55321). Migration 085 reuses
+  the existing guest index and adds a matching member-message cursor index.
+  No customer data migration or external provider change is needed. Deploy
+  the database changes before the application; retain 084 on UI rollback.
+- `tests/sql/support-history.sql` passed with every change rolled back:
+  full 121-message traversal, 50-row cap, timestamp ties, stable arrival,
+  terminal pages, wrong/missing/cross-conversation cursors, closed history,
+  unread preservation, inactive/unrelated/permission-denied actors, unassigned
+  guest read/reply/close/file denial without side effects, permitted assigned
+  reply/close, and direct anon/authenticated RPC denial.
+- Focused Playwright: **12/12 desktop/phone cases passed** across
+  `support-history.spec.ts` and `assisted-chat-audit.spec.ts`. Four new cases
+  use real local Auth sessions, database history, private Storage bytes and
+  download routes. Two new history-failure cases and six existing chat tests
+  mock transport to exercise retry/draft and submission-failure behavior.
+  The attachment is a synthetic fixture stored through the upload adapter;
+  these tests do not claim a new browser upload-form verification.
+- Eight screenshots reviewed under `artifacts/support-history-2026-09-14/`
+  cover member, staff, guest launcher and recovery histories on desktop/phone.
+  The focused review caught a grid row pushing the composer outside the chat;
+  corrected before the passing rerun. Streamed Next.js pages can send HTTP
+  200 before `notFound()` renders, so page denials assert the visible 404 and
+  absence of messages; file/API denials assert their HTTP responses too.
+  Capture readiness now requires the visible thread and Latest messages control,
+  preventing hidden streamed content from passing as a rendered history screen.
+  All six history cases passed again with those stronger capture assertions.
+- `npm run quality`: **252 tests**, 28-spec validation, source check and
+  TypeScript passed. `npm run build` passed with **83 generated pages**.
+- Cleanup verified zero synthetic guest chats and zero synthetic member
+  messages; synthetic attachment objects and email-delivery rows were removed.
+  No commit, push, remote migration or deployment. Earlier worktree changes
+  remain preserved. User visual approval and a full-site visual/release audit
+  are not claimed. F05 member attachments and push transport remain open.
+
+## Map/navigation overlap repair — 2026-09-14 (local)
+
+- Resumed the interrupted `FEAT-UIX-001` layout correction already present in
+  the dirty Loadgistic tree. The desktop rail inset/width/gap are shared with
+  content spacing; map workspaces consume actual remaining flex height below
+  header/tablet navigation. Earlier audit/loading/fleet changes are preserved.
+- `npm run test:e2e -- tests/e2e/public-map-shell-layout.spec.ts`: **4/4 passed**.
+  Open and email-unlocked Private capacity each cover 320, 390, 760, 761,
+  1024, 1180, 1181, 1440, 1920 and 2560 CSS-pixel widths. Short-screen cases
+  include 320 by 640 and 1024 by 768. Assertions cover rail/header/phone-nav
+  separation, the private session bar, minimum map size, document overflow,
+  bounded Filters, Close filters, About navigation, and private logout.
+- Private access uses the real local Supabase application/email path and
+  Mailpit numeric code, with a unique synthetic recipient per case. Each
+  created grant is revoked in `finally`; existing grants are untouched.
+  No application APIs or auth boundaries are mocked in these cases.
+- `npm run quality`: **248/248 tests**, 28-spec validation, 319-file source
+  check and TypeScript passed. `npm run build` passed with **83 generated
+  pages**. The build/browser wrappers left `next-env.d.ts` and `tsconfig.json`
+  unchanged.
+- Sixteen ignored map/Filters screenshots at 320, 390, 1024 and 1920 pixels:
+  `artifacts/map-shell-2026-09-14/`. Reviewed desktop, tablet and short-phone
+  geometry. External map tiles can still be loading in captures; this is
+  layout evidence, not tile-provider reliability or map-scale certification.
+- Scope: local layout/spec/evidence only. No hosted writes, migration, push or
+  deployment. User visual approval and the expensive full-site visual audit
+  remain separate gates. The earlier audit's account, lifecycle, portrait,
+  admin-action and scaling gaps remain open.
+
+## Current-feature audit and optional antivirus — 2026-09-13 (local)
+
+### Follow-up audit repairs
+
+- F01/F07: pure eligibility checks complete endpoint pairs and every additional
+  area criterion. Unknown supplied places produce an empty result with a
+  correction action. Five new domain/catalog tests plus desktop/phone browser
+  validation cover the repaired behavior.
+- F03/F05: six desktop/phone chat cases exercise success, attachment UI, closure,
+  restart, failed drafts, duplicate attempts and saved-message/refresh-failure
+  separation. Chat responses are mocked; this is not hosted transport evidence.
+  Polling policy and route error handling have two additional tests.
+- F12: persisted active administrator check precedes external Auth creation;
+  two denial/authority tests and retained PostgreSQL checks cover this ordering.
+  No unauthorized Auth identity was created for testing.
+- F02: migration `083_tracking_proof_access.sql` applied locally. Rollback SQL
+  tests passed provider/admin/recipient access, missing/wrong event, cross-
+  shipment/provider, revoked recipient, expired guest, suspended provider and
+  direct-browser RPC denials. Projections contain no private Storage path.
+- Real local browser proof workflow passed on desktop and phone: create a
+  synthetic Tracking record, upload through the status form, retrieve identical
+  Storage bytes, deny anonymous access, receive a local Mailpit OTP, open the
+  guest proof, revoke that recipient, deny the same URL, deny an unrelated
+  provider, and open it from admin detail. Test-created records/files are
+  removed. Captures: `test-results/tracking-proof-audit-*/provider-proof.png`
+  and `guest-proof.png` (ignored, synthetic data only).
+- Final focused batch: **10/10 Playwright cases passed**. `npm run quality`:
+  **248 tests**, 28 specs, 319 source files and TypeScript passed. Optimized
+  `npm run build` passed with 83 generated pages and the new proof route.
+- Harness corrections: explicit guest grant in rollback fixtures, rendered-page
+  wait after cold compilation, fresh test session between roles, and final
+  admin landing wait before navigating.
+- No commit, push, remote migration, hosted configuration change or deployment.
+  Existing dirty-tree changes remain intact. F04/F06/F08–F11 and remaining F05
+  history/attachment work stay open in the audit.
+
+### Original upload-policy checkpoint
+
+- Read-only inventory: `CURRENT_FEATURE_AUDIT_2026-09-13.md` records current UI,
+  adapters, gaps and limits. Eight existing admin record types opened on both
+  desktop and phone. Seven public entry pages passed basic 390px width checks.
+- The audit reproduced private-route false matches with synthetic pure inputs
+  and the chat's post-success reset error with mocked browser responses. These
+  remain documented defects, not fixed as part of the upload change.
+- BASE-DEP-001 / ADR-052 implements the owner's explicit optional-antivirus
+  policy. `npm run quality` passed 28 specs, 313 source files, 237 tests and
+  TypeScript. Focused scanner/storage/readiness tests: 16 passed.
+- A separate local app at port 3113 loaded `validation-only`. A real browser
+  submitted a synthetic verification document to isolated Supabase Storage,
+  showed submission success, retrieved matching bytes as the owner, and received
+  401 anonymously. One temporary vehicle, one document, its object and scoped
+  synthetic audit records were removed. No production data changed.
+- Test-harness corrections: a fully verified fixture has no upload form; a
+  self-managed Driver submits Driver authorization for a related truck, not an
+  owner-operator's vehicle-ownership subject. No production behavior was changed
+  to make those assumptions pass. The temporary server was stopped and its
+  generated TypeScript config changes restored.
+- Remote health observed before rollout: database and private Storage connected,
+  upload scanner blocker present. No remote deployment, credentials change or
+  new antivirus vendor was performed. Hosted upload proof is still required.
+- The optimized production build subsequently passed and generated 83 pages.
+
+## Empty-fleet onboarding and lifecycle — 2026-09-13 (local)
+
+- Migrations `081` and `082` applied and recorded in isolated Loadgistic local
+  Supabase. Invitation records/functions are service-only; direct browser
+  Driver/member/assignment writes cannot bypass the managed workflow. No remote
+  migrations or deployment were performed.
+- `npm run quality`: specification/source checks, all **233** Node tests and
+  TypeScript passed. `npm run build`: optimized build passed, generating **83**
+  pages. `git diff --check` passed. Existing unrelated work remains uncommitted
+  and preserved; no broad staging, reset, or other-project change was made.
+- Rollback-only `tests/sql/fleet-driver-onboarding.sql` passed invite de-duplication,
+  verified-email scope, wrong/unverified email denial, expiry, cancellation,
+  suspended-inviter denial, atomic membership, conservative permissions,
+  assignment, stale-membership denial, contact edits, immutable truck identity,
+  Company-driver/unrelated-owner denial, removal, retained history, same-fleet
+  rejoin, independent-provider conflict, replay denial and browser privilege checks.
+- The existing Supabase workspace/Fleet verifier passed dashboard, bounded driver
+  projection, fixed and interchangeable-trailer registration, attached-trailer
+  changes, atomic owner updates, audit privacy and browser denial. It restored its
+  local fixture state; no remote target was used.
+- **Eight focused browser checks passed:** desktop and phone complete empty-fleet
+  onboarding; mobile registration/owner-vs-Company-driver access and driver/truck
+  document regressions; final desktop/phone Fleet control layout. New owners and
+  drivers used real local Auth email OTP, not a manually inserted Driver. Mailpit
+  received invitation notifications. The visible workflow accepted the invite,
+  assigned the chosen truck, saved corrected truck details, published its first
+  capacity signal with device geolocation, reached Tracking and Network, edited
+  contact data, removed the driver, and verified loss of workspace access.
+- Test-created identities/trucks/invitations/capacity were removed by exact local
+  IDs. Production and real customer records were untouched. Screenshots stay in
+  ignored `test-results/`; final Fleet layouts have no horizontal page overflow,
+  and permissions use compact checkboxes with full-sized touch labels.
+- A test initially expected only the signup email subject; the running local
+  Auth sent the valid sign-in template. The helper now accepts those two explicit
+  templates while still matching the exact synthetic recipient and request time.
+  No OTPs or unrelated mailbox contents were logged. A migration extraction was
+  narrowed to its two Fleet functions and the unrelated local dashboard function
+  restored before verification; a regression test asserts that function inventory.
+- Hosted rollout remains pending: apply the reviewed `077`–`082` chain before
+  the application, verify real invitation email and OTP/Google recipient acceptance,
+  and test owner assignment and revocation after publication. The Google callback
+  shares the verified-identity decision, but this checkpoint does not claim a new
+  real Google consent run. No new mail vendor or paid service is required.
+
+## Free access, automatic Featured, and shared loading — 2026-09-13
+
+- `FEAT-BIL-001`, `FEAT-FTR-001`, and `FEAT-UIX-001`: migrations `079` and
+  `080` applied successfully and are recorded on isolated local Supabase only.
+  Admin Settings defaults to Free; the Featured policy defaults to Auto with
+  eight Drivers. No production access mode, database, or hosting changed.
+- Rollback-only `tests/sql/platform-controls.sql` passed active-owner/company-
+  Driver free access, new-payment denial, administrator-only policy writes,
+  activation confirmation, seven-day expiry, unchanged-mode idempotence, retained
+  payment periods, bounded automatic selection, distinct current Drivers, manual
+  draft protection, repeated-job invariance, and denied browser RPC access.
+  The existing local verification/billing verifier also passed: Free rejects a
+  payment, then a temporary paid-mode run proves the positive private-proof and
+  review workflow, and cleanup restores Free. No actual payment is made.
+- `npm run quality` passed specification/source checks, all 228 Node tests, and
+  TypeScript. The optimized production build passed and generated 79 pages.
+- The eight focused desktop/phone platform-control checks passed: confirmation
+  UI, native POST payload/pending feedback, Auto/Manual selection changes,
+  immediate preparation, provider free access, negative settings permissions,
+  bounded lazy-map skeleton, reduced motion, and no horizontal page overflow.
+  The existing manual-roster workflow separately passed on desktop and phone
+  with three exact Drivers, an interlude, and successful publication.
+  A further desktop/phone check followed automatic preparation onto the public
+  Featured board, verified real Driver/truck cards, and opened working details
+  with the transporter-profile action.
+  Screenshots in ignored `test-results/platform-controls-*` were inspected at
+  desktop and phone sizes. The activation screenshot shows an **unsaved** paid
+  choice so the confirmation is visible; the saved local setting remains Free.
+- Before hosted rollout, apply pending `077`, `078`, `079`, then `080`; publish
+  the reviewed client and existing signed 15-minute managed-operations worker
+  through GitHub/Netlify. Confirm its `featured-rosters` counts and the public
+  programme remotely. No added service or paid scheduler is required. Existing
+  managed-scanner, email-delivery, restore, and monitoring rollout requirements
+  remain separate; this checkpoint does not claim those are complete.
+
+Regression lessons: wait for hydrated content after streamed authentication/date
+navigation, not just the URL. Use explicit labels for select controls. Capture
+native-submit feedback before navigation replaces the document; holding a mobile
+navigation while inspecting its old JavaScript context can deadlock the test.
+Preserve submitter names/values, and never weaken count/publication assertions to
+make a flaky test pass. Prepare a known test roster rather than appending forever.
+The repository's React type shim needs explicit callback types and namespace
+hooks; check this convention before implementing shared controls.
+
+## Driver linkage without mandatory documents — 2026-09-13
+
+- `FEAT-FLT-001`, `FEAT-CAP-001`, and `FEAT-VER-001`: migration `078` is
+  applied and recorded only on isolated local Supabase. Publication and Open/
+  Private reads require the current active Driver; no upload or approval becomes
+  an access gate. Fleet rows, owned truck details, and the selected truck identify
+  the Driver. Separate expandable Driver/truck document groups retain private-file
+  protections and distinguish current approval from missing or expired evidence.
+- Rollback-only PostgreSQL regression passed document-free publication, inactive
+  identity, removed membership, inactive fleet Driver, unassignment, independent
+  identity, and denied browser lookup. No document file or retained fixture was
+  deleted. CI now exercises this regression after managed fixture setup.
+- `npm run quality` passed all 223 Node tests, specification/source validation,
+  and TypeScript. The optimized production build generated all 77 pages.
+  The focused desktop/phone browser batch passed truck-to-Driver navigation,
+  optional Verification access, expanded category counts without file links,
+  no horizontal overflow, capacity-summary layout, and first publication.
+  Screenshots are under ignored `test-results/driver-document-clarity-*`.
+  These captures verify controls and content, not external map-tile availability;
+  the local browser captures had unloaded third-party tile backgrounds.
+- The existing 5,000-truck PostgreSQL scale check now creates 5,000 unique active
+  assigned synthetic Drivers inside the same rollback. Both bounded-page checks
+  passed: 15 rows, 49,260 payload bytes, 1,107.522 ms text query and 2,249.037 ms
+  route query on this local machine. No synthetic truck or Auth identity remained.
+  These timings are local regression evidence, not production throughput claims.
+- Rollout remains pending. Apply `077`, then `078`, before deploying the client
+  through the reviewed GitHub/Netlify workflow. No remote schema or hosting change
+  was made. Restore previous function definitions and client for rollback; retain
+  all assignments, capacity history, and review records.
+
+Regression lessons: an assignment row is insufficient if the Driver is inactive
+or no longer belongs to the fleet. Recheck eligibility on reads as well as writes.
+Keep scale fixtures valid under new eligibility rules instead of weakening their
+result-count assertions. Never use an empty array's `every()` result as evidence
+that all documents were reviewed.
+
+## Separate capacity actions and save recovery — 2026-09-13
+
+- Status, coverage, sharing, load preferences, regular service, and location
+  have separate labelled buttons and focused dialogs. Quick refresh remains
+  independent. First publication defaults to Private; existing visibility is
+  preserved. Map fitting reserves space for the rail on desktop and phone.
+- A real browser test reproduced stale values when opening another dialog
+  before `router.refresh()` completed. The next editor now waits for refreshed
+  server facts. Consecutive status, sharing, coverage, and preference saves
+  preserve each other's values. Known database validation codes now have specific
+  customer messages; unexpected diagnostics contain only operation/error codes.
+- `npm run quality` passed all 221 Node tests and TypeScript. The optimized
+  build passed. Twelve distinct focused desktop/phone scenarios passed across
+  the main run and the four-case layout rerun. The latter corrected and retested
+  a phone header/rail overlap without weakening the no-overlap assertions.
+- Real local writes cover Empty/Partial/Off Duty, first publication, regular
+  service, location, visibility, and pickup/drop-off settings; unknown-error
+  redaction uses a mocked database response, and browser retry uses one mocked
+  failure. A real authenticated invalid Partial-area request returns an actionable
+  route message. Anonymous mutation and owner-location restrictions remain tested.
+  The narrow 320×640 map and dialog screenshots were visually inspected.
+- The user's exact generic save failure did not reproduce on the local fixture;
+  its local-versus-hosted origin remains unconfirmed. Do not claim that changing
+  error copy proves the reported backend failure is fixed. No hosted schema,
+  Netlify deployment, or new migration was changed in this follow-up.
+
+Regression lessons: test actual status changes, not just a visibility toggle in
+the status dialog. A successful HTTP mutation is not completion of the subsequent
+server-state refresh. Separating Sharing from first publication must not silently
+make the first signal public. Expanding a floating rail requires matching header
+and map-padding changes, with geometric no-overlap checks on phones.
 
 ## Focused capacity dialogs — 2026-09-13
 

@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import {SurfaceSkeleton} from './loading-state';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
 import { CircleDotDashed, LocateFixed, ShieldCheck } from 'lucide-react';
@@ -11,7 +12,7 @@ type TruckArea={id:string;label:string;lat:number;lng:number;radiusKm:number};
 
 const NearbyMap=dynamic(()=>import('./nearby-truck-map-leaflet').then(module=>module.NearbyTruckMapLeaflet),{
   ssr:false,
-  loading:()=> <div className="nearby-truck-map loading-map">Loading approximate-location map...</div>
+  loading:()=> <SurfaceSkeleton kind="map" className="nearby-truck-map loading-map" label="Loading nearby trucks"/>
 });
 
 export function NearbyTruckSearch({active,radiusKm,trucks}:{active:boolean;radiusKm:number;trucks:TruckArea[]}) {

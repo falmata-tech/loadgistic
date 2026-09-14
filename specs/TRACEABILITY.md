@@ -1,5 +1,231 @@
 # Specification traceability
 
+## Release packaging and browser readiness — 2026-09-14
+
+BASE-DEP-001 F26 → `.dockerignore`, Dockerfile builder guard and CI non-secret
+canaries. A scratch context build proved application presence and private-state
+exclusion; the normal container gate remains pending after Docker Hub DNS failure.
+F25/F27 browser/fixture corrections → 158 enabled cases have passing evidence
+across the full diagnostic run and focused retries; eight opt-in captures skipped.
+CI includes all 14 rollback SQL suites and six concurrent authorization cases.
+See BUILD_VERIFICATION and AUDIT_RELEASE_CANDIDATE for exact results and gates;
+these do not imply a clean full-suite run or hosted rollout.
+
+## Recorded-audit contracts — verified locally
+
+| Contract | Implementation | Evidence and remaining gate |
+|---|---|---|
+| FEAT-FLT-001 / FEAT-TRK-001 / FEAT-ADM-001, ADR-058 | lifecycle port/controls/routes; migrations 090–091 | Four lifecycle unit tests, rollback SQL and two queued former-Driver cases passed; desktop/phone lifecycle browser passed |
+| FEAT-IAM-001, ADR-059 | account-security handoff, own-session Auth routes/controls; migration 092 | Four validation/handoff tests, `tests/sql/account-security.sql` and four concurrent closure cases passed; desktop/phone inbox/browser passed under local Auth settings |
+| FEAT-LST-001 / FEAT-MAT-001, ADR-060 | bounded map windows, public aggregate cells, private SQL filtering; migration 093 | Unit tests, viewport SQL, 5,000-truck scale/EXPLAIN and throttled desktop/phone browser passed; dense-map regressions passed on both viewports; eight clustering tests include the F21 failing-before-fix reproduction |
+| FEAT-PRV-001, ADR-062 | Public metadata/name SQL projections; migration 095 | Hidden-contact/path/surname SQL assertions and independent/company desktop/phone HTML privacy checks passed |
+| FEAT-SUP-001 / FEAT-GST-001, ADR-061 | authorized revisions, conditional HTTP, no-overlap/backoff polling; migration 094 | Conditional tag test, `tests/sql/support-polling.sql` and desktop/phone `tests/e2e/support-polling.spec.ts` passed |
+
+Final quality: 290 tests, TypeScript, 28 specs and 349 source checks. All 34
+affected browser cases passed across focused runs; BUILD_VERIFICATION records
+final build evidence and exact scope. These entries do not imply hosted rollout
+or visual approval.
+
+FEAT-LST-001 F22/F24 → PublicCapacityFeed feedback in the selected summary and
+phone summary width reserves zoom controls. `tests/e2e/map-feedback.spec.ts`
+proved the old overlap/intercepted click, then passed desktop/phone at six widths
+including 320px with loading, failed refresh, real retry and closing. Shared
+public/private shell and dense-map regressions passed; screenshots were inspected.
+F23 corrects stale spatial/polling headings to match previously passing evidence.
+
+## 2026-09-14 member Support attachments (local)
+
+FEAT-SUP-001 / BASE-BE-001 / BASE-DEP-001, ADR-057 → migration 089,
+`support-attachments.js`, SupportThread multipart replies, private attachment
+route, and managed cleanup worker. Five tests cover input bounds, safe names,
+delete ordering and retryable failures; the worker test verifies bounded safe
+counts. `tests/sql/support-attachments.sql` proves atomic attachment, idempotent
+retry, current ownership/assignment/permission/activation, closed-history reads,
+stale/failed cleanup and service-only permissions.
+`tests/e2e/support-attachments.spec.ts` proves real member PNG/staff PDF browser
+uploads/downloads, invalid-content cleanup, retained older/closed history and
+cross-conversation/member/anonymous/reassigned-staff denials on desktop/phone.
+Final gate evidence and rollout limits are in BUILD_VERIFICATION.
+
+## 2026-09-14 Tracking foreground location controls (local)
+
+FEAT-TRK-001 / BASE-FE-001 / BASE-BE-001, ADR-056 →
+`tracking-location-controls.js`, ProviderTrackingControls and the recipient
+Tracking guidance. Seven pure tests cover radius/result validation, hidden
+callbacks, cancellation, fetch abortion, single-flight ownership and retry.
+`tests/e2e/tracking-location-controls.spec.ts` exercises real local travel and
+location persistence, privacy radii, server/client cooldown, delayed-GPS selection retention, hidden callbacks,
+permission retry and local Mailpit recipient access on desktop/phone. Sensor
+coordinates and visibility transitions are simulated; server persistence is
+real. Final evidence and limits are in BUILD_VERIFICATION.
+
+
+## 2026-09-14 public provider fleet paging (local)
+
+FEAT-PRV-001 / FEAT-LST-001 / BASE-BE-001, ADR-055 → migration 088,
+`public-provider-paging.js`, public provider repository projection, canonical
+provider page and ProviderFleetShowcase count labels. Input/adapter tests are in
+`tests/public-provider-paging.test.mjs`; rollback SQL proves complete fleets over
+96 signals, owner scope, page limits, stable evidence and public visibility.
+`tests/e2e/public-provider-paging.spec.ts` traverses independent and Company fleets
+on desktop/phone, opens a late truck map, checks hidden fields, browser Back and
+invalid/out-of-range pages. Final evidence is in BUILD_VERIFICATION.
+
+
+## 2026-09-14 Driver portraits (local)
+
+FEAT-FTR-001 / FEAT-IAM-001 / BASE-DEP-001, ADR-054 → migration 087,
+`driver-portrait-image.js`, `driver-portrait-storage.js`, Account photo editor,
+`/api/account/portrait`, `/api/public/driver-portraits/[id]`, Featured candidates
+and signed managed cleanup. Pure image/Storage tests cover metadata removal,
+format/animation/size denial, reserved references and failed-deletion retention.
+`tests/sql/driver-portraits.sql` rolls back ownership, consent, replacement,
+revocation, activation/cancellation/cleanup ordering, stale/retry boundaries and
+browser-grant checks. `tests/e2e/driver-portraits.spec.ts` uses real local Storage
+and exact synthetic Driver/provider/truck/Featured rows on desktop and phone.
+It covers consent, rendered uploads, private bucket denial, Featured images,
+replacement, malformed input, invalid actor, deactivation and removal fallback.
+Final counts, screenshots and limitations are in BUILD_VERIFICATION.
+
+## 2026-09-14 account maintenance and callback isolation (local)
+
+`FEAT-IAM-001` / `FEAT-FLT-001` → `src/lib/account-details.js`,
+`src/lib/identity/account-details.ts`, `/api/account/details`,
+`src/components/account-details-form.tsx` and Account & plan. Migration 086
+repeats active session-actor authorization and validation and preserves private
+phone ownership during fleet edits. Shared names retain their current display
+semantics; there is no general user-edit or Auth email-change command.
+
+Evidence maps to `tests/account-details.test.mjs` (input and role policy plus
+exact function replacement), `tests/sql/account-details.sql` (rollback-only
+actor/input/grant denial, audit privacy, field isolation and state persistence),
+and `tests/e2e/account-details.spec.ts` (real local visible saves, reloads,
+clearing, invalid-input retention, authority/origin/inactive denial and public
+callback snapshots plus native POST). Both account browser cases and both
+existing fleet onboarding/contact cases pass on desktop/phone. Quality (256
+tests, 28 specs, source checks and TypeScript) and the 84-page build pass.
+Migration 086 is local only; final scope and limits are in BUILD_VERIFICATION.
+
+## 2026-09-14 retained chat history and assignment denial (local)
+
+- `FEAT-SUP-001`, `FEAT-GST-001`, `FEAT-LST-001`: migration 085 and
+  `src/lib/support-history.js` / Support adapter provide bounded, stable,
+  conversation-scoped message windows. Member, team, recovery and launcher
+  history controls keep earlier messages reachable without unbounded DOM or
+  response growth. History does not mark current replies read.
+- Migration 084 replaces exactly four guest assignment predicates with
+  NULL-safe denial. Existing service-role-only grants and file authorization
+  remain; retain this repair if rolling back the history UI.
+- `tests/support-history.test.mjs` checks cursor validation, window metadata,
+  links and migration function inventory. `tests/sql/support-history.sql`
+  checks 121-message traversal, tied timestamps, arrival stability, unread
+  preservation, terminal pages, wrong cursors, inactive/unrelated actors,
+  removed permissions, unassigned read/reply/closure/attachment denial,
+  no denied side effects and browser-role RPC denial. All SQL changes roll back.
+- `tests/e2e/support-history.spec.ts` passes on desktop/phone: four real local
+  cases cover member/team and guest launcher/recovery/team paths and private
+  Storage reads; two mocked-failure cases cover retry/draft retention. Six
+  existing assisted-chat cases also pass. Eight focused screenshots are under
+  `artifacts/support-history-2026-09-14/`. Complete gate status is recorded in
+  `docs/BUILD_VERIFICATION.md`; no hosted rollout is implied.
+
+## 2026-09-14 map/navigation overlap repair (local)
+
+`FEAT-UIX-001` / `BASE-FE-001`: the shared desktop rail variables and bounded
+public-market flex layout in `src/app/globals.css` are verified by
+`tests/e2e/public-map-shell-layout.spec.ts`. Four desktop/phone cases exercise
+Open and real email-unlocked Private capacity at ten widths (320–2560), short
+phone reflow, header/navigation/session separation, viewport bounds, usable
+map size, Filters dismissal and navigation away. Synthetic private grants are
+revoked in cleanup. Sixteen screenshots: `artifacts/map-shell-2026-09-14/`.
+Quality passes with 248 tests and TypeScript; complete gate status is recorded
+in `docs/BUILD_VERIFICATION.md`. No database, authorization or hosted change.
+
+## 2026-09-13 current-audit repairs (local)
+
+- `FEAT-MAT-001`: `capacity-geographic-match.js` and
+  `capacity-filter-places.js`, used by public/private/team projections;
+  `tests/audit-geographic-matching.test.mjs`, `capacity-filter-places.test.mjs`,
+  and desktop/phone `capacity-filter-validation.spec.ts` prove complete criteria
+  and actionable invalid-place handling.
+- `FEAT-GST-001`: `public-assisted-chat.tsx`, `guest-chat-refresh.js`, and current
+  conversation API; `guest-chat-refresh.test.mjs` plus six desktop/phone
+  `assisted-chat-audit.spec.ts` cases prove submission and bounded polling
+  behavior. Chat transport is mocked only in these browser tests.
+- `FEAT-SUP-001`: `support/team-authorization.js` and the team-creation adapter
+  and route deny before external Auth writes. `team-authorization.test.mjs`
+  covers role/persisted-active checks and command ordering.
+- `FEAT-TRK-001`: migration `083`, `readProviderTrackingProof`, the event-specific
+  proof GET endpoint and `TrackingProofLink` on three detail surfaces;
+  `tracking-proof-access.test.mjs`, rollback SQL
+  `tests/sql/tracking-proof-access.sql`, and real desktop/phone
+  `tracking-proof-audit.spec.ts` cover Storage bytes, email OTP, revoked and
+  unrelated access, and admin/provider/guest links.
+- Gates: 248 tests, TypeScript, 28 specs, 319 source files, optimized build and
+  10 focused desktop/phone E2E cases passed. No remote rollout or commit.
+  See `docs/BUILD_VERIFICATION.md` and current audit for remaining gaps.
+
+## 2026-09-13 empty-fleet lifecycle
+
+`FEAT-FLT-001` / `FEAT-IAM-001`: migrations `081`–`082`,
+`fleet-driver-management.ts`, the verified OTP/OAuth completion branches,
+`/join-fleet`, `/app/fleet/drivers/new`, invitation/contact/vehicle-detail APIs,
+Fleet controls and role-specific empty states implement invitation → verified
+acceptance → assignment → publication → revocation. The shared membership check
+matches migration `078` discovery eligibility. Contact changes and truck details
+preserve identity and history.
+
+Mapped evidence: `tests/fleet-onboarding.test.mjs`, rollback-only
+`tests/sql/fleet-driver-onboarding.sql`, `tests/e2e/fleet-onboarding.spec.ts`,
+`tests/e2e/driver-document-clarity.spec.ts`, existing truck-registration browser
+checks, and `scripts/verify-supabase-workspace-fleet.mjs`. Both new-fleet browser
+runs use real local Auth OTP and Mailpit invitation notification, never a seeded
+Driver shortcut. Production rollout and real hosted Google acceptance remain
+separate from this local checkpoint; see `docs/BUILD_VERIFICATION.md`.
+
+## 2026-09-13 launch controls, automatic selection, and loading
+
+`FEAT-BIL-001`: migration `079`, `platform-controls.js`, the `/admin/settings`
+page/command, `subscription-access.js`, and the managed identity projection keep
+Free / Trial-then-payment behavior consistent across UI and PostgreSQL. Mapped
+tests: `tests/platform-controls.test.mjs`, rollback-only
+`tests/sql/platform-controls.sql`, and `tests/e2e/platform-controls.spec.ts`.
+The local verification/billing verifier checks Free-mode denial, then temporarily
+enables paid mode for the existing positive payment-review assertions and restores
+Free in cleanup; it still refuses remote targets.
+
+`FEAT-FTR-001`: migration `080`, `featured-automation.js`, managed operations,
+shared eligibility lookup, and Featured settings implement persistent automatic
+selection and preserved manual days. The same SQL test checks current Drivers,
+count, no duplicates, manual mode/drafts, retry invariance, and browser denial.
+The unit contract checks all seven themes and rotation safeguards; worker tests
+retain only sanitized counts. Focused browser tests exercise mode changes,
+immediate preparation, and manual publication on desktop and phone.
+
+`FEAT-UIX-001`: shared `SurfaceSkeleton`, route loading boundaries, component
+fallbacks, and `NativeFormFeedback` map to unit accessibility/motion/submitter
+contracts and the same browser suite's throttled map-module and native-save
+checks. Evidence and production limitations are in `docs/BUILD_VERIFICATION.md`.
+
+## 2026-09-13 Driver linkage and optional evidence
+
+`FEAT-FLT-001` / `FEAT-CAP-001` / `FEAT-VER-001`: migration `078` resolves
+the active independent or same-company assigned Driver, guards publication,
+location/duty updates, and both capacity projections, and supplies the named
+Driver to the authorized workspace. Fleet rows, truck details, and the map's
+selected truck expose the relationship; separate expandable Driver/truck
+document summaries never infer approval from an empty array.
+
+Evidence: `tests/sql/capacity-driver-eligibility.sql` tests no-document
+publication, inactive/unassigned/nonmember exclusion, independent identity,
+and browser denial inside a rolled-back local transaction. CI runs this check.
+`tests/driver-document-eligibility.test.mjs` tests missing/expired/wrong-truck
+approvals. `tests/e2e/driver-document-clarity.spec.ts` covers desktop and phone
+Driver navigation and safe expandable evidence. The 5,000-truck scale fixture
+now supplies unique active assigned Drivers, retains its original bounded-page
+and time assertions, and confirms rollback of both trucks and Auth identities.
+Local gates and pending deployment are recorded in `docs/BUILD_VERIFICATION.md`.
+
 ## 2026-09-13 focused capacity editing evidence
 
 `FEAT-CAP-001` / `FEAT-UIX-001`: `capacity-form.tsx` keeps the map mounted;
@@ -13,6 +239,13 @@ capacity-summary scenario in `tests/e2e/smoke.spec.ts`,
 `scripts/verify-supabase-provider-capacity.mjs`. Responsive screenshots, quality,
 build results, and the pending Production rollout are recorded in
 `docs/BUILD_VERIFICATION.md`.
+
+The follow-up split into Capacity, Coverage, Sharing, Loads, Regular, and Location
+is covered by the same desktop/phone suite with real consecutive status/sharing/
+preference saves, first-publication Private visibility, and Off Duty persistence.
+The suite exposed a stale-snapshot race and a phone header/rail overlap before
+their corrections. `tests/provider-capacity-supabase.test.mjs` additionally maps
+known validation messages and redacted unexpected-database diagnostics.
 
 | Feature | Frontend | Backend/domain | Deployment concern | Primary tests |
 |---|---|---|---|---|
@@ -48,7 +281,7 @@ Cross-feature authorization contracts are mapped in `docs/AUTHORIZATION_MATRIX.m
 
 Production deployment readiness is mapped in `docs/LAUNCH_READINESS.md` and checked by `npm run launch:check`. `BASE-DEP-001` maps shared abuse control to migration `047_shared_rate_limits.sql`, `src/lib/rate-limit.js`, the managed operations worker, and the local concurrency/privacy/RLS verifier. It maps private-upload protection to migrations `048_private_upload_quarantine.sql` and `074_netlify_safe_upload_limit.sql`, `src/lib/private-storage.js`, `src/lib/upload-scanner.js`, and the local size/signature/clean/dirty/cleanup/browser-denial verifiers. The additive `075_hot_path_foreign_key_indexes.sql` migration and its source contract test map observed common relational lookups without dropping low-traffic indexes. The command remains intentionally red until the remaining hosted scanner/email/deployment evidence is complete.
 
-Playwright runs through `BrowserTestRuntime` on isolated port `3100` by default, with `PLAYWRIGHT_PORT`/`PLAYWRIGHT_BASE_URL` available for a clean alternate port and `data/test-e2e.db`; it never reuses the development database at `data/loadgistic.db`.
+Playwright runs through `scripts/run-e2e.mjs` and `scripts/e2e-server.mjs` on isolated port `3100` by default, with `PLAYWRIGHT_PORT`/`PLAYWRIGHT_BASE_URL` available for a clean alternate port. It uses the configured local Supabase services and synthetic managed fixtures; it does not use a SQLite test database. Audit helpers reject hosted targets, and CI starts and imports an isolated local Supabase instance.
 
 The local visual audit (`npm run test:ui-audit`) covers logged-out and role-scoped current-product screens at desktop and mobile sizes: homepage, About, Capacity list/map, provider microsites, Track, provider dashboards, Fleet/capacity controls, provider shipments, profile editing, verification, Support, and bounded administration. It checks response status, horizontal overflow, touch targets, unlabeled controls, icon coverage, empty commands, map rendering, and browser errors. Screenshots and `report.json` are written to the ignored `artifacts/ui-audit/` directory. Focused visual approval is required before running this expensive full audit.
 

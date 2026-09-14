@@ -1,15 +1,43 @@
 ---
 id: FEAT-FTR-001
 title: Daily Featured Trucks programme
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001, FEAT-IAM-001]
 problem: Capacity seekers need a concise daily introduction to useful truck types and the Drivers operating them, while Loadgistic needs a manageable live programme that does not consume the entire day or turn provider eligibility into an endorsement.
-behavior: Each Ethiopia calendar day has one truck-type theme and one administrator-curated ordered roster of exact active trucks with assigned Drivers. The default target is eight entries and may be changed by an administrator before publication. The deterministic 07:30–09:00 Ethiopia-time schedule divides the remaining airtime equally between selected trucks and inserts no more than four interludes of at most two minutes, naming an active sponsor when available. Public cards lead with the assigned Driver's first name, role, and portrait while keeping the exact selected truck and owning transporter unmistakable. Sponsors remain a separately managed presentation surface.
+behavior: Each Ethiopia calendar day has one truck-type theme and an ordered roster of exact active trucks with distinct assigned Drivers. Automatic selection prepares unscheduled dates for the next seven days, with a default target of eight and an administrator-controlled limit of one through twelve. Manual-only mode and individual curated days remain available; automation never changes a saved day. The deterministic 07:30–09:00 Ethiopia-time schedule divides airtime equally between selected trucks with no more than four interludes of at most two minutes, naming an active sponsor when available. Public cards lead with the Driver's name, role, and portrait while retaining the exact truck and provider. Sponsors stay separate.
 contracts: [FeaturedTruckTypeRotation, FeaturedTruckCandidate, FeaturedTruckDay, FeaturedTruckSlot, FeaturedTruckAdminCommand, PublicFeaturedTruckProjection, FeaturedTruckBoardLayout, FeaturedDaySchedule, FeaturedScheduleEntry, FeaturedScheduleConfig, DailyTikTokBroadcast]
-observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, administrator roster-gap state]
+observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, FEATURED_DAY_AUTO_PUBLISHED audit, PLATFORM_CONTROLS_UPDATED audit, bounded worker counts, administrator roster-gap state]
 rollout: Add exact truck-and-Driver slot references additively, migrate the disposable demonstration roster to current truck candidates, retain historical provider-slot identifiers only for rollback integrity, and publish the new projection only after local Supabase, authorization, schedule, and responsive board checks pass.
 ---
 
 # Daily Featured Trucks programme
+
+### Scenario: automatic daily selection with a manual day override
+
+Given automatic Featured selection is enabled with a target from one to twelve\
+When the scheduled managed-operations worker prepares the next seven Ethiopia dates\
+Then it persists one ordered daily roster from active eligible trucks and Drivers
+matching each day's existing truck-type theme\
+And deterministic rotation favors Drivers not featured recently and avoids duplicate Drivers\
+And each configuration within the theme receives a turn when eligible candidates exist\
+And fewer eligible candidates produces a smaller honest roster, never invented entries\
+And retries do not change a saved roster, target, or its audit history\
+And a manually saved draft or published day is never overwritten by automation\
+And public reads do not create or overwrite a roster.
+
+Given an administrator opens Featured\
+When they choose Automatic selection or Manual only and set the daily count\
+Then the policy is saved with an audit and applies to unprepared dates\
+And Prepare upcoming days runs the same bounded generator immediately\
+And existing manual selection and publishing remain available for individual days\
+And automatic selection is distinct from automatic allocation of presentation time\
+And unauthorized callers cannot change policy or generate rosters.
+
+Implementation plan: controls from `079`, additive automatic-day generation in
+`080`, existing signed scheduled-worker integration, and explicit admin controls.
+Reuse the 07:30–09:00 schedule and sponsor interludes. Turning automation off stops
+future generation and preserves all saved days; restore previous client/functions
+for rollback. Test eligibility, no-duplicate Drivers, retries, manual-day protection,
+worker failures, and responsive admin controls before hosted rollout.
 
 ### Scenario: each day has one understandable truck-type theme
 
@@ -30,7 +58,7 @@ Given an administrator prepares a featured day\
 When candidates are listed\
 Then each candidate is an active truck matching that day's theme with one active assigned Driver\
 And each candidate includes the truck configuration and image, Driver first name and role label, general operating place, and owning transporter when one exists\
-And each candidate includes a safe public Driver portrait preset when the account has one\
+And each candidate includes the Driver-selected public portrait, or an allowlisted demo preset when present\
 And a Driver without a portrait uses a clear person silhouette with a three-spoke steering wheel in front rather than a generic disc\
 And the administrator chooses an ordered set of exact candidates rather than selecting a transporter and allowing the public projection to guess a truck\
 And the default publication target is eight entries while an administrator may set a bounded target from one through twelve\
@@ -136,3 +164,66 @@ And each independently loaded map, schedule, card collection, or dialog owns its
 - Application services: candidate eligibility, Driver assignment and safe portrait resolution, Ethiopia-day activation, deterministic 07:30–09:00 schedule, sponsor interlude assignment, and public safe projection
 - Persistence: additive day configuration and ordered slot references to exact vehicle and Driver identities, with service-role-only commands and audit
 - Tests: schedule boundaries and equality, candidate ownership/assignment, authorization, projection privacy, responsive board/loading geometry, and focused desktop/mobile visual review
+
+## Self-managed public Driver portraits (verified locally; rollout pending)
+
+### Scenario: a Driver chooses a public portrait
+
+Given an active DRIVER identity, including a Company driver or a limited-plan account\
+When they upload a JPG, PNG or WebP of at most four MiB through Account & plan
+and explicitly confirm that the photo may be public\
+Then persisted authority is checked before Storage writes and again at activation\
+And the server decodes a single-frame raster within 25 million pixels, applies
+orientation, crops to a 512-pixel square and re-encodes JPEG without EXIF/GPS metadata\
+And the normalized image passes the existing quarantine/inspection policy\
+And one active portrait replaces the Driver's previous photo and demo preset\
+And the account preview and eligible Featured cards display the chosen image\
+And no vehicle assignment, verification, fleet permission or public phone changes.
+
+### Scenario: portrait permission and validation fail safely
+
+Given a signed-out, inactive, non-Driver or different account actor, missing public
+consent, oversized/invalid/mismatched/animated input or failed Storage inspection\
+When a portrait mutation is attempted\
+Then no other Driver's portrait can be changed and the current portrait remains\
+And a safe error explains the failed action without exposing paths or decoder errors\
+And browser roles cannot read portrait metadata, execute commands or access bucket objects.
+
+### Scenario: replacement and removal revoke future image reads
+
+Given a Driver has a public portrait or a demo preset\
+When they replace or remove it from Account & plan\
+Then only a newly generated opaque portrait ID may resolve to the current photo\
+And old IDs return 404 and removal clears the demo preset to a neutral icon\
+And every public image read checks current portrait state and active DRIVER identity\
+And responses use no-store and nosniff, with no account IDs or storage paths\
+And already downloaded copies cannot be recalled.
+
+### Scenario: interrupted uploads and deletion retries preserve the current image
+
+Given a registered portrait upload or a replaced/removed portrait\
+When activation fails, its response is ambiguous, or object deletion fails\
+Then an active image is never deleted as speculative failure cleanup\
+And registered pending uploads older than one hour and finished retired images are claimed
+in bounded cleanup batches, with retry after five minutes for failed deletion\
+And removing a still-writing upload prevents activation but defers deletion until
+that attempt settles or the one-hour stale boundary passes\
+And a claimed image cannot later become active\
+And the signed existing operations worker retries deletion with count-only results.
+
+Contracts: `DriverPortraitWorkspace`, `DriverPortraitUpload`, `PublicDriverPortrait`.
+Migration 087 uses service-only upload states PENDING → ACTIVE → RETIRED → DELETING
+(or PENDING → RETIRED/DELETING), profile-row locks and one active image per Driver.
+Portrait Storage requests have a 30-second per-request timeout.
+Storage references are reserved before object writes in the existing private
+provider-profile bucket under a distinct driver-portrait prefix. Public consent
+covers access to the photo's opaque URL even when the Driver is not on today's
+roster; roster eligibility remains unchanged. Owners/admins cannot edit another
+Driver's portrait. Portrait upload/remove audits record no contacts or file paths.
+Sharp 0.35.4, already installed through Next, becomes an explicit pinned dependency
+for server normalization (ADR-054). Apply 087 before app/worker rollout; UI rollback
+retains metadata and cleanup. Retire portraits before future account deletion.
+No hosted rollout is authorized. Verification: `tests/driver-portrait-upload.test.mjs`,
+`tests/sql/driver-portraits.sql`, `tests/e2e/driver-portraits.spec.ts` and existing
+managed-operations/Storage tests. Real local browser upload/download and the
+quality/build gates passed; evidence is in `docs/BUILD_VERIFICATION.md`.

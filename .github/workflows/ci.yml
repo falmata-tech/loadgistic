@@ -48,6 +48,23 @@ jobs:
       - name: Audit high-severity dependency advisories
         run: npm audit --audit-level=high
 
+      - name: Verify Driver linkage and optional documents without retaining test writes
+        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/capacity-driver-eligibility.sql
+
+      - name: Verify platform activation and automatic Featured with rollback
+        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/platform-controls.sql
+
+      - name: Verify audit authorization and privacy regressions with rollback
+        run: |
+          for suite in account-details account-security capacity-viewport driver-portraits \
+            fleet-driver-onboarding lifecycle-recovery public-provider-paging \
+            public-provider-privacy support-attachments support-history support-polling tracking-proof-access; do
+            docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
+
+      - name: Verify queued authorization and account closure races
+        run: node scripts/verify-audit-concurrency.mjs
+
       - name: Validate specifications and source
         run: npm run check
 
@@ -72,7 +89,9 @@ jobs:
   e2e:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The expanded 166-case suite takes about 21 minutes per viewport locally;
+    # reserve time for both serial projects and isolated Supabase setup.
+    timeout-minutes: 60
     env:
       CI: true
       SESSION_SECRET: ci-only-session-secret-not-for-production-123456
@@ -118,6 +137,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Add non-secret build-context canaries
+        run: |
+          mkdir -p .local .netlify supabase/.temp supabase/.branches
+          touch .local/context-canary .netlify/context-canary supabase/.temp/context-canary supabase/.branches/context-canary
 
       - name: Build standalone container
         run: docker build --tag loadgistic:${{ github.sha }} .

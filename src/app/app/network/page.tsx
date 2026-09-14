@@ -3,6 +3,7 @@ import {requireUser} from '@/lib/auth';
 import {listPrivateCapacityNetwork} from '@/lib/private-capacity.js';
 import {PageHeader} from '@/components/page-header';
 import {Flash} from '@/components/flash';
+import {FleetSetupEmpty} from '@/components/fleet-setup-empty';
 
 export default async function PrivateCapacityNetworkPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['TRANSPORTER','DRIVER']);
@@ -18,6 +19,6 @@ export default async function PrivateCapacityNetworkPage({searchParams}:{searchP
       <form action="/api/capacity-network" method="post" className="network-platform-share"><input type="hidden" name="action" value="LOADGISTIC"/><input type="hidden" name="vehicleId" value={vehicle.id}/><input type="hidden" name="enabled" value={loadgistic?'':'on'}/><div><ShieldCheck aria-hidden="true"/><span><strong>Share with Loadgistic</strong><small>Lets our Assisted matching team consider this truck when a visitor asks for help.</small></span></div><button className={`button small ${loadgistic?'secondary':''}`}>{loadgistic?'Stop sharing':'Share'}</button></form>
       <div className="network-access-list"><h3>Capacity access</h3>{active.filter((grant:any)=>grant.audience_type==='EMAIL').map((grant:any)=><article key={grant.id}><UserRound aria-hidden="true"/><div><strong>{grant.recipient_email}</strong><span>Added by {grant.created_by_name} · Recipient verifies this email when opening Private capacity</span></div><form action="/api/capacity-network" method="post"><input type="hidden" name="action" value="REVOKE"/><input type="hidden" name="grantId" value={grant.id}/><button className="button danger small">Remove</button></form></article>)}{!active.some((grant:any)=>grant.audience_type==='EMAIL')?<p className="meta">No email access has been added for this truck.</p>:null}</div>
     </section>})}</div>
-    {!vehicles.length?<div className="empty-state"><Truck aria-hidden="true"/><strong>No available trucks</strong><span>Add or assign an active truck before sharing capacity.</span></div>:null}
+    {!vehicles.length?<FleetSetupEmpty companyDriver={user.driver_kind==='COMPANY'} fleetOwner={user.role==='TRANSPORTER'}/>:null}
   </div>;
 }

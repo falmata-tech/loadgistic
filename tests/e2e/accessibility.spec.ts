@@ -19,8 +19,22 @@ async function login(page: Page, email: string, destination = '/app/home') {
 
 async function waitForPage(page: Page) {
   await page.waitForLoadState('domcontentloaded');
-  await page.locator('.loading-map').waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+  await expect(page.locator('main .surface-skeleton')).toHaveCount(0,{timeout:20_000});
+  await expect(page.locator('.loading-map:visible')).toHaveCount(0,{timeout:20_000});
   await page.waitForTimeout(250);
+}
+
+async function visitPublicRoute(page:Page,route:string){
+  await page.goto(route);
+  // App Router can stream a shell before its server redirect completes. Assert
+  // Login's redirect before inspecting the destination's DOM or accessibility.
+  if(route==='/apply')await expect(page).toHaveURL(/\/login$/,{timeout:20_000});
+  // next.config rewrites handles internally while retaining the public URL.
+  if(route.startsWith('/@')){
+    await expect(page).toHaveURL((url:URL)=>url.pathname===route);
+    await expect(page.locator('.provider-site-identity h1')).toBeVisible({timeout:20_000});
+  }
+  await waitForPage(page);
 }
 
 async function expectNoHorizontalOverflow(page:Page,label:string){
@@ -62,7 +76,7 @@ async function expectAccessible(page: Page, label: string) {
 
 test('public release routes have no serious accessibility violations', async ({ page }: { page: Page }) => {
   for (const route of ['/', '/shared-capacity', '/featured', '/about', '/privacy', '/terms', '/track', '/login', '/apply', '/@blueline-transport']) {
-    await page.goto(route);
+    await visitPublicRoute(page,route);
     await expectAccessible(page, route);
   }
 });
@@ -181,6 +195,7 @@ test('public filters support keyboard entry, Escape, and trigger focus restorati
 
 test('featured truck details support keyboard entry, Escape, and focus restoration', async ({ page }: { page: Page }) => {
   await page.goto('/featured');
+  await waitForPage(page);
   const featured = page.locator('.featured-truck-tile').first();
   await featured.focus();
   await expect(featured).toBeFocused();
@@ -217,8 +232,7 @@ test('public and Driver mobile shells reflow without page-level horizontal scrol
 test('supporting public pages and provider essentials reflow without clipping',async({page}:{page:Page})=>{
   await page.setViewportSize({width:320,height:720});
   for(const route of ['/about','/privacy','/terms','/track','/login','/apply','/@blueline-transport']){
-    await page.goto(route);
-    await waitForPage(page);
+    await visitPublicRoute(page,route);
     const metrics=await page.evaluate(()=>({client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
     expect(metrics.scroll,`${route} has horizontal document overflow`).toBeLessThanOrEqual(metrics.client+1);
   }
