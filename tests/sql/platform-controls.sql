@@ -53,7 +53,7 @@ begin
   if exists(select 1 from public.featured_provider_slots slot join public.featured_provider_days day on day.id=slot.day_id where day.selection_source='AUTO'
     and (slot.driver_user_id is distinct from public.capacity_active_driver_id(slot.vehicle_id))) then raise exception 'INVALID_AUTO_DRIVER';end if;
   if exists(select day_id from public.featured_provider_slots group by day_id having count(*)<>count(distinct driver_user_id)) then raise exception 'REPEATED_DRIVER';end if;
-  if exists(select 1 from public.featured_provider_days day where day.selection_source='AUTO' and day.feature_date between today and today+6 and (target_count>5
+  if exists(select 1 from public.featured_provider_days day where day.selection_source='AUTO' and ((day.feature_date between today and today+6 and target_count>5)
     or target_count<>(select count(*) from public.featured_provider_slots where day_id=day.id))) then raise exception 'AUTO_COUNT_INVALID';end if;
   select jsonb_agg(to_jsonb(slot) order by slot.id) into roster_before from public.featured_provider_slots slot;
   repeat_result:=public.generate_managed_featured_days();

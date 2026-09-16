@@ -12,7 +12,9 @@ spatial-filter, aggregate and audience-denial assertion.
 The full local SQL pass also identified three stale setup/assertion assumptions.
 Fleet onboarding now proves the accepted private-account phone separation from
 migration 086; company paging creates the active owner required by migration 092;
-and Featured target counts apply to the requested week, not unrelated history.
+and the five-truck Featured target limit applies to the requested week. Global
+roster-count consistency remains checked for all historical automatic days;
+three older local days legitimately had larger targets, with zero count mismatches.
 All 15 SQL suites have passing evidence across the initial and focused corrected
 runs. SQL failures are now grouped by suite in CI. No production contract or
 authorization check was relaxed; the accepted FEAT-IAM-001/FEAT-FLT-001 contracts
