@@ -122,6 +122,7 @@ Refresh the manifest if any migration changes before publication.
 | `093_capacity_viewport_queries.sql` | `207eaa42c51d0b4706107c1494a51b7f6b7d6a3c0a6fed969bcbf576139f37f7` |
 | `094_support_incremental_polling.sql` | `e7a4d8dd793b372100c20d3620f9c36365a2f0c4fd5b1b8dde27a7c6b3c9a3f9` |
 | `095_public_provider_safe_metadata.sql` | `0550b070c2ba12f1dd6a04346a6d6fa5781be7e4711029b1b6f753ce0b20ff24` |
+| `096_browser_relation_boundary.sql` | `fd4187eab743ac6e04d10e253e1201448f30cafbae01684f47b73b2809c3e708` |
 
 
 ## Authorized rollout checklist — active

@@ -87,3 +87,27 @@ Tests: tests/security-operations.test.mjs, tests/sql/security-boundaries.sql,
 scripts/check-database-security.sql, scripts/check-production-security.mjs,
 CI catalog gate and daily security-advisor workflow. Hosted ownership repair,
 provider permissions and verified denial remain explicit rollout evidence.
+
+## Scenario: browser sessions cannot bypass application commands
+
+Given an anonymous visitor or an active or inactive authenticated identity
+When it attempts direct access to a non-extension public application relation
+Then table, view, sequence and column privileges deny access before legacy RLS policies
+And browser sessions cannot execute the legacy organization/workspace policy helpers
+And only the caller-bound current_user_projection security-definer function remains
+executable by authenticated sessions among application security-definer functions
+And authorized service adapters retain their existing privileges and history.
+
+Given a later migration grants browser relation or column access, or exposes an
+application security-definer function beyond the own-identity contract
+When the catalog gate runs
+Then the release fails even if RLS is enabled on that relation.
+
+Migration 096 changes only application ACLs and postgres defaults for future public
+tables/sequences; extension objects and provider-owned defaults are untouched.
+Apply before promotion, with the reviewed backup and bounded transaction. On
+compatibility failure stop promotion and fix the authorized adapter; do not restore
+broad browser grants. Local rollback tests: tests/sql/browser-boundaries.sql and
+scripts/verify-database-security-gate.mjs (eight unsafe catalog fixtures plus
+explicit column-grant repair and repeatability).
+Hosted execution and full release verification remain pending.

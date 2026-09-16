@@ -1,5 +1,14 @@
 # Specification traceability
 
+FEAT-SEC-001 / FEAT-IAM-001 / BASE-BE-001 / ADR-064 → migration 096,
+application ACL/definer catalog gate, tests/sql/browser-boundaries.sql and
+scripts/verify-database-security-gate.mjs. Actual active-session access failed
+before repair and was denied afterward; inactive-session CRUD, own identity,
+service/history, future grants and eight injected gate failures passed locally.
+All 16 SQL suites, 297 unit tests, spec/source, TypeScript and build passed.
+Focused desktop/mobile and clean-CI evidence are recorded in BUILD_VERIFICATION;
+hosted rollout is separate.
+
 FEAT-SEC-001 / ADR-063 → exact owner PostGIS containment, public-table catalog gate,
 role denial SQL and scoped read-only advisor monitor. Local regression evidence
 and pending provider-side enforcement are recorded in PRODUCTION_AUTHORITY.md;

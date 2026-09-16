@@ -45,8 +45,11 @@ jobs:
       - name: Apply provider-owned PostGIS containment on isolated local services
         run: node scripts/prepare-local-security.mjs
 
-      - name: Reject public tables without RLS and browser spatial-reference grants
+      - name: Reject unsafe public RLS, browser relation grants and definer RPCs
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
+
+      - name: Prove the security gate rejects reintroduced browser grants
+        run: node scripts/verify-database-security-gate.mjs
 
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
@@ -62,7 +65,7 @@ jobs:
 
       - name: Verify audit authorization and privacy regressions with rollback
         run: |
-          for suite in security-boundaries account-details account-security capacity-viewport driver-portraits \
+          for suite in security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits \
             fleet-driver-onboarding lifecycle-recovery public-provider-paging \
             public-provider-privacy support-attachments support-history support-polling tracking-proof-access; do
             echo "::group::SQL regression: $suite"
@@ -128,7 +131,7 @@ jobs:
       - name: Apply provider-owned PostGIS containment on isolated local services
         run: node scripts/prepare-local-security.mjs
 
-      - name: Reject public tables without RLS and browser spatial-reference grants
+      - name: Reject unsafe public RLS, browser relation grants and definer RPCs
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
 
       - name: Import and verify managed fixtures

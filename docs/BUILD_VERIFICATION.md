@@ -1,5 +1,22 @@
 # Build Verification
 
+## Browser database boundary — 2026-09-17
+
+Migration 096 closes direct browser application-relation access while preserving
+caller-bound identity and existing authorized service adapters. The new actual-role
+regression failed before repair (ACTIVE_PROFILE_READ_ALLOWED) and passed afterward.
+Inactive-session CRUD, membership/history retention, service writes, own-identity
+active state and future table/sequence defaults passed. Eight injected unsafe
+ACL/RLS/definer states were rejected by the catalog gate; explicit column-grant
+repair and repeatable migration also passed with all fixture changes rolled back.
+
+All 16 rollback SQL suites, 297 unit tests, specification/source checks, TypeScript
+and production build passed. All eight focused desktop/mobile browser cases
+passed (3.9 minutes): login, role projection, actual email change/deactivation,
+and fleet invitation/assignment/publication/revocation. The existing local full-fixture verifier found 144 active trucks where
+its fresh-fixture contract requires 143; no fixture reset or weakened assertion
+was used. Clean CI must verify the unchanged fixture contract after migration replay.
+
 ## Scale artifact directory on clean runners — 2026-09-17
 
 Clean CI passed all SQL audit suites, concurrency, spec/source and 297 unit

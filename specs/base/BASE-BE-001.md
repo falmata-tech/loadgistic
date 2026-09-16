@@ -49,7 +49,7 @@ Given Loadgistic runs locally, in browser tests, in Preview, or in Production\
 When an application command or projection uses durable data\
 Then it uses the Supabase PostgreSQL repository contract rather than a SQLite runtime fallback\
 And Supabase Auth supplies the verified identity projection\
-And Supabase RLS independently enforces tenant scope\
+And browser database privileges deny direct application-table access while RLS remains enabled as defense in depth; server commands enforce actor and tenant scope\
 And tests use an isolated local Supabase project rather than a different persistence engine.
 
 ## Contract details

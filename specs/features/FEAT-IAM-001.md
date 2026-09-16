@@ -357,3 +357,16 @@ retaining deactivation and history. Require unit, SQL and real local inbox/brows
 evidence before completion. Supabase own-session email update/confirmation:
 https://supabase.com/docs/reference/javascript/auth-updateuser
 and https://supabase.com/docs/guides/auth/auth-email-templates .
+
+## Direct database session boundary (FEAT-SEC-001)
+
+Given an active or deactivated identity still holds a valid Supabase session
+When it calls application tables directly
+Then browser-role privileges deny reads and writes, independently of retained
+organization membership and older row policies
+And authenticated current_user_projection still returns only auth.uid() with its
+actual active state; anonymous callers cannot execute it
+And server authorization continues to reject inactive workspace access.
+
+Migration 096 and tests/sql/browser-boundaries.sql implement this boundary without
+deleting account or shipment history or changing hosted Auth configuration.

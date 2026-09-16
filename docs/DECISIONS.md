@@ -1,5 +1,23 @@
 # Architecture Decisions
 
+## ADR-064 — Business data stays behind authorized server commands
+
+FEAT-SEC-001 / FEAT-IAM-001: browser roles have no direct privileges on public
+application tables, views, sequences or columns. Retained membership after
+account deactivation must not provide a second mutation path through old RLS
+policies. The existing caller-bound current_user_projection RPC remains available
+to authenticated sessions; server adapters retain service access and perform
+actor/tenant checks. RLS remains enabled as defense in depth.
+
+Migration 096 revokes application relation ACLs and the three legacy browser
+policy-helper RPCs, including independent column grants and future postgres
+public-table/sequence defaults. It excludes extension-owned objects and leaves
+provider ownership, Auth, Storage, data and history unchanged. A catalog gate
+rejects reintroduced grants or unapproved application definer RPCs; rollback-only
+role tests cover active/inactive sessions and preserved own-identity/service
+access. Apply before promotion. If compatibility fails, stop and repair the
+adapter; rollback must not restore broad browser grants.
+
 ## ADR-063 — Separate agent inspection from production authority
 
 FEAT-SEC-001 makes routine production inspection read-only and project-scoped.
