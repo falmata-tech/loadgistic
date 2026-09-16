@@ -78,3 +78,17 @@ No contributor may bypass a failing required check by weakening the check, delet
 ## Pull-request evidence
 
 Every pull request must state related spec IDs, contract changes, tests run, observability impact, rollout/rollback, and whether data or security scope changed. The repository pull-request template captures this evidence.
+
+
+## Production credential and schema boundary (FEAT-SEC-001)
+
+Follow [PRODUCTION_AUTHORITY.md](PRODUCTION_AUTHORITY.md). Routine inspection has
+only exact-project read scopes. Under the 2026-09-17 owner decision, only the
+owner executes production changes; protected automation is a future proposal. Do not treat token format, a plan digest, AGENTS.md,
+ignored files or file mode 0600 as a boundary against the same OS user. Never
+bypass provider ownership with role changes, extension catalog changes or a more
+privileged fallback. CI checks RLS after local schema setup, including provider-
+owned extension remediation, and tests real anonymous/authenticated denial.
+Current rollout still requires Supabase's owner-side repair and provider-enforced
+credential/protection changes. A scheduled workflow file without its scoped token
+and main-branch installation is not active monitoring.

@@ -1,5 +1,10 @@
 # Specification traceability
 
+FEAT-SEC-001 / ADR-063 → exact owner PostGIS containment, public-table catalog gate,
+role denial SQL and scoped read-only advisor monitor. Local regression evidence
+and pending provider-side enforcement are recorded in PRODUCTION_AUTHORITY.md;
+no hosted resolution is implied.
+
 ## Release packaging and browser readiness — 2026-09-14
 
 BASE-DEP-001 F26 → `.dockerignore`, Dockerfile builder guard and CI non-secret

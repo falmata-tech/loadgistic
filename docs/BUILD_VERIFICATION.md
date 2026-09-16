@@ -1,5 +1,43 @@
 # Build Verification
 
+## Production authority and PostGIS containment — 2026-09-16/17
+
+FEAT-SEC-001 / ADR-063. Quality passed 297 tests, TypeScript, 29 specs and 349
+source checks. Seven new monitor regressions prove scoped-format credential
+rejection, exact GET destinations, redirect refusal, target validation, unavailable
+or malformed advisor failure, metadata-only output and WARN/ERROR blocking.
+No write endpoint or arbitrary-query option exists in the monitor.
+
+The real local catalog gate failed on public.spatial_ref_sys before repair.
+Normal postgres could not alter the provider-owned table. The exact owner SQL
+then enabled RLS and removed browser grants on local services only. Both browser
+roles' CRUD operations were denied, while service reference reads and PostGIS
+coordinate transformation passed. A newly created unprotected public table made
+the same gate fail and disappeared on rollback. Two legacy local bulk writers
+were disabled and tested to fail before loading credentials or spawning tools.
+
+The corrected signup fixture uses retained inactive associations, consistent with
+migration 092's active-owner/participant constraints. The complete local signup
+verifier passed. The broader local verifier failed on 144 active vehicles against
+its exact 143 clean-fixture requirement; no data reset or relaxed assertion was
+used. Required clean CI has not passed for these changes.
+
+The hosted critical RLS finding remains OPEN: only the provider owner can apply
+the prepared SQL. Project-scoped monitoring credentials, independent coding/
+approval identities, branch/environment enforcement and active daily monitoring
+are pending owner configuration. Repository rules alone do not restrict an admin
+credential. Encrypted database and private Storage exports passed authenticated recovery.
+The full custom database archive restored in a network-disabled disposable local
+container: 2,268 archive entries, 52 public tables and migration ledger 076.
+Scheduled jobs were disabled and the container was removed. The one private
+Storage object passed local upload/download byte/hash comparison and verified
+cleanup. Logs and recovery keys remain ignored; separate owner key custody is
+still an operational requirement. The owner selected owner-only production
+changes on 2026-09-17; no automation identity or technical approval boundary
+has been installed.
+No production setting/database changes occurred. Application UI source is unchanged;
+the preceding production-build/browser evidence is not a hosted security proof.
+
 ## Deployment preflight and F25–F29 — 2026-09-14
 
 - Full diagnostic browser run: 139 passed, 19 failed, eight opt-in visual captures

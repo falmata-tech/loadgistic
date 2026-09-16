@@ -1,5 +1,27 @@
 # Architecture Decisions
 
+## ADR-063 — Separate agent inspection from production authority
+
+FEAT-SEC-001 makes routine production inspection read-only and project-scoped.
+The owner chose owner-only production changes on 2026-09-17; no automation
+identity is selected. The agent prepares/tests changes; the owner applies hosted
+writes, protection settings, merges and deployment. Future automation requires a
+new owner decision and verified credential/approval separation.
+A classic PAT, GitHub admin session or database-owner password in the same agent
+process defeats this separation; local scripts and token-prefix checks cannot
+provide it. Existing credentials must be replaced/revoked by the owner after
+recovery access and limited replacements are verified. Do not strand the owner.
+
+Provider-owned PostGIS metadata receives a narrow owner-executed RLS/ACL repair.
+No extension relocation, system catalog edits or ownership takeover is included.
+CI replays the owner step on isolated local services, rejects every unprotected
+public table and proves role denial plus service spatial operations. Production
+must receive the same verified owner repair before promotion. Routine advisor
+monitoring requests only project identity and security findings and fails closed
+on unavailable/malformed results or warning/error findings. The workflow has no
+production write secret. Provider protection/identity setup remains explicit
+owner work; it is not claimed complete by adding repository files.
+
 ## ADR-062 — Public metadata is safe before rendering
 
 F19 / FEAT-PRV-001: final JavaScript filtering did not protect intermediate query

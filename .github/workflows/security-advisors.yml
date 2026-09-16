@@ -1,0 +1,22 @@
+name: Production security advisors
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * *'
+permissions:
+  contents: read
+jobs:
+  advisors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Read exact project security findings
+        env:
+          # Owner provisions only Project Settings Read + Advisors Read for
+          # tpwyyzoqijjmbvsmmvcm. Never use the classic/deployment PAT here.
+          LOADGISTIC_ADVISOR_READ_TOKEN: ${{ secrets.LOADGISTIC_ADVISOR_READ_TOKEN }}
+        run: node scripts/check-production-security.mjs

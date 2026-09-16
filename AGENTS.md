@@ -58,3 +58,31 @@ Before major authentication, authorization, workflow, public-data, file, schema,
     or inbox, and confirm the running process loaded the expected adapter. Log
     only sanitized status/count evidence; never print mailbox bodies, OTPs,
     callback secrets, tokens, or customer contact data.
+
+
+## Production authority — FEAT-SEC-001
+
+- Owner decision, 2026-09-17: production changes are owner-only for now. The
+  agent prepares and tests changes but must not apply hosted database writes,
+  credentials/configuration changes, repository/environment protections, merges
+  or production deployments using the current administrator identity. No separate
+  automation account is selected. The approved read-only backup and isolated
+  restore remain authorized. Future automation requires a new owner decision.
+
+- Routine agent work uses local services and project-scoped read-only production
+  inspection. Keep production administrator/PAT/database-owner/service credentials
+  outside the routine agent environment. Repository rules are not a sandbox.
+- Never run hosted `supabase config push`, broad Auth replacement, arbitrary
+  production SQL, role/ownership escalation, or catalog edits. Never use a more
+  powerful credential to bypass an ownership denial.
+- Production writes require the owner's review of the exact project, immutable
+  artifact/digest, SQL or fields, current/proposed state, protected backup,
+  restore evidence and rollback. A prior deployment approval does not authorize
+  unrelated provider, SMTP, secret, signing-key, network, billing or deletion work.
+- After ambiguous remote results, stop writes and inspect; do not automatically
+  repeat or restore broad settings. Retain history and security containment.
+- No release while critical advisors, catalog checks or required CI fail. New
+  public tables require RLS before exposure, including extension-created tables.
+- Follow docs/PRODUCTION_AUTHORITY.md. The 2026-09-16 approved database/private-file
+  backup is a limited exception for that exact export and isolated restore; it
+  does not authorize general configuration writes or new administrator access.

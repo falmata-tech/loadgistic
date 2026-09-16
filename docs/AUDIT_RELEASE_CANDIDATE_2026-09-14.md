@@ -4,8 +4,26 @@ The owner authorized deployment on 2026-09-14 ("should we deploy? lets go").
 Release preparation is active; promotion still depends on the required gates.
 Audit implementation commit `b22bc3a` follows baseline `a86f4f9`. It is pushed
 in draft [PR #15](https://github.com/falmata-tech/loadgistic/pull/15); required CI
-is running. The pre-existing `.next-upload-audit/` remains untracked and excluded.
+previously failed on a stale signup fixture. The pre-existing `.next-upload-audit/` remains untracked and excluded.
 Work is limited to Loadgistic. See AUDIT_COMPLETION_2026-09-14.md.
+
+## Security hold — 2026-09-16/17
+
+The owner now selects owner-only production changes. Earlier deployment approval
+does not authorize agent execution; the agent prepares/tests and the owner applies
+hosted changes, protection settings, merges and promotion. No automation identity
+is selected.
+
+The owner approved the encrypted database/private-file backup and isolated restore;
+both exports and recovery rehearsals passed. That approval is no longer pending.
+The live critical advisor is confirmed on
+provider-owned `public.spatial_ref_sys`, with anonymous CRUD grants. Its exact
+owner-executed repair, recurrence checks and agent authority controls are in
+FEAT-SEC-001 and `PRODUCTION_AUTHORITY.md`. Supabase must apply the hosted repair;
+the ordinary database account cannot do so. Required provider-side least-privilege
+and independent approval protections are not installed yet. PR #15's previous
+CI failed on a stale signup fixture, now corrected and verified locally.
+Do not promote the candidate until these security and release gates pass.
 
 ## Preconditions and exact targets
 

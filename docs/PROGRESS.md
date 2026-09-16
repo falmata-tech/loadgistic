@@ -1,10 +1,63 @@
 # Progress
 
+## Security alert and agent authority — active, 2026-09-16
+
+Scope: FEAT-SEC-001 / BASE-DEP-001 / FEAT-IAM-001; security and operations.
+The owner approved encrypted hosted database/private-file backup and isolated
+restore. Previous backup approval is resolved; deployment authorization is now
+superseded by the 2026-09-17 selection of **owner-only production changes for now**.
+No automation account is selected. The agent prepares/tests; the owner applies
+hosted writes, credentials/configuration, protections, merges and deployment.
+
+- [x] Independently verify Loadgistic project and live advisory/catalog metadata.
+- [x] Identify critical table: public.spatial_ref_sys, owned by supabase_admin;
+  anonymous CRUD grants exist. Other public tables have RLS enabled.
+- [x] Verify ordinary postgres cannot alter that table; do not bypass ownership.
+- [x] Complete approved encrypted backup and isolated restore verification.
+- [x] Specify and locally test exact owner repair, role denial and catalog recurrence gate.
+- [ ] Have Supabase execute the hosted owner repair and verify the live finding clears.
+- [x] Implement scoped read-only advisor monitoring and owner change-review rules.
+- [ ] Provision the scoped monitor token and install provider-side restrictions.
+- [x] Prepare provider-side least-privilege/protected-release settings; distinguish
+  actual enforcement from repository rules and pending owner work.
+- [x] Fix and verify stale signup verifier setup found by clean CI.
+- [x] Record tested evidence, hosted repair status and remaining deployment gates.
+
+Read-only findings: Supabase credential is classic-or-unknown, GitHub credential
+has repository admin permission, and main has no branch protection. These are
+not yet limited by provider enforcement. Prior CI run 34861635105 failed during
+signup fixture verification; subsequent SQL/container/E2E jobs did not run.
+Production still has migration 076; draft PR #15 is not deployable yet.
+
+Local evidence: quality passed 297 tests, TypeScript, 29 specs/26 features and
+349 source checks. The real catalog gate failed before owner repair and passed
+after; anon/authenticated CRUD denial and service PostGIS transformation passed.
+A new unprotected-table canary was rejected and fully rolled back. The corrected
+signup verifier passed. The broader local fixture verifier stopped at 144 active
+vehicles versus its clean-fixture contract of 143; existing local data was preserved,
+and clean remote CI remains required. Both ignored legacy bulk production-write
+helpers now fail before loading credentials or running tools.
+
+The private Storage archive contains seven bucket definitions and one object;
+authenticated decryption and byte/hash recovery passed. The ordinary full database
+dump timed out twice; the bounded streaming export then succeeded (1,858,785
+archive bytes), with authenticated decryption and SHA-256 recovery verified.
+The full database restored successfully (2,268 archive entries, 52 public tables,
+ledger 076) in a disposable container with network disabled, no host mounts and
+scheduled jobs disabled; the container was removed. The private object was restored
+to a unique local Storage path, downloaded and hash-verified, then removed with
+cleanup verified. Recovery keys still require separate owner custody before
+routine agent credentials are isolated.
+No plaintext archive, hosted repair, credentials/protection change or deployment
+is claimed. Read [PRODUCTION_AUTHORITY.md](PRODUCTION_AUTHORITY.md) for the concrete
+owner action list and prepared Supabase repair request.
+
 ## Deployment preparation — active, 2026-09-14
 
 The owner authorized deployment. Audit candidate `b22bc3a` is committed and pushed
 in draft [PR #15](https://github.com/falmata-tech/loadgistic/pull/15); required CI
-is running and no production promotion has occurred. The preserved untracked
+failed on the stale signup fixture described above; no production promotion
+has occurred. The preserved untracked
 `.next-upload-audit/` directory is outside this release.
 
 Hosted Loadgistic is verified at migration 076
@@ -21,10 +74,9 @@ missing Docker context exclusions for local credentials and deployment state
 build hit Docker Hub DNS timeouts on both attempts. CI now includes the audit SQL,
 concurrency and context-canary gates.
 
-Automatic approval review rejected the proposed hosted database backup because
-explicit permission for the data export and local destination is required.
-A concrete encrypted-backup/isolated-restore question is pending. No export,
-production mutation or deployment has occurred. The candidate is in draft review
+The initial backup approval block was resolved by the owner; encrypted database
+and private-file exports now have verified decryption and isolated restore
+evidence. No production mutation or deployment has occurred. The candidate is in draft review
 for required CI; do not promote it while the release gates remain unresolved.
 
 ## Recorded audit — verified locally, 2026-09-14
