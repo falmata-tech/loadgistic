@@ -160,7 +160,11 @@ if(!/LOADGISTIC_SCALE_DRIVERS_REMAINING=0/.test(combined))throw new Error('POSTG
 const planStart=combined.indexOf('[\n');
 if(planStart>=0){
  const planEnd=combined.indexOf('\n]',planStart);
- if(planEnd>=0)fs.writeFileSync(path.join(root,'.local','audit-viewport-explain.json'),combined.slice(planStart,planEnd+2));
+ if(planEnd>=0){
+  const planPath=path.join(root,'.local','audit-viewport-explain.json');
+  fs.mkdirSync(path.dirname(planPath),{recursive:true,mode:0o700});
+  fs.writeFileSync(planPath,combined.slice(planStart,planEnd+2),{mode:0o600});
+ }
 }
 const overview=combined.split(/\r?\n/).find(line=>line.includes('LOADGISTIC_OVERVIEW_RESULT'))?.trim();
 if(overview)process.stdout.write(overview+'\n');

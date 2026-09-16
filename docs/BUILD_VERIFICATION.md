@@ -1,5 +1,16 @@
 # Build Verification
 
+## Scale artifact directory on clean runners — 2026-09-17
+
+Clean CI passed all SQL audit suites, concurrency, spec/source and 297 unit
+checks. Its scale SQL completed but artifact writing failed because `.local`
+did not yet exist. The scale runner now creates that directory before writing
+the EXPLAIN JSON with restricted file permissions. A fresh-output-directory
+rehearsal passed: 5,000 trucks, 15-row pages, 49,260 page bytes; text/route queries
+took 1.19/1.56 seconds and the bounded overview 3.33 seconds, under the unchanged
+five-second limits. The JSON artifact parsed and rollback left zero synthetic
+trucks and Drivers. These are local measurements, not production timings.
+
 ## SQL fixture compatibility — 2026-09-17
 
 Clean CI now passes the isolated owner setup, catalog gate and all managed
