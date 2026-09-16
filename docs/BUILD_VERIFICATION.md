@@ -1,5 +1,15 @@
 # Build Verification
 
+## Clean-CI local owner authentication — 2026-09-17
+
+The fresh PostgreSQL 15 CI image requires password authentication for its local
+owner role; the long-lived PostgreSQL 17 stack did not reproduce the missing
+password failure. The fixed helper reads the CLI-provisioned password only
+inside the named local Docker container and connects to explicit loopback/5432.
+It does not load hosted credentials. The owner setup, public-table catalog gate,
+real browser-role CRUD denial and service spatial transformation passed locally.
+Clean CI remains required; local success does not substitute for that result.
+
 ## Production authority and PostGIS containment — 2026-09-16/17
 
 FEAT-SEC-001 / ADR-063. Quality passed 297 tests, TypeScript, 29 specs and 349

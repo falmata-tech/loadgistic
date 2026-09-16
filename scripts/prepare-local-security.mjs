@@ -2,7 +2,11 @@ import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 // Fixed Docker target: this helper cannot select a hosted URL or arbitrary SQL.
 const sql = readFileSync(new URL('../docs/operations/spatial-reference-owner-repair.sql', import.meta.url), 'utf8');
-const result = spawnSync('docker', ['exec','-i','supabase_db_loadgistic-local','psql','-X','-q','-U','supabase_admin','-d','postgres','-v','ON_ERROR_STOP=1'], {input:sql, encoding:'utf8', timeout:30000});
+// PostgreSQL 15 authenticates this local owner with the CLI-provisioned container
+// password. Read it only inside that fixed container; never read a hosted secret.
+// Explicit loopback/port prevents a PGHOST environment override from redirecting it.
+const localCommand = 'test -n "$POSTGRES_PASSWORD" || exit 78; PGPASSWORD="$POSTGRES_PASSWORD" PGCONNECT_TIMEOUT=5 exec psql -X -w -q -h 127.0.0.1 -p 5432 -U supabase_admin -d postgres -v ON_ERROR_STOP=1';
+const result = spawnSync('docker', ['exec','-i','supabase_db_loadgistic-local','sh','-c',localCommand], {input:sql, encoding:'utf8', timeout:30000});
 if (result.status !== 0) {
   // This fixed local metadata repair never handles customer values or secrets.
   // Retain the first PostgreSQL/Docker error so clean-CI failures are actionable.
