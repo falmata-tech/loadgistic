@@ -2,7 +2,7 @@
 begin;
 do $test$
 declare owner_id uuid;org uuid;outsider uuid;recipient uuid:=gen_random_uuid();wrong_user uuid:=gen_random_uuid();
-  invite_id uuid;other_invite uuid;vehicle_id uuid;row jsonb;before_number text;email_value text;
+  invite_id uuid;other_invite uuid;vehicle_id uuid;row jsonb;before_number text;email_value text;private_phone text;
 begin
   select id into strict owner_id from profiles where email='transporter@loadgistic.local';
   select organization_id into strict org from organization_members where user_id=owner_id and membership_role='OWNER';
@@ -44,9 +44,12 @@ begin
   begin perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',recipient,'vehicle_id',vehicle_id));raise exception 'STALE_MEMBER_ASSIGNED';
     exception when raise_exception then if sqlerrm<>'NOT_FOUND' then raise;end if;end;
   insert into organization_members(user_id,organization_id,membership_role) values(recipient,org,'DRIVER');
+  -- FEAT-IAM-001 / migration 086 keeps the private account phone separate.
+  select phone into strict private_phone from profiles where id=recipient;
   perform fleet_update_driver_contact(owner_id,jsonb_build_object('driver_user_id',recipient,'name','Updated Driver','phone','+251900000002'));
   if not exists(select 1 from profiles p join drivers d on d.user_id=p.id where p.id=recipient
-    and p.full_name='Updated Driver' and d.name=p.full_name and d.phone=p.phone) then raise exception 'CONTACT_NOT_UPDATED';end if;
+    and p.full_name='Updated Driver' and d.name=p.full_name and d.phone='+251900000002'
+    and p.phone is not distinct from private_phone) then raise exception 'CONTACT_NOT_UPDATED';end if;
   begin perform fleet_update_driver_contact(outsider,jsonb_build_object('driver_user_id',recipient,'name','Wrong','phone','+251900000002'));raise exception 'CROSS_OWNER_EDIT';
     exception when raise_exception then if sqlerrm<>'FORBIDDEN' then raise;end if;end;
   perform update_provider_vehicle_details(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'make','Fuso','model','Canter','plate','TEST-456','cargo_configuration','Light Box Truck'));

@@ -19,7 +19,9 @@ begin
  -- Insert 1,001 authorized newer records and a uniquely matching older record.
  select id into strict actor from profiles where email='driver@loadgistic.local';
  select id into strict provider from provider_profiles where user_id=actor;
- select * into strict source from capacities where provider_profile_id=provider and market_status='EMPTY' order by updated_at desc limit 1;
+ -- The managed verifier can leave the source truck Partial or Off Duty. Its
+ -- current status is irrelevant: every synthetic copy below is explicitly Empty.
+ select * into strict source from capacities where provider_profile_id=provider order by updated_at desc limit 1;
  select * into strict truck from vehicles where id=source.vehicle_id;
  select string_agg(quote_ident(attname),',' order by attnum) into vehicle_columns from pg_attribute where attrelid='public.vehicles'::regclass and attnum>0 and not attisdropped and attgenerated='';
  select string_agg(quote_ident(attname),',' order by attnum) into capacity_columns from pg_attribute where attrelid='public.capacities'::regclass and attnum>0 and not attisdropped and attgenerated='';
@@ -27,7 +29,9 @@ begin
   truck.id:=gen_random_uuid();truck.platform_number:='SQL-SPATIAL-'||n;truck.plate:='SQL-SPATIAL-'||n;truck.active:=true;
   execute format('insert into vehicles(%s) select %s from jsonb_populate_record(null::public.vehicles,$1)',vehicle_columns,vehicle_columns) using to_jsonb(truck);
   source.id:=gen_random_uuid();source.vehicle_id:=truck.id;source.updated_at:=now()-make_interval(secs=>n);
-  source.expires_at:=now()+interval '1 day';source.visibility:='PRIVATE';source.market_status:='EMPTY';source.status:='EMPTY';
+  source.expires_at:=now()+interval '1 day';source.visibility:='PRIVATE';source.market_status:='EMPTY';source.status:='EMPTY';source.available_percent:=100;
+  source.availability_geometry:='RADIUS';source.work_radius_km:=10;
+  source.current_route_points_json:='[]'::jsonb;source.capacity_area_boundary_json:='[]'::jsonb;
   source.location_lat:=case when n=1002 then 14 else 9 end;source.location_lng:=case when n=1002 then 47 else 38 end;
   execute format('insert into capacities(%s) select %s from jsonb_populate_record(null::public.capacities,$1)',capacity_columns,capacity_columns) using to_jsonb(source);
   insert into capacity_access_grants(vehicle_id,audience_type,recipient_email_digest,recipient_email,created_by)

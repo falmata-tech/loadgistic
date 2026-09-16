@@ -1,5 +1,23 @@
 # Build Verification
 
+## SQL fixture compatibility — 2026-09-17
+
+Clean CI now passes the isolated owner setup, catalog gate and all managed
+workflow verifiers. It exposed an older spatial fixture assumption: no Empty
+capacity necessarily remains after those verifiers. A rollback-only reproduction
+with exclusively Partial source rows fails before the fix and passes afterward;
+the test now explicitly creates Empty/radius copies and keeps every paging,
+spatial-filter, aggregate and audience-denial assertion.
+
+The full local SQL pass also identified three stale setup/assertion assumptions.
+Fleet onboarding now proves the accepted private-account phone separation from
+migration 086; company paging creates the active owner required by migration 092;
+and Featured target counts apply to the requested week, not unrelated history.
+All 15 SQL suites have passing evidence across the initial and focused corrected
+runs. SQL failures are now grouped by suite in CI. No production contract or
+authorization check was relaxed; the accepted FEAT-IAM-001/FEAT-FLT-001 contracts
+control the corrected assertions. Clean CI is still required.
+
 ## Clean-CI local owner authentication — 2026-09-17
 
 The fresh PostgreSQL 15 CI image requires password authentication for its local

@@ -65,7 +65,9 @@ jobs:
           for suite in security-boundaries account-details account-security capacity-viewport driver-portraits \
             fleet-driver-onboarding lifecycle-recovery public-provider-paging \
             public-provider-privacy support-attachments support-history support-polling tracking-proof-access; do
-            docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+            echo "::group::SQL regression: $suite"
+            docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+            echo "::endgroup::"
           done
 
       - name: Verify queued authorization and account closure races

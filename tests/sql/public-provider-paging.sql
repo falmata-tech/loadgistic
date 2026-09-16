@@ -1,7 +1,7 @@
 -- Isolated local database only. Synthetic fixtures and assertions roll back.
 begin;
 do $test$
-declare actor uuid:=gen_random_uuid(); provider uuid:=gen_random_uuid(); org uuid:=gen_random_uuid();
+declare actor uuid:=gen_random_uuid(); provider uuid:=gen_random_uuid(); org uuid:=gen_random_uuid();company_owner uuid:=gen_random_uuid();
   vehicle uuid; last_vehicle uuid; evidence_vehicle uuid; row jsonb; result jsonb; first_summary jsonb;
   ids uuid[]; seen uuid[]:='{}'; i integer; n integer;
 begin
@@ -78,6 +78,13 @@ begin
   begin perform public_provider_fleet_page(org,provider,1);raise exception 'BOTH_SCOPES_ACCEPTED';exception when others then if sqlerrm<>'INVALID_PROVIDER_SCOPE' then raise;end if;end;
   begin perform public_provider_fleet_page(null,null,1);raise exception 'NO_SCOPE_ACCEPTED';exception when others then if sqlerrm<>'INVALID_PROVIDER_SCOPE' then raise;end if;end;
   insert into organizations(id,name,handle,type) values(org,'Company paging','paging-org-'||substr(org::text,1,8),'TRANSPORT_COMPANY');
+  -- Migration 092 requires a real active owner before creating active trucks.
+  insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+    values(company_owner,'company-paging-sql@example.invalid','{}','{}');
+  insert into profiles(id,email,full_name,role,active)
+    values(company_owner,'company-paging-sql@example.invalid','Company paging owner','TRANSPORTER',true)
+    on conflict(id) do update set full_name='Company paging owner',role='TRANSPORTER',active=true;
+  insert into organization_members(organization_id,user_id,membership_role) values(org,company_owner,'OWNER');
   insert into company_pages(organization_id,published) values(org,true);
   result:=public_provider_fleet_page(org,null,1);
   if result->>'total'<>'0' or jsonb_array_length(result->'items')<>0 then raise exception 'CROSS_PROVIDER_OR_EMPTY_LEAK';end if;
