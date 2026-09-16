@@ -52,6 +52,17 @@ And only the owner executes production changes
 And the already approved read-only backups and isolated restore remain authorized
 And future automated production execution requires a new owner decision.
 
+## Scenario: one-time owner-authorized assistance
+
+Given the owner explicitly authorizes assisted execution of the current reviewed
+Loadgistic repair/release while retaining the safe workflow
+When the agent performs that task
+Then every target, digest, backup/restore, security and CI gate still applies
+And no ownership or privilege bypass, broad settings replacement or unrelated
+credential/provider change is permitted
+And owner-only execution remains the standing default outside this task
+And any provider ownership or failed release gate stops the dependent action.
+
 ## Scenario: reviewed production change
 
 Given a production database or configuration change is proposed

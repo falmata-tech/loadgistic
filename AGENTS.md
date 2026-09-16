@@ -69,6 +69,13 @@ Before major authentication, authorization, workflow, public-data, file, schema,
   automation account is selected. The approved read-only backup and isolated
   restore remain authorized. Future automation requires a new owner decision.
 
+- One-time 2026-09-17 exception: the owner subsequently authorized agent help
+  executing this reviewed Loadgistic repair/release only, preserving every backup,
+  target/digest, security and CI gate. See the scoped exception in
+  docs/PRODUCTION_AUTHORITY.md. It does not permit ownership/privilege bypass,
+  broad settings replacement or unrelated changes. Owner-only remains the
+  default outside that task and after it ends.
+
 - Routine agent work uses local services and project-scoped read-only production
   inspection. Keep production administrator/PAT/database-owner/service credentials
   outside the routine agent environment. Repository rules are not a sandbox.

@@ -46,6 +46,21 @@ proposal below is future setup, not permission to install it now.
 This is the current operating rule; technical credential separation is still
 pending. An independent automated approval boundary is not claimed.
 
+
+## One-time assisted release exception — 2026-09-17
+
+The owner subsequently asked the agent to perform the reviewed repair/release
+work "just for now" while preserving the safe workflow. This is a task-limited
+exception, not permanent administrator authority. It permits publishing the
+prepared changes to draft PR #15, running and fixing required CI, and carrying
+out the reviewed Loadgistic repair/release steps only when their prerequisite
+evidence passes. Preserve exact target/digest checks, tested backup/restore,
+independent postchecks and the stop-on-ambiguity rule. Do not bypass Supabase
+ownership, broaden privileges, replace settings in bulk, or deploy past a failed
+security/release gate. No unrelated credential/provider changes are authorized.
+Owner-only execution remains the default after this task or if a prerequisite
+requires provider intervention. Separate coding identity remains unselected.
+
 ## Authority boundaries
 
 | Actor | Allowed authority | Excluded authority |

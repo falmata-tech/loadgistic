@@ -1,5 +1,17 @@
 # Progress
 
+## Assisted repair/release — 2026-09-17
+
+The owner authorized a one-time assisted execution of the reviewed Loadgistic
+repair/release, preserving the safe workflow. Owner-only remains the standing
+default. See PRODUCTION_AUTHORITY for the exact scope and stopping conditions.
+
+- [ ] Recheck exact hosted project/advisors and provider ownership.
+- [ ] Publish the tested security changes to draft PR #15 and obtain clean CI.
+- [ ] Resolve the critical hosted finding through its actual owner; no bypass.
+- [ ] Apply only reviewed release changes after every prerequisite passes.
+- [ ] Record hosted evidence or the precise provider/access blocker.
+
 ## Security alert and agent authority — active, 2026-09-16
 
 Scope: FEAT-SEC-001 / BASE-DEP-001 / FEAT-IAM-001; security and operations.
