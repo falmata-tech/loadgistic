@@ -7,6 +7,7 @@ import { checked, redirectWith, text } from '@/lib/redirects';
 export async function POST(request:NextRequest) {
   const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
+  if(user.role!=='ADMIN')return NextResponse.json({error:'Access denied.'},{status:403});
   const form=await request.formData();
   try {
     await createSupportAgent(user,{

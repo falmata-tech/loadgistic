@@ -16,6 +16,9 @@
 - Rollout and rollback:
 - Data migration:
 - Security/tenant/public-field impact:
+- Applicable do-not-repeat lesson IDs from `docs/SECURITY_REGRESSION_REGISTER.md`:
+- Negative regression evidence, or not applicable with reason:
+- New findings recorded with owner/next action; local, hosted and monitoring states distinguished:
 
 ## Product invariants
 

@@ -52,6 +52,13 @@ function accessMessage(payload){
 }
 
 export function buildEmailMessage(payload){
+  if(payload?.template==='fleet-driver-invitation'){
+    const title='You’re invited to join a fleet on Loadgistic';
+    const intro=`${text(payload.organizationName)} invited you to join as a Company driver.`;
+    const guidance='Log in using this email, then choose Join fleet. This invitation expires in seven days. Your fleet owner can assign your truck after you accept. If you were not expecting this invitation, ignore it.';
+    return {...payload,subject:title,text:[intro,guidance,text(payload.url)].join('\n\n'),
+      html:emailHtml(title,[`<p>${escapeHtml(intro)}</p>`,`<p>${escapeHtml(guidance)}</p>`,`<p><a href="${escapeHtml(payload.url)}">View invitation</a></p>`])};
+  }
   if(['tracking-started','tracking-completed'].includes(payload?.template))return trackingMessage(payload);
   if(['shared-capacity-access','tracking-access-code','assisted-matching-access'].includes(payload?.template))return accessMessage(payload);
   throw new Error('UNKNOWN_EMAIL_TEMPLATE');

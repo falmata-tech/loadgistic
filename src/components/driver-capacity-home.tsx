@@ -52,8 +52,8 @@ function RestrictedAvailability({vehicles,latestByVehicle,renderedAt}:{vehicles:
 export function DriverCapacityHome({ vehicles, capacities, corridors, access, query, renderedAt }: { vehicles: any[]; capacities: any[]; corridors:any[]; access:any; query: Record<string,string|undefined>; renderedAt:number }) {
   const latestByVehicle = new Map<string,any>();
   for (const capacity of capacities) if (!latestByVehicle.has(capacity.vehicle_id)) latestByVehicle.set(capacity.vehicle_id,capacity);
-  const vehicleOptions = vehicles.map(vehicle => ({ id:String(vehicle.id), label:String(vehicle.label), make:String(vehicle.make||''), model:String(vehicle.model||''), cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''), plate:String(vehicle.plate||''), platformNumber:String(vehicle.platform_number||''), current:latestByVehicle.get(vehicle.id) || null }));
-  const current = capacities[0];
+  const vehicleOptions = vehicles.map(vehicle => ({ id:String(vehicle.id), label:String(vehicle.label), make:String(vehicle.make||''), model:String(vehicle.model||''), cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''), plate:String(vehicle.plate||''), platformNumber:String(vehicle.platform_number||''), driver:vehicle.assigned_driver||null, current:latestByVehicle.get(vehicle.id) || null }));
+const current = capacities[0];
   const restricted=access?.kind==='COMPANY'&&!access.can_manage_capacity;
   if(!vehicles.length&&access?.kind==='SELF_MANAGED')return <div className="page capacity-home-page"><section className="driver-empty-fleet"><Truck aria-hidden="true"/><div><h1>Add your first truck</h1><p>Register the truck you control, then publish its capacity and approximate location.</p></div><Link className="button success" href="/app/fleet/new"><Plus aria-hidden="true"/>Add truck</Link></section></div>;
   return <div className="page capacity-home-page">

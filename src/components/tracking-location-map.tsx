@@ -2,8 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import { LocateFixed } from 'lucide-react';
+import {SurfaceSkeleton} from './loading-state';
 
-const TrackingLocationMapLeaflet=dynamic(()=>import('./tracking-location-map-leaflet'),{ssr:false,loading:()=> <div className="tracking-location-map-loading"><LocateFixed aria-hidden="true"/><span>Loading shipment map…</span></div>});
+const TrackingLocationMapLeaflet=dynamic(()=>import('./tracking-location-map-leaflet'),{ssr:false,loading:()=> <SurfaceSkeleton kind="map" className="tracking-location-map-loading" label="Loading shipment map"/>});
 
 export function TrackingLocationMap({shipment}:{shipment:any}){
   const location=shipment.current_location;

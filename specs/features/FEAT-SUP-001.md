@@ -1,15 +1,33 @@
 ---
 id: FEAT-SUP-001
 title: Native authenticated customer support inbox
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001, FEAT-GST-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001, FEAT-GST-001, BASE-DEP-001]
 problem: Members need simple in-app help while platform owners need bounded assignment, scoped support-agent access, and accountable resolution without per-agent fees or a second operational platform.
-behavior: Loadgistic presents signed-in Support as a simple New chat, Continue chat, and Past chats workflow; stores authoritative conversations and messages; lets either participant end an owned chat; routes one open conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration. FEAT-GST-001 extends the same queue with clearly labeled account-free Assisted matching conversations and private requested attachments without changing member ownership.
+behavior: Loadgistic presents signed-in Support as a simple New chat, Continue chat, and Past chats workflow; stores authoritative conversations, messages and private optional reply attachments; lets either participant end an owned chat; routes one open conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration. FEAT-GST-001 extends the same queue with clearly labeled account-free Assisted matching conversations and private requested attachments without changing member ownership.
 contracts: [SupportConversation, SupportMessage, SupportCategory, SupportAgentState, SupportQueueAssignment, SupportAccessPolicy, SupportAudit]
 observability: [support_conversation_created, support_message_sent, support_conversation_assigned, support_conversation_claimed, support_conversation_closed, support_agent_availability_changed, support_assignment_capacity_reached, denied_support_access]
 rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Preview, and Production with visibility-aware bounded refreshes and message/query windows; durable database records remain authoritative so authorized Realtime notifications can be enabled without changing ownership, and managed failure never falls back to SQLite.
 ---
 
 # Customer support inbox
+
+### Scenario: every retained message remains reachable
+
+Given an authorized member or staff actor opens a conversation with more than 50 messages\
+When Older messages is selected\
+Then a bounded preceding window is shown in chronological order with a Latest messages action\
+And a conversation-scoped message cursor orders equal timestamps by message ID\
+And new replies do not shift or duplicate the historical window\
+And historical reads do not mark unseen current messages as read or refresh back to the latest window\
+And missing, malformed, or cross-conversation cursors fail without disclosing another conversation\
+And every request repeats current authorization, including closed conversations.
+
+Implementation: additive service-only history RPCs, a 50-message window, shared
+history navigation on member/staff pages, and bounded public-chat history state.
+Verify with `tests/support-history.test.mjs`, rollback SQL
+`tests/sql/support-history.sql` and `tests/e2e/support-history.spec.ts`.
+This history checkpoint adds no push transport or retention-policy change.
+Member reply attachments are specified separately below.
 
 ### Scenario: authenticated member requests help
 
@@ -112,8 +130,83 @@ And managed failure never falls back to SQLite.
 
 ## Contract ownership
 
+### Scenario: team creation authorizes before external identity creation
+
+Given a caller requests creation of a Support team member\
+When the caller is missing, inactive, not an administrator, or cannot be verified against current persisted authority\
+Then no Supabase Auth identity is created or deleted\
+And authorization failure is returned before any external mutation\
+And the database command independently repeats the administrator check on successful requests.
+
 - Pages: `/app/support`, `/support`, `/support/[id]`, `/admin/support`
 - Application services: dedicated managed Support application port
 - Inbound adapters: `/api/support/*` and `/api/admin/support-agents`
 - Persistence adapter: actor-scoped Supabase PostgreSQL commands extending migration `008`
 - Tests: managed Support contract and live Supabase verifier, domain authorization/routing, E2E customer/agent flow, and desktop/mobile UI audit
+
+Team-creation repair evidence: `tests/team-authorization.test.mjs` verifies
+persisted active administrator authority and its position before external Auth
+creation. Existing SQL denial remains mandatory; no new schema or provider is
+introduced. Do not roll back to late authorization while team creation is enabled.
+
+## Private member reply attachments (verified locally)
+
+Given an active member owns an open Support conversation, or current assigned
+Support staff with Support permission or an administrator can reply\
+When they send a required non-empty message with one optional JPEG, PNG, WebP
+or PDF of at most the configured four-MiB ceiling\
+Then the server checks current conversation permission before any Storage write\
+And the file passes existing private quarantine/inspection checks\
+And the message and its attachment become visible atomically after upload\
+And permission, assignment, open-state and rate limits are rechecked at commit.
+
+Given an attached message exists in recent or older history, including a closed chat\
+When a current permitted participant follows its download link\
+Then the server reauthorizes the conversation and exact attachment on every read\
+And serves the file as a no-store, nosniff download\
+And another member, unassigned/reassigned/inactive staff or anonymous visitor
+cannot read the bytes or private Storage path\
+And message projections contain only the attachment ID and safe display metadata.
+
+Given Storage, inspection or message attachment fails or a response is ambiguous\
+When cleanup runs\
+Then an already attached file is never deleted speculatively\
+And reserved unfinished uploads remain registered until failed/stale cleanup\
+And unacknowledged Storage writes retain a one-hour grace period before cleanup\
+And cleanup claims at most 20 unattached objects with retryable deletion state\
+And metadata is removed only after object deletion succeeds\
+And closed chat history retains attached files; no retention policy is changed.
+
+Contracts: additive migration 089, service-only reservation/commit/read/cleanup
+RPCs and private `support-attachment/member-support/` objects. Browser table/RPC
+access remains denied. Message audits contain no file path/name/body. Rollout
+requires 089 before UI/worker publication; UI rollback retains metadata and
+cleanup. Future conversation/account deletion must explicitly drain files first.
+No new vendor, bucket or push transport. Tests: `tests/support-attachments.test.mjs`,
+`tests/sql/support-attachments.sql`, `tests/e2e/support-attachments.spec.ts`.
+
+Local evidence: five input/cleanup tests, rollback SQL authorization/lifecycle
+checks, and desktop/phone browser uploads and byte-verified downloads passed.
+Invalid signatures create no message and retain retryable grace-period metadata
+until cleanup succeeds; assigned staff,
+reassignment denial, cross-conversation/member/anonymous denial and closed older
+history were exercised against local Auth/PostgreSQL/Storage. Six screenshots
+are retained under `artifacts/support-attachments-2026-09-14/`; owner visual
+approval and hosted rollout are not claimed. Final gates: BUILD_VERIFICATION.
+
+## Incremental polling (verified locally; hosted rollout separate)
+
+Given a visible current conversation or staff queue is polling\
+When its authorized state has not changed\
+Then a lightweight revision request returns HTTP 304 without transcript or page refresh\
+And current membership, assignment, permission or guest digest is checked before the revision comparison\
+And a changed message, assignment, closure or queue state triggers a bounded fresh projection\
+And read receipts alone do not cause repeated full transcript refreshes\
+And requests do not overlap, hidden tabs and older history pause, and failures back off\
+And a failed or denied request never reports a successful unchanged state or clears a draft.
+
+The selected F05 transport is incremental polling, as permitted by the audit;
+no Realtime channel or new provider is required. Migration 094 introduces a
+service-only conversation revision port. Rollout requires it before clients;
+rollback restores polling without changing messages or attachments. SQL denial,
+conditional HTTP, visibility/backoff and browser draft tests remain required.

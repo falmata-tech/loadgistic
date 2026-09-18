@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   Network,
   Sparkles,
+  Settings2,
   Truck,
   UserRound
 } from 'lucide-react';
@@ -45,6 +46,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/capacity-network', label: 'Capacity network', icon: Network },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
+    { href: '/admin/settings', label: 'Settings', icon: Settings2 },
     { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   SUPPORT: [

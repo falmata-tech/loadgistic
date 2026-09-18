@@ -105,7 +105,11 @@ And a self-managed owner-operator receives the relevant combined owner and drive
 Given a newly signed-up provider workspace has no approved verification requests\
 When its trial or paid access is current\
 Then its authorized user can use the provider workspace and publish capacity\
-And gray Not verified badges encourage evidence submission without blocking access.
+And document uploads are optional during signup, truck registration, publication, and other authorized software use\
+And gray Not verified badges encourage evidence submission without blocking access\
+And colored reviewed badges require an unexpired approval, not merely an upload\
+And a missing approval states that Loadgistic has not reviewed current evidence rather than claiming the Driver or provider possesses no document\
+And an empty badge array can never be summarized as fully reviewed.
 
 ### Scenario: public marketplace trust warning remains visible
 

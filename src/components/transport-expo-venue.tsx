@@ -15,7 +15,8 @@ function DriverSteeringWheel(){
 }
 
 function DriverPortrait({truck}:{truck:any}){
-  if(truck.driver_portrait_url)return <img src={truck.driver_portrait_url} alt=""/>;
+  const [failedUrl,setFailedUrl]=React.useState(null as string|null);
+  if(truck.driver_portrait_url&&truck.driver_portrait_url!==failedUrl)return <img src={truck.driver_portrait_url} alt="" onError={()=>setFailedUrl(truck.driver_portrait_url)}/>;
   return <span className="driver-portrait-fallback" aria-hidden="true"><UserRound/><DriverSteeringWheel/></span>;
 }
 

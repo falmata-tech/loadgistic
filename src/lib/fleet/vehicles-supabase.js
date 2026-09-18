@@ -1,6 +1,7 @@
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 
 const VEHICLE_ERRORS=[
+  'VEHICLE_OWNER_INACTIVE',
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','INVALID_VEHICLE_INPUT','INVALID_VEHICLE_MAKE',
   'INVALID_VEHICLE_MODEL','INVALID_VEHICLE_PLATE','INVALID_VEHICLE_CONFIGURATION',
   'INVALID_TRAILER_CONFIGURATION','NOT_INTERCHANGEABLE_TRACTOR','INCOMPATIBLE_TRAILER_CONFIGURATION','NOT_FOUND'
@@ -29,6 +30,15 @@ export async function setSupabaseProviderVehicleAttachedTrailer(user,vehicleId,c
   const {data,error}=await client.rpc('set_provider_vehicle_attached_trailer',{actor_user_id:user.id,command:{
     vehicle_id:String(vehicleId||''),cargo_configuration:String(cargoConfiguration||'').trim()
   }});
+  if(error)throw vehicleError(error);
+  return data;
+}
+
+export async function updateSupabaseProviderVehicleDetails(user,vehicleId,input){
+  const {data,error}=await createSupabaseAdminClient().rpc('update_provider_vehicle_details',{
+    actor_user_id:user.id,command:{vehicle_id:vehicleId,make:input.make,model:input.model,
+      plate:input.plate,cargo_configuration:input.cargoConfiguration}
+  });
   if(error)throw vehicleError(error);
   return data;
 }

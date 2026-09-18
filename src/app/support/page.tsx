@@ -23,7 +23,7 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
   const available=Boolean(result.agent?.available);
 
   return <div className="page support-page">
-    <SupportRefresh/>
+    <SupportRefresh endpoint={`/api/support/updates?view=${view}&page=${result.page}`}/>
     <PageHeader icon={Headphones} title="Support Inbox" subtitle="Help one customer at a time." action={<form action="/api/support/availability" method="post">{!available?<input type="hidden" name="available" value="on"/>:null}<button className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/>Pause</>:<><PlayCircle aria-hidden="true"/>Go available</>}</button></form>}/>
     <Flash error={query.error} success={query.success}/>
     <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/>Assisted matching</Link>

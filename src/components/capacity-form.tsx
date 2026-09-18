@@ -2,113 +2,126 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Boxes, CircleDotDashed, Gauge, LocateFixed, MapPin, MapPinned, Pencil, Plus, PowerOff, RefreshCw, Repeat2, Route, Save, Trash2, Truck } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Boxes, Gauge, MapPinned, RefreshCw, Repeat2, Route, Save, Shield, Truck } from 'lucide-react';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
-import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
-import { capacityPrivacyRadii, obscureCoordinate } from '@/lib/location-privacy.js';
+import { capacityPrivacyRadii } from '@/lib/location-privacy.js';
 import { relativeTime } from '@/lib/ui';
-import { EthiopiaPlaceInput } from './ethiopia-place-input';
+import { readDriverLocation, saveDriverLocation, type DriverLocation } from '@/lib/capacity-editor-client';
 import { CapacityLocationMap } from './capacity-location-map';
 import { CapacityMarketPlanning } from './capacity-market-planning';
+import { CapacityEditDialog } from './capacity-edit-dialog';
+import { CapacitySignalEditor, type CapacitySnapshot, type RegularSignal } from './capacity-signal-editor';
 
-type Point={lat:number;lng:number};
-type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
-type EditablePlace={key:string;place_ref:string;label:string;lat?:number;lng?:number};
-type CapacitySnapshot={status?:string;visibility?:string;accepts_full_load?:number;accepts_partial_load?:number;availability_geometry?:string;location_area?:string;location_lat?:number;location_lng?:number;location_precision_km?:number;location_updated_at?:string;current_route_points?:PlacePoint[];capacity_area_center_place_ref?:string;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];accepts_multi_pick?:number;accepts_multi_drop?:number};
-type VehicleOption={id:string;label:string;make:string;model:string;cargoConfiguration:string;plate:string;platformNumber?:string;current?:CapacitySnapshot|null};
-type EditSection='ALL'|'AVAILABILITY'|'ROUTE'|'RECURRING';
+type VehicleOption={id:string;label:string;make:string;model:string;cargoConfiguration:string;plate:string;platformNumber?:string;driver?:{id:string;name:string}|null;current?:CapacitySnapshot|null};
+type EditSection='AVAILABILITY'|'ROUTE'|'SHARING'|'LOADS'|'RECURRING'|'LOCATION';
+const editorTitles={AVAILABILITY:'Current capacity',ROUTE:'Current coverage',SHARING:'Capacity sharing',LOADS:'Load preferences',RECURRING:'Regular service',LOCATION:'Approximate location'};
 
-function loadPolicy(current?:CapacitySnapshot|null){if(current?.accepts_full_load&&current?.accepts_partial_load)return 'BOTH';if(current?.accepts_partial_load)return 'PTL';return 'FTL';}
-function loadPolicyLabel(value:string){return value==='BOTH'?'Full or Partial Truckload':value==='PTL'?'Partial Truckload':'Full Truckload';}
-function editable(points:PlacePoint[]|undefined,prefix:string,min:number){const saved=(points||[]).map((point,index)=>({...point,key:`${prefix}-${index}`}));return saved.length>=min?saved:Array.from({length:min},(_,index)=>({key:`${prefix}-${index}`,place_ref:'',label:''}));}
-function routeLabel(points:any[],separator=' → '){return points?.length?points.map(point=>point.label).join(separator):'Needs an update';}
-
-function PlaceSequenceEditor({title,help,items,setItems,name,refName,min,max,label}:{title:string;help:string;items:EditablePlace[];setItems:React.Dispatch<React.SetStateAction<EditablePlace[]>>;name:string;refName:string;min:number;max:number;label:string}){
-  return <div className="multi-place-editor"><div className="multi-place-heading"><div><strong>{title}</strong><span>{help}</span></div><button type="button" className="button secondary small" disabled={items.length>=max} onClick={()=>setItems(values=>[...values,{key:`${name}-${Date.now()}`,place_ref:'',label:''}])}><Plus aria-hidden="true"/>Add city</button></div>
-    {items.map((item,index)=><div className="multi-place-row" key={item.key}><span>{index+1}</span><div className="form-group"><label htmlFor={item.key}><MapPin aria-hidden="true"/>{label} {index+1}</label><EthiopiaPlaceInput id={item.key} name={name} placeRefName={refName} defaultPlaceRef={item.place_ref} defaultValue={item.label} onPlaceSelect={place=>setItems(values=>values.map(value=>value.key===item.key?{...value,place_ref:place.id,label:place.display_name,lat:place.lat,lng:place.lng}:value))} required/></div>{items.length>min?<button type="button" className="icon-button" aria-label={`Remove ${label.toLowerCase()} ${index+1}`} onClick={()=>setItems(values=>values.filter(value=>value.key!==item.key))}><Trash2 aria-hidden="true"/></button>:null}</div>)}
-  </div>;
+function snapshotLocation(current?:CapacitySnapshot|null):DriverLocation|null{
+  return current?.location_lat!=null&&current.location_lng!=null?{lat:Number(current.location_lat),lng:Number(current.location_lng),radius:Number(current.location_precision_km)||20,area:current.location_area||'',updatedAt:current.location_updated_at||''}:null;
 }
 
-export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true,lockVehicleSelection=false,showTruckIdentity=true,corridors=[],returnTo='/app/home',allowCorridors=false,renderedAt}:{vehicles:VehicleOption[];initialVehicleId?:string;allowDeviceLocation?:boolean;lockVehicleSelection?:boolean;showTruckIdentity?:boolean;corridors?:any[];returnTo?:string;allowCorridors?:boolean;renderedAt:number}){
-  const initialId=vehicles.some(vehicle=>vehicle.id===initialVehicleId)?initialVehicleId:vehicles[0]?.id;
-  const [vehicleId,setVehicleId]=React.useState(initialId||'');
-  const selectedVehicle=vehicles.find(vehicle=>vehicle.id===vehicleId);const current=selectedVehicle?.current;
-  const [editSection,setEditSection]=React.useState((current?null:'ALL') as EditSection|null);
-  const [status,setStatus]=React.useState(current?.status||'EMPTY');
-  const [visibility,setVisibility]=React.useState(current?.visibility==='PRIVATE'?'PRIVATE':'OPEN');
-  const [geometry,setGeometry]=React.useState(current?.status==='PARTIAL'?'ROUTE':current?.availability_geometry||'RADIUS');
-  const [privacyRadius,setPrivacyRadius]=React.useState(Number(current?.location_precision_km)||20);
-  const [acceptedLoads,setAcceptedLoads]=React.useState(loadPolicy(current));
-  const [multiPick,setMultiPick]=React.useState(Boolean(current?.accepts_multi_pick));
-  const [multiDrop,setMultiDrop]=React.useState(Boolean(current?.accepts_multi_drop));
-  const [point,setPoint]=React.useState((current?.location_lat!=null&&current?.location_lng!=null?{lat:Number(current.location_lat),lng:Number(current.location_lng)}:null) as Point|null);
-  const [area,setArea]=React.useState(current?.location_area||'');
-  const [locationState,setLocationState]=React.useState(current?.location_lat!=null?'ready':'idle');
-  const [locationFeedback,setLocationFeedback]=React.useState('');
-  const [locationUpdatedAt,setLocationUpdatedAt]=React.useState(current?.location_updated_at||'');
-  const [routePoints,setRoutePoints]=React.useState(editable(current?.current_route_points,'current-route',2) as EditablePlace[]);
-  const [areaCenter,setAreaCenter]=React.useState({key:'area-center',place_ref:current?.capacity_area_center_place_ref||'',label:current?.capacity_area_center_label||'',lat:current?.capacity_area_center_lat,lng:current?.capacity_area_center_lng} as EditablePlace);
-  const [areaBoundary,setAreaBoundary]=React.useState(editable(current?.capacity_area_boundary,'area-boundary',3) as EditablePlace[]);
-  const locationRequestActive=React.useRef(false);const privacyRadiusRef=React.useRef(privacyRadius);const automaticVehicleRef=React.useRef('');const lastAutomaticRefresh=React.useRef(0);
-  const [interactive,setInteractive]=React.useState(false);React.useEffect(()=>setInteractive(true),[]);
-  const onDuty=status!=='OFF_DUTY';const editing=editSection!==null;
-
-  function reset(nextId:string){const next=vehicles.find(vehicle=>vehicle.id===nextId)?.current;const nextPrivacy=Number(next?.location_precision_km)||20;setVehicleId(nextId);setEditSection(next?null:'ALL');setStatus(next?.status||'EMPTY');setVisibility(next?.visibility==='PRIVATE'?'PRIVATE':'OPEN');setGeometry(next?.status==='PARTIAL'?'ROUTE':next?.availability_geometry||'RADIUS');setPrivacyRadius(nextPrivacy);privacyRadiusRef.current=nextPrivacy;setAcceptedLoads(loadPolicy(next));setMultiPick(Boolean(next?.accepts_multi_pick));setMultiDrop(Boolean(next?.accepts_multi_drop));setPoint(next?.location_lat!=null&&next?.location_lng!=null?{lat:Number(next.location_lat),lng:Number(next.location_lng)}:null);setArea(next?.location_area||'');setLocationState(next?.location_lat!=null?'ready':'idle');setLocationFeedback('');setLocationUpdatedAt(next?.location_updated_at||'');setRoutePoints(editable(next?.current_route_points,'current-route',2));setAreaCenter({key:'area-center',place_ref:next?.capacity_area_center_place_ref||'',label:next?.capacity_area_center_label||'',lat:next?.capacity_area_center_lat,lng:next?.capacity_area_center_lng});setAreaBoundary(editable(next?.capacity_area_boundary,'area-boundary',3));}
-
-  function chooseStatus(nextStatus:string){setStatus(nextStatus);if(nextStatus==='PARTIAL'){setGeometry('ROUTE');if(editSection==='AVAILABILITY'&&current?.availability_geometry==='RADIUS')setEditSection('ALL');}}
-
-  function refreshLocation(nextPrivacyRadius=privacyRadiusRef.current,automatic=false){
-    if(locationRequestActive.current)return;setLocationFeedback('');
-    if(!allowDeviceLocation||!window.isSecureContext){setLocationState('insecure');if(!automatic)setLocationFeedback('Location requires a secure browser connection.');return;}if(!navigator.geolocation){setLocationState('unsupported');if(!automatic)setLocationFeedback('This device does not provide browser location.');return;}
-    locationRequestActive.current=true;setLocationState('requesting');
-    navigator.geolocation.getCurrentPosition(async position=>{try{const hidden=obscureCoordinate(position.coords.latitude,position.coords.longitude,nextPrivacyRadius);const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);const nextArea=nearest?`Around ${nearest.name}, Ethiopia`:'Around current device area';setPoint(hidden);setArea(nextArea);if(current&&['EMPTY','PARTIAL'].includes(current.status||'')){setLocationState('saving');const response=await fetch('/api/capacity/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleId,approximateLat:hidden.lat,approximateLng:hidden.lng,locationPrecisionKm:nextPrivacyRadius})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Truck location could not be saved.');privacyRadiusRef.current=nextPrivacyRadius;setPrivacyRadius(nextPrivacyRadius);setPoint({lat:Number(result.approximateLat),lng:Number(result.approximateLng)});setArea(result.locationArea);setLocationUpdatedAt(result.locationUpdatedAt);setLocationState('saved');setLocationFeedback(automatic?'':'Approximate truck location saved.');}else{privacyRadiusRef.current=nextPrivacyRadius;setPrivacyRadius(nextPrivacyRadius);setLocationState('captured');setLocationUpdatedAt(new Date().toISOString());if(!automatic)setLocationFeedback('Location captured. Save the capacity update to publish it.');}}catch(error){setLocationState('error');if(!automatic)setLocationFeedback(error instanceof Error?error.message:'Truck location could not be saved.');}finally{locationRequestActive.current=false;}},error=>{locationRequestActive.current=false;const nextState=error.code===error.PERMISSION_DENIED?'denied':error.code===error.TIMEOUT?'timeout':'unavailable';setLocationState(nextState);if(!automatic)setLocationFeedback(nextState==='denied'?'Location permission is off. Allow location for Loadgistic, then try again.':nextState==='timeout'?'The device location request timed out. Try again.':'The device could not provide a location. Try again.');},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+function LocationEditor({vehicleId,location,canUpdate,onBusyChange,onSaved,onCancel}:{vehicleId:string;location:DriverLocation|null;canUpdate:boolean;onBusyChange:(busy:boolean)=>void;onSaved:(location:DriverLocation)=>void;onCancel:()=>void}){
+  const [radius,setRadius]=React.useState(location?.radius||20);
+  const [busy,setBusy]=React.useState(false);
+  const [error,setError]=React.useState('');
+  const active=React.useRef(false);
+  async function save(event:React.FormEvent){
+    event.preventDefault();if(active.current||!canUpdate)return;
+    active.current=true;setBusy(true);onBusyChange(true);setError('');
+    try{onSaved(await saveDriverLocation(vehicleId,await readDriverLocation(radius)));}
+    catch(reason){setError(reason instanceof Error?reason.message:'Truck location could not be saved.');}
+    finally{active.current=false;setBusy(false);onBusyChange(false);}
   }
-  React.useEffect(()=>{privacyRadiusRef.current=privacyRadius;},[privacyRadius]);
-  React.useEffect(()=>{if(!allowDeviceLocation||!current||!['EMPTY','PARTIAL'].includes(current.status||''))return;if(automaticVehicleRef.current!==vehicleId){automaticVehicleRef.current=vehicleId;lastAutomaticRefresh.current=0;}const refreshWhenDue=()=>{if(document.visibilityState!=='visible'||Date.now()-lastAutomaticRefresh.current<600_000)return;lastAutomaticRefresh.current=Date.now();refreshLocation(privacyRadiusRef.current,true);};refreshWhenDue();const interval=window.setInterval(refreshWhenDue,60_000);document.addEventListener('visibilitychange',refreshWhenDue);return()=>{window.clearInterval(interval);document.removeEventListener('visibilitychange',refreshWhenDue);};},[allowDeviceLocation,vehicleId,current?.status]);
-  React.useEffect(()=>{if(!locationFeedback)return;const timeout=window.setTimeout(()=>setLocationFeedback(''),4500);return()=>window.clearTimeout(timeout);},[locationFeedback]);
-  if(!vehicles.length)return <div className="empty-state">No active truck is assigned to this account.</div>;
-
-  const regularSignals=corridors.slice(0,1).filter(signal=>signal.geometry==='RADIUS'?signal.area_boundary?.length>=3:signal.route_points?.length>=2);
-  const truckBar=<section className="capacity-truck-bar"><Image src={vehicleConfigurationImage(selectedVehicle?.cargoConfiguration)} alt={selectedVehicle?.cargoConfiguration||'Truck'} width={112} height={88}/><div className="capacity-truck-copy"><small>Current truck</small><strong>{selectedVehicle?.make} {selectedVehicle?.model}</strong><span>{selectedVehicle?.platformNumber} · {selectedVehicle?.cargoConfiguration} · {visibility==='PRIVATE'?'Private capacity':'Open capacity'}</span></div>{lockVehicleSelection?null:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/>Truck</label><select id="capacity-vehicle" value={vehicleId} onChange={event=>reset(event.target.value)}>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} {vehicle.model}</option>)}</select></div>}</section>;
-  const savedMap=current&&point?<CapacityLocationMap center={point} radiusKm={privacyRadius} areaCenter={current.availability_geometry==='RADIUS'&&current.capacity_area_center_lat!=null?{lat:Number(current.capacity_area_center_lat),lng:Number(current.capacity_area_center_lng)}:null} areaBoundary={current.availability_geometry==='RADIUS'?current.capacity_area_boundary||[]:[]} routePoints={current.availability_geometry==='ROUTE'?current.current_route_points||[]:[]} regularSignals={regularSignals} availabilityStatus={current.status}/>:null;
-
-  if(current&&!editing){
-    const availabilityValue=current.status==='OFF_DUTY'?'Off Duty':current.status==='EMPTY'?'Empty':'Partial';
-    const coverageValue=current.availability_geometry==='ROUTE'?'Route':'Area';
-    const regularValue=regularSignals[0]?(regularSignals[0].geometry==='RADIUS'?'Area':'Route'):'None';
-    return <div className="capacity-console capacity-summary-console" data-testid="capacity-summary">
-      <section className="capacity-saved-summary driver-map-summary">
-        <div className="capacity-summary-layout">{savedMap||<div className="capacity-map-empty"><MapPinned aria-hidden="true"/><strong>No Driver location</strong><span>Open Location and refresh this truck.</span></div>}</div>
-        {showTruckIdentity?<header className="capacity-summary-map-header">{truckBar}</header>:null}
-        <nav className="capacity-summary-toolrail" aria-label="Edit capacity signals">
-          <button type="button" onClick={()=>setEditSection('AVAILABILITY')} aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small>Capacity</small><strong>{availabilityValue}</strong></span></button>
-          {current.status!=='OFF_DUTY'?<button type="button" onClick={()=>setEditSection('ROUTE')} aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small>Coverage</small><strong>{coverageValue}</strong></span></button>:null}
-          {allowCorridors?<button type="button" onClick={()=>setEditSection('RECURRING')} aria-label={`Edit regular service: ${regularValue}`} title={`Regular service · ${regularValue}`}><Repeat2 aria-hidden="true"/><span><small>Regular</small><strong>{regularValue}</strong></span></button>:null}
-          <button type="button" onClick={()=>setEditSection('ALL')} aria-label="Edit all capacity settings" title="Edit all capacity settings"><Pencil aria-hidden="true"/><span><small>Edit</small><strong>All</strong></span></button>
-        </nav>
-        {allowDeviceLocation&&current.status!=='OFF_DUTY'?<section className="capacity-location-dock" aria-label="Approximate truck location controls">
-          <MapPinned aria-hidden="true"/>
-          <span className="capacity-location-dock-copy"><strong>{area||'Location not refreshed'}</strong><small>{locationUpdatedAt?`${privacyRadius} km radius · updated ${relativeTime(locationUpdatedAt,renderedAt)}`:`${privacyRadius} km radius · refresh to update`}</small></span>
-          <label htmlFor="summary-privacy-radius"><span>Approximate location radius</span><select id="summary-privacy-radius" aria-label="Approximate location radius" value={privacyRadius} onChange={event=>refreshLocation(Number(event.target.value))} disabled={['requesting','saving'].includes(locationState)}>{capacityPrivacyRadii('BOTH').map(value=><option value={value} key={value}>{value} km</option>)}</select></label>
-          <button type="button" className="button secondary" onClick={()=>refreshLocation()} disabled={['requesting','saving'].includes(locationState)} aria-label="Refresh truck location" title="Refresh truck location"><RefreshCw aria-hidden="true"/><span>{locationState==='requesting'?'Reading…':locationState==='saving'?'Saving…':'Refresh'}</span></button>
-        </section>:null}
-        {locationFeedback?<div className={`capacity-location-toast ${['saved','captured'].includes(locationState)?'success':'warning'}`} role={['saved','captured'].includes(locationState)?'status':'alert'} data-testid="capacity-location-state">{locationFeedback}</div>:null}
-      </section>
-    </div>;
-  }
-
-  if(editSection==='RECURRING')return <div className="capacity-console capacity-planning-console capacity-edit-workspace" role="dialog" aria-modal="true" aria-label="Edit regular service" data-testid="capacity-planning-editor"><header className="capacity-editor-shell-header">{truckBar}<button type="button" className="button secondary small focused-summary-return" aria-label="Back to summary" onClick={()=>setEditSection(null)}><ArrowLeft aria-hidden="true"/><span>Back to summary</span></button></header><CapacityMarketPlanning corridors={corridors} returnTo={returnTo}/></div>;
-  const showAvailability=editSection==='ALL'||editSection==='AVAILABILITY';const showLocation=onDuty&&editSection==='ALL';const showCoverage=onDuty&&(editSection==='ALL'||editSection==='ROUTE');
-  const routeMapPoints=routePoints.filter((item:EditablePlace)=>item.place_ref&&Number.isFinite(item.lat)&&Number.isFinite(item.lng)) as PlacePoint[];const boundaryMapPoints=areaBoundary.filter((item:EditablePlace)=>item.place_ref&&Number.isFinite(item.lat)&&Number.isFinite(item.lng)) as PlacePoint[];
-  return <form action="/api/capacity" method="post" className="capacity-console simple-capacity-console capacity-edit-workspace" role="dialog" aria-modal="true" aria-label={editSection==='ALL'?'Edit all capacity settings':editSection==='AVAILABILITY'?'Edit current capacity':'Edit current coverage'} data-testid="capacity-form"><input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="status" value={status}/><input type="hidden" name="acceptedLoads" value={status==='PARTIAL'?'PTL':acceptedLoads}/><input type="hidden" name="availabilityGeometry" value={geometry}/><input type="hidden" name="locationArea" value={area}/><input type="hidden" name="approximateLat" value={allowDeviceLocation?point?.lat??'':''}/><input type="hidden" name="approximateLng" value={allowDeviceLocation?point?.lng??'':''}/><input type="hidden" name="locationPrecisionKm" value={allowDeviceLocation&&point?privacyRadius:''}/><input type="hidden" name="locationSource" value={allowDeviceLocation&&point?'DEVICE_OBSCURED':'PRESERVE_DRIVER'}/><header className="capacity-editor-shell-header">{truckBar}
-    {current?<button type="button" className="button secondary small focused-summary-return" aria-label="Back to summary" onClick={()=>setEditSection(null)}><ArrowLeft aria-hidden="true"/><span>Back to summary</span></button>:null}</header>
-    {showAvailability?<section className="control-panel capacity-decision"><div className="capacity-step-title"><span>1</span><Gauge aria-hidden="true"/><div><h2>Capacity now</h2><p>Choose availability and who can see the current signal.</p></div></div><div className="segmented-control capacity-status-choices"><button type="button" aria-pressed={status==='EMPTY'} onClick={()=>chooseStatus('EMPTY')}><Truck aria-hidden="true"/><strong>Empty</strong></button><button type="button" aria-pressed={status==='PARTIAL'} onClick={()=>chooseStatus('PARTIAL')}><Boxes aria-hidden="true"/><strong>Partial</strong></button><button type="button" aria-pressed={status==='OFF_DUTY'} onClick={()=>chooseStatus('OFF_DUTY')}><PowerOff aria-hidden="true"/><strong>Off Duty</strong></button></div>{onDuty?<div className="segmented-control capacity-visibility-choices"><button type="button" aria-pressed={visibility==='OPEN'} onClick={()=>setVisibility('OPEN')}><strong>Open capacity</strong><small>Anyone can see this signal</small></button><button type="button" aria-pressed={visibility==='PRIVATE'} onClick={()=>setVisibility('PRIVATE')}><strong>Private capacity</strong><small>Only people and Loadgistic you approve</small></button></div>:null}{status==='PARTIAL'?<p className="meta">Partial shows that some space may be available on this Capacity route. Confirm the actual fit directly.</p>:null}{status==='EMPTY'?<div className="segmented-control load-policy-control">{['FTL','PTL','BOTH'].map(value=><label key={value}><input type="radio" checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><span>{loadPolicyLabel(value)}</span></label>)}</div>:null}</section>:null}
-    {showCoverage?<section className="control-panel capacity-decision"><div className="capacity-step-title"><span>2</span><Route aria-hidden="true"/><div><h2>Where this truck is available</h2><p>{status==='PARTIAL'?'Set the route this partially loaded truck is travelling.':'Choose an area or route. Neither requires a date.'}</p></div></div><div className="segmented-control geometry-choice">{status==='EMPTY'?<button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong>Service area</strong><small>A center with surrounding cities</small></button>:null}<button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong>Capacity route</strong><small>Two to five cities in travel order</small></button></div>{geometry==='RADIUS'&&status==='EMPTY'?<><div className="form-group"><label htmlFor="capacity-area-center"><MapPin aria-hidden="true"/>Area center</label><EthiopiaPlaceInput id="capacity-area-center" name="capacityAreaCenter" placeRefName="capacityAreaCenterPlaceRef" defaultPlaceRef={areaCenter.place_ref} defaultValue={areaCenter.label} onPlaceSelect={place=>setAreaCenter({...areaCenter,place_ref:place.id,label:place.display_name,lat:place.lat,lng:place.lng})} required/></div><PlaceSequenceEditor title="Surrounding cities" help="Choose three to five cities that define the service area." items={areaBoundary} setItems={setAreaBoundary} name="capacityAreaBoundary" refName="capacityAreaBoundaryPlaceRef" min={3} max={5} label="Boundary city"/><p className="meta">The green outline shows Empty availability. The violet outline shows the truck's approximate location.</p></>:<PlaceSequenceEditor title="Route cities" help="Choose two to five cities in travel order." items={routePoints} setItems={setRoutePoints} name="currentRoutePlace" refName="currentRoutePlaceRef" min={2} max={5} label="City"/>}<div className="multi-stop-toggles"><label className="rich-toggle"><input name="acceptsMultiPick" type="checkbox" checked={multiPick} onChange={event=>setMultiPick(event.target.checked)}/><span className="toggle-track"/><span><strong>Multiple pickups</strong><small>Can arrange more than one pickup by phone</small></span></label><label className="rich-toggle"><input name="acceptsMultiDrop" type="checkbox" checked={multiDrop} onChange={event=>setMultiDrop(event.target.checked)}/><span className="toggle-track"/><span><strong>Multiple drop-offs</strong><small>Can arrange more than one drop-off by phone</small></span></label></div></section>:null}
-    {showLocation?<section className="control-panel capacity-decision capacity-location-step"><div className="capacity-step-title"><span>3</span><MapPinned aria-hidden="true"/><div><h2>Approximate current location</h2><p>A larger violet circle shares less precise location information.</p></div></div>{point?<CapacityLocationMap center={point} radiusKm={privacyRadius} areaCenter={geometry==='RADIUS'&&Number.isFinite(areaCenter.lat)&&Number.isFinite(areaCenter.lng)?{lat:Number(areaCenter.lat),lng:Number(areaCenter.lng)}:null} areaBoundary={geometry==='RADIUS'?boundaryMapPoints:[]} routePoints={geometry==='ROUTE'?routeMapPoints:[]} availabilityStatus={status}/>:<div className="capacity-map-empty"><LocateFixed aria-hidden="true"/><strong>Location refresh needed</strong></div>}<div className="location-privacy-controls"><label htmlFor="privacy-radius">Approximate location radius<select id="privacy-radius" value={privacyRadius} onChange={event=>setPrivacyRadius(Number(event.target.value))}>{capacityPrivacyRadii('BOTH').map(value=><option value={value} key={value}>{value} km</option>)}</select></label>{allowDeviceLocation?<button type="button" className="button secondary" onClick={()=>refreshLocation()} disabled={['requesting','saving'].includes(locationState)}><RefreshCw aria-hidden="true"/>{locationState==='requesting'?'Reading device location…':locationState==='saving'?'Saving truck location…':current?'Refresh & save truck location':'Request location permission'}</button>:<div className="permission-note"><MapPinned aria-hidden="true"/>The assigned Driver controls this truck location.</div>}</div>{locationFeedback?<div className={`alert ${['saved','captured'].includes(locationState)?'success':'warning'}`} data-testid="capacity-location-state">{locationFeedback}</div>:null}</section>:null}
-    {!onDuty?<section className="control-panel off-duty-panel"><strong>Off Duty hides this truck from the public map.</strong><p>Your regular service stays saved.</p></section>:null}
-    {editSection!=='ALL'&&editSection!=='ROUTE'&&current?.availability_geometry==='ROUTE'?(current.current_route_points||[]).map((item:PlacePoint)=><React.Fragment key={item.place_ref}><input type="hidden" name="currentRoutePlace" value={item.label}/><input type="hidden" name="currentRoutePlaceRef" value={item.place_ref}/></React.Fragment>):null}
-    {editSection!=='ALL'&&editSection!=='ROUTE'&&current?.availability_geometry==='RADIUS'?<><input type="hidden" name="capacityAreaCenter" value={current.capacity_area_center_label||''}/><input type="hidden" name="capacityAreaCenterPlaceRef" value={current.capacity_area_center_place_ref||''}/>{(current.capacity_area_boundary||[]).map((item:PlacePoint)=><React.Fragment key={item.place_ref}><input type="hidden" name="capacityAreaBoundary" value={item.label}/><input type="hidden" name="capacityAreaBoundaryPlaceRef" value={item.place_ref}/></React.Fragment>)}</>:null}
-    <input type="hidden" name="visibility" value={visibility}/>
-    <div className="capacity-publish-bar"><span><strong>{editSection==='ALL'?'Publish capacity update':`Save ${String(editSection).toLowerCase()}`}</strong><small>{onDuty?(visibility==='PRIVATE'?'Visible to approved Network contacts':'Visible in Open capacity'):'Hidden from capacity maps'}</small></span><div className="hero-actions">{current?<button type="button" className="button secondary" onClick={()=>setEditSection(null)}>Cancel</button>:null}<button className={`button ${onDuty?'success':'danger'}`} disabled={!interactive||(allowDeviceLocation&&onDuty&&!point)||(onDuty&&geometry==='ROUTE'&&routePoints.some((item:EditablePlace)=>!item.place_ref))||(onDuty&&geometry==='RADIUS'&&(!areaCenter.place_ref||areaBoundary.some((item:EditablePlace)=>!item.place_ref)))}><Save aria-hidden="true"/>Save</button></div></div>
+  return <form className="capacity-signal-form" onSubmit={save}>
+    <div className="capacity-signal-dialog-body"><p className="meta">{location?.area||'No location recorded yet.'}</p>
+      {canUpdate?<><label htmlFor="location-editor-radius">Approximate location radius<select id="location-editor-radius" value={radius} onChange={event=>setRadius(Number(event.target.value))} disabled={busy}>{capacityPrivacyRadii('BOTH').map(value=><option value={value} key={value}>{value} km</option>)}</select></label><p className="meta">A larger radius shares less detail. Save reads your device location and updates only this truck's approximate location.</p></>:<p className="meta">The assigned Driver updates this location while the truck is Empty or Partial.</p>}
+      {error?<p className="alert error" role="alert">{error}</p>:null}
+    </div>
+    <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}>{canUpdate?'Cancel':'Close'}</button>{canUpdate?<button className="button" disabled={busy}><Save aria-hidden="true"/>{busy?'Updating…':'Save location'}</button>:null}</footer>
   </form>;
+}
+
+export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true,lockVehicleSelection=false,showTruckIdentity=true,corridors=[],returnTo='/app/home',allowCorridors=false,renderedAt}:{vehicles:VehicleOption[];initialVehicleId?:string;allowDeviceLocation?:boolean;lockVehicleSelection?:boolean;showTruckIdentity?:boolean;corridors?:RegularSignal[];returnTo?:string;allowCorridors?:boolean;renderedAt:number}){
+  const router=useRouter();
+  const [syncing,startSync]=React.useTransition();
+  const [vehicleId,setVehicleId]=React.useState(initialVehicleId||vehicles[0]?.id||'');
+  const selectedVehicle=vehicles.find(vehicle=>vehicle.id===vehicleId)||vehicles[0];
+  const selectedId=selectedVehicle?.id||'';
+  const current=selectedVehicle?.current;
+  const [editSection,setEditSection]=React.useState(null as EditSection|null);
+  const [busy,setBusy]=React.useState(false);
+  const [refreshing,setRefreshing]=React.useState(false);
+  const [notice,setNotice]=React.useState(null as {text:string;error?:boolean}|null);
+  const [localLocation,setLocalLocation]=React.useState(null as {vehicleId:string;value:DriverLocation}|null);
+  const requestActive=React.useRef(false);
+  const activeVehicle=React.useRef(selectedId);activeVehicle.current=selectedId;
+  const lastAutomaticRefresh=React.useRef({vehicleId:'',at:0});
+  const location=React.useMemo(()=>{
+    const saved=snapshotLocation(current);
+    const refreshed=localLocation?.vehicleId===selectedId?localLocation.value:null;
+    return refreshed&&(!saved?.updatedAt||Date.parse(refreshed.updatedAt)>=Date.parse(saved.updatedAt))?refreshed:saved;
+  },[current,localLocation,selectedId]);
+  const regularSignals=React.useMemo(()=>corridors.slice(0,1).filter(signal=>signal.geometry==='RADIUS'?signal.area_boundary?.length>=3:signal.route_points?.length>=2),[corridors]);
+  // Opening or typing in a dialog must not refit the saved map's bounds.
+  const savedMap=React.useMemo(()=>location?<CapacityLocationMap key={selectedId} center={location} radiusKm={location.radius} areaCenter={current?.availability_geometry==='RADIUS'&&current.capacity_area_center_lat!=null?{lat:Number(current.capacity_area_center_lat),lng:Number(current.capacity_area_center_lng)}:null} areaBoundary={current?.availability_geometry==='RADIUS'?current.capacity_area_boundary||[]:[]} routePoints={current?.availability_geometry==='ROUTE'?current.current_route_points||[]:[]} regularSignals={regularSignals} availabilityStatus={current?.status}/>:null,[location,current,regularSignals,selectedId]);
+  const onDuty=Boolean(current&&current.status!=='OFF_DUTY');
+
+  async function refreshLocation(radius=location?.radius||20,automatic=false){
+    if(requestActive.current||!allowDeviceLocation||!onDuty)return;
+    requestActive.current=true;setRefreshing(true);if(!automatic)setNotice(null);
+    const target=selectedId;
+    try{
+      const saved=await saveDriverLocation(target,await readDriverLocation(radius));
+      if(activeVehicle.current===target){setLocalLocation({vehicleId:target,value:saved});if(!automatic)setNotice({text:'Approximate truck location saved.'});}
+    }catch(reason){if(!automatic&&activeVehicle.current===target)setNotice({text:reason instanceof Error?reason.message:'Truck location could not be saved.',error:true});}
+    finally{requestActive.current=false;setRefreshing(false);}
+  }
+  React.useEffect(()=>{
+    if(!allowDeviceLocation||!onDuty||editSection)return;
+    const refreshWhenDue=()=>{
+      if(document.visibilityState!=='visible'||requestActive.current)return;
+      const last=lastAutomaticRefresh.current;
+      if(last.vehicleId===selectedId&&Date.now()-last.at<600_000)return;
+      lastAutomaticRefresh.current={vehicleId:selectedId,at:Date.now()};
+      void refreshLocation(location?.radius||20,true);
+    };
+    refreshWhenDue();
+    const interval=window.setInterval(refreshWhenDue,60_000);
+    document.addEventListener('visibilitychange',refreshWhenDue);
+    return()=>{window.clearInterval(interval);document.removeEventListener('visibilitychange',refreshWhenDue);};
+  },[allowDeviceLocation,onDuty,selectedId,editSection,location?.radius]);
+  React.useEffect(()=>{if(!notice)return;const timeout=window.setTimeout(()=>setNotice(null),4500);return()=>window.clearTimeout(timeout);},[notice]);
+
+  function close(){if(!busy)setEditSection(null);}
+  function saved(message='Capacity saved.'){
+    setBusy(false);setEditSection(null);setNotice({text:message});startSync(()=>router.refresh());
+  }
+  if(!selectedVehicle)return <div className="empty-state">No active truck is assigned to this account.</div>;
+  const availabilityValue=!current?'Not set':current.status==='OFF_DUTY'?'Off Duty':current.status==='EMPTY'?'Empty':'Partial';
+  const coverageValue=current?.availability_geometry==='ROUTE'?'Route':current?.availability_geometry==='RADIUS'?'Area':'Not set';
+  const regularValue=regularSignals[0]?(regularSignals[0].geometry==='RADIUS'?'Area':'Route'):'None';
+  const sharingValue=current?.visibility==='PRIVATE'?'Private':'Open';
+  const loadsValue=current?.status==='PARTIAL'||!current?.accepts_full_load?'Partial':current?.accepts_partial_load?'Either':'Full';
+  const truckLabel=`${selectedVehicle.make} ${selectedVehicle.model} · ${selectedVehicle.platformNumber||selectedVehicle.label}`;
+  return <div className="capacity-console capacity-summary-console" data-testid="capacity-summary">
+    <section className="capacity-saved-summary driver-map-summary">
+      <div className="capacity-summary-layout">{savedMap||<div className="capacity-map-empty"><MapPinned aria-hidden="true"/><strong>{current?'No Driver location':'No capacity published yet'}</strong><span>{current?'Use the Location control to check this truck.':'Choose Capacity to add this truck’s first signal.'}</span></div>}</div>
+      {showTruckIdentity?<header className="capacity-summary-map-header"><section className="capacity-truck-bar"><Image src={vehicleConfigurationImage(selectedVehicle.cargoConfiguration)} alt={selectedVehicle.cargoConfiguration||'Truck'} width={112} height={88}/><div className="capacity-truck-copy"><small>Current truck</small><strong>{selectedVehicle.make} {selectedVehicle.model}</strong><span>{selectedVehicle.platformNumber} · {selectedVehicle.cargoConfiguration} · {current?.visibility==='PRIVATE'?'Private capacity':'Open capacity'}</span><span className="capacity-assigned-driver">{selectedVehicle.driver?`Driver: ${selectedVehicle.driver.name}`:<Link href="/app/fleet#driver-access">No driver assigned · Assign driver</Link>}</span></div>{lockVehicleSelection?null:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/>Truck</label><select id="capacity-vehicle" value={selectedId} disabled={refreshing||syncing} onChange={event=>{setVehicleId(event.target.value);setNotice(null);}}>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} {vehicle.model}</option>)}</select></div>}</section></header>:null}
+      <nav className="capacity-summary-toolrail" aria-label="Edit capacity signals">
+        <button type="button" onClick={()=>setEditSection('AVAILABILITY')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small>Capacity</small><strong>{availabilityValue}</strong></span></button>
+        {onDuty?<button type="button" onClick={()=>setEditSection('ROUTE')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small>Coverage</small><strong>{coverageValue}</strong></span></button>:null}
+        {onDuty?<button type="button" onClick={()=>setEditSection('SHARING')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit capacity sharing: ${sharingValue}`} title={`Capacity sharing · ${sharingValue}`}><Shield aria-hidden="true"/><span><small>Sharing</small><strong>{sharingValue}</strong></span></button>:null}
+        {onDuty?<button type="button" onClick={()=>setEditSection('LOADS')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit load preferences: ${loadsValue}`} title={`Load preferences · ${loadsValue}`}><Boxes aria-hidden="true"/><span><small>Loads</small><strong>{loadsValue}</strong></span></button>:null}
+        {allowCorridors?<button type="button" onClick={()=>setEditSection('RECURRING')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit regular service: ${regularValue}`} title={`Regular service · ${regularValue}`}><Repeat2 aria-hidden="true"/><span><small>Regular</small><strong>{regularValue}</strong></span></button>:null}
+        <button type="button" onClick={()=>setEditSection('LOCATION')} disabled={refreshing||syncing} aria-haspopup="dialog" aria-label="Edit approximate location" title="Approximate location"><MapPinned aria-hidden="true"/><span><small>Location</small><strong>{location?`${location.radius} km`:'Not set'}</strong></span></button>
+      </nav>
+      {allowDeviceLocation&&onDuty?<section className="capacity-location-dock" aria-label="Approximate truck location controls"><MapPinned aria-hidden="true"/><span className="capacity-location-dock-copy"><strong>{location?.area||'Location not refreshed'}</strong><small>{location?.updatedAt?`${location.radius} km radius · updated ${relativeTime(location.updatedAt,renderedAt)}`:'Refresh to update'}</small></span><button type="button" className="capacity-radius-action" aria-haspopup="dialog" aria-label="Edit approximate location radius" title="Edit approximate location radius" onClick={()=>setEditSection('LOCATION')} disabled={refreshing||syncing}>{location?.radius||20} km</button><button type="button" className="button secondary" onClick={()=>void refreshLocation()} disabled={refreshing||syncing} aria-label="Refresh truck location" title="Refresh truck location"><RefreshCw aria-hidden="true"/><span>{refreshing?'Updating…':'Refresh'}</span></button></section>:null}
+      {notice?<div className={`capacity-location-toast ${notice.error?'warning':'success'}`} role={notice.error?'alert':'status'} data-testid="capacity-location-state">{notice.text}</div>:null}
+    </section>
+    {editSection?<CapacityEditDialog title={editorTitles[editSection as EditSection]} truck={truckLabel} busy={busy} onClose={close}>
+      {editSection==='RECURRING'?<CapacityMarketPlanning corridors={corridors} returnTo={returnTo} onBusyChange={setBusy} onSaved={()=>saved('Regular service saved.')} onRemoved={()=>router.refresh()} onCancel={close}/>:editSection==='LOCATION'?<LocationEditor vehicleId={selectedId} location={location} canUpdate={allowDeviceLocation&&onDuty} onBusyChange={setBusy} onCancel={close} onSaved={value=>{setLocalLocation({vehicleId:selectedId,value});saved('Approximate truck location saved.');}}/>:<CapacitySignalEditor section={editSection} hasAssignedDriver={Boolean(selectedVehicle.driver)} vehicleId={selectedId} current={current} location={location} allowDeviceLocation={allowDeviceLocation} onBusyChange={setBusy} onSaved={()=>saved()} onCancel={close}/>}
+    </CapacityEditDialog>:null}
+  </div>;
 }

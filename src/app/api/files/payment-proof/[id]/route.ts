@@ -1,7 +1,7 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { getPaymentProofFile } from '@/lib/billing.js';
-import { readPrivateUpload } from '@/lib/private-storage.js';
+import { privateDocumentHeaders, readPrivateUpload } from '@/lib/private-storage.js';
 
 export const runtime='nodejs';
 
@@ -13,10 +13,5 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   if(!proof)return NextResponse.json({error:'Not found'},{status:404});
   const bytes=await readPrivateUpload(proof.file_path);
   if(!bytes)return NextResponse.json({error:'Not found'},{status:404});
-  const originalName=String(proof.original_name||'payment-proof').replaceAll('"','');
-  return new NextResponse(bytes,{headers:{
-    'Content-Type':proof.mime_type||'application/octet-stream',
-    'Content-Disposition':`inline; filename="${originalName}"`,
-    'Cache-Control':'private, no-store'
-  }});
+  return new NextResponse(bytes,{headers:privateDocumentHeaders(proof.mime_type,proof.original_name||'payment-proof')});
 }

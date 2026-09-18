@@ -148,3 +148,30 @@ And permission changes take effect on the next authorized request and are audite
 - Inbound adapter: `/api/admin/records/[type]/[id]`
 - Persistence: service-role-only managed admin projection and command functions with actor permission checks and atomic audit writes
 - Tests: managed admin contract tests, local Supabase verifier, `tests/repository.test.mjs`, and `tests/e2e/smoke.spec.ts`
+
+## Bounded record recovery (F04, implementation)
+
+Given an active administrator or delegated Customers team member opens a client
+workspace record\
+When they correct its business name with a reason and the observed name\
+Then the server rechecks Customers permission, exact organization/provider kind,
+input bounds and concurrent-change protection\
+And updates only that business name with before/after audit evidence\
+And authentication, handles, contacts, ownership, membership and historical events
+are not editable through this action.
+
+Given an Operations-authorized team member opens Tracking detail\
+When the record permits recovery\
+Then the same governed correction/reassignment/cancellation controls and SQL
+rules used by providers are available, with a required reason and revision\
+And the member may inspect its current approximate travel location only when
+location sharing is enabled and the shipment is in an eligible travel state\
+And historical assignment locations, exact device coordinates, recipients,
+codes and private Storage paths are absent from the map projection.
+
+Migration 091 adds the Customers-scoped workspace correction and narrow
+Operations map; migration 090 supplies shared recovery. Both precede UI rollout.
+No new broad admin editor or external authority. Rollback hides the controls while
+retaining audit/recovery state. Required evidence: delegated permission, wrong
+record kind, concurrent edit, location-state privacy and real desktop/phone
+admin correction/recovery/map workflows.

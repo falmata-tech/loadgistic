@@ -46,7 +46,7 @@ function panelId(platformNumber:string){
   return `truck-map-${platformNumber.toLowerCase().replace(/[^a-z0-9]+/g,'-')}`;
 }
 
-export function ProviderFleetShowcase({providerName,trucks}:{providerName:string;trucks:any[]}){
+export function ProviderFleetShowcase({providerName,trucks,total=trucks.length}:{providerName:string;trucks:any[];total?:number}){
   const [expanded,setExpanded]=React.useState(null as string|null);
   const [viewer,setViewer]=React.useState(null as Point|null);
   const [locationState,setLocationState]=React.useState('idle' as LocationState);
@@ -85,9 +85,9 @@ export function ProviderFleetShowcase({providerName,trucks}:{providerName:string
         <h2 id="provider-fleet-title">Trucks and published capacity</h2>
         <p>Review each {providerName} truck, check when its capacity and approximate location were updated, then open its map for geographic context.</p>
       </div>
-      <div className="provider-fleet-counts" aria-label={`${trucks.length} active trucks, ${availableCount} published capacity signals`}>
-        <span><strong>{trucks.length}</strong> active</span>
-        <span className="available"><strong>{availableCount}</strong> capacity signals</span>
+      <div className="provider-fleet-counts" aria-label={`${trucks.length} of ${total} active trucks shown, ${availableCount} published capacity signals on this page`}>
+        <span><strong>{trucks.length}</strong> of {total} trucks</span>
+        <span className="available"><strong>{availableCount}</strong> signals on this page</span>
       </div>
     </header>
 

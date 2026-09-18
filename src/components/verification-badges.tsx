@@ -22,7 +22,7 @@ const icons:Record<string,typeof Shield>={
   TRUCK_AUTHORIZATION:KeyRound
 };
 
-type VerificationBadge={type:string;verified:boolean;expired?:boolean;reviewedAt?:string|null;expiresOn?:string|null;vehicleLabel?:string|null};
+export type VerificationBadge={type:string;verified:boolean;expired?:boolean;reviewedAt?:string|null;expiresOn?:string|null;vehicleLabel?:string|null};
 
 export function VerificationBadges({badges,compact=false,label,reviewCount=0,averageRating=null}:{badges?:VerificationBadge[];compact?:boolean;label?:string;reviewCount?:number;averageRating?:number|null}) {
   if (!badges?.length&&!reviewCount) return null;
@@ -35,7 +35,7 @@ export function VerificationBadges({badges,compact=false,label,reviewCount=0,ave
       const stateLabel=badge.verified?'Loadgistic reviewed':badge.expired?'Expired':'Not verified';
       return <details className={`verification-badge ${state} badge-${badge.type.toLowerCase().replaceAll('_','-')}`} key={`${badge.type}:${badge.vehicleLabel||''}`} title={`${labels[badge.type]||badge.type}: ${badge.verified?'Verified':badge.expired?'Expired':'Not verified'}`}>
         <summary><Icon aria-hidden="true"/><span>{labels[badge.type]||badge.type.replaceAll('_',' ')}</span><small>{stateLabel}</small></summary>
-        <div className="verification-badge-details"><strong>{stateLabel}</strong>{badge.vehicleLabel?<span>{badge.vehicleLabel}</span>:null}{badge.reviewedAt?<span>Reviewed {new Date(badge.reviewedAt).toLocaleDateString()}</span>:null}{badge.expiresOn?<span><CalendarClock aria-hidden="true"/>Expires {badge.expiresOn}</span>:null}<span>Review applies to this document category only.</span></div>
+        <div className="verification-badge-details"><strong>{stateLabel}</strong>{badge.vehicleLabel?<span>{badge.vehicleLabel}</span>:null}{badge.reviewedAt?<span>Reviewed {new Date(badge.reviewedAt).toLocaleDateString()}</span>:null}{badge.expiresOn?<span><CalendarClock aria-hidden="true"/>Expires {badge.expiresOn}</span>:null}<span>{badge.verified?'Review applies to this document category only.':'No current reviewed evidence on Loadgistic. Ask the provider for documents.'}</span></div>
       </details>;
     })}
     {reviewCount?<span className="verification-badge verified reputation" title={`${averageRating || 0} of 5 from ${reviewCount} published reviews`}><Star aria-hidden="true"/><span>{averageRating} / 5</span><small>{reviewCount} published {reviewCount===1?'review':'reviews'}</small></span>:null}

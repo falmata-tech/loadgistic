@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { MANAGED_AUTH_ERROR, managedWorkspaceDestination } from '@/lib/auth-flow.js';
 import { getManagedCurrentUser } from '@/lib/identity/supabase';
+import {hasJoinableFleetInvitation} from '@/lib/fleet-driver-management';
 import {
   managedOAuthCallbackHandoff,readManagedOAuthHandoff,MANAGED_OAUTH_COOKIE
 } from '@/lib/managed-oauth-flow.js';
@@ -69,6 +70,10 @@ export async function GET(request:NextRequest) {
     if(!error&&data.user&&projection?.active){
       clearSignupCookie(response);
       response.headers.set('Location',managedWorkspaceDestination(projection.role));
+      return response;
+    }
+    if(!error&&data.user&&setupAllowed&&await hasJoinableFleetInvitation(data.user.id)){
+      response.headers.set('Location',redirectUrl(request,'/join-fleet').toString());
       return response;
     }
     if(!error&&data.user&&setupAllowed&&await managedProviderSignupEligible(data.user.id)){

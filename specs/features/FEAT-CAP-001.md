@@ -97,6 +97,7 @@ And the managed projection returns only stable cursor order.
 Given a visitor has no Loadgistic account\
 When current capacity or regular service is returned\
 Then the projection may include provider public identity, public handle, provider-controlled contact availability, the assigned Driver's first name and operating-model label, the Driver's public callback phone, separate Driver and truck verification summaries, truck presentation, obscured Service area or structured Capacity route place sequence, capacity facts, and freshness\
+And the truck must resolve to a current active Driver under `FEAT-FLT-001` for publication and subsequent Open or Private discovery, independently of optional document reviews\
 And a Company driver names the fleet transporter while an Owner-operator or Self-managed driver remains clearly independent\
 And missing, pending, rejected, or expired Driver and truck evidence is shown as not verified rather than hiding the truck\
 And it excludes the Driver's surname, plate, private account contacts, raw exact coordinates, proof paths, tracking secrets, and administrative data\
@@ -214,18 +215,18 @@ Given a truck has saved capacity facts\
 When its authorized provider opens the editor\
 Then a map-centered summary appears before the full editor\
 And one compact selected-truck control occupies the map's reserved top-left zone without repeating a Capacity title\
-And focused current-capacity, current-coverage, regular-service, and Edit all actions remain in one aligned top-right rail\
+And focused current-capacity, current-coverage, sharing, load-preference, regular-service, and location actions remain in one aligned top-right rail without an Edit all action\
 And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
 And the Driver map uses the same Empty green, Partial yellow, Approximate location violet, and Regular service blue signal language and readable hover summaries as the public Market\
 And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
 And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
 And current capacity, current geometry, and regular service facts each open only their relevant editor\
 And no separate future-or-recurring planning section appears below the capacity console\
-And Edit current capacity opens the complete current-capacity workflow while regular service retains its own explicit save\
+And every edit opens a native modal over the still-mounted map with only that signal's inputs, while regular service retains its own explicit save\
 And focused saves preserve unopened values\
-And approximate-location accuracy and Refresh truck location remain directly operable from the combined location dock without entering the capacity editor\
+And the radius shortcut opens the Location modal while Refresh truck location remains directly operable from the combined location dock\
 And automatic refresh succeeds silently while manual success or failure is announced transiently beside that dock\
-And either direct location control persists without replacing or extending the map summary.
+And both location controls persist without replacing or extending the map summary.
 
 ### Scenario: Driver capacity is map first on phones
 
@@ -233,13 +234,38 @@ Given an authorized Driver opens Capacity management on a supported phone\
 When published capacity exists\
 Then the map occupies the primary remaining workspace beneath the compact application bars\
 And the current truck selector remains compact in the reserved top-left map zone instead of becoming a page-sized card\
-And a compact top-right rail preserves current capacity, current geometry, regular service, and Edit all actions with recognizable icons and accessible names\
+And a compact top-right rail preserves current capacity, current geometry, regular service, and location actions with recognizable icons and accessible names\
 And the complete map key remains visible at bottom-left while Approximate location radius and Refresh truck location share one bottom-right dock\
 And every floating zone stays aligned, distinct, and clear of the other zones, required attribution, and essential map interaction\
-And a focused edit or Edit all opens an accessible modal over the map rather than extending the page\
+And a focused edit opens an accessible modal over the map rather than replacing the map or navigating to another page\
 And Save or Cancel closes the editing workspace and returns the Driver to the updated map summary\
-And the editor uses one header containing the truck identity and one Back to summary action\
+And the editor uses one compact header containing the signal name, truck identity, and a Close action, with reachable Save and Cancel controls\
 And the page does not repeat a visible Capacity title, detached Updating card, separate location summary card, or automatic-refresh notice.
+
+### Scenario: a focused edit is isolated and reversible
+
+Given an authorized provider is viewing a saved truck on Driver Home or its Fleet detail\
+When Capacity, Coverage, Sharing, Loads, Regular service, or Location is selected\
+Then only the selected group's inputs open in a labelled modal with trapped keyboard focus\
+And Current capacity contains only Empty, Partial, and Off Duty choices; Sharing owns public/private visibility, while Loads owns accepted load types and multiple pickup/drop-off preferences\
+And Coverage contains only the current route or area inputs\
+And each available group has its own compact, labelled floating button rather than an Edit all action or a combined settings button\
+And a first publication defaults to Private with a concise visible notice, so separating Sharing cannot silently publish a new truck's location openly; existing visibility is preserved\
+And the underlying map remains mounted at its current pan and zoom\
+And Cancel, Close, or Escape discards the draft and returns focus to the triggering control\
+And a save prevents duplicate submissions, retains the draft on denial or network failure, and announces a safe error inside the modal\
+And successful current-capacity or regular-service saves refresh server-owned map facts without document navigation\
+And another editor cannot open until that refresh finishes, so a rapid second edit cannot submit the previous snapshot and overwrite the first save\
+And unopened pickup, drop-off, geometry, load, and visibility values survive a focused save\
+And saving a non-location group preserves the last confirmed Driver location and its timestamp\
+And a fleet owner can inspect but cannot overwrite the assigned Driver's location\
+And a new on-duty signal or an Empty-area-to-Partial transition includes only the missing required coverage or Driver-location inputs in that same modal before publication\
+And regular service opens with its saved inputs and can be edited atomically or explicitly removed from its own modal without exposing an Edit all workflow\
+And a denied or invalid regular-service replacement leaves the original signal and audit history unchanged.
+
+Known capacity validation failures must produce actionable, public-safe messages rather than a generic unexpected-error message. Unexpected database failures expose no database details or personal data; server diagnostics retain only the operation and safe database error code. Regression evidence must include an actual status change, not only a visibility save in the status dialog.
+
+Verification: `tests/e2e/capacity-signal-dialogs.spec.ts`, the capacity-summary scenario in `tests/e2e/smoke.spec.ts`, `tests/provider-capacity-supabase.test.mjs`, and the local-only `scripts/verify-supabase-provider-capacity.mjs`. JSON mutation responses retain authenticated application commands and the PostgreSQL audit/authorization boundary; native POST redirects remain supported. Apply additive migration `077_focused_capacity_editing.sql` before the client. The replacement command reuses the scoped remove/add validators in one PostgreSQL transaction. Rollback restores the prior client and HTTP response negotiation without discarding capacity history; the additive RPC may remain unused.
 
 ### Scenario: Driver Home keeps operations in one clear order
 
@@ -267,5 +293,5 @@ And selecting the managed backend never falls back to SQLite after a Supabase er
 - Public pages: `/capacity`, `/capacity/[id]`
 - Provider editors: Driver Home and truck-specific Fleet page
 - Application services: provider-capacity workspace and commands, current-capacity, regular-capacity-route, public projection, cursor and proximity functions
-- Persistence adapters: server-only Supabase provider-capacity RPCs in migrations `043_provider_capacity_runtime.sql` and `073_public_capacity_filter_alignment.sql`; the legacy SQLite adapter remains isolated from managed execution during cutover
+- Persistence adapters: server-only Supabase provider-capacity RPCs in migrations `043_provider_capacity_runtime.sql`, `073_public_capacity_filter_alignment.sql`, and `077_focused_capacity_editing.sql`
 - Tests: domain, provider-capacity Supabase authorization, repository, authorization, E2E, visual audit

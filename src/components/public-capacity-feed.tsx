@@ -22,12 +22,14 @@ import {
   X
 } from 'lucide-react';
 import React from 'react';
+import {retainMapTrucks} from '@/lib/capacity-viewport.js';
 import { BUSINESS_SEARCH_PRIVACY_KM, obscureCoordinate } from '@/lib/location-privacy.js';
 import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 import { PublicCapacityMap } from './public-capacity-map';
+import { TruckDocumentSummary } from './truck-document-summary';
 
-type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number};
+type FeedResult={clusters?:any[];items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number;filterError?:string|null};
 type Point={lat:number;lng:number};
 type VisitorLocationState='idle'|'locating'|'ready'|'denied'|'timeout'|'unavailable'|'unsupported'|'insecure'|'outside'|'error';
 type SearchSuggestion={key:string;kind:'PROVIDER'|'TRUCK';title:string;detail:string;href:string};
@@ -50,10 +52,12 @@ function Choice({name,value,checked,onChange,children,disabled=false}:{
 
 export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/public/capacity'}:{initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string}){
   const [items,setItems]=React.useState(initial.items);
+  const [clusters,setClusters]=React.useState(null as any[]|null);
+  const overviewMode=React.useRef(apiPath==='/api/public/capacity');
   const [cursor,setCursor]=React.useState(initial.nextCursor);
   const [hasMore,setHasMore]=React.useState(initial.hasMore);
   const [loading,setLoading]=React.useState(false);
-  const [error,setError]=React.useState('');
+  const [error,setError]=React.useState(initial.filterError||'');
   const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(initial.items.some((item:any)=>item.id===query.truck)?query.truck:null);
   const [viewer,setViewer]:[Point|null,(value:Point|null)=>void]=React.useState(null);
   const parsedNearLat=Number(query.nearLat);
@@ -77,37 +81,51 @@ export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/p
   const vehiclePicker=React.useRef(null as HTMLDetailsElement|null);
   const initialLocationRequest=React.useRef(false);
   const loadMoreInFlight=React.useRef(false);
+  const viewport=React.useRef('');
+  const selectedRef=React.useRef(selectedId);selectedRef.current=selectedId;
+  const generation=React.useRef(0);
+  const pendingRequest=React.useRef(null as AbortController|null);
+  React.useEffect(()=>()=>pendingRequest.current?.abort(),[]);
 
   const params=React.useCallback((nextCursor?:string|null)=>{
     const value=new URLSearchParams(query);
+    if(viewport.current)value.set('viewport',viewport.current);
+    if(overviewMode.current&&viewport.current)value.set('overview','1');else value.delete('overview');
     if(nextCursor)value.set('cursor',nextCursor);else value.delete('cursor');
     return value;
   },[query]);
 
-  const loadMore=React.useCallback(async()=>{
-    if(!cursor||loadMoreInFlight.current)return false;
-    loadMoreInFlight.current=true;
-    setLoading(true);
-    setError('');
+  const loadWindow=React.useCallback(async(nextCursor:string|null,replace:boolean)=>{
+    if(!replace&&(!nextCursor||loadMoreInFlight.current))return false;
+    if(replace){generation.current+=1;pendingRequest.current?.abort();}
+    const version=generation.current;
+    const controller=new AbortController();pendingRequest.current=controller;
+    loadMoreInFlight.current=true;setLoading(true);setError('');
     try{
-      const response=await fetch(`${apiPath}?${params(cursor).toString()}`);
+      const response=await fetch(`${apiPath}?${params(nextCursor).toString()}`,{signal:controller.signal,cache:'no-store'});
       if(!response.ok)throw new Error('Capacity could not be loaded.');
       const page:FeedResult=await response.json();
-      setItems((current:any[])=>{
-        const currentIds=new Set(current.map((item:any)=>item.id));
-        return [...current,...page.items.filter((item:any)=>!currentIds.has(item.id))];
-      });
-      setCursor(page.nextCursor);
-      setHasMore(page.hasMore);
+      if(version!==generation.current)return false;
+      if(page.filterError)throw new Error(page.filterError);
+      setItems((current:any[])=>retainMapTrucks(current,page.items,selectedRef.current,{replace}));
+      setClusters(page.clusters||null);
+      setCursor(page.nextCursor);setHasMore(page.hasMore);
       return page.items.length>0;
     }catch(problem){
-      setError(problem instanceof Error?problem.message:'Capacity results could not be loaded.');
+      if(version===generation.current&&!controller.signal.aborted)setError(problem instanceof Error?problem.message:'Capacity results could not be loaded.');
       return false;
     }finally{
-      loadMoreInFlight.current=false;
-      setLoading(false);
+      if(version===generation.current){loadMoreInFlight.current=false;setLoading(false);}
     }
-  },[apiPath,cursor,params]);
+  },[apiPath,params,selectedId]);
+  const loadMore=()=>loadWindow(cursor,false);
+  function openCluster(){overviewMode.current=false;setClusters(null);void loadWindow(null,true);}
+  function explore(bounds:number[]){
+    const key=bounds.map(value=>value.toFixed(4)).join(',');
+    if(key===viewport.current)return;
+    viewport.current=key;setCursor(null);setHasMore(false);
+    void loadWindow(null,true);
+  }
 
   function useMyLocation(){
     setLocationFeedback('');
@@ -230,7 +248,9 @@ export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/p
     insecure:'Location is available only through a secure connection.',
     error:'Location could not be updated. Try again or continue browsing.'
   } as Partial<Record<VisitorLocationState,string>>)[locationState]||'';
-  const overlayKind=error?'error':loading?'loading':!items.length?'empty':locationNotice?'location':'';
+  const overlayKind=error?'error':loading?'loading':!items.length&&!clusters?.length?'empty':locationNotice?'location':'';
+
+  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='error'?'assertive':'polite'} data-testid={overlayKind==='location'?'visitor-location-state':'capacity-feed-state'}>{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/>Review filters</button>:<button type="button" onClick={()=>void loadWindow(null,true)}><RefreshCw aria-hidden="true"/>Try again</button>}</>:overlayKind==='loading'?'Loading trucks in this map area…':overlayKind==='empty'?'No truck signals match these filters. Adjust your search or check again later.':locationNotice}</div>:null;
 
   const searchControls=<div className="capacity-search-controls">
     <div className="capacity-search-combobox" onBlur={event=>{
@@ -308,10 +328,15 @@ export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/p
     </dialog>
 
     <div className="market-workbench market-map-view">
-      <div className="market-command-column"><section className="public-capacity-toolbar" aria-label="Capacity map location controls"><button type="button" className="button location-action" onClick={useMyLocation} disabled={locationState==='locating'}><LocateFixed aria-hidden="true"/>{locationActionLabel}</button><span className="public-location-note">Your precise location remains on this device.</span></section>{searchControls}</div>
+      <div className="market-command-column"><section className="public-capacity-toolbar" aria-label="Capacity map location controls"><button type="button" className="button location-action" onClick={useMyLocation} disabled={locationState==='locating'}><LocateFixed aria-hidden="true"/>{locationActionLabel}</button><span className="public-location-note">Your precise location remains on this device.</span></section>{searchControls}
+        {!selected&&((apiPath==='/api/public/capacity'&&clusters===null&&viewport.current)||hasMore)?<div className="capacity-window-controls" aria-label="Map area results">
+          {apiPath==='/api/public/capacity'&&clusters===null&&viewport.current?<button type="button" className="button secondary" disabled={loading} onClick={()=>{overviewMode.current=true;void loadWindow(null,true);}}>Show area summaries</button>:null}
+          {hasMore?<button type="button" className="button secondary" disabled={loading} onClick={()=>void loadMore()}>More trucks in this area</button>:null}
+        </div>:null}
+      </div>
       <section id="capacity-map-view" className={`public-map-shell${selected?' has-selected-truck':''}`}>
-        <div className="public-map-canvas"><PublicCapacityMap items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider)} onSelect={setSelectedId} onExplore={hasMore?()=>void loadMore():undefined}/>{selected?<aside className="map-capacity-sheet" aria-label={`${selected.provider_name} truck summary`}><button type="button" className="map-focus-exit" onClick={()=>setSelectedId(null)} aria-label="Close truck summary"><X aria-hidden="true"/></button><div className="map-truck-identity"><span className={`status ${selected.status==='PARTIAL'?'yellow':'green'}`}>{selected.status==='PARTIAL'?'Partial':'Empty'}</span><strong>{selected.vehicle_make} {selected.vehicle_model}</strong><small>{selected.provider_name}</small></div><div className={`map-signal-age ${selected.capacity_confirmation_needed?'confirm':''}`}><CalendarClock aria-hidden="true"/><span><strong>{selected.capacity_updated_label||'Capacity update unavailable'}</strong>{selected.current_signal_geometry_visible!==false?<small>{selected.location_updated_label||'Location update unavailable'}</small>:null}{selected.capacity_confirmation_needed?<small>Confirm availability directly.</small>:null}</span></div>{selected.current_signal_geometry_visible===false?<p className="map-private-signal-note"><MapPinned aria-hidden="true"/><span><strong>Regular service—not current location</strong>Call for current details or ask the Driver to share private capacity with your email.</span></p>:null}<div className="public-truck-driver"><UserRound aria-hidden="true"/><span><strong>{selected.assigned_driver_first_name||'Driver not named'}</strong><small>{selected.driver_kind_label}{selected.assigned_driver_phone?` · ${selected.assigned_driver_phone}`:' · Phone not published'}</small></span></div><div className="public-driver-trust"><span className={selected.driver_verification_badges?.every((badge:any)=>badge.verified)?'verified':'unverified'}>Driver documents {selected.driver_verification_badges?.every((badge:any)=>badge.verified)?'reviewed':'not fully verified'}</span><span className={selected.truck_verification_badges?.every((badge:any)=>badge.verified)?'verified':'unverified'}>Truck documents {selected.truck_verification_badges?.every((badge:any)=>badge.verified)?'reviewed':'not verified'}</span></div><div className="public-card-actions"><Link className="button" href={`/@${selected.provider_handle}`}><Building2 aria-hidden="true"/>Profile</Link>{selected.assigned_driver_phone?<a className="button secondary" href={`tel:${selected.assigned_driver_phone}`}><Phone aria-hidden="true"/>Call driver</a>:selected.contact_phone?<a className="button secondary" href={`tel:${selected.contact_phone}`}><Phone aria-hidden="true"/>Call</a>:null}</div></aside>:null}</div>
-        {overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='error'?'assertive':'polite'} data-testid={overlayKind==='location'?'visitor-location-state':'capacity-feed-state'}>{overlayKind==='error'?<>{error}<button type="button" onClick={()=>void loadMore()}><RefreshCw aria-hidden="true"/>Try again</button></>:overlayKind==='loading'?'Loading more truck capacity…':overlayKind==='empty'?'No truck signals match these filters. Adjust your search or check again later.':locationNotice}</div>:null}
+        <div className="public-map-canvas"><PublicCapacityMap clusters={clusters} onOpenCluster={openCluster} items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider)} onSelect={setSelectedId} onExplore={explore}/>{selected?<aside className="map-capacity-sheet" aria-label={`${selected.provider_name} truck summary`}><button type="button" className="map-focus-exit" onClick={()=>setSelectedId(null)} aria-label="Close truck summary"><X aria-hidden="true"/></button><div className="map-truck-identity"><span className={`status ${selected.status==='PARTIAL'?'yellow':'green'}`}>{selected.status==='PARTIAL'?'Partial':'Empty'}</span><strong>{selected.vehicle_make} {selected.vehicle_model}</strong><small>{selected.provider_name}</small></div><div className={`map-signal-age ${selected.capacity_confirmation_needed?'confirm':''}`}><CalendarClock aria-hidden="true"/><span><strong>{selected.capacity_updated_label||'Capacity update unavailable'}</strong>{selected.current_signal_geometry_visible!==false?<small>{selected.location_updated_label||'Location update unavailable'}</small>:null}{selected.capacity_confirmation_needed?<small>Confirm availability directly.</small>:null}</span></div>{selected.current_signal_geometry_visible===false?<p className="map-private-signal-note"><MapPinned aria-hidden="true"/><span><strong>Regular service—not current location</strong>Call for current details or ask the Driver to share private capacity with your email.</span></p>:null}<div className="public-truck-driver"><UserRound aria-hidden="true"/><span><strong>{selected.assigned_driver_first_name||'Driver not named'}</strong><small>{selected.driver_kind_label}{selected.assigned_driver_phone?` · ${selected.assigned_driver_phone}`:' · Phone not published'}</small></span></div><div className="map-truck-documents"><TruckDocumentSummary label="Driver documents" badges={selected.driver_verification_badges}/><TruckDocumentSummary label="Truck documents" badges={selected.truck_verification_badges}/></div><div className="public-card-actions"><Link className="button" href={`/@${selected.provider_handle}`}><Building2 aria-hidden="true"/>Profile</Link>{selected.assigned_driver_phone?<a className="button secondary" href={`tel:${selected.assigned_driver_phone}`}><Phone aria-hidden="true"/>Call driver</a>:selected.contact_phone?<a className="button secondary" href={`tel:${selected.contact_phone}`}><Phone aria-hidden="true"/>Call</a>:null}</div>{feedback}</aside>:null}</div>
+        {!selected?feedback:null}
       </section>
     </div>
   </>;

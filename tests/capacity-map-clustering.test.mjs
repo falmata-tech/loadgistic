@@ -114,3 +114,15 @@ test('thousands of markers retain bounded groups without pairwise placement',()=
   assert.ok(groups.every(group=>group.memberIds.length<=MAX_CLUSTER_MEMBERS));
   assert.ok(groups.every(group=>Math.abs(group.visualOffset.x)<=MAX_VISUAL_OFFSET_PX&&Math.abs(group.visualOffset.y)<=MAX_VISUAL_OFFSET_PX));
 });
+
+test('a same-status neighbor cannot push a group into the opposite-status label',()=>{
+  const entries=[['west','EMPTY',87],['east','EMPTY',100],['partial','PARTIAL',89]]
+    .flatMap(([id,status,x])=>[0,1].map(index=>marker(`${id}-${index}`,status,x,200)));
+  const groups=buildCapacityMarkerGroups(entries,9);
+  const centers=groups.map(group=>({status:group.status,x:group.projectedAnchor.x+group.visualOffset.x,y:group.projectedAnchor.y+group.visualOffset.y}));
+  for(const first of centers)for(const second of centers){
+    if(first.status!==second.status)assert.ok(Math.abs(first.x-second.x)>=40||Math.abs(first.y-second.y)>=14,'Opposite-status labels must stay readable across cell boundaries');
+  }
+  assert.deepEqual(buildCapacityMarkerGroups([...entries].reverse(),9),groups);
+  assert.ok(groups.every(group=>Math.hypot(group.visualOffset.x,group.visualOffset.y)<=MAX_VISUAL_OFFSET_PX));
+});

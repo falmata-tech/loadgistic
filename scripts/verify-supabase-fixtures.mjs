@@ -177,7 +177,7 @@ try{
     available_percent:0,accepts_full_load:false,accepts_partial_load:false,
     accepts_multi_pick:false,accepts_multi_drop:false,accepts_multi_stop:false,
     updated_at:new Date(Date.now()+60_000).toISOString(),expires_at:new Date(Date.now()+60_000).toISOString()};
-  for(const generated of ['origin_geog','destination_geog','current_origin_geog','current_destination_geog','location_geog'])delete offDuty[generated];
+  for(const generated of ['origin_geog','destination_geog','current_origin_geog','current_destination_geog','location_geog','map_envelope'])delete offDuty[generated];
   const {error:offDutyError}=await service.from('capacities').insert(offDuty);
   if(offDutyError)throw new Error(`SUPABASE_FIXTURE_VERIFY_OFF_DUTY_INSERT_FAILED:${offDutyError.message}`);
   const hiddenAfterOffDuty=await listSupabasePublicCapacityCursor({capacityId:freshnessTarget.capacity.id},{pageSize:14});

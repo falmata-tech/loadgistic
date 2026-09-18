@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { launchReadiness } from '../src/lib/launch-readiness.js';
 
+test('operator-approved validation-only upload policy warns without claiming virus scanning',()=>{
+  const result=launchReadiness({NODE_ENV:'production',UPLOAD_SCANNER_BACKEND:'validation-only'});
+  assert.ok(result.warnings.includes('uploads-not-virus-scanned'));
+  assert.ok(!result.blockers.includes('upload-malware-scanner'));
+  assert.ok(result.blockers.includes('durable-private-storage'));
+  assert.equal(result.ok,false);
+});
+
 test('local readiness is runnable and production readiness names durable blockers',()=>{
   const local=launchReadiness({NODE_ENV:'development'});
   assert.equal(local.ok,true);

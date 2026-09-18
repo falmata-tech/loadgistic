@@ -1,0 +1,52 @@
+{
+  "status": "PROPOSED_NOT_APPLIED",
+  "repository": "falmata-tech/loadgistic",
+  "branch": "main",
+  "preconditions": [
+    "Separate non-admin coding identity",
+    "Independent owner reviewer confirmed",
+    "Owner recovery access verified"
+  ],
+  "branchProtection": {
+    "required_status_checks": {
+      "strict": true,
+      "contexts": [
+        "validate",
+        "e2e",
+        "container"
+      ]
+    },
+    "enforce_admins": true,
+    "required_pull_request_reviews": {
+      "dismiss_stale_reviews": true,
+      "require_code_owner_reviews": true,
+      "required_approving_review_count": 1,
+      "require_last_push_approval": true
+    },
+    "restrictions": null,
+    "required_conversation_resolution": true,
+    "allow_force_pushes": false,
+    "allow_deletions": false
+  },
+  "productionEnvironment": {
+    "requiredReviewers": "Owner chooses independent human; no guessed principal",
+    "preventSelfReview": true,
+    "adminBypass": false,
+    "deploymentBranches": [
+      "main"
+    ],
+    "secrets": "Only in protected release environment; never PR jobs"
+  },
+  "supabaseMonitor": {
+    "project": "tpwyyzoqijjmbvsmmvcm",
+    "permissions": {
+      "Project Settings": "Read",
+      "Advisors": "Read"
+    },
+    "otherPermissions": "None",
+    "credential": "Scoped PAT with short expiry; owner provisions"
+  },
+  "currentMode": "OWNER_ONLY_PRODUCTION_CHANGES",
+  "automationIdentity": null,
+  "execution": "Owner-only; future automation proposal, not authorization to apply"
+}

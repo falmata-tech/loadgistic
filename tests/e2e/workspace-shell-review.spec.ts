@@ -70,11 +70,11 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await page.getByRole('button',{name:/^Edit regular service:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
   await capture(page,path.join(output,`${project}-driver-regular-service.png`));
-  await page.getByRole('button',{name:'Back to summary'}).click();
+  await page.getByRole('button',{name:'Close editor'}).click();
   await page.getByRole('button',{name:/^Edit current capacity:/}).click();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await capture(page,path.join(output,`${project}-driver-capacity-editor.png`));
-  await page.getByRole('button',{name:'Back to summary'}).click();
+  await page.getByRole('button',{name:'Close editor'}).click();
   await page.goto('/app/menu');
   await settleDevelopmentOverlay(page);
   await capture(page,path.join(output,`${project}-more.png`));
