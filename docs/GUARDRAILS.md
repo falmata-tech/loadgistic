@@ -2,6 +2,22 @@
 
 These controls apply to every major action: authentication or authorization changes, state-machine changes, public data exposure, file access, schema changes, dependency changes, deployment changes, and destructive maintenance.
 
+## Known failures we must not repeat
+
+Read [SECURITY_REGRESSION_REGISTER.md](SECURITY_REGRESSION_REGISTER.md) before
+schema, extension, authentication, public-data, file or remote-setting changes.
+Reference applicable lesson IDs in the PR and run their negative checks. When a
+new failure is discovered, add its cause, prevention, evidence, owner and next
+action before closing or deferring it. A table provided by an extension is still
+part of the exposed database surface; an API guard does not replace RLS/ACLs.
+
+For every new or changed migration/extension, verify the resulting catalog on a
+clean database, including inherited/default and column grants, views, sequences
+and SECURITY DEFINER functions. Exercise browser-role denial and preserved service
+behavior. Never assume an extension installer or a successful schema migration
+chose secure defaults. Adding an exposed schema or a Realtime publication requires
+its own access-path review; PostgREST-only evidence does not cover either.
+
 ## Before the change
 
 - Identify the governing feature and base spec IDs.

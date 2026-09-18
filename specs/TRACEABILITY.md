@@ -1,5 +1,18 @@
 # Specification traceability
 
+## Security recurrence prevention — FEAT-SEC-001 / ADR-065
+
+`docs/SECURITY_REGRESSION_REGISTER.md` maps NR-01–NR-10 to prevention, negative
+checks, operational responsibility and enforcement limits. AGENTS, guardrails and
+the PR template require the relevant lessons before sensitive changes. The
+catalog verifier now rejects eleven deliberately unsafe states, including future
+table/sequence defaults and a newly default-executable definer function. Its
+fixtures roll back and preserve normal service access. Request-boundary evidence
+covers SQL roles, real local REST/GraphQL, 300 unit tests and eight desktop/mobile
+account/fleet cases. Hosted verification and active scheduled/provider controls
+require separate operational evidence; they are not inferred from this matrix.
+
+
 FEAT-SEC-001 / FEAT-IAM-001 / BASE-BE-001 / ADR-064 → migration 096,
 application ACL/definer catalog gate, tests/sql/browser-boundaries.sql and
 scripts/verify-database-security-gate.mjs. Actual active-session access failed

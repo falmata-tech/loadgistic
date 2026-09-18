@@ -154,3 +154,21 @@ And a missing key fails visibly; the schedule is not claimed installed until its
 workflow is on main and its public-key variable is provisioned.
 
 Tests: tests/data-api-monitor.test.mjs; scripts/check-production-api-guard.mjs.
+
+## Scenario: known security failures must not silently recur
+
+Given a discovered security defect or a related credible regression risk
+When its fix is prepared or a migration, extension or remote setting is changed
+Then docs/SECURITY_REGRESSION_REGISTER.md records a stable lesson ID, cause,
+preventive control, negative test, operational owner and remaining limitation
+And the PR identifies the applicable lessons and evidence before completion
+And future browser table/sequence grants and default-executable definer functions
+are injected in rolled-back fixtures and must fail the catalog gate
+And local tests, hosted verification, monitoring installation and independent
+provider enforcement are recorded as separate states, never inferred from a file.
+
+Tests: scripts/verify-database-security-gate.mjs; catalog and Data API CI checks.
+The register and AGENTS/GUARDRAILS/PR links are reviewed documentation; they are
+not a technical sandbox or a promise that a privileged administrator cannot
+remove a control. New defects must be recorded with an owner and next action even
+when their fix is deferred. Security gates cannot be bypassed to close a lesson.

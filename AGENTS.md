@@ -22,11 +22,15 @@ npm run test:e2e
 
 Before major authentication, authorization, workflow, public-data, file, schema, dependency, or deployment changes:
 
-1. Read `docs/GUARDRAILS.md` and the related files under `specs/`.
+1. Read `docs/GUARDRAILS.md`, `docs/SECURITY_REGRESSION_REGISTER.md`, and the related files under `specs/`.
 2. Add or update a feature spec with linked base IDs and Given/When/Then scenarios.
 3. Name changed contracts, observability, rollout, and rollback behavior.
 4. Add permission, workflow, or state-transition tests before calling the spec complete.
 5. Run `npm run quality`; run E2E for changed user workflows.
+6. Map relevant do-not-repeat lesson IDs to their negative checks. Record new
+   security failures in `docs/SECURITY_REGRESSION_REGISTER.md` with evidence, an
+   owner and a next action; do not equate a documented control with installed
+   provider enforcement or claim completion by suppressing a finding.
 
 ## Architecture
 

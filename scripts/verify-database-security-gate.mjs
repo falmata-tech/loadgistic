@@ -12,7 +12,10 @@ const cases=[
   ['sequence','create sequence public.security_boundary_sequence; grant usage on sequence public.security_boundary_sequence to authenticated;','APPLICATION_BROWSER_PRIVILEGES_FORBIDDEN'],
   ['definer','grant execute on function public.is_org_member(uuid) to authenticated;','APPLICATION_BROWSER_DEFINER_FORBIDDEN'],
   ['anonymous identity','grant execute on function public.current_user_projection() to anon;','APPLICATION_BROWSER_DEFINER_FORBIDDEN'],
-  ['RLS','create table public.security_boundary_table(id bigint);','PUBLIC_RLS_REQUIRED']
+  ['RLS','create table public.security_boundary_table(id bigint);','PUBLIC_RLS_REQUIRED'],
+  ['future table default','alter default privileges for role postgres in schema public grant select on tables to anon; create table public.security_future_table(id bigint); alter table public.security_future_table enable row level security;','APPLICATION_BROWSER_PRIVILEGES_FORBIDDEN'],
+  ['future sequence default','alter default privileges for role postgres in schema public grant usage on sequences to authenticated; create sequence public.security_future_sequence;','APPLICATION_BROWSER_PRIVILEGES_FORBIDDEN'],
+  ['default definer execute','create function public.security_future_definer() returns integer language sql security definer as \'select 1\';','APPLICATION_BROWSER_DEFINER_FORBIDDEN']
 ];
 function check(sql){
   // Fixed isolated container and database: no remote URL, credential or CLI override.
