@@ -54,6 +54,9 @@ jobs:
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
 
+      - name: Verify the Data API guard through SQL, REST and GraphQL
+        run: node scripts/verify-data-api-guard.mjs
+
       - name: Audit high-severity dependency advisories
         run: npm audit --audit-level=high
 
@@ -136,6 +139,9 @@ jobs:
 
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
+
+      - name: Verify the Data API guard through SQL, REST and GraphQL
+        run: node scripts/verify-data-api-guard.mjs
 
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium

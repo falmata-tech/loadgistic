@@ -111,3 +111,46 @@ broad browser grants. Local rollback tests: tests/sql/browser-boundaries.sql and
 scripts/verify-database-security-gate.mjs (eight unsafe catalog fixtures plus
 explicit column-grant repair and repeatability).
 Hosted execution and full release verification remain pending.
+
+## Scenario: Data API requests require an approved database role and operation
+
+Given the service uses server-authorized business adapters and a caller-bound
+current_user_projection RPC for session identity
+When PostgREST accepts a request
+Then a SECURITY INVOKER pre-request function permits service_role requests
+And authenticated requests permit only GET, HEAD or POST of the public
+current_user_projection RPC, including inactive identities for access revocation
+And anonymous requests, other RPCs, direct relations, GraphQL and spoofed server
+headers are rejected before business SQL executes
+And an unrecognized role, method, path or identity schema fails closed.
+
+Given an existing authenticator pre-request hook or database-specific override
+When migration 097 is applied
+Then an unrelated hook is preserved and the transaction fails
+And the approved hook can be reapplied without adding browser data privileges
+And application code, geography data, extension ownership and Auth remain intact.
+
+Given this request guard is enabled as incident containment
+When operational verification runs
+Then actual HTTP denial and preserved service and own-identity access are verified
+And a notification or SQL commit alone is not accepted as activation evidence
+And underlying RLS/ACL and advisor gates remain mandatory for application promotion
+And no protection of direct SQL, Storage or Realtime is inferred from this hook.
+
+Tests: tests/sql/data-api-guard.sql, scripts/verify-data-api-guard.mjs,
+scripts/check-data-api-guard.sql, and account/fleet browser workflows with the
+hook active. CI must exercise the HTTP boundary and reject hook configuration
+or function-security drift. Rollout: bounded migration 097; reviewed incident
+bootstrap may apply this same artifact before the ordinary migration ledger
+catches up. Replay is safe. Unexpected existing hooks stop the change. On failure,
+stop promotion and inspect; repair forward or use an independently reviewed safe
+containment before disabling the hook. Never automatically restore open access.
+
+Given the scheduled HTTP monitor has only the public anonymous API key
+When the guard is removed, replaced, unavailable or produces an unrelated denial
+Then the monitor fails without reading customer rows or using administrator access
+And it checks the fixed project independently of the advisor job
+And a missing key fails visibly; the schedule is not claimed installed until its
+workflow is on main and its public-key variable is provisioned.
+
+Tests: tests/data-api-monitor.test.mjs; scripts/check-production-api-guard.mjs.

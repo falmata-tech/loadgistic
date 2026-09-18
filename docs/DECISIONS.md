@@ -1,5 +1,22 @@
 # Architecture Decisions
 
+## ADR-065 — Deny direct browser Data API requests before SQL
+
+FEAT-SEC-001 / FEAT-IAM-001: migration 097 installs an invoker-rights request
+guard in a private schema. Only the actual service_role, or an authenticated
+request for the public caller-bound identity RPC, proceeds. Request headers
+cannot assert server authority. Auth, server persistence and geography remain
+compatible; direct REST and GraphQL calls by browser roles are denied.
+
+Reject existing unrelated hooks rather than replacing them. Verify activation
+through HTTP with bounded polling; PostgreSQL notification is not proof of
+effective API configuration. Keep RLS, grants and advisor gates as independent
+controls. This is an additional API boundary, not an owner-rights workaround,
+and it provides no guarantee for Realtime, Storage or direct SQL. An incident
+bootstrap may apply this same repeatable artifact before the ordinary ordered
+migrations. Retain containment on rollout failure; no automatic open-access
+rollback. Tests cover SQL roles, live local REST/GraphQL and browser workflows.
+
 ## ADR-064 — Business data stays behind authorized server commands
 
 FEAT-SEC-001 / FEAT-IAM-001: browser roles have no direct privileges on public

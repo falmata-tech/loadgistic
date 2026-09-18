@@ -20,3 +20,17 @@ jobs:
           # tpwyyzoqijjmbvsmmvcm. Never use the classic/deployment PAT here.
           LOADGISTIC_ADVISOR_READ_TOKEN: ${{ secrets.LOADGISTIC_ADVISOR_READ_TOKEN }}
         run: node scripts/check-production-security.mjs
+
+  data-api-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Verify anonymous Data API denial independently of advisors
+        env:
+          # Public anonymous key only; this job has no production write secret.
+          LOADGISTIC_MONITOR_PUBLISHABLE_KEY: ${{ vars.LOADGISTIC_MONITOR_PUBLISHABLE_KEY }}
+        run: node scripts/check-production-api-guard.mjs
