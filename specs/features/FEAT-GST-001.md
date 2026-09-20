@@ -71,6 +71,19 @@ And desktop uses a bounded dialog while a phone uses a safe-area-aware sheet abo
 And dismissing the dialog only minimizes it while an explicit guest or team End chat action ends further replies\
 And focus is trapped while open, Escape closes it, focus returns to the launcher, and new team messages are announced without stealing focus.
 
+### Scenario: the launcher accepts clicks only when ready
+
+Given the public page has rendered while its client JavaScript is still loading\
+When a visitor reaches Ask Loadgistic\
+Then the launcher remains disabled until its event handlers are attached\
+And after initialization one click opens the dialog on desktop and phone\
+And delayed conversation reads show the existing loading state without losing the click.
+
+Verification: `tests/e2e/assisted-chat-audit.spec.ts` holds client scripts before
+initialization, then releases them and exercises the first enabled click.
+This changes client readiness only; message authorization and stored data stay
+under the existing Support contracts. Rollback is an application-only change.
+
 ### Scenario: ending and restarting are explicit
 
 Given a guest has an active Assisted matching conversation\

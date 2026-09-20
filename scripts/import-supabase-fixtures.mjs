@@ -7,6 +7,7 @@ import {
   selectSharedFixtureVehicleIds
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
+import {readFixtureSchema} from './lib/fixture-schema.mjs';
 
 const localEnvironmentPath=path.join(process.cwd(),'.env.local');
 if(fs.existsSync(localEnvironmentPath)){
@@ -144,12 +145,7 @@ function buildFeaturedFixtureTables(){
 Object.assign(fixtureTables,buildFeaturedFixtureTables());
 const supabase=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 
-const openApiResponse=await fetch(`${url}/rest/v1/`,{
-  headers:{apikey:serviceRoleKey,authorization:`Bearer ${serviceRoleKey}`}
-});
-if(!openApiResponse.ok)throw new Error(`SUPABASE_SCHEMA_READ_FAILED:${openApiResponse.status}`);
-const openApi=await openApiResponse.json();
-const definitions=openApi.definitions||openApi.components?.schemas||{};
+const definitions=await readFixtureSchema(url,serviceRoleKey);
 
 const plan=[
   ['users','profiles'],

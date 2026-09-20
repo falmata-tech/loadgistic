@@ -14,6 +14,7 @@ type Presence={available:boolean;availableTeamMembers:number};
 export function PublicAssistedChat(){
   const dialog=React.useRef(null as HTMLDialogElement|null);
   const pathname=usePathname();
+  const [hydrated,setHydrated]=React.useState(false);
   const [open,setOpen]=React.useState(false);
   const [conversation,setConversation]=React.useState(null as Conversation|null);
   const [presence,setPresence]=React.useState({available:false,availableTeamMembers:0} as Presence);
@@ -48,7 +49,7 @@ export function PublicAssistedChat(){
     return request;
   },[]);
 
-  React.useEffect(()=>{if(sessionStorage.getItem('loadgistic-chat-open')==='1')setOpen(true);},[]);
+  React.useEffect(()=>{setHydrated(true);if(sessionStorage.getItem('loadgistic-chat-open')==='1')setOpen(true);},[]);
   React.useEffect(()=>{if(!enabled)return;if(open){if(!dialog.current?.open)dialog.current?.showModal();}else if(dialog.current?.open)dialog.current.close();sessionStorage.setItem('loadgistic-chat-open',open?'1':'0');},[open,enabled]);
   React.useEffect(()=>{
     if(!enabled)return;
@@ -108,7 +109,7 @@ export function PublicAssistedChat(){
   if(!enabled)return null;
 
   return <>
-    <button className="public-chat-launcher" type="button" onClick={()=>setOpen(true)} aria-haspopup="dialog" aria-label={conversation?.unread_team_count?`Ask Loadgistic, ${conversation.unread_team_count} unread message${conversation.unread_team_count===1?'':'s'}`:'Ask Loadgistic'}>
+    <button className="public-chat-launcher" type="button" disabled={!hydrated} onClick={()=>setOpen(true)} aria-haspopup="dialog" aria-label={conversation?.unread_team_count?`Ask Loadgistic, ${conversation.unread_team_count} unread message${conversation.unread_team_count===1?'':'s'}`:'Ask Loadgistic'}>
       <Headphones aria-hidden="true"/><span>Ask Loadgistic</span>{conversation?.unread_team_count?<b>{conversation.unread_team_count}</b>:null}
     </button>
     <dialog ref={dialog} className="public-chat-dialog" aria-labelledby="public-chat-title" onClose={()=>setOpen(false)} onCancel={event=>{event.preventDefault();setOpen(false);}}>

@@ -39,6 +39,11 @@ its own access-path review; PostgREST-only evidence does not cover either.
 
 ### Workflow regression lessons
 
+- Server-rendered controls must not accept clicks before their client handlers
+  attach. For initialization races, hold client scripts in a browser regression,
+  verify the disabled state, release scripts, then test the first enabled click.
+  Do not hide a lost click with arbitrary waits or whole-test retries.
+
 - Before upload-browser tests, inspect the subject model and document eligibility.
   A fully verified fixture intentionally has no submission form. Self-managed
   Driver truck authorization belongs to the Driver with a related vehicle;

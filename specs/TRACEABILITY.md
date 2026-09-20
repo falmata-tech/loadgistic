@@ -1,5 +1,15 @@
 # Specification traceability
 
+## Chat initialization and fixture diagnostics — 2026-09-20
+
+FEAT-GST-001 → disabled-until-hydrated public launcher and the delayed-script
+regression in `tests/e2e/assisted-chat-audit.spec.ts`. It failed before the fix;
+14 focused desktop/phone cases then passed with zero retries, including all five
+previously retrying chat/history cases per viewport. BASE-DEP-001 → local-only,
+bounded pre-import schema read and four diagnostic/redaction tests in
+`tests/fixture-schema.test.mjs`. See `docs/AUDIT_READINESS_2026-09-20.md` for the
+still-unconfirmed historical HTTP 500 cause and remaining release evidence.
+
 ## Security recurrence prevention — FEAT-SEC-001 / ADR-065
 
 `docs/SECURITY_REGRESSION_REGISTER.md` maps NR-01–NR-10 to prevention, negative

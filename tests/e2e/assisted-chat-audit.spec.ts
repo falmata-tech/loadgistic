@@ -1,5 +1,37 @@
 import {test,expect} from '@playwright/test';
 
+test('chat launcher waits for hydration before accepting its first click',async({page}:{page:any})=>{
+  let releaseScripts=()=>{};
+  let releaseConversation=()=>{};
+  const scriptsReady=new Promise<void>(resolve=>{releaseScripts=resolve;});
+  const conversationReady=new Promise<void>(resolve=>{releaseConversation=resolve;});
+  await page.route('**/_next/**/*.js*',async(route:any)=>{
+    await scriptsReady;
+    await route.continue();
+  });
+  await page.route('**/api/guest-support/current**',async(route:any)=>{
+    await conversationReady;
+    await route.fulfill({json:{conversation:null,presence:{available:false,availableTeamMembers:0}}});
+  });
+  try{
+    await page.goto('/about',{waitUntil:'commit'});
+    const launcher=page.getByRole('button',{name:'Ask Loadgistic',exact:true});
+    await expect(launcher).toBeVisible();
+    await expect(launcher).toBeDisabled();
+    releaseScripts();
+    await expect(launcher).toBeEnabled();
+    await launcher.click();
+    const dialog=page.getByRole('dialog',{name:'Ask Loadgistic'});
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel('Opening your conversation')).toBeVisible();
+    releaseConversation();
+    await expect(dialog.getByLabel('Email',{exact:true})).toBeVisible();
+  }finally{
+    releaseScripts();releaseConversation();
+    await page.unrouteAll({behavior:'wait'});
+  }
+});
+
 test('chat start, attachment reply, end and restart have no false failure',async({page}:{page:any})=>{
   let conversation:any=null;
   let posts=0;

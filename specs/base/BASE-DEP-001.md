@@ -136,6 +136,16 @@ Then it resets and uses a dedicated local Supabase project on dedicated ports\
 And it does not reuse a running development server or its business records\
 And its generated Next.js artifacts are isolated from both the live development server and production build output.
 
+Given local fixture setup reads its schema before any reset or import\
+When that read times out or returns an error\
+Then setup stops before fixture mutations and reports only a sanitized status and provider code\
+And it never prints response messages, details, credentials or raw transport errors\
+And neither the read nor the destructive import is silently retried\
+And a malformed or empty schema is rejected before reset.
+
+Verification: `tests/fixture-schema.test.mjs`. This diagnostic does not establish
+the cause of a past intermittent HTTP 500 or waive clean CI setup evidence.
+
 ### Scenario: local development uses incremental compilation
 
 Given a developer starts Loadgistic with the documented development command\
