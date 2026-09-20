@@ -3,6 +3,17 @@ import assert from 'node:assert/strict';
 import { inspectDataApiGuard } from '../scripts/lib/data-api-monitor.mjs';
 const key = 'sb_publishable_local_test_only';
 const denied = () => ({status:403,json:async()=>({code:'42501',message:'BROWSER_DATA_API_ACCESS_DENIED'})});
+test('guard verification survives extension relocation while probing existing application relations',async()=>{
+  const visited=[];
+  const result=await inspectDataApiGuard({key,fetchImpl:async url=>{
+    const path=new URL(url).pathname;visited.push(path);
+    // Relocated PostGIS is intentionally absent from the exposed API schema.
+    if(path==='/rest/v1/spatial_ref_sys')return {status:404,json:async()=>({code:'PGRST205'})};
+    return denied();
+  }});
+  assert.equal(result.passed,true);
+  assert.deepEqual(visited,['/rest/v1/capacities','/rest/v1/profiles','/rest/v1/rpc/current_user_projection']);
+});
 test('guard monitor probes only the fixed project with anonymous GET requests and no rows', async () => {
   const calls=[];
   const result=await inspectDataApiGuard({key,fetchImpl:async(url,options)=>{calls.push({url,options});return denied();}});

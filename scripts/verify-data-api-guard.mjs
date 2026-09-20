@@ -63,7 +63,7 @@ async function eventually(fn, label) {
 }
 let created = false, graphqlCreated = false;
 try {
-  await eventually(async () => denied(await request(anonKey, '/rest/v1/spatial_ref_sys?select=srid&limit=0')), 'GUARD_ACTIVATION_NOT_CONFIRMED');
+  await eventually(async () => denied(await request(anonKey, '/rest/v1/capacities?select=id&limit=0')), 'GUARD_ACTIVATION_NOT_CONFIRMED');
   if (sql("select exists(select 1 from pg_extension where extname='pg_graphql')::text;") === 'false') {
     sql('create extension pg_graphql;');
     graphqlCreated = true;
@@ -103,8 +103,10 @@ try {
   }
   check(denied(await request(anonKey, '/rest/v1/rpc/current_user_projection', 'POST', {})), 'anonymous identity denied');
   check((await request(serviceKey, '/rest/v1/capacities?select=id&limit=1')).status === 200, 'service application read');
-  const spatial = await request(serviceKey, '/rest/v1/spatial_ref_sys?select=srid&srid=eq.4326');
-  check(spatial.status === 200 && spatial.json?.length === 1, 'service geography lookup');
+  check(sql("begin; set local role service_role; set local search_path=public,extensions,pg_temp; select exists(select 1 from spatial_ref_sys where srid=4326); rollback;") === 't', 'service geography reference lookup');
+  const spatial = await request(serviceKey, '/rest/v1/rpc/public_capacity_page', 'POST',
+    { query: { near_lat: 9, near_lng: 38, near_radius_km: 500 } });
+  check(spatial.status === 200 && Array.isArray(spatial.json), 'service geography application query');
   check((await request(serviceKey, probe, 'POST', { id: 2, label: 'service' })).status === 201, 'service write');
   const rows = await request(serviceKey, `${probe}?select=id,label&order=id`);
   check(rows.json?.length === 2 && rows.json[0].label === 'synthetic', 'denied writes left original row unchanged');

@@ -12,6 +12,15 @@ still-unconfirmed historical HTTP 500 cause and remaining release evidence.
 
 ## Security recurrence prevention — FEAT-SEC-001 / ADR-065
 
+Extension relocation compatibility: the anonymous monitor uses existing
+application relations and keeps exact guard-denial assertions; a missing public
+extension route is no longer a dependency. Its regression failed before the
+change. All 305 unit tests, specs/source and types passed, along with real local
+SQL/REST/GraphQL/fixture-Auth checks and three live anonymous probes. The local
+verifier exercises service reference access through SQL and a geographic
+application RPC instead of requiring the extension table in the REST schema.
+Provider execution and independent hosted catalog/advisor checks remain separate.
+
 `docs/SECURITY_REGRESSION_REGISTER.md` maps NR-01–NR-10 to prevention, negative
 checks, operational responsibility and enforcement limits. AGENTS, guardrails and
 the PR template require the relevant lessons before sensitive changes. The

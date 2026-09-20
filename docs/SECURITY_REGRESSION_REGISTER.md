@@ -23,6 +23,15 @@ instead of renumbering or deleting them.
 
 ## How to use and maintain this register
 
+NR-04/NR-05 relocation lesson: a guard monitor must probe stable application
+relations rather than require an extension table to remain in an exposed schema.
+The relocation regression in `tests/data-api-monitor.test.mjs` still rejects
+missing application routes, unrelated denials and open endpoints. Before moving
+an extension, verify its target schema, data, dependent types/functions/indexes
+and application queries; retain separate evidence for a logical-copy rehearsal
+and the provider's actual in-place execution. Never broaden exposed schemas to
+make an obsolete monitor URL pass. Owner: release operator and CI maintainer.
+
 1. Before a sensitive change, identify the affected IDs and linked specifications.
    Review all objects created by an extension or migration, not only named app
    tables. An ownership error stops that operation; it is not permission to

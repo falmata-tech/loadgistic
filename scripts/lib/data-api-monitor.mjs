@@ -10,7 +10,7 @@ export async function inspectDataApiGuard({ key, fetchImpl = fetch }) {
   }
   if (!anonymous) throw Error('ANONYMOUS_MONITOR_KEY_REQUIRED');
   const paths = [
-    '/rest/v1/spatial_ref_sys?select=srid&limit=0',
+    '/rest/v1/capacities?select=id&limit=0',
     '/rest/v1/profiles?select=id&limit=0',
     '/rest/v1/rpc/current_user_projection',
   ];

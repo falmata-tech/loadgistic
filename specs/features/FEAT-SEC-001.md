@@ -155,6 +155,19 @@ workflow is on main and its public-key variable is provisioned.
 
 Tests: tests/data-api-monitor.test.mjs; scripts/check-production-api-guard.mjs.
 
+Given Supabase relocates PostGIS into a non-exposed extensions schema\
+When the anonymous guard monitor runs\
+Then its strict guard-denial probes use existing application relations and the
+own-identity RPC, independently of the removed public extension-table route\
+And an unrelated denial, missing application relation, open endpoint or outage
+still fails; relocation never disables the independent catalog/advisor gates.
+
+Provider relocation requires a fresh recoverable backup, target-schema
+compatibility evidence, exact project/schema/version review and independent
+postchecks. The agent does not perform provider catalog changes or privilege
+escalation. A logical-copy compatibility rehearsal does not prove execution of
+the provider's in-place operation.
+
 ## Scenario: known security failures must not silently recur
 
 Given a discovered security defect or a related credible regression risk
