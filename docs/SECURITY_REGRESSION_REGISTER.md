@@ -21,6 +21,35 @@ instead of renumbering or deleting them.
 | NR-09 | Account closure removes login UI access but stale tokens or retained membership still authorize writes; history is deleted during “cleanup.” | Recheck active actor and tenant authority at mutation boundaries; retain history and deny browser database shortcuts. Run `tests/sql/browser-boundaries.sql`, `tests/sql/account-security.sql`, `scripts/verify-audit-concurrency.mjs`, and account-security browser workflows. | Identity/domain author |
 | NR-10 | Customer files, credentials or backup content leak through public storage, browser code, logs or build context. | Keep server credentials server-only, reauthorize private reads, and exclude local credentials/backups from images. Run `tests/private-storage.test.mjs`, `tests/sql/tracking-proof-access.sql`, relevant attachment tests, and the CI container-context canaries. Never log tokens, OTPs, customer rows or recovered backup contents as evidence. | Storage/runtime author; release owner |
 
+
+| NR-11 | A successful build is published with a broken server bundle because a nested checkout changes workspace tracing or deployment tools repackage the adapter incorrectly. | Build an immutable code-only export with no parent workspace; verify the final uploaded function retains its adapter manifest, runtime configuration and module paths. Exercise a cold start on the provider before publication, then verify production health and desktop/phone workflows. Keep the previous working deploy available; preserve database containment during application rollback. September 20 attempt 6ab03906b83e9eec579c7bc0 failed runtime verification and was rolled back; corrected release evidence must be recorded before closure. | Release owner; CI maintainer |
+
+| NR-12 | A pilot importer writes raw object paths that the authorized private-file reader cannot resolve. Backup restoration and row counts alone miss broken visible document controls. | Import the canonical private-storage URI, exercise the importer mapping through the private reader, and click the deployed document control with exact-byte and guest-denial checks. Repair only the reviewed fixture-tagged record set, with drift checks and recovery; never rerun the bulk seed or loosen the reader to accept arbitrary paths. PILOT-FILE-001 affected 335 synthetic records; the owner approved the bounded repair, it was applied and independently verified, and desktop/phone document bytes and guest-denial checks passed on September 21. | Fixture/import author; release owner |
+
+| NR-13 | A performance fix changes appearance or adds user steps without approval; specs/tests are rewritten to accept it and passing CI substitutes for owner review. | Preserve the original workflow and result completeness; keep server mechanics internal. Require approval of a specific UX tradeoff before implementation, and a running local desktop/phone review before UI deployment. See [map incident and open repair checklist](MAP_PERFORMANCE_REGRESSION_2026-09-21.md). Local restoration removes the manual modes/loading controls; 13 focused unit and six desktop/phone browser cases pass. Owner visual review and extensive release gates remain pending; no corrective release. | Implementing agent; release owner |
+
+NR-02/03/09 onboarding check (2026-09-21): assignment eligibility must not become
+proof of email ownership. Migration 099 leaves Auth email unconfirmed and denies
+unverified caller-bound workspace projection; owner registration cannot adopt an
+existing provider, another fleet, suspended or reserved identity. Its preparation
+and registration RPCs explicitly deny browser execution. The rollback-only
+`tests/sql/driver-preverification.sql`, legacy invitation regression and catalog
+gate pass locally; desktop/phone real-OTP workflows confirm login preserves the
+prior assignment. No auto-confirmation, password creation or owner-accessible
+Driver session. Owner: identity/migration author. Next: owner visual review, full
+release gates and separately authorized rollout.
+
+NR-08 backup lesson: a timed-out exporter may still return a zero process status
+or leave an authenticated but incomplete encrypted archive. Treat a timeout as
+failure independently of exit status; fully restore the exact archive before it
+can satisfy the release gate. The September 20 truncated export was rejected by
+restore, preserved as invalid, and replaced with a fully restored archive before
+migration. Owner: backup/release operator.
+
+### Featured rotation check — 2026-09-21
+
+NR-01/03: migration 098 creates its selection ledger with RLS and explicit browser privilege revocation in the same transaction. Only the existing service-authorized generator writes history; browser execution remains denied. The rollback-only `tests/sql/featured-random-rounds.sql` and resulting catalog security check passed locally. Saved-roster fingerprints were unchanged after local application, and a separate two-session check confirmed concurrent generation returns without writing while the advisory lock is held. CI now includes the regression; hosted execution is not claimed. Owner: migration/release author. Next: owner UI review, full release gates and separately authorized rollout.
+
 ## How to use and maintain this register
 
 NR-04/NR-05 relocation lesson: a guard monitor must probe stable application

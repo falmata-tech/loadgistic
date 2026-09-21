@@ -28,7 +28,7 @@ Given the assigned Driver chooses a supported privacy radius and grants browser 
 When current radius availability is refreshed\
 Then the exact device coordinate is displaced in the browser before submission\
 And only the displaced center, chosen privacy radius, safe general-area label, and timestamp are stored\
-And the public map always shows a violet privacy circle sized by that chosen accuracy\
+And the public map always shows a blue privacy circle sized by that chosen accuracy\
 And all user-facing copy names that circle the Approximate current location or Approximate location radius rather than exposing the internal privacy-control term\
 And Empty Service-area availability adds a separate green hollow working polygon whose interior does not block route interaction\
 And Fleet owners may preserve but cannot replace that Driver location with their own device position.
@@ -73,7 +73,7 @@ When the Market renders\
 Then one shared map is loaded and synchronized with the current filtered feed\
 And no per-truck tile map or ranked List view is instantiated\
 And its initial framing remains focused on Ethiopia while public and provider views may be panned only within a practical East Africa envelope\
-And violet approximate location, status-colored current Service area or Capacity route, and blue regular service use shape, line style, icon, and text in addition to color\
+And blue approximate location, status-colored current Service area or Capacity route, and muted-orange regular service use shape, line style, icon, and text in addition to color\
 And selecting a truck removes other truck markers and clusters until the selected card is closed\
 And the selected marker remains visually distinct and above its signal layers at every fitted zoom while a compact in-map information window carries its essential truck actions\
 And hovering or focusing one signal shows a temporary readable light-surface explanation with a restrained neutral border and signal-matched accent\
@@ -105,3 +105,5 @@ And unresolved data stays preserved for rollback without inventing coordinates o
 - Persistence: current capacity, one regular Service area or Capacity route, and structured location fields
 - Frontend: provider editor, public Capacity Board filters, cards, and one shared map
 - Tests: domain, repository, authorization, E2E, and visual audit
+
+September 21 owner-requested palette and interaction update: blue identifies location; muted orange identifies regular service, with green/yellow availability unchanged. FEAT-LST-001 defines compact map-key, non-blocking details and catalog-city proximity acceptance. Local verification precedes owner visual approval and rollout.

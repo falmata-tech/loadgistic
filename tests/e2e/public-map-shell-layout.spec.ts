@@ -1,3 +1,4 @@
+import {openCapacityFilters} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
@@ -16,6 +17,7 @@ async function verifyShell(page:any,testInfo:any,surface:string){
   mkdirSync(captures,{recursive:true});
   for(const [width,height] of viewports){
     await page.setViewportSize({width,height});
+    await openCapacityFilters(page);
     await expect.poll(async()=>page.evaluate(()=>{
       const box=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
       const header=box('.public-header');
@@ -39,8 +41,8 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       navigationClear:true,headerClear:true,withinViewport:true,
       toolsContained:true,sessionClear:true,usableMap:true,noDocumentOverflow:true,
     });
-    await page.getByRole('button',{name:'Filters',exact:true}).click();
-    const dialog=page.getByRole('dialog',{name:'Filters',exact:true});
+    await page.getByRole('button',{name:'More filters',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'More filters',exact:true});
     await expect(dialog).toBeVisible();
     const bounds=await dialog.boundingBox();
     expect(bounds).toBeTruthy();

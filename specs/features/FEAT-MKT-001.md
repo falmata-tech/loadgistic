@@ -232,3 +232,29 @@ And no fixed illustration determines participant count, row count, or board dime
 - Pages: `/` as the canonical Truck Market; `/featured` as Daily Featured Trucks; `/capacity` and `/providers` as compatibility redirects to the Market; `/track`, `/about`, and `/@handle`
 - Projection boundary: explicit public whitelists only
 - Tests: repository, E2E, visual audit
+
+### Editorial direction — owner clarification, 2026-09-21
+
+Loadgistic helps transporters share capacity signals with known brokers and
+enterprises shipping or receiving goods, or with the open market. Transporters
+then provide professional private shipment tracking to brokers, their customers,
+or enterprise contacts directly. Optional reviewed documents help people seeking
+transport assess the provider, Driver and truck.
+
+Apply this positioning concisely to About, public metadata, onboarding, Network,
+Tracking and verification introductions. About carries the fuller story; working
+screens explain the immediate task without repeating the platform pitch. Keep
+real permission, privacy and badge limitations where relevant. Do not claim
+screening guarantees, automatic/live tracking, bookings, payments, broker accounts
+or enterprise dashboards that are not implemented. These are audience descriptions,
+not new authorization roles. This is an editorial correction, not a workflow change.
+
+Review: inspect desktop/phone About and entry pages plus local provider Network,
+Tracking and Verification; preserve navigation/form actions and record captures.
+
+
+Local editorial evidence: typecheck and source/spec checks passed; desktop/phone
+captures of nine entry/workspace routes are retained in
+`artifacts/narrative-review-2026-09-21/`. Setup after identity confirmation was
+source-reviewed only. About's phone action obstruction is recorded as UIA-16;
+owner visual approval and deployment remain pending.

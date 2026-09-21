@@ -129,8 +129,8 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
   const cursor=decodePublicCursor(options.cursor);
   const resolved=await resolveCapacityFilterPlaces(client,filters);
   if(resolved.filterError)return {items:[],hasMore:false,nextCursor:null,pageSize:pageSize,filterError:resolved.filterError};
-  const [originPlace,destinationPlace,areaPlace]=resolved.places;
-  const nearLat=Number(filters.nearLat),nearLng=Number(filters.nearLng);
+  const [originPlace,destinationPlace,areaPlace,truckCity]=resolved.places;
+  const nearLat=truckCity?.center_lat??Number(filters.nearLat),nearLng=truckCity?.center_lng??Number(filters.nearLng);
   const hasNear=Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
   let query;
   try{query={...capacityDatabaseFilters(filters,resolved.places),
@@ -305,8 +305,8 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   const client=createSupabaseAdminClient();
   const resolved=await resolveCapacityFilterPlaces(client,filters);
   if(resolved.filterError)return {items:[],hasMore:false,nextCursor:null,pageSize:100,filterError:resolved.filterError};
-  const [originPlace,destinationPlace,areaPlace]=resolved.places;
-  const nearLat=Number(filters.nearLat),nearLng=Number(filters.nearLng);
+  const [originPlace,destinationPlace,areaPlace,truckCity]=resolved.places;
+  const nearLat=truckCity?.center_lat??Number(filters.nearLat),nearLng=truckCity?.center_lng??Number(filters.nearLng);
   const hasNear=Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
   const pageSize=Math.max(12,Math.min(100,Number(options.pageSize)||100));
   let query;

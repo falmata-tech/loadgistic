@@ -18,12 +18,14 @@ No database migration or message-authorization change is introduced.
   schemas and transport failures. No raw messages, credentials or retries are used.
 - [x] Complete quality (304 unit tests, specs/source and TypeScript) and production
   build. The actual local schema read returned 59 definitions without an import.
-- [ ] Complete exact-commit remote CI.
+- [x] Complete exact-commit remote CI: e52a2a3 / 35519622994 and monitoring
+  follow-up 6b3d6cd / 35526988445 passed validate, container and E2E; each full
+  browser suite passed 160 cases without retries, with eight opt-in skips.
 - [ ] Promote only after the independent production security and release gates pass.
 
-CI-OBS-002 has a reproduced product defect and local no-retry evidence. A new
-complete remote suite must confirm the result; earlier retries are not silently
-counted as clean evidence. The first enabled click now works with a deliberately
+CI-OBS-002 is closed by the reproduced defect, regression, local no-retry evidence
+and two successful complete remote suites without retries. Earlier retry results
+remain historical evidence. The first enabled click now works with a deliberately
 delayed conversation response. Playwright's [hydration guidance](https://playwright.dev/docs/navigations#hydration)
 describes this failure mode and the readiness control.
 

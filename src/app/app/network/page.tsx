@@ -10,7 +10,7 @@ export default async function PrivateCapacityNetworkPage({searchParams}:{searchP
   const query=await searchParams;
   const vehicles:any[]=await listPrivateCapacityNetwork(user);
   return <div className="page private-capacity-network">
-    <PageHeader icon={Network} title="Network" subtitle="Control who can see each truck’s current capacity and approximate location."/>
+    <PageHeader icon={Network} title="Network" subtitle="Share truck capacity privately with the brokers and customers you work with."/>
     <Flash error={query.error} success={query.success}/>
     <aside className="permission-note"><ShieldCheck aria-hidden="true"/><div><strong>Truck-specific access</strong><span>People you approve see the same location radius chosen by the Driver. Remove access at any time.</span></div></aside>
     <div className="network-truck-list">{vehicles.map(vehicle=>{const active=vehicle.grants.filter((grant:any)=>!grant.revoked_at);const loadgistic=active.find((grant:any)=>grant.audience_type==='LOADGISTIC');return <section className="card network-truck-card" key={vehicle.id}>

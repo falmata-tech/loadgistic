@@ -2,7 +2,7 @@
 
 ## Product invariant
 
-Loadgistic gives account-free capacity seekers a public view of road-freight supply from fleets, owner-operators, and self-managed Drivers. Providers publish current capacity and own shipment tracking after the parties agree offline; Loadgistic does not publish demand or handle transactions.
+Loadgistic helps fleets, owner-operators and self-managed Drivers share capacity signals with known brokers and enterprises (shippers and receivers), or with the open market. Transporters provide private shipment tracking to brokers, their customers or enterprises directly after agreeing the work. Optional document review helps people seeking transport assess providers; it is not a service guarantee. Keep this positioning concise in product copy. Public discovery remains account-free; Loadgistic does not publish demand or handle transactions.
 
 Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
 
@@ -64,6 +64,51 @@ Before major authentication, authorization, workflow, public-data, file, schema,
     callback secrets, tokens, or customer contact data.
 
 
+## Local visual review before UI deployment
+
+- Owner-required order (2026-09-21): keep the dev server running and provide the
+  URL for owner visual testing; obtain explicit visual approval; run extensive
+  tests/release gates; deploy only when the owner explicitly asks. Visual approval
+  alone is not deployment permission. Limited checks needed to make the preview
+  usable may run first; do not put the full suite ahead of owner review.
+
+- Performance-only requests authorize optimization of the existing experience,
+  not a redesign or additional user work. Establish the existing appearance,
+  click sequence, automatic behavior and result completeness before editing.
+- Keep batching, caching, aggregation and loading modes internal. Do not add
+  user-facing mode switches, confirmation clicks, manual loading requirements or
+  reduced discovery coverage to meet a performance target without explicit owner
+  agreement to that specific tradeoff before implementation. If an optimization
+  cannot preserve the experience, defer it and explain the measured limitation.
+- Write regression acceptance from the original workflow and the owner's request,
+  not from the proposed implementation. A self-authored spec or passing test
+  cannot grant permission for a product change. Review before/after interaction
+  and completeness alongside actual performance evidence. See NR-13.
+
+- For every visible UI or map change, start and keep a Loadgistic local server
+  running against local services. Give the owner the working URL and the exact
+  interaction to review, with focused desktop and phone screenshots.
+- Run focused interaction tests first, then wait for the owner's explicit
+  visual approval before full release gates or deployment of those changes.
+  Automated screenshots, passing CI, and an earlier deployment authorization
+  do not constitute visual approval of a changed interface.
+- Record what was reviewed and approved. Material visual or interaction changes
+  after approval require another local review. Never silently redesign markers
+  or add interaction steps while fixing loading or clustering.
+
+## External support communication
+
+- Keep support emails short, courteous and limited to what the recipient needs
+  to perform the specific requested job: the affected project, a clear request,
+  any prerequisite they asked us to confirm, and essential compatibility limits.
+- Keep our backups, internal audit evidence, release gates and follow-up checks
+  on our side. Do not send hashes, test inventories, implementation instructions
+  or extra reporting requests unless support needs them to resolve the case.
+- Respect the provider's proposed supported procedure. Ask them to do only work
+  that requires their access; do our own application and security verification.
+- Brevity must preserve material safety constraints and accurate claims. Editing
+  a draft does not authorize sending it or expanding a production change's scope.
+
 ## Production authority — FEAT-SEC-001
 
 - Owner decision, 2026-09-17: production changes are owner-only for now. The
@@ -92,8 +137,12 @@ Before major authentication, authorization, workflow, public-data, file, schema,
   unrelated provider, SMTP, secret, signing-key, network, billing or deletion work.
 - After ambiguous remote results, stop writes and inspect; do not automatically
   repeat or restore broad settings. Retain history and security containment.
-- No release while critical advisors, catalog checks or required CI fail. New
-  public tables require RLS before exposure, including extension-created tables.
+- Normally no release while critical advisors, catalog checks or required CI fail.
+  The owner's September 20 one-release exception in docs/PRODUCTION_AUTHORITY.md
+  permits this reviewed release before the known PostGIS provider repair only
+  after its other prerequisites pass. Keep the finding and failed check visible;
+  do not disable checks or apply this exception to any other failure or release.
+  New public tables require RLS before exposure, including extension-created tables.
 - Follow docs/PRODUCTION_AUTHORITY.md. The 2026-09-16 approved database/private-file
   backup is a limited exception for that exact export and isolated restore; it
   does not authorize general configuration writes or new administrator access.

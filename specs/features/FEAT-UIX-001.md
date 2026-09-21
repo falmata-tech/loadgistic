@@ -398,3 +398,33 @@ And every confirmed defect is recorded with its affected actor, viewport, route,
 - Public pages: homepage, Capacity, Providers, Track, About, account access, and provider setup
 - Provider pages: `/app/**` excluding `/admin/**`
 - Tests: E2E and visual audit
+
+
+### Scenario: loading feedback matches the surface being loaded
+
+Given content is loading in a map or search result surface\
+When the user waits for its response\
+Then a restrained teal horizontal activity indicator communicates ongoing work\
+And an accessible text label remains available without displaying a text-only loading notice\
+And the indicator does not fabricate a percentage or block existing controls\
+And reduced-motion preference replaces animation with a static treatment\
+And a map's initial skeleton resembles its canvas, zoom controls and map key rather than crossed diagonal bands\
+And route-level map loading preserves the desktop toolbar and phone overlay layout\
+And existing form, records, chat and Featured skeletons retain their content-shaped layouts.
+
+Scope: shared loading component, map/search loading feedback and map skeletons.
+Focused desktop/phone delayed-response captures precede owner review; full release
+gates follow approval. Rollback restores components/styles; no data changes.
+
+### Provider dashboard facts — 2026-09-21
+
+Given a provider opens Home after Tracking activity
+When a shipment is cancelled or completed
+Then it is excluded from Active Tracking; Completed Tracking counts only completion.
+And Recent Tracking orders by last update so an older shipment updated today is visible.
+And On-duty Trucks counts current Empty/Partial signals on active owned trucks.
+
+Implementation: scoped migration 100 corrects only the existing dashboard projection;
+its persisted authorization, tenant scope and six-row limit remain. Rollback restores
+the prior function without changing shipments. Verify rollback-only status/order/
+vehicle tests, denial and catalog checks, then the local browser presentation.

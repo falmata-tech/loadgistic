@@ -175,3 +175,50 @@ No new broad admin editor or external authority. Rollback hides the controls whi
 retaining audit/recovery state. Required evidence: delegated permission, wrong
 record kind, concurrent edit, location-state privacy and real desktop/phone
 admin correction/recovery/map workflows.
+
+### UI contract corrections — 2026-09-21
+
+Given the administrator opens the Capacity inventory
+When a row is Off Duty
+Then its description says Off Duty and never describes an empty truck.
+
+Given an administrator acts on a user or truck from a searched/paginated inventory
+When the server reports success or denial
+Then the same record type, search and page remain selected.
+
+Implementation: derive capacity wording from stored status and include bounded
+list context in every record action. Preserve existing backend authority and
+mutation contracts. Focused desktop/phone checks exercise real controls and deny
+unrelated actors; no remote changes. Rollback restores presentation only.
+
+Given a saved Records URL points beyond the last result page
+When the inventory loads
+Then it recovers to the first bounded page of that search instead of claiming
+there are no matching records and hiding pagination. Invalid page numbers use page one.
+
+Given a provider publishes a regular-service area using the current polygon contract
+When an administrator opens Routes or its detail
+Then the area is labelled Service area around its center, not a route from a city
+to itself. Route geometry retains its origin/destination presentation. Migration
+101 adds only the existing geometry discriminator to the bounded admin list; no
+coordinates or broader privileges. Verify area/route SQL and desktop/phone rendering.
+
+### Review queue decision context — audit continuation, 2026-09-21
+
+Given a reviewer opens a searched, status-filtered, paginated document/payment/rating queue
+When a decision succeeds or the backend denies it
+Then the response retains that queue, search, status and page context
+And caller-provided return paths cannot redirect outside the matching Review Center tab.
+And review notes and status persist through the existing authorized command; terminal
+replays and callers without the required permission remain denied.
+
+Given a stale or invalid page number is requested in any Review Center queue
+When a bounded offset read returns no rows
+Then an out-of-range page recovers to the first bounded page of the same filter
+And genuinely empty queues remain empty; query failures are never disguised as empty data.
+
+Plan: reuse bounded page normalization/recovery for the three existing queue
+adapters, canonicalize Review Center return context, and pass it from each form.
+No database privilege/state-machine changes. Verify pure URL/paging negatives and
+actual desktop/phone review commands with disposable local records. Rollback
+restores adapters/presentation while preserving review decisions and audit history.

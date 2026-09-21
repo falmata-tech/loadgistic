@@ -370,3 +370,20 @@ And server authorization continues to reject inactive workspace access.
 
 Migration 096 and tests/sql/browser-boundaries.sql implement this boundary without
 deleting account or shipment history or changing hosted Auth configuration.
+
+
+## Owner-added company Driver — 2026-09-21
+
+FEAT-FLT-001 allows the owner to register the driver's actual email and assign a
+truck before email verification. The Auth identity is unconfirmed, has no supplied
+password and confers no session. Current-user projection denies unconfirmed email
+identities, including a forged/unconfirmed JWT subject used in the SQL regression.
+The normal email-code flow supplies confirmation and the existing Driver workspace;
+there is no extra Join fleet acceptance for newly owner-added Drivers. Existing
+pending invitations preserve their verified acceptance flow. Owner account creation
+cannot repurpose provider/staff/other-fleet or suspended identities. ADR-068.
+
+Local evidence for the owner-added Driver contract: migration 099,
+`tests/sql/driver-preverification.sql` and both desktop/phone real-Mailpit
+`tests/e2e/fleet-onboarding.spec.ts` pass. See `specs/TRACEABILITY.md`; owner
+visual review, full release gates and production rollout remain pending.

@@ -37,7 +37,37 @@ its own access-path review; PostgREST-only evidence does not cover either.
 
 ## Required gates
 
+### Owner visual review (NR-13)
+
+Required sequence: running dev server and owner visual testing → explicit visual
+approval → extensive tests and release gates → deployment only on the owner's
+explicit request. Keep the preview running during review. Visual approval is not
+deployment authorization; never infer either from passing automated checks.
+
+Performance work must preserve the existing appearance, action count, automatic
+loading and discoverability. Capture that baseline before implementation and
+test it independently of the optimized code. Internal aggregation or batching
+does not justify exposing modes, adding clicks, hiding results or making visitors
+load data manually. A specific user-experience tradeoff needs explicit owner
+agreement before implementation; otherwise defer the optimization. Changing a
+spec and a test to match the new design is not approval. Compare measured speed,
+requests and payloads together with interaction and result completeness.
+
+Before deploying any visible UI/map change, keep a local Loadgistic server
+running against local services and provide its working URL, affected interaction
+and desktop/phone captures. Run focused interaction checks, then obtain explicit
+owner visual approval before expensive full release gates or publication.
+CI and automated screenshots prove checks, not acceptance of a design. An earlier
+release approval does not approve a later visual change. Record the reviewed
+version and re-review material changes. Performance fixes must preserve the
+accepted interaction unless a change is explicitly reviewed.
+
 ### Workflow regression lessons
+
+- When lifecycle states or stored geometry evolve, check dashboard totals, recent
+  activity ordering and list/detail wording against the current backend contract.
+  A matching route or successful page load is not proof of a working control:
+  verify persisted state, visible success/denial and preserved list context.
 
 - Server-rendered controls must not accept clicks before their client handlers
   attach. For initialization races, hold client scripts in a browser regression,
@@ -55,8 +85,11 @@ its own access-path review; PostgREST-only evidence does not cover either.
 
 - Start at an empty workspace when adding onboarding or assignment flows.
   Pre-seeded drivers can prove assignment but cannot prove that a new owner can
-  add a driver. Verify invitation delivery, recipient identity, acceptance,
-  assignment, first publication, and revocation through their real boundaries.
+  add a driver. Verify required email, immediate assignment while still unverified,
+  denied unverified workspace access, actual inbox-code login, preserved assignment,
+  first publication and revocation through their real boundaries. Retain verified
+  invitation acceptance tests for legacy invitations. Adding a driver must never
+  auto-confirm email, create an owner-accessible session or adopt another account.
 - When copying an existing SQL function into an additive migration, extract only
   the intended function and assert its function inventory. A broad replacement
   can accidentally change an unrelated dashboard's role checks.

@@ -245,3 +245,33 @@ And the final runtime receives only the standalone application and public assets
 Evidence: a local canary/context check plus the ordinary standalone Docker build.
 No hosted data is required for this check. Rollback must preserve these exclusions;
 this changes packaging only, not runtime authority or database behavior.
+
+### Scenario: production pilot documents use the private-storage contract
+
+Given the additive pilot importer substitutes a shared synthetic verification file
+When it maps a verification request for a namespaced pilot identity
+Then the stored reference includes the `supabase://verification/` bucket prefix
+And the existing private-storage reader retrieves the intended object
+And the document route still requires the authorized account.
+
+A repair of existing pilot references must match the exact fixture identity,
+original reference and reviewed row set; preserve file bytes and all other fields;
+retain a protected recovery snapshot; and reject drift before an atomic update.
+Do not rerun the bulk importer to correct these references. Production application
+still requires the owner's exact database-change approval. Regression evidence:
+`tests/production-pilot-policy.test.mjs`; deployment browser verification and the
+bounded repair rehearsal recorded in `docs/PROGRESS.md`.
+
+
+### Scenario: performance work preserves the approved experience
+
+Given a request authorizes performance improvements to an existing interface\
+When an optimization is proposed\
+Then its acceptance preserves appearance, action count, automatic behavior and result completeness\
+And any required UX tradeoff needs explicit owner agreement before implementation\
+And a running local preview with desktop/phone evidence requires explicit owner visual approval before deployment\
+And successful CI, an agent-authored spec and earlier release permission do not replace that approval.
+
+NR-13 and `docs/MAP_PERFORMANCE_REGRESSION_2026-09-21.md` record the map incident,
+local evidence and remaining repair. Repository rules are workflow requirements,
+not installed provider-level enforcement.

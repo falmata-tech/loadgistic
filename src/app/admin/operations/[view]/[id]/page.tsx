@@ -36,6 +36,7 @@ function titleFor(record:any){
   return record.owner_name||record.plan_name;
 }
 function statusFor(record:any){
+  if(record.view==='ROUTES')return record.geometry==='RADIUS'?'SERVICE_AREA':'ROUTE';
   return record.operational_status
     ||record.capacity_status
     ||record.subscription_status
@@ -50,7 +51,7 @@ function factsFor(record:any){
   if(record.view==='DRIVERS')return [['Email',record.email],['Phone',record.phone],['Fleet transporter',record.owner_name],['Assigned truck',record.platform_number],['Capacity updates',record.can_manage_capacity?'Allowed':'Not allowed'],['Tracking updates',record.can_manage_tracking?'Allowed':'Not allowed']];
   if(record.view==='TRACKING')return [['Cargo',record.cargo_summary],['Route',`${record.origin} → ${record.destination}`],['Transporter',record.provider_name],['Truck',record.platform_number],['Driver',record.driver_name],['Tracking mode',record.tracking_mode?.replaceAll('_',' ')],['Expected pickup',record.expected_pickup_date],['Expected delivery',record.expected_delivery_date],['Updated',date(record.updated_at)]];
   if(record.view==='CAPACITY')return [['Transporter',record.owner_name],['Truck',`${record.platform_number} · ${record.make} ${record.model}`],['Visibility',record.visibility?.replaceAll('_',' ')],['Signal type',record.availability_geometry==='RADIUS'?'Service area':'Capacity route'],['Reported area',record.location_area],['Capacity updated',date(record.updated_at)],['Location updated',date(record.location_updated_at)]];
-  if(record.view==='ROUTES')return [['Transporter',record.owner_name],['Type',record.record_kind==='SERVICE_AREA'?'Service area':'Capacity route'],['Geometry',record.geometry==='RADIUS'?'Area':'Route'],['Service',record.record_kind==='SERVICE_AREA'?`${record.origin} · ${record.radius_km} km`:`${record.origin} → ${record.destination}`],['Added',date(record.created_at)]];
+  if(record.view==='ROUTES')return [['Transporter',record.owner_name],['Type',record.geometry==='RADIUS'?'Service area':'Regular route'],['Geometry',record.geometry==='RADIUS'?'Area':'Route'],['Service',record.geometry==='RADIUS'?`Area around ${record.origin}`:`${record.origin} → ${record.destination}`],['Added',date(record.created_at)]];
   return [['Owner',record.owner_name],['Plan',record.plan_name],['Billing',record.billing_model?.replaceAll('_',' ')],['Starts',date(record.starts_at)],['Ends',date(record.ends_at)],['Updated',date(record.updated_at)]];
 }
 

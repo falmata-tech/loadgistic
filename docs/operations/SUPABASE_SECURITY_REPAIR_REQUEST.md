@@ -1,4 +1,34 @@
-# Prepared support request — owner sends; not sent by the agent
+# Support request sent — awaiting provider repair
+
+September 20 update: the owner supplied Support's reply offering an in-place
+PostGIS move to extensions after backup confirmation. The fresh backup, full
+restore and target-layout compatibility checks passed; see
+[POSTGIS_RELOCATION_READINESS.md](POSTGIS_RELOCATION_READINESS.md). A narrowly
+scoped follow-up was explicitly approved and SMTP accepted at
+2026-09-20T18:25:28.436Z. It confirms the verified backup and requests Paul's
+proposed in-place move; no attachment was resent. Provider completion remains
+unconfirmed. The historical original request below is preserved unchanged;
+the approved relocation now supersedes its RLS-only repair proposal.
+
+Historical status, 2026-09-18: the owner-selected Data API guard is active. Live
+anonymous REST and GraphQL requests are denied; service access and public site
+health passed. This closes the verified API access path without changing table
+ownership or deleting data. The table-level RLS/ACL repair requested below is
+still outstanding, and its advisor warning remains. See ../PROGRESS.md for exact
+activation and verification evidence. The sent email/attachment are unchanged;
+no additional message was sent.
+
+On 2026-09-17T03:20:40.889Z, after explicit owner approval, the agent sent the exact reviewed
+request and SQL attachment to support@supabase.com from the verified registered
+owner account. SMTP accepted the one recipient with zero rejections. This confirms
+submission, not inbox delivery, a support case number or completion of the repair.
+Protected receipt: `.local/support-repair-submission.json`. Do not resend while
+awaiting a response. The hosted finding remains open pending provider execution
+and independent catalog/advisor checks.
+
+Latest read-only verification (2026-09-20T19:04:54.392Z): the critical advisor,
+disabled RLS and table-level anonymous CRUD grants remain present. The separate
+API guard denies those browser requests; the owner-side repair is not confirmed.
 
 Project: Loadgistic, `tpwyyzoqijjmbvsmmvcm`.
 Subject: Owner-side containment required for public PostGIS reference table.

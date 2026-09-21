@@ -21,3 +21,12 @@ test('database query keeps combined criteria, resolved coordinates and absent pr
  assert.deepEqual(filters.viewport,[38,8,40,10]);assert.equal(filters.destination_radius_km,100);
  assert.throws(()=>capacityDatabaseFilters({viewport:'38,8'}));
 });
+
+
+test('truck city filters reported location independently, taking precedence over device proximity',()=>{
+ const places=[null,null,{center_lat:10,center_lng:40},{center_lat:8.54,center_lng:39.27}];
+ const query=capacityDatabaseFilters({truckLocationRadiusKm:25,nearLat:14,nearLng:48,nearRadiusKm:5},places);
+ assert.equal(query.near_lat,8.54);assert.equal(query.near_lng,39.27);assert.equal(query.near_radius_km,25);
+ assert.equal(query.area_lat,10);assert.equal(query.geometry,null);
+ assert.equal(capacityDatabaseFilters({truckLocationRadiusKm:999},places).near_radius_km,50);
+});

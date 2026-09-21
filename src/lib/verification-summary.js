@@ -45,3 +45,19 @@ export function truckAuthorizationBadgeFromApproved(records,vehicleId,vehicleLab
     vehicleId,vehicleLabel
   };
 }
+
+export function projectVerificationSubject(subject){
+  const documents=subject.approved_documents||[];
+  const badges=verificationBadgesFromApproved(subject.subject_type,documents);
+  const verificationTypes=subject.verification_types||[];
+  const pairingBadges=verificationTypes.includes('VEHICLE_AUTHORIZATION')
+    ?(subject.vehicles||[]).map(vehicle=>truckAuthorizationBadgeFromApproved(documents,vehicle.id,vehicle.label)):[];
+  const verifiedTypes=new Set(badges.filter(badge=>badge.verified).map(badge=>badge.type));
+  const allowedTypes=verificationTypes.filter(type=>type==='VEHICLE_AUTHORIZATION'
+    ?pairingBadges.some(badge=>!badge.verified):!verifiedTypes.has(type));
+  const vehicles=verificationTypes.includes('VEHICLE_AUTHORIZATION')
+    ?(subject.vehicles||[]).filter(vehicle=>!pairingBadges.find(badge=>badge.vehicleId===vehicle.id)?.verified)
+    :subject.vehicles||[];
+  return {...subject,vehicles,verification_types:undefined,approved_documents:undefined,
+    allowed_types:allowedTypes,badges:[...badges,...pairingBadges]};
+}

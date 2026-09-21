@@ -43,7 +43,7 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
 
   return <form onSubmit={submit} className="form-card stack">
     {error?<div className="flash error" role="alert">{error}</div>:null}
-    <section><div className="section-heading-icon"><Truck aria-hidden="true"/><div><h2>Truck and tracking</h2><p className="meta">Create the record only after you and the customer have agreed offline.</p></div></div><div className="form-grid">
+    <section><div className="section-heading-icon"><Truck aria-hidden="true"/><div><h2>Truck and tracking</h2><p className="meta">Start Tracking once you and your customer have agreed the work.</p></div></div><div className="form-grid">
       <div className="form-group full"><label htmlFor="provider-shipment-vehicle"><Truck aria-hidden="true"/>Truck</label><select id="provider-shipment-vehicle" name="vehicleId" required defaultValue=""><option value="" disabled>Choose a truck</option>{vehicles.map(vehicle=><option key={vehicle.id} value={vehicle.id}>{vehicle.platform_number} · {vehicle.make} {vehicle.model} · {vehicle.cargo_configuration||vehicle.category}</option>)}</select></div>
       <div className="form-group full"><label htmlFor="cargo-summary"><PackageCheck aria-hidden="true"/>Cargo summary</label><input id="cargo-summary" name="cargoSummary" minLength={3} maxLength={500} required placeholder="Coffee bags · partial space"/></div>
     </div></section>
@@ -53,7 +53,7 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
       <div className="form-group"><label htmlFor="expected-pickup"><CalendarDays aria-hidden="true"/>Expected pickup <span className="meta">(optional)</span></label><input id="expected-pickup" name="expectedPickupDate" type="date"/></div>
       <div className="form-group"><label htmlFor="expected-delivery"><CalendarDays aria-hidden="true"/>Expected delivery <span className="meta">(optional)</span></label><input id="expected-delivery" name="expectedDeliveryDate" type="date"/></div>
     </div></section>
-    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2>Tracking parties</h2><p className="meta">The customer owner receives the completion record and review invitation. Add anyone else who should follow this shipment.</p></div></div><div className="form-grid">
+    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2>Tracking parties</h2><p className="meta">The customer owner receives the completion record and review invitation. Add brokers, shippers or receivers who should also follow this shipment.</p></div></div><div className="form-grid">
       <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/>Customer owner email</label><input id="customer-email" name="customerEmail" type="email" required autoComplete="off"/></div>
       <div className="form-group full"><label htmlFor="additional-recipient-emails"><Mail aria-hidden="true"/>Additional tracking emails <span className="meta">(optional)</span></label><textarea id="additional-recipient-emails" name="additionalRecipientEmails" rows={3} placeholder={'dispatch@example.com\nreceiver@example.com'} aria-describedby="additional-recipient-help"/><small id="additional-recipient-help" className="meta">Enter one email per line, up to 20. Each person verifies their own email before viewing updates.</small></div>
     </div></section>

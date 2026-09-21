@@ -153,3 +153,26 @@ The catalog may add country- or actor-specific document names in a later accepte
 - Application services: dedicated managed Verification application port
 - Private file adapter: `/api/files/verification/[id]` backed by actor-scoped PostgreSQL authorization and private Storage
 - Tests: managed Verification contract and live Supabase verifier, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
+
+### Authorization submission choices reflect current approval — 2026-09-21
+
+Given a Driver has multiple eligible trucks and some pairings already have current approval
+When Truck authorization is selected
+Then only pairings without current approval are offered for submission
+And expired approval permits renewal; all approved/expired badge details remain visible.
+And the backend still rechecks identity, assignment, expiry and duplicate submissions.
+And an empty submission form never claims mandatory documents or verification of
+unavailable subjects: documents remain optional.
+
+Implementation: filter the form's truck projection using the same current-approval
+badges already displayed, without removing records or weakening submission checks.
+Pending submissions still receive the existing backend duplicate denial; do not
+claim they are approvals. Cover mixed approval/expiry and actual provider browser
+choices, keeping fixtures isolated.
+
+Given the verification form's server-rendered HTML arrives before its client logic
+When a visitor tries to change subject or document category
+Then those dependent selectors wait for client readiness before accepting input
+And an accepted choice displays its corresponding fields without being reset by mount.
+The local browser audit reproduced a lost early category selection; use the same
+readiness protection as the existing assisted-chat control, without new user steps.

@@ -110,7 +110,9 @@ compatibility failure stop promotion and fix the authorized adapter; do not rest
 broad browser grants. Local rollback tests: tests/sql/browser-boundaries.sql and
 scripts/verify-database-security-gate.mjs (eight unsafe catalog fixtures plus
 explicit column-grant repair and repeatability).
-Hosted execution and full release verification remain pending.
+Migration 096 was applied with migrations 077–097 on September 20. Independent
+application catalog, guard and service checks passed. Application rollout evidence
+and the separately open PostGIS repair are recorded in `docs/PROGRESS.md`.
 
 ## Scenario: Data API requests require an approved database role and operation
 
@@ -185,3 +187,21 @@ The register and AGENTS/GUARDRAILS/PR links are reviewed documentation; they are
 not a technical sandbox or a promise that a privileged administrator cannot
 remove a control. New defects must be recorded with an owner and next action even
 when their fix is deferred. Security gates cannot be bypassed to close a lesson.
+
+## Operational exception: owner-authorized release before provider repair
+
+Given the owner explicitly authorized the September 20 one-release exception
+When release candidate 6b3d6cd is evaluated before the provider repair completes
+Then follow the exact scope and outstanding prerequisites in
+`docs/PRODUCTION_AUTHORITY.md`, section One-release owner exception
+And the known PostGIS RLS/grant finding remains open and the unchanged checks
+continue reporting its failure; record the owner's acceptance separately
+And independently verify remaining application catalog checks so the expected
+first failure cannot conceal a different defect
+And all other CI, backup/recovery, authorization, migration, configuration and
+runtime requirements still apply; a new failure stops promotion
+And the exception ends after this single successful promotion, without granting
+privilege bypass or changing the standing policy for future releases.
+
+This is a scoped operational authorization, not implemented check suppression
+or evidence of a completed deployment. Existing negative tests remain unchanged.

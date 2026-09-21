@@ -1,5 +1,85 @@
 # Specification traceability
 
+## Platform positioning — 2026-09-21 (local owner review pending)
+
+FEAT-MKT-001 editorial clarification: About, public metadata, sign-in/setup,
+Private capacity entry, Network, Tracking and Verification now describe capacity
+sharing and shipment collaboration led by transporters, with optional document
+review supporting customer assessment. Typecheck and source/spec checks pass.
+Eighteen desktop/phone route captures report HTTP 200, no horizontal overflow and
+no page errors in `artifacts/narrative-review-2026-09-21/`. About CTA destinations
+and signup entry redirect remain correct. Authenticated initial setup copy was
+source-reviewed only. A separate phone action hit-test found the UIA-16 overlay
+obstruction; no claim of full usability or release completion. No hosted changes.
+
+## Capacity drawer — 2026-09-21 (local visual review pending)
+
+FEAT-LST-001 / FEAT-SHR-001: shared Open/Private drawer and More filters modal,
+one draft form, unchanged scoped endpoints and no map remount. Fourteen distinct
+focused desktop/phone cases pass: `capacity-filter-drawer.spec.ts` (six), focused
+accessibility (two), map-clarity city filtering (two), loading-feedback lookup
+(two), and smoke route endpoints (two). Real Mailpit OTP and an isolated published
+provider/truck/grant prove Private filtering and logout. Actual phone touch and
+mouse drag, inert/focus behavior, reduced motion and CTA hit testing are included.
+Typecheck and source/spec checks pass. Captures: `artifacts/capacity-drawer-final-2026-09-21/`;
+search/lookup evidence: `artifacts/capacity-drawer-search-2026-09-21/`.
+Two broader public-entry cases still fail after their map steps because the local
+Featured projection has zero sponsors while the test assumes a sponsor rail;
+see QA-01 in the UI audit. No full-suite/release pass is claimed. Owner visual
+review remains required before extensive gates and separately authorized rollout.
+
+## Review workflow continuation — 2026-09-21 (local visual review pending)
+
+FEAT-ADM-001 / FEAT-VER-001 / FEAT-BIL-001 / FEAT-REV-001 → UIA-09–12 and
+UIA-15 in `docs/UI_BACKEND_AUDIT_2026-09-21.md`. Five new pure regressions plus
+three Verification/Billing runtime checks pass. `tests/e2e/review-workflows.spec.ts`
+passes all six desktop/phone cases: actual document uploads/private downloads,
+review notes and status, paid-plan transition, uphold/remove publication rules,
+provider denial, terminal replay denial, filtered return context, stale/fractional
+pages, and approved-truck exclusion. Delayed-script checks verify dependent
+selectors wait for readiness. Two focused Fleet Add-driver clarity cases also
+pass. Typecheck and source/spec checks pass; screenshots inspected in
+`artifacts/review-workflow-audit-2026-09-21/`,
+`artifacts/review-workflow-readiness-2026-09-21/`, and
+`artifacts/review-workflow-corrected-2026-09-21/`.
+All records/files were synthetic and local; no remote payment or customer email
+delivery was performed. NR-10 private-file denial and NR-13 local owner review
+remain enforced. Full release gates await owner visual review; no hosted release.
+UIA-13/14 remain recorded follow-ups, not completed work.
+
+## UI/backend contract audit — 2026-09-21 (local visual review pending)
+
+FEAT-ADM-001 / FEAT-UIX-001 / FEAT-BIL-001 → UIA-01–08 in `docs/UI_BACKEND_AUDIT_2026-09-21.md`. Migrations 100/101 and `tests/sql/dashboard-activity.sql` / `tests/sql/admin-service-geometry.sql` pass rollback regressions and catalog checks. The migrations are applied only locally. `tests/e2e/ui-contract-audit.spec.ts` covers eight distinct desktop/phone cases: actual admin-save persistence/context and missing-record denial, truthful capacity/admin-plan presentation, authoritative Home projection, stale/invalid pagination and area/list-detail agreement. All pass, along with typecheck and source/spec checks. The read-only audit covered 44 page/role visits and traced 151 distinct POST targets; this is not exhaustive action coverage. Screenshots are in `artifacts/ui-contract-review-2026-09-21/` and `artifacts/ui-contract-additional-review-2026-09-21/`. Owner visual approval precedes full release gates; no hosted release.
+
+## Driver assignment before email verification — 2026-09-21 (local review pending)
+
+FEAT-FLT-001 / FEAT-IAM-001 / ADR-068 / NR-02/03/09 → migration `099_driver_assignment_before_email_verification.sql`, `addFleetDriver`, `/api/fleet/drivers`, and Add driver UI. `tests/sql/driver-preverification.sql` proves unconfirmed assignment, denied unverified projection, same identity after confirmation, private-phone preservation, conservative permissions, safe duplicate addition, mismatched identity/other-fleet/provider/reserved/suspended account denial, revocation/history and browser privilege denial. Legacy invitation SQL and catalog security checks pass. `tests/e2e/fleet-onboarding.spec.ts` passes on desktop and phone with real local Mailpit OTP: assign while unconfirmed, reject a wrong code, verify login without Join fleet, publish, access Tracking, edit contact and revoke. Five focused unit tests, typecheck and source/spec checks pass. Migration applied only locally; no hosted rollout. Captures: `artifacts/driver-preverification-review-2026-09-21/`. Owner visual approval precedes full gates.
+
+## City proximity and map clarity — 2026-09-21 (local review pending)
+
+FEAT-LST-001 / FEAT-GEO-001 / NR-13 → `capacity-filter-places.js` resolves the independent city criterion, `capacity-viewport.js` maps it to the existing uncertainty-aware reported-location query, and public/shared/admin pages and APIs preserve it through pagination. `capacity-filter-places.test.mjs` and `capacity-viewport.test.mjs` cover invalid-city denial, independent geography and city precedence over device coordinates. `tests/e2e/map-clarity.spec.ts` covers real catalog selection, matching returned coordinates across pages, guest denial of the shared API, blue location/orange regular service, compact key bounds and wheel/drag/touch behavior with detail cards. Seven unit checks, ten focused desktop/phone browser cases, TypeScript and source/spec validation pass. Captures: `artifacts/map-clarity-review-2026-09-21/`. Owner visual approval and full gates remain pending. No database migration or remote changes.
+
+## Loading feedback and random Featured rounds — 2026-09-21
+
+FEAT-UIX-001 / FEAT-LST-001 → shared `LoadingIndicator`, map `SurfaceSkeleton`, route fallback and search/place/member consumers. `tests/e2e/loading-feedback.spec.ts` checks actual deferred scripts/network responses, desktop/phone geometry, unobstructed controls, accessible status, editable inputs and reduced motion. Captures are in `artifacts/loading-review-2026-09-21/`. Existing records/forms/chat/Featured skeletons remain content-shaped. Owner review and full release gates are separate.
+
+FEAT-FTR-001 / ADR-067 / NR-01/03 → migration `098_featured_random_rounds.sql` and `tests/sql/featured-random-rounds.sql` (random draws, global exhaustion, exact-pair changes, inactive eligibility, retry, retained history and browser denial). Rehearsal and resulting catalog checks passed; applied only locally without changing saved rosters. Existing `tests/sql/platform-controls.sql` passes. `tests/featured-providers.test.mjs` checks 1–12 actual roster sizes, equal minute allocation and time boundaries; UI/type tests preserve themes/projection. Fourteen focused unit tests and the desktop/phone Featured administration workflow pass. A separate two-session local check confirmed lock contention returns without generation. CI includes the new SQL regression but has not run remotely for this change.
+
+## Restore map interaction — 2026-09-21 (owner visually approved)
+
+FEAT-LST-001 / FEAT-GEO-001 / BASE-DEP-001 / ADR-066 / NR-13 → automatic
+viewport loading in `capacity-map-loading.js`, the shared feed and Leaflet map.
+The separate summary renderer, extra confirmation and manual loading controls are
+removed. `tests/capacity-map-loading.test.mjs` proves all 154 records remain across
+11 automatic pages, deduplication, selected retention, abort/stale denial and
+cursor/failure stopping. Nine clustering unit tests include the crossing-offset
+label regression that fails before the correction. Six focused desktop/phone
+browser cases pass in `map-cluster-transition.spec.ts` and the dense-map smoke
+case; TypeScript/source pass. Owner approved the restored map with “its good”.
+Full gates and rollout remain pending, and the new loading changes need a separate review. Earlier aggregate/140-retention claims below are historical for the old
+client; that integration is withdrawn, and national-scale client optimization is
+deferred rather than imposing extra user interaction. See the map incident record.
+
 ## Chat initialization and fixture diagnostics — 2026-09-20
 
 FEAT-GST-001 → disabled-until-hydrated public launcher and the delayed-script
@@ -308,7 +388,7 @@ known validation messages and redacted unexpected-database diagnostics.
 | `FEAT-VER-001` | Vivid category-colored expandable evidence badges, persistent due-diligence warning, verification center, admin review queue, profile badges, and Shipment/Truck Board trust strips | Actor-scoped managed center/submission/file/review commands with subject ownership, type policy, pairing expiry, duplicate and terminal-review checks | `051_managed_verification_billing.sql` plus `052`–`053` variable-scope corrections, private quarantine/release, browser denial, audit | Verification/Billing runtime contract, live local Supabase verifier, authorization, E2E |
 | `FEAT-TRK-001` | One 80-bit customer-owner code/link, separate 80-bit review code, complete entry-format guidance, observable public code submission and denial, temporary guest Tracking, ordered provider/Driver action panel, optional customer-safe approximate travel map, owner emails, and 30-day guest expiry | Dedicated Tracking-secret code derivation and digest independent of session rotation, assigned-Driver scope, explicit location consent, browser-obscured travel-only location, ten-minute refresh limit, valid transitions, image-proof authorization, shared unlock/review limits, idempotent managed delivery queue, safe guest projection, retention redaction | `TRACKING_CODE_SECRET`, `044_provider_tracking_runtime.sql`, `046_managed_email_operations.sql`, preferred Resend/bounded SMTP/optional webhook port, private storage, scanning, retries, cleanup monitoring | `tests/tracking-code-security.test.mjs`, provider-tracking, managed Tracking negative authorization, `tests/email-delivery.test.mjs`, `tests/rate-limit.test.mjs`, valid/invalid Tracking E2E, focused location projection E2E, UI audit |
 | `FEAT-PLC-001` | Async Ethiopia-first place comboboxes with country-qualified labels and a bounded client cache | Bundled 3,575-place OSM-derived catalog, repeatable import, country metadata, legacy-label normalization, query-isolated non-shared server responses, bounded client-local search cache, coordinates, and built-in fallback | OSM attribution, optional PBF input, Supabase batch import, and import metrics | domain, repository, query-cache-isolation, E2E |
-| `FEAT-GEO-001` | Green Empty and yellow Partial Service-area-or-Capacity-route availability, isolated selected-truck map, persistent multi-signal inspector, persisted Driver refresh, visible browser-only visitor point/ranges, and one blue regular Service area or Capacity route | Driver/browser displacement, Driver-only refresh authorization, separate approximate-location circle, current/regular geometry invariants, polygon and route matching | Central HTTPS tile configuration, visible linked attribution, exact-origin CSP, non-blocking community fallback warning, responsive resize reliability, indexed place catalog, exact-location exclusion | map-tile config/readiness/CSP, domain, capacity-market, critical E2E, full E2E, UI audit |
+| `FEAT-GEO-001` | Green Empty and yellow Partial Service-area-or-Capacity-route availability, isolated selected-truck map, persistent multi-signal inspector, persisted Driver refresh, visible browser-only visitor point/ranges, and one muted-orange regular Service area or Capacity route | Driver/browser displacement, Driver-only refresh authorization, separate approximate-location circle, current/regular geometry invariants, polygon and route matching | Central HTTPS tile configuration, visible linked attribution, exact-origin CSP, non-blocking community fallback warning, responsive resize reliability, indexed place catalog, exact-location exclusion | map-tile config/readiness/CSP, domain, capacity-market, critical E2E, full E2E, UI audit |
 | `FEAT-MAT-001` | Public structured route, status, signal-geometry, illustrated truck-configuration, load-type, stop-pattern, freshness, Service-area, Capacity-route, and visitor-proximity filters with explainable evidence | Deterministic AND eligibility across every supplied criterion; complete-polygon proximity; one- or two-endpoint matching across every segment of a multi-city route; direction; visitor/truck uncertainty overlap; and geometry-consistent evidence | Pure deterministic domain functions plus indexed Supabase JSONB place collections and server-only PostGIS RPC filtering; `073_public_capacity_filter_alignment.sql` | domain, capacity-market, Supabase-fixture filter-alignment regression, focused desktop/mobile route/filter E2E, accessibility, UI audit |
 | `FEAT-PST-001` | No current pooled or along-route demand surface | Shared-demand projections retired and fake local source rows purged | Retired-route monitoring; restore only from an approved backup | source checks, E2E redirects |
 | `FEAT-BIL-001` | Provider signup trial, billing-focused limited Home, Account/private payment proof, paid status, and admin review | Actor-scoped managed summary/submission/file/review commands, workspace ownership, seven-day trial, terminal review, and 30-day paid period | `051_managed_verification_billing.sql`, private quarantine/release, browser denial, audit | Verification/Billing runtime contract, live local Supabase verifier, domain, authorization, E2E |
@@ -334,3 +414,8 @@ The local visual audit (`npm run test:ui-audit`) covers logged-out and role-scop
 `tests/capacity-market.test.mjs` verifies the deterministic supply-only reset, zero legacy demand rows, 30 published provider pages, nine fleet companies, 21 independent profiles, 143 current signals, at least 60 real named operating localities, bounded locality concentration, non-diagonal offsets, distinct large-fleet branch patterns, a 100-truck local-delivery cohort, complete cursor traversal without duplicates, public Driver first name/callback/operating-model/document-category projection, location-aligned and road-coherent Empty/Partial multi-city Service-area and Capacity-route geometry, the primary Driver demo's compact same-market location/current/regular geometry, provider/truck/geometry text search, full-polygon current and regular Service-area proximity, every-segment freight alignment with current or regular Capacity routes, exactly one regular Service area or Capacity route per provider, application/database rejection of a second signal, public contact controls, safe projection, and optional anonymous proximity. Clustering tests and focused desktop/mobile E2E verify stable geographic anchoring, bounded same-status groups, unlike-status label separation, map-only geolocation centering, and explicit proximity filtering.
 
 `tests/featured-truck-types.test.mjs`, `tests/featured-truck-ui.test.mjs`, `tests/expo-venue.test.mjs`, `tests/featured-providers.test.mjs`, and `tests/e2e/smoke.spec.ts` verify the seven-day truck-type rotation, exact active truck and assigned Driver selection, deterministic equal whole-minute automatic scheduling inside 07:30–09:00 EAT, no more than four two-minute programme interludes, break-safe live state, validated and safely projected manual intervals, administrator publication, current-day fixture repair without administrator overwrite, responsive remaining-viewport layout, separate Sponsors treatment, keyboard-accessible exact-truck details, and featured/sponsored profile and exact-truck map actions. Focused schedule review captures are written to `artifacts/featured-schedule-v1/`; the expensive full-site visual audit remains approval-gated.
+
+Final UIA-08 screenshot review also caught the detail badge exposing the internal
+Profile Route kind for an area. List/detail badges now say Service Area; the
+focused browser checks assert this alongside the area description. Final area
+captures: `artifacts/ui-contract-area-final-review-2026-09-21/`.

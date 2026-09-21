@@ -26,7 +26,7 @@ export default function TrackingLocationMapLeaflet({origin,destination,location,
     <BaseMapTiles/>
     <FitShipment origin={origin} destination={destination} location={location} status={status}/>
     <Polyline positions={[[location.lat,location.lng],[target.lat,target.lng]]} pathOptions={{color:'#0d6b6e',weight:4,dashArray:'8 8'}} interactive={false}/>
-    <Circle center={[location.lat,location.lng]} radius={location.radiusKm*1000} pathOptions={{color:'#7c3aed',weight:4,dashArray:'8 7',fillColor:'#a78bfa',fillOpacity:.08}}><Tooltip direction="top"><strong>{location.label}</strong><br/>Approximate within {location.radiusKm} km</Tooltip></Circle>
+    <Circle center={[location.lat,location.lng]} radius={location.radiusKm*1000} pathOptions={{color:'#1a73e8',weight:4,dashArray:'8 7',fillColor:'#1a73e8',fillOpacity:.08}}><Tooltip direction="top"><strong>{location.label}</strong><br/>Approximate within {location.radiusKm} km</Tooltip></Circle>
     <CircleMarker center={[origin.lat,origin.lng]} radius={8} pathOptions={{color:'#fff',weight:3,fillColor:'#0d6b6e',fillOpacity:1}}><Tooltip direction="top">Pickup · {origin.label}</Tooltip></CircleMarker>
     <CircleMarker center={[destination.lat,destination.lng]} radius={8} pathOptions={{color:'#fff',weight:3,fillColor:'#f2b01e',fillOpacity:1}}><Tooltip direction="top">Drop-off · {destination.label}</Tooltip></CircleMarker>
   </MapContainer></div>;

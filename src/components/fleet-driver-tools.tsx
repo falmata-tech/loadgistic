@@ -4,7 +4,7 @@ import type {FleetInvitation} from '@/lib/fleet-driver-management';
 
 export function FleetInvitations({invitations,returnTo}:{invitations:FleetInvitation[];returnTo:string}){
   return <div className="fleet-invitations">
-    <Link className="button success small" href={`/app/fleet/drivers/new?returnTo=${encodeURIComponent(returnTo)}`}><UserPlus aria-hidden="true"/>Invite driver</Link>
+    <Link className="button success small" href={`/app/fleet/drivers/new?returnTo=${encodeURIComponent(returnTo)}`}><UserPlus aria-hidden="true"/>Add driver</Link>
     {invitations.length?<details open><summary>Pending invitations ({invitations.length})</summary><div className="list">{invitations.map(invitation=><article className="fleet-invitation-row" key={invitation.id}>
       <div><strong>{invitation.driver_name}</strong><span>{invitation.email}</span><small>{invitation.email_sent_at?'Email sent · Awaiting acceptance':'Email not delivered · Awaiting acceptance'}</small></div>
       <form action="/api/fleet/invitations" method="post"><input type="hidden" name="invitationId" value={invitation.id}/><input type="hidden" name="returnTo" value={returnTo}/><button className="button secondary small" name="action" value="resend"><Mail aria-hidden="true"/>Retry email</button><button className="button secondary small" name="action" value="cancel">Cancel invitation</button></form>

@@ -32,6 +32,23 @@ export async function hasJoinableFleetInvitation(actorId:string):Promise<boolean
 export async function inviteFleetDriver(actorId:string,input:InviteDriverInput):Promise<string>{
   return z.string().uuid().parse(await command('fleet_invite_driver',{actor_user_id:actorId,command:input}));
 }
+export async function addFleetDriver(actorId:string,input:InviteDriverInput):Promise<string>{
+  const normalized={email:input.email.trim().toLowerCase(),name:input.name.trim(),phone:input.phone.trim()};
+  const args={actor_user_id:actorId,command:normalized};
+  // Validate owner authority and account conflicts before any Auth-side write.
+  let target=z.string().uuid().nullable().parse(await command('fleet_driver_registration_target',args));
+  if(!target){
+    const client=createSupabaseAdminClient();
+    const created=await client.auth.admin.createUser({email:normalized.email,email_confirm:false});
+    if(created.error||!created.data.user){
+      // A concurrent request or ambiguous Auth response may have created it.
+      // Read and revalidate once; never confirm, replace or delete an identity.
+      target=z.string().uuid().nullable().parse(await command('fleet_driver_registration_target',args));
+      if(!target)throw new Error('FLEET_DRIVER_OPERATION_FAILED');
+    }else target=created.data.user.id;
+  }
+  return z.string().uuid().parse(await command('fleet_register_driver',{...args,target_user_id:target}));
+}
 export async function acceptFleetInvitation(actorId:string,invitationId:string):Promise<void>{
   await command('fleet_accept_invitation',{actor_user_id:actorId,invitation_id:invitationId});
 }

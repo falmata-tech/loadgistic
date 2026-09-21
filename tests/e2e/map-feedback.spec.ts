@@ -1,3 +1,4 @@
+import {openCapacityFilters} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
@@ -37,6 +38,7 @@ test('selected truck feedback stays readable through location denial and refresh
   const widths=info.project.name.includes('mobile')?[[760,900],[390,844],[320,640]]:[[761,900],[1024,768],[1280,720]];
   for(const [width,height] of widths){
     await page.setViewportSize({width,height});
+    await openCapacityFilters(page);
     await expect(page.getByTestId('visitor-location-state')).toBeVisible();
     await assertReadableFeedback(page);
     await page.screenshot({path:path.join(captures,`selected-${width}.png`),scale:'css'});

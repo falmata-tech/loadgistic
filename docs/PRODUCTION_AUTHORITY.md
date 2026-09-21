@@ -2,6 +2,107 @@
 
 FEAT-SEC-001 / BASE-DEP-001 / ADR-063. Scope: Loadgistic only.
 
+## Current status — 2026-09-21
+
+Application commit 6b3d6cd is published as Netlify deployment
+6ab0ac42563b51a851213fa5. Runtime readiness and strict desktop/phone functional
+checks pass. The owner separately approved the exact 335-record pilot-reference
+repair; it was applied and verified, including document-byte and guest-denial
+checks. Do not replay completed migrations, configuration or the data repair.
+
+The previous successful promotion consumed the previous release exception. On
+September 21 the owner visually approved the accumulated local changes and
+explicitly requested “deploy it all.” This authorizes preparation and execution
+of that Loadgistic release, preserving exact-commit CI, target checks, backup,
+migration rehearsal, immutable packaging, monitored promotion and rollback.
+It does not authorize unrelated credential or hosted-setting changes.
+
+A fresh read-only check on September 21 confirms PostGIS 3.3.7 is now in
+extensions, the migration ledger is 097, no public tables lack RLS, and security
+advisors contain no ERROR. Full catalog, service-spatial and API-guard postchecks
+remain required before closing the provider repair. The two remaining warnings
+are own-identity SECURITY DEFINER access and leaked-password protection.
+Evidence: `.local/release-20260921-preflight.json`. No renewed exception is needed
+or inferred; this candidate must pass normal release gates.
+
+## Provider repair status — 2026-09-20
+
+The owner explicitly approved the concise backup confirmation and Paul's proposed
+in-place PostGIS relocation from public to extensions. SMTP accepted that exact
+follow-up on September 20; provider completion is not yet verified. The tested
+backup and target-layout evidence are in operations/POSTGIS_RELOCATION_READINESS.md.
+This scoped provider procedure supersedes the original RLS-only request; only
+Supabase performs it. A version upgrade requires a further compatibility decision.
+The agent remains prohibited from catalog edits or ownership/privilege bypass.
+All independent postchecks remain required; the subsequent one-release owner
+exception below changes only the requirement to wait for this provider repair.
+
+## One-release owner exception — September 20
+
+The owner subsequently explicitly authorized proceeding with this reviewed
+application release once the other work is complete, even if Supabase has not
+replied or completed the proposed move. This supersedes the wait-for-provider
+requirement for this release only. It is an owner acceptance of the existing
+PostGIS reference-table risk, not a completed repair or a passing security check.
+
+Scope: Loadgistic project tpwyyzoqijjmbvsmmvcm, Netlify site
+dbb0fcec-9ec9-4511-9737-db0e32849af5, reviewed release candidate 6b3d6cd and
+its hash-bound migrations 077–097. The exception covers the known
+public.spatial_ref_sys RLS/direct-grant finding and its pending provider repair.
+It does not waive unrelated warnings, new findings, application authorization,
+required CI, backup/recovery or configuration review. Any changed release code
+requires its own exact-commit verification.
+
+Before using the exception:
+
+1. Verify the exact target, immutable candidate, migration hashes, successful CI,
+   recoverable fresh backup, bounded migration plan and application rollback.
+2. Verify the reviewed release on the current public PostGIS layout as well as
+   the already-rehearsed extensions layout; preserve compatibility with Paul's
+   already-authorized move and stop on unexpected concurrent schema changes.
+3. Recheck the guard definition/configuration and actual anonymous/authenticated
+   denial, service spatial access, browser database-login authority and relevant
+   Realtime publications. Do not infer Storage or direct SQL protection from the
+   HTTP hook. Stop if a new access path or failing protection is found.
+4. Independently check all application RLS/ACL/definer requirements; an expected
+   early failure in the full catalog gate must not hide a second failure. Retain
+   the unchanged full gate/advisor results as failing where applicable and record
+   this exact owner exception separately. No test or monitor is disabled.
+5. Complete the remaining reviewed configuration, migration, runtime and visible
+   browser checks. Recheck guard/service/health behavior after promotion; stop
+   further changes on unexpected results. Preserve containment during rollback.
+
+The authorization is consumed by this single successful application promotion;
+it grants no future release exception or additional provider/credential powers.
+Support's repair stays open after deployment until independent postchecks pass.
+The standing owner-only rule and normal release policy remain unchanged outside
+this specific exception. This records authority, not evidence that the remaining
+prerequisites have passed. No deployment occurred when recording this decision.
+
+## Application release execution — September 20
+
+The reviewed migrations 077–097 are applied and verified under the one-release
+exception; the API guard and service spatial behavior passed independent checks.
+The Auth callback append is applied and unrelated fields verified unchanged.
+The owner subsequently approved the single non-secret production-context scanner
+value across the scopes required by Netlify Free; that exact setting is applied
+and independently verified with unrelated values unchanged. The first application
+publication failed runtime checks and was rolled back to the previous working
+application. Packaging repair and draft verification remain within this same
+reviewed release; the exception is consumed only by a successful verified
+promotion. Do not replay the completed migrations or configuration changes.
+
+## Existing containment — 2026-09-18
+
+The owner-selected Data API guard is now active and independently verified on
+Loadgistic. The exact migration-097 artifact adds an invoker function and sets
+only authenticator's pre-request hook; no role membership, extension ownership,
+table data or provider credential was changed. Fresh encrypted backup and isolated
+restore evidence passed before application. See docs/PROGRESS.md and the protected
+`.local/data-api-guard-production-evidence.json` for results. Underlying table
+RLS/ACL repair and advisor release gates remain open. The historical finding and
+authority boundaries below still apply; this containment is not a full release.
+
 ## Current finding and limits
 
 Live checks on 2026-09-16 identified one ERROR: RLS disabled on
@@ -19,7 +120,8 @@ findings concern RLS enabled without policies; for server-only tables that is an
 intentional deny-by-default state, not a reason to add permissive policies.
 Warnings still need individually documented review. Do not suppress them wholesale.
 
-No hosted repair or provider permission change has been made. The owner approved
+No owner-side table repair or provider permission change has been made.
+The separate Data API containment is recorded above. The owner approved
 one encrypted database/private-file backup and isolated restore. Both exports
 passed authenticated recovery; the full database restored in a network-disabled
 disposable container and the private object passed local Storage restore/hash
@@ -69,7 +171,7 @@ requires provider intervention. Separate coding identity remains unselected.
 | Advisor monitor | Scoped PAT: only Project Settings Read and Advisors Read for `tpwyyzoqijjmbvsmmvcm` | Database/query, Auth, API-key secrets, signing keys, backups, billing and all writes |
 | Application runtime | Existing application service key only inside its production runtime | Management PAT, database-owner password, GitHub/Netlify administrator credentials |
 | Owner release operator | Exact reviewed change in an isolated, protected execution environment | Unreviewed changes, broad configuration replacement, unrelated projects |
-| Supabase table owner/support | Exact PostGIS RLS/ACL repair in the attached SQL | Ownership transfer, role expansion, extension recreation, application-data changes |
+| Supabase table owner/support | Approved in-place PostGIS relocation from public to extensions, following the verified backup confirmation | Unreviewed version upgrade, ownership transfer, role expansion, extension recreation, application-data changes |
 
 Supabase recommends scoped PATs for agents. Scoped tokens are in gradual public
 alpha rollout; if unavailable, do not substitute a classic PAT for the monitor.
@@ -116,10 +218,13 @@ The repository is public, so GitHub environment reviewers are supported by the
 currently documented plan rules. Actual protection configuration and an independent
 reviewer remain pending. No guessed user or bot was granted permissions.
 
-## Exact PostGIS containment
+## Historical RLS-only repair proposal
 
-Send the prepared `operations/SUPABASE_SECURITY_REPAIR_REQUEST.md` to Supabase
-support using the owner's account. The agent has not sent it. The attachment is
+The approved September 20 provider relocation supersedes this earlier proposal.
+
+The owner explicitly approved sending the reviewed repair request. The agent
+sent it from the verified registered-owner account to support@supabase.com; SMTP
+accepted it on 2026-09-17. Provider execution remains unconfirmed. The attachment is
 `operations/spatial-reference-owner-repair.sql`. It enables RLS and revokes direct
 PUBLIC/anon/authenticated table grants in one transaction, with 5-second lock and
 20-second statement limits, exact extension membership checks and postconditions.

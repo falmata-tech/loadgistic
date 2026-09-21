@@ -21,7 +21,7 @@ test('truck management names its Driver and verification stays optional',async({
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:testInfo.outputPath('truck-driver-link.png')});
   await page.goto('/app/verification');
-  await expect(page.getByText('Documents are optional. Add them when you’re ready for review.')).toBeVisible();
+  await expect(page.getByText('Build confidence in your transport service with optional document review.')).toBeVisible();
   await expect(page.locator('.verification-subject-list')).toBeVisible();
 });
 
@@ -46,10 +46,10 @@ test('selected public truck separates Driver and truck review categories',async(
   await page.screenshot({path:testInfo.outputPath('truck-review-categories.png')});
 });
 
-test('Fleet keeps invite, contact and remove actions distinct and responsive',async({page}:{page:any},info:any)=>{
+test('Fleet keeps add, contact and remove actions distinct and responsive',async({page}:{page:any},info:any)=>{
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
-  await expect(page.locator('.page>.page-header').getByRole('link',{name:'Invite driver'})).toBeVisible();
+  await expect(page.locator('.page>.page-header').getByRole('link',{name:'Add driver'})).toBeVisible();
   const driver=page.locator('.fleet-driver-manager').first();
   await driver.locator('summary').first().click();
   await driver.getByText('Edit contact',{exact:true}).click();

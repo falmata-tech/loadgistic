@@ -11,7 +11,10 @@ rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access com
 
 # Fleet driver access
 
-## Empty-fleet onboarding and lifecycle (verified locally; remote rollout pending)
+## Legacy invitations and shared driver lifecycle
+
+New Add driver entry follows the clarified 2026-09-21 contract below. This
+section preserves the existing invitation API and outstanding invitation flow.
 
 Controlling identity contract: FEAT-IAM-001. A fleet invitation is not an
 account, assignment, document approval, or permission to act as the recipient.
@@ -40,7 +43,7 @@ And no documents are required to accept, assign, publish, or use Tracking.
 ### Scenario: assign in context and manage driver identity
 
 Given an owner opens Assign driver on an owned truck\
-When they select an active accepted company driver\
+When they select an active company driver added by email or through a legacy invitation\
 Then the selected truck context is retained, current permissions are preserved,
 and the owner returns to that truck after saving\
 And a missing organization membership is rejected by both driver listing and
@@ -290,3 +293,45 @@ before UI. UI rollback retains inactive records and their recovery route; do not
 reactivate records or republish historical capacity as a rollback operation.
 Evidence required: lifecycle SQL, unit command validation, real desktop/phone
 retire/restore flow and active-Tracking/other-owner/Company-driver denial.
+
+
+## Add and assign before email verification — clarified 2026-09-21
+
+Email is required when the fleet owner adds a driver. The owner clarified that
+verification, not the email field itself, must cease blocking assignment.
+
+Given an authorized fleet owner provides name, contact phone and email
+When they add a driver whose identity is new or a pristine bootstrap
+Then the driver is available immediately for the existing truck assignment flow
+And existing owner-operated capacity and Tracking retain that same Driver identity
+And adding the driver neither confirms their email nor gives the owner their session
+And no invitation delivery or acceptance is required before assigning the truck
+And repeated addition to the same fleet does not duplicate or alter the driver.
+
+Given the new driver has not verified their email
+When account/workspace access is requested
+Then no current-user projection or application session grants workspace access
+And the normal email-code login verifies the email and opens the assigned workspace
+And that first login retains the same Driver, truck assignment and owner-set permissions
+And wrong/expired codes cannot activate a session or change an assignment.
+
+Given an email belongs to an existing provider, staff member, suspended account
+or another fleet's driver
+When a fleet owner attempts to add it
+Then the operation fails without moving the identity or changing its permissions
+And the existing confirmed-email invitation flow remains compatible for older invitations.
+
+Plan: migration 099 adds scoped preparation/registration commands and a verified-email
+current-user projection guard. Use the supported Auth admin create-user API with
+`email_confirm:false`, no password and no session. Recheck email/identity/owner
+under database locks before membership creation; retain an inactive bootstrap
+if Auth succeeds but registration fails, allowing safe retry without deleting an
+identity. Owner contact phone remains separate from private account contact.
+No global Auth settings, auto-confirmation or arbitrary identity transfer.
+
+Evidence: rollback-only assignment/unverified-session/cross-fleet/conflict tests;
+real local Add driver → assign before verification → wrong-code rejection → inbox
+OTP login → preserved assignment/permissions → offboarding on desktop and phone.
+Apply schema locally before preview, then owner visual review before full gates.
+Rollback restores the prior Add/Invite entry point while retaining added identities,
+assignments and the verified-email login guard. No hosted rollout is included.

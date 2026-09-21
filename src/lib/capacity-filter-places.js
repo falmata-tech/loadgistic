@@ -17,7 +17,8 @@ export async function resolveCapacityFilterPlaces(client,filters){
     const places=await Promise.all([
       resolveCapacityFilterPlace(client,filters.originPlaceRef,filters.origin),
       resolveCapacityFilterPlace(client,filters.destinationPlaceRef,filters.destination),
-      resolveCapacityFilterPlace(client,filters.currentAreaPlaceRef,filters.currentArea)
+      resolveCapacityFilterPlace(client,filters.currentAreaPlaceRef,filters.currentArea),
+      resolveCapacityFilterPlace(client,filters.truckCityPlaceRef,filters.truckCity)
     ]);
     return {places,filterError:null};
   }catch(error){

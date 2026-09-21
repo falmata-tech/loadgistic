@@ -83,6 +83,47 @@ function separateNearbyGroups(groups){
   });
 }
 
+// The initial separation considers original anchors. Its independent shifts can
+// cross and leave opposite status labels overlapping. Resolve against the final
+// positions, within the same small display radius and neighboring screen cells.
+function separateStatusLabels(groups){
+  const placed=groups.map(group=>({...group,visualOffset:{...group.visualOffset}}));
+  const bucketSize=128;
+  const buckets=new Map();
+  for(const group of placed){
+    const key=`${Math.floor(group.projectedAnchor.x/bucketSize)}:${Math.floor(group.projectedAnchor.y/bucketSize)}`;
+    const bucket=buckets.get(key)||[];bucket.push(group);buckets.set(key,bucket);
+  }
+  const offsets=[];
+  for(const radius of [16,MAX_VISUAL_OFFSET_PX])for(let step=0;step<16;step++){
+    const angle=step*Math.PI/8;offsets.push({x:radius*Math.cos(angle),y:radius*Math.sin(angle)});
+  }
+  for(let pass=0;pass<3;pass++){
+    let changed=false;
+    for(const group of placed){
+      const cellX=Math.floor(group.projectedAnchor.x/bucketSize),cellY=Math.floor(group.projectedAnchor.y/bucketSize);
+      const neighbors=[];
+      for(let x=cellX-1;x<=cellX+1;x++)for(let y=cellY-1;y<=cellY+1;y++){
+        for(const other of buckets.get(`${x}:${y}`)||[])if(other!==group&&other.status!==group.status)neighbors.push(other);
+      }
+      const overlap=offset=>neighbors.reduce((sum,other)=>{
+        const dx=Math.abs(group.projectedAnchor.x+offset.x-other.projectedAnchor.x-other.visualOffset.x);
+        const dy=Math.abs(group.projectedAnchor.y+offset.y-other.projectedAnchor.y-other.visualOffset.y);
+        return sum+Math.max(0,44-dx)*Math.max(0,18-dy);
+      },0);
+      let best=group.visualOffset,bestScore=overlap(best);
+      if(!bestScore)continue;
+      for(const offset of offsets){
+        const score=overlap(offset);
+        if(score<bestScore){best=offset;bestScore=score;if(!score)break;}
+      }
+      if(best!==group.visualOffset){group.visualOffset=best;changed=true;}
+    }
+    if(!changed)break;
+  }
+  return placed;
+}
+
 /**
  * Groups projected capacity markers in global pixel cells. The caller supplies
  * world-pixel coordinates (Leaflet `project`), so panning cannot change cell
@@ -146,7 +187,7 @@ export function buildCapacityMarkerGroups(entries,zoom){
   }
 
   groups.sort((first,second)=>first.projectedAnchor.y-second.projectedAnchor.y||first.projectedAnchor.x-second.projectedAnchor.x||(first.status<second.status?-1:first.status>second.status?1:0)||first.part-second.part||(first.key<second.key?-1:first.key>second.key?1:0));
-  return separateNearbyGroups(groups);
+  return separateStatusLabels(separateNearbyGroups(groups));
 }
 
 export {MAX_CLUSTER_MEMBERS,MAX_VISUAL_OFFSET_PX};

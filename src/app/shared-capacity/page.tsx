@@ -9,14 +9,14 @@ import {SharedCapacitySessionBoundary} from '@/components/shared-capacity-sessio
 import {localAuthInboxUrl} from '@/lib/auth-flow.js';
 
 export const dynamic='force-dynamic';
-export const metadata:Metadata={title:'Private Transport Capacity',description:'View truck capacity privately shared with your verified email.'};
+export const metadata:Metadata={title:'Private Transport Capacity',description:'View capacity shared privately with you by transporters, using your approved email.'};
 
 export default async function SharedCapacityPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const query=await searchParams;
   const session=await getSharedCapacitySession();
   const sessionError=query.session==='inactive'?'Your Private capacity session ended after 30 minutes without activity. Verify your email to continue.':undefined;
   const sessionSuccess=query.session==='logout'?'You have logged out of Private capacity.':undefined;
-  const filters={q:query.q||'',provider:query.provider||'',truck:query.truck||'',status:query.status||'',geometry:query.geometry||'',vehicleCategory:query.vehicleCategory||'',loadType:query.loadType||'',stopOption:query.stopOption||'',freshness:query.freshness||'',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'',directionMode:query.directionMode||'',nearLat:query.nearLat||'',nearLng:query.nearLng||'',nearRadiusKm:query.nearRadiusKm||''};
+  const filters={q:query.q||'',provider:query.provider||'',truck:query.truck||'',status:query.status||'',geometry:query.geometry||'',vehicleCategory:query.vehicleCategory||'',loadType:query.loadType||'',stopOption:query.stopOption||'',freshness:query.freshness||'',truckCityPlaceRef:query.truckCityPlaceRef||'',truckCity:query.truckCity||'',truckLocationRadiusKm:query.truckLocationRadiusKm||'',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'',directionMode:query.directionMode||'',nearLat:query.nearLat||'',nearLng:query.nearLng||'',nearRadiusKm:query.nearRadiusKm||''};
   return <><PublicHeader/><main className={`public-app-page ${session?'public-market-workspace':'public-information-workspace shared-capacity-locked-workspace'}`}>
     <h1 className="sr-only">Private Transport Capacity</h1>
     <Flash error={sessionError||query.error} success={sessionSuccess||query.success}/>

@@ -128,3 +128,11 @@ And managed failure never falls back to SQLite or a serverless local file.
 - Application services: dedicated managed Billing and workspace application ports; pure expiry policy in `src/lib/subscription-access.js`
 - Persistence and files: actor-scoped Supabase PostgreSQL commands plus private Storage quarantine/release/read/remove adapters
 - Tests: managed Billing contract and live Supabase verifier, `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
+
+### Scenario: platform administration is not a customer subscription
+
+Given an administrator opens Account & plan
+When their platform role grants access without a provider subscription
+Then the page identifies platform administration access, does not say No plan
+assigned or ask them to contact support for a plan, and offers no payment form.
+This is a presentation correction; provider billing and authorization stay unchanged.

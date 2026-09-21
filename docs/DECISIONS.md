@@ -1,5 +1,36 @@
 # Architecture Decisions
 
+## ADR-068 — Assign an owner-added Driver before email-code verification
+
+FEAT-FLT-001 / FEAT-IAM-001: retain the actual email when adding a company Driver. An owner-scoped preflight checks eligibility before the supported Supabase Auth admin create-user call, with email confirmation false and no password/session. A locked registration command rechecks owner, exact Auth email and pristine/same-fleet identity before membership and conservative permissions. Existing assignment/publication/Tracking identities remain stable; no roster-to-account remapping is needed. Unconfirmed identities cannot obtain a current-user projection. Normal email OTP supplies login proof, without a second invitation-acceptance step for these new drivers. Older pending invitations retain their existing flow.
+
+Do not auto-confirm, change hosted Auth settings, adopt an existing provider/staff/other-fleet identity or delete an identity after an ambiguous provider response. Auth success followed by database failure leaves a harmless bootstrap for retry. Commands revoke browser execution; Auth/profile and organization locks serialize competing registrations. The Add UI can roll back while retaining records and the email-confirmation guard. Owner-only production rules remain in force. Supabase documents the supported [createUser API](https://supabase.com/docs/reference/javascript/auth-admin-createuser); local inbox/browser evidence must prove the actual login path.
+
+## ADR-067 — Persist random Featured rounds without changing saved rosters
+
+FEAT-FTR-001: the owner chose weekly subsets until every eligible exact truck-and-Driver pair has been selected. Migration 098 records selections in a private, RLS-enabled ledger and randomly draws unseen pairs under the existing generation lock. The round spans all seven existing truck-type themes; an exhausted theme waits rather than repeating while other eligible themes remain. Newly eligible pairs join the current round; inactive pairs do not block completion. This is random selection, without scoring or learned ranking.
+
+The existing daily ceiling (1–12), distinct-Driver rule and 07:30–09:00 window remain. Actual roster size determines equal presentation time. Saved days and manual drafts are preserved. Published historical pairs seed round one; manual curation can override automatic fairness. Selection is a reserved turn, not proof that a visitor watched it. Opaque pair IDs intentionally survive roster deletion so edits cannot reset rotation. No private profile data is duplicated in the ledger.
+
+RLS, explicit browser privilege revocation, service-only generation and the unique round/pair key are mandatory (NR-01/03). Apply 098 transactionally before worker rollout. Rollback restores the prior generator while retaining history; do not delete rosters or the ledger. Local rehearsal and application preserve existing roster fingerprints; hosted migration and release are separate. Focused SQL tests cover round exhaustion, random draws, changed eligibility, retries, history retention and denial.
+
+## ADR-066 — Restore automatic map loading; defer the aggregate UI integration
+
+FEAT-LST-001 / FEAT-GEO-001 / NR-13: the owner rejected the unapproved map modes
+and loading controls introduced with ADR-060. The local repair removes that
+integration and restores round clusters, truck markers and automatic sequential
+cursor loading for the filtered viewport. Panning cancels the prior chain;
+selected truck identity survives replacement. Do not silently truncate matching
+results at 140. Server page limits and existing SQL authorization/viewport filters
+remain; the aggregate RPC stays available but is no longer used by the map.
+
+This supersedes ADR-060's client modes and retention cap, not its SQL filtering
+or permission rules. Cumulative viewport memory is not capped; national-scale
+aggregation is deferred until it can preserve interaction and completeness.
+No schema or hosted configuration change is needed. Rollback restores the client.
+Focused tests precede owner local visual review; full release gates follow that
+approval, and deployment requires a separate explicit request.
+
 ## ADR-065 — Deny direct browser Data API requests before SQL
 
 FEAT-SEC-001 / FEAT-IAM-001: migration 097 installs an invoker-rights request

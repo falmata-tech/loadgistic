@@ -182,3 +182,12 @@ And an unavailable or rejected Supabase request fails closed instead of importin
 - Application service boundary: the Supabase-only private-capacity port under `src/lib/private-capacity.js`
 - Supabase PostgreSQL adapter and server-only ports: `src/lib/repository/supabase.js` and `supabase/migrations/042_shared_capacity_runtime.sql`
 - Tests: domain/repository authorization, capacity-market projection, desktop/mobile E2E
+
+### Shared map filter presentation — 2026-09-21
+
+The owner-requested FEAT-LST-001 sliding filter drawer and More filters modal
+apply equally to the authenticated Private capacity map. Filtering, suggestions
+and map pagination stay on `/api/shared-capacity`; applying criteria stays on
+`/shared-capacity`. Do not expose a public fallback or move session/logout controls
+under the drawer or a Leaflet layer. Focused browser evidence must use a real local
+shared session and retain unauthenticated denial.

@@ -10,8 +10,8 @@ export default async function TrackingUnlockPage({searchParams}:{searchParams:Pr
     <section className="tracking-unlock-panel">
       <div className="tracking-unlock-icon"><KeyRound aria-hidden="true"/></div>
       <div>
-        <h1 className="page-title">Track an agreed shipment</h1>
-        <p className="page-subtitle">Enter the Tracking code and an approved email.</p>
+        <h1 className="page-title">Follow your shipment</h1>
+        <p className="page-subtitle">View updates from your transporter using the Tracking code and an approved email.</p>
       </div>
       <Flash error={query.error} success={query.success}/>
       <TrackingUnlockForm localInbox={localAuthInboxUrl()}/>

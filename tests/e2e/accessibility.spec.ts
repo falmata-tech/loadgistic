@@ -1,3 +1,4 @@
+import {openCapacityFilters} from './capacity-drawer-helper';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
@@ -171,11 +172,12 @@ test('administration and support workspaces have no serious accessibility violat
 
 test('public filters support keyboard entry, Escape, and trigger focus restoration', async ({ page }: { page: Page }) => {
   await page.goto('/');
-  const trigger = page.getByRole('button', { name: /^Filters/ });
+  await openCapacityFilters(page);
+  const trigger = page.getByRole('button', { name: /^More filters/ });
   await trigger.focus();
   await expect(trigger).toBeFocused();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Filters' });
+  const dialog = page.getByRole('dialog', { name: 'More filters' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close filters' })).toBeFocused();
   await expectAccessible(page,'capacity filters');

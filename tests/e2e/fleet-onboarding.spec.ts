@@ -4,13 +4,19 @@ import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {localMailpitNumericCode} from './mailpit-helper';
 
-async function verifyNewEmail(page:any,email:string){
+async function verifyNewEmail(page:any,email:string,wrongFirst=false){
   await page.goto('/login');
   const requested=Date.now();
   await page.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);
   await page.getByRole('button',{name:'Email me a code'}).click();
   await expect(page.getByTestId('email-code-form')).toBeVisible();
   const code=await localMailpitNumericCode(email,requested,['Your Loadgistic signup code','Your Loadgistic sign-in code']);
+  if(wrongFirst){
+    await page.getByLabel('Six-digit code',{exact:true}).fill(code==='000000'?'111111':'000000');
+    await page.getByRole('button',{name:'Continue',exact:true}).click();
+    await expect(page.getByTestId('email-code-form')).toBeVisible();
+    await expect(page).not.toHaveURL(/\/app\/home/);
+  }
   await page.getByLabel('Six-digit code',{exact:true}).fill(code);
   await page.getByRole('button',{name:'Continue',exact:true}).click();
 }
@@ -21,7 +27,7 @@ async function selectPlace(page:any,label:string,value:string){
   await page.getByRole('option',{name:new RegExp(value,'i')}).first().click();
 }
 
-test('new fleet invites a driver through email, assigns a truck, publishes and revokes access',async({page,browser}:{page:any;browser:any},info:any)=>{
+test('fleet assigns an unverified driver, then email-code login unlocks the same assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(180_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
@@ -29,7 +35,7 @@ test('new fleet invites a driver through email, assigns a truck, publishes and r
   const service=createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
   const suffix=randomUUID().slice(0,8);
   const ownerEmail=`fleet-owner-${suffix}@loadgistic.local`,driverEmail=`fleet-driver-${suffix}@loadgistic.local`;
-  const ownerName=`Fleet Owner ${suffix}`,driverName=`Invited Driver ${suffix}`;
+  const ownerName=`Fleet Owner ${suffix}`,driverName=`Added Driver ${suffix}`;
   const driverContext=await browser.newContext({baseURL:info.project.use.baseURL,
     viewport:page.viewportSize()||undefined,isMobile:Boolean(info.project.use.isMobile),
     permissions:['geolocation'],geolocation:{latitude:9.03,longitude:38.76},
@@ -67,26 +73,22 @@ test('new fleet invites a driver through email, assigns a truck, publishes and r
     const truckId=truckPath.split('/').at(-1)!;
     await page.getByRole('link',{name:'Assign driver',exact:true}).click();
     await expect(page.locator('.fleet-assignment-context')).toContainText('Workflow mini');
-    await page.getByRole('link',{name:'Invite driver',exact:true}).first().click();
+    await page.getByRole('link',{name:'Add driver',exact:true}).first().click();
     await page.getByLabel('Driver name',{exact:true}).fill(driverName);
     await page.getByLabel('Email',{exact:true}).fill(driverEmail);
     await page.getByLabel('Contact phone',{exact:true}).fill('+251900000022');
-    await page.getByRole('button',{name:'Send invitation'}).click();
-    await expect(page.getByText('Invitation sent. After the driver accepts, assign their truck here.')).toBeVisible();
-    await expect(page.locator('.fleet-invitation-row')).toContainText(driverEmail);
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    await page.screenshot({path:info.outputPath('fleet-invitation.png')});
-    const inbox=await (await fetch('http://127.0.0.1:55324/api/v1/messages')).json();
-    expect(inbox.messages.some((message:{Subject:string;To:{Address:string}[]})=>message.Subject==='You’re invited to join a fleet on Loadgistic'&&message.To.some(to=>to.Address===driverEmail))).toBe(true);
-
-    await verifyNewEmail(driverPage,driverEmail);
-    await expect(driverPage).toHaveURL(/\/join-fleet$/);
-    await expect(driverPage.getByRole('heading',{name:`Workflow Fleet ${suffix}`})).toBeVisible();
-    await driverPage.screenshot({path:info.outputPath('driver-accept-invitation.png')});
-    await driverPage.getByRole('button',{name:'Join fleet',exact:true}).click();
-    await expect(driverPage).toHaveURL(/\/app\/home$/);
-    await page.reload();
+    await page.screenshot({path:info.outputPath('add-driver-form.png')});
+    await page.getByRole('button',{name:'Add driver',exact:true}).click();
+    await expect(page.getByText('Driver added. You can assign a truck now; email verification happens when they log in.')).toBeVisible();
     await expect(page.locator('.fleet-invitation-row')).toHaveCount(0);
+    const identity=await service.from('profiles').select('id').eq('email',driverEmail).single();
+    expect(identity.error).toBeNull();
+    const beforeLogin=await service.auth.admin.getUserById(identity.data!.id);
+    expect(beforeLogin.data.user?.email_confirmed_at).toBeFalsy();
+    const inbox=await (await fetch('http://127.0.0.1:55324/api/v1/messages')).json();
+    expect(inbox.messages.some((message:{To:{Address:string}[]})=>message.To.some(to=>to.Address===driverEmail))).toBe(false);
+    await driverPage.goto('/app/home');
+    await expect(driverPage).toHaveURL(/\/login/);
     const driver=page.locator('.fleet-driver-manager').filter({hasText:driverName});
     await driver.locator('summary').first().click();
     await expect(driver.getByRole('combobox',{name:'Truck',exact:true})).toHaveValue(truckId);
@@ -95,6 +97,13 @@ test('new fleet invites a driver through email, assigns a truck, publishes and r
     await driver.getByRole('button',{name:'Save driver',exact:true}).click();
     await expect(page).toHaveURL(new RegExp(`${truckPath}\\?success=`));
     await expect(page.getByRole('region',{name:'Truck driver'})).toContainText(driverName);
+    const assignment=await service.from('driver_vehicle_assignments').select('driver_user_id').eq('vehicle_id',truckId).eq('active',true).single();
+    expect(assignment.data?.driver_user_id).toBe(identity.data!.id);
+    expect((await service.auth.admin.getUserById(identity.data!.id)).data.user?.email_confirmed_at).toBeFalsy();
+    await page.screenshot({path:info.outputPath('assigned-before-verification.png')});
+    await verifyNewEmail(driverPage,driverEmail,true);
+    await expect(driverPage).toHaveURL(/\/app\/home$/);
+    expect((await service.auth.admin.getUserById(identity.data!.id)).data.user?.email_confirmed_at).toBeTruthy();
     await page.locator('.fleet-truck-details-editor>summary').click();
     await page.getByLabel('Model',{exact:true}).fill('Corrected mini');
     await page.getByRole('button',{name:'Save truck details'}).click();

@@ -1,7 +1,8 @@
 "use client";
 
 import React from 'react';
-import { Building2, CheckCircle2, Heart, LoaderCircle, Search, Truck, X } from 'lucide-react';
+import {LoadingIndicator} from './loading-state';
+import { Building2, CheckCircle2, Heart, Search, Truck, X } from 'lucide-react';
 
 type Member={
   id:string;
@@ -67,7 +68,7 @@ export function AsyncMemberSelect({
     <div className="member-search-input">
       <Search aria-hidden="true"/>
       <input id={id} value={query} onChange={event=>clearSelection(event.target.value)} onFocus={()=>setOpen(true)} autoComplete="off" placeholder={placeholder} aria-expanded={open&&Boolean(results.length)} role="combobox"/>
-      {loading?<LoaderCircle className="member-search-loading" aria-label="Searching members"/>:null}
+      {loading?<LoadingIndicator className="member-search-loading" label="Searching members"/>:null}
     </div>
     {selected?<div className="member-search-selected"><CheckCircle2 aria-hidden="true"/><span><strong>{query}</strong><small>Exactly one {kind==='TRANSPORT'?'transporter or self-managed Driver':'Business'} selected</small></span><button type="button" className="button secondary small" onClick={()=>clearSelection('')}><X aria-hidden="true"/>Change</button></div>:null}
     {!selected&&query.length<2?<small>Type at least 2 characters.</small>:null}

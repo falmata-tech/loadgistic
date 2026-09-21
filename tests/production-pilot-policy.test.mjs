@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import {readPrivateUpload} from '../src/lib/private-storage.js';
 import {
   PRODUCTION_PILOT_SOURCE,pilotEmail,pilotUuid,validateProductionPilotTarget
 } from '../scripts/production-pilot-policy.mjs';
@@ -32,4 +33,31 @@ test('Production pilot requires an exact remote Supabase project confirmation',(
   assert.throws(()=>validateProductionPilotTarget({url:'http://127.0.0.1:55321',projectRef:'local',confirmation:'local'}),/REMOTE_TARGET_REQUIRED/);
   assert.throws(()=>validateProductionPilotTarget({url:'https://one.supabase.co',projectRef:'one',confirmation:'two'}),/EXACT_PROJECT_CONFIRMATION_REQUIRED/);
   assert.throws(()=>validateProductionPilotTarget({url:'https://one.example.com',projectRef:'one',confirmation:'one'}),/SUPABASE_PROJECT_URL_REQUIRED/);
+});
+
+test('the pilot importer produces a verification reference the private reader can retrieve',async()=>{
+  const source=fs.readFileSync('scripts/import-production-pilot.mjs','utf8');
+  const mapping=source.match(/if\(sourceTable==='verification_requests'&&column==='storage_path'&&value\)value=`([^`]+)`;/);
+  assert.ok(mapping,'verification mapping must be explicit');
+  const reference=mapping[1].replace('${PRODUCTION_PILOT_SOURCE}',PRODUCTION_PILOT_SOURCE);
+  const previousFetch=globalThis.fetch;
+  const previousUrl=process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const previousKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bytes=Buffer.from([0xff,0xd8,0xff,0x00]);
+  let reads=0;
+  process.env.NEXT_PUBLIC_SUPABASE_URL='https://pilot-contract.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY='synthetic-test-service-key';
+  globalThis.fetch=async(input,init)=>{
+    const url=new URL(typeof input==='string'?input:input.url||input.href);
+    assert.equal(url.origin,'https://pilot-contract.supabase.co');
+    assert.equal(url.pathname,`/storage/v1/object/verification/${PRODUCTION_PILOT_SOURCE}/verification-placeholder.jpg`);
+    assert.equal(init?.method,'GET');reads++;
+    return new Response(bytes,{status:200,headers:{'content-type':'image/jpeg'}});
+  };
+  try{assert.deepEqual(await readPrivateUpload(reference),bytes);assert.equal(reads,1);}
+  finally{
+    globalThis.fetch=previousFetch;
+    if(previousUrl===undefined)delete process.env.NEXT_PUBLIC_SUPABASE_URL;else process.env.NEXT_PUBLIC_SUPABASE_URL=previousUrl;
+    if(previousKey===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=previousKey;
+  }
 });

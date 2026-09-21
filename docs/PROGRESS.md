@@ -1,16 +1,580 @@
 # Progress
 
+## Approved release — active, 2026-09-21
+
+Owner reviewed the local changes and explicitly said “all looks good, deploy it
+all.” This approves the current accumulated Loadgistic changes and release work.
+The local preview remains running; no new interface redesign is included.
+
+- [x] Record owner visual approval and deployment instruction.
+- [x] Recheck production target: migration 097, PostGIS 3.3.7 now in extensions, no unprotected public tables or ERROR advisors.
+- [x] Pass initial local quality: 319 tests, source/spec validation and typecheck.
+- [ ] Resolve release-test fixture failures and complete required database/browser/build gates.
+- [ ] Commit reviewed source, publish the branch and verify required CI for that exact commit.
+- [ ] Back up production, rehearse migrations 098–101 and verify exact migration plan/rollback.
+- [ ] Build and inspect an isolated immutable Netlify draft, promote, and independently verify production.
+
+The previous release exception remains consumed. This release uses normal gates.
+Full hosted catalog/ACL, API-guard and service-spatial checks now pass without
+an exception. Dependency audit reports zero vulnerabilities. Six distinct
+public-entry/sponsor/redirect desktop/phone cases pass after explicit local
+sponsor fixtures and corrected drawer/readiness assumptions.
+
+Two remaining advisor warnings concern the intentionally bounded own-identity RPC
+and leaked-password protection; retain their review rather than suppressing them.
+UIA-13/14 remain recorded follow-ups. UIA-16 was rechecked: at the actual end of
+About’s phone scroll, both action centers receive clicks; the earlier check only
+used scrollIntoViewIfNeeded, which does not account for overlays. No CSS change
+is justified by that check alone. Capture: narrative-review-2026-09-21/phone-about-scroll-end.png.
+
+
+## Platform positioning copy — locally reviewed, 2026-09-21
+
+- [x] Review public/About/onboarding and Network/Tracking/verification introductions.
+- [x] Record the owner’s transporter/broker/enterprise positioning in FEAT-MKT-001.
+- [x] Update concise interface copy and durable product guidance; retain factual access and verification limits.
+- [x] Check desktop/phone rendering and navigation locally; keep preview available.
+
+About now carries the fuller transporter/broker/shipper/receiver story; metadata,
+sign-in/setup, Private capacity, Network, Tracking and Verification use concise
+related copy. AGENTS and the product master preserve this direction. Typecheck
+and source/spec checks pass. Eighteen local desktop/phone route checks returned
+200 with no horizontal overflow or page errors; captures/report are in
+`artifacts/narrative-review-2026-09-21/`. The first capture attempt incorrectly
+expected the desktop context panel to be visible on phone; the corrected check
+uses the actual shared login instructions. Unauthenticated `/apply` correctly
+redirects to login; the identity-confirmed setup copy was source-reviewed, not
+exercised through a new signup. The existing optional-verification assertion was
+updated to match its new copy. No full-suite pass is claimed.
+
+About's phone actions revealed an overlay obstruction, recorded as UIA-16 for
+follow-up; this is not a clean overall usability result. Owner visual approval
+remains pending. Preview stays at `http://127.0.0.1:3100/about`.
+
+Editorial work only. Prior drawer review and UIA-13/14 / QA-01 follow-ups remain
+recorded; this request does not authorize deployment or introduce account roles.
+
+## Capacity filter drawer — locally verified, 2026-09-21
+
+- [x] Inspect shared Open/Private map component and preserve earlier dirty work.
+- [x] Record owner-requested drawer/modal contract in FEAT-LST-001 / FEAT-SHR-001.
+- [x] Move primary filters into a sliding left drawer and detail filters into one modal; preserve drafts and endpoint scope.
+- [x] Verify desktop/phone close, reopen, swipe, focus, map gestures and combined filter application with real local Private access.
+- [x] Capture both surfaces and leave preview running for owner visual review before extensive gates.
+
+Earlier UIA-13/14 audit follow-ups remain recorded; this requested interface change
+is the current task. No deployment or hosted configuration changes requested.
+
+Implemented: one shared draft/form for the drawer and native More filters dialog;
+phone starts collapsed, desktop expanded, Escape and close return focus, hidden
+controls are inert, and touch/mouse swipes use the heading/open handle. The map
+stays mounted and its bounds do not change when the drawer toggles. Search edits
+clear a prior transporter-search scope while retaining other criteria. The phone
+chat launcher becomes compact only while the drawer is open, clearing its actions.
+
+Fourteen distinct focused desktop/phone cases pass across drawer/Private OTP,
+keyboard accessibility, city filtering, route endpoints, lookup feedback and
+transporter search. Typecheck and source/spec checks pass. Screenshots inspected:
+`artifacts/capacity-drawer-final-2026-09-21/`; final search/lookup evidence:
+`artifacts/capacity-drawer-search-2026-09-21/`. Earlier failures were a wrapped-label
+selector mismatch, incomplete synthetic provider fixture (missing published page),
+a gesture started before drawer animation settled, and a lookup wait that preceded
+the actual server response. Tests now exercise actual touch on phones and verify
+that the chat launcher cannot intercept the filter submit control.
+
+The broader public-entry smoke passes its map controls, then fails its existing
+Featured sponsor-rail assertion on both viewports. A read-only local projection
+confirms zero current sponsors; the component intentionally renders no rail in
+that state. No sponsor fixture was fabricated or assertion removed. This separate
+fixture/setup follow-up is recorded in the UI audit and remains required before
+claiming a complete release gate. The original wider run was 11 passed / 3 failed;
+the corrected lookup pair and new transporter-search pair then passed (4/4).
+
+Local health is 200, no drawer test providers remain, and no migration, production
+write, commit, push or deployment occurred. Review http://127.0.0.1:3100/ and
+`/shared-capacity`: open/close Filters, swipe the heading, edit primary criteria,
+open More filters, then apply together. Phone and desktop captures are available
+without retaining the disposable private access grant. Owner visual approval
+precedes extensive quality/build/release gates under AGENTS.md / NR-13.
+
+## Review workflow audit continuation — locally verified, 2026-09-21
+
+- [x] Inspect Review Center form targets, queue adapters, review-state commands and verification subject projection.
+- [x] Preserve queue/search/status/page on real document/payment/rating decisions; canonicalize untrusted return paths.
+- [x] Recover stale/invalid review pages without unbounded fetching or suppressing errors.
+- [x] Offer only trucks without current authorization approval in the authorization upload selector; keep all badges/history and optional-document wording.
+- [x] Verify real decisions, persisted notes/status, terminal replay denial, non-reviewer denial and phone/desktop rendering using exact local synthetic records.
+- [x] Correct the reproduced early category-selection reset and verify deliberately delayed scripts on desktop/phone.
+- [x] Update audit and handoff evidence; leave preview running for owner review before extensive release gates.
+
+UIA-09–12 and UIA-15 are corrected locally. Eight focused unit/runtime checks,
+six desktop/phone review-workflow cases and two Fleet Add-driver clarity cases
+pass; typecheck and source/spec checks pass. Payment/rating evidence is in
+`artifacts/review-workflow-audit-2026-09-21/`; final document/readiness evidence
+is in `artifacts/review-workflow-readiness-2026-09-21/`; Fleet clarity captures
+are in `artifacts/review-workflow-corrected-2026-09-21/`. Captures were inspected.
+
+The initial document assertion expected 404 for an anonymous file request;
+the established route correctly returned 401. The corrected run exposed an
+early category-selection reset, now guarded by client readiness. The first
+delayed-script harness unregistered routes while releasing them; correcting
+that race produced the final passing desktop/phone run. No permission checks
+were relaxed. Failed test teardown left three exact synthetic accounts and their
+test trucks across the timeout and delayed-script harness failures. Their identity
+and absence of documents were verified before local cleanup; teardown now tolerates
+closed browser contexts before cleaning its records. No existing customer/demo
+records were reset. Final inspection finds zero remaining review audit providers;
+the local health endpoint returns 200.
+
+Review http://127.0.0.1:3100/admin/reviews (search/filter and decide a disposable
+record) and `/app/verification` (Truck authorization with mixed approvals).
+Owner visual approval still precedes extensive gates; no migration, hosted
+write, commit, push or deployment in this continuation. Next recorded work:
+UIA-13 exact payment display and UIA-14 pending-document guidance, followed by
+Support/delegated-permission coverage. See the audit for evidence and limits.
+
+## UI and backend contract audit — active, 2026-09-21
+
+Scope: public home/navigation, provider home/Fleet/Tracking/Account, administrative
+records/reviews/settings/Featured/support, and role-specific navigation. Inspect
+claims against authoritative queries and actual controls; do not redesign workflows.
+
+- [x] Record baseline dirty worktree and trace primary page/action/backend contracts.
+- [x] Complete local read-only route/form audit; investigate failures without changing demo records.
+- [x] Prove and repair incorrect dashboard activity counts/order, admin capacity descriptions, lost record-list context, and administrator plan messaging.
+- [x] Run focused SQL/security and desktop/phone interaction checks; retain screenshots.
+- [x] Record scope, residual issues, evidence and owner preview; visual approval precedes full gates.
+
+
+Result: eight confirmed contract mismatches corrected locally (UIA-01–08);
+see [UI_BACKEND_AUDIT_2026-09-21.md](UI_BACKEND_AUDIT_2026-09-21.md).
+The additional findings were false empty Records pages for stale/invalid page
+numbers and regular-service areas shown as city-to-itself routes. Both corrected.
+44 page/role visits and 151 distinct POST-target traces are recorded; page loading
+and route presence are explicitly not treated as exhaustive mutation evidence.
+
+Migrations 100/101 passed rollback rehearsal and catalog security, then applied
+locally with prior-function backups. Both negative SQL regressions pass. Eight
+distinct desktop/phone cases pass; the admin-save pair also passed again after
+pagination changes. TypeScript and source/spec checks pass. Initial focused test
+failures included an incorrect test alert selector and a transient local browser
+navigation failure; the corrected controlled run passed. No arbitrary retries
+or product checks were weakened. Screenshots were inspected for desktop/phone.
+
+Review http://127.0.0.1:3100/admin, `/admin/operations`, `/app/home`, and `/app/more`.
+Owner visual approval and extensive quality/build/release gates remain pending
+in that order. No production mutation, commit, push or deployment for this audit.
+
+## Add and assign before email verification — active, 2026-09-21
+
+The owner clarified: email remains required; verification must not block assignment.
+This replaces the previous interpretation about adding without an email.
+
+- [x] Record clarified FEAT-FLT-001 / FEAT-IAM-001 contract and inspect existing assignment/Auth boundaries.
+- [x] Add service-only registration with owner/identity conflict checks; create only an unconfirmed actual-email identity via supported Auth API.
+- [x] Deny unverified current-user projection; reuse normal OTP login without additional fleet acceptance for newly added drivers.
+- [x] Update Add driver UI; retain legacy pending invitations and assignment/contact/offboarding behavior.
+- [x] Run local SQL/catalog security and real inbox OTP/assignment browser checks.
+- [ ] Provide local visual review before extensive gates; no hosted rollout requested.
+
+
+Local migration 099 was rehearsed transactionally with both new and legacy
+onboarding SQL checks, then applied with the prior identity projection backed up.
+The final cross-fleet/suspended/reserved-identity and browser-privilege regression
+and catalog check pass. Five focused unit checks, TypeScript, source/spec checks,
+and both desktop/phone real-Mailpit browser workflows pass. The browser proves
+assignment while Auth email remains unconfirmed, no invitation mail/acceptance,
+wrong-code denial, actual OTP confirmation into the same assigned identity,
+capacity publication, Tracking access, contact changes and offboarding. The
+additional cross-fleet SQL fixture initially assumed a self-managed Driver had an
+organization; it was corrected to create an isolated rollback-only fleet.
+
+Review http://127.0.0.1:3100/app/fleet/drivers/new (local server remains running).
+Desktop/phone captures: `artifacts/driver-preverification-review-2026-09-21/`.
+Visual approval and full quality/build/release gates remain pending in the required
+order. No hosted writes, push, commit or deployment for this change.
+
+## Map clarity and city location — active, 2026-09-21
+
+- [x] Inspect current palette, key, location status, overlays and proximity query.
+- [x] Record FEAT-LST-001 acceptance: city matches reported truck location with uncertainty, separate from routes/service areas; preserve authorization and GPS privacy.
+- [x] Implement blue location (public/provider/tracking), muted-orange regular service, compact collapsed key and small location status in the command area.
+- [x] Preserve wheel/drag through informational overlays and truck-summary copy; explicit buttons/links remain interactive. Phone touch panning passes. Add independent city/range filtering to public/shared/admin feed pages and APIs using existing uncertainty-aware SQL.
+- [x] Seven focused unit tests and ten desktop/phone browser cases pass: city matching/pagination/invalid-place and shared-access denial, compact key/palette/status, wheel/drag/touch through signal and truck details, existing GPS refresh and permission-denied retry. Type/source/spec checks pass; fully loaded desktop/phone captures reviewed locally.
+- [ ] Owner visual review at http://127.0.0.1:3100 before extensive gates; no deployment requested.
+
+Unknown city references return an actionable filter error, not unfiltered results. The city criterion overrides device proximity and does not trigger GPS permission on reload. The filter badge counts criteria rather than their supporting URL fields. Existing service-area and shipment-route filters remain independent. No schema, hosted data/settings, commit, push or deployment changes. Screenshots: `artifacts/map-clarity-review-2026-09-21/`.
+
+## Loading presentation and Featured rotation — active, 2026-09-21
+
+The owner visually approved the restored map interaction, then requested a
+horizontal loading indicator, map-shaped placeholders and an app-wide loading
+review. This approval applies to the preceding map correction, not these new
+visual changes. Keep the dev server open and obtain another visual review before
+extensive gates. No deployment was requested.
+
+- [x] Inspect loading components and saved Featured generation/scheduling.
+- [x] Replace map refresh text/spinner with an accessible teal horizontal bar.
+- [x] Replace the cross-shaped map skeleton with neutral streets, blocks and marker placeholders; retain existing controls and interaction.
+- [x] Reuse the bar for public truck search, place lookup and member lookup. Records, forms, chat and Featured already have content-shaped placeholders; compact form-submit feedback remains appropriate.
+- [x] Confirm weekly subsets: random exact pairs carry over across weeks until the eligible round is exhausted, then a fresh round starts. Existing truck-type days and daily ceiling remain; actual roster count sets airtime.
+- [x] Rehearse migration 098 and its rollback-only round/permission regression, then apply only to local Supabase. Existing saved roster fingerprints are unchanged; prior generator retained privately for rollback. ADR-067.
+- [x] Four desktop/phone map loading checks pass, including reduced motion and controls during refresh. Screenshots: `artifacts/loading-review-2026-09-21/`.
+- [x] Desktop/phone search and place loading checks and Featured admin-to-public workflow pass. Fourteen focused unit checks, TypeScript, source/spec checks pass. Two-session local generation-lock denial passes; no history writes occur while another generation owns the lock.
+- [ ] Owner visual review of these new loading changes at http://127.0.0.1:3100.
+- [ ] Extensive quality/build/workflow gates after visual approval; release only if explicitly requested.
+
+The rollback-only Featured regression proves varied random draws, no pair repeats before exhaustion, retry stability, manual-history retention, changed pair eligibility, inactive-pair handling and denied browser privileges. The existing platform-controls SQL regression also passes. The resulting catalog security check passed locally. One initial admin browser check exceeded its five-second redirect wait during cold development compilation; the controlled warmed rerun passed both viewports. Phone screenshot review also caught activity-bar overlap with the map key/chat; the bounding-box regression passed after the placement correction. No hosted database, provider configuration, push or deployment occurred for this task.
+
+## Map interaction regression — 2026-09-21
+
+Owner reaffirmed the workflow: keep the dev server open for their visual testing,
+then run extensive tests after visual approval, and deploy only when requested.
+Visual approval alone does not grant deployment authority. The owner approved the
+restored map with “its good”; the new loading presentation above needs separate review.
+No corrective release is claimed.
+
+The owner rejected the unapproved map workflow introduced by audit commit
+`b22bc3a`: square summary markers, an extra Show trucks click and manual loading /
+summary controls. The performance request did not authorize those product changes.
+Recorded the cause, evidence and prevention in
+[MAP_PERFORMANCE_REGRESSION_2026-09-21.md](MAP_PERFORMANCE_REGRESSION_2026-09-21.md)
+and NR-13. AGENTS.md and GUARDRAILS.md now require preserving the original UX,
+prior approval of any specific tradeoff, and explicit local visual approval
+before UI deployment. Self-authored specs/tests cannot grant product authority.
+
+Local preview is running at http://127.0.0.1:3100 against local services. Removed
+the separate summary renderer, popup and manual loading/mode controls. Restored
+round clusters/truck markers and automatic sequential paging for the filtered
+viewport, with cancellation, deduplication, selected-truck retention and retry.
+Results beyond 140 are no longer silently omitted. Large-scale aggregation and a
+cumulative client-memory cap are deferred rather than imposed through extra UX.
+Server page limits, viewport filtering and authorization are unchanged; ADR-066.
+
+Fixed crossing display offsets that made opposite-status labels overlap while
+preserving membership, anchors, design and the 32-pixel offset limit. The geometry
+regression fails before and passes after. Thirteen focused unit tests and six
+desktop/phone browser cases pass, including the existing dense-map selection and
+signal workflow. TypeScript/source checks pass. Screenshots are in
+`artifacts/map-cluster-review-2026-09-21/`. The owner has visually approved this correction. No full release gate, push or
+deployment ran for it. Next: review the newly requested loading presentation above,
+then extensive gates, then deployment only if asked.
+
+## Published runtime and approved pilot repair — 2026-09-21
+
+Release `6b3d6cd` is published at https://loadgistic-473.netlify.app, deployment
+`6ab0ac42563b51a851213fa5` (04:08:34Z). Health returned HTTP 200 with
+`readyForPublicProduction: true`. Exact CI 35526988445 passed validate, E2E and
+container (160 browser passes, zero retries, eight opt-in skips). Runtime/CI
+success does not imply owner acceptance of the map experience above.
+
+The owner explicitly approved the 335 synthetic verification storage-reference
+corrections. The protected, rehearsed, drift-checked repair was applied and verified
+at 04:24:14Z: 335 corrected, zero malformed references remaining. No customer
+records, file bytes or permissions changed. Strict deployed desktop/phone checks
+then passed, including authorized document bytes, guest denial, public chat,
+account security and no browser exceptions. Evidence:
+`.local/pilot-reference-repair-receipt.json` and
+`.local/release-final-deployed-browser-evidence.json`. The importer regression is
+fixed locally; its prior quality gate passed 306 tests, source/specs and TypeScript.
+Do not replay the bulk importer, completed migrations or configuration writes.
+
+Application catalog, API guard and spatial checks passed; ledger 097. The full
+security check still reports the known PostGIS reference-table finding, and Paul's
+repair remains open. The one-release promotion authorization is consumed; it does
+not authorize another UI release. Production warnings remain validation-only
+uploads, at-least-once SMTP and community map tiles. Monitoring installation and
+provider credential separation remain separate outstanding work.
+
+## Release execution — 2026-09-20
+
+Production migrations 077–097 committed atomically at 19:03:46Z after a fresh
+encrypted database backup, full isolated restore and successful 21-migration
+rehearsal. Four negative cases proved the one-time exception still rejects new
+missing RLS, browser column grants, a removed API hook and browser SQL login.
+Independent application catalog, guard and service geography checks passed before
+and after execution. The full catalog check still reports the known PostGIS
+finding; it is not marked green. Live advisors now show one ERROR, nine WARN and
+23 INFO (six application-helper warnings removed). The ordinary ledger is 097.
+
+The isolated exact-commit Netlify production build passed (86 routes); source
+comparison and artifact private-file exclusion checks passed. Fresh private-file
+backup restored and compared successfully. The Auth callback append is applied
+and verified; all unrelated Auth settings matched. Actual authenticated pilot
+HTTP denials and own-identity access passed again after migration. Desktop/phone
+checks confirmed the currently published market/map/filters remain functional.
+The test session used an existing synthetic pilot and was signed out locally;
+it did not send email, create users or change passwords. It is not evidence of
+a real inbox or Google OAuth login. Existing full CI remains 160 browser passes,
+zero retries and eight opt-in skips.
+
+The owner approved the required Netlify Free scopes for the single non-secret
+production-context scanner value. It is applied and independently verified; all
+unrelated environment settings are unchanged. The first publication of 6b3d6cd
+failed runtime verification (HTTP 502: missing resolved run-config.json). The
+previous working application was restored at 19:57:20Z, and its health endpoint
+returned HTTP 200. Database migrations, Auth callback and API containment remain
+applied. The release is not complete and the exception is not consumed.
+
+Packaging diagnosis found that the nested source export inherited the parent
+checkout's workspace root. A fresh code-only export is being built at /app in an
+isolated Linux container, then tested on a draft URL before another publication.
+Do not replay migrations, configuration writes or the failed publication script.
+Protected receipts retain both the failed attempt and the verified rollback.
+
+The first fresh database export was truncated when its ten-minute timeout fired
+without a failing Docker exit code. The mandatory restore rejected it before any
+migration. The exporter now explicitly rejects timed-out exports; the replacement
+archive completed and fully restored before use. The invalid archive and earlier
+valid backup are preserved separately; no truncated backup is accepted as recovery
+evidence. Full deployment receipts and remaining steps are protected in
+`.local/assisted-release-handoff.json` and `.local/release-final-*`.
+
+## Owner release exception — 2026-09-20
+
+The owner authorized this one reviewed release before Paul's reply/repair, once
+all other work and checks are complete. Recorded the exact limited exception in
+PRODUCTION_AUTHORITY.md and FEAT-SEC-001. The known PostGIS finding remains open;
+checks are unchanged and must not be reported as passing. The migrations reviewed
+here do not relocate PostGIS or require its ownership. Remaining work: verify the
+current-layout release/backup, independently evaluate all other catalog checks,
+recheck live containment and access paths, then apply only the reviewed migrations,
+configuration and application rollout with postchecks. Paul alone performs the
+already-authorized provider move. No deployment or production write accompanied
+this authorization update.
+
+## Release follow-up — 2026-09-20
+
+Update: e52a2a3 passed all jobs in CI 35519622994: 160 browser passes with no
+retries, eight opt-in skips. The owner subsequently supplied Supabase's reply:
+Support offers provider-assisted relocation into extensions after backup
+confirmation. Fresh encrypted backup and full isolated restore passed; an
+isolated target-layout copy preserved 87 table counts/digests, spatial queries,
+all 21 pending migrations and the unchanged security gate. No provider catalog
+edits or hosted writes were performed. The monitor now probes application tables
+so it does not require public exposure of the relocated extension. Follow-up
+6b3d6cd passed every job in exact-commit CI 35526988445: 160 browser passes,
+zero retries and eight opt-in skips (23.7 minutes). Its negative test,
+305-unit-test quality gate, actual local SQL/REST/GraphQL/fixture-Auth verification
+and three live anonymous probes passed. See operations/POSTGIS_RELOCATION_READINESS.md.
+The owner approved the shortened follow-up and continued release work. SMTP
+accepted the exact email to support@supabase.com at 2026-09-20T18:25:28.436Z,
+confirming the tested backup and requesting Paul's proposed in-place relocation.
+No attachment or additional provider work was requested. Protected receipt:
+`.local/postgis-relocation-confirmation-submission.json`. Acceptance confirms
+submission, not provider completion. Application deployment remains pending
+provider repair and independent postchecks. No further send approval is needed;
+do not resend the accepted message. All 21 migration digests still match the
+reviewed manifest, now bound to the successful current commit.
+The post-send read-only check at 18:27:23Z still finds PostGIS 3.3.7 in public,
+one critical advisor, 15 warnings and ledger 076. The installed request hook is
+unchanged and its three live denial probes passed. Provider repair has not yet
+occurred. The draft PR now records the successful latest CI. No production
+schema/configuration write, merge or application deployment occurred this turn.
+
+The owner requested the remaining fixes and deployment. Read-only hosted checks
+at 15:19:24Z still show one critical advisor: spatial_ref_sys lacks RLS and retains
+anonymous table privileges, owned by supabase_admin. The current postgres role
+lacks owner membership. Ledger remains 076. The deployed API containment passed
+all three live anonymous denial probes. Netlify still publishes 451edd1 from
+September 11; no new production deployment occurred. The independent security
+gate therefore still blocks full migration/application promotion.
+
+CI-OBS-002: reproduced the public chat launcher's enabled-before-hydration defect
+by withholding client scripts. The fix disables it until handlers attach; the
+regression failed before the fix. All 14 affected desktop/phone cases passed with
+zero retries, including the five previously flaky flows per viewport. CI-OBS-001:
+added a ten-second bounded local-only schema read before fixture mutation, with
+sanitized status/code diagnostics and no automatic retries. Four negative/positive
+tests and an actual local schema read passed. The original HTTP 500 cause remains
+unconfirmed; diagnostics are not represented as a proven fix for that historical
+failure. Quality passed with 304 tests; build/remote CI evidence follows in
+AUDIT_READINESS_2026-09-20.md and the protected handoff. No security gate was weakened.
+
+
+## Do-not-repeat security lessons — 2026-09-18
+
+Owner requested recurrence prevention, including similar risks to future users.
+Commit `4c1c8a6` adds SECURITY_REGRESSION_REGISTER.md (NR-01–NR-10), required
+agent/guardrail/PR review links, specification traceability and three additional
+negative catalog fixtures. All eleven unsafe catalog states were rejected; all
+changes rolled back. Quality passed with 300 unit tests. Responsibility and
+remaining provider/monitoring setup are explicit; no guarantee of infallibility
+or claim of installed credential separation is made.
+
+Pushed to draft PR #15. CI `35380281319` for exact commit `4c1c8a6` completed successfully: validation,
+container and full desktop/mobile suite. Browser result: 148 first-attempt passes,
+ten passes after retry, eight opt-in skips (33.0 minutes). Retry cases and the
+initial setup observation are recorded with owners and closure criteria in
+[AUDIT_FOLLOWUP_2026-09-18.md](AUDIT_FOLLOWUP_2026-09-18.md). Prior guard-only CI `35379271678`
+passed validation/container but failed before browser tests: the first local
+fixture OpenAPI request returned HTTP500. A direct local repeat returned200; the
+new clean validation job passed. Root cause is not established; preserve this
+startup failure evidence. The new browser job passed fixture initialization and
+its live guard checks without a runtime code change. CI-OBS-001 remains a deferred
+infrastructure observation: owner = CI maintainer; next action = capture a bounded,
+sanitized provider error code if initial OpenAPI loading fails again and evaluate
+an idempotent readiness probe. Do not replay destructive fixture imports blindly.
+The full browser suite later passed with the retry limits documented above.
+
+## Data API guard deployed — 2026-09-18
+
+Implemented FEAT-SEC-001 / ADR-065 in commit `fc9f1e6`, pushed to draft PR #15.
+Migration 097's exact SQL was applied as the reviewed incident containment at
+2026-09-18T18:16:41Z. Production application and migration ledger remain at their
+previous release/076; the full ordered schema/application release is separate.
+No table data, extension ownership, identity function or existing spatial ACLs
+were changed. The ordinary migration replay supports the already-installed guard.
+
+Verified: anonymous reference/application REST, GraphQL and identity RPC calls
+are denied with the guard's exact error; server application/geography reads work;
+authenticated own-identity SQL remains callable; homepage, login and health return
+200. All hosted postchecks passed. A separate live desktop/phone browser check
+also passed public search, rendered map and visible filters without page exceptions
+or failed application API responses; all non-GET/HEAD requests were blocked by the
+probe. Evidence: `.local/data-api-guard-public-browser-evidence.json`.
+Production user-login HTTP was not exercised;
+local real authenticated HTTP and eight desktop/mobile account/fleet workflows
+passed. Quality: 300 unit tests, specs/source and TypeScript; production build,
+independent RLS/ACL gates and permanent SQL/REST/GraphQL regressions all passed.
+
+Fresh encrypted database backup and full isolated restore passed against the
+same archive hash; the network-disabled restore container was removed. Protected
+plan/evidence: `.local/data-api-guard-production-plan.json`,
+`.local/data-api-guard-production-evidence.json`, `.local/security-restore-evidence.json`.
+SQL SHA-256: `adaec16113aac0e2a9156d85b4fa40f47e7ea01170b4a299eea26a3e27febb64`.
+
+The anonymous HTTP monitor passed three live probes. Its public-key repository
+variable is configured; it has no administrator/write credential. Scheduled
+execution remains pending the workflow reaching main. Exact-commit remote CI:
+`35380281319` for follow-up commit `4c1c8a6`, completed successfully. All three
+required jobs passed; the retry/skip breakdown above remains part of the evidence.
+
+Remaining: the underlying provider-owned table still lacks RLS and retains its
+old ACLs, so the Supabase advisor remains open. The hook protects Data API traffic,
+not direct SQL/Storage/Realtime; hosted metadata confirmed no browser login roles
+and no spatial-reference replication publication. No security gate is suppressed.
+Full app promotion remains blocked by the independent underlying repair/advisor
+requirements and the remaining reviewed release steps. Owner-only authority
+remains the standing rule outside this explicitly authorized incident task.
+
+## Easier security options — researched and locally tested, 2026-09-17
+
+The owner's request to research alternatives found a smaller documented route:
+a PostgREST pre-request guard allowing service_role and authenticated own-identity
+lookup only. No extension ownership, deletion, data movement or application
+rewrite is needed for this API containment. Local warmed REST requests, GraphQL,
+spoofed headers, role denials, service writes, PostGIS reference reads and managed
+signup/Auth passed. Eight desktop/mobile account and fleet browser cases passed
+with the guard active (2.9 minutes). Exact experimental objects/configuration were
+removed; a delayed reload required independent HTTP confirmation before cleanup,
+and the original database security gate passed afterward.
+
+The guard is locally tested research, not deployed. It does not enable RLS or
+clear the advisor: that alert remains a distinct underlying database issue.
+No release gate was weakened, and no hosted configuration or data was changed.
+Other evaluated options: schema USAGE restriction (works but breaks current
+identity lookup), a dedicated API schema (larger adapter/wrapper change), disabling
+the Data API (breaks current server persistence), and a full PostGIS rebuild.
+See operations/SUPABASE_SECURITY_OPTIONS.md for sources, evidence and rollout limits.
+
+Exact commit `1b42e1c` CI run `35177715919` is now fully successful: validate,
+container and E2E. Browser summary: 153 passed, five passed on retry, eight opt-in
+skips, 31.1 minutes. This is the unmodified release candidate's CI; the API guard
+was a separate local experiment and is not part of that commit.
+
+## PostGIS rebuild alternative — feasibility checked, 2026-09-17
+
+The owner asked about recreating the insecure setup while retaining data.
+Supabase documents a full extension/dependency rebuild and restore into another
+schema. Earlier claims that support was the only possible strategy were too
+broad; support is the existing narrow repair route. Live metadata confirms both
+table and extension ownership by supabase_admin, non-relocatable PostGIS 3.3.7,
+and 11 generated geography columns in application tables. An isolated rehearsal
+must prove privileges, complete dependency/data restoration and non-exposure
+before any production proposal. No deletion or hosted mutation occurred. See
+operations/POSTGIS_REBUILD_ASSESSMENT.md. The simple copy/delete-table proposal
+would not preserve extension dependencies or guarantee safer privileges.
+
+## Deployment recheck — 2026-09-17
+
+The owner additionally authorized acting on their behalf. Metadata rechecked at
+2026-09-17T03:40:14.564Z confirms organization Owner status, but the existing
+database connection is postgres, not superuser, and has no table-owner authority
+or SELECT grant option on supabase_admin-owned spatial_ref_sys. Supabase documents
+that Dashboard SQL also runs as postgres. No role change or hosted write was
+attempted; the exact provider repair request is already submitted.
+
+Owner reiterated authorization to check results and deploy. No new permission
+request is needed for the reviewed release. Exact commit `1b42e1c`, CI run
+`35177715919`: validate and container passed; full desktop/mobile E2E is running.
+Clean CI passed migration 096, the new catalog/negative-grant checks, fresh managed
+fixtures, SQL/concurrency, 297 units, scale, TypeScript and build. The earlier
+local 144-versus-143 fixture count did not reproduce with fresh CI fixtures.
+
+Live security recheck at 2026-09-17T03:35:15.150Z: one ERROR, 15 WARN,
+18 INFO. `spatial_ref_sys` still has RLS disabled and anon SELECT/INSERT/UPDATE/
+DELETE; owner is supabase_admin, ordinary postgres has no owner membership.
+The hosted ledger remains 076. Supabase's exact approved repair request was
+submitted; SMTP acceptance is not proof of repair. Stop promotion until the
+provider repair, remaining security review and required CI pass. No ownership
+bypass, hosted schema/settings write, merge or production deployment occurred.
+
+## Browser database boundary — pushed, clean CI running, 2026-09-17
+
+FEAT-SEC-001 / FEAT-IAM-001: a rollback-only local test proved retained membership
+could let an inactive session update a vehicle through legacy table grants.
+
+- [x] Trace all session-client consumers; business data uses service adapters,
+  while current_user_projection is the required caller-bound identity RPC.
+- [x] Specify removal of browser application-relation privileges and helper RPCs.
+- [x] Add migration 096 and actual-role/default-grant regression coverage.
+- [x] Prove failure before repair, denial afterward, service/identity compatibility,
+  eight recurrence checks, quality/build and eight desktop/mobile browser cases.
+- [x] After explicit approval, push exact commit `1b42e1c` to draft PR #15;
+  remote head independently verified. CI run `35177715919` started.
+- [ ] Obtain clean CI for migration 096 and the complete browser suite.
+- [ ] Review release artifact and record rollout evidence; no hosted apply yet.
+
+Local evidence: all 16 rollback SQL suites, eight deliberate catalog failures,
+297 unit tests, spec/source, TypeScript, production build and eight desktop/mobile
+browser cases pass. Targeted managed signup, Support and Fleet verification also
+passes. The full local fixture verifier still expects 143 active trucks and found
+144 in this existing developer database; preserve its assertion and require clean
+CI fixtures before release. Next-generated metadata was restored by the wrapper.
+Local progress/support-submission notes and pre-existing `.next-upload-audit/`
+remain outside the pushed commit. The owner explicitly approved the exact email;
+SMTP accepted it for support@supabase.com with the reviewed SQL digest verified.
+
 ## Assisted repair/release — 2026-09-17
 
 The owner authorized a one-time assisted execution of the reviewed Loadgistic
 repair/release, preserving the safe workflow. Owner-only remains the standing
 default. See PRODUCTION_AUTHORITY for the exact scope and stopping conditions.
 
-- [ ] Recheck exact hosted project/advisors and provider ownership.
-- [ ] Publish the tested security changes to draft PR #15 and obtain clean CI.
+- [x] Recheck exact hosted project/advisors and provider ownership.
+- [x] Publish the tested security changes to draft PR #15.
+- [ ] Obtain clean CI for `1b42e1c`, run `35177715919`. Earlier candidate checks
+  do not substitute for the new exact-commit result.
 - [ ] Resolve the critical hosted finding through its actual owner; no bypass.
 - [ ] Apply only reviewed release changes after every prerequisite passes.
 - [ ] Record hosted evidence or the precise provider/access blocker.
+
+The PostgreSQL 15 local-owner authentication failure is corrected. Managed
+verification now passes in clean CI; older SQL fixture assumptions were corrected
+against migrations 086/092 and the spatial test now builds its own Empty/radius
+state. The latest clean CI has passed all SQL suites, concurrency, 297 unit tests,
+5,000-truck scale limits, TypeScript, production build and container; the complete
+browser suite is still running for that earlier commit. The scale script also now creates its artifact directory on
+fresh runners.
+
+The exact reviewed support email and SQL attachment were explicitly approved and
+accepted by SMTP at 2026-09-17T03:20:40.889Z; registered-owner identity and attachment digest
+were reverified. One recipient accepted, zero rejected. The protected receipt is
+`.local/support-repair-submission.json`; a support reply/case number and the actual
+owner repair remain outstanding. No hosted database/settings change or deployment
+has been performed by the agent. The prior automatic-approval blockers for this
+exact push and email are resolved by the owner's explicit authorization.
 
 ## Security alert and agent authority — active, 2026-09-16
 
@@ -73,7 +637,7 @@ has occurred. The preserved untracked
 `.next-upload-audit/` directory is outside this release.
 
 Hosted Loadgistic is verified at migration 076
-and Netlify commit `451edd1f`; migrations 077–095 and the new account-security
+and Netlify commit `451edd1f`; migrations 077–096 and the new account-security
 callback still need rollout. The dependency audit is clean. The full 166-case
 browser release suite finished with 139 passes, 19 failures and eight opt-in
 visual skips (52.8 minutes). It exposed test-readiness/selector drift (F25),
@@ -476,3 +1040,8 @@ configuration or deployment has been changed in this task.
 - Every Leaflet surface now uses one centralized HTTPS tile configuration with visible linked attribution and an exact-origin CSP. The bounded beta falls back to the direct OpenStreetMap community endpoint with a non-blocking launch warning; no proxy, prefetch, bulk copy, or Netlify-hosted tile set is used. Monitor traffic and select a reviewed provider before sustained use.
 - Tracking unlock, review unlock, and review submission now use the shared PostgreSQL limiter. Add the remaining public-discovery coverage and reviewed bot protection; configure and remotely prove the managed upload scanner; then complete the actual database-restore rehearsal, monitoring, and a tested rollback. The encrypted Storage-object export has already passed an isolated restore and checksum proof; the local EICAR-aware scanner is test-only.
 - The reviewed GitHub-to-Netlify Production promotion and live route smoke are complete. Hosted schema publication through `076`, database SSL enforcement, and the Storage restore rehearsal are complete; managed upload scanning, remote application-email delivery, the actual database restore, Preview concurrency, and production monitoring remain rollout gates.
+
+Final UIA-08 screenshot review also caught the detail badge exposing the internal
+Profile Route kind for an area. List/detail badges now say Service Area; the
+focused browser checks assert this alongside the area description. Final area
+captures: `artifacts/ui-contract-area-final-review-2026-09-21/`.

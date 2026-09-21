@@ -126,3 +126,21 @@ test('a same-status neighbor cannot push a group into the opposite-status label'
   assert.deepEqual(buildCapacityMarkerGroups([...entries].reverse(),9),groups);
   assert.ok(groups.every(group=>Math.hypot(group.visualOffset.x,group.visualOffset.y)<=MAX_VISUAL_OFFSET_PX));
 });
+
+test('status separation checks final positions when opposite display offsets cross',()=>{
+  // Phone reproduction: anchors differ by 41px horizontally and 12px vertically;
+  // independent 32px horizontal shifts cross, leaving labels only 23px apart.
+  const entries=[
+    ...Array.from({length:6},(_,i)=>marker(`empty-${i}`,'EMPTY',105,248)),
+    ...Array.from({length:7},(_,i)=>marker(`partial-${i}`,'PARTIAL',64,236))
+  ];
+  const groups=buildCapacityMarkerGroups(entries,6);
+  for(const a of groups)for(const b of groups){
+    if(a.status===b.status)continue;
+    assert.ok(Math.abs(a.projectedAnchor.x+a.visualOffset.x-b.projectedAnchor.x-b.visualOffset.x)>=44||
+      Math.abs(a.projectedAnchor.y+a.visualOffset.y-b.projectedAnchor.y-b.visualOffset.y)>=18);
+  }
+  assert.equal(groups.reduce((n,g)=>n+g.memberIds.length,0),13);
+  assert.ok(groups.every(g=>Math.hypot(g.visualOffset.x,g.visualOffset.y)<=MAX_VISUAL_OFFSET_PX+1e-9));
+  assert.deepEqual(buildCapacityMarkerGroups([...entries].reverse(),6),groups);
+});

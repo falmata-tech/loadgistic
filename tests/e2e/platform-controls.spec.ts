@@ -41,7 +41,7 @@ test('admin access controls are responsive and native saves retain submitted val
 test('Featured automatic selection can be switched off and prepared without losing manual controls',async({page}:{page:any},info:any)=>{
   test.setTimeout(60000);await login(page,'admin@loadgistic.local');await page.goto('/admin/featured');
   const controls=page.getByRole('region',{name:'Featured selection settings'});
-  const originalCount=await controls.getByLabel('Drivers per day').inputValue();
+  const originalCount=await controls.getByLabel('Maximum Drivers per day').inputValue();
   try{
     await controls.getByLabel('Selection',{exact:true}).selectOption('MANUAL');
     await controls.getByRole('button',{name:'Save selection settings'}).click();
@@ -49,7 +49,7 @@ test('Featured automatic selection can be switched off and prepared without losi
     await expect(controls.getByRole('button',{name:'Prepare upcoming days'})).toHaveCount(0);
   }finally{
     await controls.getByLabel('Selection',{exact:true}).selectOption('AUTO');
-    await controls.getByLabel('Drivers per day').fill(originalCount);
+    await controls.getByLabel('Maximum Drivers per day').fill(originalCount);
     await controls.getByRole('button',{name:'Save selection settings'}).click();
   }
   await expect(controls.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
