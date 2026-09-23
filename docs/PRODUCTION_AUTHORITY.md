@@ -344,5 +344,17 @@ Netlify deploy `6ab3aaa9668f9644dcba97d8`, site
 hosted Auth/SMTP/secret changes. Retain exact-commit CI, immutable build/runtime
 checks, refreshed encrypted backup/isolated restore, security checks and monitored
 promotion. Rollback is to that existing application deployment, retaining schema
-and demo-account history. Domain setup is documented separately; no domain or
-DNS change has occurred, and it is not a reason to change SMTP credentials.
+and demo-account history. The later domain authorization below separately
+covers the domain/URL cutover; it does not authorize SMTP credential changes.
+
+## September 23 custom-domain authorization
+
+After updating GoDaddy DNS, the owner explicitly requested publishing on
+`loadgistic.com`. This authorizes attaching that apex and its www alias to the
+existing Loadgistic Netlify site, managed HTTPS issuance, changing only the
+production APP_URL, and the Supabase Site URL plus exact sign-in and account
+security callback URLs. The concrete old/new values and digest are retained in
+`docs/operations/LOADGISTIC_DOMAIN_SETUP.md` and the protected local plan.
+Preserve old callbacks during cutover and all unrelated configuration. This is
+not authority to change SMTP, providers, credentials, DNS email records,
+database permissions or other projects. Normal release checks still apply.

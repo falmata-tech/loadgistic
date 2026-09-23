@@ -616,3 +616,14 @@ actual local invitation delivery, OTP delivery/unlock, no account creation,
 duplicate recovery, unrelated-email non-delivery and revocation. Initial new-form
 URL property collision fixed and desktop rerun passes. All 335 unit tests,
 TypeScript and source/spec gates pass; exact-candidate CI/release remain pending.
+
+## Custom domain verification — 2026-09-23
+
+BASE-DEP-001 / FEAT-IAM-001: owner-approved external GoDaddy DNS and narrow
+Netlify/APP_URL/Auth callback cutover connects https://loadgistic.com. Managed
+certificate covers apex/www; HTTP and www redirects pass, health is ready, and
+desktop/phone browser checks pass public map filtering/Clear all and email-only
+login rendering. Exact old/new fields, unchanged Auth-field verification and
+protected evidence paths are in `docs/operations/LOADGISTIC_DOMAIN_SETUP.md`.
+The new Tracking release and production OTP login are not claimed by this public
+verification. Existing production deployment remains `6ab3aaa9668f9644dcba97d8`.

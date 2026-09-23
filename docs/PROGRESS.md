@@ -16,7 +16,8 @@ status controls, phone usability, research, and release after readiness.
 - [ ] Full quality, exact-candidate CI, immutable release and live verification.
 
 The earlier demo aliases are already applied. This UI is not yet deployed;
-no new hosted configuration or database mutation is included.
+no database mutation is included. The separately authorized domain cutover
+changes only domain/HTTPS and application/Auth URLs.
 
 Focused evidence: three progress unit tests, source/spec validation and TypeScript
 pass; the combined Tracking/auth/pilot subset passes all 18 tests. A fresh read-only
@@ -30,7 +31,11 @@ shipments were removed; existing demo accounts were preserved.
 Owner also requests GoDaddy domain setup for loadgistic.com and permits replacing
 its Webflow records; no email service is desired there. Current DNS and exact
 website records/application checks are in `docs/operations/LOADGISTIC_DOMAIN_SETUP.md`.
-No domain/configuration write has occurred.
+The owner has updated DNS and authorized publication. Domain attachment and
+application/Auth URL changes are verified. HTTPS, www/HTTP redirects, production
+health and desktop/phone public map/filter/Clear all/login checks pass at
+https://loadgistic.com. It serves the previous verified deployment while the new
+Tracking release finishes its separate gates.
 
 Recipient-save evidence: `artifacts/tracking-parties-20260923/` (phone) and
 `artifacts/tracking-parties-desktop-20260923/` (desktop). The first desktop run
@@ -1400,3 +1405,23 @@ Final UIA-08 screenshot review also caught the detail badge exposing the interna
 Profile Route kind for an area. List/detail badges now say Service Area; the
 focused browser checks assert this alongside the area description. Final area
 captures: `artifacts/ui-contract-area-final-review-2026-09-21/`.
+
+## September 23 follow-up release handoff
+
+Candidate `727c48e5a529412b979ad0c1fc1bfa8ecbf11245`, PR #15, CI
+`35860658374`: validate/container pass; full browser job still running at 13:06 UTC.
+Fresh encrypted backup and isolated restore pass at migration 101; no migration
+was applied. Security catalog/guard/spatial checks pass with no ERROR advisor.
+Immutable Linux draft `6ab3c9fdcd810fa0a9f56d7a` is ready; source matches all
+853 committed files and native adapter packaging passes. Preview health reaches
+the application and reports its deliberately absent preview configuration.
+Production remains `6ab3aaa9668f9644dcba97d8` / `200c783`.
+
+Automatic approval review rejected a proposed privileged production demo-test
+inventory because service-key access for that specific scope was not authorized.
+No such inventory or demo mutation ran. A question is pending for bounded service
+key use in the compiled-runtime and read-only tagged-demo browser release checks;
+do not substitute another credential route. The narrower custom-domain operation
+was separately authorized and completed. Release scripts/evidence are under
+`.local/release-20260923-tracking-*`, domain evidence under
+`.local/domain-20260923/`. Keep the local app on port 3100 running.
