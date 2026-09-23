@@ -7,11 +7,21 @@ translation gaps. Include Tracking fixes, document migration 102, owner-first
 profiles and the current draft catalogs with English fallback.
 
 - [x] Confirm live security baseline: ledger 101, correct PostGIS schema, no ERROR.
-- [ ] Full local quality and current-candidate SQL/build checks.
+- [x] Full local quality (345 tests), current-candidate SQL checks and production build.
 - [ ] Commit explicit task scope, push PR 15 and pass exact-commit CI.
-- [ ] Fresh encrypted backup, isolated restore and migration 102 rehearsal.
+- [x] Fresh encrypted backup, isolated restore and migration 102 rehearsal.
 - [ ] Resolve prior bounded production runtime/private-demo approval.
 - [ ] Apply reviewed migration, publish immutable artifact and verify live.
+
+First candidate `9cdc0a1` / CI `35925609765` stopped at a legacy fixture
+assertion requiring exactly one truck badge. Local read-only reproduction confirms
+an existing truck legitimately has both approved ownership and use-permission
+evidence. The fixture verifier now checks distinct allowed categories, neutral
+unverified-state semantics, reviewed timestamps and separate owner categories.
+The new migration regression remains mandatory; no security gate is relaxed.
+The fresh encrypted backup restores successfully in a network-disabled container;
+migration 102, document regressions, catalog/API-guard/spatial checks all pass.
+Production remains at migration 101 and the previous application.
 
 Logo files were supplied to the owner before continuing this release. Local app
 remains available. Existing `.next-upload-audit/` remains excluded.
