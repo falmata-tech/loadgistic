@@ -13,7 +13,8 @@ status controls, phone usability, research, and release after readiness.
 - [x] Fix recipient-save wait: JSON inline result after commit, bounded client wait,
   post-response invitation delivery; desktop/phone invitation → OTP → guest
   access → revocation pass. Duplicate errors preserve input and release busy state.
-- [ ] Full quality, exact-candidate CI, immutable release and live verification.
+- [x] Full quality and exact-candidate CI (validate, container, desktop/phone E2E).
+- [ ] Compiled production-runtime verification, promotion and private live checks.
 
 The earlier demo aliases are already applied. This UI is not yet deployed;
 no database mutation is included. The separately authorized domain cutover
@@ -1409,7 +1410,10 @@ captures: `artifacts/ui-contract-area-final-review-2026-09-21/`.
 ## September 23 follow-up release handoff
 
 Candidate `727c48e5a529412b979ad0c1fc1bfa8ecbf11245`, PR #15, CI
-`35860658374`: validate/container pass; full browser job still running at 13:06 UTC.
+`35860658374`: validate, container and the full desktop/phone browser job all
+pass: 335 unit tests and 215 browser checks passed, with 8 browser checks
+skipped (not claimed as tested). Compiled production-runtime and private browser verification remain pending
+the requested bounded credential-use approval.
 Fresh encrypted backup and isolated restore pass at migration 101; no migration
 was applied. Security catalog/guard/spatial checks pass with no ERROR advisor.
 Immutable Linux draft `6ab3c9fdcd810fa0a9f56d7a` is ready; source matches all

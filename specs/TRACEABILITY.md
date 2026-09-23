@@ -615,7 +615,9 @@ success/error without waiting on navigation or mail. Desktop/phone tests prove
 actual local invitation delivery, OTP delivery/unlock, no account creation,
 duplicate recovery, unrelated-email non-delivery and revocation. Initial new-form
 URL property collision fixed and desktop rerun passes. All 335 unit tests,
-TypeScript and source/spec gates pass; exact-candidate CI/release remain pending.
+TypeScript and source/spec gates pass. Exact-candidate CI `35860658374` for
+`727c48e` passes validate, container and desktop/phone E2E. Production-runtime
+verification and promotion remain pending; the public domain is already live.
 
 ## Custom domain verification — 2026-09-23
 
