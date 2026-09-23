@@ -1,4 +1,6 @@
 'use client';
+
+import {Localized,Text} from '@/components/localization';
 import React from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -25,25 +27,25 @@ export function AccountSecurityControls({blockers,available,pendingEmail}:{block
   const input:Operation=action==='EMAIL'?{action,email:String(form.get('email')||'')}:{action,confirm:'DEACTIVATE'};
   void send('request',input);
  }
- return <section className="card stack" aria-label="Account security" aria-busy={busy}><h2>Account security</h2>
-  {!available?<p role="status">Account security changes are temporarily unavailable.</p>:<>
+ return <Localized as="section" copy={["aria-label"]} className="card stack" aria-label="Account security" aria-busy={busy}><h2><Text message="Account security"/></h2>
+  {!available?<p role="status"><Text message="Account security changes are temporarily unavailable."/></p>:<>
   {stage==='CURRENT_EMAIL'&&operation?<form className="stack" onSubmit={event=>{event.preventDefault();void send('confirm',operation,String(new FormData(event.currentTarget).get('code')||''));}}>
-   <p>Verify your current login email before {operation.action==='EMAIL'?'changing your email':'deactivating access'}.</p>
-   <label>Current email code<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required/></label>
-   <button className="button" disabled={busy}>{busy?'Checking…':'Verify current email'}</button>
-   <button type="button" className="button secondary" disabled={busy} onClick={()=>{setStage('REQUEST');setOperation(null);setError('');}}>Start again</button>
-  </form>:stage==='EMAIL_PENDING'&&operation?<div className="stack"><p>Open the confirmation links in your current and new email inboxes. Keep this browser available until the change is complete.</p><button className="button secondary" disabled={busy} onClick={()=>void send('check',operation)}>{busy?'Checking…':'Check email change'}</button><button className="button secondary" disabled={busy} onClick={()=>{setStage('REQUEST');setOperation(null);setError('');}}>Request a fresh verification</button></div>:<>
-  <details><summary>Change login email</summary><form className="stack" onSubmit={event=>begin(event,'EMAIL')}>
-   <label>New login email<input name="email" type="email" autoComplete="email" maxLength={254} required/></label>
-   <p className="meta">Verify your current email first. Your public business contacts stay separate.</p><button className="button secondary" disabled={busy}>{busy?'Sending…':'Send verification code'}</button>
+   <p><Text message="Verify your current login email before "/>{operation.action==='EMAIL'?<Text message="changing your email"/>:<Text message="deactivating access"/>}.</p>
+   <label><Text message="Current email code"/><input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required/></label>
+   <button className="button" disabled={busy}>{busy?<Text message="Checking…"/>:<Text message="Verify current email"/>}</button>
+   <button type="button" className="button secondary" disabled={busy} onClick={()=>{setStage('REQUEST');setOperation(null);setError('');}}><Text message="Start again"/></button>
+  </form>:stage==='EMAIL_PENDING'&&operation?<div className="stack"><p><Text message="Open the confirmation links in your current and new email inboxes. Keep this browser available until the change is complete."/></p><button className="button secondary" disabled={busy} onClick={()=>void send('check',operation)}>{busy?<Text message="Checking…"/>:<Text message="Check email change"/>}</button><button className="button secondary" disabled={busy} onClick={()=>{setStage('REQUEST');setOperation(null);setError('');}}><Text message="Request a fresh verification"/></button></div>:<>
+  <details><summary><Text message="Change login email"/></summary><form className="stack" onSubmit={event=>begin(event,'EMAIL')}>
+   <label><Text message="New login email"/><input name="email" type="email" autoComplete="email" maxLength={254} required/></label>
+   <p className="meta"><Text message="Verify your current email first. Your public business contacts stay separate."/></p><button className="button secondary" disabled={busy}>{busy?<Text message="Sending…"/>:<Text message="Send verification code"/>}</button>
   </form></details>
-  <details><summary>Deactivate account</summary><p>Your access and public business visibility end. Shipment, Support, audit and file history are retained. Contact Support if you later need the account reopened.</p>
-   {currentBlockers.length?<ul>{currentBlockers.map(key=>{const blocker=accountClosureBlockers[key as keyof typeof accountClosureBlockers];return blocker?<li key={key}><Link href={blocker.href}>{blocker.text}</Link></li>:<li key={key}>Resolve outstanding account work with Support.</li>;})}</ul>:<form className="stack" onSubmit={event=>begin(event,'DEACTIVATE')}>
-    <label><input type="checkbox" required/>I want to deactivate this account and retain its history.</label>
-    <button className="button danger" disabled={busy}>{busy?'Sending…':'Verify email to deactivate'}</button>
+  <details><summary><Text message="Deactivate account"/></summary><p><Text message="Your access and public business visibility end. Shipment, Support, audit and file history are retained. Contact Support if you later need the account reopened."/></p>
+   {currentBlockers.length?<ul>{currentBlockers.map(key=>{const blocker=accountClosureBlockers[key as keyof typeof accountClosureBlockers];return blocker?<li key={key}><Link href={blocker.href}>{blocker.text}</Link></li>:<li key={key}><Text message="Resolve outstanding account work with Support."/></li>;})}</ul>:<form className="stack" onSubmit={event=>begin(event,'DEACTIVATE')}>
+    <label><input type="checkbox" required/><Text message="I want to deactivate this account and retain its history."/></label>
+    <button className="button danger" disabled={busy}>{busy?<Text message="Sending…"/>:<Text message="Verify email to deactivate"/>}</button>
    </form>}
   </details></>}
   </>}
   {message?<p role="status">{message}</p>:null}{error?<p role="alert" className="alert error">{error}</p>:null}
- </section>;
+ </Localized>;
 }

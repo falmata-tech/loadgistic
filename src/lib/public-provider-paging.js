@@ -26,3 +26,14 @@ export async function loadPublicProviderFleet(client,scope,page){
 export function publicFleetVehicleIds(values){
   return z.array(z.string().uuid()).max(12).parse(values);
 }
+
+/** Regular service is provider information, independent of its current fleet page.
+ * Public presentation needs place labels only, never raw private record fields. */
+export function publicProviderRegularService(record){
+  if(!record)return null;
+  const labels=points=>Array.isArray(points)?points.slice(0,5).map(point=>String(point?.label||'')).filter(Boolean):[];
+  const route=labels(record.route_points_json);
+  return {geometry:record.geometry==='RADIUS'?'RADIUS':'ROUTE',
+    route_labels:route.length>=2?route:[record.origin,record.destination].filter(Boolean).map(String),
+    area_center_label:String(record.area_center_label||''),area_labels:labels(record.area_boundary_json)};
+}

@@ -1,3 +1,5 @@
+
+import {Text} from '@/components/localization';
 import {cookies} from 'next/headers';
 import {redirect} from 'next/navigation';
 import {Building2, Phone, Truck, UserRound} from 'lucide-react';
@@ -56,15 +58,15 @@ export default async function ApplyPage({
     <PublicHeader/>
     <PublicAuthShell
       variant="signup"
-      taskKicker="Transporter setup"
-      title="Set up your transporter workspace"
-      description="Tell us how you operate. Add trucks, public contacts, and documents from your workspace next."
-      contextKicker="Build your presence"
-      contextTitle="Share capacity. Grow your transport business."
-      contextDescription="Connect with brokers and businesses, share truck availability, and keep customers informed through private Tracking."
-      contextNoteTitle="Identity confirmed"
-      contextNote="Your account remains inactive until this short transporter setup is complete."
-      footerNote="Creating an account does not mark any Driver, truck, or document as reviewed."
+      taskKicker={<Text message="Transporter setup"/>}
+      title={<Text message="Set up your transporter workspace"/>}
+      description={<Text message="Tell us how you operate. Add trucks, public contacts, and documents from your workspace next."/>}
+      contextKicker={<Text message="Build your presence"/>}
+      contextTitle={<Text message="Share capacity. Grow your transport business."/>}
+      contextDescription={<Text message="Connect with brokers and businesses, share truck availability, and keep customers informed through private Tracking."/>}
+      contextNoteTitle={<Text message="Identity confirmed"/>}
+      contextNote={<Text message="Your account remains inactive until this short transporter setup is complete."/>}
+      footerNote={<Text message="Creating an account does not mark any Driver, truck, or document as reviewed."/>}
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <ProviderDetailsForm selectedType={selectedType}/>
@@ -75,7 +77,7 @@ export default async function ApplyPage({
 function ProviderDetailsForm({selectedType}:{selectedType:string|undefined}){
   return <form action="/api/applications" method="post" className="form-card stack provider-setup-form" data-testid="provider-details-form">
     <fieldset>
-      <legend>How do you operate?</legend>
+      <legend><Text message="How do you operate?"/></legend>
       <div className="signup-role-grid">
         {accountTypes.map(type=>{
           const Icon=type.icon;
@@ -87,11 +89,11 @@ function ProviderDetailsForm({selectedType}:{selectedType:string|undefined}){
       </div>
     </fieldset>
     <div className="form-grid">
-      <div className="form-group"><label htmlFor="applicant-name"><UserRound aria-hidden="true"/>Your name</label><input id="applicant-name" name="name" autoComplete="name" required/></div>
-      <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/>Transporter name</label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
-      <div className="form-group"><label htmlFor="application-phone"><Phone aria-hidden="true"/>Account phone</label><input id="application-phone" name="phone" type="tel" autoComplete="tel" aria-describedby="application-phone-help" required/><small id="application-phone-help">Private. Add a public phone later if you choose.</small></div>
-      <div className="form-group full"><label htmlFor="application-note"><Truck aria-hidden="true"/>About your transport work <span className="meta">(optional)</span></label><textarea id="application-note" name="notes" maxLength={1000} aria-describedby="application-note-help"/><small id="application-note-help">Briefly describe the transport services you plan to offer.</small></div>
+      <div className="form-group"><label htmlFor="applicant-name"><UserRound aria-hidden="true"/><Text message="Your name"/></label><input id="applicant-name" name="name" autoComplete="name" required/></div>
+      <div className="form-group"><label htmlFor="workspace-name"><Building2 aria-hidden="true"/><Text message="Transporter name"/></label><input id="workspace-name" name="businessName" autoComplete="organization" required/></div>
+      <div className="form-group"><label htmlFor="application-phone"><Phone aria-hidden="true"/><Text message="Account phone"/></label><input id="application-phone" name="phone" type="tel" autoComplete="tel" aria-describedby="application-phone-help" required/><small id="application-phone-help"><Text message="Private. Add a public phone later if you choose."/></small></div>
+      <div className="form-group full"><label htmlFor="application-note"><Truck aria-hidden="true"/><Text message="About your transport work "/><span className="meta"><Text message="(optional)"/></span></label><textarea id="application-note" name="notes" maxLength={1000} aria-describedby="application-note-help"/><small id="application-note-help"><Text message="Briefly describe the transport services you plan to offer."/></small></div>
     </div>
-    <button className="button auth-primary-action" type="submit"><Building2 aria-hidden="true"/>Create transporter workspace</button>
+    <button className="button auth-primary-action" type="submit"><Building2 aria-hidden="true"/><Text message="Create transporter workspace"/></button>
   </form>;
 }

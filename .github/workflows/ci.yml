@@ -70,7 +70,7 @@ jobs:
         run: |
           for suite in security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds \
             fleet-driver-onboarding driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
-            public-provider-privacy support-attachments support-history support-polling tracking-proof-access; do
+            public-provider-privacy support-attachments support-history support-polling tracking-proof-access truck-document-alternatives; do
             echo "::group::SQL regression: $suite"
             docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
             echo "::endgroup::"

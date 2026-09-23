@@ -1,5 +1,7 @@
 'use client';
 
+
+import {Text,Localized} from '@/components/localization';
 import {KeyRound,Mail} from 'lucide-react';
 import React from 'react';
 import {useRouter} from 'next/navigation';
@@ -42,13 +44,13 @@ export function SharedCapacityAccessForm({localInbox=null}:{localInbox?:string|n
     finally{setBusy(false);}
   }
 
-  return <div className="card shared-capacity-access-card"><Mail aria-hidden="true"/><div><h2>Open your private capacity map</h2><p>View capacity shared with you by transporters. Use your approved email to receive an access code—no account needed.</p></div>
-    {stage==='EMAIL'?<form onSubmit={requestCode}><label>Email<input name="email" type="email" autoComplete="email" value={email} onChange={event=>{setEmail(event.target.value);setNotice('');}} required/></label><button className="button" disabled={busy}><Mail aria-hidden="true"/>{busy?'Checking…':'Continue with email'}</button></form>
-      :<form onSubmit={verifyCode}><label>Email<input name="email" type="email" autoComplete="email" value={email} onChange={event=>setEmail(event.target.value)} required/></label>{localTestCode?<p className="shared-capacity-local-code" role="status"><small>Local test code</small><strong>{localTestCode}</strong><span>This appears only because email delivery is not configured locally.</span></p>:null}<label>One-time code<input name="code" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,'').slice(0,6))} required/></label><button className="button" disabled={busy}><KeyRound aria-hidden="true"/>{busy?'Checking…':'Open private capacity'}</button><button type="button" className="text-button" onClick={()=>{setStage('EMAIL');setCode('');setMessage('');setLocalTestCode('');}}>Use another email</button>{localInbox?<LocalInboxLink url={localInbox}/>:null}</form>}
+  return <div className="card shared-capacity-access-card"><Mail aria-hidden="true"/><div><h2><Text message="Open your private capacity map"/></h2><p><Text message="View capacity shared with you by transporters. Use your approved email to receive an access code—no account needed."/></p></div>
+    {stage==='EMAIL'?<form onSubmit={requestCode}><label><Text message="Email"/><input name="email" type="email" autoComplete="email" value={email} onChange={event=>{setEmail(event.target.value);setNotice('');}} required/></label><button className="button" disabled={busy}><Mail aria-hidden="true"/>{busy?<Text message="Checking…"/>:<Text message="Continue with email"/>}</button></form>
+      :<form onSubmit={verifyCode}><label><Text message="Email"/><input name="email" type="email" autoComplete="email" value={email} onChange={event=>setEmail(event.target.value)} required/></label>{localTestCode?<p className="shared-capacity-local-code" role="status"><small><Text message="Local test code"/></small><strong>{localTestCode}</strong><span><Text message="This appears only because email delivery is not configured locally."/></span></p>:null}<label><Text message="One-time code"/><input name="code" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,'').slice(0,6))} required/></label><button className="button" disabled={busy}><KeyRound aria-hidden="true"/>{busy?<Text message="Checking…"/>:<Text message="Open private capacity"/>}</button><button type="button" className="text-button" onClick={()=>{setStage('EMAIL');setCode('');setMessage('');setLocalTestCode('');}}><Text message="Use another email"/></button>{localInbox?<LocalInboxLink url={localInbox}/>:null}</form>}
     {message?<p className="form-success" role="status">{message}</p>:null}{notice?<p className="form-notice" role="status">{notice}</p>:null}{error?<p className="form-error" role="alert">{error}</p>:null}
   </div>;
 }
 
 function LocalInboxLink({url}:{url:string}){
-  return <a className="auth-inline-link" href={url} target="_blank" rel="noreferrer" aria-label="Open the local inbox in a new tab">Local testing: open the local inbox <span aria-hidden="true">↗</span></a>;
+  return <Localized as="a" copy={["aria-label"]} className="auth-inline-link" href={url} target="_blank" rel="noreferrer" aria-label="Open the local inbox in a new tab"><Text message="Local testing: open the local inbox "/><span aria-hidden="true">↗</span></Localized>;
 }

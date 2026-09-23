@@ -6,8 +6,8 @@ export function PageHeader({
   action,
   icon: Icon
 }: {
-  title: string;
-  subtitle?: string;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
   action?: React.ReactNode;
   icon?: LucideIcon;
 }) {

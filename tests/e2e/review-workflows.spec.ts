@@ -40,7 +40,7 @@ async function deniedReview(page:any,path:string,form:any){
   expect(response.status()).toBe(303);expect(new URL(response.headers().location).searchParams.has('error')).toBe(true);return response;
 }
 
-test('document reviews persist notes and context; approved trucks leave authorization choices',async({page,browser}:{page:any;browser:any},info:any)=>{
+test('document reviews persist notes and context; each truck excludes its pending or approved permission',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(180000);const service=localAuditService();const actor=await auditProvider(service,'review-doc');
   const vehicles:string[]=[];let admin:any;let guest:any;
   const marker=`review-doc-${actor.suffix}`;const bytes=readFileSync('public/icon-192.png');
@@ -54,17 +54,16 @@ test('document reviews persist notes and context; approved trucks leave authoriz
         const pattern='**/_next/static/**/*.js';
         await page.route(pattern,async(route:any)=>{await scriptsReady;await route.continue();});
         try{
-          await page.goto('/app/verification',{waitUntil:'commit'});
+          await page.goto(`/app/verification?truck=${vehicles[index]}`,{waitUntil:'commit'});
           await expect(page.getByLabel('Verification type',{exact:true})).toBeDisabled();
           await expect(page.getByLabel('Profile, driver, or truck',{exact:true})).toBeDisabled();
         }finally{releaseScripts();}
-      }else await page.goto('/app/verification');
+      }else await page.goto(`/app/verification?truck=${vehicles[index]}`);
       await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_AUTHORIZATION');
       await expect(page.getByLabel('Verification type',{exact:true})).toHaveValue('VEHICLE_AUTHORIZATION');
-      const selector=page.getByLabel('Truck',{exact:true});
-      await expect(selector).toBeVisible();
-      if(index===1){await expect(selector.locator('option')).toHaveCount(1);await expect(selector).toHaveValue(vehicles[1]);await page.screenshot({path:info.outputPath('eligible-authorization-truck.png'),fullPage:true});}
-      await selector.selectOption(vehicles[index]);await page.getByLabel('Truck authorization expires',{exact:true}).fill('2099-01-01');
+      await expect(page.getByLabel('Profile, driver, or truck',{exact:true})).toHaveValue(`VEHICLE:${vehicles[index]}`);
+      await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(vehicles[index]);
+      await page.getByLabel('Permission expires',{exact:true}).fill('2099-01-01');
       await page.getByLabel('Document name',{exact:true}).fill(`${marker}-${index}`);
       await page.getByLabel('Verification document',{exact:true}).setInputFiles({name:'synthetic-authorization.png',mimeType:'image/png',buffer:bytes});
       await page.getByRole('button',{name:'Submit for review',exact:true}).click();await expect(page.getByText('Verification submitted for review.',{exact:true})).toBeVisible();
@@ -73,11 +72,10 @@ test('document reviews persist notes and context; approved trucks leave authoriz
       expect(checked(await service.from('verification_requests').select('status').eq('id',stored.id).single()).status).toBe('PENDING');
       await page.reload();
       await expect(page.getByText('Documents already awaiting review are excluded from the choices below. Check Request history for updates.')).toBeVisible();
-      if(index===0){
-        await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_AUTHORIZATION');
-        await expect(page.getByLabel('Truck',{exact:true}).locator('option')).toHaveCount(1);
-        await expect(page.getByLabel('Truck',{exact:true})).toHaveValue(vehicles[1]);
-      }else await expect(page.getByLabel('Verification type',{exact:true}).locator('option[value=VEHICLE_AUTHORIZATION]')).toHaveCount(0);
+      await page.goto(`/app/verification?truck=${vehicles[index]}`);
+      await expect(page.getByLabel('Verification type',{exact:true})).toBeEnabled();
+      await expect(page.getByLabel('Verification type',{exact:true}).locator('option[value=VEHICLE_AUTHORIZATION]')).toHaveCount(0);
+      await expect(page.getByLabel('Verification type',{exact:true}).locator('option[value=VEHICLE_OWNERSHIP]')).toHaveCount(1);
       await page.screenshot({path:info.outputPath(`pending-document-${index}.png`),fullPage:true});
       let review=await openReview(admin.page,'documents',stored.id,marker);
       const file=review.row.getByRole('link',{name:'Open private document'});const href=await file.getAttribute('href');

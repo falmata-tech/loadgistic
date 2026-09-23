@@ -1,3 +1,5 @@
+
+import {Text} from '@/components/localization';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import { canManageProviderVehicles } from '@/lib/fleet.js';
@@ -30,5 +32,5 @@ export default async function WorkspaceMenuPage(){
     {href:'/',label:'Open capacity',detail:'Open the public transport-capacity map.',Icon:MapPinned,public:true},
     {href:'/featured',label:'Public featured programme',detail:'Preview today’s transporter programme.',Icon:Sparkles,public:true}
   ];
-  return <div className="page workspace-menu-page"><PageHeader icon={LayoutGrid} title="More" subtitle="Account, public profile, support, and public discovery."/><section className="workspace-menu-grid">{links.filter(link=>access.granted||['/app/more','/','/featured'].includes(link.href)).map(({href,label,detail,Icon,public:publicLink})=><Link href={href} className="workspace-menu-card" key={href}><span><Icon aria-hidden="true"/></span><div><strong>{label}</strong><p>{detail}</p></div>{publicLink?<ExternalLink aria-hidden="true"/>:null}</Link>)}</section><div className="workspace-menu-signout"><LogoutButton/></div></div>;
+  return <div className="page workspace-menu-page"><PageHeader icon={LayoutGrid} title={<Text message="More"/>} subtitle={<Text message="Account, public profile, support, and public discovery."/>}/><section className="workspace-menu-grid">{links.filter(link=>access.granted||['/app/more','/','/featured'].includes(link.href)).map(({href,label,detail,Icon,public:publicLink})=><Link href={href} className="workspace-menu-card" key={href}><span><Icon aria-hidden="true"/></span><div><strong>{label}</strong><p>{detail}</p></div>{publicLink?<ExternalLink aria-hidden="true"/>:null}</Link>)}</section><div className="workspace-menu-signout"><LogoutButton/></div></div>;
 }

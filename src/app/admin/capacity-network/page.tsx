@@ -1,3 +1,5 @@
+
+import {Text} from '@/components/localization';
 import {Network} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
 import {listLoadgisticSharedCapacity} from '@/lib/private-capacity.js';
@@ -10,5 +12,5 @@ export default async function AdminCapacityNetworkPage({searchParams}:{searchPar
   const user=await requireUser(['ADMIN','SUPPORT'],{allowLimited:true});
   const raw=await searchParams;
   const query={q:raw.q||'',provider:raw.provider||'',truck:raw.truck||'',status:raw.status||'',geometry:raw.geometry||'',vehicleCategory:raw.vehicleCategory||'',loadType:raw.loadType||'',stopOption:raw.stopOption||'',freshness:raw.freshness||'',truckCityPlaceRef:raw.truckCityPlaceRef||'',truckCity:raw.truckCity||'',truckLocationRadiusKm:raw.truckLocationRadiusKm||'',currentAreaPlaceRef:raw.currentAreaPlaceRef||'',currentArea:raw.currentArea||'',currentAreaRadiusKm:raw.currentAreaRadiusKm||'',originPlaceRef:raw.originPlaceRef||'',origin:raw.origin||'',originRadiusKm:raw.originRadiusKm||'',destinationPlaceRef:raw.destinationPlaceRef||'',destination:raw.destination||'',destinationRadiusKm:raw.destinationRadiusKm||'',directionMode:raw.directionMode||'',nearLat:raw.nearLat||'',nearLng:raw.nearLng||'',nearRadiusKm:raw.nearRadiusKm||''};
-  return <div className="page admin-capacity-network"><PageHeader icon={Network} title="Assisted matching capacity" subtitle="Private truck availability explicitly shared with Loadgistic."/><section className="home-market-shell public-market-console"><PublicCapacityFeed initial={await listLoadgisticSharedCapacity(user,query)} query={query} searchPath="/admin/capacity-network" apiPath="/api/admin/capacity-network"/></section></div>;
+  return <div className="page admin-capacity-network"><PageHeader icon={Network} title={<Text message="Assisted matching capacity"/>} subtitle={<Text message="Private truck availability explicitly shared with Loadgistic."/>}/><section className="home-market-shell public-market-console"><PublicCapacityFeed initial={await listLoadgisticSharedCapacity(user,query)} query={query} searchPath="/admin/capacity-network" apiPath="/api/admin/capacity-network"/></section></div>;
 }

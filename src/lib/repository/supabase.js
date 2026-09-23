@@ -1,5 +1,6 @@
+import {verificationBadgesFromApproved,truckDocumentBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
-import {loadPublicProviderFleet,publicFleetVehicleIds} from '../public-provider-paging.js';
+import {loadPublicProviderFleet,publicFleetVehicleIds,publicProviderRegularService} from '../public-provider-paging.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
 import {randomUUID} from 'node:crypto';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
@@ -95,25 +96,15 @@ function validPlacePoints(value,minimum){
   return points.length>=minimum?points:[];
 }
 
-function verificationBadges(subjectType,records){
-  const latest=new Map();
-  for(const record of records||[])if(!latest.has(record.verification_type))latest.set(record.verification_type,record);
-  const required=subjectType==='VEHICLE'
-    ?[latest.has('VEHICLE_AUTHORIZATION')?'VEHICLE_AUTHORIZATION':'VEHICLE_OWNERSHIP']
-    :subjectType==='ORGANIZATION'?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']:['IDENTITY','DRIVER_IDENTITY'];
-  const today=ethiopiaDate();
-  return required.map(type=>{
-    const record=latest.get(type);
-    const expired=Boolean(record?.expires_on&&record.expires_on<today);
-    return {type,verified:Boolean(record&&!expired),expired,reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null};
-  });
-}
+function verificationBadges(subjectType,records){return verificationBadgesFromApproved(subjectType,records);}
 
-function truckAuthorizationBadge(records,vehicleId,vehicleLabel){
-  const record=(records||[]).find(item=>item.verification_type==='VEHICLE_AUTHORIZATION'&&item.related_vehicle_id===vehicleId);
-  const expired=Boolean(record?.expires_on&&record.expires_on<ethiopiaDate());
-  return {type:'TRUCK_AUTHORIZATION',verified:Boolean(record&&!expired),expired,
-    reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null,vehicleId,vehicleLabel};
+async function capacityOwnerBadges(client,rows){
+  const organizationIds=[...new Set(rows.map(row=>row.provider_organization_id).filter(Boolean))];
+  const providerIds=[...new Set(rows.map(row=>row.provider_profile_id).filter(Boolean))];
+  if(!rows.length)return new Map();
+  const {data,error}=await client.rpc('capacity_owner_documents',{organization_ids:organizationIds,provider_ids:providerIds});
+  if(error)throw new Error('SUPABASE_CAPACITY_OWNER_DOCUMENTS_FAILED',{cause:error});
+  return new Map((data||[]).map(owner=>[owner.subject_id,verificationBadges(owner.subject_type,owner.documents)]));
 }
 
 function providerKindLabel(value){
@@ -159,6 +150,7 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
   }
   const hasMore=rows.length>pageSize;
   const selected=rows.slice(0,pageSize);
+  const ownerBadges=await capacityOwnerBadges(client,selected);
   const items=selected.map(row=>{
     const recurring=(row.recurring_corridors||[]).slice(0,1).map(signal=>({
       ...signal,geometry:signal.geometry==='RADIUS'?'RADIUS':'ROUTE',
@@ -175,10 +167,9 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
       recurring_corridors:recurring,current_route_points:validPlacePoints(row.current_route_points,row.availability_geometry==='ROUTE'?2:0),
       capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
       driver_kind:driverKind,driver_kind_label:providerKindLabel(row.provider_kind),
+      owner_verification_badges:ownerBadges.get(row.provider_organization_id||row.provider_profile_id)||[],
       driver_verification_badges:verificationBadges(row.provider_kind==='FLEET_TRANSPORTER'?'DRIVER':'PROVIDER_PROFILE',row.driver_documents),
-      truck_verification_badges:row.provider_kind==='OWNER_OPERATOR'
-        ?verificationBadges('VEHICLE',row.vehicle_documents)
-        :[truckAuthorizationBadge(row.authorization_documents,row.vehicle_id,row.platform_number)],
+      truck_verification_badges:truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number),
       possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
       near_center_distance_km:undefined,updated_label:publicBoardTime(row.updated_at),
       capacity_update_stage:capacityAge.stage,capacity_updated_label:capacityAge.label,
@@ -280,9 +271,7 @@ function projectPrivateCapacityRow(row,hasNear,nearLat,nearLng){
     capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
     driver_kind:driverKind,driver_kind_label:providerKindLabel(row.provider_kind),
     driver_verification_badges:verificationBadges(row.provider_kind==='FLEET_TRANSPORTER'?'DRIVER':'PROVIDER_PROFILE',row.driver_documents),
-    truck_verification_badges:row.provider_kind==='OWNER_OPERATOR'
-      ?verificationBadges('VEHICLE',row.vehicle_documents)
-      :[truckAuthorizationBadge(row.authorization_documents,row.vehicle_id,row.platform_number)],
+    truck_verification_badges:truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number),
     possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
     updated_label:publicBoardTime(row.updated_at),capacity_update_stage:capacityAge.stage,
     capacity_updated_label:capacityAge.label,capacity_confirmation_needed:capacityAge.confirmAvailability,
@@ -320,9 +309,10 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_PROJECTION_FAILED',error);
   const rows=(data||[]).map(row=>row.payload||row);
   const selected=rows.slice(0,pageSize);
+  const ownerBadges=await capacityOwnerBadges(client,selected);
   const items=selected.map(row=>{
     const item=projectPrivateCapacityRow(row,hasNear,nearLat,nearLng);
-    return {...item,geographic_match_label:capacityGeographicMatch(item,filters,originPlace,destinationPlace,areaPlace).label};
+    return {...item,owner_verification_badges:ownerBadges.get(row.provider_organization_id||row.provider_profile_id)||[],geographic_match_label:capacityGeographicMatch(item,filters,originPlace,destinationPlace,areaPlace).label};
   });
   const hasMore=rows.length>pageSize;
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};
@@ -419,16 +409,18 @@ export async function getSupabasePublicProvider(handle,options={}){
     ?{requested_organization_id:owner.id,requested_provider_profile_id:null}
     :{requested_organization_id:null,requested_provider_profile_id:owner.id};
   const reviewOwnerColumn=owner.kind==='ORGANIZATION'?'provider_organization_id':'provider_profile_id';
-  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,providerVerificationResult]=await Promise.all([
+  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,providerVerificationResult,regularServiceResult]=await Promise.all([
     client.rpc('public_provider_page_details',reviewOwner),
     loadPublicProviderFleet(client,owner,options.truckPage),
     client.from('provider_reviews').select('id,rating,note,created_at,dispute_status').eq(reviewOwnerColumn,owner.id).eq('status','PUBLISHED').order('created_at',{ascending:false}).limit(20),
     client.rpc('public_provider_review_summary',reviewOwner),
     client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
       .eq('subject_type',owner.kind).eq('subject_id',owner.id).eq('status','APPROVED')
-      .order('reviewed_at',{ascending:false,nullsFirst:false})
+      .order('reviewed_at',{ascending:false,nullsFirst:false}),
+    client.from('profile_routes').select('geometry,origin,destination,route_points_json,area_center_label,area_boundary_json')
+      .eq(owner.kind==='ORGANIZATION'?'organization_id':'provider_profile_id',owner.id).order('id').limit(1)
   ]);
-  const initialError=pageResult.error||reviewResult.error||reviewSummaryResult.error||providerVerificationResult.error;
+  const initialError=pageResult.error||reviewResult.error||reviewSummaryResult.error||providerVerificationResult.error||regularServiceResult.error;
   if(initialError)throw new Error('SUPABASE_PUBLIC_PROVIDER_FAILED',{cause:initialError});
   const page=pageResult.data;
   if(!page||!vehicleResult)return null;
@@ -494,21 +486,11 @@ export async function getSupabasePublicProvider(handle,options={}){
       assigned_driver_phone:(owner.kind==='ORGANIZATION'?driverPhoneById.get(driverId):null)||publicContactPhone,
       driver_kind:driverKind,driver_kind_label:providerKindLabel(providerKind),
       driver_verification_badges:subjectId?verificationBadges(subjectType,documentsFor(subjectType,subjectId)):verificationBadges('DRIVER',[]),
-      truck_verification_badges:providerKind==='OWNER_OPERATOR'?verificationBadges('VEHICLE',documentsFor('VEHICLE',vehicle.id))
-        :[truckAuthorizationBadge(documentsFor(subjectType,subjectId),vehicle.id,vehicle.platform_number)],capacity:null};
+      truck_verification_badges:truckDocumentBadges(documentsFor('VEHICLE',vehicle.id),documentsFor(subjectType,subjectId),vehicle.id,vehicle.platform_number),capacity:null};
   });
   const reviews=reviewResult.data||[];
   const reviewSummary=reviewSummaryResult.data||{};
   const providerBadges=verificationBadges(owner.kind,providerVerificationResult.data||[]);
-  if(owner.kind==='PROVIDER_PROFILE'){
-    const summary=vehicleResult.evidence;
-    if(summary){
-      const records=summary.document?[summary.document]:[];
-      const evidence=providerKind==='OWNER_OPERATOR'?verificationBadges('VEHICLE',records)[0]
-        :truckAuthorizationBadge(records,summary.vehicle_id,summary.platform_number);
-      if(evidence)providerBadges.push(evidence);
-    }
-  }
   const providerName=owner.organization?.name||owner.profile?.business_name;
   const providerHandle=owner.organization?.handle||owner.profile?.handle;
   return {name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:page.services,
@@ -522,6 +504,7 @@ export async function getSupabasePublicProvider(handle,options={}){
     provider_kind:providerKind,provider_kind_label:providerKind==='FLEET_TRANSPORTER'?'Fleet transporter':providerKindLabel(providerKind),
     fleet_page:{page:vehicleResult.page,pageCount:vehicleResult.page_count,total:vehicleResult.total,pageSize:vehicleResult.page_size},
     vehicles:trucks.map(({capacity:unusedCapacity,...vehicle})=>vehicle),trucks,capacities,reviews,
+    regular_service:publicProviderRegularService(regularServiceResult.data?.[0]),
     verification_badges:providerBadges,review_count:Number(reviewSummary.review_count||0),
     average_rating:reviewSummary.average_rating==null?null:Number(reviewSummary.average_rating)};
 }

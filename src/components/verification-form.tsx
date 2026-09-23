@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text,Localized} from '@/components/localization';
 import React from 'react';
 import { BadgeCheck, FileCheck2, FileText, ShieldCheck, Upload } from 'lucide-react';
 
@@ -19,31 +21,32 @@ const labels:Record<string,string>={
   BUSINESS_ADDRESS:'Business address',
   DRIVER_IDENTITY:'Driver license',
   VEHICLE_OWNERSHIP:'Truck ownership',
-  VEHICLE_AUTHORIZATION:'Truck authorization'
+  VEHICLE_AUTHORIZATION:'Permission to use truck'
 };
 
-export function VerificationForm({subjects}:{subjects:Subject[]}) {
+export function VerificationForm({subjects,initialTruckId}:{subjects:Subject[];initialTruckId?:string}) {
   const [ready,setReady]=React.useState(false);
   React.useEffect(()=>setReady(true),[]);
   const availableSubjects=subjects.filter(subject=>subject.allowed_types.length);
   const pendingCount=subjects.reduce((count,subject)=>count+(subject.pending_count||0),0);
-  const [key,setKey]=React.useState(availableSubjects.length?`${availableSubjects[0].subject_type}:${availableSubjects[0].subject_id}`:'');
+  const initial=availableSubjects.find(subject=>subject.subject_type==='VEHICLE'&&subject.subject_id===initialTruckId);
+  const [key,setKey]=React.useState(initial?`VEHICLE:${initial.subject_id}`:availableSubjects.length?`${availableSubjects[0].subject_type}:${availableSubjects[0].subject_id}`:'');
   const selected=availableSubjects.find(subject=>`${subject.subject_type}:${subject.subject_id}`===key);
   const [verificationType,setVerificationType]=React.useState(selected?.allowed_types[0]||'');
   React.useEffect(()=>setVerificationType(selected?.allowed_types[0]||''),[key,selected?.allowed_types]);
-  if(!availableSubjects.length)return <section className="card verification-complete"><ShieldCheck aria-hidden="true"/><div><h2>{pendingCount?'Documents in review':'No documents to submit'}</h2><p className="meta">{pendingCount?'Your submitted documents are awaiting review. Check Request history for updates. Pending documents are not yet approved.':subjects.length?'All document categories currently available here have current approval. Documents remain optional.':'No eligible profiles or trucks are available for document submission.'}</p></div></section>;
+  if(!availableSubjects.length)return <section className="card verification-complete"><ShieldCheck aria-hidden="true"/><div><h2>{pendingCount?<Text message="Documents in review"/>:<Text message="No documents to submit"/>}</h2><p className="meta">{pendingCount?<Text message="Your submitted documents are awaiting review. Check Request history for updates. Pending documents are not yet approved."/>:subjects.length?<Text message="All document categories currently available here have current approval. Documents remain optional."/>:<Text message="No eligible profiles or trucks are available for document submission."/>}</p></div></section>;
   return <form action="/api/verifications" method="post" encType="multipart/form-data" className="form-card stack">
-    <div className="section-heading-icon"><FileCheck2 aria-hidden="true"/><div><h2>Submit verification</h2><p className="meta">Documents are private and reviewed by Loadgistic administrators.</p></div></div>
-    {pendingCount?<p className="meta">Documents already awaiting review are excluded from the choices below. Check Request history for updates.</p>:null}
+    <div className="section-heading-icon"><FileCheck2 aria-hidden="true"/><div><h2><Text message="Submit verification"/></h2><p className="meta"><Text message="Documents are private and reviewed by Loadgistic administrators."/></p></div></div>
+    {pendingCount?<p className="meta"><Text message="Documents already awaiting review are excluded from the choices below. Check Request history for updates."/></p>:null}
     <div className="form-grid">
-      <div className="form-group full"><label htmlFor="verification-subject"><BadgeCheck aria-hidden="true"/>Profile, driver, or truck</label><select id="verification-subject" disabled={!ready} value={key} onChange={event=>setKey(event.target.value)} required>{availableSubjects.map(subject=><option key={`${subject.subject_type}:${subject.subject_id}`} value={`${subject.subject_type}:${subject.subject_id}`}>{subject.name} · {subject.type}</option>)}</select></div>
+      <div className="form-group full"><label htmlFor="verification-subject"><BadgeCheck aria-hidden="true"/><Text message="Profile, driver, or truck"/></label><select id="verification-subject" disabled={!ready} value={key} onChange={event=>setKey(event.target.value)} required>{availableSubjects.map(subject=><option key={`${subject.subject_type}:${subject.subject_id}`} value={`${subject.subject_type}:${subject.subject_id}`}>{subject.name} · {subject.type}</option>)}</select></div>
       <input type="hidden" name="subjectType" value={selected?.subject_type||''}/>
       <input type="hidden" name="subjectId" value={selected?.subject_id||''}/>
-      <div className="form-group"><label htmlFor="verification-type"><ShieldCheck aria-hidden="true"/>Verification type</label><select id="verification-type" name="verificationType" disabled={!ready} value={verificationType} onChange={event=>setVerificationType(event.target.value)} required>{selected?.allowed_types.map(type=><option value={type} key={type}>{labels[type]||type}</option>)}</select></div>
-      {verificationType==='VEHICLE_AUTHORIZATION'?<><div className="form-group"><label htmlFor="related-vehicle">Truck</label><select id="related-vehicle" name="relatedVehicleId" required>{selected?.vehicles?.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.label}</option>)}</select></div><div className="form-group"><label htmlFor="authorization-expiry">Truck authorization expires</label><input id="authorization-expiry" name="expiresOn" type="date" min={new Date(Date.now()+86_400_000).toISOString().slice(0,10)} required/></div></>:null}
-      <div className="form-group"><label htmlFor="document-name"><FileText aria-hidden="true"/>Document name</label><input id="document-name" name="documentName" required placeholder="Example: Business license"/></div>
-      <div className="form-group full"><label htmlFor="verification-file"><Upload aria-hidden="true"/> Verification document</label><input id="verification-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required/></div>
+      <div className="form-group"><label htmlFor="verification-type"><ShieldCheck aria-hidden="true"/><Text message="Verification type"/></label><select id="verification-type" name="verificationType" disabled={!ready} value={verificationType} onChange={event=>setVerificationType(event.target.value)} required>{selected?.allowed_types.map(type=><option value={type} key={type}><Text message={labels[type]||type}/></option>)}</select></div>
+      {verificationType==='VEHICLE_AUTHORIZATION'?<>{selected?.subject_type==='VEHICLE'?<input type="hidden" name="relatedVehicleId" value={selected.subject_id}/>:<div className="form-group"><label htmlFor="related-vehicle"><Text message="Truck"/></label><select id="related-vehicle" name="relatedVehicleId" required>{selected?.vehicles?.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.label}</option>)}</select></div>}<div className="form-group"><label htmlFor="authorization-expiry"><Text message="Permission expires"/></label><input id="authorization-expiry" name="expiresOn" type="date" min={new Date(Date.now()+86_400_000).toISOString().slice(0,10)} required/></div></>:null}
+      <div className="form-group"><label htmlFor="document-name"><FileText aria-hidden="true"/><Text message="Document name"/></label><Localized as="input" copy={["placeholder"]} id="document-name" name="documentName" required placeholder="Example: Business license"/></div>
+      <div className="form-group full"><label htmlFor="verification-file"><Upload aria-hidden="true"/><Text message=" Verification document"/></label><input id="verification-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required/></div>
     </div>
-    <button className="button icon-button-label" type="submit"><Upload aria-hidden="true"/>Submit for review</button>
+    <button className="button icon-button-label" type="submit"><Upload aria-hidden="true"/><Text message="Submit for review"/></button>
   </form>;
 }

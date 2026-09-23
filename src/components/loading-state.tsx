@@ -1,13 +1,14 @@
+import {Localized,Text} from './localization';
 export function LoadingIndicator({label='Loading…',className=''}:{label?:string;className?:string}){
   return <span className={`loading-indicator ${className}`} role="status">
-    <span className="sr-only">{label}</span>
+    <span className="sr-only"><Text message={label}/></span>
     <span className="loading-progress-track" aria-hidden="true"><span/></span>
   </span>;
 }
 
 export function SurfaceSkeleton({kind='records',label='Loading content',className=''}:{kind?:'records'|'map'|'form'|'chat';label?:string;className?:string}){
-  return <section className={`surface-skeleton skeleton-${kind} ${className}`} aria-busy="true" aria-label={label}>
-    <span className="sr-only" role="status">{label}</span>
+  return <Localized as="section" copy={["aria-label"]} className={`surface-skeleton skeleton-${kind} ${className}`} aria-busy="true" aria-label={label}>
+    <span className="sr-only" role="status"><Text message={label}/></span>
     <div className="skeleton-decoration" aria-hidden="true">
       {kind==='map'?<>
         <svg className="skeleton-map-canvas" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -21,5 +22,5 @@ export function SurfaceSkeleton({kind='records',label='Loading content',classNam
         <div className="skeleton-items">{Array.from({length:kind==='chat'?3:kind==='form'?4:6},(_,index)=><div className="skeleton-item" key={index}><i/><span><i/><i/></span></div>)}</div>
       </>}
     </div>
-  </section>;
+  </Localized>;
 }

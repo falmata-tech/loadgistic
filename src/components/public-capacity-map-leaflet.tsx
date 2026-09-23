@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text,Localized} from '@/components/localization';
 import React from 'react';
 import L from 'leaflet';
 import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
@@ -199,16 +201,16 @@ function CapacityMarkers({items,selectedId,onSelect}:{items:Signal[];selectedId:
     const groupItems=group.memberIds.map(id=>itemById.get(id)).filter((item):item is Signal=>Boolean(item));
     const groupPoint:[number,number]=[group.anchor.lat,group.anchor.lng];
     const visualOffset:[number,number]=[group.visualOffset.x,group.visualOffset.y];
-    if(groupItems.length===1){const item=groupItems[0];const accessibleLabel=truckMarkerAccessibleLabel(item);return <Marker key={group.key} position={groupPoint} icon={truckMarker(item,false,zoom,visualOffset)} title={accessibleLabel} alt={accessibleLabel} eventHandlers={markerActivation(()=>onSelect(item.id))}><Tooltip direction="top" offset={[visualOffset[0],(zoom<=6?-84:-98)+visualOffset[1]]} opacity={1} className={`capacity-marker-tooltip ${item.status==='PARTIAL'?'partial':'empty'}`}>{item.cargo_configuration||'Truck'} · {item.status==='PARTIAL'?'Partial':'Empty'}<br/>{item.provider_name}<br/>{item.capacity_updated_label||'Capacity update unavailable'}<br/>{item.location_updated_label||'Location update unavailable'}<br/>{item.capacity_confirmation_needed?'Call to confirm availability':item.availability_geometry==='RADIUS'?'Service area · select for details':'Capacity route · select for details'}</Tooltip></Marker>;}
+    if(groupItems.length===1){const item=groupItems[0];const accessibleLabel=truckMarkerAccessibleLabel(item);return <Marker key={group.key} position={groupPoint} icon={truckMarker(item,false,zoom,visualOffset)} title={accessibleLabel} alt={accessibleLabel} eventHandlers={markerActivation(()=>onSelect(item.id))}><Tooltip direction="top" offset={[visualOffset[0],(zoom<=6?-84:-98)+visualOffset[1]]} opacity={1} className={`capacity-marker-tooltip ${item.status==='PARTIAL'?'partial':'empty'}`}>{item.cargo_configuration||'Truck'} · {item.status==='PARTIAL'?<Text message="Partial"/>:<Text message="Empty"/>}<br/>{item.provider_name}<br/>{item.capacity_updated_label||'Capacity update unavailable'}<br/>{item.location_updated_label||'Location update unavailable'}<br/>{item.capacity_confirmation_needed?<Text message="Call to confirm availability"/>:item.availability_geometry==='RADIUS'?<Text message="Service area · select for details"/>:<Text message="Capacity route · select for details"/>}</Tooltip></Marker>;}
     const statusLabel=group.status==='PARTIAL'?'Partial':'Empty';
     const statusClass=group.status==='PARTIAL'?'partial':'empty';
     const icon=L.divIcon({className:`capacity-map-cluster ${statusClass}`,html:`<span>${groupItems.length}</span><small>${statusLabel}</small>`,iconSize:[58,58],iconAnchor:[29-visualOffset[0],29-visualOffset[1]]});
     return <Marker key={group.key} position={groupPoint} icon={icon} title={`${groupItems.length} ${statusLabel} trucks`} eventHandlers={zoom<15?markerActivation(()=>map.setView(groupPoint,Math.min(15,zoom+2),{animate:false})):undefined}>
-      <Tooltip direction="top" offset={visualOffset} className={`capacity-marker-tooltip ${statusClass}`}>{groupItems.length} {statusLabel} trucks<br/>{zoom<15?'Zoom in to separate nearby trucks':'Select this group to choose a truck'}</Tooltip>
+      <Tooltip direction="top" offset={visualOffset} className={`capacity-marker-tooltip ${statusClass}`}>{groupItems.length} {statusLabel}<Text message=" trucks"/><br/>{zoom<15?<Text message="Zoom in to separate nearby trucks"/>:<Text message="Select this group to choose a truck"/>}</Tooltip>
       {zoom>=15?<Popup className={`capacity-cluster-picker ${statusClass}`} minWidth={240} maxWidth={300} autoPan={false}>
         <div className="capacity-cluster-picker-content" role="group" aria-label={`${statusLabel} trucks in this area`}>
-          <strong>{groupItems.length} {statusLabel.toLowerCase()} trucks nearby</strong>
-          <span>Select a truck to inspect its capacity.</span>
+          <strong>{groupItems.length} {statusLabel.toLowerCase()}<Text message=" trucks nearby"/></strong>
+          <span><Text message="Select a truck to inspect its capacity."/></span>
           <div>{groupItems.map(item=><button key={item.id} type="button" onClick={()=>onSelect(item.id)}><b>{item.cargo_configuration||'Truck'}</b><small>{item.provider_name}</small></button>)}</div>
         </div>
       </Popup>:null}
@@ -252,13 +254,13 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
   const currentClosed=selected?.availability_geometry==='RADIUS'||Boolean(currentPoints?.length&&currentPoints[0].lat===currentPoints.at(-1)?.lat&&currentPoints[0].lng===currentPoints.at(-1)?.lng);
   const currentPath:SignalPath|undefined=selected?.current_signal_geometry_visible!==false&&currentPoints&&currentPoints.length>=2?{positions:currentPoints.map(point=>[point.lat,point.lng]),closed:currentClosed,offset:currentClosed?-12:-6}:undefined;
   const visibleSignalInfos=pinnedInfo?[pinnedInfo]:hoveredInfo?[hoveredInfo]:[];
-  return <div className="public-capacity-map" aria-label="Map of available trucks">
+  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available trucks">
     <MapContainer center={[9.1,40.2]} zoom={7} minZoom={5} maxZoom={15} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom>
       <BaseMapTiles/>
       <ResizeMap/>
       <ProgressiveCapacityLoader onExplore={onExplore}/>
       <Bounds items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={keepItemsInView}/>
-      {viewer?<CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{className:'public-viewer-location-marker',color:'#fff',fillColor:'#1a73e8',fillOpacity:1,weight:3}}><Tooltip direction="top" offset={[0,-10]} opacity={1} className="capacity-location-tooltip">Your location</Tooltip></CircleMarker>:null}
+      {viewer?<CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{className:'public-viewer-location-marker',color:'#fff',fillColor:'#1a73e8',fillOpacity:1,weight:3}}><Tooltip direction="top" offset={[0,-10]} opacity={1} className="capacity-location-tooltip"><Text message="Your location"/></Tooltip></CircleMarker>:null}
       {items.filter(item=>item.id===selectedId).map(item=><React.Fragment key={item.id}>
         {locationInfo&&hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)?<Circle center={[Number(item.location_lat),Number(item.location_lng)]} radius={(Number(item.location_precision_km)||20)*1000} eventHandlers={signalEvents(locationInfo)} pathOptions={{className:'map-location-privacy-circle map-interactive-signal',color:'#1a73e8',weight:8,fill:false,dashArray:'7 7'}}/>:null}
         {radiusInfo&&item.status==='EMPTY'&&item.availability_geometry==='RADIUS'&&(item.capacity_area_boundary||[]).length>=3?<OffsetPolyline closed offset={-12} positions={(item.capacity_area_boundary||[]).map(point=>[point.lat,point.lng])} eventHandlers={signalEvents(radiusInfo)} pathOptions={{className:`map-service-area map-interactive-signal capacity-${availabilityAccent}`,color:currentSignalColor,weight:9,fill:false}}/>:null}
@@ -266,10 +268,10 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
         {(item.recurring_corridors||[]).slice(0,1).map((signal,index)=>{const info=regularInfos[index];if(!info)return null;if(signal.geometry==='RADIUS'){const points=signal.area_boundary||[];if(points.length<3)return null;return <OffsetPolyline avoid={currentPath} closed offset={12} key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:8,dashArray:'5 9',fill:false}}/>;}const points=signal.route_points||[];if(points.length<2)return null;return <OffsetPolyline avoid={currentPath} key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} offset={6} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:7,dashArray:'5 9',opacity:.9}}/>;})}
       </React.Fragment>)}
       <CapacityMarkers items={items} selectedId={selectedId} onSelect={onSelect}/>
-    {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<button type="button" onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</button>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}
+    {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<Localized as="button" copy={["aria-label"]} type="button" onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</Localized>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}
     </MapContainer>
-    <div className="ethiopia-map-label">Ethiopia capacity · East Africa view</div>
+    <div className="ethiopia-map-label"><Text message="Ethiopia capacity · East Africa view"/></div>
 
-    <details className="public-map-legend" open={legendOpen} onToggle={event=>setLegendOpen(event.currentTarget.open)}><summary>Map key</summary><div className="public-map-legend-items"><span className="empty-status">Empty truck</span><span className="partial-status">Partial truck</span><span className="privacy">Approximate location</span><span className="radius">Empty service area</span><span className="empty-route">Empty capacity route</span><span className="partial-route">Partial capacity route</span><span className="corridor">Regular service</span></div></details>
-  </div>;
+    <details className="public-map-legend" open={legendOpen} onToggle={event=>setLegendOpen(event.currentTarget.open)}><summary><Text message="Map key"/></summary><div className="public-map-legend-items"><span className="empty-status"><Text message="Empty truck"/></span><span className="partial-status"><Text message="Partial truck"/></span><span className="privacy"><Text message="Approximate location"/></span><span className="radius"><Text message="Empty service area"/></span><span className="empty-route"><Text message="Empty capacity route"/></span><span className="partial-route"><Text message="Partial capacity route"/></span><span className="corridor"><Text message="Regular service"/></span></div></details>
+  </Localized>;
 }

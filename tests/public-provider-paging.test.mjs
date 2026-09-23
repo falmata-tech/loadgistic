@@ -23,3 +23,15 @@ test('fleet adapter scopes both provider types, preserves server clamping and fa
   await assert.rejects(loadPublicProviderFleet({rpc:async()=>({error:{message:'private internal detail'}})},{id,kind:'ORGANIZATION'},1),/SUPABASE_PUBLIC_PROVIDER_FLEET_FAILED/);
   await assert.rejects(loadPublicProviderFleet({rpc:async()=>({data:{...response,page_size:100},error:null})},{id,kind:'ORGANIZATION'},1));
 });
+
+test('provider regular service exposes only bounded place labels, independent of truck pages',async()=>{
+  const {publicProviderRegularService}=await import('../src/lib/public-provider-paging.js');
+  const projection=publicProviderRegularService({geometry:'ROUTE',origin:'A',destination:'B',created_by:'private-user',
+    route_points_json:[{label:'A',lat:9,lng:38,private_note:'secret'},{label:'B',lat:8,lng:39}],
+    storage_path:'private-file',private_phone:'private-contact'});
+  assert.deepEqual(projection,{geometry:'ROUTE',route_labels:['A','B'],area_center_label:'',area_labels:[]});
+  const area=publicProviderRegularService({geometry:'RADIUS',area_center_label:'Adama',area_boundary_json:Array.from({length:20},(_,i)=>({label:`Place ${i}`}))});
+  assert.equal(area.area_labels.length,5);assert.equal(area.area_center_label,'Adama');
+  assert.deepEqual(publicProviderRegularService({origin:'A',destination:'B'}).route_labels,['A','B']);
+  assert.equal(publicProviderRegularService(null),null);
+});

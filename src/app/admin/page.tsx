@@ -1,3 +1,5 @@
+
+import {Text} from '@/components/localization';
 import Link from 'next/link';
 import {Activity,ArrowRight,BadgeDollarSign,Building2,ClipboardCheck,Gauge,Headphones,Network,Route,Settings2,Sparkles,Truck,UserRoundCog,Users} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
@@ -27,13 +29,13 @@ export default async function AdminOverviewPage(){
   const user=await requireUser(['ADMIN'],{allowLimited:true});
   const data:any=await getAdminOperations(user,'',{view:'WORKSPACES',page:1,pageSize:1});
   return <div className="page admin-overview-page">
-    <PageHeader icon={Activity} title="Administration" subtitle="Platform overview"/>
+    <PageHeader icon={Activity} title={<Text message="Administration"/>} subtitle={<Text message="Platform overview"/>}/>
     <section className="admin-overview-section" aria-labelledby="admin-records-heading">
-      <header><div><span>Platform data</span><h2 id="admin-records-heading">Records</h2></div><Link className="button secondary small" href="/admin/operations">Open all records<ArrowRight aria-hidden="true"/></Link></header>
+      <header><div><span><Text message="Platform data"/></span><h2 id="admin-records-heading"><Text message="Records"/></h2></div><Link className="button secondary small" href="/admin/operations"><Text message="Open all records"/><ArrowRight aria-hidden="true"/></Link></header>
       <div className="admin-overview-records">{records.map(({view,label,count,detail,Icon})=><Link href={`/admin/operations?view=${view}`} key={view}><span><Icon aria-hidden="true"/></span><div><strong>{label}</strong><small>{detail}</small></div>{count?<b>{String(data.counts[count]??0)}</b>:<ArrowRight aria-hidden="true"/>}</Link>)}</div>
     </section>
     <section className="admin-overview-section" aria-labelledby="admin-work-heading">
-      <header><div><span>Work queues</span><h2 id="admin-work-heading">Management</h2></div></header>
+      <header><div><span><Text message="Work queues"/></span><h2 id="admin-work-heading"><Text message="Management"/></h2></div></header>
       <div className="admin-overview-work">{workAreas.map(({href,label,detail,Icon})=><Link href={href} key={href}><span><Icon aria-hidden="true"/></span><div><strong>{label}</strong><small>{detail}</small></div><ArrowRight aria-hidden="true"/></Link>)}</div>
     </section>
   </div>;

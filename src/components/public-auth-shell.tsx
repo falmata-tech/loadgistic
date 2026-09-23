@@ -1,18 +1,20 @@
+
+import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import type {ReactNode} from 'react';
 import {ArrowLeft, MapPinned} from 'lucide-react';
 
 type PublicAuthShellProps={
   variant:'login'|'signup';
-  taskKicker:string;
-  title:string;
-  description:string;
-  contextKicker?:string;
-  contextTitle?:string;
-  contextDescription?:string;
-  contextNoteTitle?:string;
-  contextNote?:string;
-  footerNote?:string;
+  taskKicker:ReactNode;
+  title:ReactNode;
+  description:ReactNode;
+  contextKicker?:ReactNode;
+  contextTitle?:ReactNode;
+  contextDescription?:ReactNode;
+  contextNoteTitle?:ReactNode;
+  contextNote?:ReactNode;
+  footerNote?:ReactNode;
   feedback?:ReactNode;
   children:ReactNode;
 };
@@ -26,28 +28,28 @@ export function PublicAuthShell({
       <section className={`auth-access-shell auth-shell ${variant}`} data-testid="auth-access-shell">
         <div className="auth-task-panel">
           <header className="auth-task-header">
-            <span>{taskKicker}</span>
-            <h1>{title}</h1>
-            <p>{description}</p>
+            <span>{typeof taskKicker==='string'?<Text message={taskKicker}/>: taskKicker}</span>
+            <h1>{typeof title==='string'?<Text message={title}/>: title}</h1>
+            <p>{typeof description==='string'?<Text message={description}/>: description}</p>
           </header>
           {feedback}
           <div className="auth-task-content">{children}</div>
           <footer className="auth-task-footer">
-            {footerNote?<p>{footerNote}</p>:null}
-            <Link className="auth-market-link" href="/"><ArrowLeft aria-hidden="true"/>Back to Open capacity</Link>
+            {footerNote?<p>{typeof footerNote==='string'?<Text message={footerNote}/>: footerNote}</p>:null}
+            <Link className="auth-market-link" href="/"><ArrowLeft aria-hidden="true"/><Text message="Back to Open capacity"/></Link>
           </footer>
         </div>
-        {variant!=='login'?<aside className="auth-context-panel" aria-label="About Loadgistic transporter access">
+        {variant!=='login'?<Localized as="aside" copy={["aria-label"]} className="auth-context-panel" aria-label="About Loadgistic transporter access">
           <div>
-            <span>{contextKicker}</span>
-            <h2>{contextTitle}</h2>
-            <p>{contextDescription}</p>
+            <span>{typeof contextKicker==='string'?<Text message={contextKicker}/>: contextKicker}</span>
+            <h2>{typeof contextTitle==='string'?<Text message={contextTitle}/>: contextTitle}</h2>
+            <p>{typeof contextDescription==='string'?<Text message={contextDescription}/>: contextDescription}</p>
           </div>
           {contextNoteTitle&&contextNote?<div className="auth-context-note">
             <MapPinned aria-hidden="true"/>
-            <span><strong>{contextNoteTitle}</strong><small>{contextNote}</small></span>
+            <span><strong>{typeof contextNoteTitle==='string'?<Text message={contextNoteTitle}/>: contextNoteTitle}</strong><small>{typeof contextNote==='string'?<Text message={contextNote}/>: contextNote}</small></span>
           </div>:null}
-        </aside>:null}
+        </Localized>:null}
       </section>
     </div>
   </main>;

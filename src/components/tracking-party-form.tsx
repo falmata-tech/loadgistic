@@ -1,5 +1,7 @@
 'use client';
 
+
+import {Localized,Text} from '@/components/localization';
 import React from 'react';
 import {useRouter} from 'next/navigation';
 import {MailPlus} from 'lucide-react';
@@ -24,11 +26,11 @@ export function TrackingPartyForm({shipmentId}:{shipmentId:string}){
       setResult({error:'We could not confirm the save. Refresh Tracking and check the party list before trying again.'});
     }finally{busy.current=false;setSaving(false);}
   }
-  return <form action={`/api/provider-shipments/${shipmentId}/recipients`} method="post" onSubmit={submit} className="stack" aria-label="Add tracking party" aria-busy={saving}>
+  return <Localized as="form" copy={["aria-label"]} action={`/api/provider-shipments/${shipmentId}/recipients`} method="post" onSubmit={submit} className="stack" aria-label="Add tracking party" aria-busy={saving}>
     <input type="hidden" name="action" value="ADD"/>
-    <div className="form-group"><label htmlFor="tracking-party-email"><MailPlus aria-hidden="true"/>Add tracking party</label><input id="tracking-party-email" name="email" type="email" autoComplete="email" maxLength={254} required readOnly={saving}/></div>
-    {result.error?<p role="alert" className="alert error">{result.error}</p>:null}
-    {result.success?<p role="status" className="alert success">{result.success}</p>:null}
-    <button className="button secondary" disabled={saving}><MailPlus aria-hidden="true"/>{saving?'Adding party…':'Add and email access'}</button>
-  </form>;
+    <div className="form-group"><label htmlFor="tracking-party-email"><MailPlus aria-hidden="true"/><Text message="Add tracking party"/></label><input id="tracking-party-email" name="email" type="email" autoComplete="email" maxLength={254} required readOnly={saving}/></div>
+    {result.error?<p role="alert" className="alert error"><Text message={result.error}/></p>:null}
+    {result.success?<p role="status" className="alert success"><Text message={result.success}/></p>:null}
+    <button className="button secondary" disabled={saving}><MailPlus aria-hidden="true"/>{saving?<Text message="Adding party…"/>:<Text message="Add and email access"/>}</button>
+  </Localized>;
 }

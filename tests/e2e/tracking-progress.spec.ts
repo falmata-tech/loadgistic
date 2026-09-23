@@ -1,4 +1,6 @@
 import {test,expect} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+import {translateMessage} from '../../src/lib/i18n/core.js';
 import {localAuditService,checked,auditProvider} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
@@ -26,6 +28,31 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     await expect(steps.nth(2)).toContainText('Remaining');await expect(steps.nth(2).locator('input')).toHaveCount(0);
     await expect(page.getByRole('radio',{name:/Going to pickup/})).toBeEnabled();
     await page.getByRole('radio',{name:/Going to pickup/}).focus();await expect(page.getByRole('radio',{name:/Going to pickup/})).toBeFocused();
+    // Language changes translate whole controls without changing pending state or user notes.
+    const language=page.locator('.language-picker select');
+    await page.locator('input[name=nextStatus][value=ISSUE]').check();
+    await panel.locator('textarea[name=note]').fill('Home <b>Account</b>');
+    for(const locale of ['am','om','so','ti','en']){
+      const messages=locale==='en'?{}:JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
+      const t=(key:string,values:Record<string,string|number>={})=>translateMessage(messages,key,values);
+      await expect(language).toBeEnabled();await language.selectOption(locale);
+      await expect(page.locator('html')).toHaveAttribute('lang',locale);
+      await expect(steps.nth(0)).toContainText(t('Going to pickup'));
+      await expect(page.locator('.workspace-title .meta')).toHaveText(t('Self-managed driver'));
+      await expect(panel.locator('textarea[name=note]')).toHaveValue('Home <b>Account</b>');
+      await page.locator('input[name=nextStatus][value=ISSUE]').check();
+      const note=panel.locator('textarea[name=note]');await note.fill('Home <b>Account</b>');
+      await expect(panel.getByRole('button',{name:t('Save {status}',{status:t('Problem')}),exact:true})).toBeEnabled();
+      await expect(note).toHaveValue('Home <b>Account</b>');
+      await page.locator('input[name=nextStatus][value=TO_PICKUP]').check();
+      await expect(panel.locator('.tracking-selection strong')).toHaveText(t('Ready to save: {status}',{status:t('Going to pickup')}));
+      await expect(panel.getByRole('button',{name:t('Save {status}',{status:t('Going to pickup')}),exact:true})).toBeEnabled();
+      await expect(panel.locator('input[name=note]')).toHaveValue('Going to pickup');
+      await panel.screenshot({path:info.outputPath(`tracking-ready-${locale}.png`)});
+      await page.locator('input[name=nextStatus][value=ISSUE]').check();
+      await panel.locator('textarea[name=note]').fill('Home <b>Account</b>');
+    }
+    await page.locator('input[name=nextStatus][value=TO_PICKUP]').check();
     await panel.screenshot({path:info.outputPath('tracking-ready.png')});
     // Selection must not mutate the saved state.
     await page.getByRole('radio',{name:/Loading/}).check();

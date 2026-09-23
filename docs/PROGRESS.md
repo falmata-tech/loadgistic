@@ -1,5 +1,113 @@
 # Progress
 
+## Accumulated release — requested, 2026-09-23
+
+Owner requests deployment after reviewing the local work and disclosure of
+translation gaps. Include Tracking fixes, document migration 102, owner-first
+profiles and the current draft catalogs with English fallback.
+
+- [x] Confirm live security baseline: ledger 101, correct PostGIS schema, no ERROR.
+- [ ] Full local quality and current-candidate SQL/build checks.
+- [ ] Commit explicit task scope, push PR 15 and pass exact-commit CI.
+- [ ] Fresh encrypted backup, isolated restore and migration 102 rehearsal.
+- [ ] Resolve prior bounded production runtime/private-demo approval.
+- [ ] Apply reviewed migration, publish immutable artifact and verify live.
+
+Logo files were supplied to the owner before continuing this release. Local app
+remains available. Existing `.next-upload-audit/` remains excluded.
+
+
+## Language coverage follow-up — local review, 2026-09-23
+
+FEAT-LNG-001. Audit found 465 missing marked messages plus untracked dynamic
+labels. Zero raw JSX text did not establish complete localization.
+
+- [x] Inventory catalog gaps without translating user content.
+- [x] Fix prominent profile, filter, account and tracking copy; use whole messages.
+- [x] Inventory dynamic presentation boundaries and keep unknown coverage visible.
+- [x] Focused catalog and desktop/phone language checks, with local preview running.
+- [x] Record remaining translation and natural-language review work honestly.
+
+
+Added 85 messages per translated language (987 entries each), corrected Oromo
+spelling/Featured wording and the provider's “New to Loadgistic” statement.
+Whole messages now cover profile counts/service descriptions, filter distances,
+pagination and tracking status/save feedback. Public and workspace role labels
+use explicit translation boundaries; company text, user notes and enum values
+remain unchanged. Audit now includes object labels/hints and dynamic boundaries.
+
+Seven focused catalog/progression tests, source/spec validation, TypeScript and
+whitespace checks pass. Final login/About, profile/filter and full tracking
+progression browser rerun passes all six desktop/phone cases, including all five
+languages and unchanged notes/status values. Two narrow map-header cases also
+pass. The first run caught a test checking streamed loading markup too early;
+waiting for the single hydrated picker resolves it. Phone tracking was interrupted
+by my temporary JSX edit during the running check; that edit was corrected and
+the complete phone workflow passed on the frozen-source rerun. No failing gate
+was suppressed. Captures: `artifacts/localization-followup-20260923-retry/`.
+Final badge-wording checks pass on desktop and phone in
+`artifacts/localization-followup-20260923-profile-final/` and
+`artifacts/localization-followup-20260923-profile-phone-final/`. The phone profile
+needed the same explicit streamed-page readiness wait as login; the completed
+page then passed every language/content check.
+
+Remaining: **439 fixed messages lack translations; 126 dynamic boundaries need
+classification**. This is broader than the prior inventory, not full localization.
+The strict audit remains nonzero. See [LOCALIZATION_REVIEW.md](LOCALIZATION_REVIEW.md)
+for remaining public/tracking/account/admin/help/policy, metadata/email and
+natural-language review work. Local only; owner review precedes full release
+gates. Preview: http://127.0.0.1:3100/@rift-valley-haulage-02 .
+
+## Transporter details before fleet — local review, 2026-09-23
+
+FEAT-PRV-001 / NR-13. Owner explicitly changes the profile order: About,
+services, credentials, regular service and reviews precede trucks; multiple
+trucks open via one disclosure with existing pagination; a single truck displays
+directly without a button. Preserve the separate document and localization work.
+
+- [x] Inspect current profile rendering, pagination and related acceptance tests.
+- [x] Update the hierarchy and single/multiple-truck contracts before code.
+- [x] Reorder sections, add accessible fleet disclosure and retain page navigation.
+- [x] Keep provider regular service independent of the selected truck page.
+- [x] Focused desktop/phone, single/final-page cases and screenshots.
+- [ ] Owner visual review before extensive gates or deployment.
+
+Implemented: profile identity and contacts → About/services/documents → media,
+regular service and reviews → truck list. Multiple trucks use a native keyboard
+accessible disclosure, initially closed. A single active truck renders directly.
+Pagination retains the open state and links to `#provider-trucks`; the last page
+with one truck remains a fleet. Ordinals continue across pages. Provider regular
+service now reads one owner-scoped row and projects place labels only, independent
+of the capacity records on the selected truck page. No schema change is needed
+for this layout task. The prior document migration remains separate.
+
+Evidence: seven focused paging/localization unit tests, source/spec checks and
+TypeScript pass. Both single-truck browser cases pass; all four independent/company
+paging cases pass on desktop/phone (105 and 13 trucks, last-page behavior,
+keyboard expand/collapse, invalid input, hidden contacts/files and unpublished
+profile denial). The first fleet run stopped on an overly broad test selector
+that also matched document summaries; the corrected direct-child selector passes.
+Actual Rift Valley desktop/phone captures and bookmarked reload checks pass at
+`artifacts/provider-layout-owner-20260923/`. Synthetic captures are in
+`artifacts/provider-layout-20260923/` and `artifacts/provider-layout-20260923-retry/`.
+Local preview: http://127.0.0.1:3100/@rift-valley-haulage-02 .
+No deployment or remote mutation. Full gates wait for owner visual review.
+
+## Five-language interface — active, 2026-09-23
+
+FEAT-LNG-001 / NR-13. Owner requests English, Amharic, Afaan Oromo, Somali
+and Tigrinya across public and dashboard interfaces, concise natural wording,
+and no translation of user-generated content. Prior Tracking release gates
+remain recorded below and are not replaced by this work.
+
+- [x] Inventory current localization support and static interface copy.
+- [x] Record language, content-boundary, persistence and review contracts.
+- [x] Add locale preference, draft catalogs and accessible language selection.
+- [ ] Mark application-owned copy across public and role workspaces.
+- [ ] Translate messages and record any coverage/review gaps explicitly.
+- [ ] Focused tests, desktop/phone captures and running local preview.
+- [ ] Owner visual/language review before extensive release gates or deployment.
+
 ## Tracking progression — active, 2026-09-23
 
 FEAT-TRK-001 / NR-13. Owner requests clear completed/current/next/remaining
@@ -1429,3 +1537,63 @@ do not substitute another credential route. The narrower custom-domain operation
 was separately authorized and completed. Release scripts/evidence are under
 `.local/release-20260923-tracking-*`, domain evidence under
 `.local/domain-20260923/`. Keep the local app on port 3100 running.
+
+## Document ownership and entity display — local review, 2026-09-23
+
+Owner additionally requests company documents visible with the company and its
+owner; driver/truck documents on the respective entity; a truck submission may
+use either ownership proof or permission from its owner; review labels identify
+the specific reviewed document rather than assert blanket verification. Interpret
+this as shared display of authorized company evidence, not reassignment of
+company documents to a Driver or publication of private file bytes.
+
+- [x] Inspect FEAT-VER-001, subject/related-vehicle authorization and public projections.
+- [x] Specify ownership/permission alternatives, company-owner linkage and expiry.
+- [x] Fix affected submission, review and entity views with permission regressions.
+- [x] Include the new document labels in all five catalogs; desktop/phone focused checks pass.
+- [ ] Owner visual approval, full validation and separately reviewed production migration/release.
+
+Implemented: company/owner evidence appears in the company editor and public
+map summary; Driver and truck evidence stay separate. Truck details link to that
+truck's ownership/permission choice. A reviewed alternative names only that
+category. New company-Driver permission retains its grantee and disappears from
+the truck's current evidence after reassignment. Private documents remain private.
+
+Evidence: rollback-only SQL regression passed; local migration 102 applied;
+16 focused pure/catalog tests passed; two upload/approval-display and two public
+entity-summary browser cases passed across desktop/phone. Captures are in
+`artifacts/truck-documents-final-20260923-retry/` and
+`artifacts/public-document-entities-20260923/`. Normal email-code login and real
+private upload were exercised against local services with disposable accounts.
+Approval used the authorized database command; the broader admin UI test remains
+in the post-owner-review gate. Local preview: http://127.0.0.1:3100/app/verification.
+No new production write or release occurred.
+
+Local migration CLI found pre-existing missing history for 083/096/097. No broad
+replay or reset ran. The rehearsed 102 definitions and ledger row were applied
+atomically to the explicitly named local Docker database only. Record those
+older local history gaps for a separate environment reconciliation.
+
+Localization remains incomplete: draft catalogs currently have 899 entries per
+language. `scripts/audit-localization.mjs` tracks static copy and reports gaps;
+English fallback is not counted as translated. Dynamic copy, metadata, outbound
+email and natural-language review remain outstanding. All five locale switches
+preserve email input, truck names, document titles and machine values. The new
+picker initially collided with map support on phones; explicit reserved header
+space now passes all five languages at 320/390/760px. Evidence:
+`artifacts/localization-header-20260923-final/`. Existing application typechecks
+pass, but the main tsconfig includes offline React/Playwright shims; removing
+those in an isolated diagnostic config exposed pre-existing type gaps. Record
+that separately; no broad typing rewrite is included here.
+
+Final focused owner-section check: desktop and phone pass, including the company
+editor showing only owner categories while the truck keeps its reviewed permission.
+The initial extension of this test hit NOT_FOUND because its disposable provider
+fixture lacked the company-page row normally created during onboarding; adding
+that row to the fixture resolved it. No production behavior was weakened.
+Static localization inventory: 1,278 marked messages, 465 missing translations
+after the explicit technical-name/example allowlist, and zero remaining raw JSX
+text nodes in the scanned app/components. This excludes dynamic-copy coverage
+and therefore is not an overall completion percentage. Final source/spec and
+repository TypeScript checks pass. Changes remain uncommitted and undeployed;
+the pre-existing `.next-upload-audit/` directory is untouched.

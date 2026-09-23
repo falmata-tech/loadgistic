@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Localized,Text} from '@/components/localization';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { FileText, Info, LayoutDashboard, LockKeyhole, LogIn, MapPinned, Route, Users } from 'lucide-react';
@@ -47,7 +49,7 @@ export function PublicMobileNav({signedIn=false}:{signedIn?:boolean}) {
         aria-current={isActive ? 'page' : undefined}
       >
         <Icon aria-hidden="true" />
-        <span>{mobile?destination.label:destination.desktopLabel}</span>
+        <span>{<Text message={mobile?destination.label:destination.desktopLabel}/>}</span>
       </Link>
     );
   };
@@ -57,19 +59,19 @@ export function PublicMobileNav({signedIn=false}:{signedIn?:boolean}) {
     :{key:'login',href:'/login',label:'Log in',desktopLabel:'Log in',icon:LogIn};
 
   return <>
-    <nav className="public-workspace-nav" aria-label="Public workspace navigation">
-      <span className="public-nav-group">Explore</span>
+    <Localized as="nav" copy={["aria-label"]} className="public-workspace-nav" aria-label="Public workspace navigation">
+      <span className="public-nav-group"><Text message="Explore"/></span>
       {destinations.slice(0,4).map(destination=>destinationLink(destination,false))}
-      <span className="public-nav-group">Account</span>
+      <span className="public-nav-group"><Text message="Account"/></span>
       {destinationLink(sessionDestination,false,'public-nav-secondary')}
-      <span className="public-nav-group">Loadgistic</span>
+      <span className="public-nav-group"><Text message="Loadgistic"/></span>
       {destinationLink(destinations[4],false)}
       {destinationLink({key:'privacy',href:'/privacy',label:'Privacy',desktopLabel:'Privacy',icon:LockKeyhole},false,'public-nav-secondary')}
       {destinationLink({key:'terms',href:'/terms',label:'Terms',desktopLabel:'Terms',icon:FileText},false,'public-nav-secondary')}
-    </nav>
-    <nav className="public-mobile-nav" aria-label="Public mobile navigation">
+    </Localized>
+    <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Public mobile navigation">
       {destinations.slice(0,4).map(destination=>destinationLink(destination,true))}
       {destinationLink(destinations[4],true)}
-    </nav>
+    </Localized>
   </>;
 }

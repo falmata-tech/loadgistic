@@ -1,5 +1,45 @@
 # Specification traceability
 
+## Language coverage follow-up — 2026-09-23
+
+FEAT-LNG-001 → whole-message profile counts/service copy, distance filters,
+pagination, tracking status/save/feedback and translated workspace/provider roles.
+`tests/localization.test.mjs` covers every tracking progression label in all four
+catalogs; four localization tests plus three progression tests pass.
+`tests/e2e/localization.spec.ts` covers preserved form/provider content and filter
+values; `tests/e2e/tracking-progress.spec.ts` covers translated actions, unchanged
+notes and persisted machine statuses. Results and capture paths are in PROGRESS.
+Coverage remains incomplete: 439 missing fixed messages and 126 dynamic boundaries
+requiring review. Strict audit intentionally exits nonzero. See
+[the remaining review inventory](../docs/LOCALIZATION_REVIEW.md). No deployment.
+
+## Owner-first transporter profile — local review, 2026-09-23
+
+FEAT-PRV-001 / NR-13 → provider page, native fleet disclosure, anchored Pagination,
+continuous truck ordinals and bounded provider regular-service labels. Four
+paging/metadata unit tests and six desktop/phone browser cases pass; one truck
+renders directly, multiple trucks expand on request and every paged truck stays
+reachable. Independent/company scopes, unpublished denial and private-field
+exclusion remain covered. Actual Rift Valley captures and bookmarked reload
+checks: `artifacts/provider-layout-owner-20260923/`. Owner review and extensive
+release gates remain pending; no production change.
+
+## Local entity documents and language foundation — 2026-09-23
+
+FEAT-VER-001 → migration 102, verification-summary, public/private repository
+projections, company editor, truck detail and submission form. Focused SQL
+authorization/expiry/reassignment/private-file checks and four desktop/phone
+document browser cases pass. Production remains at schema 101 for this task;
+new document behavior is local only. Owner review and full gates remain pending.
+
+FEAT-LNG-001 → explicit Text/Localized boundaries, first-party language cookie,
+lazy catalogs and shared public/dashboard picker. Three catalog/core tests,
+desktop/phone login/About persistence, unchanged user text/machine values in the
+document workflow, and 320/390/760px map-header separation pass. Translation
+coverage and natural-language review are incomplete; run
+`node scripts/audit-localization.mjs --strict` for the current static gaps.
+Metadata, emails and dynamic strings are separately outstanding.
+
 ## Owner demo aliases — 2026-09-23
 
 FEAT-IAM-001 / NR-14: 154 local and 152 live tagged identities now use the

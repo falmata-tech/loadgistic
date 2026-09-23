@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Localized,Text} from '@/components/localization';
 import React from 'react';
 import { Circle, CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
@@ -50,17 +52,17 @@ export function LeafletRouteMap({ routes, comparisonRoutes = [],areas=[],compari
     ...visibleAreas.map(area=>({lat:Number(area.center_lat),lng:Number(area.center_lng),radiusKm:Number(area.radius_km)}))
   ];
   return <div className="route-map-block">
-    <div className="route-map" aria-label="Approximate coverage map">
+    <Localized as="div" copy={["aria-label"]} className="route-map" aria-label="Approximate coverage map">
       <MapContainer center={[9.1,39.7]} zoom={6} minZoom={5} maxZoom={10} scrollWheelZoom={false}>
         <BaseMapTiles/>
         {visible.map((route:any,index:number)=><Polyline key={`${route.group}-${route.id||index}`} positions={[[route.from.lat,route.from.lng],[route.to.lat,route.to.lng]]} pathOptions={routeStyle(route)}/>)}
-        {visibleAreas.map((area:any,index:number)=><Circle key={`${area.group}-area-${area.id||index}`} center={[area.center_lat,area.center_lng]} radius={Number(area.radius_km)*1000} pathOptions={area.group==='viewer'?{color:'#c45116',weight:4,opacity:.96,dashArray:'10 7',fillColor:'#c45116',fillOpacity:.12}:{color:'#1769e0',weight:3,opacity:.86,fillColor:'#1769e0',fillOpacity:.15}}><Tooltip permanent direction="center">{area.place_label}<br/>{area.radius_km} km</Tooltip></Circle>)}
+        {visibleAreas.map((area:any,index:number)=><Circle key={`${area.group}-area-${area.id||index}`} center={[area.center_lat,area.center_lng]} radius={Number(area.radius_km)*1000} pathOptions={area.group==='viewer'?{color:'#c45116',weight:4,opacity:.96,dashArray:'10 7',fillColor:'#c45116',fillOpacity:.12}:{color:'#1769e0',weight:3,opacity:.86,fillColor:'#1769e0',fillOpacity:.15}}><Tooltip permanent direction="center">{area.place_label}<br/>{area.radius_km}<Text message=" km"/></Tooltip></Circle>)}
         {[...markers.entries()].map(([name,marker]:any)=><CircleMarker key={name} center={[marker.lat,marker.lng]} radius={6} pathOptions={{color:'#0b3f91',fillColor:'#ffffff',fillOpacity:1,weight:3}}><Tooltip permanent direction="top" offset={[0,-5]}>{name}</Tooltip></CircleMarker>)}
         <FitCoverage points={fitPoints}/>
       </MapContainer>
-      <div className="route-map-legend">{routes.length||areas.length?<span><i className="profile"/>Profile coverage</span>:null}{comparisonRoutes.length||comparisonAreas.length?<span><i className="viewer"/>Your coverage</span>:null}</div>
-    </div>
-    <p className="meta">Approximate city-radius areas and city-to-city lines over OpenStreetMap. They are not exact facilities, live movement, or guaranteed road paths.</p>
-    {unknown.length?<p className="map-unavailable">Map placement is unavailable for legacy locations that have not been confirmed from the place catalog: {unknown.join(', ')}.</p>:null}
+      <div className="route-map-legend">{routes.length||areas.length?<span><i className="profile"/><Text message="Profile coverage"/></span>:null}{comparisonRoutes.length||comparisonAreas.length?<span><i className="viewer"/><Text message="Your coverage"/></span>:null}</div>
+    </Localized>
+    <p className="meta"><Text message="Approximate city-radius areas and city-to-city lines over OpenStreetMap. They are not exact facilities, live movement, or guaranteed road paths."/></p>
+    {unknown.length?<p className="map-unavailable"><Text message="Map placement is unavailable for legacy locations that have not been confirmed from the place catalog: "/>{unknown.join(', ')}.</p>:null}
   </div>;
 }

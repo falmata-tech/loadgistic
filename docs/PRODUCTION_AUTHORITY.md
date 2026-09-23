@@ -358,3 +358,21 @@ security callback URLs. The concrete old/new values and digest are retained in
 Preserve old callbacks during cutover and all unrelated configuration. This is
 not authority to change SMTP, providers, credentials, DNS email records,
 database permissions or other projects. Normal release checks still apply.
+
+## September 23 localization and document release — requested
+
+Following the local preview and explicit disclosure of incomplete translation
+coverage, the owner directed “deploy.” This authorizes releasing the accumulated
+Loadgistic changes with English fallback for missing translations, the reviewed
+owner-first profile layout, prior Tracking fixes and document migration 102.
+Target remains project `tpwyyzoqijjmbvsmmvcm`, Netlify site
+`dbb0fcec-9ec9-4511-9737-db0e32849af5`, domain `loadgistic.com`.
+Preserve exact-candidate CI, encrypted backup and isolated migration rehearsal,
+security/runtime checks and monitored promotion. Existing hosted settings stay
+unchanged. Translation completeness is not claimed; the inventory remains open.
+
+Production runtime/private demo verification using the service key was separately
+rejected by automatic approval review earlier. Its narrow approval remains
+unresolved; this record does not bypass that decision or authorize another
+credential route. Prepare the exact current candidate and bounded verification
+plan before requesting the missing approval if still required.

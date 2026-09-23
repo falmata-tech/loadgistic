@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Localized} from '@/components/localization';
 import React from 'react';
 import { X } from 'lucide-react';
 
@@ -19,7 +21,7 @@ export function CapacityEditDialog({title,truck,busy,onClose,children}:{title:st
     };
   },[]);
   return <dialog ref={dialogRef} className="capacity-signal-dialog" aria-labelledby={titleId} aria-busy={busy} onCancel={event=>{event.preventDefault();if(!busy)onClose();}}>
-    <header className="capacity-signal-dialog-header"><div><h2 id={titleId}>{title}</h2><p>{truck}</p></div><button type="button" className="icon-button" aria-label="Close editor" disabled={busy} onClick={onClose}><X aria-hidden="true"/></button></header>
+    <header className="capacity-signal-dialog-header"><div><h2 id={titleId}>{title}</h2><p>{truck}</p></div><Localized as="button" copy={["aria-label"]} type="button" className="icon-button" aria-label="Close editor" disabled={busy} onClick={onClose}><X aria-hidden="true"/></Localized></header>
     {children}
   </dialog>;
 }

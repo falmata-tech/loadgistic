@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import {Text} from './localization';
 import {usePathname} from 'next/navigation';
 
 // Native POSTs do not use React's server-action form status. Keep their actual
@@ -31,5 +32,5 @@ export function NativeFormFeedback(){
     window.addEventListener('pageshow',clear);
     return()=>{document.removeEventListener('submit',submit);window.removeEventListener('pageshow',clear);clear();};
   },[pathname]);
-  return <span className="sr-only" role="status" aria-live="polite">{message}</span>;
+  return <span className="sr-only" role="status" aria-live="polite"><Text message={message}/></span>;
 }

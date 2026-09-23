@@ -631,12 +631,14 @@ test('provider-name search filters the one Truck Market and truck details reach 
   await page.goto(`/@${blueLineTrucks[0].provider_handle}`);
   await expect(page.locator('.provider-handle')).toContainText('/@');
   await expect(page.getByRole('heading',{name:'Reviewed documents'})).toBeVisible();
+  const fleetToggle=page.locator('.provider-fleet-disclosure>summary');
+  if(await fleetToggle.count())await fleetToggle.click();
   await expect(page.getByRole('heading',{name:'Trucks and published capacity'})).toBeVisible();
   await expect.poll(()=>page.locator('.provider-truck-card').count()).toBeGreaterThan(0);
   await expect(page.locator('.provider-truck-relative-map')).toHaveCount(0);
   const fleetTop=await page.locator('.provider-fleet-showcase').evaluate((element:any)=>element.getBoundingClientRect().top+window.scrollY);
   const aboutTop=await page.locator('.provider-about-card').evaluate((element:any)=>element.getBoundingClientRect().top+window.scrollY);
-  expect(fleetTop).toBeLessThan(aboutTop);
+  expect(fleetTop).toBeGreaterThan(aboutTop);
   const mapButton=page.getByRole('button',{name:'View capacity on map'}).first();
   await expect(mapButton).toBeVisible();
   await mapButton.click();

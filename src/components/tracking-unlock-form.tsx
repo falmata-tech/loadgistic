@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text,Localized} from '@/components/localization';
 import React from 'react';
 import {ArrowLeft,KeyRound,LoaderCircle,Mail,PackageSearch} from 'lucide-react';
 
@@ -48,18 +50,18 @@ export function TrackingUnlockForm({localInbox=null}:{localInbox?:string|null}) 
 
   return <div className="stack" style={{width:'min(100%, 420px)',textAlign:'left'}}>
     {stage==='DETAILS'?<form className="stack auth-primary-form" onSubmit={requestCode}>
-      <div className="form-group"><label htmlFor="tracking-email"><Mail aria-hidden="true"/>Approved email</label><input id="tracking-email" name="email" type="email" autoComplete="email" value={email} onChange={event=>setEmail(event.target.value)} required readOnly={submitting}/></div>
-      <div className="form-group"><label htmlFor="tracking-code"><KeyRound aria-hidden="true"/>Tracking code</label><input id="tracking-code" name="trackingCode" autoComplete="off" autoCapitalize="characters" inputMode="text" placeholder="LG-XXXX-XXXX-XXXX-XXXX" maxLength={22} spellCheck={false} value={trackingCode} onChange={event=>setTrackingCode(event.target.value.toUpperCase())} required readOnly={submitting}/></div>
-      <button className="button auth-primary-action icon-button-label" disabled={submitting} aria-live="polite">{submitting?<LoaderCircle className="tracking-submit-spinner" aria-hidden="true"/>:<Mail aria-hidden="true"/>}{submitting?'Sending code…':'Email me a code'}</button>
+      <div className="form-group"><label htmlFor="tracking-email"><Mail aria-hidden="true"/><Text message="Approved email"/></label><input id="tracking-email" name="email" type="email" autoComplete="email" value={email} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>setEmail(event.target.value)} required readOnly={submitting}/></div>
+      <div className="form-group"><label htmlFor="tracking-code"><KeyRound aria-hidden="true"/><Text message="Tracking code"/></label><Localized as="input" copy={["placeholder"]} id="tracking-code" name="trackingCode" autoComplete="off" autoCapitalize="characters" inputMode="text" placeholder="LG-XXXX-XXXX-XXXX-XXXX" maxLength={22} spellCheck={false} value={trackingCode} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>setTrackingCode(event.target.value.toUpperCase())} required readOnly={submitting}/></div>
+      <button className="button auth-primary-action icon-button-label" disabled={submitting} aria-live="polite">{submitting?<LoaderCircle className="tracking-submit-spinner" aria-hidden="true"/>:<Mail aria-hidden="true"/>}{submitting?<Text message="Sending code…"/>:<Text message="Email me a code"/>}</button>
     </form>:<form className="stack auth-primary-form" onSubmit={verifyCode}>
       <div className="permission-note"><Mail aria-hidden="true"/><div><strong>{email}</strong><span>{trackingCode}</span></div></div>
-      {localTestCode?<p className="shared-capacity-local-code" role="status"><small>Local test code</small><strong>{localTestCode}</strong><span>This appears only because email delivery is not configured locally.</span></p>:null}
-      <div className="form-group"><label htmlFor="tracking-otp"><KeyRound aria-hidden="true"/>One-time code</label><input id="tracking-otp" name="code" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,'').slice(0,6))} required readOnly={submitting}/></div>
-      <button className="button auth-primary-action icon-button-label" disabled={submitting}>{submitting?<LoaderCircle className="tracking-submit-spinner" aria-hidden="true"/>:<PackageSearch aria-hidden="true"/>}{submitting?'Opening tracking…':'Open tracking'}</button>
-      <button type="button" className="text-button" onClick={changeDetails} disabled={submitting}><ArrowLeft aria-hidden="true"/>Change email or Tracking code</button>
+      {localTestCode?<p className="shared-capacity-local-code" role="status"><small><Text message="Local test code"/></small><strong>{localTestCode}</strong><span><Text message="This appears only because email delivery is not configured locally."/></span></p>:null}
+      <div className="form-group"><label htmlFor="tracking-otp"><KeyRound aria-hidden="true"/><Text message="One-time code"/></label><input id="tracking-otp" name="code" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>setCode(event.target.value.replace(/\D/g,'').slice(0,6))} required readOnly={submitting}/></div>
+      <button className="button auth-primary-action icon-button-label" disabled={submitting}>{submitting?<LoaderCircle className="tracking-submit-spinner" aria-hidden="true"/>:<PackageSearch aria-hidden="true"/>}{submitting?<Text message="Opening tracking…"/>:<Text message="Open tracking"/>}</button>
+      <button type="button" className="text-button" onClick={changeDetails} disabled={submitting}><ArrowLeft aria-hidden="true"/><Text message="Change email or Tracking code"/></button>
     </form>}
     {message?<p className="form-success" role="status">{message}</p>:null}
     {error?<p className="form-error" role="alert">{error}</p>:null}
-    {localInbox?<a className="auth-inline-link" href={localInbox} target="_blank" rel="noreferrer">Local testing: open the email inbox <span aria-hidden="true">↗</span></a>:null}
+    {localInbox?<a className="auth-inline-link" href={localInbox} target="_blank" rel="noreferrer"><Text message="Local testing: open the email inbox "/><span aria-hidden="true">↗</span></a>:null}
   </div>;
 }

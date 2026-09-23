@@ -1,3 +1,5 @@
+
+import {Text,Localized} from '@/components/localization';
 import type {Metadata} from 'next';
 import {PublicHeader} from '@/components/public-header';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
@@ -18,9 +20,9 @@ export default async function SharedCapacityPage({searchParams}:{searchParams:Pr
   const sessionSuccess=query.session==='logout'?'You have logged out of Private capacity.':undefined;
   const filters={q:query.q||'',provider:query.provider||'',truck:query.truck||'',status:query.status||'',geometry:query.geometry||'',vehicleCategory:query.vehicleCategory||'',loadType:query.loadType||'',stopOption:query.stopOption||'',freshness:query.freshness||'',truckCityPlaceRef:query.truckCityPlaceRef||'',truckCity:query.truckCity||'',truckLocationRadiusKm:query.truckLocationRadiusKm||'',currentAreaPlaceRef:query.currentAreaPlaceRef||'',currentArea:query.currentArea||'',currentAreaRadiusKm:query.currentAreaRadiusKm||'',originPlaceRef:query.originPlaceRef||'',origin:query.origin||'',originRadiusKm:query.originRadiusKm||'',destinationPlaceRef:query.destinationPlaceRef||'',destination:query.destination||'',destinationRadiusKm:query.destinationRadiusKm||'',directionMode:query.directionMode||'',nearLat:query.nearLat||'',nearLng:query.nearLng||'',nearRadiusKm:query.nearRadiusKm||''};
   return <><PublicHeader/><main className={`public-app-page ${session?'public-market-workspace':'public-information-workspace shared-capacity-locked-workspace'}`}>
-    <h1 className="sr-only">Private Transport Capacity</h1>
+    <h1 className="sr-only"><Text message="Private Transport Capacity"/></h1>
     <Flash error={sessionError||query.error} success={sessionSuccess||query.success}/>
-    {session?<SharedCapacitySessionBoundary initialExpiresAt={session.expiresAt}><section className="container home-market-shell public-market-console" aria-label="Privately shared truck capacity"><PublicCapacityFeed initial={await listSharedCapacity(session.emailDigest,filters)} query={filters} searchPath="/shared-capacity" apiPath="/api/shared-capacity"/></section></SharedCapacitySessionBoundary>
+    {session?<SharedCapacitySessionBoundary initialExpiresAt={session.expiresAt}><Localized as="section" copy={["aria-label"]} className="container home-market-shell public-market-console" aria-label="Privately shared truck capacity"><PublicCapacityFeed initial={await listSharedCapacity(session.emailDigest,filters)} query={filters} searchPath="/shared-capacity" apiPath="/api/shared-capacity"/></Localized></SharedCapacitySessionBoundary>
       :<section className="container shared-capacity-access"><SharedCapacityAccessForm localInbox={localAuthInboxUrl()}/></section>}
   </main></>;
 }

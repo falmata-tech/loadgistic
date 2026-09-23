@@ -3300,3 +3300,47 @@ body:has(.featured-workspace-page) .public-chat-launcher>span{display:none}
  .tracking-step-copy small { grid-column:1 / -1; }
  .tracking-action-form > .button { width:100%; min-height:48px; }
 }
+
+/* Language choice shares the header; it must never cover map/form controls. */
+.language-picker{position:relative;flex-shrink:0;max-width:100%;font-size:.875rem}
+.language-picker label{display:flex;align-items:center;gap:.35rem;margin:0}
+.language-picker svg{width:1.1rem;height:1.1rem;flex-shrink:0;color:var(--teal,#0e7376)}
+.language-picker select{width:auto;max-width:10rem;min-height:44px;margin:0;padding:.45rem 1.5rem .45rem .5rem;border:1px solid #c9dcdc;border-radius:10px;background:#fff;color:#18314a;font:inherit}
+.language-picker-error{position:absolute;right:0;top:100%;z-index:30;min-width:12rem;background:#fff;padding:.5rem;border:1px solid #c9dcdc;border-radius:8px}
+html:lang(am),html:lang(ti){font-family:system-ui,'Noto Sans Ethiopic','Nyala','Abyssinica SIL',sans-serif;line-height:1.6}
+html:not(:lang(en)) :is(.button,.nav-link,.mobile-nav a,.public-mobile-nav a){white-space:normal;overflow-wrap:anywhere}
+@media(max-width:600px){.language-picker select{max-width:7.75rem;font-size:.8rem}.language-picker label>svg{display:none}.public-session-compact{gap:.4rem}.app-topbar .topbar-actions{display:flex;flex-wrap:wrap}}
+
+.public-header-language{margin-left:auto;flex-shrink:0}
+@media(max-width:760px){
+  body:has(.capacity-drawer-workbench) .public-header-language{margin-right:52px}
+  body:has(.capacity-drawer-workbench) .public-nav{gap:8px}
+  body:has(.capacity-drawer-workbench) .public-header-language select{max-width:7.75rem}
+  body:has(.capacity-drawer-workbench) .public-header-language label>svg{display:none}
+}
+@media(max-width:380px){body:has(.capacity-drawer-workbench) .public-header-language select{max-width:6.75rem}}
+@media(max-width:760px){
+  body:has(.capacity-drawer-workbench) .public-session-compact{flex:0 0 84px;width:84px;justify-content:flex-end}
+  body:has(.capacity-drawer-workbench) .public-login-action{width:84px;min-width:84px}
+}
+@media(max-width:380px){
+  body:has(.capacity-drawer-workbench) .public-session-compact{flex-basis:44px;width:44px}
+  body:has(.capacity-drawer-workbench) .public-login-action{width:44px;min-width:44px}
+}
+
+/* Provider details come first. Native disclosure keeps fleet access keyboard-ready. */
+#provider-trucks{scroll-margin-top:90px;min-width:0}
+.provider-fleet-disclosure{min-width:0;border:1px solid #cbdcd9;border-radius:14px;background:#fff;overflow:clip}
+.provider-fleet-toggle{display:flex;align-items:center;gap:10px;min-height:56px;padding:16px 20px;list-style:none;cursor:pointer;color:var(--navy);font-weight:750}
+.provider-fleet-toggle::-webkit-details-marker{display:none}
+.provider-fleet-toggle:focus-visible{outline:3px solid var(--teal,#0e7376);outline-offset:-4px}
+.provider-fleet-toggle>svg{width:22px;height:22px;flex-shrink:0}
+.provider-fleet-toggle>svg:last-child{margin-left:auto;transition:transform .15s}
+.provider-fleet-toggle small{color:var(--muted);font-size:.8rem;font-weight:500}
+.provider-fleet-disclosure .fleet-close-label{display:none}
+.provider-fleet-disclosure[open]>.provider-fleet-toggle{border-bottom:1px solid #d7e4e1}
+.provider-fleet-disclosure[open]>.provider-fleet-toggle>.fleet-close-label{display:inline}
+.provider-fleet-disclosure[open]>.provider-fleet-toggle>.fleet-open-label{display:none}
+.provider-fleet-disclosure[open]>.provider-fleet-toggle>svg:last-child{transform:rotate(180deg)}
+.provider-fleet-disclosure>.provider-fleet-showcase{border:0;border-radius:0}
+@media(max-width:760px){#provider-trucks{scroll-margin-top:70px}.provider-fleet-toggle{padding:14px 12px;gap:8px;flex-wrap:wrap}.provider-fleet-toggle small{margin-left:30px;order:1;flex-basis:100%}}

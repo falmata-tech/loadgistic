@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text} from '@/components/localization';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -29,7 +31,7 @@ export function SupportRefresh({enabled=true,intervalMs=5000,endpoint='/api/supp
     schedule();document.addEventListener('visibilitychange',visibility);
     return()=>{disposed=true;controller?.abort();window.clearTimeout(timer);document.removeEventListener('visibilitychange',visibility);};
   },[enabled,intervalMs,endpoint,router]);
-  return failed?<p role="status">Conversation updates are temporarily unavailable. Retrying…</p>:null;
+  return failed?<p role="status"><Text message="Conversation updates are temporarily unavailable. Retrying…"/></p>:null;
 }
 
 export function SupportAutoScroll({containerId,lastMessageId,atStart=false}:{containerId:string;lastMessageId?:string;atStart?:boolean}) {

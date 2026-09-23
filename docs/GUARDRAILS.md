@@ -83,9 +83,9 @@ accepted interaction unless a change is explicitly reviewed.
   `submit` can shadow HTMLFormElement properties. Use an explicit endpoint or
   `getAttribute` and test the actual POST destination and inline success/denial.
 - Before upload-browser tests, inspect the subject model and document eligibility.
-  A fully verified fixture intentionally has no submission form. Self-managed
-  Driver truck authorization belongs to the Driver with a related vehicle;
-  it is not an owner-operator's vehicle-ownership subject. Create and clean only
+  A fully verified fixture intentionally has no submission form. Truck evidence offers ownership or permission under the selected truck.
+  Historical Driver permissions and new company-Driver permissions retain
+  their specific Driver/truck pairing; reassignment must not transfer approval. Create and clean only
   an exact synthetic unverified subject instead of changing fixture approvals.
 - Never report UI submission as successful merely because the API succeeded:
   verify the visible post-submit state too. React event `currentTarget` must
@@ -103,7 +103,9 @@ accepted interaction unless a change is explicitly reviewed.
   geometry and a normal first click/tap, then verify the stored first record;
   opening a dialog on an already-populated fixture is insufficient (UIA-21).
 - When copying an existing SQL function into an additive migration, extract only
-  the intended function and assert its function inventory. A broad replacement
+  the intended function and assert its function inventory. Inspect later
+  migrations that patched it and preserve those fixes (including 052’s explicit
+  verification variable scope); exercise the replacement command in PostgreSQL. A broad replacement
   can accidentally change an unrelated dashboard's role checks.
 - Treat local Auth confirmation and sign-in email templates as distinct valid
   paths. Match a test's exact synthetic recipient and request time; inspect only
