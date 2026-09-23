@@ -1,5 +1,58 @@
 # Specification traceability
 
+## Corrected candidate release approval — 2026-09-23
+
+Following the corrected local preview and review request, the owner directed
+“ok now lets deploy our changes.” The partial shared-leg and closed-outline
+corrections below are accepted for this release. Local quality passes 329 tests,
+source/spec checks and TypeScript; the six focused desktop/phone cases remain
+the current interaction evidence. Exact-commit CI and hosted rollout are pending.
+
+## Partial shared-leg correction — 2026-09-22 (local review pending)
+
+Final combined focused run: six desktop/phone cases pass in
+`artifacts/map-overlap-final-retry-20260922/`, including native shared-leg
+selection, coincident closed outlines and detail-card gestures. Typecheck,
+source/spec validation and all ten geometry cases pass. A prior run could not
+connect to the stopped dev server; after restarting it and confirming HTTP 200,
+the controlled retry passed. Owner visual approval remains pending.
+
+FEAT-GEO-001: `tests/map-signal-offset.test.mjs` has ten passing cases, including
+96 orientation/reversal combinations. The screenshot regression failed before
+segment-aware avoidance and passes after it. Cases also cover partial collinear
+segments, inserted vertices, near-parallel strokes, route/polygon edges, winding,
+closed joins, bounded sharp turns and tiny areas. `map-shared-segment.spec.ts`
+passes actual local JAC X200 shared-leg click/touch checks at two zoom levels,
+with no API geometry mocks. Clearances are measured along the shared leg and
+native taps use exposed integer-pixel dash centers. Phone checks pan normally
+below the existing truck card. Captures:
+`artifacts/shared-segment-pixel-20260922/desktop-shared-route.png` and
+`artifacts/shared-segment-pixel-20260922/mobile-shared-route.png`.
+The synthetic closed-outline checks also pass on the segment-aware renderer.
+Earlier preview approval request is superseded; this visible correction is not
+approved, committed, or deployed yet. The release objective remains active.
+
+## Closed map outlines — 2026-09-22 (local review pending)
+
+FEAT-GEO-001: four pure regressions in `tests/map-signal-offset.test.mjs` pass.
+`tests/e2e/map-signal-overlap.spec.ts` passes desktop and phone native click/touch,
+keyboard and zoom checks for coincident areas and reversed closed routes, plus
+the unchanged blue location circle. Tests sample stable, exposed strokes and use
+normal actionability checks; no forced clicks. Synthetic viewport geometry is
+explicitly limited to renderer stress coverage; actual basemap tiles remain.
+Screenshots: `artifacts/signal-overlap-fitted-20260922/`. Initial failing checks
+and their timing/first-fit corrections remain in protected local logs. Typecheck
+and source/spec checks pass. Four additional desktop/phone cases confirm the overlap fix and retained
+wheel/drag/touch behavior in `artifacts/signal-overlap-confirmed-20260922/`.
+Full CI and deployment remain after owner review.
+
+FEAT-LST-001 / FEAT-SHR-001 release corrections separately cover drawer state,
+feedback location, debounced viewport startup, selected card/zoom/Filters access
+and the narrow-phone card collision. Eight focused Open/Private/feedback cases
+passed, followed by desktop and phone final card checks (phone passed one
+controlled retry after a request remained loading). CI run 35609759724 remains
+failed; no successful replacement CI or new production deployment is claimed.
+
 ## Platform positioning — 2026-09-21 (local owner review pending)
 
 FEAT-MKT-001 editorial clarification: About, public metadata, sign-in/setup,

@@ -82,6 +82,54 @@ And clicking or pressing one signal pins only that signal's compact explanation 
 And overlapping current and regular Capacity routes use small opposite visual offsets without changing their stored cities so each remains independently selectable\
 And Service-area and approximate-location interiors remain non-interactive while their wide outlines remain available to pointer and keyboard users.
 
+### Closed signal outlines — owner request, 2026-09-22
+
+Given a selected truck has coincident current and regular service-area boundaries
+or a Capacity route that returns to its starting city
+When the map renders or zooms
+Then the current and regular outlines occupy separate small screen-space lanes,
+including the closing edge, regardless of vertex order or starting vertex
+And each can be activated directly by pointer, touch or keyboard without a chooser
+And the blue approximate-location circle retains its original center and radius
+And stored cities, geographic matching, location precision and fit bounds do not change.
+
+The map currently draws outlines only for the selected truck, with at most one
+location circle. Current and regular closed outlines use inward/outward lanes up
+to 12px, with corner displacement capped at 24px; open routes retain 6px lanes.
+The inward lane reduces for tiny areas to avoid inverting their boundary.
+Interiors remain transparent to map gestures. Crossings can intersect at a point;
+they must not hide an entire coincident outline. Degenerate paths remain finite.
+
+Plan: share a bounded pixel-path offset helper, close its joins consistently,
+reuse existing signal interactions, and prove coincident boundaries/closed routes
+with focused desktop/phone hit tests and screenshots. Local owner visual approval
+is required before resuming full release gates. No database change; rollback is
+the preceding renderer. Pure geometry and browser tests map to this acceptance.
+
+### Partially shared segments — owner screenshot, 2026-09-22
+
+The JAC X200 local fixture exposes a missed case: its current route is Dire Dawa
+to Shinile, while regular service continues through Melka Jebdu to Dengego.
+Canonicalizing each whole route from its endpoints places both strokes on the
+same side of the shared first leg. Identical whole-route tests are insufficient.
+
+Given current and regular signals share only a segment or part of a segment
+When either path reverses, adds intermediate points, bends sharply, or shares a
+polygon edge
+Then the regular stroke chooses its display lane against the rendered current
+segments, keeping at least 12px between parallel shared centerlines where a
+bounded lane exists, regardless of overall endpoint order
+And joins preserve the chosen segment lanes, using short bevels at sharp turns
+instead of pulling a long shared segment back onto another stroke
+And isolated crossings remain crossings, with no new chooser or loading step.
+
+Prefer the existing lane when clear; choose the nearest clear alternative within
+24px of the original edge, with corner displacement capped at 48px for those
+clearance adjustments. Otherwise the normal 6/12px lanes and 24px corner cap remain. Test both synthetic edge
+cases and actual mouse/touch selection along the shared Dire Dawa–Shinile leg.
+The earlier local review request is superseded until this correction is verified.
+
+
 ### Scenario: tile delivery is centralized and attributable
 
 Given any public, provider, Tracking, or location-picker map is rendered\

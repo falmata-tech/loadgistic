@@ -1,5 +1,107 @@
 # Progress
 
+## Release resumed — 2026-09-23
+
+After the corrected map preview and its review request, the owner directed:
+“ok now lets deploy our changes.” This authorizes release of the current
+corrected candidate, including the shared-leg and closed-outline fixes. Local
+quality passes all 329 tests, source/spec checks and TypeScript. The existing
+dev server remains available at http://127.0.0.1:3100.
+
+- [x] Record current-candidate release approval and completed local checks.
+- [ ] Commit the reviewed follow-up and verify all required exact-commit CI jobs.
+- [ ] Refresh the protected production backup and rehearse migrations 098–101.
+- [ ] Verify and apply the exact bounded migration plan.
+- [ ] Build/inspect the immutable draft, verify runtime and prepare rollback.
+- [ ] Publish and independently verify live health, desktop/phone and private files.
+
+The earlier pending review entries below describe the state before this
+instruction. No further visible redesign is part of this release. The provider
+repair is verified complete and normal security/release gates apply.
+
+## Supabase provider repair — confirmed complete, 2026-09-23 (UTC)
+
+Support's completion notice matches today's independent live read-only checks:
+`extensions.spatial_ref_sys`, owner `supabase_admin`, PostGIS 3.3.7, no public
+copy, no public tables without RLS and no ERROR advisors. Full catalog, API-guard
+catalog and service-spatial gates pass; all three anonymous HTTP guard probes
+pass and production health returns 200. Evidence:
+`.local/postgis-completion-20260923.json` and
+`.local/postgis-completion-http-20260923.json`. The original finding is resolved;
+the two existing advisor warnings remain separately recorded. A short support
+acknowledgement is drafted at `.local/postgis-completion-reply-review.md`, unsent.
+This verification made no remote writes and does not approve the changed map or
+complete the application release below.
+
+
+## Map outline follow-up — active, 2026-09-22
+
+Final focused confirmation passes all six desktop/phone browser cases: the actual
+JAC shared leg, synthetic coincident areas/closed routes, and detail-card
+wheel/drag/touch behavior. Evidence: `artifacts/map-overlap-final-retry-20260922/`
+and `.local/map-overlap-final-retry-20260922.log` (six passes, 1.5 minutes).
+The prior final-run attempt failed before reaching the app because the local
+server was stopped (`ECONNREFUSED`); it is retained as infrastructure evidence.
+The server was restarted, its health endpoint returned 200, and the controlled
+retry passed. Ten pure geometry cases, typecheck and source/spec checks pass.
+The preview remains at http://127.0.0.1:3100; a fresh owner visual-review request
+is pending. No full release gates, remote writes or deployment were performed
+for this correction.
+
+Owner screenshot follow-up: earlier preview is not approved. Local JAC X200
+`0bd5d4eb-f21b-4751-b0e2-99be9c1315f3` confirms a shared first leg with different
+whole-route endpoint ordering. Current Dire Dawa–Shinile and regular service via
+Melka Jebdu to Dengego receive the same display side. Prior whole-outline checks
+missed partial overlaps. FEAT-GEO-001 now requires segment-aware clearance and
+bounded joins, plus exact-fixture desktop/phone selection along that shared leg.
+The segment-aware correction is now implemented locally. Ten geometry tests pass,
+including 96 orientation/reversal combinations, partial collinear overlap,
+intermediate cities, near-parallel strokes, mixed route/polygon edges, sharp
+turns and tiny boundaries. The exact local JAC fixture passes native desktop
+clicks and phone taps along the shared leg at two zoom levels. Brown is checked
+along the yellow leg, not merely on an unrelated part of its journey.
+Evidence: `artifacts/shared-segment-pixel-20260922/` and protected geometry logs.
+
+The final phone-test miss came from a fractional point at a dash endpoint rounding
+into its transparent gap, not a map movement. Tests use exposed integer-pixel
+stroke centers. The speculative hover restriction was removed; hover/keyboard
+behavior is unchanged. Production coordinates, filtering and permissions are
+unchanged. Full CI and deployment remain after local visual approval.
+
+
+The owner asked whether overlapping circles/polygons receive the same separation
+as open routes. Inspection found open routes offset by 6px, but closed areas drawn
+on top of each other. FEAT-GEO-001 now covers bounded closed-outline lanes,
+unchanged blue location radius and stored geography, and direct touch/keyboard
+selection. Only the selected truck's outlines are rendered; there is one location
+circle. This additional visible change needs local review before resuming the
+already-authorized release. Preview remains at http://127.0.0.1:3100.
+
+- [x] Identify existing route-only handling and update the geography contract.
+- [x] Implement bounded closed joins independent of boundary winding/start vertex.
+- [x] Pass four pure geometry regressions, including a tiny-area inward limit.
+- [x] Verify actual desktop/phone taps, keyboard access, zoom and screenshots.
+- [x] Confirm unchanged drag/wheel behavior and repeat the first-tap regression.
+- [ ] Obtain owner visual review, then resume exact-commit CI/release below.
+
+Early checks sampled during zoom transitions and also exposed first-tap misses
+on newly fitted layers. Tests now wait for the post-zoom viewport response and
+stable SVG geometry; the renderer reconciles its pixel offsets after mounting,
+since Bounds can fit before the layer subscribes to zoomend. Both desktop and
+phone then pass direct click/touch and keyboard selection of current area/closed
+route, regular service and the original location circle at two zoom levels.
+Four geometry regressions pass, including winding/start-order invariance,
+reversed open routes, bounded corners and tiny areas. Typecheck and source/spec
+checks pass. Captures: `artifacts/signal-overlap-fitted-20260922/`. A separate four-case
+desktop/phone confirmation passes both overlap and existing wheel/drag/touch
+behavior in `artifacts/signal-overlap-confirmed-20260922/`.
+
+The overlap browser scenarios use synthetic coincident geometry through the local
+viewport response and real basemap tiles; they do not alter database coordinates
+or claim backend acceptance of that stress geometry. Map intersections can still
+cross at a point, and a truck card can cover an outline; normal panning/zooming
+remains necessary to expose it. No chooser or manual loading step was added.
+
 ## Approved release — active, 2026-09-21
 
 Owner reviewed the local changes and explicitly said “all looks good, deploy it
@@ -10,9 +112,20 @@ The local preview remains running; no new interface redesign is included.
 - [x] Recheck production target: migration 097, PostGIS 3.3.7 now in extensions, no unprotected public tables or ERROR advisors.
 - [x] Pass initial local quality: 319 tests, source/spec validation and typecheck.
 - [ ] Resolve release-test fixture failures and complete required database/browser/build gates.
-- [ ] Commit reviewed source, publish the branch and verify required CI for that exact commit.
+- [x] Commit and push reviewed source as ddca448 to draft PR #15.
+- [ ] Verify corrected candidate through required CI; initial run 35609759724 failed E2E.
 - [ ] Back up production, rehearse migrations 098–101 and verify exact migration plan/rollback.
 - [ ] Build and inspect an isolated immutable Netlify draft, promote, and independently verify production.
+
+CI run 35609759724 passed validation/security/build and container checks; E2E
+reported 188 passes, eight failures, four flaky cases and eight skips. Corrections
+address drawer animation assumptions, expected feedback placement, debounced
+viewport readiness and real selected-card/zoom/Filters overlaps. Eight focused
+Open/Private/selected-card cases then passed. A final narrow-phone collision fix
+passes desktop and phone checks, including actual failed-refresh recovery; the
+first phone attempt remained loading, with one controlled retry passing. Captures:
+`artifacts/map-feedback-2026-09-14/selected-320.png`. Initial 319-test quality passes
+are not evidence for the subsequent outline change. No production writes occurred.
 
 The previous release exception remains consumed. This release uses normal gates.
 Full hosted catalog/ACL, API-guard and service-spatial checks now pass without

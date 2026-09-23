@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {closeCapacityFilters} from './capacity-drawer-helper';
 
 type BrowserFixtures={page:any;context:any};
 
@@ -18,9 +19,11 @@ test('low-end phone automatically loads viewport pages and settles after panning
   await page.goto('/');
   try{await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible({timeout:20000});}
   catch{throw new Error('MAP_STARTUP_DIAGNOSTIC '+JSON.stringify({requests:viewports.length,responses,failedRequests}));}
-  expect(viewports.length).toBeGreaterThan(0);expect(viewports.every(bounds=>bounds.split(',').length===4)).toBe(true);
+  // Initial server-rendered markers precede the debounced viewport fetch.
+  await expect.poll(()=>viewports.length,{timeout:15000}).toBeGreaterThan(0);expect(viewports.every(bounds=>bounds.split(',').length===4)).toBe(true);
   expect(overviewRequests).toBe(0);
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+  await closeCapacityFilters(page);
   const before=viewports.at(-1);const map=page.locator('.leaflet-container');const box=await map.boundingBox();expect(box).toBeTruthy();
   await page.mouse.move(box!.x+box!.width*.7,box!.y+box!.height*.55);await page.mouse.down();
   await page.mouse.move(box!.x+box!.width*.3,box!.y+box!.height*.55,{steps:5});await page.mouse.up();

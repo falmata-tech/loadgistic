@@ -261,3 +261,23 @@ non-modal drawer and the existing native detailed dialog, then verify focused
 phone/desktop interactions and real private-session access. Keep the local server
 running for owner visual approval before extensive release gates. No migration;
 rollback restores the preceding presentation without altering data or privileges.
+
+
+### Release regression clarification — 2026-09-22
+
+With a selected truck and the filter drawer closed, both zoom buttons must remain
+visible and receive pointer input on desktop, tablet and phone. The truck card
+must not cover them. Keep the approved drawer/card workflow and map bounds; use
+the free space below the drawer handle for selected-truck zoom controls.
+Selecting a truck must also preserve pointer access to the Filters handle and
+drawer on phones; the map's selected state must not rise above that drawer.
+At narrow phone widths, the closed drawer's Filters handle must not overlap the
+selected truck's identity or actions; position the card below the handle.
+
+Browser checks follow committed drawer state rather than animation visibility;
+close the drawer before interacting with map controls beneath it. Location
+permission feedback lives in the drawer. Loading/failure feedback remains on the
+map and must preserve the selected truck, controls and real retry behavior.
+The map-key styling check uses controlled image tiles; it does not certify the
+external tile provider's availability. Owner review and deployment checks use
+the real configured tile service.

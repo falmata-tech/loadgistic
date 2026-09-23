@@ -76,3 +76,15 @@ no ERROR; remaining warnings identify own-identity projection and leaked-passwor
 protection, separately reviewed under the normal release policy. Evidence:
 `.local/release-20260921-preflight.json`. Provider email acknowledgement is not
 needed to establish the observed schema state. The app release is separate.
+
+## Provider confirmation and closure — 2026-09-23 (UTC)
+
+The owner supplied Support's completion notice. Fresh independent read-only
+checks confirm the exact table schema/owner, PostGIS 3.3.7, absence of its public
+relation, no public tables without RLS, and no ERROR advisors. Full catalog,
+API-guard catalog and service-spatial gates pass. All three live anonymous guard
+probes pass and application health returns 200. Evidence:
+`.local/postgis-completion-20260923.json` and
+`.local/postgis-completion-http-20260923.json`. This closes the provider repair;
+application rollout and previously reviewed warnings remain separate. No remote
+writes or support email were sent during verification.

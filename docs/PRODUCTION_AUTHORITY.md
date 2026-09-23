@@ -2,7 +2,29 @@
 
 FEAT-SEC-001 / BASE-DEP-001 / ADR-063. Scope: Loadgistic only.
 
-## Current status — 2026-09-21
+## Current release authorization — 2026-09-23
+
+After receiving the corrected map preview and review request, the owner
+explicitly directed “ok now lets deploy our changes.” Continue the accumulated
+Loadgistic release including the reviewed map corrections, preserving exact
+candidate CI, target checks, fresh backup/restore, bounded migrations 098–101,
+immutable packaging, monitored promotion and application rollback. This grants
+no unrelated hosted-setting or credential changes.
+
+## Provider repair closure — 2026-09-23 (UTC)
+
+The owner supplied Support's completion notice. Independent live read-only checks
+confirm `extensions.spatial_ref_sys` is owned by `supabase_admin`, PostGIS remains
+3.3.7, and `public.spatial_ref_sys` is absent. No public tables lack RLS and no
+security advisors are ERROR. Full catalog, guard catalog and service-spatial
+checks pass; three anonymous HTTP probes receive the expected guard denial and
+production health returns 200. The provider repair is closed without an agent
+remote write. Evidence: `.local/postgis-completion-20260923.json` and
+`.local/postgis-completion-http-20260923.json`. The two previously reviewed
+warnings remain separate. This is not an application deployment or renewed
+exception; the earlier map review gate is superseded by the release instruction above.
+
+## Application release status — 2026-09-21
 
 Application commit 6b3d6cd is published as Netlify deployment
 6ab0ac42563b51a851213fa5. Runtime readiness and strict desktop/phone functional
@@ -25,7 +47,7 @@ are own-identity SECURITY DEFINER access and leaked-password protection.
 Evidence: `.local/release-20260921-preflight.json`. No renewed exception is needed
 or inferred; this candidate must pass normal release gates.
 
-## Provider repair status — 2026-09-20
+## Historical provider repair status — 2026-09-20
 
 The owner explicitly approved the concise backup confirmation and Paul's proposed
 in-place PostGIS relocation from public to extensions. SMTP accepted that exact

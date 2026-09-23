@@ -1,4 +1,4 @@
-import {openCapacityFilters} from './capacity-drawer-helper';
+import {openCapacityFilters,closeCapacityFilters} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
@@ -51,12 +51,16 @@ test('city and distance filter matches reported truck locations without GPS perm
 
 test('blue location feedback stays by controls and the small map key opens within the screen',async({page,context}: {page:any;context:any},info:any)=>{
   test.setTimeout(60000);mkdirSync(captures,{recursive:true});
+  // This checks control geometry and colors, not external tile availability.
+  // Keep real Leaflet tile loading, using a clearly synthetic image response.
+  await page.route('https://tile.openstreetmap.org/**',async(route:any)=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/><path d="M0 128H256M128 0V256" stroke="#d7e1dc"/></svg>'}));
   await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.74});
   await page.goto('/');await openCapacityFilters(page);
   const status=page.getByTestId('visitor-location-state');await expect(status).toContainText('Location updated');
   await expect(page.locator('.market-command-column').getByTestId('visitor-location-state')).toBeVisible();
   await expect(page.locator('.public-map-shell').getByTestId('visitor-location-state')).toHaveCount(0);
   await expect(page.locator('.public-viewer-location-marker')).toHaveAttribute('fill','#1a73e8');
+  await closeCapacityFilters(page);
   const key=page.locator('.public-map-legend');await expect(key).not.toHaveAttribute('open','');
   const summary=key.locator('summary');const closed=await summary.boundingBox();expect(closed.width).toBeLessThan(100);expect(closed.height).toBeGreaterThanOrEqual(44);
   await summary.click();await expect(key.locator('.public-map-legend-items')).toBeVisible();

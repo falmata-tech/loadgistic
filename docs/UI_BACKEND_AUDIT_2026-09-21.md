@@ -161,3 +161,34 @@ an independent case and opens the phone drawer before inspecting its retained
 query; both viewport cases pass. Captures/results:
 `artifacts/release-preflight-browser-corrected-2026-09-21/` and
 `artifacts/release-redirect-2026-09-21/`. No production sponsorship changes.
+
+
+## Map release follow-up — 2026-09-22
+
+- **UIA-17 — map context label:** the decorative desktop “Ethiopia capacity”
+  label partly sits beneath the collapsed Filters handle. No blocked action was
+  observed. Recorded for a focused layout follow-up; not silently redesigned in
+  the requested outline fix. Evidence:
+  `artifacts/signal-overlap-fitted-20260922/desktop-areas.png`.
+- **UIA-18 — coincident closed outlines:** open routes had offsets; service-area
+  polygons did not. FEAT-GEO-001 adds bounded, winding-independent closed lanes,
+  a tiny-area inward limit and reconciliation with the initial fitted view.
+  Four pure geometry tests and desktop/phone direct touch/click/keyboard checks
+  pass with explicitly synthetic coincident geometry and real map tiles.
+  Captures: `artifacts/signal-overlap-fitted-20260922/`. Owner visual review is
+  pending; this is a local correction, not a deployed result.
+
+The selected truck/Filters/zoom collisions discovered during release E2E were
+also corrected and verified at 320–1280px. Initial CI run 35609759724 still has a
+failed E2E conclusion; the replacement candidate has not been pushed or deployed.
+
+
+- **UIA-19 — partial route overlap:** owner screenshot exposed the local JAC
+  X200 shared Dire Dawa–Shinile leg. Whole-route endpoint orientation chose the
+  same display side when regular service continued through other cities.
+  Comparing actual shared segments now selects a clear bounded lane; sharp
+  joins preserve it. Ten geometry tests include 96 direction/reversal variants,
+  extra intermediate points, partial overlap and mixed polygon edges. Native
+  desktop/phone tests measure and tap both strokes specifically along the shared
+  leg at two zoom levels. Evidence: `artifacts/shared-segment-pixel-20260922/`.
+  Earlier whole-outline tests were insufficient; visual approval remains pending.

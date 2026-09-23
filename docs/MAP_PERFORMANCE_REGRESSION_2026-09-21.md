@@ -90,3 +90,20 @@ workflow obligations, not provider-enforced restrictions on an administrator.
 Preview: http://127.0.0.1:3100 (local services only). Candidate captures:
 `artifacts/map-cluster-review-2026-09-21/`; before captures and request evidence:
 `.local/map-review/`. The local correction is ready for owner review, not yet an accepted or deployed UI.
+
+
+## Shared-stroke lesson — 2026-09-22
+
+The owner found a partial yellow/brown route overlap after whole-outline checks
+passed. Those checks proved that each shape had some clickable point, not that a
+shared leg stayed separately selectable. Overall endpoint direction is not a
+reliable side choice for one shared segment of a longer route.
+
+For future map overlap work, include actual recorded counterexamples plus shared
+subsegments, opposite directions, extra collinear points, polygon edges and sharp
+turns. Measure separation on the shared section and activate both strokes there
+with native desktop/phone input. Do not replace that proof with forced clicks,
+keyboard-only activation or taps elsewhere on the longer path. Keep display
+adjustments bounded and independent of stored geography. Distinguish ordinary
+single-point intersections and overlay occlusion from coincident shared strokes.
+Current evidence and pending owner review are recorded in PROGRESS and FEAT-GEO-001.

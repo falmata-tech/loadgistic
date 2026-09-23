@@ -186,7 +186,7 @@ test('public entry makes capacity immediately usable without an account',async({
 test('legacy capacity URL preserves search in the filter drawer',async({page}:{page:any})=>{
   await page.goto('/capacity?q=Fuso');
   await expect(page).toHaveURL(/\?q=Fuso$/);
-  await page.locator('.capacity-drawer-handle').waitFor({state:'visible',timeout:15000});
+  await page.locator('.capacity-drawer-handle').waitFor({state:'attached',timeout:15000});
   const drawer=await openCapacityFilters(page);
   await expect(drawer.getByRole('combobox',{name:'Search published truck capacity'})).toHaveValue('Fuso');
 });

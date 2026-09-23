@@ -1,4 +1,23 @@
-# Support request sent — awaiting provider repair
+# Supabase PostGIS repair — verified complete
+
+## Current status — September 23, 2026 (UTC)
+
+The owner supplied Support's completion notice. Independent read-only verification
+at 06:09 UTC confirms `extensions.spatial_ref_sys`, owned by `supabase_admin`,
+PostGIS 3.3.7 in `extensions`, and no `public.spatial_ref_sys`. No public table
+lacks RLS. The unchanged full catalog security, API-guard catalog and service-role
+spatial query checks pass; Security Advisor reports no ERROR. Three live anonymous
+API probes return the required guard denial, and application health returns 200.
+Protected evidence: `.local/postgis-completion-20260923.json` and
+`.local/postgis-completion-http-20260923.json`.
+
+The original exposed-reference-table finding is resolved. The existing warnings
+for own-identity SECURITY DEFINER access and leaked-password protection remain
+recorded separately. No remote database/configuration write was made for this
+verification. Application release and the pending map visual review are separate.
+A concise acknowledgement is prepared locally; it has not been sent.
+
+## Historical request and preparation — superseded by the completed move
 
 September 20 update: the owner supplied Support's reply offering an in-place
 PostGIS move to extensions after backup confirmation. The fresh backup, full
@@ -26,7 +45,7 @@ Protected receipt: `.local/support-repair-submission.json`. Do not resend while
 awaiting a response. The hosted finding remains open pending provider execution
 and independent catalog/advisor checks.
 
-Latest read-only verification (2026-09-20T19:04:54.392Z): the critical advisor,
+Historical read-only verification (2026-09-20T19:04:54.392Z): the critical advisor,
 disabled RLS and table-level anonymous CRUD grants remain present. The separate
 API guard denies those browser requests; the owner-side repair is not confirmed.
 

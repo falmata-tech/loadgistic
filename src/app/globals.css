@@ -3210,6 +3210,9 @@ body:has(.featured-workspace-page) .public-chat-launcher>span{display:none}
 .capacity-drawer-actions>.button{display:flex;gap:6px;justify-content:center;align-items:center;font-size:.76rem;min-height:44px;padding:8px}.capacity-drawer-actions>.button svg{width:17px}
 .capacity-drawer-actions>a{display:flex;align-items:center;justify-content:center;min-height:44px;color:#526d68;font-size:.7rem}
 .capacity-drawer-workbench .public-map-shell .leaflet-top.leaflet-left{left:auto;right:10px;top:10px}
+.capacity-drawer-workbench .public-map-shell.has-selected-truck{z-index:0}
+.capacity-drawer-workbench .public-map-shell.has-selected-truck .leaflet-top.leaflet-left{left:10px;right:auto;top:64px}
+@media(max-width:480px){.capacity-drawer-workbench .public-map-shell.has-selected-truck .map-capacity-sheet{top:64px}}
 @media(max-width:760px){
  .public-market-console .capacity-drawer-workbench .capacity-filter-drawer{inset:6px auto 6px 6px;width:330px;max-width:calc(100% - 54px)}
  .capacity-drawer-heading{padding:8px 12px}.capacity-drawer-scroll{padding:12px;gap:16px}

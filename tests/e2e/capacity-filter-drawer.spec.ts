@@ -3,18 +3,17 @@ import {randomUUID} from 'node:crypto';
 import {localAuditService,auditProvider,checked} from './audit-helpers';
 import {grantPrivateCapacityAccess} from '../../src/lib/private-capacity.js';
 import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
+import {openCapacityFilters as openDrawer,closeCapacityFilters} from './capacity-drawer-helper';
 
 test.use({extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});
-async function openDrawer(page:any){
-  const drawer=page.getByRole('complementary',{name:'Capacity filters'});
-  if(!await drawer.isVisible())await page.getByRole('button',{name:/^Filters/}).click();
-  await expect(drawer).toBeVisible();return drawer;
-}
 async function drag(page:any,mobile:boolean,x:number,y:number,dx:number){
   if(mobile){
     const cdp=await page.context().newCDPSession(page);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
-    for(let step=1;step<=8;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*step/8,y}]});
+    for(let step=1;step<=8;step++){
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*step/8,y}]});
+      await page.evaluate(()=>new Promise(requestAnimationFrame));
+    }
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();
   }else{
     await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+dx,y,{steps:8});await page.mouse.up();
@@ -47,10 +46,12 @@ async function exercise(page:any,info:any,path:string,api:string){
   await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-more-filters.png`),scale:'css'});
   await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();
   await expect(drawer.getByRole('button',{name:'More filters'})).toBeFocused();
-  await drawer.getByRole('button',{name:'Close filter drawer'}).click();
+  await closeCapacityFilters(page);
   await expect(page.getByRole('button',{name:/^Filters/})).toBeFocused();
   await expect(page.locator('#capacity-filter-drawer')).toHaveAttribute('inert','');
-  await expect.poll(()=>windows.length).toBeGreaterThan(0);const before=windows.at(-1);
+  await expect.poll(()=>windows.length).toBeGreaterThan(0);
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
+  const before=windows.at(-1);
   const map=await page.locator('.leaflet-container').boundingBox();
   await drag(page,mobile,map.x+map.width*.65,map.y+map.height*.4,-75);
   await expect.poll(()=>windows.at(-1)).not.toBe(before);

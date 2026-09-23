@@ -6,11 +6,13 @@ import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, T
 import { isTrailerVehicleConfiguration, vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { BaseMapTiles } from '@/components/base-map-tiles';
 import { buildCapacityMarkerGroups } from '@/lib/capacity-map-clustering';
+import { offsetSignalPath } from '@/lib/map-signal-offset';
 
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
 type Signal={id:string;provider_name:string;platform_number?:string;status:string;cargo_configuration?:string;availability_geometry?:string|null;current_signal_geometry_visible?:boolean;location_lat?:number;location_lng?:number;location_precision_km?:number;work_radius_km?:number;location_updated_at?:string|null;capacity_updated_label?:string;capacity_confirmation_needed?:boolean;location_updated_label?:string;location_is_last_reported?:boolean;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];current_route_points?:PlacePoint[];recurring_corridors?:any[]};
 type MapSignalInfo={id:string;accent:'location'|'empty'|'partial'|'regular';label:string;title:string;primary:string;detail:string};
+type SignalPath={positions:[number,number][];closed:boolean;offset:number};
 
 function hasCoordinate(value:unknown){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));}
 const EAST_AFRICA_MAP_BOUNDS=L.latLngBounds([-12.5,28],[18,52.5]);
@@ -52,24 +54,26 @@ function ProgressiveCapacityLoader({onExplore}:{onExplore?:(bounds:number[])=>vo
   return null;
 }
 
-function OffsetPolyline({positions,offset,eventHandlers,pathOptions}:{positions:[number,number][];offset:number;eventHandlers:any;pathOptions:any}){
+function OffsetPolyline({positions,offset,closed=false,avoid,eventHandlers,pathOptions}:{positions:[number,number][];offset:number;closed?:boolean;avoid?:SignalPath;eventHandlers:L.LeafletEventHandlerFnMap;pathOptions:L.PathOptions}){
   const map=useMap();
   const [revision,setRevision]=React.useState(0);
   useMapEvents({zoomend:()=>setRevision((value:number)=>value+1),resize:()=>setRevision((value:number)=>value+1)});
+  // The sibling Bounds effect can fit before this layer subscribes to zoomend.
+  // Reconcile with that fitted view once, without waiting for a hover rerender.
+  React.useEffect(()=>{setRevision((value:number)=>value+1);},[map]);
   const shifted=React.useMemo(()=>{
     if(!offset||positions.length<2)return positions;
     const zoom=map.getZoom();
     const pixels=positions.map(position=>map.project(position,zoom));
-    return pixels.map((pixel,index)=>{
-      const before=pixels[Math.max(0,index-1)];
-      const after=pixels[Math.min(pixels.length-1,index+1)];
-      const dx=after.x-before.x,dy=after.y-before.y;
-      const length=Math.hypot(dx,dy)||1;
-      const shiftedPoint=L.point(pixel.x-(dy/length)*offset,pixel.y+(dx/length)*offset);
-      const latLng=map.unproject(shiftedPoint,zoom);
+    const loop=closed||(positions[0][0]===positions.at(-1)![0]&&positions[0][1]===positions.at(-1)![1]);
+    const reference=avoid?offsetSignalPath(avoid.positions.map(position=>map.project(position,zoom)),avoid.offset,avoid.closed):[];
+    if(avoid?.closed&&reference.length)reference.push({...reference[0]});
+    return offsetSignalPath(pixels,loop?Math.sign(offset)*12:offset,loop,reference.length?[reference]:[]).map(pixel=>{
+      const latLng=map.unproject(L.point(pixel.x,pixel.y),zoom);
       return [latLng.lat,latLng.lng] as [number,number];
     });
-  },[map,offset,positions,revision]);
+  },[map,offset,positions,closed,avoid,revision]);
+  if(closed)return <Polygon positions={shifted} eventHandlers={eventHandlers} pathOptions={pathOptions}/>;
   return <Polyline positions={shifted} eventHandlers={eventHandlers} pathOptions={pathOptions}/>;
 }
 
@@ -244,6 +248,9 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
     }
   });
   const currentSignalColor=availabilityAccent==='partial'?'#eab308':'#16a34a';
+  const currentPoints=selected?.availability_geometry==='ROUTE'?selected.current_route_points:selected?.status==='EMPTY'?selected?.capacity_area_boundary:undefined;
+  const currentClosed=selected?.availability_geometry==='RADIUS'||Boolean(currentPoints?.length&&currentPoints[0].lat===currentPoints.at(-1)?.lat&&currentPoints[0].lng===currentPoints.at(-1)?.lng);
+  const currentPath:SignalPath|undefined=selected?.current_signal_geometry_visible!==false&&currentPoints&&currentPoints.length>=2?{positions:currentPoints.map(point=>[point.lat,point.lng]),closed:currentClosed,offset:currentClosed?-12:-6}:undefined;
   const visibleSignalInfos=pinnedInfo?[pinnedInfo]:hoveredInfo?[hoveredInfo]:[];
   return <div className="public-capacity-map" aria-label="Map of available trucks">
     <MapContainer center={[9.1,40.2]} zoom={7} minZoom={5} maxZoom={15} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom>
@@ -254,9 +261,9 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
       {viewer?<CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{className:'public-viewer-location-marker',color:'#fff',fillColor:'#1a73e8',fillOpacity:1,weight:3}}><Tooltip direction="top" offset={[0,-10]} opacity={1} className="capacity-location-tooltip">Your location</Tooltip></CircleMarker>:null}
       {items.filter(item=>item.id===selectedId).map(item=><React.Fragment key={item.id}>
         {locationInfo&&hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)?<Circle center={[Number(item.location_lat),Number(item.location_lng)]} radius={(Number(item.location_precision_km)||20)*1000} eventHandlers={signalEvents(locationInfo)} pathOptions={{className:'map-location-privacy-circle map-interactive-signal',color:'#1a73e8',weight:8,fill:false,dashArray:'7 7'}}/>:null}
-        {radiusInfo&&item.status==='EMPTY'&&item.availability_geometry==='RADIUS'&&(item.capacity_area_boundary||[]).length>=3?<Polygon positions={(item.capacity_area_boundary||[]).map(point=>[point.lat,point.lng])} eventHandlers={signalEvents(radiusInfo)} pathOptions={{className:`map-service-area map-interactive-signal capacity-${availabilityAccent}`,color:currentSignalColor,weight:9,fill:false}}/>:null}
+        {radiusInfo&&item.status==='EMPTY'&&item.availability_geometry==='RADIUS'&&(item.capacity_area_boundary||[]).length>=3?<OffsetPolyline closed offset={-12} positions={(item.capacity_area_boundary||[]).map(point=>[point.lat,point.lng])} eventHandlers={signalEvents(radiusInfo)} pathOptions={{className:`map-service-area map-interactive-signal capacity-${availabilityAccent}`,color:currentSignalColor,weight:9,fill:false}}/>:null}
         {routeInfo&&item.availability_geometry==='ROUTE'&&(item.current_route_points||[]).length>=2?<OffsetPolyline positions={(item.current_route_points||[]).map(point=>[point.lat,point.lng])} offset={-6} eventHandlers={signalEvents(routeInfo)} pathOptions={{className:`map-current-route map-interactive-signal capacity-${availabilityAccent}`,color:currentSignalColor,weight:8,opacity:.95}}/>:null}
-        {(item.recurring_corridors||[]).slice(0,1).map((signal,index)=>{const info=regularInfos[index];if(!info)return null;if(signal.geometry==='RADIUS'){const points=signal.area_boundary||[];if(points.length<3)return null;return <Polygon key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:8,dashArray:'5 9',fill:false}}/>;}const points=signal.route_points||[];if(points.length<2)return null;return <OffsetPolyline key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} offset={6} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:7,dashArray:'5 9',opacity:.9}}/>;})}
+        {(item.recurring_corridors||[]).slice(0,1).map((signal,index)=>{const info=regularInfos[index];if(!info)return null;if(signal.geometry==='RADIUS'){const points=signal.area_boundary||[];if(points.length<3)return null;return <OffsetPolyline avoid={currentPath} closed offset={12} key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:8,dashArray:'5 9',fill:false}}/>;}const points=signal.route_points||[];if(points.length<2)return null;return <OffsetPolyline avoid={currentPath} key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} offset={6} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:7,dashArray:'5 9',opacity:.9}}/>;})}
       </React.Fragment>)}
       <CapacityMarkers items={items} selectedId={selectedId} onSelect={onSelect}/>
     {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<button type="button" onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</button>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}
