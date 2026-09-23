@@ -11,6 +11,29 @@ rollout: Require one server-only Tracking code secret before Production creates 
 
 # Guest tracking
 
+### Scenario: provider understands saved progress before choosing an update
+
+Given an authorized provider opens Tracking on desktop or phone\
+When saved status and event history are displayed\
+Then the five journey steps distinguish Completed, Current, Next and Remaining in text\
+And a step omitted from recorded history is never described as completed\
+And the initial permitted Loading shortcut remains available with an explanation\
+And Problem is separate from the ordered journey; recovery offers the existing permitted resume states without claiming one mandatory next step\
+And selecting an available step changes only the pending selection until Save is submitted\
+And the save label names the selected step, completed/cancelled sessions have no mutation controls, and assigned-Driver-only travel remains enforced\
+And keyboard focus is visible and phone controls fit without horizontal scrolling.
+
+Presentation-only contract: saved events/status and existing permitted transitions
+remain authoritative. No migration, permission, email, or lifecycle changes.
+Rollout follows NR-13 local owner review, then exact-candidate release gates;
+rollback restores the application without rewriting shipment history.
+Design references: [USWDS step indicator](https://designsystem.digital.gov/components/step-indicator/)
+(explicit states and separate navigation) and [GOV.UK task list](https://design-system.service.gov.uk/components/task-list/)
+(unordered task lists are not appropriate for an ordered journey).
+Verification: `tests/tracking-progress.test.mjs` and
+`tests/e2e/tracking-progress.spec.ts`; owner approved the progression layout on
+2026-09-23. The recipient-save follow-up is a defect correction to its existing form.
+
 ### Scenario: one stable shipment code and authorized recipient list are issued
 
 Given a provider owner, self-managed Driver, or company Driver assigned to the selected truck starts Tracking with one customer-owner email and zero or more additional recipient emails\
@@ -72,6 +95,21 @@ And duplicate active recipients are not created\
 And the customer-owner recipient remains visibly distinct from additional tracking parties\
 And revocation prevents the next OTP request and invalidates that recipient's next customer-safe read without affecting other recipients\
 And no unrelated provider, Driver, administrator without the required operational authority, or public visitor can list or mutate the recipient list.
+
+### Scenario: adding a Tracking party confirms the saved access before email delivery
+
+Given an authorized provider adds an additional recipient on desktop or phone\
+When the recipient and invitation outbox record commit\
+Then the form confirms that access is saved and email is queued without waiting for SMTP or a page navigation\
+And it prevents duplicate in-flight submissions, retains entered email on failure and clears busy feedback after a bounded wait\
+And duplicate or denied additions show an inline error rather than an indefinite spinner\
+And the invitation remains eligible for the existing recovery worker if the post-response delivery fails\
+And the added email can request its own OTP using the shipment Tracking code, receive the code, and open the authorized customer view without an account\
+And an unrelated email cannot obtain that view, and revocation invalidates the recipient's existing guest access.
+
+Verification: `tests/e2e/tracking-parties.spec.ts`, existing email-delivery and
+managed Tracking permission tests. No SMTP configuration, role, schema or guest
+authentication contract changes; the native POST fallback remains available.
 
 ### Scenario: customer-safe reads remain narrow in managed persistence
 

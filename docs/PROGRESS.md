@@ -1,5 +1,42 @@
 # Progress
 
+## Tracking progression — active, 2026-09-23
+
+FEAT-TRK-001 / NR-13. Owner requests clear completed/current/next/remaining
+status controls, phone usability, research, and release after readiness.
+
+- [x] Inspect saved state, existing transitions and primary design guidance.
+- [x] Implement truthful history labels, explicit selection/save and phone layout.
+- [x] Focused workflow checks and desktop/phone captures; local dev remains running.
+- [x] Owner confirms Gmail receipt of demo sign-in test emails.
+- [x] Owner approved Tracking layout: “tracking is good” (2026-09-23).
+- [x] Fix recipient-save wait: JSON inline result after commit, bounded client wait,
+  post-response invitation delivery; desktop/phone invitation → OTP → guest
+  access → revocation pass. Duplicate errors preserve input and release busy state.
+- [ ] Full quality, exact-candidate CI, immutable release and live verification.
+
+The earlier demo aliases are already applied. This UI is not yet deployed;
+no new hosted configuration or database mutation is included.
+
+Focused evidence: three progress unit tests, source/spec validation and TypeScript
+pass; the combined Tracking/auth/pilot subset passes all 18 tests. A fresh read-only
+check verifies all 152 live demo aliases, roles and account state. Desktop workflow passed; phone initially tried to focus before hydration,
+then passed after explicitly waiting for the enabled control. Both exercise
+persisted saves, selection without a write, initial Loading shortcut, Problem
+recovery and terminal completion. Captures: `artifacts/tracking-progress-20260923/`
+and `artifacts/tracking-progress-phone-20260923/`. Temporary test accounts and
+shipments were removed; existing demo accounts were preserved.
+
+Owner also requests GoDaddy domain setup for loadgistic.com and permits replacing
+its Webflow records; no email service is desired there. Current DNS and exact
+website records/application checks are in `docs/operations/LOADGISTIC_DOMAIN_SETUP.md`.
+No domain/configuration write has occurred.
+
+Recipient-save evidence: `artifacts/tracking-parties-20260923/` (phone) and
+`artifacts/tracking-parties-desktop-20260923/` (desktop). The first desktop run
+caught a form named-property collision in the new fetch code; explicit endpoint
+fix passed rerun. Local quality passes all 335 tests. No production claim yet.
+
 ## Owner demo email aliases — applied, 2026-09-23
 
 Owner requests unique plus-addresses at their Gmail inbox for all demo identities,
@@ -16,7 +53,7 @@ not reuse of the completed deployment authority or a hosted settings change.
 - [x] Default manual local password login off, retain explicit automated-test
   isolation, and verify normal alias email-code login on desktop/phone.
 - [x] Save the private roster and local end-to-end/live-request evidence.
-- [ ] Owner confirms actual Gmail receipt (codes requested; do not paste them).
+- [x] Owner confirms actual Gmail receipt on 2026-09-23 (no codes shared).
 
 All 154 local and 152 live demo email updates are verified. Local normal dev
 is running with the password shortcut off. Mailpit forwards only the owner demo
@@ -26,8 +63,7 @@ quality passes 332 tests. Future additive pilot imports now preserve the current
 Auth email, preventing profile/address drift. Protected roster:
 `.local/demo-email-20260923/DEMO_ACCOUNTS.md`; operational evidence and reset/recovery
 limits: `docs/operations/DEMO_ACCOUNT_EMAILS.md`. No new application deployment,
-hosted settings change or real-account reassignment occurred. Gmail arrival is
-not claimed until the owner confirms it. Existing `.next-upload-audit/` is untouched.
+hosted settings change or real-account reassignment occurred. The owner confirmed the test emails arrived in Gmail on 2026-09-23. Existing `.next-upload-audit/` is untouched.
 
 ## Published and verified — 2026-09-23
 

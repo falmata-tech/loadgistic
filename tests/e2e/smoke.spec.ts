@@ -743,8 +743,9 @@ test('provider starts Tracking for multiple parties with one stable shipment cod
   ]);
   await expect(page.getByRole('heading',{name:/Tracking · LGX-/})).toBeVisible({timeout:10_000});
   await expect(page.getByText(trackingPartyEmail,{exact:true})).toBeVisible();
-  await expect(page.locator('.tracking-action-choice')).toHaveCount(6);
-  await expect(page.locator('.tracking-action-choice strong')).toHaveText(['Going to pickup','Loading','En route','Unloading','Complete','Problem']);
+  await expect(page.locator('.tracking-journey li')).toHaveCount(5);
+  await expect(page.getByLabel('Report a problem')).toBeEnabled();
+  await expect(page.locator('.tracking-journey strong')).toHaveText(['Going to pickup','Loading','En route','Unloading','Complete']);
   await page.locator('input[name="nextStatus"][value="LOADING"]').check();
   await expect(page.getByLabel('Photo (optional)')).toBeVisible();
   await page.getByRole('button',{name:'Save Loading'}).click();

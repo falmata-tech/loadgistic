@@ -6,8 +6,7 @@ FEAT-IAM-001 / NR-14: 154 local and 152 live tagged identities now use the
 owner's distinct plus aliases. Protected exact-plan receipts verify Auth/profile
 email, immutable IDs, roles and confirmation/active state; local forward and
 rollback rehearsal passes. Desktop/phone normal local OTP login and absence of
-manual password shortcut pass; live code request passes. Gmail receipt awaits
-owner confirmation. `tests/production-pilot-policy.test.mjs` covers existing
+manual password shortcut pass; live code request passes. Owner confirmed Gmail receipt on 2026-09-23. `tests/production-pilot-policy.test.mjs` covers existing
 address preservation and foreign-identity rejection; `tests/auth-flow.test.mjs`
 keeps plus tags distinct and fixture credentials non-production. Quality passes
 332 tests. See `docs/operations/DEMO_ACCOUNT_EMAILS.md` for private evidence and
@@ -599,3 +598,21 @@ Final UIA-08 screenshot review also caught the detail badge exposing the interna
 Profile Route kind for an area. List/detail badges now say Service Area; the
 focused browser checks assert this alongside the area description. Final area
 captures: `artifacts/ui-contract-area-final-review-2026-09-21/`.
+
+## Tracking progression preview — 2026-09-23
+
+FEAT-TRK-001: `tracking-progress.js` and provider controls distinguish actual
+saved history/current/next/remaining states, initial shortcut and Problem recovery.
+Three unit tests, focused desktop/phone persisted browser workflows, source/spec
+checks and TypeScript pass. Phone focus probe was corrected to wait for hydration.
+Captures under `artifacts/tracking-progress-20260923/` and
+`artifacts/tracking-progress-phone-20260923/`. Owner approved the layout on September 23; full release
+gates remain pending; no new deployment or lifecycle/permission change.
+
+FEAT-TRK-001 recipient-save follow-up: native/JSON route preserves server authorization,
+commits before scheduling mail with Next after(), and the form reports inline
+success/error without waiting on navigation or mail. Desktop/phone tests prove
+actual local invitation delivery, OTP delivery/unlock, no account creation,
+duplicate recovery, unrelated-email non-delivery and revocation. Initial new-form
+URL property collision fixed and desktop rerun passes. All 335 unit tests,
+TypeScript and source/spec gates pass; exact-candidate CI/release remain pending.

@@ -79,6 +79,9 @@ accepted interaction unless a change is explicitly reviewed.
   verify the disabled state, release scripts, then test the first enabled click.
   Do not hide a lost click with arbitrary waits or whole-test retries.
 
+- When enhancing native forms with fetch, named inputs such as `action` or
+  `submit` can shadow HTMLFormElement properties. Use an explicit endpoint or
+  `getAttribute` and test the actual POST destination and inline success/denial.
 - Before upload-browser tests, inspect the subject model and document eligibility.
   A fully verified fixture intentionally has no submission form. Self-managed
   Driver truck authorization belongs to the Driver with a related vehicle;

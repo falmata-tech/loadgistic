@@ -3,13 +3,14 @@ import {getTrackingRecovery} from '@/lib/lifecycle.js';
 import {TrackingRecoveryControls} from '@/components/lifecycle-controls';
 import {TrackingProofLink} from '@/components/tracking-proof-link';
 import { notFound, redirect } from 'next/navigation';
-import {ArrowLeft,CalendarClock,KeyRound,Link2,MailPlus,PackageCheck,ShieldAlert,Star,Truck,UserRoundCheck,UserRoundX} from 'lucide-react';
+import {ArrowLeft,CalendarClock,KeyRound,Link2,PackageCheck,ShieldAlert,Star,Truck,UserRoundCheck,UserRoundX} from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { getProviderShipment } from '@/lib/provider-tracking.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
 import { ProviderTrackingControls } from '@/components/provider-tracking-controls';
+import {TrackingPartyForm} from '@/components/tracking-party-form';
 
 const transitions:Record<string,string[]>={CREATED:['TO_PICKUP','LOADING','ISSUE'],TO_PICKUP:['LOADING','ISSUE'],LOADING:['IN_TRANSIT','ISSUE'],IN_TRANSIT:['UNLOADING','ISSUE'],UNLOADING:['COMPLETED','ISSUE'],ISSUE:['TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING']};
 export default async function ProviderShipmentPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}){
@@ -25,7 +26,7 @@ export default async function ProviderShipmentPage({params,searchParams}:{params
       <article><span>Cargo</span><strong>{shipment.cargo_summary}</strong></article><article><span>Truck</span><strong><Truck aria-hidden="true"/>{shipment.platform_number}</strong></article><article><span>Driver</span><strong>{shipment.driver_name}</strong></article><article><span>Status</span><StatusPill status={shipment.operational_status}/></article>
       <article><span>Pickup</span><strong>{shipment.expected_pickup_date?new Date(`${shipment.expected_pickup_date}T12:00:00`).toLocaleDateString():'Not set'}</strong></article><article><span>Delivery</span><strong>{shipment.expected_delivery_date?new Date(`${shipment.expected_delivery_date}T12:00:00`).toLocaleDateString():'Not set'}</strong></article>
     </section>
-    <ProviderTrackingControls key={shipment.id} trackingId={shipment.id} trackingMode={shipment.tracking_mode} operationalStatus={shipment.operational_status} nextStatuses={next} allowDeviceLocation={user.role==='DRIVER'&&shipment.assigned_driver_user_id===user.id} defaultPrecisionKm={Number(shipment.latest_location?.location_precision_km)||undefined}/>
+    <ProviderTrackingControls key={shipment.id} trackingId={shipment.id} trackingMode={shipment.tracking_mode} operationalStatus={shipment.operational_status} nextStatuses={next} recordedStatuses={shipment.events.map((event:{status:string})=>event.status)} allowDeviceLocation={user.role==='DRIVER'&&shipment.assigned_driver_user_id===user.id} defaultPrecisionKm={Number(shipment.latest_location?.location_precision_km)||undefined}/>
     <TrackingRecoveryControls context={recovery}/>
     <div className="two-col"><section className="card"><h2 className="panel-heading"><CalendarClock aria-hidden="true"/>Customer-safe timeline</h2><ol className="timeline">{shipment.events.map((event:any)=><li key={event.id}><strong>{event.status.replaceAll('_',' ')}</strong><p>{event.note||'Status updated'}</p>{event.has_proof?<TrackingProofLink shipmentId={shipment.id} eventId={event.id}/>:null}<div className="meta">{new Date(event.created_at).toLocaleString()}</div></li>)}</ol></section>
       <aside className="stack"><TrackingPartyCard shipment={shipment}/>
@@ -41,7 +42,7 @@ function TrackingPartyCard({shipment}:{shipment:any}){
   return <section className="card stack"><h3><UserRoundCheck aria-hidden="true"/>Tracking parties</h3>
     <div className="stack">{recipients.map((recipient:any)=><div className="list-row tracking-party-row" key={recipient.id}><div><strong>{recipient.recipient_email}</strong><div className="meta">{recipient.recipient_role==='OWNER'?'Customer owner':recipient.revoked_at?'Access revoked':'Tracking party'}</div></div>{recipient.recipient_role!=='OWNER'&&!recipient.revoked_at&&mayAdd?<form action={`/api/provider-shipments/${shipment.id}/recipients`} method="post"><input type="hidden" name="action" value="REVOKE"/><input type="hidden" name="recipientId" value={recipient.id}/><button className="button secondary small"><UserRoundX aria-hidden="true"/>Revoke</button></form>:null}</div>)}</div>
     {shipment.tracking_access_code?<><div className="tracking-secret"><KeyRound aria-hidden="true"/><div><span>Shipment Tracking code</span><strong>{shipment.tracking_access_code}</strong></div></div><p><Link2 aria-hidden="true"/> <Link href={shipment.tracking_path}>Open public Track page</Link></p><p className="meta">Each approved person enters this code with their own email, then verifies a one-time code.</p></>:<p className="meta">Guest access has expired.</p>}
-    {mayAdd?<form action={`/api/provider-shipments/${shipment.id}/recipients`} method="post" className="stack"><input type="hidden" name="action" value="ADD"/><div className="form-group"><label htmlFor="tracking-party-email"><MailPlus aria-hidden="true"/>Add tracking party</label><input id="tracking-party-email" name="email" type="email" autoComplete="email" required/></div><button className="button secondary"><MailPlus aria-hidden="true"/>Add and email access</button></form>:null}
+    {mayAdd?<TrackingPartyForm shipmentId={shipment.id}/>:null}
     {shipment.guest_expires_at?<p className="meta">Guest access expires {new Date(shipment.guest_expires_at).toLocaleString()}.</p>:null}
   </section>;
 }

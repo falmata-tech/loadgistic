@@ -1,7 +1,8 @@
 "use client";
 
 import React from 'react';
-import { Check, Circle, CircleCheckBig, LocateFixed, LockKeyhole, Navigation, PackageCheck, PackageOpen, RefreshCw, Route, TriangleAlert, Upload } from 'lucide-react';
+import { Check, CircleCheckBig, LocateFixed, Navigation, PackageCheck, PackageOpen, RefreshCw, Route, TriangleAlert, Upload } from 'lucide-react';
+import {trackingProgress} from '@/lib/tracking-progress.js';
 import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
 import { obscureCoordinate,LOCAL_CAPACITY_PRIVACY_RADII_KM } from '@/lib/location-privacy.js';
 import {createForegroundLocationRunner,trackingLocationResult,trackingPrivacyRadius,TRACKING_LOCATION_INTERVAL_MS} from '@/lib/tracking-location-controls.js';
@@ -19,7 +20,7 @@ const travelStatuses=new Set(['TO_PICKUP','IN_TRANSIT']);
 type LocationState='idle'|'requesting'|'saving'|'saved'|'waiting'|'paused'|'error';
 type SafeLocation={area:string;lat:number;lng:number;precisionKm:number};
 
-export function ProviderTrackingControls({trackingId,trackingMode,operationalStatus,nextStatuses,allowDeviceLocation,defaultPrecisionKm,returnTo}:{trackingId:string;trackingMode:string;operationalStatus:string;nextStatuses:string[];allowDeviceLocation:boolean;defaultPrecisionKm?:number;returnTo?:string}){
+export function ProviderTrackingControls({trackingId,trackingMode,operationalStatus,nextStatuses,recordedStatuses=[],allowDeviceLocation,defaultPrecisionKm,returnTo}:{trackingId:string;trackingMode:string;operationalStatus:string;nextStatuses:string[];recordedStatuses?:string[];allowDeviceLocation:boolean;defaultPrecisionKm?:number;returnTo?:string}){
   const available=React.useMemo(()=>new Set(nextStatuses),[nextStatuses]);
   const sharesLocation=trackingMode==='LOCATION_AND_STATUS';
   const first=trackingActions.find(action=>available.has(action.status)&&!(sharesLocation&&travelStatuses.has(action.status)&&!allowDeviceLocation))?.status||'';
@@ -98,13 +99,22 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
     });
   }
 
-  if(['CANCELLED','COMPLETED'].includes(operationalStatus))return <section className="card tracking-control-panel">
-    <h2>{operationalStatus==='CANCELLED'?'Tracking cancelled':'Tracking complete'}</h2>
-    <p>{operationalStatus==='CANCELLED'?'Guest access has ended. Earlier Tracking events are retained.':'No further status update is needed.'}</p>
-  </section>;
+  const terminal=['CANCELLED','COMPLETED'].includes(operationalStatus);
+  function journeyStep(item:typeof trackingActions[number],index:number){
+    const driverRequired=sharesLocation&&travelStatuses.has(item.status)&&!allowDeviceLocation;
+    const enabled=!terminal&&available.has(item.status)&&!driverRequired;
+    const isSelected=selected===item.status&&!terminal;
+    const state=trackingProgress(item.status,operationalStatus,recordedStatuses,nextStatuses);
+    const content=<><span className="tracking-step-number" aria-hidden="true">{state==='Completed'?<Check/>:index+1}</span><span className="tracking-step-copy"><strong>{item.label}</strong><span className="tracking-step-state">{state}{isSelected?' · Selected':''}</span>{enabled&&item.status==='LOADING'&&operationalStatus==='CREATED'?<small>Already at pickup</small>:null}{driverRequired&&available.has(item.status)?<small>Assigned Driver only</small>:null}</span></>;
+    return <li key={item.status} aria-current={state==='Current'?'step':undefined} data-state={state}>
+      {enabled?<label className={`tracking-step available ${isSelected?'selected':''}`}><input type="radio" name="nextStatus" value={item.status} checked={isSelected} onChange={()=>setSelected(item.status)}/>{content}</label>:<div className={`tracking-step ${state==='Completed'?'complete':state==='Current'?'current':'pending'}`}>{content}</div>}
+    </li>;
+  }
+  const journey=<ol className="tracking-journey" aria-label="Shipment progress">{trackingActions.filter(item=>item.status!=='ISSUE').map(journeyStep)}</ol>;
+  if(terminal)return <section className="card tracking-control-panel"><h2>{operationalStatus==='CANCELLED'?'Tracking cancelled':'Tracking complete'}</h2>{journey}<p>{operationalStatus==='CANCELLED'?'Guest access has ended. Earlier Tracking events are retained.':'No further status update is needed.'}</p></section>;
 
   return <section className="card tracking-control-panel">
-    <div className="control-panel-title"><div className="panel-title-copy"><Route aria-hidden="true"/><div><h2>Tracking update</h2><p>Choose the next available action.</p></div></div></div>
+    <div className="control-panel-title"><div className="panel-title-copy"><Route aria-hidden="true"/><div><h2>Tracking update</h2><p>{operationalStatus==='ISSUE'?'Problem reported. Choose where the shipment resumes.':operationalStatus==='CREATED'?'Ready to start. Choose the first update.':`Current: ${trackingActions.find(item=>item.status===operationalStatus)?.label||operationalStatus}`}</p></div></div></div>
     {sharesLocation?<>
       <div className={`automatic-location ${locationState}`} role="status"><LocateFixed aria-hidden="true"/><span><strong>{!allowDeviceLocation?'Assigned Driver location':locationState==='paused'?'Location updates paused':locationState==='error'?'Location update failed':locationState==='requesting'?'Finding Driver location…':locationState==='saving'?'Saving approximate location…':locationState==='saved'?`Approximate location shared · ${savedPrecision} km`:locationState==='waiting'?'Waiting for the next location update':autoLocationActive?'Location update ready':'Location starts during travel'}</strong><small>{allowDeviceLocation?'Updates about every 10 minutes during travel. Keep this screen open and visible; updates pause when the phone locks or you leave this screen.':'Updates require the assigned Driver’s open, visible Tracking screen. They pause when the phone locks or that screen closes.'}</small></span></div>
       {allowDeviceLocation?<div className="form-group tracking-location-controls"><label htmlFor={`tracking-radius-${trackingId}`}>Location privacy radius</label><select id={`tracking-radius-${trackingId}`} value={precisionKm} disabled={!ready||busy||submitting} onChange={event=>setPrecisionKm(Number(event.target.value))}>{LOCAL_CAPACITY_PRIVACY_RADII_KM.map(radius=><option key={radius} value={radius}>{radius} km</option>)}</select>{savedPrecision!==null?<small>Last saved radius: {savedPrecision} km.</small>:<small>No location has been saved yet.</small>}<small>The selected radius applies to the next saved location. A larger radius shares a broader area. Changing it does not alter earlier updates.</small>{autoLocationActive?<button type="button" className="button secondary small" disabled={busy||submitting} onClick={()=>void sendLocation()}><RefreshCw aria-hidden="true"/>{locationState==='error'?'Retry location':'Update location'}</button>:null}{locationState==='waiting'?<small>No new location was saved. Updates are limited to once every 10 minutes.</small>:null}</div>:null}
@@ -112,16 +122,13 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
     {error?<div className="flash error" role="alert">{error}</div>:null}
     <form action={`/api/provider-shipments/${trackingId}/status`} method="post" encType="multipart/form-data" className="tracking-action-form" onSubmit={submit}>
       {returnTo?<input type="hidden" name="returnTo" value={returnTo}/>:null}
-      <fieldset className="form-group tracking-action-fieldset" disabled={busy||submitting}><legend><Check aria-hidden="true"/>Tracking status</legend><div className="tracking-action-grid">{trackingActions.map(item=>{
-        const driverRequired=sharesLocation&&travelStatuses.has(item.status)&&!allowDeviceLocation;
-        const enabled=available.has(item.status)&&!driverRequired,isSelected=selected===item.status,Icon=item.Icon;
-        return <label className={`tracking-action-choice ${enabled?'available':'disabled'} ${isSelected?'selected':''} ${item.status==='ISSUE'?'problem':''}`} key={item.status} aria-disabled={!enabled} title={driverRequired?'The assigned Driver makes this update.':undefined}>
-          <input type="radio" name="nextStatus" value={item.status} checked={isSelected} onChange={()=>setSelected(item.status)} disabled={!enabled}/><Icon aria-hidden="true"/><span><strong>{item.label}</strong><small>{driverRequired?'Assigned Driver only':item.hint}</small></span>{isSelected?<Check className="choice-state" aria-hidden="true"/>:enabled?<Circle className="choice-state" aria-hidden="true"/>:<LockKeyhole className="choice-state" aria-hidden="true"/>}
-        </label>;
-      })}</div></fieldset>
+      <fieldset className="form-group tracking-action-fieldset" disabled={!ready||busy||submitting}><legend>Shipment progress</legend>{journey}
+        {available.has('ISSUE')?<label className={`tracking-problem-choice ${selected==='ISSUE'?'selected':''}`}><input type="radio" name="nextStatus" value="ISSUE" checked={selected==='ISSUE'} onChange={()=>setSelected('ISSUE')}/><TriangleAlert aria-hidden="true"/><span><strong>Report a problem</strong><small>Pause the journey and explain what happened.</small></span></label>:null}
+      </fieldset>
+      <div className="tracking-selection" aria-live="polite"><strong>{selected==='ISSUE'?'Report a problem':`Ready to save: ${action?.label||'No available update'}`}</strong><span>{selected==='ISSUE'?'Add a short explanation below.':'Nothing changes until you save.'}</span></div>
       {selected==='ISSUE'?<div className="form-group tracking-proof-input"><label htmlFor={`tracking-issue-${trackingId}`}><TriangleAlert aria-hidden="true"/>What happened?</label><textarea id={`tracking-issue-${trackingId}`} name="note" required maxLength={1000}/></div>:<input type="hidden" name="note" value={action?.label||''}/>}
       {action?.acceptsProof?<div className="form-group tracking-proof-input"><label htmlFor={`tracking-photo-${trackingId}`}><Upload aria-hidden="true"/>Photo <span className="meta">(optional)</span></label><input id={`tracking-photo-${trackingId}`} name="proof" type="file" accept="image/jpeg,image/png,image/webp"/></div>:null}
-      {first?<button className="button" disabled={submitting||busy||!selected}>{submitting?'Saving…':<><Check aria-hidden="true"/>Save {action?.label||'update'}</>}</button>:<div className="tracking-finished"><CircleCheckBig aria-hidden="true"/><span><strong>No status update available</strong><small>Check the current assignment and Tracking state.</small></span></div>}
+      {first?<button className="button" disabled={!ready||submitting||busy||!selected}>{submitting?'Saving…':<><Check aria-hidden="true"/>Save {action?.label||'update'}</>}</button>:<div className="tracking-finished"><CircleCheckBig aria-hidden="true"/><span><strong>No status update available</strong><small>Check the current assignment and Tracking state.</small></span></div>}
     </form>
   </section>;
 }

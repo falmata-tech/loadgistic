@@ -331,3 +331,18 @@ controls reduce recurrence and detect drift; they cannot guarantee zero future b
 - [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Supabase PostGIS setup](https://supabase.com/docs/guides/database/extensions/postgis)
 - [GitHub environment protections](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+
+## September 23 Tracking follow-up release — authorized, not yet published
+
+The owner requests deployment of all completed changes after readiness, approved
+the new Tracking progression UI (“tracking is good”), and requested the recipient
+save/OTP defect correction. Scope: this reviewed application plus the already
+completed demo-email import safeguards; baseline is app `200c7833974bea2db5c28d057df636ef7baa7967`,
+Netlify deploy `6ab3aaa9668f9644dcba97d8`, site
+`dbb0fcec-9ec9-4511-9737-db0e32849af5`, Supabase
+`tpwyyzoqijjmbvsmmvcm` at migration 101. There are no new database migrations or
+hosted Auth/SMTP/secret changes. Retain exact-commit CI, immutable build/runtime
+checks, refreshed encrypted backup/isolated restore, security checks and monitored
+promotion. Rollback is to that existing application deployment, retaining schema
+and demo-account history. Domain setup is documented separately; no domain or
+DNS change has occurred, and it is not a reason to change SMTP credentials.

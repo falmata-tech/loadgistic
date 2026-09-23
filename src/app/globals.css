@@ -3267,3 +3267,36 @@ body:has(.featured-workspace-page) .public-chat-launcher>span{display:none}
  body:has(.capacity-drawer-workbench) .public-chat-launcher>b{position:absolute;top:-4px;right:-4px}
 }
 @media(max-width:380px){body:has(.capacity-drawer-workbench) .public-chat-launcher{right:68px}}
+
+/* Provider Tracking: saved journey and deliberately separate pending action. */
+.tracking-journey { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:8px 0 16px; padding:0; list-style:none; }
+.tracking-journey li { min-width:0; }
+.tracking-step { position:relative; display:flex; align-items:flex-start; gap:10px; height:100%; min-height:112px; padding:14px 10px; border:1px solid var(--line); border-radius:10px; background:#f7f9fa; }
+.tracking-step-number { display:grid; place-items:center; flex:none; width:26px; height:26px; border:1px solid #a9b6bf; border-radius:50%; font-size:.8rem; font-weight:700; }
+.tracking-step-number svg { width:17px; height:17px; }
+.tracking-step-copy { display:grid; gap:5px; min-width:0; }
+.tracking-step-copy strong { font-size:.9rem; }
+.tracking-step-state,.tracking-step-copy small { font-size:.75rem; color:#52647b; line-height:1.4; }
+.tracking-step.complete { background:#eff8f3; }
+.tracking-step.complete .tracking-step-number { color:#176442; border-color:#8ebda4; background:#dcefe4; }
+.tracking-step.current { border:2px solid #117477; background:#edf7f7; }
+.tracking-step.current .tracking-step-state { color:#086468; font-weight:700; }
+.tracking-step.available { cursor:pointer; background:white; border-color:#8caeaf; }
+.tracking-step.selected { border:2px solid #117477; background:#f0fafa; box-shadow:0 0 0 2px #11747718; }
+.tracking-step > input { position:absolute; width:1px; height:1px; opacity:0; min-height:0; }
+.tracking-step:focus-within,.tracking-problem-choice:focus-within { outline:3px solid #1769e0; outline-offset:3px; }
+.tracking-problem-choice { display:flex; align-items:center; gap:12px; padding:12px; min-height:52px; border:1px solid var(--line); border-radius:8px; cursor:pointer; }
+.tracking-problem-choice > input { width:18px; height:18px; min-height:0; flex:none; }
+.tracking-problem-choice > svg { width:20px; color:#975400; flex:none; }
+.tracking-problem-choice > span { display:grid; gap:3px; }
+.tracking-problem-choice small { color:var(--muted); }
+.tracking-problem-choice.selected { border-color:#975400; background:#fffaef; }
+.tracking-selection { display:grid; gap:4px; padding:12px 0; }
+.tracking-selection span { color:var(--muted); font-size:.85rem; }
+@media(max-width:1050px) {
+ .tracking-journey { grid-template-columns:1fr; gap:6px; }
+ .tracking-step { min-height:62px; padding:10px 12px; align-items:center; }
+ .tracking-step-copy { grid-template-columns:minmax(0,1fr) auto; flex:1; align-items:center; column-gap:10px; }
+ .tracking-step-copy small { grid-column:1 / -1; }
+ .tracking-action-form > .button { width:100%; min-height:48px; }
+}

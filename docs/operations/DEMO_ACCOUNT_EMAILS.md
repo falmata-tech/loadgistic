@@ -1,7 +1,7 @@
 # Owner-controlled demo email accounts
 
 FEAT-IAM-001 / NR-06, NR-09, NR-10, NR-14. Completed email correction on
-September 23, 2026; external inbox receipt remains awaiting owner confirmation.
+September 23, 2026; the owner confirmed receipt of test sign-in emails in Gmail.
 
 The owner requested distinct Gmail plus-addresses for demo identities so normal
 email-code login can be used locally and live. The protected roster is
@@ -43,7 +43,8 @@ Desktop transporter and phone company-Driver logins completed through the real
 local email request, captured code, verification and workspace UI. The manual
 password shortcut was absent. Live normal email request reached the code-entry
 screen. No OTP, email body or session was printed or retained in screenshots.
-Actual Gmail arrival needs owner confirmation; request success is not inbox proof.
+The owner confirmed Gmail arrival on September 23. A completed production browser
+login still needs its own verification; request success alone is not login proof.
 Protected evidence: `browser-evidence.json` and `screenshots/` in the task folder.
 
 All 332 unit tests, source/spec checks and TypeScript pass. Policy tests preserve
@@ -72,3 +73,12 @@ Source: Supabase's supported admin email update API:
 https://supabase.com/docs/reference/javascript/auth-admin-updateuserbyid
 Recipient-restricted local relay:
 https://mailpit.axllent.org/docs/configuration/smtp-relay/
+
+Owner confirmation, 2026-09-23: the requested test sign-in emails arrived at the
+approved Gmail inbox. No OTP was shared. This confirms receipt alongside the
+recorded local normal-login and live-request evidence; it does not substitute for
+a completed production browser login.
+
+A fresh read-only verification during Tracking preparation on September 23 again
+passed for all 152 live demo identities (aliases, roles, confirmation and active
+state), recorded in `.local/tracking-progress-20260923/live-demo-verification.log`.
