@@ -97,3 +97,26 @@ http://127.0.0.1:3100.
    Foreground-only updates must not be presented as locked-phone GPS.
 3. Use a designated demo recipient to confirm actual hosted inbox delivery.
    No real-recipient email is authorized or sent by these local checks.
+
+## Full release CI follow-up
+
+Run 35835686120 on f171c7a passed validation/container jobs but reported 208
+browser passes, two failures, two retry passes and eight opt-in skips. Deployment
+was held. UIA-22 records a real narrow-phone obstruction: floating support
+covered map Try again. The repair reserves a compact support action in the phone
+map header and verifies full touch-target and header-link separation.
+
+The second failure was a zoom-test synchronization race with pagination requests
+for the old window; the test now waits for an actually changed viewport. Drawer
+gestures wait for their CSS transition, and auth tests await their actual server
+response/navigation. Private access uses a server-component refresh, which the
+corrected test handles explicitly. No workflow assertion or authorization check
+is removed. Focused verification and a new exact-candidate CI run are required.
+
+Final correction evidence: ten focused map/reset/admin cases pass in
+`artifacts/ci-map-final-20260923/`; the two private-map cases pass in
+`artifacts/ci-private-verified-20260923/`. The latter verifies action status,
+visible login/logout and 401 denial without reading the logout keepalive body
+after navigation. The trace identified that body wait as the intermediate test
+stall. Phone recovery/header captures were inspected; the new candidate still
+requires normal exact-commit CI and deployment checks.

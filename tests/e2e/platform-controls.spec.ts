@@ -5,6 +5,7 @@ async function login(page:any,email:string){
   const form=page.getByTestId('login-form');
   await form.getByLabel('Email',{exact:true}).fill(email);await form.getByLabel('Password').fill('Loadgistic123!');
   await form.getByRole('button',{name:'Log in',exact:true}).click();
+  await page.waitForURL(email==='admin@loadgistic.local'?/\/admin$/:/\/app\/home/,{waitUntil:'domcontentloaded'});
   await expect(page).toHaveURL(email==='admin@loadgistic.local'?/\/admin$/:/\/app\/home/);
   // Wait for the redirected page, not just its URL while a streamed loading
   // boundary is still completing the authentication navigation.

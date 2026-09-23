@@ -10,16 +10,19 @@ async function assertReadableFeedback(page:any,withFeedback=false){
     const sheet=document.querySelector('.map-capacity-sheet')!.getBoundingClientRect();
     const canvas=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
     const handle=document.querySelector('.capacity-drawer-handle')!.getBoundingClientRect();
+    const chat=document.querySelector('.public-chat-launcher')!.getBoundingClientRect();
     const overlaps=(a:DOMRect,b:DOMRect)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
     return {
       clearIdentityAndActions:[...document.querySelectorAll('.map-truck-identity,.map-focus-exit,.map-capacity-sheet>.public-card-actions')].every(element=>!feedback||!overlaps(feedback,element.getBoundingClientRect())),
       clearFilterHandle:[...document.querySelectorAll('.map-truck-identity,.map-focus-exit,.map-capacity-sheet>.public-card-actions')].every(element=>!overlaps(handle,element.getBoundingClientRect())),
       contained:sheet.top>=canvas.top&&sheet.bottom<=canvas.bottom&&sheet.left>=canvas.left&&sheet.right<=canvas.right,
       feedbackReadable:!feedback||(feedback.left>=canvas.left&&feedback.right<=canvas.right&&feedback.top>=canvas.top&&feedback.bottom<=canvas.bottom),
+      retryReachable:[...document.querySelectorAll('.public-feed-overlay button')].every(element=>{const rect=element.getBoundingClientRect();return !overlaps(chat,rect)&&element.contains(document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2));}),
+      chatClearOfHeader:[...document.querySelectorAll('.public-header a')].every(element=>!overlaps(chat,element.getBoundingClientRect())),
       zoomReachable:[...document.querySelectorAll('.leaflet-control-zoom a')].every(element=>{const rect=element.getBoundingClientRect();return element.contains(document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2));}),
       noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight,
     };
-  })).toEqual({clearIdentityAndActions:true,clearFilterHandle:true,contained:true,feedbackReadable:true,zoomReachable:true,noOverflow:true});
+  })).toEqual({clearIdentityAndActions:true,clearFilterHandle:true,contained:true,feedbackReadable:true,retryReachable:true,chatClearOfHeader:true,zoomReachable:true,noOverflow:true});
 }
 
 test('selected truck feedback stays readable through location denial and refresh recovery',async({page}: {page:any},info:any)=>{
@@ -32,7 +35,7 @@ test('selected truck feedback stays readable through location denial and refresh
   expect(response.ok()).toBe(true);
   const truck=(await response.json()).items[0];
   expect(truck).toBeTruthy();
-  await page.goto(`/?truck=${encodeURIComponent(truck.id)}`);
+  await page.goto(`/?truck=${encodeURIComponent(truck.id)}`,{waitUntil:'domcontentloaded'});
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
   const captures=path.resolve('artifacts/map-feedback-2026-09-14');
@@ -73,10 +76,15 @@ test('selected truck feedback stays readable through location denial and refresh
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
     await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
     await assertReadableFeedback(page);
+    await page.getByRole('button',{name:'Ask Loadgistic',exact:true}).click();
+    await expect(page.getByRole('dialog',{name:'Ask Loadgistic'})).toBeVisible();
+    await page.getByRole('button',{name:'Minimize chat'}).click();
     await page.getByRole('button',{name:'Close truck summary'}).click();
     await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
     await openCapacityFilters(page);
     await expect(page.getByTestId('visitor-location-state')).toBeVisible();
+    // Closing a query-selected truck remounts the unfiltered feed and loads it.
+    await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
     await expect(page.locator('.public-feed-overlay')).toHaveCount(0);
   }finally{
     release?.();

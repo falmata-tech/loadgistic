@@ -6,6 +6,16 @@ import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 import {openCapacityFilters as openDrawer,closeCapacityFilters} from './capacity-drawer-helper';
 
 test.use({extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});
+async function submitPrivateAction(page:any,button:any,path:string,method:string){
+  const action=page.waitForResponse((response:any)=>response.request().method()===method
+    &&new URL(response.url()).pathname===path,{timeout:30000});
+  await button.click();
+  const response=await action;expect(response.status()).toBe(200);
+  // Logout navigates immediately after a keepalive DELETE. Its response body
+  // can outlive the old document; verify the status, locked UI and API denial.
+  if(method==='POST')expect(await response.json()).toEqual({ok:true});
+}
+
 async function drag(page:any,mobile:boolean,x:number,y:number,dx:number){
   if(mobile){
     const cdp=await page.context().newCDPSession(page);
@@ -64,10 +74,13 @@ async function exercise(page:any,info:any,path:string,api:string){
   await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-map.png`),scale:'css'});
   await openDrawer(page);await expect(drawer.getByLabel('Availability',{exact:true})).toHaveValue('EMPTY');
   await expect(drawer.getByLabel('In or near a city',{exact:true})).not.toHaveValue('');
+  await drawer.evaluate(async(element:HTMLElement)=>{await Promise.all(element.getAnimations().map(animation=>animation.finished));});
   await drawer.locator('.capacity-drawer-heading').scrollIntoViewIfNeeded();
   const heading=await drawer.locator('.capacity-drawer-heading').boundingBox();
   await drag(page,mobile,heading.x+heading.width*.6,heading.y+heading.height/2,-90);
   await expect(page.getByRole('button',{name:/^Filters/})).toBeVisible();
+  await drawer.evaluate(async(element:HTMLElement)=>{await Promise.all(element.getAnimations().map(animation=>animation.finished));});
+  await page.getByRole('button',{name:/^Filters/}).scrollIntoViewIfNeeded();
   const handle=await page.getByRole('button',{name:/^Filters/}).boundingBox();
   await drag(page,mobile,handle.x+10,handle.y+20,90);
   await expect(drawer).toBeVisible();
@@ -122,13 +135,13 @@ test('Private capacity uses the same drawer with real local OTP and scoped resul
     const grant=await grantPrivateCapacityAccess(actor,{vehicleId:vehicle.id,email});if(typeof grant==='string')ids.push(grant);
     await page.goto('/shared-capacity');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();
     await page.getByRole('button',{name:'Continue with email'}).click();await expect(page.getByLabel('One-time code')).toBeVisible({timeout:30000});
-    await page.getByLabel('One-time code').fill(await mailboxCode(email,since));await page.getByRole('button',{name:'Open private capacity'}).click();
-    await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible();
+    await page.getByLabel('One-time code').fill(await mailboxCode(email,since));await submitPrivateAction(page,page.getByRole('button',{name:'Open private capacity'}),'/api/shared-capacity/access','POST');
+    await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible({timeout:30000});
     const before=await (await page.request.get('/api/shared-capacity')).json();expect(before.items).toHaveLength(1);expect(before.items[0].provider_handle).toBe(`drawer-${actor.suffix}`);
     await exercise(page,info,'/shared-capacity','/api/shared-capacity');
     await exerciseUnfilteredReset(page,info,'/shared-capacity','/api/shared-capacity');
-    const logout=page.getByRole('button',{name:'Log out'});await expect(logout).toBeVisible();await logout.click();
-    await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();expect((await page.request.get('/api/shared-capacity')).status()).toBe(401);
+    const logout=page.getByRole('button',{name:'Log out'});await expect(logout).toBeVisible();await submitPrivateAction(page,logout,'/api/shared-capacity/session','DELETE');
+    await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible({timeout:30000});expect((await page.request.get('/api/shared-capacity')).status()).toBe(401);
   }finally{
     const challenges=checked(await db.from('shared_capacity_email_otps').select('id').eq('recipient_email',email));ids.push(...challenges.map((r:any)=>r.id));
     const grants=checked(await db.from('capacity_access_grants').select('id').eq('recipient_email',email));ids.push(...grants.map((r:any)=>r.id));
@@ -165,7 +178,8 @@ async function exerciseUnfilteredReset(page:any,info:any,path:string,api:string)
   const previousCount=requests.length;
   await page.locator('.leaflet-control-zoom-in').click();
   await expect.poll(()=>requests.length).toBeGreaterThan(previousCount);
-  expect(requests.at(-1)!.searchParams.get('viewport')).not.toBe(baseline);
+  // Pagination/loading may produce another request for the old window first.
+  await expect.poll(()=>requests.at(-1)!.searchParams.get('viewport')).not.toBe(baseline);
   await openDrawer(page);const beforeClear=requests.length;
   await drawer.getByRole('link',{name:'Clear all',exact:true}).click();
   await openDrawer(page);

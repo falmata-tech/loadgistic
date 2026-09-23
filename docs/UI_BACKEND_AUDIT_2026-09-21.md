@@ -246,3 +246,19 @@ restricted Drivers see the missing fleet-owner setup prerequisite before they
 can try Available. No new privilege or hosted configuration is introduced.
 Prevention: test customer email journeys from a fresh browser using only the
 received message, and test new assignments before any capacity record exists.
+
+### UIA-22 — floating support covers phone map recovery
+
+Full release CI exposed the chat launcher covering Try again on a narrow map
+with a selected truck and refresh failure. Earlier feedback checks measured
+containment and minimum size but omitted global overlays; a center-only hit test
+also misses partial obstruction. The phone map now reserves the compact support
+action in the header. The regression checks complete retry/launcher rectangles,
+header-link separation, normal retry and chat clicks, and existing zoom, summary
+and filter behavior. No forced click, hidden support feature or permission change.
+Focused verification and exact-candidate release are tracked in PROGRESS.
+
+CI also exposed a zoom-test race: another request for the old window satisfied a
+request-count wait before zoom finished. The assertion now waits for the actual
+changed viewport. Drawer gesture coordinates wait for a stable element, and
+admin login waits for its completed redirect rather than a five-second URL check.

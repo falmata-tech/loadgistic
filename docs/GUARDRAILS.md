@@ -64,6 +64,11 @@ accepted interaction unless a change is explicitly reviewed.
 
 ### Workflow regression lessons
 
+- Check floating global controls against the full bounds of recovery, close and
+  submit actions at narrow widths. A visible or large-enough button, or a clear
+  center point, does not prove its whole touch target is unobstructed. Include
+  support launchers and fixed navigation, not only the component under test.
+
 - When lifecycle states or stored geometry evolve, check dashboard totals, recent
   activity ordering and list/detail wording against the current backend contract.
   A matching route or successful page load is not proof of a working control:

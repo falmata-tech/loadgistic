@@ -1,5 +1,18 @@
 # Specification traceability
 
+## UIA-22 release correction — 2026-09-23
+
+FEAT-LST-001: full retry-target/header separation, native retry/chat/close clicks,
+zoom access and viewport containment pass on desktop and 320/390/760px phones.
+The support launcher has a reserved compact phone-header position. Ten focused
+map/reset/admin cases pass in `artifacts/ci-map-final-20260923/`; both final
+FEAT-SHR-001 private-map/gesture/OTP/logout cases pass separately in
+`artifacts/ci-private-verified-20260923/` with scoped records and post-logout 401.
+The earlier CI failure and test synchronization corrections are retained in
+PROGRESS and the UI audit. No forced interactions, permission changes, real
+customer writes or hosted publication are part of this local verification.
+
+
 ## Authorized demo corrections — 2026-09-23
 
 FEAT-BIL-001 / FEAT-VER-001: all six desktop/phone Review Center cases pass

@@ -297,3 +297,13 @@ the current unfiltered URL must also reset local drafts and view state. Closing
 or reopening the drawer alone must preserve drafts and the existing map.
 Focused regression checks prove inputs, map replacement/view, request parameters,
 results and private-session retention after real Clear all actions.
+
+### Scenario: mobile refresh recovery remains reachable beside support
+
+Given a selected truck and a failed capacity refresh on a 320px-wide phone
+When the visitor sees Try again in the summary
+Then its full touch target remains clear of the floating chat launcher
+And retry uses the existing capacity adapter without losing the selected truck
+And chat, zoom, summary close and contact actions remain available
+And phone maps reserve a compact support action in the header, clear of both
+account navigation and map content, with its accessible name retained.

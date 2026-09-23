@@ -3259,3 +3259,11 @@ body:has(.featured-workspace-page) .public-chat-launcher>span{display:none}
 .capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty>.button{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:4px}
 .capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty>.button svg{width:20px;height:20px;color:currentColor}
 @media(max-width:480px){.capacity-home-page .driver-map-summary.has-no-map{padding:12px;gap:12px}.capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty{padding:20px 14px}}
+
+/* Keep phone map recovery/actions clear of support; use the free header slot. */
+@media(max-width:760px){
+ body:has(.capacity-drawer-workbench) .public-chat-launcher{top:calc(7px + env(safe-area-inset-top));right:108px;bottom:auto;width:44px;min-width:44px;min-height:44px;height:44px;padding:0;justify-content:center;border-radius:10px}
+ body:has(.capacity-drawer-workbench) .public-chat-launcher>span{display:none}
+ body:has(.capacity-drawer-workbench) .public-chat-launcher>b{position:absolute;top:-4px;right:-4px}
+}
+@media(max-width:380px){body:has(.capacity-drawer-workbench) .public-chat-launcher{right:68px}}

@@ -1,5 +1,32 @@
 # Progress
 
+## Release CI corrections — 2026-09-23
+
+Candidate f171c7a passed validation and container CI, but browser CI reported
+208 passes, two failures, two retry passes and eight opt-in skips. Do not deploy
+that failed run. Correct the mobile chat launcher covering map refresh recovery,
+make the zoom regression wait for an actual changed viewport, and synchronize
+drawer gestures and admin login with their settled UI/navigation state. Preserve
+all assertions, permissions and the existing interface. Recheck focused desktop/
+phone cases, then run normal exact-candidate CI and release gates again.
+
+- [x] Verify unobstructed mobile retry, chat, zoom and summary controls.
+- [x] Verify viewport reset, settled drawer gestures and admin login.
+- [ ] Commit/push corrected candidate, pass full CI, then continue release.
+
+Twelve distinct focused desktop/phone cases now pass: ten map/drawer/reset/admin
+cases in `artifacts/ci-map-final-20260923/`, plus both final private-map cases in
+`artifacts/ci-private-verified-20260923/` (1.1 minutes). The phone error capture
+was inspected: the entire Try again target is clear, with chat beside account
+navigation. Both login/logout JSON action statuses and the visible screens are
+verified; private logout still produces 401. Interim private checks timed out
+because the test read the keepalive logout body after document navigation, as
+confirmed by `artifacts/ci-private-trace-20260923/`. The corrected test retains
+all user-visible and denial assertions. The local server was restarted after
+navigation slowdowns and remains at http://127.0.0.1:3100. Normal CI must pass
+for the new commit; no production changes have been applied.
+
+
 ## Finish demo fixes and deploy — authorized, 2026-09-23
 
 Owner: “ok go ahead and fix deploy.” This accepts the presented local login,
