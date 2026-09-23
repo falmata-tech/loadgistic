@@ -47,6 +47,27 @@ sessions. The Google scenarios below describe retained disabled capability.
 Focused proof: actual local inbox-code sign-in, direct endpoint/callback denial,
 responsive/a11y login states. Rollback is a reviewed application revision.
 
+### Owner demo inbox aliases — 2026-09-23
+
+Given an account is positively identified by the existing local/production demo
+fixture marker and immutable fixture key
+When the owner requests distinct plus-addresses at their own inbox
+Then a reviewed, backed-up email-only correction preserves the Auth user ID,
+application role, assignments, records and profile synchronization
+And collisions, untagged identities, wrong projects and unexpected current
+addresses stop the correction before unrelated accounts are changed
+And demo users sign in through the normal email-code form, without public demo
+credentials or a shortcut that bypasses email proof.
+
+Normal local development defaults the fixture password form off. The isolated
+E2E runner may explicitly enable its existing local-only credential boundary;
+automated ephemeral test recipients remain isolated from real inbox delivery.
+The owner inbox and full alias roster stay in protected local operational files.
+Delivery to an external inbox is a separate check from changing an account email.
+No hosted SMTP/provider setting is changed by an identity email correction.
+A later additive pilot import must retain an existing tagged Auth identity's
+current email in its profile projection, rather than resetting it to a fake address.
+
 ### Scenario: Google account access is bound to one flow
 
 Given an active managed Supabase user has a Loadgistic role projection and a linked Google identity\

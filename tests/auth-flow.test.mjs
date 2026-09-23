@@ -66,6 +66,8 @@ test('fixture passwords are explicitly non-production only',()=>{
 
 test('email-code inputs are bounded and normalized without account disclosure',()=>{
   assert.equal(normalizeManagedAuthEmail(' Provider@Example.COM '),'provider@example.com');
+  assert.equal(normalizeManagedAuthEmail(' Owner+Truck@Example.COM '),'owner+truck@example.com');
+  assert.notEqual(normalizeManagedAuthEmail('owner+truck@example.com'),normalizeManagedAuthEmail('owner+driver@example.com'));
   assert.equal(normalizeManagedAuthEmail('not-an-email'),null);
   assert.equal(isNumericEmailOtp('123456'),true);
   assert.equal(isNumericEmailOtp('12345678'),false);

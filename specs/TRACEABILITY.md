@@ -1,5 +1,18 @@
 # Specification traceability
 
+## Owner demo aliases — 2026-09-23
+
+FEAT-IAM-001 / NR-14: 154 local and 152 live tagged identities now use the
+owner's distinct plus aliases. Protected exact-plan receipts verify Auth/profile
+email, immutable IDs, roles and confirmation/active state; local forward and
+rollback rehearsal passes. Desktop/phone normal local OTP login and absence of
+manual password shortcut pass; live code request passes. Gmail receipt awaits
+owner confirmation. `tests/production-pilot-policy.test.mjs` covers existing
+address preservation and foreign-identity rejection; `tests/auth-flow.test.mjs`
+keeps plus tags distinct and fixture credentials non-production. Quality passes
+332 tests. See `docs/operations/DEMO_ACCOUNT_EMAILS.md` for private evidence and
+reset/relay limits. No new application release was needed for these account edits.
+
 ## Verified deployment — 2026-09-23
 
 Commit 200c783 / Netlify 6ab3aaa9668f9644dcba97d8 / CI 35843724742:

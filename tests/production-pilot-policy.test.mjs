@@ -14,6 +14,17 @@ test('Production pilot identities are namespaced, non-deliverable, and determini
   assert.doesNotMatch(pilotEmail('user-driver-1'),/@gmail\.com$|@loadgistic\.local$/);
 });
 
+test('a repeat pilot import preserves the current email of the exact tagged identity',()=>{
+  const identity={email:'owner+demo@example.com',app_metadata:{fixture_source:PRODUCTION_PILOT_SOURCE,role:'DRIVER'},user_metadata:{fixture_key:'user-driver-1'}};
+  assert.equal(pilotEmail('user-driver-1',identity),'owner+demo@example.com');
+  assert.throws(()=>pilotEmail('other-driver',identity),/IDENTITY_MISMATCH/);
+  assert.throws(()=>pilotEmail('user-driver-1',{...identity,app_metadata:{...identity.app_metadata,fixture_source:'real-account'}}),/IDENTITY_MISMATCH/);
+  assert.throws(()=>pilotEmail('user-driver-1',{...identity,app_metadata:{...identity.app_metadata,role:'ADMIN'}}),/IDENTITY_MISMATCH/);
+  assert.throws(()=>pilotEmail('user-driver-1',{...identity,email:'not-an-email'}),/IDENTITY_MISMATCH/);
+  const source=fs.readFileSync('scripts/import-production-pilot.mjs','utf8');
+  assert.match(source,/value=pilotEmail\(row.id,existingPilotUsers.get\(row.id\)\)/);
+});
+
 test('the hosted importer is additive and keeps destructive local reset and reusable credentials out',()=>{
   const source=fs.readFileSync('scripts/import-production-pilot.mjs','utf8');
   assert.match(source,/validateProductionPilotTarget/);

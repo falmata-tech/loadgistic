@@ -2,6 +2,20 @@
 
 FEAT-SEC-001 / BASE-DEP-001 / ADR-063. Scope: Loadgistic only.
 
+## Demo email correction — 2026-09-23
+
+After release completion, the owner explicitly requested unique plus-addresses
+at their Gmail inbox for all demo identities. This separately authorized the
+bounded email-only correction of 152 fixture-tagged live accounts in
+`tpwyyzoqijjmbvsmmvcm`; it did not reopen deployment or hosted settings authority.
+The exact protected plan, local update/rollback rehearsal, collision/drift checks
+and all-account postchecks passed. IDs, roles, confirmation state and history
+were retained; two untagged live identities were excluded. Local-only Mailpit
+relay is restricted to the owner demo aliases; no hosted SMTP/Auth configuration
+was changed. The operation is complete and grants no ongoing write authority.
+Actual Gmail delivery confirmation remains separate. See
+[demo email operations](operations/DEMO_ACCOUNT_EMAILS.md).
+
 ## September 23 release completed
 
 Commit `200c783` is independently verified live as Netlify deployment

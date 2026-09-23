@@ -1,5 +1,34 @@
 # Progress
 
+## Owner demo email aliases — applied, 2026-09-23
+
+Owner requests unique plus-addresses at their Gmail inbox for all demo identities,
+normal email-code login, and removal of the manual local password shortcut.
+FEAT-IAM-001 / NR-06/09/10. This is a new bounded email-address correction,
+not reuse of the completed deployment authority or a hosted settings change.
+
+- [x] Inventory tagged accounts and collision-check aliases: 152 live demos
+  (9 transporters, 143 Drivers), 154 local demos (plus local admin/support).
+  Two untagged live identities and all unrelated identities are excluded.
+- [x] Protect the exact mapping/current identity state; rehearse email update,
+  profile synchronization and rollback with a local demo identity.
+- [x] Apply only reviewed aliases, retain IDs/roles/history and verify every row.
+- [x] Default manual local password login off, retain explicit automated-test
+  isolation, and verify normal alias email-code login on desktop/phone.
+- [x] Save the private roster and local end-to-end/live-request evidence.
+- [ ] Owner confirms actual Gmail receipt (codes requested; do not paste them).
+
+All 154 local and 152 live demo email updates are verified. Local normal dev
+is running with the password shortcut off. Mailpit forwards only the owner demo
+aliases, preserves its prior inbox and retains recovery snapshots. Desktop/phone
+normal local OTP login passes; live OTP request reaches code entry. Full local
+quality passes 332 tests. Future additive pilot imports now preserve the current
+Auth email, preventing profile/address drift. Protected roster:
+`.local/demo-email-20260923/DEMO_ACCOUNTS.md`; operational evidence and reset/recovery
+limits: `docs/operations/DEMO_ACCOUNT_EMAILS.md`. No new application deployment,
+hosted settings change or real-account reassignment occurred. Gmail arrival is
+not claimed until the owner confirms it. Existing `.next-upload-audit/` is untouched.
+
 ## Published and verified — 2026-09-23
 
 Application commit `200c7833974bea2db5c28d057df636ef7baa7967` is live at
