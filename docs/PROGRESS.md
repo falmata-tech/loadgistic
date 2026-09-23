@@ -1,5 +1,42 @@
 # Progress
 
+## Published and verified — 2026-09-23
+
+Application commit `200c7833974bea2db5c28d057df636ef7baa7967` is live at
+https://loadgistic-473.netlify.app, Netlify deployment
+`6ab3aaa9668f9644dcba97d8`, published at 10:39:29 UTC. CI run `35843724742`
+passed validate, container and E2E: 331 unit tests, 211 browser passes, one
+retry-pass and eight opt-in skips. The prior failed candidate was not deployed.
+
+The refreshed encrypted backup restored successfully in a network-disabled
+container. Exact reviewed migrations 098–101 passed rehearsal, were committed
+atomically, and passed independent catalog/Data API/spatial checks afterward.
+PostGIS remains in extensions; no public table lacks RLS and no critical advisor
+finding remains. The two previously reviewed warnings remain. No hosted Auth,
+provider, credential or other configuration setting was changed.
+
+The isolated native draft and production artifacts match all 846 committed files,
+pass flat-root/adapter/private-file checks, and the compiled runtime reports ready.
+The live desktop/phone checks pass: public map, filters and Clear all, email-only
+login, chat, account/session screens, exact private-document bytes and guest denial.
+The verification-page probe initially inspected a streamed loading shell; waiting
+for Request history resolved that harness issue without weakening file assertions.
+
+Live shared-route checks pass both viewports and both zoom levels using accessible
+SVG labels, retaining geometric clearance and normal clicks/taps. Production
+omits custom SVG class hooks that development supplies: UIA-23 records the missing
+custom hover/focus shadow for follow-up. The class-based probes and CI retry are
+retained as failures/retry evidence, not silently counted as clean passes.
+
+Evidence: `.local/release-20260923-publication-receipt.json`, production artifact,
+deployed browser and final security evidence, plus
+`.local/release-20260923-live-map-accessible.log` (2 passes, no retries).
+PR #15 records the release result. The local preview remains at
+http://127.0.0.1:3100. Safari, physical-phone GPS prompts and real-recipient inbox
+delivery remain unverified; no real-recipient email was sent. This scoped release
+is complete; routine production changes revert to owner-only authority.
+Earlier entries below are historical checkpoints, superseded by this result.
+
 ## Release CI corrections — 2026-09-23
 
 Candidate f171c7a passed validation and container CI, but browser CI reported
@@ -12,7 +49,7 @@ phone cases, then run normal exact-candidate CI and release gates again.
 
 - [x] Verify unobstructed mobile retry, chat, zoom and summary controls.
 - [x] Verify viewport reset, settled drawer gestures and admin login.
-- [ ] Commit/push corrected candidate, pass full CI, then continue release.
+- [x] Commit/push corrected candidate, pass full CI, then continue release.
 
 Twelve distinct focused desktop/phone cases now pass: ten map/drawer/reset/admin
 cases in `artifacts/ci-map-final-20260923/`, plus both final private-map cases in
@@ -40,8 +77,8 @@ corrections and releasing them with the existing safety gates.
   clear ordered instructions, preserving OTP/review authority (FEAT-REV-001).
 - [x] Exercise company Driver permission combinations on desktop/phone; WebKit
   runtime is incompatible on this macOS host, so Safari remains unverified.
-- [ ] Run focused checks, quality and exact-commit CI; prepare fresh backup/restore.
-- [ ] Apply only reviewed migrations 098–101, build and verify immutable artifact,
+- [x] Run focused checks, quality and exact-commit CI; prepare fresh backup/restore.
+- [x] Apply only reviewed migrations 098–101, build and verify immutable artifact,
   publish, and independently verify hosted behavior. No hosted settings changes.
 
 Focused fixes are verified: six document/payment/rating cases; both desktop/phone
@@ -149,11 +186,11 @@ quality passes all 329 tests, source/spec checks and TypeScript. The existing
 dev server remains available at http://127.0.0.1:3100.
 
 - [x] Record current-candidate release approval and completed local checks.
-- [ ] Commit the reviewed follow-up and verify all required exact-commit CI jobs.
-- [ ] Refresh the protected production backup and rehearse migrations 098–101.
-- [ ] Verify and apply the exact bounded migration plan.
-- [ ] Build/inspect the immutable draft, verify runtime and prepare rollback.
-- [ ] Publish and independently verify live health, desktop/phone and private files.
+- [x] Commit the reviewed follow-up and verify all required exact-commit CI jobs.
+- [x] Refresh the protected production backup and rehearse migrations 098–101.
+- [x] Verify and apply the exact bounded migration plan.
+- [x] Build/inspect the immutable draft, verify runtime and prepare rollback.
+- [x] Publish and independently verify live health, desktop/phone and private files.
 
 The earlier pending review entries below describe the state before this
 instruction. No further visible redesign is part of this release. The provider

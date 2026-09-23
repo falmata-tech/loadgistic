@@ -2,6 +2,16 @@
 
 FEAT-SEC-001 / BASE-DEP-001 / ADR-063. Scope: Loadgistic only.
 
+## September 23 release completed
+
+Commit `200c783` is independently verified live as Netlify deployment
+`6ab3aaa9668f9644dcba97d8` on the existing Loadgistic site. CI `35843724742`,
+backup/restore, bounded migrations 098–101, security checks, immutable packaging
+and live desktop/phone/private-file checks pass. The scoped authorization below
+is consumed. Owner-only remains the default for future production changes.
+UIA-23 is a recorded map styling follow-up, not permission for another rollout.
+No hosted Auth/provider/credential setting was changed.
+
 ## Current release authorization — 2026-09-23
 
 Latest owner instruction: “ok go ahead and fix deploy,” following the demo risk

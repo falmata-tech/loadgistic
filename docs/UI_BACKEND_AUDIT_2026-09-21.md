@@ -262,3 +262,25 @@ CI also exposed a zoom-test race: another request for the old window satisfied a
 request-count wait before zoom finished. The assertion now waits for the actual
 changed viewport. Drawer gesture coordinates wait for a stable element, and
 admin login waits for its completed redirect rather than a five-second URL check.
+
+
+### UIA-23 — production SVG classes differ from development (open)
+
+The published 200c783 map renders yellow/brown paths with `leaflet-interactive`,
+correct stroke geometry, accessible button labels and tabindex, but without the
+custom classes supplied through React Leaflet `pathOptions`. Development tests
+see those classes. Inspection of the installed React Leaflet path hook shows
+`pathOptions` are applied through a later `setStyle`; Leaflet needs SVG classes
+at layer construction. Development remount behavior masks this difference.
+The intended custom hover/focus shadow therefore does not apply in production,
+and the local shared-segment test cannot locate its CSS hooks on the live build.
+This is not evidence that the drawn routes are absent or overlapping.
+
+Owner: capacity UI maintainer. Follow-up: supply class names at layer creation
+for all public-map shapes and verify pointer/keyboard highlights against a
+compiled production build on desktop/phone before a separately tested release.
+Do not add forced taps or remove the geometric separation assertions. Live
+interaction evidence uses existing accessible SVG labels instead of absent
+classes and retains both zoom levels, separation and native click/touch checks.
+Evidence: `.local/release-20260923-live-shared-route-final/` (class-based checks
+fail) and `.local/release-20260923-live-map-accessible/` (actual controls).

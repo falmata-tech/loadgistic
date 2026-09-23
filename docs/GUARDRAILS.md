@@ -155,3 +155,10 @@ owned extension remediation, and tests real anonymous/authenticated denial.
 Current rollout still requires Supabase's owner-side repair and provider-enforced
 credential/protection changes. A scheduled workflow file without its scoped token
 and main-branch installation is not active monitoring.
+
+
+- UIA-23: verify map layer classes and hover/keyboard focus against a compiled
+  production build. React development remounts can hide constructor-only Leaflet
+  option mistakes. Use accessible controls for interaction assertions and retain
+  separate checks for required styling hooks; do not treat a missing test selector
+  as proof that visible geometry is missing.

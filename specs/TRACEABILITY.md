@@ -1,5 +1,18 @@
 # Specification traceability
 
+## Verified deployment — 2026-09-23
+
+Commit 200c783 / Netlify 6ab3aaa9668f9644dcba97d8 / CI 35843724742:
+all required jobs pass, with the single browser retry explicitly retained.
+FEAT-SEC-001: restored backup, rehearsed/applied migrations 098–101, catalog,
+Data API and spatial checks pass. FEAT-IAM/LST/SHR/VER: published desktop/phone
+login presentation, map filters/reset, account access and exact authorized file
+bytes with guest denial pass. Shared-leg native taps and minimum clearance pass
+at two zoom levels on both viewports using accessible SVG labels. UIA-23 remains
+open for constructor-time classes/custom hover-focus styling; the development
+CSS-selector probes do not pass against the production SVG. See PROGRESS and
+DEMO_READINESS_2026-09-23 for evidence paths and Safari/GPS/inbox limits.
+
 ## UIA-22 release correction — 2026-09-23
 
 FEAT-LST-001: full retry-target/header separation, native retry/chat/close clicks,

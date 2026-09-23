@@ -120,3 +120,19 @@ visible login/logout and 401 denial without reading the logout keepalive body
 after navigation. The trace identified that body wait as the intermediate test
 stall. Phone recovery/header captures were inspected; the new candidate still
 requires normal exact-commit CI and deployment checks.
+
+
+## Published candidate verification
+
+Commit 200c783 is live as Netlify deployment 6ab3aaa9668f9644dcba97d8.
+CI 35843724742 passes all required jobs (211 browser passes, one retry-pass,
+eight opt-in skips). Migrations 098–101, backup/restore and security gates pass.
+Live desktop/phone login presentation, filters/reset, chat, account access and
+private-document bytes/guest denial pass. Both viewports also pass real native
+shared-route clicks/taps and clearance at two zoom levels; accessible SVG labels
+are used because production omits the development CSS hooks. UIA-23 records the
+missing custom hover/focus highlight for follow-up. Initial class-selector checks
+failed and are retained; this is not a claim of clean first-attempt verification.
+The streamed verification-page test now waits for its actual content before
+checking documents. Safari, actual phone GPS and real-inbox delivery remain the
+specific demo limitations listed above. The production release gate is complete.
