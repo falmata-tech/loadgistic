@@ -60,3 +60,8 @@ export function driverPortraitUrl(filename){
   const value=String(filename||'');
   return DRIVER_PORTRAIT_SET.has(value)?`/marketing/drivers/${value}`:null;
 }
+
+export function uploadedDriverPortraitUrl(id){
+  return typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    ?`/api/public/driver-portraits/${id}`:null;
+}

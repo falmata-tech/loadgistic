@@ -1,3 +1,5 @@
+
+import {Text} from '@/components/localization';
 import { Heart, HeartOff, Link2, Link2Off, UserCheck } from 'lucide-react';
 
 type NetworkState = {
@@ -21,13 +23,13 @@ function NetworkForm({targetKind,targetId,returnTo,action,label,kind='secondary'
 
 export function NetworkActions({state,targetKind,targetId,returnTo}:{state:NetworkState;targetKind:string;targetId:string;returnTo:string}) {
   if(!state.eligible)return null;
-  if(state.status==='CONNECTED')return <div className="network-action-row"><span className="status green"><UserCheck aria-hidden="true"/>Connected</span></div>;
+  if(state.status==='CONNECTED')return <div className="network-action-row"><span className="status green"><UserCheck aria-hidden="true"/><Text message="Connected"/></span></div>;
   if(state.incoming)return <div className="network-action-row">
     <NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action="ACCEPT" label="Accept" kind="" Icon={UserCheck}/>
     <NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action="DECLINE" label="Decline" Icon={Link2Off}/>
   </div>;
   return <div className="network-action-row">
     <NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action={state.is_favorite?'UNFAVORITE':'FAVORITE'} label={state.is_favorite?'Unfavorite':'Favorite'} Icon={state.is_favorite?HeartOff:Heart}/>
-    {state.connect_eligible===false?null:state.outgoing?<span className="status"><Link2 aria-hidden="true"/>Request sent</span>:<NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action="REQUEST" label="Connect" kind="" Icon={Link2}/>}
+    {state.connect_eligible===false?null:state.outgoing?<span className="status"><Link2 aria-hidden="true"/><Text message="Request sent"/></span>:<NetworkForm targetKind={targetKind} targetId={targetId} returnTo={returnTo} action="REQUEST" label="Connect" kind="" Icon={Link2}/>}
   </div>;
 }

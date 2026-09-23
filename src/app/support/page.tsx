@@ -1,3 +1,5 @@
+
+import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import { CheckCircle2, Clock3, Headphones, Inbox, PauseCircle, PlayCircle, UserCheck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
@@ -23,17 +25,17 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
   const available=Boolean(result.agent?.available);
 
   return <div className="page support-page">
-    <SupportRefresh/>
-    <PageHeader icon={Headphones} title="Support Inbox" subtitle="Help one customer at a time." action={<form action="/api/support/availability" method="post">{!available?<input type="hidden" name="available" value="on"/>:null}<button className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/>Pause</>:<><PlayCircle aria-hidden="true"/>Go available</>}</button></form>}/>
+    <SupportRefresh endpoint={`/api/support/updates?view=${view}&page=${result.page}`}/>
+    <PageHeader icon={Headphones} title={<Text message="Support Inbox"/>} subtitle={<Text message="Help one customer at a time."/>} action={<form action="/api/support/availability" method="post">{!available?<input type="hidden" name="available" value="on"/>:null}<button className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/><Text message="Pause"/></>:<><PlayCircle aria-hidden="true"/><Text message="Go available"/></>}</button></form>}/>
     <Flash error={query.error} success={query.success}/>
-    <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/>Assisted matching</Link>
+    <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/><Text message="Assisted matching"/></Link>
     <section className="support-agent-strip">
       <span className={`live-dot ${available?'':'off'}`} aria-hidden="true"/>
-      <div><strong>{available?'Available':'Paused'}</strong><small>{result.agent.open_count} of {result.agent.max_open_conversations} assigned</small></div>
+      <div><strong>{available?<Text message="Available"/>:<Text message="Paused"/>}</strong><small>{result.agent.open_count}<Text message=" of "/>{result.agent.max_open_conversations}<Text message=" assigned"/></small></div>
     </section>
-    <nav className="support-tabs" aria-label="Support queue">
+    <Localized as="nav" copy={["aria-label"]} className="support-tabs" aria-label="Support queue">
       {views.map(item=>{const Icon=item.icon;return <Link className={view===item.id?'active':''} href={`/support?view=${item.id}`} key={item.id}><Icon aria-hidden="true"/><span>{item.label}</span><strong>{result.counts[item.count]}</strong></Link>;})}
-    </nav>
+    </Localized>
     <section className="support-conversation-list">
       {result.items.map((item:any)=><article key={item.id}>
         {item.status==='WAITING'?<div className="support-conversation-main">
@@ -44,10 +46,10 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
           <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
         </Link>}
         <StatusPill status={item.status}/>
-        {item.status==='WAITING'?<form action={`/api/support/conversations/${item.id}/claim`} method="post"><button className="button small"><UserCheck aria-hidden="true"/>Claim</button></form>:<Link className="button secondary small" href={`/support/${item.id}`}><Inbox aria-hidden="true"/>Open</Link>}
+        {item.status==='WAITING'?<form action={`/api/support/conversations/${item.id}/claim`} method="post"><button className="button small"><UserCheck aria-hidden="true"/><Text message="Claim"/></button></form>:<Link className="button secondary small" href={`/support/${item.id}`}><Inbox aria-hidden="true"/><Text message="Open"/></Link>}
       </article>)}
     </section>
-    {!result.items.length?<div className="empty-state"><Inbox aria-hidden="true"/><strong>{view==='WAITING'?'No customers waiting.':view==='CLOSED'?'No closed conversations yet.':'Your inbox is clear.'}</strong><span>{view==='ASSIGNED'&&available?'New requests assign automatically when they arrive.':'Choose another queue.'}</span></div>:null}
+    {!result.items.length?<div className="empty-state"><Inbox aria-hidden="true"/><strong>{view==='WAITING'?<Text message="No customers waiting."/>:view==='CLOSED'?<Text message="No closed conversations yet."/>:<Text message="Your inbox is clear."/>}</strong><span>{view==='ASSIGNED'&&available?<Text message="New requests assign automatically when they arrive."/>:<Text message="Choose another queue."/>}</span></div>:null}
     <Pagination path="/support" query={{view}} page={result.page} pageCount={result.pageCount} total={result.total}/>
   </div>;
 }

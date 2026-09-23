@@ -1,15 +1,40 @@
 ---
 id: FEAT-BIL-001
-title: Time-bounded workspace subscription access
+title: Free access and controlled trial/payment activation
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-APP-001, FEAT-TRK-001]
 problem: Self-managed Driver and fleet transporter workspaces need a useful trial, manually confirmed monthly access, and predictable limits after access expires.
-behavior: Successful provider signup starts a seven-day workspace trial; a manually approved payment grants 30 days; expired or unpaid providers retain login, Home, Account, and billing access while provider operating commands are denied. Public capacity discovery and guest tracking never depend on a seeker subscription.
+behavior: An administrator controls Free access or Trial then payment. Free access is the launch default, with no trial countdown or payment prompts. Enabling paid mode gives existing unpaid providers a fresh seven-day activation window; new providers receive their normal seven-day trial. A manually approved payment grants 30 days. Expired or unpaid providers retain login, Home, Account, and billing access in paid mode. Public discovery and guest tracking never require seeker payment.
 contracts: [WorkspaceSubscription, SubscriptionAccessPolicy, TrialPeriod, PaidPeriod, PaymentProofAggregate, EtbAmount, BillingReviewPolicy, BillingFilePort]
-observability: [billing_audit, subscription_access_denial, trial_provisioned, paid_period_started, submission_outcome, review_outcome]
+observability: [PLATFORM_CONTROLS_UPDATED audit, billing_audit, subscription_access_denial, trial_provisioned, paid_period_started, submission_outcome, review_outcome]
 rollout: Keep review manual and plan prices undisclosed until a separately specified payment integration and commercial price schedule are approved; use private Supabase Storage plus actor-scoped PostgreSQL commands in every runtime, monitor expiry denials and renewal-review time, and never fall back to SQLite.
 ---
 
 # Billing proof
+
+### Scenario: administrator controls commercial activation
+
+Given the administrator selects Free access in platform settings\
+When an active provider with an owned subscription uses the workspace\
+Then subscription expiry does not block authorized operations\
+And no trial deadline or payment-submission prompt is shown\
+And payment submission is rejected as unnecessary while history remains readable\
+And authentication, ownership, Driver linkage, and permission checks remain unchanged.
+
+Given the administrator enables Trial then payment\
+When the change is saved\
+Then a seven-day activation window begins for existing unpaid workspaces\
+And valid paid periods and all billing history are preserved\
+And saving the same mode does not restart the window\
+And disabling and later re-enabling starts a new explicitly described activation window\
+And UI and PostgreSQL commands enforce the same effective-access policy\
+And non-admin settings writes are denied and successful changes are audited.
+
+Implementation plan: additive service-only platform controls in migration `079`,
+shared effective-access policy in identity and PostgreSQL actor scopes, an admin
+Settings destination, and policy-aware account presentation. Existing expiry
+scenarios below apply while Trial then payment is enabled. Verify both modes,
+activation boundaries, permission denial, and history preservation before rollout.
+Rollback restores the policy/functions/client without deleting billing records.
 
 ### Scenario: workspace submits payment proof
 
@@ -103,3 +128,18 @@ And managed failure never falls back to SQLite or a serverless local file.
 - Application services: dedicated managed Billing and workspace application ports; pure expiry policy in `src/lib/subscription-access.js`
 - Persistence and files: actor-scoped Supabase PostgreSQL commands plus private Storage quarantine/release/read/remove adapters
 - Tests: managed Billing contract and live Supabase verifier, `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
+
+### Scenario: platform administration is not a customer subscription
+
+Given an administrator opens Account & plan
+When their platform role grants access without a provider subscription
+Then the page identifies platform administration access, does not say No plan
+assigned or ask them to contact support for a plan, and offers no payment form.
+This is a presentation correction; provider billing and authorization stay unchanged.
+
+### Scenario: monetary displays preserve minor units
+
+Given a stored payment amount of 125050 minor units
+When Account or Review Center displays it
+Then it displays ETB 1,250.50 without rounding away cents
+And whole-birr amounts retain their compact existing format.

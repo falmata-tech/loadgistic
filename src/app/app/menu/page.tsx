@@ -1,10 +1,12 @@
+
+import {Text} from '@/components/localization';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import { canManageProviderVehicles } from '@/lib/fleet.js';
 import { getWorkspaceAccess } from '@/lib/workspace.js';
 import { LogoutButton } from '@/components/logout-button';
 import { PageHeader } from '@/components/page-header';
-import { Activity, BadgeCheck, ClipboardCheck, CreditCard, Database, ExternalLink, Headphones, LayoutGrid, MapPinned, Network, Sparkles, Truck, UserRound } from 'lucide-react';
+import { Activity, BadgeCheck, ClipboardCheck, CreditCard, Database, ExternalLink, Headphones, LayoutGrid, MapPinned, Network, Settings2, Sparkles, Truck, UserRound } from 'lucide-react';
 
 export default async function WorkspaceMenuPage(){
   const user=await requireUser(undefined,{allowLimited:true});
@@ -18,6 +20,7 @@ export default async function WorkspaceMenuPage(){
     ...(ownsProfile?[{href:'/app/company-page',label:'Public profile',detail:'Manage the transporter page customers see.',Icon:UserRound}]:[]),
     ...(provider?[{href:'/app/verification',label:'Verification',detail:'Review document status and submit updates.',Icon:BadgeCheck}]:[]),
     ...(administrator?[
+      {href:'/admin/settings',label:'Settings',detail:'Control free access, trials, and payment activation.',Icon:Settings2},
       {href:'/admin',label:'Administration overview',detail:'Open platform records and current work queues.',Icon:Activity},
       {href:'/admin/operations',label:'Platform records',detail:'Find users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans.',Icon:Database},
       {href:'/admin/reviews',label:'Review Center',detail:'Review documents, ratings, and payment evidence.',Icon:ClipboardCheck},
@@ -29,5 +32,5 @@ export default async function WorkspaceMenuPage(){
     {href:'/',label:'Open capacity',detail:'Open the public transport-capacity map.',Icon:MapPinned,public:true},
     {href:'/featured',label:'Public featured programme',detail:'Preview today’s transporter programme.',Icon:Sparkles,public:true}
   ];
-  return <div className="page workspace-menu-page"><PageHeader icon={LayoutGrid} title="More" subtitle="Account, public profile, support, and public discovery."/><section className="workspace-menu-grid">{links.filter(link=>access.granted||['/app/more','/','/featured'].includes(link.href)).map(({href,label,detail,Icon,public:publicLink})=><Link href={href} className="workspace-menu-card" key={href}><span><Icon aria-hidden="true"/></span><div><strong>{label}</strong><p>{detail}</p></div>{publicLink?<ExternalLink aria-hidden="true"/>:null}</Link>)}</section><div className="workspace-menu-signout"><LogoutButton/></div></div>;
+  return <div className="page workspace-menu-page"><PageHeader icon={LayoutGrid} title={<Text message="More"/>} subtitle={<Text message="Account, public profile, support, and public discovery."/>}/><section className="workspace-menu-grid">{links.filter(link=>access.granted||['/app/more','/','/featured'].includes(link.href)).map(({href,label,detail,Icon,public:publicLink})=><Link href={href} className="workspace-menu-card" key={href}><span><Icon aria-hidden="true"/></span><div><strong>{label}</strong><p>{detail}</p></div>{publicLink?<ExternalLink aria-hidden="true"/>:null}</Link>)}</section><div className="workspace-menu-signout"><LogoutButton/></div></div>;
 }

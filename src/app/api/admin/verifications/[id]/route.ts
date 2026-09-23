@@ -1,3 +1,4 @@
+import {reviewQueueReturnPath} from '@/lib/review-navigation.js';
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { reviewVerification } from '@/lib/verification.js';
@@ -9,10 +10,11 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   const form=await request.formData();
+  const returnTo=reviewQueueReturnPath(text(form,'returnTo'),'documents');
   try {
     await reviewVerification(user,id,text(form,'status'),text(form,'note'));
-    return redirectWith(request,'/admin/reviews?tab=documents','success','Verification reviewed.');
+    return redirectWith(request,returnTo,'success','Verification reviewed.');
   } catch(error) {
-    return redirectWith(request,'/admin/reviews?tab=documents','error',errorMessage(error));
+    return redirectWith(request,returnTo,'error',errorMessage(error));
   }
 }

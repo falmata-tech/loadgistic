@@ -182,3 +182,23 @@ And an unavailable or rejected Supabase request fails closed instead of importin
 - Application service boundary: the Supabase-only private-capacity port under `src/lib/private-capacity.js`
 - Supabase PostgreSQL adapter and server-only ports: `src/lib/repository/supabase.js` and `supabase/migrations/042_shared_capacity_runtime.sql`
 - Tests: domain/repository authorization, capacity-market projection, desktop/mobile E2E
+
+### Shared map filter presentation — 2026-09-21
+
+The owner-requested FEAT-LST-001 sliding filter drawer and More filters modal
+apply equally to the authenticated Private capacity map. Filtering, suggestions
+and map pagination stay on `/api/shared-capacity`; applying criteria stays on
+`/shared-capacity`. Do not expose a public fallback or move session/logout controls
+under the drawer or a Leaflet layer. Focused browser evidence must use a real local
+shared session and retain unauthenticated denial.
+
+### Scenario: clearing filters retains only the private access session
+
+Given an authorized Private capacity visitor applies or edits map filters
+When they choose Clear all or the detailed dialog's Clear action
+Then the filter draft, selected truck and filtered map view reset together
+And subsequent requests use unfiltered private results for that same verified email
+And the session is neither discarded nor widened to another recipient or public API.
+
+Shared reset semantics and desktop/phone regression evidence are specified in
+FEAT-LST-001. A query URL change must not retain the previous component's state.

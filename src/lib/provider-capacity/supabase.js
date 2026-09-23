@@ -13,6 +13,13 @@ const MANAGED_ERRORS=[
 function managedError(code,error){
   const message=String(error?.message||'');
   const known=MANAGED_ERRORS.find(candidate=>message.includes(candidate));
+  if(!known){
+    // Never log database messages/details: they can include submitted coordinates
+    // or contacts. An operation and bounded SQL/PostgREST code are sufficient
+    // to distinguish a database outage, stale schema, and validation defect.
+    const databaseCode=/^(?:[0-9A-Z]{5}|PGRST\d{3})$/.test(String(error?.code||''))?String(error.code):'UNAVAILABLE';
+    console.error('[provider-capacity]',{operation:code,databaseCode});
+  }
   return new Error(known||code,{cause:error});
 }
 
@@ -110,12 +117,14 @@ export async function setSupabaseProviderAssignedVehicleDuty(user,vehicleId,onDu
   return data;
 }
 
-export async function addSupabaseProviderRegularCapacity(user,input){
+export async function addSupabaseProviderRegularCapacity(user,input,replaceId=/** @type {string|null} */(null)){
   const command={geometry:String(input.geometry||''),route_places:placeCommands(input.routePlaces),
     area_center_place_ref:String(input.areaCenterPlaceRef||''),
     area_boundary_places:placeCommands(input.areaBoundaryPlaces)};
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('add_provider_regular_capacity',{actor_user_id:user.id,command});
+  const {data,error}=await client.rpc(replaceId?'replace_provider_regular_capacity':'add_provider_regular_capacity',{
+    actor_user_id:user.id,command,...(replaceId?{target_route_id:String(replaceId)}:{})
+  });
   if(error)throw managedError('SUPABASE_PROVIDER_REGULAR_CAPACITY_ADD_FAILED',error);
   return data;
 }

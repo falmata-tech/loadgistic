@@ -32,17 +32,31 @@ When it validates and stores the upload\
 Then the file's actual signature agrees with its permitted MIME type\
 And the complete multipart upload is limited to four mebibytes so it remains below Netlify's effective buffered binary-request boundary\
 And the untrusted object is first written to a dedicated private quarantine boundary\
-And a configured scanner returns an explicit clean verdict before the object is copied into its purpose-specific private bucket\
-And an infected, malformed, timed-out, quota-limited, unavailable, or unexpected scanner result deletes the quarantined object and returns no storage reference\
+And the operator explicitly selects managed antivirus or validation-only upload inspection\
+And managed antivirus requires an explicit clean verdict before release; an infected, malformed, timed-out, quota-limited, unavailable, or unexpected scanner result deletes the quarantined object and returns no storage reference\
+And validation-only mode retains signature, MIME, size, quarantine, and authorization checks but never claims a virus-free verdict\
 And the database stores an opaque released private-storage reference rather than a public URL or quarantine reference\
 And every download rechecks domain authorization before reading that reference\
 And every managed runtime uses private Supabase Storage buckets while local development uses an isolated EICAR-aware test scanner that cannot satisfy Production readiness\
 And scanner credentials, verdict details, original document content, and quarantine references are never written to application logs.
 
+### Scenario: operator-approved uploads without antivirus
+
+Given the owner explicitly selects `UPLOAD_SCANNER_BACKEND=validation-only`\
+When a permitted private upload passes the existing size and file-signature checks\
+Then it can be released without a third-party antivirus account\
+And health reports `uploads-not-virus-scanned` as a warning, not a clean scanner verdict\
+And this mode is never selected automatically after a managed scanner fails\
+And a missing mode still uses the local-test default which cannot satisfy Production readiness\
+And private PDF evidence is downloaded as an attachment with no-sniff and restrictive document headers\
+And restoring managed antivirus is a configuration-only rollback.
+
+This is the owner's explicit 2026-09-13 pilot risk decision, not equivalent malware protection. See `docs/UPLOAD_POLICY_2026-09-13.md`. Regression evidence: `tests/upload-scanner.test.mjs`, `tests/private-storage.test.mjs`, and `tests/launch-readiness.test.mjs`.
+
 ### Scenario: production readiness reports blockers truthfully
 
 Given health traffic reaches a production runtime\
-When durable database, private storage, session secret, distinct Tracking code secret, or upload-scanning configuration is incomplete\
+When durable database, private storage, session secret, distinct Tracking code secret, or the explicitly chosen upload inspection configuration is incomplete\
 Then readiness returns an unhealthy response with non-secret blocker names\
 And it never falls back to SQLite or local serverless files when Supabase is unavailable.
 
@@ -122,6 +136,16 @@ Then it resets and uses a dedicated local Supabase project on dedicated ports\
 And it does not reuse a running development server or its business records\
 And its generated Next.js artifacts are isolated from both the live development server and production build output.
 
+Given local fixture setup reads its schema before any reset or import\
+When that read times out or returns an error\
+Then setup stops before fixture mutations and reports only a sanitized status and provider code\
+And it never prints response messages, details, credentials or raw transport errors\
+And neither the read nor the destructive import is silently retried\
+And a malformed or empty schema is rejected before reset.
+
+Verification: `tests/fixture-schema.test.mjs`. This diagnostic does not establish
+the cause of a past intermittent HTTP 500 or waive clean CI setup evidence.
+
 ### Scenario: local development uses incremental compilation
 
 Given a developer starts Loadgistic with the documented development command\
@@ -149,7 +173,7 @@ And the public browser credential is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 And `APP_URL` supplies one HTTPS deployment-owned origin for fixed Supabase Auth callbacks\
 And Supabase's Site URL and Redirect URL allowlists, Google provider, numeric email template, and verified SMTP are recorded as owner-managed controls\
 And secret values are entered in the deployment platforms rather than committed\
-And Netlify or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and upload scanning contracts pass.
+And Netlify or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and selected upload inspection contracts pass.
 
 ### Scenario: zero-cost pilot has explicit capacity boundaries
 
@@ -205,3 +229,49 @@ And generated identities, capacity, files, and reports are never written to Prod
 - `npm run quality`
 - `npm run build`
 - `npm run test:scale`
+
+
+### Scenario: local credentials and deployment state never enter container builds (F26)
+
+Given a developer checkout contains ignored credentials, backups, deployment
+artifacts and linked database state\
+When Docker sends the build context and constructs the application builder\
+Then `.local`, `.netlify`, every `.next*` build directory, and Supabase `.temp`
+or `.branches` directories are excluded before context transfer\
+And the builder fails before compilation if local credential/deployment or linked
+Supabase state is present\
+And the final runtime receives only the standalone application and public assets.
+
+Evidence: a local canary/context check plus the ordinary standalone Docker build.
+No hosted data is required for this check. Rollback must preserve these exclusions;
+this changes packaging only, not runtime authority or database behavior.
+
+### Scenario: production pilot documents use the private-storage contract
+
+Given the additive pilot importer substitutes a shared synthetic verification file
+When it maps a verification request for a namespaced pilot identity
+Then the stored reference includes the `supabase://verification/` bucket prefix
+And the existing private-storage reader retrieves the intended object
+And the document route still requires the authorized account.
+
+A repair of existing pilot references must match the exact fixture identity,
+original reference and reviewed row set; preserve file bytes and all other fields;
+retain a protected recovery snapshot; and reject drift before an atomic update.
+Do not rerun the bulk importer to correct these references. Production application
+still requires the owner's exact database-change approval. Regression evidence:
+`tests/production-pilot-policy.test.mjs`; deployment browser verification and the
+bounded repair rehearsal recorded in `docs/PROGRESS.md`.
+
+
+### Scenario: performance work preserves the approved experience
+
+Given a request authorizes performance improvements to an existing interface\
+When an optimization is proposed\
+Then its acceptance preserves appearance, action count, automatic behavior and result completeness\
+And any required UX tradeoff needs explicit owner agreement before implementation\
+And a running local preview with desktop/phone evidence requires explicit owner visual approval before deployment\
+And successful CI, an agent-authored spec and earlier release permission do not replace that approval.
+
+NR-13 and `docs/MAP_PERFORMANCE_REGRESSION_2026-09-21.md` record the map incident,
+local evidence and remaining repair. Repository rules are workflow requirements,
+not installed provider-level enforcement.

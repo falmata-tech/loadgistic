@@ -20,7 +20,7 @@ const MANAGED_ERRORS=[
   'FEATURED_PROVIDER_REQUIRED','FEATURED_PROVIDER_DUPLICATE','FEATURED_PROVIDER_INVALID','FEATURED_PROVIDER_INELIGIBLE',
   'FEATURED_HEADLINE_INVALID','FEATURED_INTRODUCTION_INVALID','FEATURED_SCHEDULE_MODE_INVALID',
   'FEATURED_TARGET_COUNT_INVALID','FEATURED_TARGET_COUNT_MISMATCH','FEATURED_TRUCK_THEME_INVALID',
-  'FEATURED_TRUCK_INVALID','FEATURED_TRUCK_DUPLICATE','FEATURED_TRUCK_INELIGIBLE','FEATURED_DRIVER_REQUIRED',
+  'FEATURED_TRUCK_INVALID','FEATURED_TRUCK_DUPLICATE','FEATURED_TRUCK_INELIGIBLE','FEATURED_DRIVER_REQUIRED','FEATURED_DRIVER_DUPLICATE',
   'SPONSORSHIP_DATE_RANGE_INVALID','SPONSORSHIP_POSITION_INVALID','SPONSORSHIP_KIND_INVALID',
   'SPONSORSHIP_PROVIDER_INVALID','SPONSORSHIP_PROVIDER_INELIGIBLE','SPONSOR_NAME_INVALID',
   'SPONSOR_DESCRIPTION_INVALID','SPONSOR_WEBSITE_INVALID','SPONSOR_CONTACT_REQUIRED','SPONSORSHIP_OVERLAP',
@@ -121,8 +121,9 @@ function pageFromRows(rows,page,pageSize){
 
 export async function getAdminOperations(user,query='',options={}){
   const view=String(options.view||'WORKSPACES').toUpperCase();
-  const pageSize=Math.max(1,Math.min(50,Number(options.pageSize)||20));
-  const page=Math.max(1,Number(options.page)||1);const search=String(query||'').trim().slice(0,80);
+  const requestedSize=Number(options.pageSize);const requestedPage=Number(options.page);
+  const pageSize=Number.isSafeInteger(requestedSize)&&requestedSize>0?Math.min(50,requestedSize):20;
+  let page=Number.isSafeInteger(requestedPage)&&requestedPage>0&&requestedPage<=1_000_000?requestedPage:1;const search=String(query||'').trim().slice(0,80);
   const client=createSupabaseAdminClient();
   const [countsResult,pageResult]=await Promise.all([
     client.rpc('managed_admin_operation_counts',{actor_user_id:user.id}),
@@ -130,7 +131,15 @@ export async function getAdminOperations(user,query='',options={}){
       requested_offset:(page-1)*pageSize,requested_limit:pageSize})
   ]);
   if(countsResult.error||pageResult.error)throw managedError('SUPABASE_ADMIN_OPERATIONS_FAILED',countsResult.error||pageResult.error);
-  const pagination=pageFromRows(pageResult.data,page,pageSize);
+  // Window totals disappear with an empty offset page. Recover one bounded page
+  // instead of presenting a false empty inventory after records are removed.
+  let rows=pageResult.data;
+  if(page>1&&!rows?.length){
+    const recovered=await client.rpc('managed_admin_operations_page',{actor_user_id:user.id,requested_view:view,search_text:search,requested_offset:0,requested_limit:pageSize});
+    if(recovered.error)throw managedError('SUPABASE_ADMIN_OPERATIONS_FAILED',recovered.error);
+    rows=recovered.data;page=1;
+  }
+  const pagination=pageFromRows(rows,page,pageSize);
   return {counts:countsResult.data||{},view,items:pagination.items,pagination,query:search};
 }
 

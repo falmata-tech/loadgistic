@@ -107,7 +107,7 @@ export function normalizeEtb(value) {
 
 export function formatEtb(minor) {
   if (minor === null || minor === undefined) return null;
-  return `ETB ${(minor / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  return `ETB ${(minor / 100).toLocaleString('en-US', { minimumFractionDigits: minor % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
 }
 
 export function validatePriceMode({ priceMode, priceEtb, targetPriceEtb }) {
@@ -324,4 +324,10 @@ export function statusLabel(value) {
     .split('_')
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+/** Recovery never rewinds terminal Tracking or changes location consent. */
+export function trackingRecoveryActions(status){
+  return ['CREATED','TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING','ISSUE'].includes(status)
+    ?['CORRECT','REASSIGN','CANCEL']:[];
 }

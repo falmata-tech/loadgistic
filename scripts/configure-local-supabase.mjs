@@ -47,7 +47,7 @@ function writeLocalEnvironment(){
     ['SUPABASE_SERVICE_ROLE_KEY',serviceRoleKey],
     ['LOADGISTIC_LOCAL_MAILPIT_URL',mailUrl],
     ['UPLOAD_SCANNER_BACKEND','local'],
-    ['ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN','true']
+    ['ENABLE_LOCAL_FIXTURE_PASSWORD_LOGIN','false']
   ]);
   if(!/^SESSION_SECRET=/m.test(source))values.set('SESSION_SECRET',randomBytes(32).toString('base64url'));
   const seen=new Set();

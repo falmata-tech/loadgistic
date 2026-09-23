@@ -148,3 +148,77 @@ And permission changes take effect on the next authorized request and are audite
 - Inbound adapter: `/api/admin/records/[type]/[id]`
 - Persistence: service-role-only managed admin projection and command functions with actor permission checks and atomic audit writes
 - Tests: managed admin contract tests, local Supabase verifier, `tests/repository.test.mjs`, and `tests/e2e/smoke.spec.ts`
+
+## Bounded record recovery (F04, implementation)
+
+Given an active administrator or delegated Customers team member opens a client
+workspace record\
+When they correct its business name with a reason and the observed name\
+Then the server rechecks Customers permission, exact organization/provider kind,
+input bounds and concurrent-change protection\
+And updates only that business name with before/after audit evidence\
+And authentication, handles, contacts, ownership, membership and historical events
+are not editable through this action.
+
+Given an Operations-authorized team member opens Tracking detail\
+When the record permits recovery\
+Then the same governed correction/reassignment/cancellation controls and SQL
+rules used by providers are available, with a required reason and revision\
+And the member may inspect its current approximate travel location only when
+location sharing is enabled and the shipment is in an eligible travel state\
+And historical assignment locations, exact device coordinates, recipients,
+codes and private Storage paths are absent from the map projection.
+
+Migration 091 adds the Customers-scoped workspace correction and narrow
+Operations map; migration 090 supplies shared recovery. Both precede UI rollout.
+No new broad admin editor or external authority. Rollback hides the controls while
+retaining audit/recovery state. Required evidence: delegated permission, wrong
+record kind, concurrent edit, location-state privacy and real desktop/phone
+admin correction/recovery/map workflows.
+
+### UI contract corrections — 2026-09-21
+
+Given the administrator opens the Capacity inventory
+When a row is Off Duty
+Then its description says Off Duty and never describes an empty truck.
+
+Given an administrator acts on a user or truck from a searched/paginated inventory
+When the server reports success or denial
+Then the same record type, search and page remain selected.
+
+Implementation: derive capacity wording from stored status and include bounded
+list context in every record action. Preserve existing backend authority and
+mutation contracts. Focused desktop/phone checks exercise real controls and deny
+unrelated actors; no remote changes. Rollback restores presentation only.
+
+Given a saved Records URL points beyond the last result page
+When the inventory loads
+Then it recovers to the first bounded page of that search instead of claiming
+there are no matching records and hiding pagination. Invalid page numbers use page one.
+
+Given a provider publishes a regular-service area using the current polygon contract
+When an administrator opens Routes or its detail
+Then the area is labelled Service area around its center, not a route from a city
+to itself. Route geometry retains its origin/destination presentation. Migration
+101 adds only the existing geometry discriminator to the bounded admin list; no
+coordinates or broader privileges. Verify area/route SQL and desktop/phone rendering.
+
+### Review queue decision context — audit continuation, 2026-09-21
+
+Given a reviewer opens a searched, status-filtered, paginated document/payment/rating queue
+When a decision succeeds or the backend denies it
+Then the response retains that queue, search, status and page context
+And caller-provided return paths cannot redirect outside the matching Review Center tab.
+And review notes and status persist through the existing authorized command; terminal
+replays and callers without the required permission remain denied.
+
+Given a stale or invalid page number is requested in any Review Center queue
+When a bounded offset read returns no rows
+Then an out-of-range page recovers to the first bounded page of the same filter
+And genuinely empty queues remain empty; query failures are never disguised as empty data.
+
+Plan: reuse bounded page normalization/recovery for the three existing queue
+adapters, canonicalize Review Center return context, and pass it from each form.
+No database privilege/state-machine changes. Verify pure URL/paging negatives and
+actual desktop/phone review commands with disposable local records. Rollback
+restores adapters/presentation while preserving review decisions and audit history.

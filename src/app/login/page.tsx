@@ -1,3 +1,5 @@
+
+import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import {cookies} from 'next/headers';
 import {redirect} from 'next/navigation';
@@ -29,25 +31,18 @@ export default async function LoginPage({
     <PublicHeader/>
     <PublicAuthShell
       variant="login"
-      taskKicker="Account"
+      taskKicker={<Text message="Account"/>}
       title={codeStep?'Enter your code':'Log in'}
       description={codeStep
         ?`We sent a six-digit code to ${maskedProviderSignupEmail(handoff?.email||'')}.`
-        :'Use a one-time email code or Google.'}
-      contextKicker="Loadgistic"
-      contextTitle="Share capacity. Track agreed shipments."
-      contextDescription="One account for self-managed drivers, owner-operators, and fleet transporters."
+        :'Get a one-time code in your inbox.'}
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <div className="managed-login-stack">
         {codeStep?<EmailCodeForm localInbox={localInbox}/>:<EmailRequestForm localInbox={localInbox}/>}
-        <div className="auth-divider"><span>or</span></div>
-        <form action="/api/applications/google" method="post">
-          <button className="button secondary auth-google-button" type="submit"><span className="auth-google-mark" aria-hidden="true">G</span>Continue with Google</button>
-        </form>
       </div>
       {fixturePassword?<LocalFixtureLogin/>:null}
-      <p className="auth-privacy-note"><LockKeyhole aria-hidden="true"/>Your login email stays private.</p>
+      <p className="auth-privacy-note"><LockKeyhole aria-hidden="true"/><Text message="Your login email stays private."/></p>
     </PublicAuthShell>
   </>;
 }
@@ -56,11 +51,11 @@ function EmailRequestForm({localInbox}:{localInbox:string|null}){
   const helpId='account-email-help';
   return <form action="/api/applications/email-otp/request" method="post" className="stack auth-primary-form" data-testid="email-code-request-form">
     <div className="form-group">
-      <label htmlFor="account-email"><Mail aria-hidden="true"/>Email</label>
+      <label htmlFor="account-email"><Mail aria-hidden="true"/><Text message="Email"/></label>
       <input id="account-email" name="email" type="email" autoComplete="email" aria-describedby={helpId} required/>
-      <small id={helpId}>We will email a six-digit code. No password is needed.</small>
+      <small id={helpId}><Text message="For existing accounts or getting started. No password needed."/></small>
     </div>
-    <button className="button auth-primary-action" type="submit"><Send aria-hidden="true"/>Email me a code</button>
+    <button className="button auth-primary-action" type="submit"><Send aria-hidden="true"/><Text message="Email me a code"/></button>
     {localInbox?<LocalInboxLink url={localInbox}/>:null}
   </form>;
 }
@@ -69,27 +64,27 @@ function EmailCodeForm({localInbox}:{localInbox:string|null}){
   const helpId='account-code-help';
   return <form action="/api/applications/email-otp/verify" method="post" className="stack auth-primary-form" data-testid="email-code-form">
     <div className="form-group">
-      <label htmlFor="account-code"><KeyRound aria-hidden="true"/>Six-digit code</label>
+      <label htmlFor="account-code"><KeyRound aria-hidden="true"/><Text message="Six-digit code"/></label>
       <input id="account-code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} aria-describedby={helpId} required/>
-      <small id={helpId}>Codes expire after ten minutes and can be used once.</small>
+      <small id={helpId}><Text message="Codes expire after ten minutes and can be used once."/></small>
     </div>
-    <button className="button auth-primary-action" type="submit"><LogIn aria-hidden="true"/>Continue</button>
-    <Link className="auth-inline-link" href="/login"><RotateCcw aria-hidden="true"/>Use a different email</Link>
+    <button className="button auth-primary-action" type="submit"><LogIn aria-hidden="true"/><Text message="Continue"/></button>
+    <Link className="auth-inline-link" href="/login"><RotateCcw aria-hidden="true"/><Text message="Use a different email"/></Link>
     {localInbox?<LocalInboxLink url={localInbox}/>:null}
   </form>;
 }
 
 function LocalInboxLink({url}:{url:string}){
-  return <a className="auth-inline-link auth-local-inbox" href={url} target="_blank" rel="noreferrer" aria-label="Open the local email inbox in a new tab">Local testing: open the email inbox <span aria-hidden="true">↗</span></a>;
+  return <Localized as="a" copy={["aria-label"]} className="auth-inline-link auth-local-inbox" href={url} target="_blank" rel="noreferrer" aria-label="Open the local email inbox in a new tab"><Text message="Local testing: open the email inbox "/><span aria-hidden="true">↗</span></Localized>;
 }
 
 function LocalFixtureLogin(){
   return <details className="auth-fixture-login">
-    <summary>Local test accounts</summary>
+    <summary><Text message="Local test accounts"/></summary>
     <form action="/api/auth/login" method="post" className="stack" data-testid="login-form">
-      <div className="form-group"><label htmlFor="fixture-email"><Mail aria-hidden="true"/>Email</label><input id="fixture-email" name="email" type="email" autoComplete="email" required/></div>
-      <div className="form-group"><label htmlFor="fixture-password"><LockKeyhole aria-hidden="true"/>Password</label><input id="fixture-password" name="password" type="password" autoComplete="current-password" required/></div>
-      <button className="button secondary" type="submit"><LogIn aria-hidden="true"/>Log in</button>
+      <div className="form-group"><label htmlFor="fixture-email"><Mail aria-hidden="true"/><Text message="Email"/></label><input id="fixture-email" name="email" type="email" autoComplete="email" required/></div>
+      <div className="form-group"><label htmlFor="fixture-password"><LockKeyhole aria-hidden="true"/><Text message="Password"/></label><input id="fixture-password" name="password" type="password" autoComplete="current-password" required/></div>
+      <button className="button secondary" type="submit"><LogIn aria-hidden="true"/><Text message="Log in"/></button>
     </form>
   </details>;
 }

@@ -1,3 +1,5 @@
+
+import {Text} from '@/components/localization';
 import { KeyRound } from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 import { Flash } from '@/components/flash';
@@ -10,12 +12,12 @@ export default async function TrackingUnlockPage({searchParams}:{searchParams:Pr
     <section className="tracking-unlock-panel">
       <div className="tracking-unlock-icon"><KeyRound aria-hidden="true"/></div>
       <div>
-        <h1 className="page-title">Track an agreed shipment</h1>
-        <p className="page-subtitle">Enter the Tracking code and an approved email.</p>
+        <h1 className="page-title"><Text message="Follow your shipment"/></h1>
+        <p className="page-subtitle"><Text message="View updates from your transporter using the Tracking code and an approved email."/></p>
       </div>
       <Flash error={query.error} success={query.success}/>
       <TrackingUnlockForm localInbox={localAuthInboxUrl()}/>
-      <p className="meta">No account required. A one-time email code protects private updates.</p>
+      <p className="meta"><Text message="No account required. A one-time email code protects private updates."/></p>
     </section>
   </div></main></>;
 }

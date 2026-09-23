@@ -22,6 +22,18 @@ test('programme never creates more than four two-minute interludes',()=>{
   assert.equal(schedule.entries.filter(item=>item.type==='PROGRAMME_BREAK').every(item=>item.time_label&&Date.parse(item.ends_at)-Date.parse(item.starts_at)<=2*60*1000),true);
 });
 
+test('random subset size determines slot durations without phantom target entries',()=>{
+  for(let count=1;count<=12;count++){
+    const keys=Array.from({length:count},(_,index)=>`pair-${index}`);
+    const schedule=buildFeaturedDaySchedule('2026-09-21',keys,{config:{targetCount:count}});
+    assert.deepEqual(schedule.walkthroughs.map(item=>item.provider_key),keys);
+    const minutes=schedule.walkthroughs.map(item=>(Date.parse(item.ends_at)-Date.parse(item.starts_at))/60000);
+    assert.ok(Math.max(...minutes)-Math.min(...minutes)<=1);
+    assert.equal(schedule.entries[0].starts_at,'2026-09-21T04:30:00.000Z');
+    assert.equal(schedule.entries.at(-1).ends_at,'2026-09-21T06:00:00.000Z');
+  }
+});
+
 test('manual schedules preserve roster order inside the fixed morning window',()=>{
   const manual=[
     {providerKey:'one',startTime:'07:30',endTime:'08:00'},

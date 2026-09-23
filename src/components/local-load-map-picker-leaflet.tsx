@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text} from '@/components/localization';
 import React from 'react';
 import { CircleMarker, MapContainer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import { MapPin, Navigation } from 'lucide-react';
@@ -43,22 +45,22 @@ export function LeafletLocalLoadMapPicker({center}:{center?:Point|null}) {
   return <div className="local-pin-picker">
     <div className="local-pin-toolbar">
       <div className="segmented-control">
-        <label><input type="radio" checked={mode==='pickup'} onChange={()=>setMode('pickup')}/><span><Navigation aria-hidden="true"/>Pickup pin</span></label>
-        <label><input type="radio" checked={mode==='dropoff'} onChange={()=>setMode('dropoff')}/><span><MapPin aria-hidden="true"/>Drop-off pin</span></label>
+        <label><input type="radio" checked={mode==='pickup'} onChange={()=>setMode('pickup')}/><span><Navigation aria-hidden="true"/><Text message="Pickup pin"/></span></label>
+        <label><input type="radio" checked={mode==='dropoff'} onChange={()=>setMode('dropoff')}/><span><MapPin aria-hidden="true"/><Text message="Drop-off pin"/></span></label>
       </div>
-      <button type="button" className="button secondary small icon-button-label" onClick={useCurrentLocation} disabled={locationStatus==='locating'}><Navigation aria-hidden="true"/>{locationStatus==='locating'?'Finding location...':`Use my location for ${mode==='pickup'?'pickup':'drop-off'}`}</button>
-      <span className="meta">Optional and private. Tap the map or use your current location for the selected pin.</span>
+      <button type="button" className="button secondary small icon-button-label" onClick={useCurrentLocation} disabled={locationStatus==='locating'}><Navigation aria-hidden="true"/>{locationStatus==='locating'?<Text message="Finding location..."/>:`Use my location for ${mode==='pickup'?'pickup':'drop-off'}`}</button>
+      <span className="meta"><Text message="Optional and private. Tap the map or use your current location for the selected pin."/></span>
     </div>
     <div className="local-pin-map">
       <MapContainer center={[mapCenter.lat,mapCenter.lng]} zoom={12} minZoom={7} maxZoom={18} scrollWheelZoom>
         <BaseMapTiles/>
         <MapCenter center={currentPoint||mapCenter}/>
         <PointCapture mode={mode} onPoint={capture}/>
-        {pickup?<CircleMarker center={[pickup.lat,pickup.lng]} radius={9} pathOptions={{color:'#1769e0',fillColor:'#1769e0',fillOpacity:.9}}><Tooltip permanent direction="top">Pickup</Tooltip></CircleMarker>:null}
-        {dropoff?<CircleMarker center={[dropoff.lat,dropoff.lng]} radius={9} pathOptions={{color:'#c45116',fillColor:'#c45116',fillOpacity:.9}}><Tooltip permanent direction="top">Drop-off</Tooltip></CircleMarker>:null}
+        {pickup?<CircleMarker center={[pickup.lat,pickup.lng]} radius={9} pathOptions={{color:'#1769e0',fillColor:'#1769e0',fillOpacity:.9}}><Tooltip permanent direction="top"><Text message="Pickup"/></Tooltip></CircleMarker>:null}
+        {dropoff?<CircleMarker center={[dropoff.lat,dropoff.lng]} radius={9} pathOptions={{color:'#c45116',fillColor:'#c45116',fillOpacity:.9}}><Tooltip permanent direction="top"><Text message="Drop-off"/></Tooltip></CircleMarker>:null}
       </MapContainer>
     </div>
-    {locationStatus==='error'?<p className="alert warning">Current location was unavailable. You can still place the selected pin on the map.</p>:null}
+    {locationStatus==='error'?<p className="alert warning"><Text message="Current location was unavailable. You can still place the selected pin on the map."/></p>:null}
     <input type="hidden" name="pickupLat" value={pickup?.lat??''}/>
     <input type="hidden" name="pickupLng" value={pickup?.lng??''}/>
     <input type="hidden" name="dropoffLat" value={dropoff?.lat??''}/>

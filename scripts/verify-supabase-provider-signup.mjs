@@ -301,15 +301,17 @@ try{
   await updateProfile(orphanPermissionsId,{role:'DRIVER',active:false},'orphan-permissions');
   const {error:permissionsError}=await service.from('driver_permissions').insert({user_id:orphanPermissionsId});
   if(permissionsError)throw new Error('SUPABASE_SIGNUP_VERIFY_ORPHAN_PERMISSIONS_ROW_FAILED');
+  // Retained inactive associations still block fresh signup. Active orphan rows
+  // are correctly rejected by migration 092 and cannot serve as test fixtures.
   const assignmentOrganizationId=await createOrganization('orphan-assignment');
   const assignmentVehicleId=randomUUID();
   const {error:assignmentVehicleError}=await service.from('vehicles').insert({
     id:assignmentVehicleId,organization_id:assignmentOrganizationId,label:'Orphan assignment vehicle',
-    category:'MINI_TRUCK',active:true
+    category:'MINI_TRUCK',active:false
   });
   if(assignmentVehicleError)throw new Error('SUPABASE_SIGNUP_VERIFY_ORPHAN_ASSIGNMENT_VEHICLE_FAILED');
   const {error:assignmentError}=await service.from('driver_vehicle_assignments').insert({
-    id:randomUUID(),driver_user_id:orphanPermissionsId,vehicle_id:assignmentVehicleId,active:true
+    id:randomUUID(),driver_user_id:orphanPermissionsId,vehicle_id:assignmentVehicleId,active:false
   });
   if(assignmentError)throw new Error('SUPABASE_SIGNUP_VERIFY_ORPHAN_ASSIGNMENT_ROW_FAILED');
   await assertRejectedSignup('orphan-permissions',orphanPermissionsId);

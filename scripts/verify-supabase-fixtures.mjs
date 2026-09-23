@@ -103,8 +103,26 @@ if(firstPage.items.length!==14||!firstPage.hasMore||!firstPage.nextCursor){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_CURSOR_FAILED');
 }
 if(firstPage.items.some(item=>item.recurring_corridors.length!==1
-  ||item.driver_verification_badges.length!==2||item.truck_verification_badges.length!==1)){
+  ||item.driver_verification_badges.length!==2)){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_PROJECTION_FAILED');
+}
+// FEAT-VER-001: a truck can carry ownership and use-permission evidence together.
+// Check categories, uniqueness and neutral-state semantics, not the retired one-badge layout.
+for(const item of firstPage.items){
+  const truck=item.truck_verification_badges;
+  const types=truck.map(badge=>badge.type);
+  const neutral=types.includes('VEHICLE_AUTHORITY');
+  if(truck.length<1||truck.length>2||new Set(types).size!==types.length
+    ||types.some(type=>!['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION','VEHICLE_AUTHORITY'].includes(type))
+    ||neutral&&(truck.length!==1||truck[0].verified||truck[0].reviewedAt)
+    ||truck.some(badge=>badge.verified&&(!badge.reviewedAt||badge.expired))){
+    throw new Error('SUPABASE_FIXTURE_VERIFY_TRUCK_DOCUMENT_CATEGORIES_FAILED');
+  }
+  const expectedOwner=item.provider_organization_id
+    ?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']:['IDENTITY','DRIVER_IDENTITY'];
+  if(JSON.stringify(item.owner_verification_badges.map(badge=>badge.type))!==JSON.stringify(expectedOwner)){
+    throw new Error('SUPABASE_FIXTURE_VERIFY_OWNER_DOCUMENT_CATEGORIES_FAILED');
+  }
 }
 const privateSignal=firstPage.items.find(item=>item.current_signal_geometry_visible===false);
 if(privateSignal&&(privateSignal.location_lat!==null||privateSignal.current_route_points.length!==0
@@ -177,7 +195,7 @@ try{
     available_percent:0,accepts_full_load:false,accepts_partial_load:false,
     accepts_multi_pick:false,accepts_multi_drop:false,accepts_multi_stop:false,
     updated_at:new Date(Date.now()+60_000).toISOString(),expires_at:new Date(Date.now()+60_000).toISOString()};
-  for(const generated of ['origin_geog','destination_geog','current_origin_geog','current_destination_geog','location_geog'])delete offDuty[generated];
+  for(const generated of ['origin_geog','destination_geog','current_origin_geog','current_destination_geog','location_geog','map_envelope'])delete offDuty[generated];
   const {error:offDutyError}=await service.from('capacities').insert(offDuty);
   if(offDutyError)throw new Error(`SUPABASE_FIXTURE_VERIFY_OFF_DUTY_INSERT_FAILED:${offDutyError.message}`);
   const hiddenAfterOffDuty=await listSupabasePublicCapacityCursor({capacityId:freshnessTarget.capacity.id},{pageSize:14});

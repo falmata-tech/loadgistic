@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text} from '@/components/localization';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock3 } from 'lucide-react';
@@ -32,5 +34,5 @@ export function TrackingIdleGuard({shipmentId}:{shipmentId:string}) {
     };
   },[router,shipmentId]);
 
-  return <div className="tracking-session-note"><Clock3 aria-hidden="true"/><span>Locks after 5 minutes without activity</span></div>;
+  return <div className="tracking-session-note"><Clock3 aria-hidden="true"/><span><Text message="Locks after 5 minutes without activity"/></span></div>;
 }

@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {isNumericEmailOtp,MANAGED_AUTH_ERROR,managedWorkspaceDestination} from '@/lib/auth-flow.js';
 import {getManagedCurrentUser} from '@/lib/identity/supabase';
+import {hasJoinableFleetInvitation} from '@/lib/fleet-driver-management';
 import {
   managedProviderSignupEligible,MANAGED_SIGNUP_COOKIE,readProviderSignupHandoff
 } from '@/lib/provider-signup.js';
@@ -52,6 +53,11 @@ export async function POST(request:NextRequest){
     const projection=!error&&data.user?await getManagedCurrentUser(client,data.user):null;
     const authenticatedEmail=String(data.user?.email||'').trim().toLowerCase();
     if(error||!projection||authenticatedEmail!==handoff.email)throw new Error('SIGNUP_IDENTITY_REQUIRED');
+    if(!projection.active&&await hasJoinableFleetInvitation(data.user.id)){
+      response.headers.set('Location',redirectUrl(request,'/join-fleet').toString());
+      clearOAuthCookie(response);
+      return response;
+    }
     if(projection.active){
       response.headers.set('Location',managedWorkspaceDestination(projection.role));
       clearSignupCookie(response);

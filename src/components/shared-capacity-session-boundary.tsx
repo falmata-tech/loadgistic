@@ -1,5 +1,7 @@
 'use client';
 
+
+import {Text,Localized} from '@/components/localization';
 import {Clock3,LogOut} from 'lucide-react';
 import React from 'react';
 import {
@@ -96,13 +98,13 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
     };
   },[endSession,renew]);
 
-  if(locked)return <section className="container shared-capacity-session-ending" role="status"><Clock3 aria-hidden="true"/><strong>Closing private capacity…</strong></section>;
+  if(locked)return <section className="container shared-capacity-session-ending" role="status"><Clock3 aria-hidden="true"/><strong><Text message="Closing private capacity…"/></strong></section>;
 
-  return <div className="shared-capacity-session-workspace" aria-label="Private Transport Capacity session">
+  return <Localized as="div" copy={["aria-label"]} className="shared-capacity-session-workspace" aria-label="Private Transport Capacity session">
     <div className="container shared-capacity-session-bar">
-      <span aria-label="Private capacity access ends after 30 minutes without activity."><Clock3 aria-hidden="true"/><span><strong>Private session</strong><small>30-minute idle limit</small></span></span>
-      <button type="button" className="button secondary small" data-shared-capacity-logout onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/>Log out</button>
+      <Localized as="span" copy={["aria-label"]} aria-label="Private capacity access ends after 30 minutes without activity."><Clock3 aria-hidden="true"/><span><strong><Text message="Private session"/></strong><small><Text message="30-minute idle limit"/></small></span></Localized>
+      <button type="button" className="button secondary small" data-shared-capacity-logout onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/><Text message="Log out"/></button>
     </div>
     {children}
-  </div>;
+  </Localized>;
 }

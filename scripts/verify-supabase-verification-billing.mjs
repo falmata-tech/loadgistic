@@ -17,6 +17,7 @@ async function expectRpcError(call,code){
 const suffix=crypto.randomUUID().slice(0,12);
 const email=`managed-verify-${suffix}@loadgistic.local`;
 let actorId;let organizationId;let subscriptionId;let verificationId;let proofId;
+let policyAdminId;let restoreFreeAccess=false;
 try{
   const {data:created,error:createError}=await service.auth.admin.createUser({email,password:crypto.randomBytes(24).toString('base64url'),email_confirm:true});
   if(createError||!created.user)throw new Error('VERIFICATION_BILLING_TEST_ACTOR_CREATE_FAILED');
@@ -36,6 +37,14 @@ try{
   }
   const {data:admin,error:adminError}=await service.from('profiles').select('id').eq('role','ADMIN').eq('active',true).limit(1).maybeSingle();
   if(adminError||!admin)throw new Error('VERIFICATION_BILLING_ADMIN_MISSING');
+  const {data:controls,error:controlsError}=await service.rpc('managed_platform_controls',{actor_user_id:admin.id});
+  if(controlsError)throw new Error('VERIFICATION_BILLING_CONTROLS_FAILED');
+  if(controls.access_mode==='FREE'){
+    policyAdminId=admin.id;restoreFreeAccess=true;
+    await expectRpcError(()=>service.rpc('submit_managed_payment_proof',{actor_user_id:actorId,command:{amount_minor:10000}}),'PAYMENT_NOT_REQUIRED');
+    const {error}=await service.rpc('save_managed_platform_controls',{actor_user_id:admin.id,command:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}});
+    if(error)throw new Error('VERIFICATION_BILLING_TEST_MODE_FAILED');
+  }
 
   const {data:center,error:centerError}=await service.rpc('managed_verification_center',{actor_user_id:actorId});
   if(centerError||center?.subjects?.length!==1||JSON.stringify(center).includes('storage_path'))throw new Error('VERIFICATION_CENTER_PROJECTION_INVALID');
@@ -80,6 +89,10 @@ try{
   }
   process.stdout.write('Supabase Verification/Billing ownership, private-file authorization, bounded review, terminal review, safe projection, and browser denial checks passed.\n');
 }finally{
+  if(restoreFreeAccess){
+    const {error}=await service.rpc('save_managed_platform_controls',{actor_user_id:policyAdminId,command:{section:'ACCESS',mode:'FREE'}});
+    if(error)throw new Error('VERIFICATION_BILLING_FREE_MODE_RESTORE_FAILED');
+  }
   if(verificationId)await service.from('verification_requests').delete().eq('id',verificationId);
   if(proofId)await service.from('payment_proofs').delete().eq('id',proofId);
   if(actorId)await service.from('audit_logs').delete().eq('actor_user_id',actorId);

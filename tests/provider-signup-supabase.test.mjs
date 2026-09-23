@@ -26,7 +26,7 @@ test('managed signup accepts only the three provider operating models without a 
   }
   assert.equal(normalizeProviderSignupInput({name:'Aster',businessName:'Aster Transport',phone:'+251911000000',applicationType:'COMPANY_DRIVER'}).ok,false);
   assert.doesNotMatch(page,/name="password"|type="password"/i);
-  assert.match(accessPage,/Continue with Google/i);
+  assert.doesNotMatch(accessPage,/Continue with Google/i);
   assert.match(accessPage,/Email me a code/i);
   assert.doesNotMatch(page,/Continue with Google|Email me a code/i);
   assert.match(page,/provider-details-form/i);

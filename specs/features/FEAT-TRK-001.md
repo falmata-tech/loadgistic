@@ -11,6 +11,29 @@ rollout: Require one server-only Tracking code secret before Production creates 
 
 # Guest tracking
 
+### Scenario: provider understands saved progress before choosing an update
+
+Given an authorized provider opens Tracking on desktop or phone\
+When saved status and event history are displayed\
+Then the five journey steps distinguish Completed, Current, Next and Remaining in text\
+And a step omitted from recorded history is never described as completed\
+And the initial permitted Loading shortcut remains available with an explanation\
+And Problem is separate from the ordered journey; recovery offers the existing permitted resume states without claiming one mandatory next step\
+And selecting an available step changes only the pending selection until Save is submitted\
+And the save label names the selected step, completed/cancelled sessions have no mutation controls, and assigned-Driver-only travel remains enforced\
+And keyboard focus is visible and phone controls fit without horizontal scrolling.
+
+Presentation-only contract: saved events/status and existing permitted transitions
+remain authoritative. No migration, permission, email, or lifecycle changes.
+Rollout follows NR-13 local owner review, then exact-candidate release gates;
+rollback restores the application without rewriting shipment history.
+Design references: [USWDS step indicator](https://designsystem.digital.gov/components/step-indicator/)
+(explicit states and separate navigation) and [GOV.UK task list](https://design-system.service.gov.uk/components/task-list/)
+(unordered task lists are not appropriate for an ordered journey).
+Verification: `tests/tracking-progress.test.mjs` and
+`tests/e2e/tracking-progress.spec.ts`; owner approved the progression layout on
+2026-09-23. The recipient-save follow-up is a defect correction to its existing form.
+
 ### Scenario: one stable shipment code and authorized recipient list are issued
 
 Given a provider owner, self-managed Driver, or company Driver assigned to the selected truck starts Tracking with one customer-owner email and zero or more additional recipient emails\
@@ -73,6 +96,21 @@ And the customer-owner recipient remains visibly distinct from additional tracki
 And revocation prevents the next OTP request and invalidates that recipient's next customer-safe read without affecting other recipients\
 And no unrelated provider, Driver, administrator without the required operational authority, or public visitor can list or mutate the recipient list.
 
+### Scenario: adding a Tracking party confirms the saved access before email delivery
+
+Given an authorized provider adds an additional recipient on desktop or phone\
+When the recipient and invitation outbox record commit\
+Then the form confirms that access is saved and email is queued without waiting for SMTP or a page navigation\
+And it prevents duplicate in-flight submissions, retains entered email on failure and clears busy feedback after a bounded wait\
+And duplicate or denied additions show an inline error rather than an indefinite spinner\
+And the invitation remains eligible for the existing recovery worker if the post-response delivery fails\
+And the added email can request its own OTP using the shipment Tracking code, receive the code, and open the authorized customer view without an account\
+And an unrelated email cannot obtain that view, and revocation invalidates the recipient's existing guest access.
+
+Verification: `tests/e2e/tracking-parties.spec.ts`, existing email-delivery and
+managed Tracking permission tests. No SMTP configuration, role, schema or guest
+authentication contract changes; the native POST fallback remains available.
+
 ### Scenario: customer-safe reads remain narrow in managed persistence
 
 Given a valid short-lived browser grant was created from an authorized recipient's email OTP\
@@ -98,7 +136,7 @@ Given the provider and customer choose Status and approximate location when Trac
 When the assigned Driver marks Going to pickup or En route and keeps the Tracking workspace open\
 Then only that assigned Driver may send a browser-obscured coordinate\
 And the Driver-selected approximate radius, general area, and update time are saved without storing the exact device coordinate\
-And location updates are accepted no more frequently than every 10 minutes unless the Driver explicitly retries after a failure\
+And location refreshes are accepted no more frequently than every 10 minutes; a retry after failure still obeys the server cooldown\
 And a fleet owner, unrelated Driver, status-only Tracking session, or invalid workflow state cannot publish a customer-visible location.
 
 ### Scenario: the customer sees location only during travel
@@ -158,6 +196,14 @@ When a provider, guest, or unrelated actor requests it\
 Then the server reauthorizes that specific actor and shipment\
 And public capacity or provider-profile visibility never grants file access.
 
+Given a Loading, Unloading, or Problem status event has a saved proof image\
+When an authorized provider, currently assigned permitted Driver, Operations-authorized team member, or verified unrevoked tracking recipient opens the timeline\
+Then that event offers an Open proof action\
+And the file endpoint repeats current shipment authorization and exact event-to-shipment membership before reading Storage\
+And missing, expired, revoked, cross-shipment, or unrelated access returns no file\
+And the response is private, non-cacheable, MIME constrained, and cannot execute active content\
+And no Storage path is included in the timeline projection or link.
+
 ## Contract ownership
 
 - Public pages: `/track` and unlocked tracking view
@@ -166,3 +212,100 @@ And public capacity or provider-profile visibility never grants file access.
 - Cleanup: scheduled 30-day guest-access expiry through the service-role-only managed command
 - Persistence: `044_provider_tracking_runtime.sql`, `046_managed_email_operations.sql`, `062_tracking_recipient_email_otp.sql`, and the server-only provider Tracking adapter
 - Tests: domain, repository, managed Tracking authorization, E2E
+
+Audit repair evidence: `tests/tracking-proof-access.test.mjs`,
+`tests/sql/tracking-proof-access.sql`, and
+`tests/e2e/tracking-proof-audit.spec.ts` (desktop and phone).
+Migration 083 adds functions only; deploy it before the proof-link application
+artifact. Reverting that artifact hides the links without deleting proof events
+or objects. Local proof access is verified; hosted rollout remains unverified.
+
+## Foreground location controls (verified locally; rollout pending)
+
+Given an assigned Driver uses Status and approximate location Tracking\
+When they prepare a travel update or keep a travel screen open\
+Then they can choose 1, 3, 5, 10, 20 or 40 km for the next obscured location\
+And the selected radius is applied in the browser before coordinates leave it\
+And the last saved radius and the pending selection are distinguished\
+And a server-throttled or locally skipped refresh is described as waiting, never
+as a newly saved coordinate\
+And location denial, unavailable device and failed save show actionable errors.
+
+Given a location acquisition or request is in progress\
+When the screen becomes hidden, unmounts, changes Tracking session or leaves a
+travel phase\
+Then pending acquisition callbacks cannot start a new save\
+And the browser aborts any in-flight fetch where possible\
+And one screen never runs overlapping location/status acquisitions\
+And a travel submission snapshots its selected status before acquiring location
+and prevents editing its status/radius while it is in progress\
+And an already received server update is not claimed to be reversible.
+
+Given either the Driver or recipient reads location-sharing guidance\
+When approximate Tracking is enabled\
+Then the UI explains that updates need the Driver's visible open screen and pause
+when the phone locks or the screen closes\
+And no background GPS or uninterrupted live-tracking guarantee is made.
+
+Contracts: browser-only single-flight foreground runner, existing allowed radius
+set, unchanged actor-scoped location/status APIs and SQL cooldown. No new schema,
+provider or permission. Rollback restores the previous UI without changing stored
+events. Tests: `tests/tracking-location-controls.test.mjs` and
+`tests/e2e/tracking-location-controls.spec.ts`; real local persistence and
+desktop/phone controls passed. Final test/build counts, screenshot paths and
+physical-device limitations are recorded in `docs/BUILD_VERIFICATION.md`.
+
+## Governed recovery (F10/F04, implementation)
+
+Given an active owning provider or Operations-authorized team member opens a
+nonterminal Tracking record\
+When they submit a correction, reassignment or cancellation with a reason\
+Then PostgreSQL locks and reauthorizes that exact record, requires its observed
+revision, and appends private before/after recovery history and a safe timeline
+entry without rewriting earlier events\
+And Company drivers, unrelated providers and staff without Operations permission
+cannot perform recovery even if they can send ordinary status updates.
+
+Given correction is requested\
+When cargo or expected dates are changed\
+Then bounded fields and date order are validated\
+And route corrections are permitted only before Loading (Created/Going to pickup)\
+And provider ownership, recipients, code, tracking mode and completed events are
+not editable through this command.
+
+Given reassignment is requested\
+When the replacement truck belongs to the same provider, is active and has an
+active eligible Driver with Tracking permission\
+Then current truck/Driver assignment changes atomically, old events remain,
+and old Driver access ends on the next request\
+And historical locations are retained but cannot appear as the replacement
+Driver's location or impose that Driver's location cooldown\
+And the authorized recipient list and stable Tracking code remain unchanged.
+
+Given cancellation is confirmed\
+When the nonterminal record is cancelled\
+Then its terminal status is CANCELLED, pending guest access/OTP delivery becomes
+ineligible, grants and recipients are revoked, and customer-facing file access ends\
+And cancellation creates neither completion email nor review eligibility\
+And provider/team history and proofs remain available to currently authorized
+actors; completed and cancelled records cannot be corrected or reassigned.
+
+Contracts: migration 090, service-only recovery command and history, required
+optimistic revision/reason, location reset boundary, guarded vehicle retirement.
+Cancellation is explicit and irreversible in this flow; UI requires confirmation.
+No guest identity change, arbitrary status rewind or mode-consent bypass.
+Deploy SQL before clients. Rollback hides recovery UI while retaining terminal
+status, revocations and history; never undo cancellation or reissue access as an
+automatic rollback. Required evidence: SQL state/permission/revision tests,
+desktop/phone owner and Operations workflows, guest and replaced-Driver denial.
+
+### Scenario: retained terminal Tracking is readable on narrow screens
+
+Given a cancelled Tracking record with retained timeline and long recipient email\
+When its owner opens the detail page on desktop or phone\
+Then the page labels it cancelled without claiming delivery completion\
+And no status or location input remains available\
+And recipient text wraps within its card without horizontal document overflow.
+
+Evidence: `tests/e2e/lifecycle-recovery.spec.ts` covers terminal copy, absent location
+inputs, guest revocation, retained events and document width on both viewports.

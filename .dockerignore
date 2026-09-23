@@ -1,8 +1,12 @@
 .git
 .github
-.next
-.next-dev
-.next-e2e
+.next*
+.local
+.netlify
+.agents
+.codex
+supabase/.temp
+supabase/.branches
 node_modules
 data
 artifacts

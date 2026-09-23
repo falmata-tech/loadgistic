@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import {SurfaceSkeleton} from './loading-state';
 
 const LeafletRouteMap = dynamic(() => import('./route-coverage-map-leaflet').then(module => module.LeafletRouteMap), {
   ssr:false,
-  loading:() => <div className="route-map loading-map" aria-label="Loading coverage map">Loading route map...</div>
+  loading:() => <SurfaceSkeleton kind="map" className="route-map loading-map" label="Loading coverage map"/>
 });
 
 export function RouteCoverageMap({ routes, comparisonRoutes = [],areas=[],comparisonAreas=[] }: { routes:any[]; comparisonRoutes?:any[];areas?:any[];comparisonAreas?:any[] }) {

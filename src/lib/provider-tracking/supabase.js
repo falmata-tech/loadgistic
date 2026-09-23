@@ -1,6 +1,8 @@
+import {readWindowedPage} from '../pagination.js';
 import {randomUUID} from 'node:crypto';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {normalizePrivateContactEmail} from '../domain.js';
+import {readPrivateUpload} from '../private-storage.js';
 import {
   hashProviderTrackingCode,
   hashTrackingAccessCode,
@@ -186,6 +188,18 @@ export async function getSupabaseProviderGuestTracking(id,recipientDigest){
   return data?payload(data):null;
 }
 
+export async function readSupabaseProviderTrackingProof(user,shipmentId,eventId,recipientDigest=/** @type {string|null} */(null)){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('provider_tracking_proof_file',{
+    actor_user_id:user?.id||null,target_shipment_id:shipmentId,target_event_id:eventId,
+    requested_recipient_digest:recipientDigest
+  });
+  if(error)throw trackingError('SUPABASE_TRACKING_PROOF_READ_FAILED',error);
+  if(!data)return null;
+  const bytes=await readPrivateUpload(data.storage_path);
+  return bytes?{bytes,mimeType:data.mime_type,originalName:data.original_name}:null;
+}
+
 export async function addSupabaseProviderTrackingRecipient(user,shipmentId,emailValue){
   const email=normalizePrivateContactEmail(emailValue);
   const client=createSupabaseAdminClient();
@@ -261,18 +275,15 @@ export async function disputeSupabaseProviderReview(user,reviewId,reason){
 }
 
 export async function listSupabaseProviderReviewModeration(user,status='PENDING',options={}){
-  const pageSize=Math.max(1,Math.min(100,Number(options.pageSize)||12));
-  const page=Math.max(1,Number(options.page)||1);
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('provider_review_moderation_queue',{
-    actor_user_id:user.id,requested_status:String(status||'PENDING').toUpperCase(),
-    requested_offset:(page-1)*pageSize,requested_limit:pageSize
-  });
-  if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_QUEUE_FAILED',error);
-  const rows=data||[];
-  const items=rows.map(row=>payload(row));
-  const total=Number(rows[0]?.total_count||0);
-  return {items,total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize))};
+  return readWindowedPage(async(offset,limit)=>{
+    const {data,error}=await client.rpc('provider_review_moderation_queue',{
+      actor_user_id:user.id,requested_status:String(status||'PENDING').toUpperCase(),
+      requested_offset:offset,requested_limit:limit
+    });
+    if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_QUEUE_FAILED',error);
+    return data||[];
+  },options,100);
 }
 
 export async function resolveSupabaseProviderReview(user,reviewId,status,note=''){
