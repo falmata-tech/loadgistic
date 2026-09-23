@@ -49,3 +49,18 @@ test('authorization choices exclude current approvals while preserving badges an
   const complete=projectVerificationSubject({...subject,vehicles:[subject.vehicles[0]]});
   assert.equal(complete.allowed_types.includes('VEHICLE_AUTHORIZATION'),false);assert.deepEqual(complete.vehicles,[]);
 });
+
+
+test('pending choices stay scoped to subject and pairing without becoming approvals',()=>{
+  const subject={subject_type:'PROVIDER_PROFILE',subject_id:'driver',verification_types:['IDENTITY','DRIVER_IDENTITY','VEHICLE_AUTHORIZATION'],vehicles:[{id:'one',label:'One'},{id:'two',label:'Two'}]};
+  const pending=[{subject_type:'PROVIDER_PROFILE',subject_id:'driver',status:'PENDING',verification_type:'IDENTITY'},
+    {subject_type:'PROVIDER_PROFILE',subject_id:'driver',status:'PENDING',verification_type:'VEHICLE_AUTHORIZATION',related_vehicle_id:'one'},
+    {subject_type:'PROVIDER_PROFILE',subject_id:'other',status:'PENDING',verification_type:'DRIVER_IDENTITY'},
+    {subject_type:'PROVIDER_PROFILE',subject_id:'driver',status:'MORE_INFO',verification_type:'DRIVER_IDENTITY'}];
+  const result=projectVerificationSubject(subject,pending);
+  assert.deepEqual(result.allowed_types,['DRIVER_IDENTITY','VEHICLE_AUTHORIZATION']);
+  assert.deepEqual(result.vehicles.map(item=>item.id),['two']);
+  assert.equal(result.pending_count,2);
+  assert.ok(result.badges.every(badge=>!badge.verified));
+  assert.ok(projectVerificationSubject(subject,pending.map(item=>({...item,status:'REJECTED'}))).allowed_types.includes('IDENTITY'));
+});

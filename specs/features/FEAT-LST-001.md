@@ -281,3 +281,19 @@ map and must preserve the selected truck, controls and real retry behavior.
 The map-key styling check uses controlled image tiles; it does not certify the
 external tile provider's availability. Owner review and deployment checks use
 the real configured tile service.
+
+### Scenario: Clear all restores the unfiltered capacity workspace
+
+Given Open or Private capacity has applied filters, a selected truck, or unsubmitted filter edits
+When the visitor chooses Clear all (or Clear in More filters)
+Then all filter inputs and selected-truck detail return to their defaults
+And the map returns to its normal unfiltered initial view and loads unfiltered results
+And no previous viewport, pending response, city reference or truck scope restores stale results
+And this also works when the URL already has no filters
+And private email authorization and its API scope remain unchanged.
+
+Query changes reinitialize query-owned feed state on both surfaces; a reset on
+the current unfiltered URL must also reset local drafts and view state. Closing
+or reopening the drawer alone must preserve drafts and the existing map.
+Focused regression checks prove inputs, map replacement/view, request parameters,
+results and private-session retention after real Clear all actions.

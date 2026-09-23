@@ -12,6 +12,6 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const initial=await listPublicCapacityCursor(query,{pageSize:14});
   return <><PublicHeader/><main className="public-app-page public-market-workspace">
     <h1 className="sr-only">Open Transport Capacity</h1>
-    <section id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body"><PublicCapacityFeed key={Object.values(query).join('|')} initial={initial} query={query}/></div></section>
+    <section id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body"><PublicCapacityFeed initial={initial} query={query}/></div></section>
   </main></>;
 }

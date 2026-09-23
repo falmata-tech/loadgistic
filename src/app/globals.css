@@ -3228,3 +3228,34 @@ body:has(.featured-workspace-page) .public-chat-launcher>span{display:none}
  body:has(.capacity-filter-drawer.is-open) .public-chat-launcher>span{display:none}
  body:has(.capacity-filter-drawer.is-open) .public-chat-launcher>b{position:absolute;top:-8px;right:-4px}
 }
+
+/* Focused email account access; provider setup retains its own context panel. */
+.auth-login-workspace .auth-page-container{width:min(480px,calc(100% - 32px));max-width:480px}
+.auth-access-shell.login{display:block;border-color:#d7e3e1;border-radius:18px;box-shadow:0 12px 36px rgba(11,29,58,.06)}
+.auth-access-shell.login .auth-task-panel{padding:32px}
+.auth-access-shell.login .auth-task-header h1{font-size:2rem;line-height:1.1}
+.auth-access-shell.login .auth-task-header{margin-bottom:24px}
+.auth-access-shell.login .auth-task-content{gap:16px}
+.auth-access-shell.login .auth-privacy-note{justify-content:center;padding:0;border:0;background:transparent}
+.auth-access-shell.login .auth-task-footer{justify-content:center;margin-top:24px;padding-top:12px}
+.auth-access-shell.login #account-code{font-size:1.35rem;letter-spacing:.28em}
+@media(max-width:480px){
+  .auth-login-workspace .auth-page-container{width:calc(100% - 24px)}
+  .auth-access-shell.login .auth-task-panel{padding:24px 20px}
+  .auth-access-shell.login .auth-task-header h1{font-size:1.8rem}
+}
+
+/* Before a Driver has a map, keep identity and setup in document flow. */
+@media(min-width:761px){.capacity-drawer-workbench .ethiopia-map-label{top:64px}}
+.capacity-home-page .driver-map-summary.has-no-map{display:flex;flex-direction:column;gap:16px;padding:16px;overflow-y:auto;background:#f7faf9}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-summary-map-header{position:static;order:-2;width:100%;max-width:610px}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-truck-bar{grid-template-columns:48px minmax(0,1fr);box-shadow:none}
+.capacity-home-page .driver-map-summary.has-no-map .compact-truck-select{grid-column:1/-1}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-truck-copy strong,.capacity-home-page .driver-map-summary.has-no-map .capacity-truck-copy span{white-space:normal;overflow-wrap:anywhere}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-summary-toolrail{position:static;order:-1;display:flex;flex-wrap:wrap;align-self:flex-start}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-summary-layout{position:static;display:flex;flex:1;min-height:260px;overflow:visible}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty{width:100%;align-content:center;gap:14px;padding:24px;border:1px dashed #c8d9d6;background:#fff}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty>span{max-width:360px;line-height:1.5}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty>.button{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:4px}
+.capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty>.button svg{width:20px;height:20px;color:currentColor}
+@media(max-width:480px){.capacity-home-page .driver-map-summary.has-no-map{padding:12px;gap:12px}.capacity-home-page .driver-map-summary.has-no-map .capacity-map-empty{padding:20px 14px}}

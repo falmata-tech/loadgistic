@@ -71,6 +71,14 @@ test('document reviews persist notes and context; approved trucks leave authoriz
       const stored=checked(await service.from('verification_requests').select('id,status').eq('submitted_by',actor.id).eq('related_vehicle_id',vehicles[index]).single());
       await deniedReview(page,`/api/admin/verifications/${stored.id}`,{status:'APPROVED'});
       expect(checked(await service.from('verification_requests').select('status').eq('id',stored.id).single()).status).toBe('PENDING');
+      await page.reload();
+      await expect(page.getByText('Documents already awaiting review are excluded from the choices below. Check Request history for updates.')).toBeVisible();
+      if(index===0){
+        await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_AUTHORIZATION');
+        await expect(page.getByLabel('Truck',{exact:true}).locator('option')).toHaveCount(1);
+        await expect(page.getByLabel('Truck',{exact:true})).toHaveValue(vehicles[1]);
+      }else await expect(page.getByLabel('Verification type',{exact:true}).locator('option[value=VEHICLE_AUTHORIZATION]')).toHaveCount(0);
+      await page.screenshot({path:info.outputPath(`pending-document-${index}.png`),fullPage:true});
       let review=await openReview(admin.page,'documents',stored.id,marker);
       const file=review.row.getByRole('link',{name:'Open private document'});const href=await file.getAttribute('href');
       const popupPromise=admin.page.waitForEvent('popup');await file.click();const popup=await popupPromise;await popup.waitForLoadState();await popup.close();
@@ -103,7 +111,7 @@ test('payment review updates only its synthetic plan and keeps the filtered queu
     expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe('PENDING');
     admin=await adminBrowser(browser,page,info);
     for(const [before,button,after] of [['PENDING','More info','MORE_INFO'],['MORE_INFO','Paid · 30 days','APPROVED']]){
-      const {form,row}=await openReview(admin.page,'payments',proofId,marker,before);await expect(row.getByText('No file attached.',{exact:true})).toBeVisible();
+      const {form,row}=await openReview(admin.page,'payments',proofId,marker,before);await expect(row.getByText('No file attached.',{exact:true})).toBeVisible();await expect(row.locator('summary')).toContainText('ETB 1,250.50');
       await form.getByRole('button',{name:button,exact:true}).click();expectContext(admin.page,'payments',marker,before);await expect(admin.page.locator('.alert.success')).toBeVisible();
       expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe(after);
     }

@@ -99,11 +99,8 @@ test('unified account access keeps one responsive and touch-sized task',async({p
     const google=page.getByRole('button',{name:'Continue with Google'});
     const back=page.getByRole('link',{name:/Back to Open capacity/i});
     await expect(emailForm).toBeVisible();
-    await expect(google).toBeVisible();
-    const [emailBox,googleBox]=await Promise.all([emailForm.boundingBox(),google.boundingBox()]);
-    expect(emailBox,`${viewport.label} email form has no box`).not.toBeNull();
-    expect(googleBox,`${viewport.label} Google action has no box`).not.toBeNull();
-    expect(emailBox!.y,`${viewport.label} email access should precede Google`).toBeLessThan(googleBox!.y);
+    await expect(google).toHaveCount(0);
+    await expect(page.locator('.auth-context-panel')).toHaveCount(0);
 
     const descriptionIds=(await email.getAttribute('aria-describedby'))?.trim().split(/\s+/).filter(Boolean)||[];
     expect(descriptionIds,`${viewport.label} email guidance is not associated with its field`).not.toHaveLength(0);
@@ -111,10 +108,9 @@ test('unified account access keeps one responsive and touch-sized task',async({p
 
     await expectMinimumTarget(email,`${viewport.label} email field`);
     await expectMinimumTarget(emailAction,`${viewport.label} email action`);
-    await expectMinimumTarget(google,`${viewport.label} Google action`);
     await expectMinimumTarget(back,`${viewport.label} Market return`);
-    await google.focus();
-    await expect(google).toBeFocused();
+    await emailAction.focus();
+    await expect(emailAction).toBeFocused();
 
     const localInbox=page.getByRole('link',{name:/email inbox/i}).first();
     if(await localInbox.isVisible())await expectMinimumTarget(localInbox,`${viewport.label} local inbox link`);

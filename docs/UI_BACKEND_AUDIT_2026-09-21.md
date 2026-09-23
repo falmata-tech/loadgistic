@@ -192,3 +192,57 @@ failed E2E conclusion; the replacement candidate has not been pushed or deployed
   desktop/phone tests measure and tap both strokes specifically along the shared
   leg at two zoom levels. Evidence: `artifacts/shared-segment-pixel-20260922/`.
   Earlier whole-outline tests were insufficient; visual approval remains pending.
+
+
+- **UIA-20 — Clear all retained map/filter state:** reproduced before repair on
+  both surfaces. Private capacity changed its URL but reused query-owned React
+  state; Open capacity's link to its already-unfiltered URL could not reset local
+  drafts or a zoomed view. The shared feed now keys its state to the complete
+  applied query and handles a same-query clear explicitly. Closing/reopening the
+  drawer still preserves drafts and map identity. Before evidence:
+  `artifacts/clear-all-before-20260923/` (two expected failures). After evidence:
+  `artifacts/login-clear-review-20260923/` (desktop/phone Open/Private workflows,
+  actual local private-email OTP and same-URL reset). The private session remains
+  authorized only for its original fixture recipient; logout still denies the API.
+  No database, grant or coordinate changes. Local correction; owner review and
+  release remain pending. Prevention: assert controls, viewport and result
+  requests after Clear, not just the resulting URL. Owner: map UI maintainer.
+
+- **UIA-21 — new Driver setup obscured by map overlays:** the current-truck
+  banner retained absolute positioning over the short no-capacity placeholder;
+  an actual new-fleet/new-Driver test reproduced the covered content. A separate
+  Location action opened a view without Save before capacity existed. The empty
+  state now keeps identity, controls and instructions in normal flow, exposes
+  Set capacity, and collects location in the existing first-publication editor.
+  It says Not published rather than incorrectly implying Open visibility.
+  Client controls also wait for their handlers; a held-script test checks the
+  first enabled click/tap. This readiness risk is not claimed as the proven
+  cause of the owner's particular failed click. Real local desktop/phone inbox
+  login, assigned-truck publication and stored actor/Private visibility pass;
+  removed-driver access still fails. No permission, customer-data or schema
+  change. Evidence: `artifacts/new-driver-before-20260923/` (expected geometry
+  failure) and `artifacts/new-driver-review-20260923/` (two passes).
+  Prevention: new-user tests must check empty-state geometry and native actions,
+  not merely publish through a floating control on a populated fixture.
+  Owner: capacity UI maintainer. Local correction; owner review/release pending.
+  Final evidence: `artifacts/new-driver-final-20260923/` adds 320px phone touch,
+  Cancel without a stored record, and actual map tiles after Save (two passes).
+  `artifacts/new-driver-dialog-regression-20260923/` passes all ten existing
+  desktop/phone capacity dialog cases, including permission restrictions.
+
+## Demo corrections — 2026-09-23
+
+The owner's “ok go ahead and fix deploy” authorizes these bounded corrections.
+UIA-13 now preserves fractional ETB in shared formatting; UIA-14 removes only
+actor-scoped pending categories/pairings and explains in-review status, retaining
+server duplicate denial and truthful badges. All six desktop/phone review
+workflows pass in `artifacts/demo-fixes-20260923/`, with stored state assertions.
+UIA-17's desktop label is moved below the Filters handle; both map workflows
+assert their rectangles do not overlap. Final serialized evidence and release
+status are tracked in PROGRESS and DEMO_READINESS_2026-09-23.md.
+
+Completion email now includes both access codes needed by a fresh guest, and
+restricted Drivers see the missing fleet-owner setup prerequisite before they
+can try Available. No new privilege or hosted configuration is introduced.
+Prevention: test customer email journeys from a fresh browser using only the
+received message, and test new assignments before any capacity record exists.

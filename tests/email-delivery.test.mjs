@@ -232,7 +232,7 @@ test('Shared Capacity and Tracking use distinct customer-safe application templa
 
 test('completion email escapes customer-visible data and excludes private event fields',()=>{
   const message=buildEmailMessage({
-    template:'tracking-completed',to:'guest@example.test',review:{url:'https://loadgistic.example/track',code:'review-code'},
+    template:'tracking-completed',to:'guest@example.test',tracking:{url:'https://loadgistic.example/track',code:'LG-1111-2222-3333-4444'},review:{url:'https://loadgistic.example/track',code:'review-code'},
     shipment:{
       code:'LG-TEST',providerName:'Example <script>alert(1)</script>',origin:'Addis Ababa',destination:'Adama',
       cargoSummary:'Workshop inputs',events:[{
@@ -242,6 +242,9 @@ test('completion email escapes customer-visible data and excludes private event 
     }
   });
   assert.match(message.text,/Status timeline/);
+  assert.match(message.text,/Tracking code\nLG-1111-2222-3333-4444/);
+  assert.match(message.text,/Review code\nreview-code/);
+  assert.match(message.text,/verify the one-time code/);
   assert.match(message.text,/In Transit/);
   assert.doesNotMatch(message.html,/<script>|<strong>safely<\/strong>/);
   assert.match(message.html,/&lt;script&gt;|&lt;strong&gt;/);

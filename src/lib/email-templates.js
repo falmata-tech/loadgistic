@@ -21,15 +21,17 @@ function trackingMessage(payload){
     :`${text(shipment.providerName)||'Your transporter'} marked your shipment complete.`;
   const accessGuidance=started
     ?'Use the link and Tracking code below with this approved email. Ask the transporter to add each other person who should follow the shipment.'
-    :'Use the separate review code below if you want to review the transporter.';
+    :'To review your transporter, open Tracking, enter this approved email and the Tracking code below, then verify the one-time code sent to your inbox. On the shipment page, enter the separate Review code below.';
   const timeline=!started&&Array.isArray(shipment.events)
     ?shipment.events.map(event=>`${statusLabel(event.status)} · ${text(event.created_at)}${event.note?` · ${text(event.note)}`:''}`)
     :[];
   const lines=[intro,line('Tracking reference',shipment.code),line('From',shipment.origin),line('To',shipment.destination),line('Cargo',shipment.cargoSummary)];
   if(timeline.length)lines.push('Status timeline:',...timeline.map(item=>`- ${item}`));
+  if(!started)lines.push('Tracking code',text(payload.tracking?.code));
   lines.push('',accessGuidance,started?'Open Tracking':'Open Tracking and review the transporter',text(access?.url),started?'Tracking code':'Review code',text(access?.code));
   const html=[`<p>${escapeHtml(intro)}</p>`,htmlLine('Tracking reference',shipment.code),htmlLine('From',shipment.origin),htmlLine('To',shipment.destination),htmlLine('Cargo',shipment.cargoSummary)];
   if(timeline.length)html.push(`<h2 style="font-size:18px">Status timeline</h2><ul>${timeline.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>`);
+  if(!started)html.push(htmlLine('Tracking code',payload.tracking?.code));
   html.push(`<p>${escapeHtml(accessGuidance)}</p>`,`<p><a href="${escapeHtml(access?.url)}">${started?'Open Tracking':'Open Tracking and review the transporter'}</a></p>`,htmlLine(started?'Tracking code':'Review code',access?.code));
   return {...payload,subject:title,text:lines.filter(value=>value!==null).join('\n'),html:emailHtml(title,html)};
 }

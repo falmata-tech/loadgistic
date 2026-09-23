@@ -7,9 +7,9 @@ type PublicAuthShellProps={
   taskKicker:string;
   title:string;
   description:string;
-  contextKicker:string;
-  contextTitle:string;
-  contextDescription:string;
+  contextKicker?:string;
+  contextTitle?:string;
+  contextDescription?:string;
   contextNoteTitle?:string;
   contextNote?:string;
   footerNote?:string;
@@ -21,7 +21,7 @@ export function PublicAuthShell({
   variant,taskKicker,title,description,contextKicker,contextTitle,
   contextDescription,contextNoteTitle,contextNote,footerNote,feedback,children
 }:PublicAuthShellProps){
-  return <main className="public-app-page auth-page-workspace">
+  return <main className={`public-app-page auth-page-workspace${variant==='login'?' auth-login-workspace':''}`}>
     <div className="container auth-page-container">
       <section className={`auth-access-shell auth-shell ${variant}`} data-testid="auth-access-shell">
         <div className="auth-task-panel">
@@ -37,7 +37,7 @@ export function PublicAuthShell({
             <Link className="auth-market-link" href="/"><ArrowLeft aria-hidden="true"/>Back to Open capacity</Link>
           </footer>
         </div>
-        <aside className="auth-context-panel" aria-label="About Loadgistic transporter access">
+        {variant!=='login'?<aside className="auth-context-panel" aria-label="About Loadgistic transporter access">
           <div>
             <span>{contextKicker}</span>
             <h2>{contextTitle}</h2>
@@ -47,7 +47,7 @@ export function PublicAuthShell({
             <MapPinned aria-hidden="true"/>
             <span><strong>{contextNoteTitle}</strong><small>{contextNote}</small></span>
           </div>:null}
-        </aside>
+        </aside>:null}
       </section>
     </div>
   </main>;

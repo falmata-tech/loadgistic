@@ -51,7 +51,20 @@ function Choice({name,value,checked,onChange,children,disabled=false}:{
   </label>;
 }
 
-export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/public/capacity'}:{initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string}){
+type FeedProps={initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string};
+
+export function PublicCapacityFeed(props:FeedProps){
+  const [resetVersion,setResetVersion]=React.useState(0);
+  // Filters own the feed, selected truck and viewport together. Both public and
+  // private navigation must discard that state when the applied query changes.
+  const queryKey=JSON.stringify(Object.entries(props.query).sort(([a],[b])=>a.localeCompare(b)));
+  return <CapacityFeedState key={`${queryKey}:${resetVersion}`} {...props} onReset={()=>setResetVersion((value:number)=>value+1)}/>;
+}
+
+function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/capacity',onReset}:FeedProps&{onReset:()=>void}){
+  // A link to the current unfiltered URL does not navigate. Reset local drafts
+  // and the map explicitly in that case; other clears use the new query key.
+  function clearUnappliedFilters(){if(!Object.values(query).some(Boolean))onReset();}
   const [items,setItems]=React.useState(initial.items);
   const [loading,setLoading]=React.useState(false);
   const [error,setError]=React.useState(initial.filterError||'');
@@ -307,7 +320,7 @@ export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/p
         </fieldset>
 
 
-        <div className="capacity-filter-actions"><Link href={searchPath} onClick={closeFilters}>Clear</Link><button className="button" type="submit"><SlidersHorizontal aria-hidden="true"/>Show matching trucks</button></div>
+        <div className="capacity-filter-actions"><Link href={searchPath} onClick={()=>{closeFilters();clearUnappliedFilters();}}>Clear</Link><button className="button" type="submit"><SlidersHorizontal aria-hidden="true"/>Show matching trucks</button></div>
       </div>
     </dialog>
 
@@ -339,7 +352,7 @@ export function PublicCapacityFeed({initial,query,searchPath='/',apiPath='/api/p
         <section className="public-capacity-toolbar" aria-label="Capacity map location controls"><button type="button" className="button location-action" onClick={useMyLocation} disabled={locationState==='locating'}><LocateFixed aria-hidden="true"/>{locationActionLabel}</button><span className="public-location-note">Your precise location remains on this device.</span></section>
         {locationNotice?<small className={`capacity-location-status ${locationState==='ready'?'ready':'attention'}`} role="status" data-testid="visitor-location-state">{locationNotice}</small>:null}
       </div>
-      <footer className="capacity-drawer-actions"><button type="button" className="capacity-filter-trigger" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/>More filters{activeFilterCount?<span>{activeFilterCount}</span>:null}</button><button type="submit" className="button"><Search aria-hidden="true"/>Show matching trucks</button><Link href={searchPath}>Clear all</Link></footer>
+      <footer className="capacity-drawer-actions"><button type="button" className="capacity-filter-trigger" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/>More filters{activeFilterCount?<span>{activeFilterCount}</span>:null}</button><button type="submit" className="button"><Search aria-hidden="true"/>Show matching trucks</button><Link href={searchPath} onClick={clearUnappliedFilters}>Clear all</Link></footer>
     </aside>
     </form>
     <div className="capacity-drawer-handle" hidden={drawerOpen}>

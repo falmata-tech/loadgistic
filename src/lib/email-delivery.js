@@ -70,7 +70,7 @@ export async function deliverPendingShipmentEmails(limit=10){
         template:delivery.delivery_kind==='TRACKING_ACCESS'?'tracking-started':'tracking-completed',
         to:delivery.recipient_email,
         customerRole:delivery.party_role==='SHIPPER'?'OWNER':'TRACKING_PARTY',
-        tracking:delivery.delivery_kind==='TRACKING_ACCESS'?{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)}:undefined,
+        tracking:{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)},
         review:delivery.delivery_kind==='COMPLETION'?{url:publicUrl('/track'),code:reviewAccessCode(delivery.shipment_id)}:undefined,
         shipment:{
           code:delivery.code,providerName:delivery.provider_name,origin:delivery.origin,

@@ -428,3 +428,15 @@ Implementation: scoped migration 100 corrects only the existing dashboard projec
 its persisted authorization, tenant scope and six-row limit remain. Rollback restores
 the prior function without changing shipments. Verify rollback-only status/order/
 vehicle tests, denial and catalog checks, then the local browser presentation.
+
+### Scenario: email-only login stays focused
+
+Given a visitor opens login on desktop or phone
+When email-only account access is enabled
+Then one compact card contains the email field and primary code action
+And code entry uses the same card with a different-email action
+And no Google action, choice divider or large marketing panel competes with login
+And labels, inline errors, keyboard focus, 44px targets and public navigation remain usable.
+
+FEAT-IAM-001 preserves the real email-code identity contract. Capture request,
+code and invalid-code states locally; obtain owner visual review before release.

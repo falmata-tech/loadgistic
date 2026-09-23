@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import { MANAGED_AUTH_ERROR, managedWorkspaceDestination } from '@/lib/auth-flow.js';
+import { MANAGED_AUTH_ERROR, MANAGED_GOOGLE_LOGIN_ENABLED, MANAGED_EMAIL_ONLY_MESSAGE, managedWorkspaceDestination } from '@/lib/auth-flow.js';
 import { getManagedCurrentUser } from '@/lib/identity/supabase';
 import {hasJoinableFleetInvitation} from '@/lib/fleet-driver-management';
 import {
@@ -15,7 +15,7 @@ export const runtime='nodejs';
 
 function failed(request:NextRequest) {
   const location=redirectUrl(request,'/login');
-  location.searchParams.set('error',MANAGED_AUTH_ERROR);
+  location.searchParams.set('error',MANAGED_GOOGLE_LOGIN_ENABLED?MANAGED_AUTH_ERROR:MANAGED_EMAIL_ONLY_MESSAGE);
   const response=NextResponse.redirect(location,303);
   response.headers.set('Cache-Control','no-store');
   return response;
@@ -41,6 +41,7 @@ function failedAndCleared(request:NextRequest){
 }
 
 export async function GET(request:NextRequest) {
+  if(!MANAGED_GOOGLE_LOGIN_ENABLED)return failedAndCleared(request);
   const query=request.nextUrl.searchParams;
   const code=query.get('code')||'';
   const flowId=query.get('sb_flow_id')||'';

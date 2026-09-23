@@ -33,18 +33,11 @@ export default async function LoginPage({
       title={codeStep?'Enter your code':'Log in'}
       description={codeStep
         ?`We sent a six-digit code to ${maskedProviderSignupEmail(handoff?.email||'')}.`
-        :'Use a one-time email code or Google.'}
-      contextKicker="Loadgistic"
-      contextTitle="Share capacity. Keep customers informed."
-      contextDescription="Share with your network or the open market, then keep shipment partners informed."
+        :'Get a one-time code in your inbox.'}
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <div className="managed-login-stack">
         {codeStep?<EmailCodeForm localInbox={localInbox}/>:<EmailRequestForm localInbox={localInbox}/>}
-        <div className="auth-divider"><span>or</span></div>
-        <form action="/api/applications/google" method="post">
-          <button className="button secondary auth-google-button" type="submit"><span className="auth-google-mark" aria-hidden="true">G</span>Continue with Google</button>
-        </form>
       </div>
       {fixturePassword?<LocalFixtureLogin/>:null}
       <p className="auth-privacy-note"><LockKeyhole aria-hidden="true"/>Your login email stays private.</p>
@@ -58,7 +51,7 @@ function EmailRequestForm({localInbox}:{localInbox:string|null}){
     <div className="form-group">
       <label htmlFor="account-email"><Mail aria-hidden="true"/>Email</label>
       <input id="account-email" name="email" type="email" autoComplete="email" aria-describedby={helpId} required/>
-      <small id={helpId}>We will email a six-digit code. No password is needed.</small>
+      <small id={helpId}>For existing accounts or getting started. No password needed.</small>
     </div>
     <button className="button auth-primary-action" type="submit"><Send aria-hidden="true"/>Email me a code</button>
     {localInbox?<LocalInboxLink url={localInbox}/>:null}

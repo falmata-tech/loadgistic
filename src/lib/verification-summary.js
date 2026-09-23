@@ -46,7 +46,9 @@ export function truckAuthorizationBadgeFromApproved(records,vehicleId,vehicleLab
   };
 }
 
-export function projectVerificationSubject(subject){
+export function projectVerificationSubject(subject,requests=[]){
+  const pending=requests.filter(request=>request.status==='PENDING'
+    &&request.subject_type===subject.subject_type&&request.subject_id===subject.subject_id);
   const documents=subject.approved_documents||[];
   const badges=verificationBadgesFromApproved(subject.subject_type,documents);
   const verificationTypes=subject.verification_types||[];
@@ -54,10 +56,12 @@ export function projectVerificationSubject(subject){
     ?(subject.vehicles||[]).map(vehicle=>truckAuthorizationBadgeFromApproved(documents,vehicle.id,vehicle.label)):[];
   const verifiedTypes=new Set(badges.filter(badge=>badge.verified).map(badge=>badge.type));
   const allowedTypes=verificationTypes.filter(type=>type==='VEHICLE_AUTHORIZATION'
-    ?pairingBadges.some(badge=>!badge.verified):!verifiedTypes.has(type));
+    ?pairingBadges.some(badge=>!badge.verified&&!pending.some(request=>request.verification_type===type&&request.related_vehicle_id===badge.vehicleId))
+    :!verifiedTypes.has(type)&&!pending.some(request=>request.verification_type===type));
   const vehicles=verificationTypes.includes('VEHICLE_AUTHORIZATION')
-    ?(subject.vehicles||[]).filter(vehicle=>!pairingBadges.find(badge=>badge.vehicleId===vehicle.id)?.verified)
+    ?(subject.vehicles||[]).filter(vehicle=>!pairingBadges.find(badge=>badge.vehicleId===vehicle.id)?.verified
+      &&!pending.some(request=>request.verification_type==='VEHICLE_AUTHORIZATION'&&request.related_vehicle_id===vehicle.id))
     :subject.vehicles||[];
   return {...subject,vehicles,verification_types:undefined,approved_documents:undefined,
-    allowed_types:allowedTypes,badges:[...badges,...pairingBadges]};
+    allowed_types:allowedTypes,pending_count:pending.length,badges:[...badges,...pairingBadges]};
 }

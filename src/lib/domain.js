@@ -107,7 +107,7 @@ export function normalizeEtb(value) {
 
 export function formatEtb(minor) {
   if (minor === null || minor === undefined) return null;
-  return `ETB ${(minor / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  return `ETB ${(minor / 100).toLocaleString('en-US', { minimumFractionDigits: minor % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
 }
 
 export function validatePriceMode({ priceMode, priceEtb, targetPriceEtb }) {

@@ -4,7 +4,7 @@ id: FEAT-IAM-001
 title: Identity, sessions, and role access
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001, FEAT-FLT-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
-behavior: Provider and platform-team identities begin at one account-access surface and prove identity through Supabase Google OAuth or a numeric email one-time code. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
+behavior: Provider and platform-team identities begin at one account-access surface and prove identity through a numeric Supabase email one-time code; Google account entry is temporarily disabled by owner decision. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
 contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact, AccountDetailsInput]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
@@ -28,6 +28,24 @@ Evidence: fleet onboarding unit/security tests and the desktop/phone new-fleet
 browser flow, including local Auth OTP email and invitation notification delivery.
 The Google callback uses the same verified-ID invitation decision; new real
 Google consent and hosted delivery remain separate rollout checks.
+
+### Current rollout: email-only access — owner request, 2026-09-23
+
+Given the owner has paused Google account access
+When someone opens login or begins account setup
+Then the only public account-entry action requests a six-digit email code
+And the compact login surface retains clear error, code-entry and different-email states
+And stale/direct Google start URLs and OAuth callbacks return to email login
+without starting OAuth, exchanging a code or granting a new app session
+And email OTP, signup handoff, existing accounts/sessions and local-only fixture
+access preserve their current authorization rules.
+
+Enforce this in application routes as well as the visible page. Keep the retained
+Google flow behind a single disabled policy constant for a future reviewed
+reenablement; do not change hosted provider credentials/configuration or revoke
+sessions. The Google scenarios below describe retained disabled capability.
+Focused proof: actual local inbox-code sign-in, direct endpoint/callback denial,
+responsive/a11y login states. Rollback is a reviewed application revision.
 
 ### Scenario: Google account access is bound to one flow
 

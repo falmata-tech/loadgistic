@@ -295,3 +295,29 @@ And selecting the managed backend never falls back to SQLite after a Supabase er
 - Application services: provider-capacity workspace and commands, current-capacity, regular-capacity-route, public projection, cursor and proximity functions
 - Persistence adapters: server-only Supabase provider-capacity RPCs in migrations `043_provider_capacity_runtime.sql`, `073_public_capacity_filter_alignment.sql`, and `077_focused_capacity_editing.sql`
 - Tests: domain, provider-capacity Supabase authorization, repository, authorization, E2E, visual audit
+
+### Scenario: a newly assigned Driver can publish the first capacity signal
+
+Given an identity-confirmed Driver is assigned a truck and allowed to manage capacity
+And that truck has no published capacity or recorded location
+When the Driver opens Home
+Then the truck identity and setup content occupy separate visible space on desktop and phone
+And a clearly labelled Set capacity action opens the existing current-capacity editor
+And interactive editor controls remain disabled until their handlers are ready
+And the first editor collects valid coverage and approximate location before Save
+And successful Save persists the assigned truck's signal and shows the normal saved map
+And the initial summary says Not published rather than claiming Open visibility
+And absent assignment or restricted fleet permissions retain their existing denial behavior.
+
+Use normal document layout for the no-map state; preserve the saved-map overlays
+and existing first-publication Private default. Verify actual new-Driver inbox
+login, normal click/touch, visible geometry, persisted state and cancellation.
+No migration or permission change. Rollback restores the preceding presentation.
+
+### Scenario: restricted Driver starts with an unconfigured truck
+
+Given a Company driver cannot manage capacity and their assigned truck has no signal
+When Home opens
+Then it explains that the fleet owner must configure capacity first
+And Available is disabled rather than offering a submission the server must reject
+And changing capacity/tracking permissions takes effect on the next read or write without a new login.

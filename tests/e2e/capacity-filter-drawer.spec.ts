@@ -47,6 +47,12 @@ async function exercise(page:any,info:any,path:string,api:string){
   await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();
   await expect(drawer.getByRole('button',{name:'More filters'})).toBeFocused();
   await closeCapacityFilters(page);
+  if(!mobile){
+    const label=page.locator('.ethiopia-map-label');
+    await expect(label).toBeVisible();
+    const labelBox=await label.boundingBox(),filterBox=await page.getByRole('button',{name:/^Filters/}).boundingBox();
+    expect(labelBox!.y).toBeGreaterThanOrEqual(filterBox!.y+filterBox!.height);
+  }
   await expect(page.getByRole('button',{name:/^Filters/})).toBeFocused();
   await expect(page.locator('#capacity-filter-drawer')).toHaveAttribute('inert','');
   await expect.poll(()=>windows.length).toBeGreaterThan(0);
@@ -81,6 +87,13 @@ async function exercise(page:any,info:any,path:string,api:string){
   await openDrawer(page);await drawer.getByRole('button',{name:/More filters/}).click();
   await expect(dialog.getByRole('combobox',{name:'Load type',exact:true})).toHaveValue('PTL');
   await dialog.getByRole('link',{name:'Clear',exact:true}).click();await expect(page).toHaveURL(new RegExp(`${path==='/'?'/$':'/shared-capacity$'}`));
+  await openDrawer(page);
+  await expect(drawer.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(drawer.getByLabel('Truck configuration',{exact:true})).toHaveValue('');
+  await expect(drawer.getByLabel('In or near a city',{exact:true})).toHaveValue('');
+  await expect(drawer.locator('input[name="truckCityPlaceRef"]')).toHaveValue('');
+  await expect(page.getByRole('dialog',{name:'More filters'})).not.toBeVisible();
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});
 }
 
 test('Open capacity drawer keeps drafts, map gestures and combined filters',async({page}:{page:any},info:any)=>{
@@ -113,6 +126,7 @@ test('Private capacity uses the same drawer with real local OTP and scoped resul
     await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible();
     const before=await (await page.request.get('/api/shared-capacity')).json();expect(before.items).toHaveLength(1);expect(before.items[0].provider_handle).toBe(`drawer-${actor.suffix}`);
     await exercise(page,info,'/shared-capacity','/api/shared-capacity');
+    await exerciseUnfilteredReset(page,info,'/shared-capacity','/api/shared-capacity');
     const logout=page.getByRole('button',{name:'Log out'});await expect(logout).toBeVisible();await logout.click();
     await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();expect((await page.request.get('/api/shared-capacity')).status()).toBe(401);
   }finally{
@@ -133,4 +147,70 @@ test('editing a transporter search drops only the previous transporter scope',as
   await expect(page.locator('.capacity-discovery-form input[name="provider"]')).toHaveCount(0);
   await drawer.getByRole('button',{name:'Search published truck capacity',exact:true}).click();
   await expect(page).toHaveURL(/q=Addis/);const url=new URL(page.url());expect(url.searchParams.has('provider')).toBe(false);expect(url.searchParams.get('status')).toBe('EMPTY');
+});
+
+
+async function exerciseUnfilteredReset(page:any,info:any,path:string,api:string){
+  const requests:URL[]=[];
+  page.on('request',(r:any)=>{const u=new URL(r.url());if(u.pathname===api&&u.searchParams.has('viewport'))requests.push(u);});
+  await page.goto(path);await openDrawer(page);
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+  await expect.poll(()=>requests.length).toBeGreaterThan(0);
+  const baseline=requests.at(-1)!.searchParams.get('viewport')!;
+  const drawer=page.locator('#capacity-filter-drawer');
+  await drawer.getByLabel('Availability',{exact:true}).selectOption('PARTIAL');
+  await drawer.getByLabel('In or near a city',{exact:true}).fill('Adama');
+  await drawer.locator('#capacity-truck-city-results .place-result').first().click();
+  await closeCapacityFilters(page);
+  const previousCount=requests.length;
+  await page.locator('.leaflet-control-zoom-in').click();
+  await expect.poll(()=>requests.length).toBeGreaterThan(previousCount);
+  expect(requests.at(-1)!.searchParams.get('viewport')).not.toBe(baseline);
+  await openDrawer(page);const beforeClear=requests.length;
+  await drawer.getByRole('link',{name:'Clear all',exact:true}).click();
+  await openDrawer(page);
+  await expect(drawer.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(drawer.getByLabel('In or near a city',{exact:true})).toHaveValue('');
+  await expect(drawer.locator('input[name="truckCityPlaceRef"]')).toHaveValue('');
+  await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
+  await expect.poll(()=>requests.length).toBeGreaterThan(beforeClear);
+  await expect.poll(()=>requests.at(-1)!.searchParams.get('viewport')).toBe(baseline);
+  expect(requests.at(-1)!.searchParams.get('status')).toBeFalsy();
+  expect(requests.at(-1)!.searchParams.get('truckCityPlaceRef')).toBeFalsy();
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});
+  await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-clear-all-unfiltered.png`),scale:'css'});
+}
+
+test('Clear all discards unsubmitted filters and resets a zoomed map on an unfiltered URL',async({page}:{page:any},info:any)=>{
+  test.setTimeout(90000);await exerciseUnfilteredReset(page,info,'/','/api/public/capacity');
+});
+
+
+test('Clear all removes applied filters and the selected truck before loading the wider map',async({page}:{page:any},info:any)=>{
+  test.setTimeout(60000);
+  const sample=(await (await page.request.get('/api/public/capacity')).json()).items[0];
+  expect(sample).toBeTruthy();
+  const filtered=new URLSearchParams({q:sample.provider_name,provider:sample.provider_handle,truck:sample.id,status:sample.status});
+  await page.goto(`/?${filtered}`);
+  await expect(page.locator('.map-capacity-sheet')).toBeVisible();
+  const drawer=await openDrawer(page);
+  const unfiltered=page.waitForResponse((r:any)=>{
+    const url=new URL(r.url());
+    return url.pathname==='/api/public/capacity'&&url.searchParams.has('viewport')&&!['q','provider','truck','status'].some(key=>url.searchParams.get(key));
+  });
+  await drawer.getByRole('link',{name:'Clear all',exact:true}).click();
+  await expect(page).toHaveURL(/\/$/);
+  const response=await unfiltered;expect(response.status()).toBe(200);
+  expect((await response.json()).items.length).toBeGreaterThan(0);
+  await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
+  await openDrawer(page);
+  await expect(drawer.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(drawer.getByRole('combobox',{name:'Search published truck capacity'})).toHaveValue('');
+  // The modal's Clear action must also discard edits on this same unfiltered URL.
+  await drawer.getByLabel('Availability',{exact:true}).selectOption('PARTIAL');
+  await drawer.getByRole('button',{name:'More filters',exact:true}).click();
+  await page.getByRole('dialog',{name:'More filters'}).getByRole('link',{name:'Clear',exact:true}).click();
+  await openDrawer(page);await expect(drawer.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(page.getByRole('dialog',{name:'More filters'})).not.toBeVisible();
+  await page.screenshot({path:info.outputPath('clear-all-selected-truck.png'),scale:'css'});
 });

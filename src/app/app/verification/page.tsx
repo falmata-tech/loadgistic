@@ -29,6 +29,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
     subject_id:String(subject.subject_id),
     name:String(subject.name),
     type:String(subject.type),
+    pending_count:Number(subject.pending_count)||0,
     allowed_types:[...subject.allowed_types].map(String),
     vehicles:(subject.vehicles||[]).map((vehicle:any)=>({id:String(vehicle.id),label:String(vehicle.label)}))
   }));

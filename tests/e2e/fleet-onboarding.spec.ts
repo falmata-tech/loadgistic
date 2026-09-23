@@ -28,7 +28,7 @@ async function selectPlace(page:any,label:string,value:string){
 }
 
 test('fleet assigns an unverified driver, then email-code login unlocks the same assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
-  test.setTimeout(180_000);
+  test.setTimeout(240_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
   if(!['localhost','127.0.0.1'].includes(new URL(endpoint).hostname))throw new Error('REMOTE_FLEET_TEST_REFUSED');
@@ -37,7 +37,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
   const ownerEmail=`fleet-owner-${suffix}@loadgistic.local`,driverEmail=`fleet-driver-${suffix}@loadgistic.local`;
   const ownerName=`Fleet Owner ${suffix}`,driverName=`Added Driver ${suffix}`;
   const driverContext=await browser.newContext({baseURL:info.project.use.baseURL,
-    viewport:page.viewportSize()||undefined,isMobile:Boolean(info.project.use.isMobile),
+    viewport:page.viewportSize()||undefined,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch),
     permissions:['geolocation'],geolocation:{latitude:9.03,longitude:38.76},
     extraHTTPHeaders:{'x-forwarded-for':'127.0.0.241'}});
   const driverPage=await driverContext.newPage();
@@ -109,9 +109,75 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByRole('button',{name:'Save truck details'}).click();
     await expect(page.getByRole('heading',{name:'Isuzu · Corrected mini'})).toBeVisible();
 
+    async function permissions(capacityAllowed:boolean,trackingAllowed:boolean){
+      await page.goto('/app/fleet');
+      const row=page.locator('.fleet-driver-manager').filter({hasText:driverName});
+      await row.locator('summary').first().click();
+      await row.getByLabel('Capacity updates',{exact:true}).setChecked(capacityAllowed);
+      await row.getByLabel('Tracking updates',{exact:true}).setChecked(trackingAllowed);
+      await row.getByRole('button',{name:'Save driver',exact:true}).click();
+      const storedPermissions=await service.from('driver_permissions').select('can_manage_capacity,can_manage_tracking').eq('user_id',identity.data!.id).single();
+      expect(storedPermissions.data).toMatchObject({can_manage_capacity:capacityAllowed,can_manage_tracking:trackingAllowed});
+    }
+    // Reuse the Driver's existing session so revocation must take effect immediately.
+    for(const trackingAllowed of [true,false]){
+      await permissions(false,trackingAllowed);await driverPage.goto('/app/home');
+      await expect(driverPage.getByText('Fleet-managed capacity',{exact:true})).toBeVisible();
+      await expect(driverPage.getByText('Ask your fleet owner to set up capacity before marking this truck Available.')).toBeVisible();
+      await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeDisabled();
+      const denied=await driverPage.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:truckId,status:'OFF_DUTY'}});
+      expect(denied.status()).toBe(400);expect(await denied.json()).toEqual({error:'You do not have permission to perform that action.'});
+      await driverPage.goto('/app/provider-shipments/new');
+      if(trackingAllowed)await expect(driverPage.getByRole('combobox',{name:/Truck/})).toBeVisible();
+      else{
+        await expect(driverPage).toHaveURL(/\/app\/provider-shipments\?error=/);
+        const rejected=await driverPage.request.post('/api/provider-shipments',{form:{vehicleId:truckId,cargoSummary:'Denied test',customerEmail:driverEmail}});
+        expect(rejected.status()).toBe(400);expect(await rejected.json()).toEqual({error:'You do not have permission to perform that action.'});
+      }
+    }
+    await permissions(true,false);
+    await driverPage.goto('/app/provider-shipments/new');
+    await expect(driverPage).toHaveURL(/\/app\/provider-shipments\?error=/);
     await driverPage.goto('/app/home');
-    await driverPage.getByRole('button',{name:/^Edit current capacity:/}).click();
+    await expect(driverPage.getByText('No capacity published yet',{exact:true})).toBeVisible();
+    await driverPage.screenshot({path:info.outputPath('new-driver-before-first-capacity.png')});
+    const obstruction=await driverPage.evaluate(()=>{
+      const banner=document.querySelector('.capacity-summary-map-header')!.getBoundingClientRect();
+      const overlaps=(a:DOMRect,b:DOMRect)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+      return [...document.querySelectorAll('.capacity-map-empty>svg,.capacity-map-empty>strong,.capacity-map-empty>span')].some(el=>overlaps(banner,el.getBoundingClientRect()));
+    });
+    expect(obstruction,'truck banner must not cover first-publication content').toBe(false);
+    await expect(driverPage.locator('.capacity-truck-copy')).toContainText('Not published');
+    await expect(driverPage.getByRole('button',{name:'Edit approximate location',exact:true})).toHaveCount(0);
+    // Hold hydration on a fresh load: the first enabled action must work.
+    let releaseScripts=()=>{};
+    const scriptsReady=new Promise<void>(resolve=>{releaseScripts=resolve;});
+    const scriptPattern='**/_next/static/**/*.js';
+    await driverPage.route(scriptPattern,async(route:any)=>{await scriptsReady;await route.continue();});
+    try{
+      await driverPage.goto('/app/home',{waitUntil:'commit'});
+      await expect(driverPage.getByRole('button',{name:'Set capacity',exact:true})).toBeDisabled();
+      await expect(driverPage.getByRole('button',{name:/^Edit current capacity:/})).toBeDisabled();
+    }finally{releaseScripts();}
+    const firstAction=driverPage.getByRole('button',{name:'Set capacity',exact:true});
+    await expect(firstAction).toBeEnabled();
+    await driverPage.unroute(scriptPattern);
+    if(info.project.name.includes('mobile'))await driverPage.setViewportSize({width:320,height:640});
+    await firstAction.scrollIntoViewIfNeeded();
+    expect(await driverPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    const box=await firstAction.boundingBox();
+    expect(await driverPage.evaluate(({x,y}:any)=>Boolean(document.elementFromPoint(x,y)?.closest('.capacity-map-empty button')),{x:box.x+box.width/2,y:box.y+box.height/2})).toBe(true);
+    await driverPage.screenshot({path:info.outputPath('new-driver-ready-to-set-capacity.png')});
+    if(info.project.name.includes('mobile'))await firstAction.tap();else await firstAction.click();
     const capacity=driverPage.getByRole('dialog',{name:'Current capacity',exact:true});
+    await expect(capacity).toBeVisible();
+    await expect(capacity.getByRole('button',{name:'Save',exact:true})).toBeDisabled();
+    await capacity.getByRole('button',{name:'Cancel',exact:true}).click();
+    await expect(capacity).toHaveCount(0);
+    const unpublished=await service.from('capacities').select('id',{count:'exact',head:true}).eq('vehicle_id',truckId);
+    expect(unpublished.error).toBeNull();expect(unpublished.count).toBe(0);
+    if(info.project.name.includes('mobile'))await firstAction.tap();else await firstAction.click();
+    await expect(capacity).toBeVisible();
     await capacity.getByRole('button',{name:'Capacity route',exact:true}).click();
     await selectPlace(driverPage,'City 1','Addis Ababa');
     await selectPlace(driverPage,'City 2','Sebeta');
@@ -121,8 +187,16 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await capacity.getByRole('button',{name:'Save',exact:true}).click();
     expect(await (await saveResponse).json()).toMatchObject({ok:true});
     await expect(capacity).toHaveCount(0);
+    const stored=await service.from('capacities').select('market_status,visibility,vehicle_id,updated_by').eq('vehicle_id',truckId).order('updated_at',{ascending:false}).limit(1).single();
+    expect(stored.error).toBeNull();
+    expect(stored.data).toMatchObject({market_status:'EMPTY',visibility:'PRIVATE',vehicle_id:truckId,updated_by:identity.data!.id});
     await expect(driverPage.getByRole('button',{name:'Edit current capacity: Empty'})).toBeVisible();
+    await expect(driverPage.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
+    await expect(driverPage.getByRole('button',{name:'Edit current capacity: Empty'})).toBeEnabled();
+    if(info.project.name.includes('mobile'))await driverPage.setViewportSize(page.viewportSize()!);
+    await expect(driverPage.locator('.capacity-location-map img.leaflet-tile-loaded').first()).toBeVisible({timeout:15000});
     await driverPage.screenshot({path:info.outputPath('new-driver-published-capacity.png')});
+    await permissions(true,true);
     await driverPage.goto('/app/provider-shipments/new');
     await expect(driverPage.getByRole('combobox',{name:/Truck/})).toBeVisible();
     await driverPage.goto('/app/network');

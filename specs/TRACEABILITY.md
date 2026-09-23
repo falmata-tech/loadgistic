@@ -1,5 +1,93 @@
 # Specification traceability
 
+## Authorized demo corrections — 2026-09-23
+
+FEAT-BIL-001 / FEAT-VER-001: all six desktop/phone Review Center cases pass
+with exact fractional ETB, excluded pending pairings, preserved approvals and
+server-persisted decisions (`artifacts/demo-fixes-20260923/`). FEAT-CAP-001:
+the unchanged fleet onboarding test passes both viewports sequentially, including
+restricted, tracking-only, capacity-only and full permissions, first publication,
+320px touch action and removal denial (`artifacts/demo-serial-20260923/`).
+FEAT-LST-001 / FEAT-SHR-001: map label separation passes on both maps; the
+private drawer and Clear all pass on both viewports in the same serialized run.
+`npm run quality` passes 331 tests, source/spec validation and TypeScript.
+FEAT-REV-001: both completion-email → fresh customer OTP → published review
+cases pass in `artifacts/demo-completion-final-20260923/` (1.4 minutes), using
+only codes from the received completion email. The test waits for each specific
+streamed destination response before asserting its flash and stored status.
+Initial concurrent dev-server timeouts are retained in demo-readiness evidence.
+The owner accepted the earlier preview and authorized the corrections/release;
+normal CI, backup/restore, immutable artifact and production checks remain required.
+
+
+## Demo workflow assessment — 2026-09-23
+
+FEAT-SHP-001 / FEAT-TRK-001 / FEAT-SHR-001 / FEAT-SUP-001: eight fresh
+desktop/phone cases pass for Tracking creation, two recipient OTP logins,
+uploaded proof bytes and denial, private capacity sharing and live chat.
+FEAT-REV-001: two new browser cases pass for all five completion status actions,
+actual local completion email, guest OTP/review code, visible review publication,
+one persisted Published row and reload. TypeScript passes. Evidence and limits:
+[demo readiness assessment](../docs/DEMO_READINESS_2026-09-23.md). No new product
+behavior, real email, hosted changes or deployment; previous visual approval
+requests remain pending. Actual-inbox, Safari/device and delegated-permission
+combination coverage is not implied by these ten local Chromium cases.
+
+## New Driver first capacity — 2026-09-23 (local owner review pending)
+
+FEAT-CAP-001 / UIA-21: an actual new fleet, emailed-but-unverified Driver,
+assignment and inbox-code login reproduce the original truck-header obstruction
+in `artifacts/new-driver-before-20260923/`. The corrected no-map layout separates
+identity and setup, adds Set capacity, and keeps controls disabled until client
+handlers attach. Both desktop/phone `fleet-onboarding.spec.ts` scenarios pass
+with the held-script first-click test and stored truck/actor/Private visibility
+assertions, followed by removed-Driver access denial. Evidence:
+`artifacts/new-driver-review-20260923/`.
+
+All ten existing `capacity-signal-dialogs.spec.ts` desktop/phone cases also pass:
+actual saves, preserved map identity, cancellation/error recovery, fleet-owner
+location restrictions, anonymous denial and first-publication/status changes.
+Evidence: `artifacts/new-driver-dialog-regression-20260923/`. Six capacity adapter
+checks, typecheck and source/spec validation pass. No permission/schema change
+or hosted write; fresh owner visual review precedes full release gates.
+
+Final `fleet-onboarding.spec.ts` run also passes both projects after adding a
+320×640 phone action/hit-target check, Cancel-with-zero-records assertion and
+real loaded-tile verification after Save. Desktop/phone setup and saved-map
+captures were inspected: `artifacts/new-driver-final-20260923/` (two passes,
+2.9 minutes). These strengthen the same two scenarios, not additional distinct
+cases. Twelve distinct focused browser cases pass for this capacity correction.
+
+## Email-only login and Clear all — 2026-09-23 (local owner review pending)
+
+FEAT-IAM-001 / FEAT-UIX-001: a compact email-only card replaces the login's dual
+panel/Google choice. Google start routes and callback reject even an existing
+signed handoff before OAuth/session exchange. `email-only-login.spec.ts` passes
+on desktop/phone with real local inbox delivery, wrong-code rejection and valid
+email-code login; captures include request, code and invalid-code states. Ten
+`auth-flow.test.mjs` checks, typecheck and source/spec checks pass. Responsive
+320/640/1440px checks pass on phone; the first desktop run timed out navigating
+`/apply`, and one unchanged controlled retry passed. No hosted provider settings
+or credentials were changed, existing sessions remain, and real Google consent
+or production email delivery is not claimed.
+
+FEAT-LST-001 / FEAT-SHR-001 / UIA-20: two reproductions failed before the shared
+query-state reset (Private applied filters, Open same-URL drafts). Focused
+Open/Private desktop/phone checks now pass, including query/default inputs,
+unchanged drawer behavior, restored unfiltered viewport, real private-email
+OTP, scoped results and logout denial. Evidence:
+`artifacts/login-clear-review-20260923/` and
+`artifacts/login-reflow-retry-20260923/`. Full release checks await the owner’s
+review of the new login. Earlier release candidate 14aeb7b and its CI were
+superseded before any production migration/publication.
+
+Final four desktop/phone checks pass in `artifacts/login-clear-final-20260923/`:
+account navigation/session state, applied-filter and selected-truck Clear all,
+and clearing modal edits on an already-unfiltered URL. Fourteen distinct focused
+browser scenarios now pass across the recorded runs, with the one controlled
+responsive retry disclosed above. Owner visual review remains pending.
+
+
 ## Corrected candidate release approval — 2026-09-23
 
 Following the corrected local preview and review request, the owner directed

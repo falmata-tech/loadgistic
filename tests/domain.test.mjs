@@ -135,6 +135,9 @@ test('ETB price modes support fixed, target, and quote',()=>{
  assert.deepEqual(validatePriceMode({priceMode:'TARGET_PRICE',targetPriceEtb:'32000'}),{priceMinor:null,targetMinor:3200000});
  assert.deepEqual(validatePriceMode({priceMode:'QUOTE_REQUESTED'}),{priceMinor:null,targetMinor:null});
  assert.equal(formatEtb(3500000),'ETB 35,000');
+ assert.equal(formatEtb(125050),'ETB 1,250.50');
+ assert.equal(formatEtb(1),'ETB 0.01');
+ assert.equal(formatEtb(0),'ETB 0');
 });
 
 test('freight status transitions preserve agreement before movement',()=>{

@@ -176,3 +176,13 @@ Then those dependent selectors wait for client readiness before accepting input
 And an accepted choice displays its corresponding fields without being reset by mount.
 The local browser audit reproduced a lost early category selection; use the same
 readiness protection as the existing assisted-chat control, without new user steps.
+
+### Scenario: pending submissions are explained before another upload
+
+Given an actor has a Pending request for a subject category or Driver-truck pairing
+When they open Verification
+Then that pending choice is excluded from their submission options and in-review guidance is visible
+And another eligible pairing remains selectable
+And Pending never produces an approved badge
+And More information or rejected requests remain eligible for corrected evidence
+And the server continues rejecting duplicate Pending requests despite stale clients.

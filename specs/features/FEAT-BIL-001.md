@@ -136,3 +136,10 @@ When their platform role grants access without a provider subscription
 Then the page identifies platform administration access, does not say No plan
 assigned or ask them to contact support for a plan, and offers no payment form.
 This is a presentation correction; provider billing and authorization stay unchanged.
+
+### Scenario: monetary displays preserve minor units
+
+Given a stored payment amount of 125050 minor units
+When Account or Review Center displays it
+Then it displays ETB 1,250.50 without rounding away cents
+And whole-birr amounts retain their compact existing format.

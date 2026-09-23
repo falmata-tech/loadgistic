@@ -4,6 +4,13 @@ FEAT-SEC-001 / BASE-DEP-001 / ADR-063. Scope: Loadgistic only.
 
 ## Current release authorization — 2026-09-23
 
+Latest owner instruction: “ok go ahead and fix deploy,” following the demo risk
+assessment and local review request. It accepts the presented login, Clear all
+and first-Driver corrections and authorizes the identified demo corrections
+(pending verification guidance, exact ETB amounts and self-contained completion
+email), focused permission checks and release with every normal gate below.
+It does not waive failed CI/security/backup checks or authorize hosted settings.
+
 After receiving the corrected map preview and review request, the owner
 explicitly directed “ok now lets deploy our changes.” Continue the accumulated
 Loadgistic release including the reviewed map corrections, preserving exact

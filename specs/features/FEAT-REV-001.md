@@ -67,3 +67,20 @@ And every accepted rating is Published immediately while an accepted low-rating 
 - Administration: bounded one- to three-star dispute queue and audited terminal decision
 - Persistence: `044_provider_tracking_runtime.sql` and the server-only provider Tracking/review adapter
 - Tests: repository, managed authorization, E2E
+
+Local browser evidence (2026-09-23):
+`tests/e2e/tracking-completion-review.spec.ts` covers actual status controls to
+Complete, local completion-email delivery, customer OTP plus the separate
+review code, visible submission and one persisted Published review after reload
+on desktop/phone. The provider/truck/shipment setup is synthetic and isolated;
+the revised test extracts both access codes from the actual local completion
+email. It does not certify hosted inbox delivery. Existing
+backend negative tests remain responsible for duplicate and grant denial.
+
+### Scenario: completion email explains all customer access steps
+
+Given a completed shipment queues its customer owner completion email
+When the email is delivered
+Then it includes separately labelled Tracking and Review codes with instructions to verify the approved email before entering the Review code
+And the customer does not need to retrieve the earlier start email
+And the separate OTP, owner grant and review authorization checks remain unchanged.

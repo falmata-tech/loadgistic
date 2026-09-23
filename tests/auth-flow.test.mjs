@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  MANAGED_GOOGLE_LOGIN_ENABLED,
   isNumericEmailOtp,
   localFixturePasswordLoginEnabled,
   localAuthInboxUrl,
@@ -155,4 +156,15 @@ test('signup uses the same managed identity choices but may create only an inact
   assert.match(setup,/authenticatedEmail===handoff\.email/);
   assert.match(config,/\[auth\.email\.template\.confirmation\][\s\S]*signup-code\.html/);
   assert.match(template,/\{\{ \.Token \}\}/);
+});
+
+
+test('email-only policy blocks Google entry and callback before identity side effects',()=>{
+  assert.equal(MANAGED_GOOGLE_LOGIN_ENABLED,false);
+  const start=readFileSync(new URL('../src/app/api/applications/google/route.ts',import.meta.url),'utf8');
+  const callback=readFileSync(new URL('../src/app/api/auth/callback/route.ts',import.meta.url),'utf8');
+  assert.ok(start.indexOf('if(!MANAGED_GOOGLE_LOGIN_ENABLED)')<start.indexOf('client.auth.signInWithOAuth'));
+  assert.ok(callback.indexOf('if(!MANAGED_GOOGLE_LOGIN_ENABLED)')<callback.indexOf('client.auth.exchangeCodeForSession'));
+  const login=readFileSync(new URL('../src/app/login/page.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(login,/Continue with Google|auth-divider/);
 });

@@ -14,7 +14,8 @@ export async function getSupabaseVerificationCenter(user){
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('managed_verification_center',{actor_user_id:user.id});
   if(error)throw managedError('SUPABASE_VERIFICATION_CENTER_FAILED',error);
-  return {subjects:(data?.subjects||[]).map(projectVerificationSubject),requests:data?.requests||[]};
+  const requests=data?.requests||[];
+  return {subjects:(data?.subjects||[]).map(subject=>projectVerificationSubject(subject,requests)),requests};
 }
 
 export async function submitSupabaseVerification(user,input,file){

@@ -1,5 +1,118 @@
 # Progress
 
+## Finish demo fixes and deploy — authorized, 2026-09-23
+
+Owner: “ok go ahead and fix deploy.” This accepts the presented local login,
+Clear all and first-Driver fixes and authorizes completing the identified demo
+corrections and releasing them with the existing safety gates.
+
+- [x] Preserve fractional ETB amounts in payment/review displays (FEAT-BIL-001).
+- [x] Exclude actor-scoped pending document choices with in-review guidance;
+  preserve authoritative duplicate denial (FEAT-VER-001).
+- [x] Make completion email self-contained with both labelled access codes and
+  clear ordered instructions, preserving OTP/review authority (FEAT-REV-001).
+- [x] Exercise company Driver permission combinations on desktop/phone; WebKit
+  runtime is incompatible on this macOS host, so Safari remains unverified.
+- [ ] Run focused checks, quality and exact-commit CI; prepare fresh backup/restore.
+- [ ] Apply only reviewed migrations 098–101, build and verify immutable artifact,
+  publish, and independently verify hosted behavior. No hosted settings changes.
+
+Focused fixes are verified: six document/payment/rating cases; both desktop/phone
+Driver permission and first-publication journeys; both map drawers and Clear all;
+and both completion-email → fresh guest OTP → single published review cases.
+The final completion run is `artifacts/demo-completion-final-20260923/` (2 passes,
+1.4 minutes); permission/private-map evidence is `artifacts/demo-serial-20260923/`.
+The latter retained one earlier completion-test failure before its streamed-page
+synchronization was corrected. Initial concurrent dev-server runs also timed out
+on loading states; no assertions or product permissions were relaxed.
+`npm run quality` passes 331 tests plus source/spec/TypeScript; final TypeScript
+and source/spec checks pass. UI captures were inspected. The fresh encrypted
+backup restored in a network-disabled disposable database and migrations 098–101
+passed rehearsal with full catalog, Data API guard and spatial checks. Exact CI
+and production release are next; no hosted mutation or publication yet.
+
+Physical-device GPS and external recipient inbox testing require a real device
+and designated recipient; automated emulation will not be reported as either.
+
+## Demo risk assessment — 2026-09-23
+
+The owner asked which important workflows could fail during a demo. Ten fresh
+focused desktop/phone cases pass: eight existing chat/private-sharing/Tracking
+creation/proof cases and two new completion-email/customer-review cases.
+TypeScript passes; no new functional failure was observed in this bounded run.
+Known UIA-13/14/17 remain; real hosted email, actual phone/Safari, and delegated
+Driver permission combinations need separate evidence. See
+[DEMO_READINESS_2026-09-23.md](DEMO_READINESS_2026-09-23.md) for results, fixture
+limits and prioritized remaining checks. No production write or publication.
+The owner's “sorry continue” resumes the assessment, not visual approval of the
+pending login, Clear all and first-Driver changes below.
+
+## Pre-deployment follow-up — active, 2026-09-23
+
+Additional owner screenshot: a newly assigned company Driver has no published
+capacity and the floating truck banner covers the empty-state content. Add this
+before release: reproduce the first-publication screen, separate empty-state
+layout from saved-map overlays, expose a clear first-capacity action, and verify
+actual publication through the new Driver's existing permissions. Do not widen
+Driver authority or modify the owner's real account as a test fixture.
+
+- [x] Reproduce first-publication banner obstruction with an isolated new Driver.
+- [x] Correct empty-state layout/action and first-click readiness.
+- [x] Verify desktop/phone first publication, stored state and preserved permissions.
+
+FEAT-CAP-001 / UIA-21: floating saved-map overlays were incorrectly used over
+the no-map setup placeholder. The no-map state now uses normal layout, an
+explicit Set capacity action and truthful Not published visibility. Location
+setup stays in the first-publication editor; no unusable separate Location
+action is offered before a capacity exists. Controls wait for attached client
+handlers. Existing assignment, fleet permissions and Private default remain.
+The before-fix geometry assertion failed; both real new-fleet/new-Driver
+desktop/phone inbox-login and publication checks now pass, including stored
+vehicle/actor/visibility and post-removal access denial. Evidence:
+`artifacts/new-driver-before-20260923/` and
+`artifacts/new-driver-review-20260923/`. Six capacity adapter checks, TypeScript
+and source/spec checks pass. Final desktop/320px-phone first-publication checks
+also pass, including Cancel creating no record, normal click/touch after
+hydration, and rendered saved-map tiles (`artifacts/new-driver-final-20260923/`).
+All ten existing dialog regressions pass in
+`artifacts/new-driver-dialog-regression-20260923/`: actual saves, map identity,
+status changes, error recovery, cancellation and owner/anonymous restrictions.
+The server remains healthy at http://127.0.0.1:3100; visual approval and
+deployment are pending. No production account or settings were changed.
+
+The owner requested a cleaner login page, email-only login for now, and repair
+of capacity-map Clear all before deployment. Release of 14aeb7b is paused; its
+CI is superseded. The fresh encrypted backup completed authenticated recovery
+(2,130,510 bytes); no production migration or application publication occurred.
+
+Plan (FEAT-IAM-001 / FEAT-UIX-001 / FEAT-LST-001 / FEAT-SHR-001):
+- [x] Reproduce Clear all on both maps and cover draft-only reset.
+- [x] Simplify login and block application Google start/callback routes while
+  preserving existing identities, email OTP and local-only test access.
+- [x] Reset map/filter/selection state after Clear all with private scope intact.
+- [x] Verify actual local email-code login, direct OAuth denial and desktop/phone
+  filter reset; capture the updated login and map.
+- [x] Obtain owner visual approval (latest fix/deploy instruction); exact-candidate release gates are now active.
+
+Hosted Auth/provider credentials are not changed as part of the application
+login switch. Existing sessions are not revoked.
+
+Local evidence: ten auth-flow unit checks, typecheck and source/spec checks pass.
+The initial focused browser run had nine passes and one desktop navigation timeout
+at `/apply`; an unchanged controlled retry passed. Both viewport sizes exercised
+real inbox-code login, wrong-code denial, paused Google routes including a signed
+handoff, Open/Private filtering and same-URL Clear all. Before-fix tests reproduced
+both retained-state failures. Captures: `artifacts/login-clear-review-20260923/`;
+responsive retry: `artifacts/login-reflow-retry-20260923/`. The new login preview
+is at http://127.0.0.1:3100/login and fresh visual approval was requested.
+No production migration, provider-setting change or publication occurred.
+
+Final four desktop/phone checks pass in `artifacts/login-clear-final-20260923/`:
+account navigation/session state, applied-filter and selected-truck Clear all,
+and clearing modal edits on an already-unfiltered URL. Fourteen distinct focused
+browser scenarios now pass across the recorded runs, with the one controlled
+responsive retry disclosed above. Owner visual review remains pending.
+
 ## Release resumed — 2026-09-23
 
 After the corrected map preview and its review request, the owner directed:

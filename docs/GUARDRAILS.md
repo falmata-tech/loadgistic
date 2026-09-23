@@ -90,6 +90,10 @@ accepted interaction unless a change is explicitly reviewed.
   first publication and revocation through their real boundaries. Retain verified
   invitation acceptance tests for legacy invitations. Adding a driver must never
   auto-confirm email, create an owner-accessible session or adopt another account.
+- Check first-use layouts before a map or record exists. Floating saved-map
+  headers must not cover empty-state instructions or actions. Assert visible
+  geometry and a normal first click/tap, then verify the stored first record;
+  opening a dialog on an already-populated fixture is insufficient (UIA-21).
 - When copying an existing SQL function into an additive migration, extract only
   the intended function and assert its function inventory. A broad replacement
   can accidentally change an unrelated dashboard's role checks.

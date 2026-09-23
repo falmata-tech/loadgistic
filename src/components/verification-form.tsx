@@ -9,6 +9,7 @@ type Subject = {
   name:string;
   type:string;
   allowed_types:string[];
+  pending_count?:number;
   vehicles?:Array<{id:string;label:string}>;
 };
 
@@ -25,13 +26,15 @@ export function VerificationForm({subjects}:{subjects:Subject[]}) {
   const [ready,setReady]=React.useState(false);
   React.useEffect(()=>setReady(true),[]);
   const availableSubjects=subjects.filter(subject=>subject.allowed_types.length);
+  const pendingCount=subjects.reduce((count,subject)=>count+(subject.pending_count||0),0);
   const [key,setKey]=React.useState(availableSubjects.length?`${availableSubjects[0].subject_type}:${availableSubjects[0].subject_id}`:'');
   const selected=availableSubjects.find(subject=>`${subject.subject_type}:${subject.subject_id}`===key);
   const [verificationType,setVerificationType]=React.useState(selected?.allowed_types[0]||'');
   React.useEffect(()=>setVerificationType(selected?.allowed_types[0]||''),[key,selected?.allowed_types]);
-  if(!availableSubjects.length)return <section className="card verification-complete"><ShieldCheck aria-hidden="true"/><div><h2>No documents to submit</h2><p className="meta">{subjects.length?'All document categories currently available here have current approval. Documents remain optional.':'No eligible profiles or trucks are available for document submission.'}</p></div></section>;
+  if(!availableSubjects.length)return <section className="card verification-complete"><ShieldCheck aria-hidden="true"/><div><h2>{pendingCount?'Documents in review':'No documents to submit'}</h2><p className="meta">{pendingCount?'Your submitted documents are awaiting review. Check Request history for updates. Pending documents are not yet approved.':subjects.length?'All document categories currently available here have current approval. Documents remain optional.':'No eligible profiles or trucks are available for document submission.'}</p></div></section>;
   return <form action="/api/verifications" method="post" encType="multipart/form-data" className="form-card stack">
     <div className="section-heading-icon"><FileCheck2 aria-hidden="true"/><div><h2>Submit verification</h2><p className="meta">Documents are private and reviewed by Loadgistic administrators.</p></div></div>
+    {pendingCount?<p className="meta">Documents already awaiting review are excluded from the choices below. Check Request history for updates.</p>:null}
     <div className="form-grid">
       <div className="form-group full"><label htmlFor="verification-subject"><BadgeCheck aria-hidden="true"/>Profile, driver, or truck</label><select id="verification-subject" disabled={!ready} value={key} onChange={event=>setKey(event.target.value)} required>{availableSubjects.map(subject=><option key={`${subject.subject_type}:${subject.subject_id}`} value={`${subject.subject_type}:${subject.subject_id}`}>{subject.name} · {subject.type}</option>)}</select></div>
       <input type="hidden" name="subjectType" value={selected?.subject_type||''}/>

@@ -26,12 +26,9 @@ test('public account access stays unified and follows session state',async({page
   const emailForm=page.getByTestId('email-code-request-form');
   const google=page.getByRole('button',{name:'Continue with Google'});
   await expect(emailForm).toBeVisible();
-  await expect(google).toBeVisible();
+  await expect(google).toHaveCount(0);
   await expect(page.getByText(/Existing account email|only if this address has a transporter account/i)).toHaveCount(0);
-  const [emailBox,googleBox]=await Promise.all([emailForm.boundingBox(),google.boundingBox()]);
-  expect(emailBox).not.toBeNull();
-  expect(googleBox).not.toBeNull();
-  expect(emailBox!.y).toBeLessThan(googleBox!.y);
+  await expect(page.locator('.auth-context-panel')).toHaveCount(0);
   await expect(page.getByRole('link',{name:/Create a transporter account|Join/i})).toHaveCount(0);
   await expect(page.getByText(/New to Loadgistic\?|Already have an account\?/i)).toHaveCount(0);
 
