@@ -23,7 +23,7 @@ jobs:
       TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -79,7 +79,7 @@ jobs:
       TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -117,7 +117,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Build standalone container
         run: docker build --tag loadgistic:${{ github.sha }} .
