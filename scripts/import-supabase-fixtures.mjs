@@ -104,8 +104,8 @@ function buildFeaturedFixtureTables(){
     expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],
     public_headline:'Daily Featured Trucks',
     public_introduction:`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
-    tiktok_url:null,broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule_mode:'AUTO',
-    schedule_config_json:{dayStart:'07:30',dayEnd:'09:00',targetCount:featured.length,sponsorBreakEvery:2,sponsorBreakMinutes:2},manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',
+    tiktok_url:null,broadcast_start_time:'08:30',broadcast_end_time:'12:00',schedule_mode:'AUTO',
+    schedule_config_json:{dayStart:'08:30',dayEnd:'12:00',targetCount:featured.length,sponsorBreakCount:4,sponsorBreakMinutes:2},manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',
     published_by:'user-admin',created_at:iso,updated_at:iso,published_at:iso
   };
   const slots=featured.map((candidate,index)=>({

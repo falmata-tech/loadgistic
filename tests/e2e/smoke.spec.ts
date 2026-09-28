@@ -23,7 +23,7 @@ test('Featured without sponsors keeps the truck board usable',async({page}:{page
     await expect(page.locator('.expo-sponsored-rail')).toHaveCount(0);
     const mobile=(page.viewportSize()?.width||0)<=760;
     const navigation=page.getByRole('navigation',{name:mobile?'Public mobile navigation':'Public workspace navigation'});
-    await expect(navigation.getByRole('link',{name:mobile?'Open':'Open capacity',exact:true})).toBeVisible();
+    await expect(navigation.getByRole('link',{name:'Capacity',exact:true})).toBeVisible();
   }finally{await restore();}
 });
 
@@ -312,7 +312,7 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
   await expect(page.getByRole('heading',{name:'Daily Featured Trucks'})).toBeVisible();
   await expect(page.getByText(/eligible truck-and-Driver choices/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:"Choose today's trucks and Drivers"})).toBeVisible();
-  await expect(page.getByText('07:30–09:00 EAT')).toBeVisible();
+  await expect(page.getByText('08:30–12:00 EAT',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Automatic'})).toHaveClass(/active/);
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Schedule sponsor'})).toBeVisible();
