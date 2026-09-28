@@ -1,4 +1,4 @@
-import {openCapacityFilters} from './capacity-drawer-helper';
+import {openCapacityFilters,openCapacityFilterDialog} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
@@ -44,7 +44,7 @@ test('map refresh uses a horizontal activity bar without hiding controls or anno
     const box=await track.boundingBox();expect(box.width).toBeGreaterThan(box.height*10);
     expect(await feedback.locator('.sr-only').evaluate((el:HTMLElement)=>getComputedStyle(el).position)).toBe('absolute');
     const activity=await feedback.boundingBox();
-    for(const selector of ['.public-map-legend summary','.public-chat-launcher']){
+    for(const selector of ['.public-map-legend summary','.public-assistance-dock']){
       const control=await page.locator(selector).boundingBox();
       expect(activity.x+activity.width<=control.x||control.x+control.width<=activity.x||activity.y+activity.height<=control.y||control.y+control.height<=activity.y).toBe(true);
     }
@@ -63,17 +63,17 @@ test('search and place lookups show activity while preserving editable inputs',a
   await expect(page.locator('.leaflet-container')).toBeVisible();
   let release:()=>void=()=>{};
   const ready=new Promise<void>(resolve=>{release=resolve;});
-  await page.route('**/api/public/capacity?q=**',async(route:any)=>{await ready;await route.continue();});
+  await page.route('**/api/capacity-search?**',async(route:any)=>{await ready;await route.continue();});
   try{
     await openCapacityFilters(page);
     const input=page.locator('#capacity-market-search');
-    await input.fill('Addis');
-    const loading=page.locator('.capacity-suggestion-loading');
+    await input.fill('Addis');await page.locator('.market-command-column').getByRole('button',{name:'Search',exact:true}).click();await openCapacityFilters(page);
+    const loading=page.locator('.capacity-result-panel .loading-indicator');
     await expect(loading.locator('.loading-progress-track')).toBeVisible();
-    await expect(loading.getByText('Finding trucks…')).toHaveClass('sr-only');
+    await expect(loading.getByText('Finding matches…')).toHaveClass('sr-only');
     await expect(input).toBeEditable();
     await page.screenshot({path:path.join(folder,`${info.project.name}-search-loading.png`),scale:'css'});
-    const completed=page.waitForResponse((response:any)=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('q')==='Addis';},{timeout:20000});
+    const completed=page.waitForResponse((response:any)=>{const url=new URL(response.url());return url.pathname==='/api/capacity-search'&&url.searchParams.get('q')==='Addis';},{timeout:20000});
     release();expect((await completed).ok()).toBe(true);await expect(loading).toHaveCount(0);
     await input.press('Escape');
   }finally{release();await page.unrouteAll({behavior:'wait'});}
@@ -81,7 +81,7 @@ test('search and place lookups show activity while preserving editable inputs',a
   const placeReady=new Promise<void>(resolve=>{releasePlace=resolve;});
   await page.route('**/api/places?q=**',async(route:any)=>{await placeReady;await route.continue();});
   try{
-    await openCapacityFilters(page);
+    await openCapacityFilterDialog(page);
     const origin=page.locator('#capacity-route-origin');
     await origin.fill('Addis');
     const track=page.locator('.place-combobox .loading-progress-track');

@@ -3,7 +3,7 @@ id: FEAT-MKT-001
 title: Frictionless public capacity marketplace
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FTR-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Manufacturers, workshops, growers, producers, and other capacity seekers need to discover legitimate road-freight options immediately without creating an account or posting demand.
-behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical map-only Open Transport Capacity workspace, `/shared-capacity` is the email-verified Private Transport Capacity map, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Open capacity, Private capacity, Track, Featured, then About; map-first workspaces rely on that persistent selected navigation and an accessible page name instead of repeating a visible title and explanation above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the public map to that transporter's current trucks; there is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
+behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical capacity map with Open to the public selected by default; `/?view=private` uses the same page with an empty map until email verification; `/shared-capacity` redirects to that private view, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Capacity, Track, Featured, then About. One introduction and an Open to the public / Privately shared with you selector sit above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the public map to that transporter's current trucks; a ranked profile search drawer identifies transport companies, owner-operators, self-managed drivers and company drivers, all backed by matching available trucks. There is no separate Provider Market or provider map. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
 contracts: [PublicAppShell, PublicWorkspaceNavigation, PublicMarketplaceView, PublicCapacityProjection, PublicTrackingEntry, LocationConsentPrompt, ProgressiveCapacityMap]
 observability: [public_workspace_navigation, public_capacity_query, public_tracking_entry, location_consent_outcome, anonymous_projection_review]
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
@@ -15,12 +15,12 @@ rollout: Release the public capacity surface with retired-route redirects, purge
 
 Given a visitor opens Loadgistic\
 When the public application shell and default Market workspace render\
-Then the selected Open capacity navigation identifies the workspace without a duplicate visible page header\
-And an accessible Open Transport Capacity page name remains available to assistive technology\
+Then the selected Capacity navigation identifies the workspace and a shared introduction explains the platform\
+And one visible Find truck capacity in Ethiopia heading names the page\
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\
-And the Map offers search across truck, transporter, Service area, and Capacity route facts, selectable truck markers, compact truck details, and a Transporter details action\
+And the Map offers public-profile search and truck/Service-area/Capacity-route filters, selectable truck markers, compact truck details, and a Transporter details action\
 And selecting a truck opens a compact dismissible information window inside the fixed map canvas without adding document height or narrowing the map\
 And that window keeps only the truck identity, availability, transporter, contact, and profile actions needed before inspecting its map signals\
 And the persistent public navigation links directly to the separate Daily Featured Trucks workspace as well as the Truck Market\
@@ -29,7 +29,7 @@ And `/` does not server-render or hydrate the featured programme while `/feature
 And repeated educational or promotional sections do not interrupt either workspace\
 And detailed market purpose, operating model, and safety education remain available on About\
 And About explains that transporters control whether current capacity is public or shared only with trusted email contacts and that confirmed work can use private Tracking\
-And a ranked or paginated public truck list is absent\
+And a paginated mixed result drawer accompanies the map\
 And the primary map initially centers and zooms for the current Ethiopia market while allowing bounded exploration across East Africa rather than exposing Africa or the world\
 And browsing cards, filters, the truck map, capacity details, provider microsites, and tracking-code entry require no account\
 And the page does not ask the visitor to post demand or sign up as a Business\
@@ -59,34 +59,29 @@ When the public capacity query is applied\
 Then only discoverable Empty or Partial trucks belonging to matching providers appear on the Map\
 And featured or sponsored View trucks on map actions apply the transporter’s exact public handle as well as its readable name\
 And automatic visitor-location refresh keeps all trucks from that explicitly selected transporter visible while adding the visitor marker for relative map context\
-And provider cards, provider markers, Area Market buildings, and provider-led result lists do not appear\
+And distinct provider and driver result cards accompany matching trucks without adding provider markers\
 And each returned truck's details retain a Transporter details action to its canonical `/@handle` microsite\
-And searching by vehicle, cargo configuration, provider name, approximate current area, any current or regular Capacity-route city, or any current or regular Service-area city uses the same single search control.
+And free-text search uses published profile details; truck configuration and current/regular geography use the truck filter dialog.
 
-### Scenario: public search suggests current transporters and trucks
+### Scenario: public search lists matching profiles
 
-Given a visitor enters at least two characters in the Truck Market search\
-When current public capacity matches a transporter, self-managed driver business, truck platform number, make, model, or cargo configuration\
-Then one keyboard-accessible suggestion panel groups safe Transporter and Truck results beneath the search field\
-And each suggestion names its result type and enough current public context to distinguish it\
-And choosing a transporter applies that transporter’s exact public handle and shows only its current trucks\
-And choosing a truck opens the Market with that truck selected on the map\
-And the suggestion response exposes no assigned company Driver, private plate, private contact, exact coordinate, or inactive truck.
+Given a visitor submits a profile name, public handle, published office city or service description\
+When eligible available trucks belong to the matching provider or are driven by the matching driver\
+Then the drawer shows distinct paginated profile cards and the map shows only those matching truck/driver pairs\
+And provider cards select the exact provider handle without adding company map markers\
+And driver cards identify the public first name and provider, and locate the assigned truck\
+And truck-only facts, private plate, login/contact data and inactive assignments do not match profile search.
 
-### Scenario: advanced filtering follows the chosen truck geometry
+### Scenario: shipment needs determine matching trucks
 
-Given a visitor opens the Truck Market filter\
-When Service area is selected\
-Then the filter identifies Empty trucks whose current Service area or provider regular Service area overlaps the selected catalog-backed center and distance\
-And matching tests the selected place against the complete stored polygon boundary rather than projecting the retired center-and-radius fixture\
-When Capacity route is selected\
-Then the filter reveals catalog-backed freight origin and destination, tolerance, and direction controls that match current or regular Capacity route alignment\
-And both freight endpoints are evaluated against every ordered segment in each two-to-five-city route rather than only its first and last cities\
-And a truck whose current signal is a Service area may still match when its provider's regular Capacity route aligns\
-And a Service-area search may match either the truck's current Service area or its provider's regular Service area\
-And truck facts and browser-location proximity may be combined with either geography\
-And public availability filtering remains categorical as Empty or Partial, with no remaining-space percentage or minimum-space filter\
-And every result remains one truck's latest Empty or Partial signal rather than a provider card or demand post.
+Given a visitor chooses full-truck or shared space and supplies optional pickup/delivery locations\
+When filtering public or authorized private capacity\
+Then the system checks accepted load types and both current and regular routes/service areas without asking the visitor to choose a signal geometry\
+And route matching evaluates every ordered segment and the selected direction/tolerances\
+And service-area matching evaluates the complete polygon for eligible Empty trucks\
+And one supplied endpoint may match independently, while two endpoints must both fit the same eligible route or area\
+And truck configuration, stops, document requirements, freshness and reported-location proximity may further narrow the same eligible pairs\
+And each map item remains one latest available truck/driver signal while the drawer lists connected profiles.
 
 ### Scenario: every supplied filter contributes to truck eligibility
 
@@ -99,7 +94,7 @@ And two shipment endpoints must both match the same eligible route or Service ar
 And a directional Capacity-route match compares the projected position of both endpoints along the complete ordered polyline, including routes with intermediate points\
 And Either direction permits the reverse projected order without changing the stored route\
 And search geometry, truck facts, freshness, and explicit nearby location are combined as eligibility checks rather than converted into a provider rank\
-And results retain stable cursor order only, with no suitability score or ranked list exposed.
+And map items retain stable cursor order, while profile cards use text relevance without claiming a transport suitability score.
 
 ### Scenario: one visitor's filter response cannot replace another
 
@@ -168,7 +163,8 @@ And filters constrain the map without creating a ranked result list.
 
 Given any public page is rendered\
 When the shared public application navigation and calls to action appear\
-Then Open capacity, Private capacity, Track, Featured, About, and the session-appropriate Log in or Dashboard action are available as route links\
+Then Capacity, Track, Featured, About, and the session-appropriate Transporter login or Dashboard action are available as route links
+And the map provides the Open to the public / Privately shared with you choice under FEAT-SHR-001\
 And Track appears immediately before Featured in both desktop and phone public navigation\
 And one current destination is communicated visually and with `aria-current="page"`\
 And desktop uses a compact floating workspace rail while phones use the persistent bottom navigation\
@@ -258,3 +254,70 @@ captures of nine entry/workspace routes are retained in
 `artifacts/narrative-review-2026-09-21/`. Setup after identity confirmation was
 source-reviewed only. About's phone action obstruction is recorded as UIA-16;
 owner visual approval and deployment remain pending.
+
+
+## Ranked capacity discovery — owner request, 2026-09-27
+
+Supersedes the earlier no-list/two-type suggestion presentation. Only entities
+with a matching discoverable Empty/Partial truck are eligible (owner confirmed).
+
+- Given open capacity, when searching profile names, public handles, published
+  office city, headline, description or services, then rank exact names/identifiers
+  ahead of prefixes, all-word text matches and conservative typo matches. Use
+  PostgreSQL simple text parsing and pg_trgm, with no hosted search dependency.
+- Given private capacity, then search uses only the verified email projection;
+  no unauthenticated private search, hidden profile prose, private plate, login
+  email, unpublished contact, inactive assignment or hidden signal is searchable.
+- Given results, then distinguish Transport company, Owner-operator,
+  Self-managed driver and Company driver using labels, icons and card structure.
+  Company-driver results show only the already-published first name and provider.
+  A provider/driver appears once per identity, with the count of matching trucks.
+- Given any combined filter, then all criteria match the same eligible truck.
+  Filters include existing capacity/geography/freshness/configuration criteria,
+  current approved document type scoped to owner,
+  driver or truck. Pending/rejected/expired documents never satisfy reviewed filters.
+- Given the map workspace, then the sliding left drawer contains search and ranked
+  results. All detailed filter inputs move into one Filters dialog with a light
+  tinted backdrop, accessible focus/close/apply and scrollable phone layout.
+- Given search changes, then stale responses are discarded, errors offer retry,
+  results are paginated server-side with stable ranking ties, and applied criteria
+  remain shared with map loading. Clear all resets results, map and filter draft.
+- Given all five UI languages, then new controls and type labels are localized;
+  provider-authored text is shown verbatim and never machine-translated.
+
+Plan: inspect existing safe projections → implement additive migration 112 and
+ranked typed endpoint → reuse shared map filters, replace suggestion dropdown with
+results drawer → focused SQL, relevance, privacy, desktop/phone tests → owner
+visual review before full gates. NR-01/02/03/08/10/13 apply. No production writes.
+Rollback reverts search UI/API and preserves existing capacity/profile data; the
+new read-only functions can remain until a separately reviewed removal.
+
+
+Owner clarification: companies never become map markers. Company cards select
+that provider and show all matching available truck/driver pairs; explicit search
+loads complete matching cursor pages independent of the initial viewport, then
+fits their truck geometry. Other applied filters remain in force. Empty search
+continues the established viewport-driven map loading.
+
+
+Owner's final search clarification: the drawer contains profiles only. Remove the
+result-type/Show selector entirely. Truck facts, identifiers, routes and capacity
+are filtered through truck filters and displayed on the map, not searched as
+profile text or rendered as separate truck result cards. Search matches public
+profile names, handles, office cities and published descriptions/services, plus
+already-public driver names. It never indexes private account details. Legacy
+resultKind parameters have no effect. Companies still remain off the map; only
+matching available truck/driver pairs render there. Public and private eligibility
+retain the active-driver requirement.
+
+Acceptance additions: GIVEN a truck identifier or make exists only on a truck,
+WHEN entered into profile search, THEN it cannot match that truck's profile by
+that fact alone. GIVEN search or truck filters are applied, THEN result pages
+contain profiles only and every profile has at least one eligible matching pair.
+GIVEN the filter modal, THEN no result-type selector is offered in any language.
+
+
+Owner simplification: office city is searched using the main public-profile search
+box. The filter dialog has no Office city field or empty Search filters group.
+Published office-city matches still constrain both profiles and their associated
+available trucks. Truck-location geography remains an independent truck filter.

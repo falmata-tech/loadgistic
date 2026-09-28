@@ -1,4 +1,5 @@
 import {createSupabaseAdminClient} from './supabase-adapter.js';
+import {hasPlatformPermission} from './platform-admin.js';
 
 function settingsError(error){
   const known=['FORBIDDEN','INVALID_PLATFORM_CONTROLS','ACCESS_ACTIVATION_CONFIRMATION_REQUIRED'];
@@ -17,4 +18,15 @@ export async function savePlatformControls(user,command){
   const {data,error}=await createSupabaseAdminClient().rpc('save_managed_platform_controls',{actor_user_id:user.id,command});
   if(error)throw settingsError(error);
   return data;
+}
+
+export async function getFeaturedControls(user){
+ if(!hasPlatformPermission(user,'FEATURED'))throw new Error('FORBIDDEN');
+ const {data,error}=await createSupabaseAdminClient().rpc('managed_featured_controls',{actor_user_id:user.id});
+ if(error)throw settingsError(error);return data;
+}
+export async function saveFeaturedControls(user,command){
+ if(!hasPlatformPermission(user,'FEATURED'))throw new Error('FORBIDDEN');
+ const {data,error}=await createSupabaseAdminClient().rpc('save_managed_featured_controls',{actor_user_id:user.id,command});
+ if(error)throw settingsError(error);return data;
 }

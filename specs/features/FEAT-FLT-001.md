@@ -108,8 +108,7 @@ Given an active Fleet transporter owner, Owner-operator, or Self-managed Driver 
 When they add a truck from My Fleet or My trucks\
 Then one active truck is created for only that organization or independent provider profile\
 And make, model, standardized cargo configuration, private plate, and a server-generated immutable Loadgistic truck number are recorded\
-And the standardized configuration catalogue offers courier cars, cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations but not motorcycles\
-And a Courier car is described as small-shipment transport rather than a taxi or a passenger service\
+And the standardized configuration catalogue offers cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations but not courier cars or motorcycles\
 And a rigid vehicle records exactly one fixed configuration\
 And a tractor records one or more compatible trailer configurations from Container trailer, Dry van trailer, and Heavy equipment trailer\
 And the tractor's currently attached trailer must be one of that same registered compatible set\
@@ -335,3 +334,51 @@ OTP login → preserved assignment/permissions → offboarding on desktop and ph
 Apply schema locally before preview, then owner visual review before full gates.
 Rollback restores the prior Add/Invite entry point while retaining added identities,
 assignments and the verified-email login guard. No hosted rollout is included.
+
+## Courier retirement — 2026-09-25
+
+Given an owner registers or changes a vehicle configuration
+When they choose from the supported freight catalogue
+Then Courier car and Courier motorcycle are absent from every selector
+And a stale client attempting to insert or change a vehicle to either retired type is rejected by PostgreSQL
+And existing historical records are retained rather than deleted or silently reclassified.
+
+Given the disposable local demo courier inventory
+When the reviewed one-time conversion runs
+Then the same vehicle IDs, driver identities, assignments, capacity signals and selection history remain
+And only verified demo vehicle descriptions/configurations are replaced with freight vehicles.
+
+The container-trailer catalogue illustration depicts a flatbed with a short container
+and exposed deck; this is an illustrative configuration image, not a photograph of a user's vehicle.
+
+
+## First location for owner-managed capacity — audit correction, 2026-09-27
+
+Given an active assigned company driver whose owner manages capacity, when the
+truck has never published capacity, then the driver can explicitly save their
+approximate device location without acquiring capacity-edit permission. The owner
+can then configure and publish the first signal using that driver-provided fix.
+Saving location alone never publishes availability or changes sharing, coverage,
+accepted loads, capacity age, or tracking permissions. Independent drivers can
+also save their own truck location. Unassigned, removed, inactive, foreign-fleet,
+retired-truck and owner-device submissions remain denied by PostgreSQL.
+
+Keep the latest approximate fix separately from capacity publication in a
+service-only RLS-protected vehicle/driver location record. Only the current active
+driver's record is visible to the authorized workspace or used for publication;
+reassignment cannot reuse another driver's snapshot. New fixes update location
+age only. Existing capacity history remains available as a compatibility source.
+No exact device coordinates or coordinates in audit logs. No automatic GPS prompt
+for an unassigned or restricted driver's first visit; explicit Save/Use location
+and bounded failure/retry controls explain the next setup step.
+
+Migration 113 is additive and local first. Rollback the app before separately
+reviewing removal of helpers/data; retain location/capacity/audit history. Verify
+browser-role denial, tenant/assignment scope, first restricted-driver location →
+owner publication, and unchanged capacity metadata/location freshness.
+
+
+Assignment and recovery corrections: Assign driver links in the capacity editor
+retain the current truck. Location/capacity HTTP operations have bounded waiting
+and report an ambiguous timeout without automatically repeating a possible write.
+This audit changes no owner/driver commercial authority or shipment permissions.

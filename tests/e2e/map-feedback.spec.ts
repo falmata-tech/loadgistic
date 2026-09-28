@@ -10,7 +10,7 @@ async function assertReadableFeedback(page:any,withFeedback=false){
     const sheet=document.querySelector('.map-capacity-sheet')!.getBoundingClientRect();
     const canvas=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
     const handle=document.querySelector('.capacity-drawer-handle')!.getBoundingClientRect();
-    const chat=document.querySelector('.public-chat-launcher')!.getBoundingClientRect();
+    const chat=document.querySelector('.public-assistance-dock')!.getBoundingClientRect();
     const overlaps=(a:DOMRect,b:DOMRect)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
     return {
       clearIdentityAndActions:[...document.querySelectorAll('.map-truck-identity,.map-focus-exit,.map-capacity-sheet>.public-card-actions')].every(element=>!feedback||!overlaps(feedback,element.getBoundingClientRect())),
@@ -37,6 +37,7 @@ test('selected truck feedback stays readable through location denial and refresh
   expect(truck).toBeTruthy();
   await page.goto(`/?truck=${encodeURIComponent(truck.id)}`,{waitUntil:'domcontentloaded'});
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
+  await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
   const captures=path.resolve('artifacts/map-feedback-2026-09-14');
   mkdirSync(captures,{recursive:true});
@@ -46,6 +47,8 @@ test('selected truck feedback stays readable through location denial and refresh
     await openCapacityFilters(page);
     await expect(page.getByTestId('visitor-location-state')).toBeVisible();
     await closeCapacityFilters(page);
+    // This case reviews the truck summary, not the separate hover signal preview.
+    await page.mouse.move(0,0);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
     await assertReadableFeedback(page);
     await page.screenshot({path:path.join(captures,`selected-${width}.png`),scale:'css'});
@@ -59,6 +62,7 @@ test('selected truck feedback stays readable through location denial and refresh
   });
   try{
     await page.locator('.leaflet-control-zoom-out').click();
+    await page.mouse.move(0,0);
     await expect(page.getByTestId('capacity-feed-state')).toContainText('Loading trucks');
     await assertReadableFeedback(page,true);
     await expect.poll(()=>Boolean(release)).toBe(true);
@@ -73,12 +77,13 @@ test('selected truck feedback stays readable through location denial and refresh
     await page.screenshot({path:path.join(captures,`${info.project.name}-refresh-error.png`),scale:'css'});
     await page.unroute('**/api/public/capacity?**');
     await retry.click();
+    await page.mouse.move(0,0);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
     await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
     await assertReadableFeedback(page);
-    await page.getByRole('button',{name:'Ask Loadgistic',exact:true}).click();
-    await expect(page.getByRole('dialog',{name:'Ask Loadgistic'})).toBeVisible();
-    await page.getByRole('button',{name:'Minimize chat'}).click();
+    await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
+    await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
+    await page.getByRole('button',{name:'Close'}).click();
     await page.getByRole('button',{name:'Close truck summary'}).click();
     await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
     await openCapacityFilters(page);

@@ -9,7 +9,7 @@ export function trackingLocationResult(result){
   throw new Error('Approximate location could not be confirmed. Try again.');
 }
 // Cancellation invalidates a late GPS callback as well as aborting a fetch.
-export function createForegroundLocationRunner(isVisible){
+export function createForegroundLocationRunner(isVisible,timeoutMs=45000){
   let active=null;
   return {
     get busy(){return active!==null;},
@@ -18,14 +18,16 @@ export function createForegroundLocationRunner(isVisible){
       if(active||!isVisible())return false;
       const controller=new AbortController();active=controller;
       const current=()=>active===controller&&!controller.signal.aborted&&isVisible();
+      let timer;
+      const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Saving took too long. Refresh to check whether it saved before trying again.')),timeoutMs);});
       try{
-        onState('requesting');const value=await read(controller.signal);
+        onState('requesting');const value=await Promise.race([read(controller.signal),timeout]);
         if(!current())return false;
-        onState('saving');const result=await save(value,controller.signal);
+        onState('saving');const result=await Promise.race([save(value,controller.signal),timeout]);
         if(!current())return false;
         onResult(result,value);return true;
-      }catch(error){if(current())onError(error);return false;}
-      finally{if(active===controller)active=null;}
+      }catch(error){if(current())onError(error);controller.abort();return false;}
+      finally{clearTimeout(timer);if(active===controller)active=null;}
     }
   };
 }

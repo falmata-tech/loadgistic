@@ -1,4 +1,4 @@
-import {openCapacityFilters,closeCapacityFilters} from './capacity-drawer-helper';
+import {openCapacityFilters,openCapacityFilterDialog,closeCapacityFilters} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
@@ -13,7 +13,7 @@ test('city and distance filter matches reported truck locations without GPS perm
   test.setTimeout(90000);mkdirSync(captures,{recursive:true});
   await page.addInitScript(()=>{(window as any).__geoCalls=0;Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition:(_:any,fail:any)=>{(window as any).__geoCalls++;fail({code:1,PERMISSION_DENIED:1});}}});});
   await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible();
-  await openCapacityFilters(page);
+  await openCapacityFilterDialog(page);
   await page.getByLabel('In or near a city',{exact:true}).fill('Adama');
   const suggestion=page.locator('#capacity-truck-city-results .place-result').first();
   await expect(suggestion).toBeVisible();await suggestion.click();
@@ -56,6 +56,7 @@ test('blue location feedback stays by controls and the small map key opens withi
   await page.route('https://tile.openstreetmap.org/**',async(route:any)=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/><path d="M0 128H256M128 0V256" stroke="#d7e1dc"/></svg>'}));
   await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.74});
   await page.goto('/');await openCapacityFilters(page);
+  await page.getByRole('button',{name:'Use my location',exact:true}).click();
   const status=page.getByTestId('visitor-location-state');await expect(status).toContainText('Location updated');
   await expect(page.locator('.market-command-column').getByTestId('visitor-location-state')).toBeVisible();
   await expect(page.locator('.public-map-shell').getByTestId('visitor-location-state')).toHaveCount(0);
@@ -81,6 +82,8 @@ test('signal detail card preserves wheel zoom and drag across its body',async({p
   const windows:string[]=[];page.on('request',(r:any)=>{const u=new URL(r.url());if(u.pathname==='/api/public/capacity'&&u.searchParams.has('viewport'))windows.push(u.searchParams.get('viewport')!);});
   await page.goto(`/?truck=${encodeURIComponent(truck.id)}`);
   const circle=page.locator('.map-location-privacy-circle');await expect(circle).toBeVisible();await expect(circle).toHaveAttribute('stroke','#1a73e8');
+  await circle.focus();await expect(page.locator('.capacity-signal-inspector:not(.pinned)')).toBeVisible();
+  await page.locator('.public-header a').first().focus();await expect(page.locator('.capacity-signal-inspector:not(.pinned)')).toHaveCount(0);
   await circle.focus();await page.keyboard.press('Enter');
   const panel=page.locator('.capacity-signal-inspector.pinned');await expect(panel).toBeVisible();
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});

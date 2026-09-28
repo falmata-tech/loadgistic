@@ -18,9 +18,11 @@ export async function POST(request:NextRequest) {
       canManageOperations:checked(form,'canManageOperations'),
       canManageTrust:checked(form,'canManageTrust'),
       canManageBilling:checked(form,'canManageBilling'),
-      canManageSupport:checked(form,'canManageSupport')
+      canManageSupport:checked(form,'canManageSupport'),
+      canManageBrokerage:checked(form,'canManageBrokerage'),
+      canManageFeatured:checked(form,'canManageFeatured')
     });
-    return redirectWith(request,'/admin/support','success','Team member created. They can sign in with their email code or Google account.');
+    return redirectWith(request,'/admin/support','success','Team member created. They can sign in with their email code.');
   } catch(error) {
     return redirectWith(request,'/admin/support','error',errorMessage(error));
   }

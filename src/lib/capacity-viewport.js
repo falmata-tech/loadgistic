@@ -24,7 +24,8 @@ export function capacityDatabaseFilters(filters={},places=[]){
  const hasNear=(Boolean(truckCity)||(filters.nearLat!==''&&filters.nearLng!==''))&&Number.isFinite(lat)&&lat>=3&&lat<=15&&Number.isFinite(lng)&&lng>=32&&lng<=49;
  const viewport=parseCapacityViewport(filters.viewport);
  return {
-  capacity_id:filters.capacityId||null,provider:filters.provider||null,status:filters.status||null,geometry:filters.geometry||null,
+  owner_docs:filters.ownerDocs||null,driver_docs:filters.driverDocs||null,truck_docs:filters.truckDocs||null,
+  capacity_id:filters.capacityId||filters.truck||null,provider:filters.provider||null,status:filters.status||null,geometry:filters.geometry||null,
   vehicle_category:filters.vehicleCategory||null,load_type:filters.loadType||null,stop_option:filters.stopOption||null,freshness:filters.freshness||null,q:filters.q||null,
   origin_lat:origin?.center_lat??null,origin_lng:origin?.center_lng??null,origin_radius_km:radius(filters.originRadiusKm),
   destination_lat:destination?.center_lat??null,destination_lng:destination?.center_lng??null,destination_radius_km:radius(filters.destinationRadiusKm),

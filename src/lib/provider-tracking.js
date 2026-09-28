@@ -97,3 +97,5 @@ export async function listProviderReviewModeration(user,status='PENDING',options
 export async function resolveProviderReview(user,reviewId,status,note=''){
   return resolveSupabaseProviderReview(user,reviewId,status,note);
 }
+
+export {requestTrackingEmailSession,verifyTrackingEmailSession,listTrackingEmailShipments,submitTrackingEmailReview} from './provider-tracking/supabase.js';

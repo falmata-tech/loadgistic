@@ -1,5 +1,83 @@
 # Architecture Decisions
 
+## ADR-072 — Driver location before owner-managed capacity
+
+FEAT-FLT-001 / FEAT-CAP-001: an assigned driver can save a device-obscured
+location without capacity-edit permission or an existing capacity record. A
+service-only RLS-protected per-truck latest-fix table separates this prerequisite
+from publication. Owners can reuse only the current active driver’s fix; their
+own device position remains denied. GPS does not publish capacity or refresh its
+availability age, route, visibility or load preferences. History stays in existing
+capacity/audit records; the new table is a latest snapshot, not a tracking trail.
+
+Migration 113 preserves current driver/vehicle/workspace checks and explicitly
+rejects missing GPS fields for publication and duty changes. The workspace reports
+whether owner-authored capacity exists so Off Duty does not hide the ability to
+resume that setup. Assigned location starts with an explicit driver action.
+
+The migration is local only. Before hosted release, rehearse 102–113 against a
+fresh protected backup and verify exact-candidate SQL/security/browser gates.
+An app rollback may leave the protected snapshot table and compatible RPC changes
+in place; do not delete fixes or weaken permissions to restore an older interface.
+
+## ADR-071 — Profile discovery over authorized capacity projections
+
+FEAT-MKT-001 / FEAT-LST-001: only profiles with matching available truck/driver
+pairs appear in discovery. Free text matches public profile identity, office city
+and published prose, never private contacts or truck-only facts. Companies and
+people appear in the results drawer; only truck/driver pairs appear on the map.
+All truck/document filters apply before both results and map eligibility.
+
+Migration 112 uses PostgreSQL simple text parsing and the existing extensions
+schema pg_trgm for conservative all-word matching and stable relevance ranking.
+No search vendor, new exposed table or copied search dataset is introduced.
+Service-only functions reuse the authorized public/private projection contracts,
+then group and paginate profiles at 15 per response. Explicit company/profile
+search loads matching map cursor pages independent of the starting viewport.
+Keep the internal search row projections aligned with any future capacity
+permission/projection changes. Local timing is not a production-scale benchmark;
+measure query cost with production-sized data before expanding scale assumptions.
+
+App rollback restores the former search presentation; read-only SQL helpers may
+remain until separately reviewed removal. Migration 112 is local only, with owner
+visual approval and fresh release rehearsal still required.
+
+## ADR-070 — Durable Brokerage conversations through authorized application APIs
+
+The owner superseded callback-only Arrange transport on 2026-09-27. FEAT-TRQ-001
+adds request-scoped private messages, preserving four-field intake and independent
+Brokerage assignment. Visitors receive a signed HttpOnly seven-day browser capability
+bound to a random submission secret; request IDs or matching contact data do not
+grant recovery. Existing callback rows cannot be adopted as chats. Staff reads and
+writes recheck current Brokerage permission and assignment; visitor projections
+exclude internal notes and identity credentials. Message retries are idempotent.
+
+Foreground delivery initially uses bounded three-second conditional API polling,
+visibility/panel pauses and durable cursor catch-up. No new browser SQL/RPC grant,
+Realtime publication, anonymous Auth identity or realtime signing credential is
+introduced. Supabase private Broadcast is a future adapter after scoped visitor
+identity, channel revocation and fallback evidence exists. Delivery failure never
+becomes an online-agent claim or automatic retry of an ambiguous write. NR-01–05,
+NR-08–10 and NR-13 apply. Additive migration 110 runs locally first; app rollback
+retains all messages and access history.
+
+Expo/React Native development builds are the recommended native direction;
+[mobile readiness](MOBILE_MONOREPO_READINESS.md) records shared-package boundaries
+and the staged migration. No application relocation or native app is claimed.
+
+## ADR-069 — One capacity page with separate public and recipient scopes
+
+FEAT-MKT-001 / FEAT-SHR-001 / FEAT-LUX-001: `/` defaults to Open to the public;
+`/?view=private` selects Privately shared with you under the same introduction.
+The old `/shared-capacity` route preserves query parameters and redirects to the
+private view. Locked private rendering contains only the base map and email form;
+it calls neither capacity projection. Existing email OTP and signed recipient
+sessions authorize the private projection. Switching audiences uses full navigation;
+logout/expiry returns to the private gate and browser-history restoration rechecks
+the session. Private metadata is noindex. This creates no group-membership model,
+database migration or hosted setting change. Rollback can restore the separate
+page/navigation while retaining all grants, OTP and session contracts.
+
 ## ADR-068 — Assign an owner-added Driver before email-code verification
 
 FEAT-FLT-001 / FEAT-IAM-001: retain the actual email when adding a company Driver. An owner-scoped preflight checks eligibility before the supported Supabase Auth admin create-user call, with email confirmation false and no password/session. A locked registration command rechecks owner, exact Auth email and pristine/same-fleet identity before membership and conservative permissions. Existing assignment/publication/Tracking identities remain stable; no roster-to-account remapping is needed. Unconfirmed identities cannot obtain a current-user projection. Normal email OTP supplies login proof, without a second invitation-acceptance step for these new drivers. Older pending invitations retain their existing flow.
@@ -1418,3 +1496,119 @@ ordinary-browser database permission is introduced. Rollback restores prior
 functions/client while preserving records. Local database regression writes and
 the 5,000-truck/Driver performance fixture roll back in full; hosted release
 verification is separate and still pending.
+
+
+## Private transport callback requests — FEAT-TRQ-001 (local, 2026-09-23)
+
+The owner requests four-field transport enquiries and an admin-only Support list
+for offline calls and referrals. Keep these as private callback records, separate
+from email-recoverable chat, market capacity and shipments. No email, member
+identity, public demand or automated provider dispatch is created. Migration 103
+uses RLS, service-only commands, explicit active-ADMIN authorization, retry IDs
+and version-checked updates; audit details exclude contacts and notes. Retain
+original requests and history on app rollback. Local visual review and normal
+production migration/release gates remain required.
+
+### 2026-09-24 — launch journey recovery (FEAT-LUX-001)
+
+Owner placement correction: guest login is labeled Share your trucks; a joined
+floating Ask for help / Request transport control opens the respective panel
+directly. The owner subsequently requested one task per panel: remove internal
+tabs, keep the outside buttons as the only task selection, and preserve the selected
+task across reloads. Transport requests must not mark support messages read.
+Remove the added map-top action strip. Existing auth routes are retained;
+GPS requires an explicit visitor action. This accepted usability change does not
+alter capacity eligibility or require manual loading. Contextual language rules
+live in `resources/i18n/CONTEXTUAL_COPY.md`; user content is never translated.
+
+Access requests bound transport and response-body waits to 15 seconds. Tracking
+creation never automatically retries an uncertain write. Its committed shipment
+and existing outbox determine success; mail delivery runs through Next's existing
+post-response pattern and pending deliveries remain retryable by the dispatcher.
+No new queue, permission, hosted setting or server idempotency claim is introduced.
+
+
+### 2026-09-24 — independent Brokerage and Support (FEAT-TRQ-001 / FEAT-SUP-001 / FEAT-GST-001)
+
+The owner clarified that finding transport belongs to a separate Brokerage team.
+The initial admin-only callback design above is extended with an independent,
+default-off staff capability. Retain the existing internal staff identity instead
+of changing authentication role enums. Admin grants Support and Brokerage separately.
+General help copy explicitly covers questions, issues and disputes.
+
+Brokerage uses manual claims and admin handoff for offline work, with scoped
+contacts, versioned writes and private event snapshots. Support keeps its existing
+available-agent/chat-capacity assignment and gains admin guest-chat reassignment.
+Open brokerage work is released when access is revoked or an account is suspended.
+An admin can reopen closed work; invalid former ownership is cleared on reopening.
+Migration 104 and application changes are local only. Do not backfill staff access.
+See operations/TEAM_INQUIRY_WORKFLOWS.md for the staff workflow and rollout limits.
+
+### 2026-09-24 — understandable Featured operation and separate team access
+
+FEAT-FTR-001 / FEAT-LUX-001: preserve the random no-repeat algorithm and saved-day
+protection. Migration 105 wraps generation with private, bounded status and an
+atomic failure boundary; its admin/team overview describes actual latest checks,
+not a promise of future job execution. Public Featured timing is not a live-video
+or availability claim. Copy polish removes decorative/internal wording while
+retaining freshness, approximate-location and document-review limits.
+
+The owner explicitly chose a separate Featured permission. Migration 106 adds it
+default-off and limits access to roster/day/sponsor management, preparation and
+Featured selection settings. Separate settings RPCs cannot return or change
+billing/access controls. Identity/team projections retain existing capabilities;
+mutations lock current authority before work. Admin alone grants/revokes access.
+No existing staff grant or production setting is changed. The worker's service
+entry remains separate from authenticated staff preparation. See
+operations/FEATURED_PROGRAMME.md for daily operation and policy limits.
+
+
+## 2026-09-24 — Official Featured broadcast pacing (FEAT-FTR-001)
+
+Owner confirmed 08:30–12:00 Ethiopia time, a maximum of eight showcases and four
+two-minute sponsor mentions. Automatic timing reserves the closing mention too;
+eight trucks share 202 minutes. Sparse days keep actual pair counts and no-repeat
+fairness. Staff can seed Manual from Automatic, move trucks without moving slot
+times, and edit intervals. Manual gaps (including opening/closing) define mentions.
+This prepares a running order, not a TikTok broadcasting integration.
+
+Migration 107 validates the write boundary and retimes only future automatic days,
+leaving pairs/history and historical/manual days untouched. Legacy read support
+remains explicit; saving a legacy manual day requires resetting/reviewing its times.
+Local implementation only; visual approval and coordinated release remain separate.
+
+
+### 2026-09-24 — public assistance is request-only
+
+Owner retired public Ask for help to reserve live support for all transport-provider
+users, including company drivers. Keep one Arrange transport launcher, one dialog
+title and Send request. Four fields feed Brokerage; no guest chat or email is created.
+API and migration 108 enforce retirement even for stale clients. Existing guests
+retain authenticated-by-recovery-code read-only history and files; staff can finish
+old work. No bulk closure/deletion. Full checks and deployment follow visual review.
+
+
+## ADR-073 — Email-verified Tracking without reusable customer codes (2026-09-28)
+
+Owner requested simpler access and 30-minute sessions. One email OTP verifies a
+recipient for all shipments currently shared with that exact normalized email.
+The list is paginated and private; every detail, proof and review rechecks current
+recipient grants. A single result opens directly; multiple results show a short
+shipment list. No account is created. Public responses reveal no eligibility.
+
+Use a separate signed HttpOnly/SameSite cookie subject for email-wide access;
+legacy shipment-bound cookies are never upgraded to broader access. Expiry is
+server-enforced: 30 minutes idle, renewed only after deliberate foreground activity,
+with an eight-hour absolute maximum. Reads/polling cannot extend it. Logout and
+expiry hide private UI; browser history restores revalidate. Secrets stay out of URLs.
+
+A verified customer-owner email can review a completed shipment without another
+code. A recipient-scoped database wrapper rechecks owner role, current access,
+completion and uniqueness. Other recipients cannot review. Existing code-based
+RPCs remain for migration compatibility, but current UI/emails do not ask for codes
+other than the six-digit email OTP. No provider status transitions change.
+
+Migration 114 is additive, reusing private OTP/outbox tables and their existing
+expiry/attempt/cleanup controls. Deploy migration before app; rollback app first,
+retain data and helpers. Rehearse 102–114 together before hosted rollout.
+Reference: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html.

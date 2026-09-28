@@ -2,6 +2,7 @@ import {expect} from '@playwright/test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 export function localAuditService(){
  nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
  const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';const url=new URL(endpoint);
@@ -9,11 +10,20 @@ export function localAuditService(){
  return createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
 }
 export function checked(result:any){expect(result.error).toBeNull();return result.data;}
+export async function auditIdentity(service:any,email:string){
+ let identity=checked(await service.from('profiles').select('id,role').eq('email',email).maybeSingle());
+ if(!identity){
+  const fixture=JSON.parse(readFileSync('resources/fixtures/managed-market.json','utf8'));const users=fixture.tables?.users||fixture.users;
+  const original=users?.find((user:{email:string})=>user.email===email);if(!original)throw new Error('LOCAL_FIXTURE_IDENTITY_MISSING');
+  identity=checked(await service.from('profiles').select('id,role').eq('full_name',original.name).eq('role',original.role).single());
+ }
+ return identity;
+}
 export async function auditLogin(page:any,email:string){
- await page.context().clearCookies();await page.goto('/login');await page.locator('details.auth-fixture-login>summary').click();
- const form=page.getByTestId('login-form');await form.getByLabel('Email',{exact:true}).fill(email);await form.getByLabel('Password').fill('Loadgistic123!');
- await form.getByRole('button',{name:'Log in',exact:true}).click();
- await expect(page).toHaveURL(email==='admin@loadgistic.local'?/\/admin$/:email==='support@loadgistic.local'?/\/support$/:/\/app\/home(?:\?.*)?$/,{timeout:30000});
+ const identity=await auditIdentity(localAuditService(),email);
+ const {localSupportLogin}=await import('./provider-support-helper');
+ await localSupportLogin(page,identity.id);await page.goto('/app/home');
+ await expect(page).toHaveURL(identity.role==='ADMIN'?/\/admin$/:identity.role==='SUPPORT'?/\/support$/:/\/app\/home(?:\?.*)?$/,{timeout:30000});
  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
 }
 export async function auditProvider(service:any,prefix:string){

@@ -1,4 +1,6 @@
-import {expect,test} from '@playwright/test';
+import {expect as baseExpect,test} from '@playwright/test';
+// Dev-server navigation includes server rendering; await the complete state.
+const expect=baseExpect.configure({timeout:15000});
 import {randomUUID} from 'node:crypto';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
@@ -28,7 +30,7 @@ async function selectPlace(page:any,label:string,value:string){
 }
 
 test('fleet assigns an unverified driver, then email-code login unlocks the same assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
-  test.setTimeout(240_000);
+  test.setTimeout(420_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
   if(!['localhost','127.0.0.1'].includes(new URL(endpoint).hostname))throw new Error('REMOTE_FLEET_TEST_REFUSED');
@@ -51,6 +53,11 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByLabel('Account phone',{exact:true}).fill('+251900000011');
     await page.getByRole('button',{name:'Create transporter workspace'}).click();
     await expect(page).toHaveURL(/\/app\/home$/);
+    await expect(page.locator('.launch-first-truck')).toBeVisible({timeout:15000});
+    await expect(page.locator('.launch-first-truck')).toContainText('Add your first truck');
+    await page.screenshot({path:info.outputPath('first-truck-guidance.png'),fullPage:true});
+    await page.locator('.launch-first-truck').getByRole('link',{name:'Add truck',exact:true}).click();
+    await expect(page.getByRole('heading',{name:'Add truck',exact:true})).toBeVisible();
     await page.goto('/app/fleet');
     await expect(page.getByText('No trucks added yet.',{exact:true})).toBeVisible();
     const owner=await service.from('profiles').select('id').eq('email',ownerEmail).single();
@@ -202,6 +209,70 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.goto('/app/network');
     await expect(driverPage.getByRole('button',{name:'Add access',exact:true})).toBeVisible();
 
+    // A second truck starts with no capacity; its owner retains publication control.
+    await page.goto('/app/fleet/new');
+    await page.getByLabel('Make',{exact:true}).fill('Isuzu');
+    await page.getByLabel('Model',{exact:true}).fill('Owner managed');
+    await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');
+    await page.getByLabel('Plate number',{exact:true}).fill(`SECOND-${suffix}`);
+    await page.getByRole('button',{name:'Add truck',exact:true}).click();
+    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText('No driver assigned');
+    const secondPath=new URL(page.url()).pathname,secondId=secondPath.split('/').at(-1)!;
+    await page.getByRole('link',{name:'Assign driver',exact:true}).click();
+    const reassigned=page.locator('.fleet-driver-manager').filter({hasText:driverName});
+    await reassigned.locator('summary').first().click();
+    await expect(reassigned.getByLabel('Truck',{exact:true})).toHaveValue(secondId);
+    await reassigned.getByLabel('Capacity updates',{exact:true}).uncheck();
+    await reassigned.getByLabel('Tracking updates',{exact:true}).uncheck();
+    await reassigned.getByRole('button',{name:'Save driver',exact:true}).click();
+    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText(driverName);
+    await page.getByRole('button',{name:'Set capacity',exact:true}).click();
+    const ownerCapacity=page.getByRole('dialog',{name:'Current capacity',exact:true});
+    await expect(ownerCapacity).toContainText('Ask the assigned driver to open Home');
+    await expect(ownerCapacity.getByRole('button',{name:'Save',exact:true})).toBeDisabled();
+    await expect(ownerCapacity.getByRole('button',{name:'Use my location',exact:true})).toHaveCount(0);
+    await ownerCapacity.getByRole('button',{name:'Cancel',exact:true}).click();
+    await driverPage.addInitScript(()=>{
+      (window as any).locationReads=0;
+      const original=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+      navigator.geolocation.getCurrentPosition=(...args)=>{(window as any).locationReads++;return original(...args);};
+    });
+    await driverPage.goto('/app/home');
+    await expect(driverPage.getByRole('button',{name:'Share truck location',exact:true})).toBeEnabled();
+    expect(await driverPage.evaluate(()=>(window as any).locationReads)).toBe(0);
+    await driverPage.screenshot({path:info.outputPath('owner-managed-first-location.png'),fullPage:true});
+    await driverPage.getByRole('button',{name:'Share truck location',exact:true}).click();
+    await expect(driverPage.getByRole('button',{name:'Refresh truck location',exact:true})).toBeEnabled();
+    expect(await driverPage.evaluate(()=>(window as any).locationReads)).toBe(1);
+    expect((await service.from('capacities').select('id',{count:'exact',head:true}).eq('vehicle_id',secondId)).count).toBe(0);
+    const firstFix=await service.from('vehicle_driver_locations').select('driver_user_id,precision_km,latitude,longitude').eq('vehicle_id',secondId).single();
+    expect(firstFix.error).toBeNull();expect(firstFix.data).toMatchObject({driver_user_id:identity.data!.id,precision_km:40});
+    expect(firstFix.data!.latitude).not.toBe(9.03);expect(firstFix.data!.longitude).not.toBe(38.76);
+    await page.reload();
+    await page.getByRole('button',{name:/^Edit current capacity:/}).click();
+    await ownerCapacity.getByRole('button',{name:'Capacity route',exact:true}).click();
+    await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
+    await ownerCapacity.getByRole('button',{name:'Save',exact:true}).click();
+    await expect(ownerCapacity).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Edit current capacity: Empty'})).toBeEnabled();
+    const ownerSignal=await service.from('capacities').select('updated_by,market_status,visibility,location_lat,location_lng').eq('vehicle_id',secondId).order('updated_at',{ascending:false}).limit(1).single();
+    expect(ownerSignal.error).toBeNull();expect(ownerSignal.data).toMatchObject({updated_by:owner.data!.id,market_status:'EMPTY',visibility:'PRIVATE',location_lat:firstFix.data!.latitude,location_lng:firstFix.data!.longitude});
+    await expect.poll(async()=>{
+      const host=await page.getByTestId('capacity-summary').locator('.leaflet-container').boundingBox();
+      const marker=await page.locator('.capacity-setting-truck-marker').boundingBox();
+      return Boolean(host&&marker&&marker.x>=host.x&&marker.x+marker.width<=host.x+host.width&&marker.y>=host.y&&marker.y+marker.height<=host.y+host.height);
+    }).toBe(true);
+    await page.screenshot({path:info.outputPath('owner-published-driver-location.png'),fullPage:true});
+    await driverPage.reload();
+    await driverPage.getByRole('button',{name:'Off Duty',exact:true}).click();
+    await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeDisabled();
+    await expect(driverPage.getByText('Refresh your truck location before marking it Available.')).toBeVisible();
+    await driverPage.getByRole('button',{name:'Refresh truck location',exact:true}).click();
+    await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeEnabled();
+    await driverPage.getByRole('button',{name:'Available',exact:true}).click();
+    await expect(driverPage.getByRole('button',{name:'Off Duty',exact:true})).toBeEnabled();
+    await driverPage.screenshot({path:info.outputPath('owner-managed-duty-restored.png'),fullPage:true});
+
     await page.goto('/app/fleet');
     const managed=page.locator('.fleet-driver-manager').filter({hasText:driverName});
     await managed.locator('summary').first().click();
@@ -223,7 +294,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.goto('/app/home');
     await expect(driverPage).toHaveURL(/\/login\?error=/);
   }finally{
-    await driverContext.close();
+    await driverContext.close().catch(()=>{});
     // Exact local test identities only; never reset shared demo fixtures.
     const profiles=await service.from('profiles').select('id').in('email',[ownerEmail,driverEmail]);
     const ids=(profiles.data||[]).map((profile:{id:string})=>profile.id);
@@ -242,3 +313,60 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     }
   }
 });
+
+for(const applicationType of ['OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
+ test(`${applicationType} signs up, adds a truck and publishes after location permission`,async({page,context}:{page:any;context:any},info:any)=>{
+  test.setTimeout(150000);
+  nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
+  const endpoint=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL||'');
+  if(!['localhost','127.0.0.1'].includes(endpoint.hostname)||endpoint.port!=='55321')throw new Error('LOCAL_LOADGISTIC_REQUIRED');
+  const service=createClient(endpoint.href,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
+  const suffix=randomUUID().slice(0,8),email=`independent-${suffix}@loadgistic.local`;
+  let userId='',providerId='',vehicleId='';
+  try{
+   await verifyNewEmail(page,email);
+   await page.locator(`input[name="applicationType"][value="${applicationType}"]`).check();
+   await page.getByLabel('Your name',{exact:true}).fill(`Independent ${suffix}`);
+   await page.getByLabel('Transporter name',{exact:true}).fill(`Independent Transport ${suffix}`);
+   await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
+   await page.getByRole('button',{name:'Create transporter workspace'}).click();
+   await expect(page.getByRole('heading',{name:'Add your first truck',exact:true})).toBeVisible();
+   const identity=await service.from('profiles').select('id,role').eq('email',email).single();
+   expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
+   const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;
+   await page.getByRole('link',{name:'Add truck',exact:true}).click();
+   await page.getByLabel('Make',{exact:true}).fill('Isuzu');await page.getByLabel('Model',{exact:true}).fill('Independent mini');
+   await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');await page.getByLabel('Plate number',{exact:true}).fill(`IND-${suffix}`);
+   await page.getByRole('button',{name:'Add truck',exact:true}).click();
+   await expect(page.getByRole('heading',{name:'Isuzu · Independent mini'})).toBeVisible();vehicleId=new URL(page.url()).pathname.split('/').at(-1)!;
+   await page.goto('/app/home');await page.getByRole('button',{name:'Set capacity',exact:true}).click();
+   const dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});
+   await dialog.getByRole('button',{name:'Capacity route',exact:true}).click();
+   await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
+   // A denied sensor is a recoverable draft error; it must never publish.
+   await context.clearPermissions();
+   await page.evaluate(()=>{const original=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);(window as any).restoreGps=()=>{navigator.geolocation.getCurrentPosition=original;};navigator.geolocation.getCurrentPosition=(_success,error)=>error?.({code:1,PERMISSION_DENIED:1} as GeolocationPositionError);});
+   await dialog.getByRole('button',{name:'Use my location',exact:true}).click();
+   await expect(dialog.getByRole('alert')).toContainText('Allow location');await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeDisabled();
+   expect((await service.from('capacities').select('id',{count:'exact',head:true}).eq('vehicle_id',vehicleId)).count).toBe(0);
+   await page.evaluate(()=>(window as any).restoreGps());await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.76});
+   await dialog.getByRole('button',{name:'Use my location',exact:true}).click();await expect(dialog.getByText(/Location ready/)).toBeVisible();
+   await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
+   await expect(page.getByRole('button',{name:'Edit current capacity: Empty'})).toBeEnabled();
+   const published=await service.from('capacities').select('updated_by,visibility,location_lat,location_precision_km').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1).single();
+   expect(published.error).toBeNull();expect(published.data).toMatchObject({updated_by:userId,visibility:'PRIVATE',location_precision_km:20});expect(published.data!.location_lat).not.toBe(9.03);
+   await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+   await page.screenshot({path:info.outputPath(`${applicationType.toLowerCase()}-first-capacity.png`),fullPage:true});
+  }finally{
+   // Exact synthetic identities only, including a partially completed signup.
+   if(!userId)userId=(await service.from('profiles').select('id').eq('email',email).maybeSingle()).data?.id||'';
+   if(userId){
+    expect((await service.from('audit_logs').delete().eq('actor_user_id',userId)).error).toBeNull();
+    if(!providerId)providerId=(await service.from('provider_profiles').select('id').eq('user_id',userId).maybeSingle()).data?.id||'';
+    if(providerId){expect((await service.from('capacities').delete().eq('provider_profile_id',providerId)).error).toBeNull();expect((await service.from('vehicles').delete().eq('provider_profile_id',providerId)).error).toBeNull();}
+    expect((await service.auth.admin.deleteUser(userId)).error).toBeNull();
+   }
+  }
+ });
+}

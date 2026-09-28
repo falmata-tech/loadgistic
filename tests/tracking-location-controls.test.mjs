@@ -32,9 +32,9 @@ test('only one acquisition runs, and stale completion cannot release a newer req
   assert.equal(saves,1);assert.equal(runner.busy,false);assert.deepEqual(states,['requesting','requesting','saving']);
 });
 test('cancelling an in-flight fetch aborts it and ignores its eventual success',async()=>{
-  const response=deferred();let signal;let result=0;const runner=createForegroundLocationRunner(()=>true);
-  const pending=runner.run({read:async()=>({}),save:(_,value)=>{signal=value;return response.promise;},onState(){},onResult(){result++;},onError(){assert.fail();}});
-  await Promise.resolve();runner.cancel();assert.equal(signal.aborted,true);response.resolve({recorded:true});await pending;assert.equal(result,0);
+  const response=deferred(),started=deferred();let signal;let result=0;const runner=createForegroundLocationRunner(()=>true);
+  const pending=runner.run({read:async()=>({}),save:(_,value)=>{signal=value;started.resolve();return response.promise;},onState(){},onResult(){result++;},onError(){assert.fail();}});
+  await started.promise;runner.cancel();assert.equal(signal.aborted,true);response.resolve({recorded:true});await pending;assert.equal(result,0);
 });
 test('a failed acquisition is reported once and can be retried',async()=>{
   const runner=createForegroundLocationRunner(()=>true);let failures=0;
@@ -46,4 +46,20 @@ test('save failure reports an error without a success callback and releases the 
   const runner=createForegroundLocationRunner(()=>true);let failures=0;
   assert.equal(await runner.run({read:async()=>({}),save:async()=>{throw new Error('Network unavailable');},onState(){},onResult(){assert.fail('Failed save reported success');},onError:error=>{assert.equal(error.message,'Network unavailable');failures++;}}),false);
   assert.equal(failures,1);assert.equal(runner.busy,false);
+});
+
+test('stalled GPS or network ends waiting without retry or late success',async()=>{
+ for(const stalledPhase of ['read','save']){
+  const stalled=deferred();let errors=0,saves=0,signal,results=0;
+  const runner=createForegroundLocationRunner(()=>true,15);
+  const result=await runner.run({read:async value=>{signal=value;return stalledPhase==='read'?stalled.promise:{};},save:async()=>{saves++;return stalled.promise;},onState(){},onResult(){results++;},onError:error=>{errors++;assert.match(error.message,/Refresh to check whether it saved/);}});
+  assert.equal(result,false);assert.equal(errors,1);assert.equal(saves,stalledPhase==='save'?1:0);assert.equal(runner.busy,false);assert.equal(signal.aborted,true);
+  stalled.resolve({recorded:true});await Promise.resolve();assert.equal(results,0);
+ }
+});
+
+test('successful completion does not abort a response still being consumed by navigation',async()=>{
+ let signal;const runner=createForegroundLocationRunner(()=>true);
+ assert.equal(await runner.run({read:async value=>{signal=value;return {};},save:async()=>({recorded:true}),onState(){},onResult(){assert.equal(signal.aborted,false);},onError(){assert.fail();}}),true);
+ assert.equal(signal.aborted,false);assert.equal(runner.busy,false);
 });

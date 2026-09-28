@@ -3,12 +3,12 @@ import {createSupabaseAdminClient} from './supabase-adapter.js';
 import {getBillingSummaryData} from './billing.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
-  CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT'
+  CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT',FEATURED:'FEATURED'
 });
 
 const PLATFORM_PERMISSION_FIELDS=Object.freeze({
   CUSTOMERS:'can_manage_customers',OPERATIONS:'can_manage_operations',TRUST:'can_manage_trust',
-  BILLING:'can_manage_billing',SUPPORT:'can_manage_support'
+  BILLING:'can_manage_billing',SUPPORT:'can_manage_support',FEATURED:'can_manage_featured'
 });
 
 export function getWorkspaceAccess(user,at=new Date()){

@@ -25,7 +25,7 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
   const verification=await getVerificationCenter(user);
   const truckEvidence=verification.subjects.find((subject:{subject_type:string;subject_id:string})=>subject.subject_type==='VEHICLE'&&subject.subject_id===id);
   const current:any=workspace.capacities.find((item:any)=>item.vehicle_id===vehicle.id);
-  const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),driver:vehicle.assigned_driver||null,current:current?JSON.parse(JSON.stringify(current)):null};
+  const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),driver:vehicle.assigned_driver||null,driverLocation:vehicle.driver_location||null,current:current?JSON.parse(JSON.stringify(current)):null};
   const corridors=JSON.parse(JSON.stringify(workspace.corridors));
   const independent=user.role==='DRIVER';
   return <div className="page fleet-truck-detail-page"><PageHeader icon={Truck} title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`} action={<Link className="button secondary small" href="/app/fleet"><ArrowLeft aria-hidden="true"/><Text message="My trucks"/></Link>}/><Flash error={query.error} success={query.success}/>

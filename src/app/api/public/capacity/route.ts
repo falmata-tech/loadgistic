@@ -7,7 +7,7 @@ export const dynamic='force-dynamic';
 export async function GET(request:NextRequest){
   const params=new URL(request.url).searchParams;
   const filters={
-    viewport:params.get('viewport')||'',q:params.get('q')||'',provider:params.get('provider')||'',status:params.get('status')||'',geometry:params.get('geometry')||'',
+    truck:params.get('truck')||'',ownerDocs:params.get('ownerDocs')||'',driverDocs:params.get('driverDocs')||'',truckDocs:params.get('truckDocs')||'',viewport:params.get('viewport')||'',q:params.get('q')||'',provider:params.get('provider')||'',status:params.get('status')||'',geometry:params.get('geometry')||'',
     vehicleCategory:params.get('vehicleCategory')||'',loadType:params.get('loadType')||'',
     stopOption:params.get('stopOption')||'',freshness:params.get('freshness')||'',
     truckCityPlaceRef:params.get('truckCityPlaceRef')||'',truckCity:params.get('truckCity')||'',truckLocationRadiusKm:params.get('truckLocationRadiusKm')||'',currentAreaPlaceRef:params.get('currentAreaPlaceRef')||'',currentArea:params.get('currentArea')||'',currentAreaRadiusKm:params.get('currentAreaRadiusKm')||'',

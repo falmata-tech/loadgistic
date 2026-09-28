@@ -1,16 +1,9 @@
+import {auditLogin} from './audit-helpers';
 import {expect,test} from '@playwright/test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 
-async function login(page:any,email='driver@loadgistic.local'){
-  await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);
-  await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(/\/app\/home/);
-}
+async function login(page:any,email='driver@loadgistic.local'){await auditLogin(page,email);}
 
 async function save(page:any,dialog:any,button='Save',endpoint='/api/capacity'){
   const saved=page.waitForResponse((response:any)=>response.url().endsWith(endpoint)&&response.request().method()==='POST');
@@ -51,6 +44,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   const nextStatus=originalStatus==='PARTIAL'?'Empty':'Partial';
   await dialog.getByRole('button',{name:nextStatus,exact:true}).click();
   await save(page,dialog);
+  await expect(capacity).toBeEnabled({timeout:15000});
   await expect(capacity).toHaveAttribute('aria-label',`Edit current capacity: ${nextStatus}`);
   await sharing.click();
   dialog=page.getByRole('dialog',{name:'Capacity sharing',exact:true});
@@ -110,6 +104,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});
   await dialog.getByRole('button',{name:originalStatus==='PARTIAL'?'Partial':'Empty',exact:true}).click();
   await save(page,dialog);
+  await expect(capacity).toBeEnabled({timeout:15000});
   await expect(capacity).toHaveAttribute('aria-label',`Edit current capacity: ${originalStatus==='PARTIAL'?'Partial':'Empty'}`);
 });
 

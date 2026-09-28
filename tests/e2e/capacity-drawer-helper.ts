@@ -16,3 +16,18 @@ export async function closeCapacityFilters(page:any){
   if(await drawer.getAttribute('aria-hidden')==='false')await drawer.getByRole('button',{name:'Close filter drawer'}).click();
   await expect(drawer).toBeHidden();
 }
+
+
+export async function openCapacityFilterDialog(page:any){
+ const dialog=page.locator('.capacity-filter-dialog');
+ if(!await dialog.isVisible()){
+  const drawer=await openCapacityFilters(page);await drawer.getByRole('button',{name:/^Filters/}).click();
+ }
+ await expect(dialog).toBeVisible();return dialog;
+}
+
+export async function chooseTruckConfiguration(dialog:any,name:string){
+ const picker=dialog.locator('.capacity-configuration-picker');
+ if(!await picker.locator('details').evaluate((el:HTMLDetailsElement)=>el.open))await picker.locator('summary').click();
+ await picker.getByRole('radio',{name,exact:true}).check();
+}

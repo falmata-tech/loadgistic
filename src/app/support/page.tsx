@@ -1,6 +1,7 @@
 
 import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
+import {redirect,notFound} from 'next/navigation';
 import { CheckCircle2, Clock3, Headphones, Inbox, PauseCircle, PlayCircle, UserCheck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { listSupportInbox } from '@/lib/support.js';
@@ -18,6 +19,7 @@ const views=[
 
 export default async function SupportInboxPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser(['SUPPORT'],{allowLimited:true});
+  if(!user.can_manage_support){if(user.can_manage_brokerage)redirect('/brokerage');if(user.can_manage_featured)redirect('/admin/featured');notFound();}
   const query=await searchParams;
   const requested=String(query.view||'ASSIGNED').toUpperCase();
   const view=views.some(item=>item.id===requested)?requested:'ASSIGNED';
@@ -28,7 +30,7 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
     <SupportRefresh endpoint={`/api/support/updates?view=${view}&page=${result.page}`}/>
     <PageHeader icon={Headphones} title={<Text message="Support Inbox"/>} subtitle={<Text message="Help one customer at a time."/>} action={<form action="/api/support/availability" method="post">{!available?<input type="hidden" name="available" value="on"/>:null}<button className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/><Text message="Pause"/></>:<><PlayCircle aria-hidden="true"/><Text message="Go available"/></>}</button></form>}/>
     <Flash error={query.error} success={query.success}/>
-    <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/><Text message="Assisted matching"/></Link>
+    <Link className="button secondary assisted-matching-link" href="/support/assisted"><Headphones aria-hidden="true"/><Text message="Guest support"/></Link>
     <section className="support-agent-strip">
       <span className={`live-dot ${available?'':'off'}`} aria-hidden="true"/>
       <div><strong>{available?<Text message="Available"/>:<Text message="Paused"/>}</strong><small>{result.agent.open_count}<Text message=" of "/>{result.agent.max_open_conversations}<Text message=" assigned"/></small></div>

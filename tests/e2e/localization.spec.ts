@@ -6,7 +6,7 @@ const languages=[['am','ስለ Loadgistic'],['om','Waa’ee Loadgistic'],['so','
 test('language changes preserve form content and persist across public navigation',async({page}:{page:import('playwright-core').Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(150000);const errors:string[]=[];page.on('pageerror',(error:Error)=>errors.push(error.message));
  await page.goto('/login');const picker=page.locator('.language-picker select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled();
- const email=page.locator('input[name=email]');await email.fill('Home+Account@example.test');
+ const email=page.getByTestId('email-code-request-form').locator('input[name=email]');await email.fill('Home+Account@example.test');
  for(const [locale] of languages){await picker.selectOption(locale);await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(email).toHaveValue('Home+Account@example.test');await expect(email).toHaveAttribute('name','email');await expect(page.getByTestId('email-code-request-form')).toHaveAttribute('action','/api/applications/email-otp/request');}
  for(const [locale,about] of languages){
   await picker.selectOption(locale);await expect(page.locator('html')).toHaveAttribute('lang',locale);await page.goto('/about');await expect(page.locator('.public-information-heading')).toContainText(about);
@@ -24,7 +24,7 @@ test('language control remains separate from phone map support and account actio
   for(const [locale] of languages){
    const picker=page.locator('.public-header-language select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled();await picker.selectOption(locale);
    await expect(page.locator('html')).toHaveAttribute('lang',locale);
-   const bounds=await Promise.all([picker,page.locator('.public-chat-launcher'),page.getByTestId('public-session-action')].map(element=>element.boundingBox()));
+   const bounds=await Promise.all([picker,page.locator('.public-assistance-dock'),page.getByTestId('public-session-action')].map(element=>element.boundingBox()));
    expect(bounds.every(Boolean)).toBe(true);
    for(let i=0;i<bounds.length;i++){const a=bounds[i]!;expect(a.x).toBeGreaterThanOrEqual(0);expect(a.x+a.width).toBeLessThanOrEqual(width+1);
     for(let j=i+1;j<bounds.length;j++){const b=bounds[j]!;expect(a.x+a.width<=b.x+1||b.x+b.width<=a.x+1||a.y+a.height<=b.y+1||b.y+b.height<=a.y+1,JSON.stringify({width,locale,i,j,bounds})).toBe(true);}

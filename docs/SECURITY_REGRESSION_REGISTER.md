@@ -100,3 +100,225 @@ and a tested response when a control fails.
 
 
 | NR-14 | Demo email correction is undone by a later seed, affects a real identity, or forwards automated mail to real recipients. | Bind corrections to exact Auth IDs, fixture markers/keys and old/new email digests; rehearse profile synchronization/rollback and retain roles/history. Preserve authoritative existing email in additive imports (`tests/production-pilot-policy.test.mjs`), keep plus aliases distinct (`tests/auth-flow.test.mjs`), and scope local relay matching/manual release to the owner-approved recipient pattern with relay-all off. Keep inbox and external-delivery evidence distinct. See `docs/operations/DEMO_ACCOUNT_EMAILS.md`. | Fixture/identity maintainer; operations owner |
+
+
+### Mobile summary growth caught before release — 2026-09-23 (NR-13)
+
+Adding company evidence introduced a third document group into the selected truck
+card. The phone layout stacked all three groups and left too little exposed map;
+refresh errors could also crowd the filter handle. Full CI stopped the release:
+three mobile map tests failed and reproduced locally. Do not waive exposed-stroke,
+control-overlap or retry checks when adding copy, badges or document subjects.
+The local correction uses two columns for the existing document controls; all three
+mobile regressions pass with real taps, zoom and recovery. Desktop verification also passes; fresh owner visual review precedes another
+release attempt. Production remains
+unchanged. Owner: UI author/release operator; evidence is recorded in PROGRESS.md.
+
+
+### Transport callback inbox — 2026-09-23
+
+NR-01–04/08/10: migration 103 enables RLS and revokes browser table/RPC access
+before exposing the new private callback queue. Only active ADMIN actors may
+list/update; contacts and notes never enter audit details or public projections.
+Rollback-only SQL checks prove browser/Support/transporter/inactive-admin denial,
+idempotent creation, stale-edit rejection and retained history. Resulting local
+catalog checks pass. Desktop/phone API tests prove cross-origin denial, bounded
+input and anonymous throttling; real browser tests prove no email and persisted
+follow-up. This is local evidence, not hosted enforcement or deployment evidence.
+Owner: migration/release author. Next: owner visual review (NR-13), complete gates,
+fresh backup/restore rehearsal of 102/103, reviewed production rollout.
+
+### Launch recovery and phone layout — 2026-09-24 (NR-08/13)
+
+Bounded access requests must include response-body reads and release the busy
+state without discarding entered details. For Tracking creation, a lost response
+can follow a committed write: retain the draft, prevent another submit and link
+to the existing Tracking list. This is a browser recovery guard, not server-side
+idempotency or an exactly-once guarantee. Creation and its existing email outbox
+remain atomic; post-response delivery failure must not turn the saved shipment
+into an apparent save failure. Route adapter doubles verify this separation;
+local browser fault tests are owned by `launch-recovery.spec.ts`.
+
+The launch entry exposed another narrow-height map collision: an oversized
+summary's inherited positioning put its identity under Filters. Constrain the
+summary below controls and put recovery feedback ahead of secondary details.
+Retain map gesture pass-through on noninteractive copy. Existing geometry,
+retry-target and gesture regressions remain mandatory; do not remove assertions
+to accept the new header. Owner: implementing agent. Next: owner visual review,
+then full release gates; no production settings or data changed by this work.
+
+Follow-up evidence: pointer/focus leaving the map now clears a transient signal
+preview, while pinned details remain open. Test the preview itself separately
+from the truck summary so an emulated hover cannot silently replace the surface
+under a layout assertion. Keep the normal wheel/drag/touch and recovery-target
+assertions. Local developer previews may disable the old fixture-password panel;
+exercise actual email-code login rather than re-enabling it to satisfy a test.
+
+
+### Separate inquiry teams and live drafts — 2026-09-24 (NR-01/02/03/08/10/13)
+
+Cause/risk: treating the existing internal SUPPORT identity as authorization for
+all inquiry work would give Support access to Brokerage contacts, and navigation
+alone would not enforce the separation. Migration 104 defaults Brokerage off,
+locks current capability for mutations, scopes worker reads to owned requests,
+redacts unassigned contacts, versions changes and releases open work after access
+loss. Guest Support assignment checks current staff availability and workload.
+Private history has RLS, revoked browser grants and service-only entry points.
+
+A background refresh can silently replace the version associated with an unsaved
+assignment or note; pin the expected state while the form is dirty and reject a
+stale submit. Reuse the polling ETag contract so unchanged data returns 304.
+Tests exercise a real concurrent saved update while an assignment draft is open.
+The staff shell previously omitted permission fields, hiding valid navigation;
+safe capability projection and actual email-code login now cover both teams.
+
+Phone checks caught fixed navigation intercepting Create member and a long email
+pushing a guest-chat status outside its header. Bound the form above navigation,
+allow identity wrapping, and exercise normal taps and viewport bounds. Do not
+force-click to hide an obstruction. Evidence: brokerage-assignment SQL, the
+resulting catalog gate and brokerage-workflows desktop/phone cases. Owner:
+implementation/release author. Next: owner visual review, complete release gates,
+protected migration rehearsal and authorized rollout. Local evidence is not
+provider enforcement or production deployment.
+
+
+The existing guest Waiting list also exposed Claim on rows the FIFO command would
+reject. Eligibility is now derived in the scoped inbox from oldest-first order,
+availability and combined chat capacity. Keep the command's independent recheck;
+a visible button is a current hint, not authorization. SQL verifies newer/full-
+agent denial and automatic next assignment after closure; browser tests verify
+only the oldest offers Claim and a normal tap persists the owner. Do not replace
+this existing fair-queue rule with arbitrary selection to make the UI pass.
+
+### Featured observability and narrow delegation — 2026-09-24 (NR-01/02/03/08/10/13)
+
+Migrations 105–106 retain RLS and explicit browser revocations. The private status
+record and bounded overview expose no contacts or raw generator errors; injected
+failure rolls back partial writes. Featured authority is default-off, independent
+of Support/Brokerage, and rechecked/locked in PostgreSQL before mutations. Narrow
+settings commands cannot change access/payment mode, and only admin can grant
+staff permissions. Revocation and suspension remain effective for existing sessions.
+
+Negative checks: `featured-operation-status.sql`, `featured-team-permission.sql`,
+`featured-random-rounds.sql`, catalog security gate and real grant/revoke browser
+workflow. Source scheduler configuration is not hosted execution evidence. Verify
+an unprompted production status advance after rollout. Owner: migration/release
+author. Next: owner desktop/phone review, full gates and separately reviewed
+rollout; neither status UI nor passing local checks authorize deployment.
+
+
+### Broadcast-window compatibility — 2026-09-24 (NR-03/08/10/13)
+
+FEAT-FTR-001 / migration 107: enforce hours, eight-truck ceiling and manual-gap
+bounds at both application and SQL command boundaries. Preserve current permission
+locks and deny browser execution of the new validator. The local rollback rehearsal
+compared every saved day's non-timing fields, every slot and selection-history row;
+manual/historical rows stayed byte-for-byte equal. Four future automatic days were
+retimed locally without reselection. Oversized automatic days abort migration.
+Negative SQL, existing no-repeat/permission suites and catalog checks pass locally.
+Do not deploy the old window-only application after changing saved schedules; use
+coordinated compatible rollout and reviewed recovery. Owner: migration/release
+maintainer. Next: owner visual approval and normal complete release gates.
+
+The focused broadcast browser check also found an existing editor-read defect:
+native JSONB manual intervals were coerced to strings and then parsed, yielding
+empty inputs despite correct persistence. Accept arrays before parsing legacy
+text. The browser regression must publish, reopen, inspect actual inputs and
+resave, not stop at a successful response or database row. Owner: Featured UI
+maintainer; evidence belongs to `featured-broadcast-window.spec.ts`.
+
+
+### Retire public support at every entry point — 2026-09-24 (NR-03/08/13)
+
+FEAT-GST-001 / FEAT-SUP-001 / FEAT-TRQ-001, migration 108. Removing a launcher alone
+would leave old clients able to create staff work or upload guest attachments.
+Deny guest creation/replies before upload/email in HTTP/application code and in
+service-only SQL commands. Reserve member writes for TRANSPORTER/DRIVER, with
+current staff permissions and assignments still checked. Keep old recovery and
+file access private; retirement must not delete transcripts or silently close work.
+
+Negative evidence: public API 410 checks, application commands with poison uploads,
+provider-only-support.sql, retained-history/attachment/browser-denial checks and
+catalog gate. Local rehearsal compared all six support record tables before/after:
+unchanged. Provider/staff and Brokerage workflows are checked in real local browsers.
+All security role tests use isolated synthetic data or rollback-only transactions.
+Fixture emails had changed to owner aliases, so history/attachment/polling tests now
+select active roles rather than assuming retired local addresses.
+Owner: Support/backend maintainer. Next: owner visual approval, full release gates,
+reviewed hosted migration and compatible app release. Database retirement stays
+in force during app rollback; restoring public chat requires an owner decision.
+
+
+Brokerage conversation extension (2026-09-27), NR-01–05/08–10/13:
+Migration 110 keeps access digests and message rows under RLS with no browser
+relation/sequence/RPC grants. Request-ID knowledge and matching submitted fields
+cannot adopt a conversation; legacy rows have no visitor capability. Negative
+checks cover wrong recipient, expired capability, Support-only/unassigned/previous
+Brokerage staff, closed writes, duplicate-ID conflicts and internal-note redaction.
+No Realtime publication or hosted configuration was added. Any future private
+Broadcast integration needs independent channel-join and revocation evidence;
+passing current HTTP/database checks does not authorize that separate access path.
+
+
+### Visitor-ended Brokerage chats — 2026-09-27 (NR-01/02/03/08/10)
+
+Messaging termination is separate from resolving a customer's transport request.
+Migration 111 serializes ending and sends on the same request lock, authenticates
+the same-browser capability, makes repeats idempotent, preserves ownership/contact/
+notes/messages and invalidates stale staff drafts. Ended or expired chat cannot
+receive new messages, even if an administrator reopens request follow-up. Staff-only
+contact/notes are omitted from visitor snapshots; the new command denies browser
+roles. Rollback-only lifecycle, wrong-scope/expired denial and catalog checks pass
+locally. All four waiting/assigned desktop/phone end-chat cases pass, including
+cross-origin denial, outsider denial, retained history and new-chat isolation;
+evidence is `artifacts/chat-follow-up-final-20260927/`. Visual approval and hosted
+rollout remain pending. Owner: chat/release author; keep history when rolling the
+application back.
+
+
+### Profile discovery is not a wider data projection — 2026-09-27 (NR-01/02/03/08/10)
+
+Search must start from the same authorized available truck/driver rows as the map.
+Migration 112 returns profile cards only; public profile text and already-public
+driver names are searchable, while hidden contacts, login identities, private
+plates and truck-only facts are not. Verified-email grants and staff scope are
+rechecked server-side; query parameters cannot supply a recipient digest. New
+helpers remain service-only with bounded HTTP pages and no shared response cache.
+The rollback SQL suite and six local desktop/phone search cases cover these
+boundaries and private grant revocation. Keep search source projections aligned
+with later map permission changes. Owner: discovery/release author. Next action:
+owner UI review and exact-candidate release validation; no hosted changes yet.
+
+### Driver location bootstrap and malformed GPS — 2026-09-27 (NR-01/02/03/08/10/13)
+
+Capacity-edit permission must not block an assigned driver's first location when
+the owner needs that location to publish. Location permission never grants route,
+sharing or capacity-edit authority. Migration 113 stores the first approximate fix
+behind RLS with no browser grants, verifies current assignment and active vehicle,
+excludes a former driver's snapshot, and preserves capacity age/settings. SQL NULL
+comparisons previously failed to reject missing GPS fields explicitly; publication
+and duty now reject omitted coordinates, radius and source. Test the commands
+directly as well as the visible form; client validation alone is insufficient.
+
+Rollback SQL `driver-location-bootstrap.sql` and catalog security checks pass
+locally; CI includes the new SQL case. Bounded capacity/Tracking requests stop
+waiting, ignore late callbacks and never automatically retry ambiguous writes.
+Owner: fleet/release author. Next actions: finish desktop/phone onboarding and
+recovery review, obtain owner visual acceptance, then fresh release gates.
+
+
+### Tracking email-session simplification — 2026-09-28 (NR-01/02/03/08/10/13)
+
+Removing reusable customer codes must not remove recipient authorization. Migration
+114 reuses bounded single-use OTP/outbox controls, scopes listing to verified email,
+and locks/rechecks the customer OWNER before review submission. Every shipment and
+proof read retains current grant/expiry checks. New RPCs are service-only; browser
+roles cannot list recipients or submit reviews. Legacy shipment cookies never become
+email-wide access. Signed sessions expire server-side after 30 idle minutes and
+at eight hours absolute; background polling cannot renew them. Email/OTP/session
+secrets remain absent from URLs and logs. Negative regressions:
+`tests/sql/tracking-email-session.sql`, `tests/tracking-session.test.mjs`, and
+`tests/e2e/tracking-email-session.spec.ts`. Owner: Tracking/release author. Next:
+owner visual review and exact-candidate release rehearsal. Focused SQL/catalog,
+47 units and eight desktop/phone cases pass; see
+`docs/TRACKING_ACCESS_REVIEW_2026-09-28.md`.

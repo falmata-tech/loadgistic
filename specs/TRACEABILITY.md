@@ -1,5 +1,121 @@
 # Specification traceability
 
+## Simplified Tracking email sessions — local evidence, 2026-09-28
+
+FEAT-TRK-001 / FEAT-REV-001, ADR-073, NR-01/02/03/08/10/13: migration 114
+adds email-only OTP, paginated current-recipient shipment listing and owner-scoped
+review submission. Signed sessions enforce thirty idle minutes and eight hours
+absolute; deliberate foreground activity renews them, reads/polling do not.
+Current recipient grants still gate detail/proof/review reads and writes.
+Legacy shipment cookies cannot acquire email-wide access.
+
+`tests/sql/tracking-email-session.sql` and catalog security pass. Forty-seven
+focused unit tests cover session bounds, recipients, emails, localization, proof,
+rate limits and creation responses; TypeScript/source/spec checks pass. Eight
+distinct desktop/phone cases pass across tracking-email-session, tracking-parties,
+tracking-completion-review and tracking-proof-audit. Actual local email delivery,
+file bytes and persisted reviews are verified; private roles/revocation, replay,
+logout and expiry are denied as specified. Exact runs, early failures, corrections
+and limits: [Tracking review](../docs/TRACKING_ACCESS_REVIEW_2026-09-28.md).
+Owner visual approval and exact-release migration/build/CI gates remain pending;
+no hosted rollout or new production SMTP verification is claimed.
+
+
+## Fleet location bootstrap and recovery — local evidence, 2026-09-28
+
+FEAT-FLT-001 / FEAT-CAP-001 / FEAT-TRK-001, ADR-072 and
+NR-01/02/03/08/10/13: migration 113 separates the assigned driver's approximate
+location from capacity-edit authority; preserves owner-authored duty recovery;
+rejects omitted GPS; and keeps location/history private. Regression SQL:
+`tests/sql/driver-location-bootstrap.sql`, plus six existing assignment,
+eligibility, invitation, lifecycle and security/boundary suites. Catalog checks
+pass. Thirty-five focused unit tests, TypeScript and source/spec checks pass.
+
+Twenty-six distinct desktop/phone cases pass across fleet-onboarding,
+fleet-vehicle-registration, lifecycle-recovery, capacity-signal-dialogs,
+tracking-location-controls and fleet-location-map-resize. These include real local
+email-code signup and backend persistence, permission revocation, first-location
+owner publication, Off Duty recovery, map layout resizing and bounded foreground
+Tracking. Exact run evidence, interrupted runs and external tile limits:
+[the fleet audit](../docs/FLEET_WORKFLOW_AUDIT_2026-09-27.md).
+Local implementation only; owner visual approval, complete release gates and
+hosted migration 113 remain pending. No assertion of real-device GPS testing.
+
+
+## Provider-only live support — local policy, 2026-09-24
+
+FEAT-SUP-001 / FEAT-GST-001 / FEAT-TRQ-001 / FEAT-LUX-001 supersede the public
+Help launcher and guest-write behavior in older evidence below. One Arrange
+transport → Send request form feeds Brokerage. Provider dashboard support remains;
+limited-plan providers retain its desktop/phone navigation and More-menu entry.
+Migration 108 retires public writes at SQL and application boundaries while keeping
+private history, files and staff assignment/closure. Protected local function
+backup plus rollback rehearsal confirmed all six support tables unchanged.
+
+Focused evidence: 18 unit/catalog checks; provider-only-support, support-history,
+support-attachments and support-polling SQL; database catalog security; managed
+support verifier. Browser tests cover hydration, retired API denial, one launcher,
+stale session state, request/admin follow-up, archive recovery/history/files,
+separate Brokerage/team permissions and all provider identity types. Evidence and
+passing navigation checks are recorded in PROGRESS. No hosted changes.
+
+
+## Separate inquiry teams — local review ready, 2026-09-24
+
+FEAT-TRQ-001 / FEAT-GST-001 / FEAT-SUP-001 / NR-01/02/03/08/10/13:
+migration 104 adds default-off Brokerage, scoped claims, admin handoff, private
+history, access-loss requeue and admin guest-Support assignment. It supersedes
+the admin-only transport inbox authorization below while preserving its route.
+`tests/sql/brokerage-assignment.sql` and `transport-requests.sql` pass with the
+catalog security check. `tests/e2e/brokerage-workflows.spec.ts` has six passing
+phone/desktop cases: real public submission → correct team → email-code login →
+claim/reply → admin handoff → closure, cross-team denial, concurrent claims,
+revocation, conditional polling, stale draft rejection, mobile navigation and
+FIFO guest-chat claim eligibility/persistence.
+`public-assistance-dock.spec.ts` adds four passing cases for outside selection,
+draft retention and restored mode. Thirty transport/localization/email unit tests
+pass. Final visual captures and remaining review/release gates are in PROGRESS.
+No production migration, real staff provisioning, SMTP change or deployment.
+
+
+## Launch clarity and language — local implementation, 2026-09-24
+
+FEAT-LUX-001 / FEAT-LNG-001 / NR-08/13 → guest Share your trucks entry and joined
+floating Ask for help / Request transport actions (no added map-top strip),
+explicit visitor GPS, accurate driver/setup guidance, separate shipment/email
+code labels, private callback summary and bounded access/creation recovery.
+Owner placement revision: 14 focused desktop/phone cases pass, including
+`public-assistance-dock.spec.ts` direct panels/drafts/existing conversation,
+320/390/760px language layout, hydration and selected-map controls. The subsequent
+owner correction removes internal task tabs: eight focused desktop/phone cases
+pass for one-task panels, preserved drafts/restored mode, chat lifecycle and
+unread-message isolation. Captures: `artifacts/single-assistance-panel-20260924/`. Preview
+captures and pending owner approval are recorded in PROGRESS.
+Nine focused unit checks pass across browser requests, route success/outbox
+separation and language catalogs. `resources/i18n/launch-message-keys.json`
+covers 119 curated message groups; user values and placeholders are preserved.
+Twenty-four focused desktop/phone cases pass across runs, including real local
+email-code Tracking and fresh fleet/driver onboarding. Capture paths, development
+harness corrections and owner review state are recorded in PROGRESS. Local preview only;
+no assertion of full-language coverage, native fluency or deployment.
+
+
+## Private transport requests — local review ready, 2026-09-23
+
+FEAT-TRQ-001 / NR-01–04/08/10/13 → four-field public form and bounded POST,
+service-only migration 103, active-ADMIN Support inbox, paginated status filters,
+call link and version-checked offline follow-up. `tests/transport-requests.test.mjs`
+passes (2); `tests/sql/transport-requests.sql` proves role/ACL/RLS denial, retries,
+retention, stale writes, pagination and contact-free audit. Resulting catalog
+security check passes. `tests/e2e/transport-requests.spec.ts` and
+`transport-request-api.spec.ts` pass on desktop/phone (6), including actual local
+submission-to-admin persistence and no email delivery. Existing chat history
+recovery (2) and assisted chat (8) pass. Four catalog tests, typecheck, source/spec
+checks pass. Captures: `artifacts/transport-requests-final-20260923/`.
+Applied locally only; owner visual review, complete release gates, protected
+rehearsal of migrations 102/103 and production rollout remain outstanding.
+
+
 ## Language coverage follow-up — 2026-09-23
 
 FEAT-LNG-001 → whole-message profile counts/service copy, distance filters,
@@ -616,7 +732,7 @@ known validation messages and redacted unexpected-database diagnostics.
 | `FEAT-SHR-001` | Provider Network controls, eligibility-aware six-digit Private capacity email-OTP entry, a clear no-share result that remains on the email step, one multi-truck authorized capacity map, non-overlapping visible logout, 30-minute deliberate-activity idle timeout, and Loadgistic assisted-matching opt-in | Truck-scoped email/platform grants, Driver create/revoke, owner oversight, no challenge or delivery for an unshared email, single-use OTP/session digests, origin/email verification limits, just-in-time both-kind lease fencing, truthful provider-success acknowledgement, bounded credential cleanup, bounded rolling renewal, complete anonymous exclusion of Private-network trucks, exact-coordinate exclusion, immediate revocation, and no Auth account/runtime fallback | `058_guest_access_retention.sql`, `059_targeted_access_email_delivery.sql`, authenticated two-minute Netlify background recovery, managed PostgreSQL plus loopback-only local Mailpit and preferred Production Resend/bounded SMTP/optional webhook email, private Storage, shared rate limit, privacy monitoring | managed runtime boundary, private-capacity runtime and live verifier, `tests/email-delivery.test.mjs`, `tests/private-capacity-runtime.test.mjs`, rate-limit tests, focused desktop/mobile E2E and no-share/active-session captures |
 | `FEAT-GST-001` | Account-free Assisted matching conversation, persistent public launcher, and recovery flow integrated with the support inbox | Server-held guest digest, immediate atomic queue assignment, two-second visible polling, route-persistent authorized conversation, strict conversation/file reads, and no demand entity | `054_managed_support_runtime.sql`, quarantined/scanned private support bucket, managed email, browser RPC denial, authorized Realtime rollout, shared rate limit | Support runtime contract, live local Supabase verifier, `tests/private-capacity-network.test.mjs`, focused desktop/mobile E2E and captures |
 | `FEAT-REV-001` | Verified customer-owner review form, public provider reputation, and provider low-rating dispute status | Shipment-bound review grant, one review per completed Tracking session, all-score publication, service-role-only provider dispute command, audited terminal decision | `044_provider_tracking_runtime.sql`, email authorization, expiry, moderation audit | repository, managed Tracking authorization, E2E |
-| `FEAT-DAT-001` | Busy city-and-town public capacity/map/microsite fixtures across fleets and owner-operators, with an explicitly authorized additive hosted-pilot path | Credential-free PostgreSQL-native 30-provider/143-truck supply fixture across weighted Ethiopian markets and at least 60 real named localities, with no dominant locality, repeated diagonal offset, or identical fleet pattern; 91 cargo vans, pickups, or mini trucks, 12 courier cars, no motorcycles, and smaller light/medium/rigid-heavy/interchangeable-tractor cohorts; active owning-Driver assignment and an exact 21 existing/24 generated/98 icon portrait mix; current attached trailer as the public configuration; seven-day Featured eligibility; mostly 30 km compact-delivery geography with three plausible regional courier corridors; wider light-truck geography; occasional logical regional routes; current-date Featured/Sponsor generation; full cursor traversal; no demand records | Destructive reset remains local-only; hosted pilot requires exact project confirmation, collision preflight, random unrecoverable Auth credentials, backup checksum, deterministic row namespace, exact rollback, and no synthetic privileged identity | managed fixture contract and live verifier, production-pilot policy/import dry-run and approved hosted execution, independent hosted database/API/browser verification, driver-portrait-policy, vehicle-catalog policy, clustering contract, focused desktop/mobile E2E, UI audit |
+| `FEAT-DAT-001` | Busy city-and-town public capacity/map/microsite fixtures across fleets and owner-operators, with an explicitly authorized additive hosted-pilot path | Credential-free PostgreSQL-native 30-provider/143-truck supply fixture across weighted Ethiopian markets and at least 60 real named localities, with no dominant locality, repeated diagonal offset, or identical fleet pattern; 100 cargo vans, pickups, or mini trucks, no courier cars or motorcycles, and smaller light/medium/rigid-heavy/interchangeable-tractor cohorts; active owning-Driver assignment and an exact 21 existing/24 generated/98 icon portrait mix; current attached trailer as the public configuration; seven-day Featured eligibility; 30 km compact freight geography; wider light-truck geography; occasional logical regional routes; current-date Featured/Sponsor generation; full cursor traversal; no demand records | Destructive reset remains local-only; hosted pilot requires exact project confirmation, collision preflight, random unrecoverable Auth credentials, backup checksum, deterministic row namespace, exact rollback, and no synthetic privileged identity | managed fixture contract and live verifier, production-pilot policy/import dry-run and approved hosted execution, independent hosted database/API/browser verification, driver-portrait-policy, vehicle-catalog policy, clustering contract, focused desktop/mobile E2E, UI audit |
 | `FEAT-LST-001` | Progressive bounded Truck Map loading, maximum-eight linear-time screen-cell clusters, and bounded provider/admin histories | Opaque cursor contract, deterministic ordering, deduplication, filter and map-state restoration, bounded operational pages | Query latency and dense-render monitoring | repository, E2E, focused desktop/mobile review |
 | `FEAT-UIX-001` | Professional capacity-sharing and shipment-tracking copy, shared route-aware desktop/mobile public app shell, bounded icon-led capacity filter with image-based truck selection, provider mobile app shell, compact Administration hierarchy, Map-first discovery, keyboard-operable controls, non-overlapping responsive overlays, short actions, touch targets, reversible details, and a current-product release audit | Existing authorization plus explicit provider, fleet, guest, review, and administrator commands remain server enforced | Multi-role route, interaction, visual, copy, fixture, safe-area, current-page accessible-name, contrast, target-size, viewport-fit, and overflow evidence that excludes retired product paths | focused route/filter and administration E2E, filter accessibility, E2E, UI audit, stress audit, `docs/APP_AUDIT_2026-08-11.md` including the 2026-08-13 responsive-shell follow-up |
 
@@ -669,3 +785,188 @@ login rendering. Exact old/new fields, unchanged Auth-field verification and
 protected evidence paths are in `docs/operations/LOADGISTIC_DOMAIN_SETUP.md`.
 The new Tracking release and production OTP login are not claimed by this public
 verification. Existing production deployment remains `6ab3aaa9668f9644dcba97d8`.
+
+## UI wording and Featured readiness — 2026-09-24, local
+
+FEAT-LUX-001 / FEAT-LNG-001 / FEAT-FTR-001 / FEAT-SUP-001: remove decorative map
+caption and repeated/internal labels, preserve meaningful limits, distinguish
+scheduled Featured from live video, expose real run/round/day status and manual
+controls. Owner-approved independent Featured responsibility is default-off,
+with narrow settings, admin grant/revoke and current database authority.
+
+Migrations 105–106 rehearsed with negative SQL/catalog checks and applied only
+locally. `featured-operation-status.sql`, `featured-team-permission.sql`,
+`featured-random-rounds.sql` and separate `brokerage-assignment.sql` verify the
+changed contracts. Thirty-three focused unit tests pass; source/spec/TypeScript pass.
+Browser evidence and remaining rollout limits are recorded in
+`docs/FEATURED_READINESS_2026-09-24.md` and `docs/PROGRESS.md`.
+Full gates, owner visual approval and hosted migration/worker verification remain
+open; these records do not mark the release complete.
+
+
+## Official Featured broadcast window — 2026-09-24, local
+
+FEAT-FTR-001 / FEAT-LNG-001: eight-showcase maximum, 08:30–12:00 EAT, four
+two-minute mentions including the close, manual gap validation and preserved
+legacy read/manual data. `tests/featured-providers.test.mjs`, `tests/expo-venue.test.mjs`,
+`tests/sql/featured-broadcast-window.sql` and `tests/e2e/featured-broadcast-window.spec.ts`
+map these contracts. Existing random-round/permission SQL suites pass. Migration 107
+preservation rehearsal, final catalog checks and synthetic cleanup are recorded in
+`docs/FEATURED_READINESS_2026-09-24.md`; four browser cases pass on desktop/phone.
+Native JSONB manual intervals now reopen/resave correctly; reordered trucks retain
+slot times. Owner UI approval and hosted rollout remain pending.
+
+
+## Managed transport request wording — 2026-09-24, local
+
+FEAT-TRQ-001 / FEAT-LNG-001: approved launcher, service description, fee confirmation,
+callback action and transport-team receipt. No backend/schema contract changes.
+Existing `transport-requests.spec.ts` and `public-assistance-dock.spec.ts`: eight
+passing desktop/phone cases retain actual private follow-up, no email, separate
+Help, drafts and recoverable submission. Seven domain/localization tests pass;
+all four language phone previews fit. Evidence and rollout status: `docs/PROGRESS.md`.
+Owner visual review and deployment are still separate pending steps.
+
+### Freight catalogue review — 2026-09-25
+
+FEAT-FLT-001 / FEAT-FTR-001 / FEAT-DAT-001 / FEAT-LUX-001: courier retirement,
+mixed Sunday preview, driver-preserving local demo conversion, container flatbed
+illustration and Transporter login label. Focused evidence: `tests/fleet-vehicle-registration.test.mjs`,
+`tests/featured-truck-types.test.mjs`, `tests/supabase-fixtures.test.mjs`,
+`tests/capacity-market.test.mjs`, `tests/localization.test.mjs` (41 passes),
+`tests/sql/freight-vehicle-catalogue.sql`, `tests/sql/featured-random-rounds.sql`,
+catalog security (NR-01/02/03), source/spec checks, TypeScript,
+and `tests/e2e/freight-catalogue.spec.ts` (six desktop/phone cases).
+Preservation checks and local projection report are protected in `.local/freight-catalogue/`;
+visual artifacts in `artifacts/freight-catalogue-20260925/` and
+`artifacts/freight-catalogue-featured-20260925/`. NR-13 owner visual approval
+and full release gates remain pending; migration 109 applied locally only.
+
+### Map introduction — 2026-09-25
+
+FEAT-LUX-001 / FEAT-LNG-001: visible introduction above Open capacity, retired
+header slogan, contextual translations and descriptive page title/description.
+`tests/e2e/map-introduction.spec.ts` passes four desktop/phone cases covering
+seven viewport sizes, all five languages, real server HTML content and metadata.
+Open-map cases in `tests/e2e/public-map-shell-layout.spec.ts` also pass at all
+existing breakpoints. Localization, source/spec and TypeScript checks pass.
+Screenshots: `artifacts/map-introduction-final-20260925/`.
+NR-13: local preview remains live; owner visual approval and release gates pending.
+Pre-existing streamed route visibility with JavaScript disabled is recorded in
+PROGRESS; it is not claimed fixed. No hosted changes.
+
+SEO basis: [Google Search Central](https://developers.google.com/search/docs/fundamentals/seo-starter-guide).
+
+### Unified capacity map — 2026-09-27
+
+FEAT-MKT-001 / FEAT-SHR-001 / FEAT-LUX-001 / FEAT-LNG-001; ADR-069:
+`tests/e2e/unified-capacity.spec.ts` covers default public scope, a locked real map
+without feed requests, no-share email, wrong/correct real local OTP, isolation from
+another recipient, private Clear all, public switching, logout/history, legacy links,
+all translated choices/access/About text and 320px clickability. Six desktop/phone
+cases pass, with final copy/layout evidence in `artifacts/unified-capacity-copy-20260927/`
+and private workflow evidence in `artifacts/unified-capacity-final-20260927/`.
+`map-introduction.spec.ts` adds four passing responsive/HTML cases.
+Ten localization/private-access unit checks, source/spec checks and TypeScript pass.
+NR-13: preview remains live at port 3100; owner visual approval precedes full release
+gates. Local implementation only; no deployment or hosted database/configuration change.
+
+### Live Brokerage and mobile readiness — 2026-09-27
+
+FEAT-TRQ-001 / FEAT-SUP-001 / FEAT-LNG-001 / FEAT-SEC-001; ADR-070:
+`tests/transport-chat.test.mjs`, existing transport/localization/provider-support
+unit suites (ten passing cases), `tests/sql/brokerage-conversations.sql`, existing
+Brokerage assignment regression and database catalog gate. Eight desktop/phone
+cases across `brokerage-conversations.spec.ts` and `transport-requests.spec.ts`
+cover actual two-party reply delivery, duplicate prevention after lost acknowledgement,
+recovery, handoff, closure, reconnect, translated controls, retained request drafts
+and existing admin follow-up. Final evidence split between
+`artifacts/brokerage-live-reviewed-20260927/` and `artifacts/brokerage-followup-20260927/`.
+Source/spec and TypeScript checks pass. Migration 110 applied locally only;
+NR-01–05/08–10/13 remain rollout gates. Owner visual approval and full release
+checks pending. `docs/MOBILE_MONOREPO_READINESS.md` records preparation only;
+no workspace move, Expo dependency installation or native build is claimed.
+
+
+### Live-chat presentation — 2026-09-27
+
+FEAT-TRQ-001 / FEAT-LNG-001 / NR-13: visible Live chat entry, Start chat action,
+one panel title and contextual empty-conversation prompt. Desktop/phone replies,
+recovery, real queue follow-up, map-control separation and five-language 320px
+entry checks pass: `brokerage-chat-entry-20260927` and
+`brokerage-chat-entry-final-20260927` under artifacts (14 distinct browser cases).
+Owner approved the preview and resumed release. A later request to add visitor
+closure is a new pending acceptance criterion; this evidence does not cover it.
+
+
+### Visitor-ended chats and retained follow-up — 2026-09-27
+
+FEAT-TRQ-001 / FEAT-LNG-001 / NR-01/02/03/08/10/13:
+`tests/sql/transport-chat-follow-up.sql` verifies retained request state, versioned
+staff edits, capability denial, idempotency, message closure, callback queues,
+private-note/contact redaction and persistent ending after admin reopening.
+Existing Brokerage assignment/conversation SQL and database catalog checks pass.
+`tests/e2e/transport-chat-follow-up.spec.ts` passes all four waiting/assigned cases
+on desktop/phone, including canceled confirmation, failure/retry, new chat while
+old follow-up remains open, retained history, staff calls and resolution. Locale
+confirmation captures and phone controls are in
+`artifacts/chat-follow-up-final-20260927/`. Eight focused unit/localization cases,
+source/spec and TypeScript pass. Logs: `.local/chat-follow-up/`.
+Migration 111 is local only; owner visual review, refreshed release rehearsal,
+exact-candidate CI and hosted rollout are still required.
+
+Focused chat regression completion (2026-09-27): all 12 distinct desktop/phone
+cases pass across `artifacts/chat-follow-up-final-20260927/` (11 passed) and
+`artifacts/chat-follow-up-claim-20260927/` (remaining desktop conversation passed).
+The first run's claim/navigation test raced the save; it now waits for the successful
+claim response and refreshed queue before choosing Mine. No permission or product
+assertion was weakened. Logs: `.local/chat-follow-up/browser-{final,claim}.log`.
+
+
+### Profile search and matching truck map — local evidence, 2026-09-27
+
+FEAT-MKT-001 / FEAT-LST-001 / FEAT-LNG-001 / ADR-071 / NR-01/02/03/08/10/13:
+`tests/sql/capacity-ranked-search.sql` passes rollback-only relevance, all-word/
+typo/Ethiopic matching, profile-only output, retired type neutrality, truck-only
+fact exclusion, published-prose scope, hidden-contact denial, inactive-driver
+exclusion, full company-pair inclusion, driver-specific map scoping, current
+subject-scoped document filters, stable pagination and browser-RPC denial.
+`tests/e2e/capacity-ranked-search.spec.ts` passes six desktop/phone cases across
+`artifacts/capacity-profile-search-20260927/` (five) and
+`artifacts/capacity-profile-search-final-20260927/` (one), including verified-email
+private grants/revocation and all four translated filter layouts. The first desktop
+attempt hit the bounded UI timeout during local compilation; its unchanged test
+passed on one controlled retry. Nine localization/filter unit checks and
+TypeScript/source/spec checks pass. Earlier eight drawer/reset cases passed in
+`artifacts/capacity-search-map-final-20260927/`. Logs: `.local/discovery-search/`.
+These are local focused checks, not full release/production-scale evidence.
+Owner visual review, exact-candidate gates and migration 112 rollout remain pending.
+
+
+Office-city control simplification: four desktop/phone cases pass in
+`artifacts/capacity-city-search-20260927/`, including main-box city search, matching
+company trucks and absent Office city controls in all UI languages. The local
+rollback SQL suite adds published office-city text/profile/map assertions.
+TypeScript and source/spec checks pass. No production changes.
+
+
+Illustrated configuration picker (FEAT-LST-001):
+`tests/e2e/capacity-configuration-picker.spec.ts` passes desktop and phone checks
+for all 15 real catalogue images, full-width layout, selected preview, keyboard
+arrow navigation, single-valued application, matching map responses and reset.
+Evidence: `artifacts/capacity-configuration-pictures-review-20260927/` (2 passed).
+TypeScript and source/spec checks pass. Existing public/private workflow tests
+now use the picture picker rather than the retired native select; their full
+release run remains pending owner visual approval. No production changes.
+
+
+Shipment-focused filters (FEAT-LST-001 / FEAT-MKT-001):
+`tests/e2e/capacity-load-needs.spec.ts` passes desktop/phone space selection,
+conflicting availability prevention, actual full/shared map/profile queries,
+Clear reset and all four translated controls. Evidence:
+`artifacts/capacity-load-needs-final-20260927/` (2 passed). An initial test reopened
+the old dialog before Clear navigation completed; synchronizing the URL corrected
+the test without altering its reset assertion. `tests/sql/capacity-ranked-search.sql`
+adds rollback assertions for automatic route/area inclusion in public/private
+matching functions and accepted full/shared-load requirements. TypeScript and
+source/spec checks pass. No database migration or production change in this step.

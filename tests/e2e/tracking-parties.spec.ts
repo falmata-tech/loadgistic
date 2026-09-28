@@ -11,7 +11,8 @@ async function invitationCode(email:string,since:number){
     if(message){
       const detail=await (await fetch(`http://127.0.0.1:55324/api/v1/message/${encodeURIComponent(message.ID)}`)).json();
       const code=String(detail.Text||'').match(/LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}/)?.[0];
-      if(code)return code;
+      expect(String(detail.Text||'')).not.toContain('Tracking code');
+      expect(String(detail.Text||'')).toContain('verify this email');return true;
     }
     await new Promise(resolve=>setTimeout(resolve,500));
   }
@@ -42,16 +43,16 @@ test('added Tracking party saves inline, receives invitation and OTP, and loses 
     // A duplicate is a recoverable inline error, not a second recipient or stuck spinner.
     await form.getByLabel('Add tracking party').fill(email);await form.getByRole('button',{name:'Add and email access'}).click();
     await expect(form.getByRole('alert')).toContainText('already has access');await expect(form.getByRole('button')).toBeEnabled();await expect(form.getByLabel('Add tracking party')).toHaveValue(email);
-    const code=await invitationCode(email,addedAt);
+    await invitationCode(email,addedAt);
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize()!,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.246'}});
     const unauthenticated=await guest.request.post(`/api/provider-shipments/${shipmentId}/recipients`,{headers:{origin:info.project.use.baseURL,accept:'application/json'},form:{action:'ADD',email:`denied-${actor.suffix}@example.test`}});expect(unauthenticated.status()).toBe(401);
-    const customer=await guest.newPage();await customer.goto('/track');await customer.getByLabel('Approved email').fill(email);await customer.getByLabel('Tracking code',{exact:true}).fill(code);
-    const requested=Date.now();await customer.getByRole('button',{name:'Email me a code'}).click();await customer.getByLabel('One-time code').fill(await localMailpitNumericCode(email,requested,'Your shipment Tracking code'));
-    await customer.getByRole('button',{name:'Open tracking'}).click();await expect(customer.getByText('Private shipment tracking')).toBeVisible();await expect(customer.getByRole('heading',{name:/Track LGX-/})).toBeVisible();
+    const customer=await guest.newPage();await customer.goto('/track');await customer.getByLabel('Email',{exact:true}).fill(email);
+    const requested=Date.now();await customer.getByRole('button',{name:'Email me a code'}).click();await customer.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requested,'Your Loadgistic tracking sign-in code'));
+    await customer.getByRole('button',{name:'Open tracking'}).click();await expect(customer.getByText('Private shipment tracking')).toBeVisible({timeout:15000});await expect(customer.getByRole('heading',{name:/Track LGX-/})).toBeVisible();
     expect(new URL(customer.url()).pathname).toBe(`/track/${shipmentId}`);
     // No account was provisioned for this account-free Tracking recipient.
     expect(checked(await service.from('profiles').select('id').eq('email',email))).toHaveLength(0);
-    const stranger=await guest.request.post('/api/tracking/otp',{headers:{origin:info.project.use.baseURL},form:{email:`unapproved-${actor.suffix}@example.test`,trackingCode:code}});expect(stranger.status()).toBe(200);
+    const stranger=await guest.request.post('/api/tracking/otp',{headers:{origin:info.project.use.baseURL},form:{email:`unapproved-${actor.suffix}@example.test`}});expect(stranger.status()).toBe(200);
     expect(checked(await service.from('access_email_deliveries').select('id').eq('recipient_email',`unapproved-${actor.suffix}@example.test`))).toHaveLength(0);
     await page.locator('.tracking-party-row').filter({hasText:email}).getByRole('button',{name:'Revoke'}).click();await expect(page.getByText('Tracking access revoked.',{exact:true})).toBeVisible();
     await customer.reload();await expect(customer.getByText('Private shipment tracking')).toHaveCount(0);await expect(customer.getByRole('heading',{name:/Track LGX-/})).toHaveCount(0);

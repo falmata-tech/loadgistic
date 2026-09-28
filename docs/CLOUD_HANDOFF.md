@@ -4,6 +4,13 @@ This is a credential-free owner handoff. Never put real secrets, customer data, 
 
 ## Release boundary
 
+Local Tracking follow-up (2026-09-28, ADR-073): email-only verification and
+30-minute idle sessions require additive migration 114 before the app. No hosted
+write or deployment has occurred. Owner visual review remains pending; fresh
+backup/restore rehearsal must include all pending migrations 102–114. See
+[Tracking access review](TRACKING_ACCESS_REVIEW_2026-09-28.md) and
+[production authority](PRODUCTION_AUTHORITY.md) for current evidence and gates.
+
 The owner selected Netlify Free for the initial commercial pilot and Supabase
 Free for managed Postgres, Auth, private Storage, and bounded Realtime. The same
 commit must continue to produce the standalone Docker artifact for CI parity and

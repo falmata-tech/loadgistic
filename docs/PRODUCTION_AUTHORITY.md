@@ -1,4 +1,60 @@
+## September 28 release resumed after Tracking review
+
+The owner’s latest instruction, “ok now deploy after checking any issues you see
+you didnt catch,” accepts the revised local Tracking presentation and resumes
+deployment of the accumulated Loadgistic web changes. This supersedes the local
+visual-review pending notes below. Required exact-candidate CI, fresh protected
+backup, isolated restore/rehearsal of migrations 102–114, security checks,
+immutable build, monitored rollout and application rollback remain mandatory.
+No hosted Auth/SMTP or unrelated configuration changes are authorized.
+
+Release checklist:
+- [x] Owner accepted the local presentation and requested deployment.
+- [ ] Full quality, SQL, browser and exact-candidate remote CI pass.
+- [ ] Fresh backup restores and all 102–114 migrations rehearse atomically.
+- [ ] Immutable draft, runtime, security and browser checks pass.
+- [ ] Bounded database upgrade and production promotion are verified.
+
 # Production authority and security operations
+
+## September 27 web release — revised chat approved; release authorized
+
+The owner requested deployment of the accumulated web changes, then explicitly
+asked to improve the live transport-chat presentation before deployment. Complete
+the scoped FEAT-TRQ-001 UI revision and local desktop/phone review first. The prior
+release request remains the intended next task; this revision requires renewed
+visual acceptance under NR-13 before extensive gates or publication.
+
+The owner subsequently selected “Approve the revised chat and resume deployment.”
+This accepts the revised local presentation and resumes the accumulated web release.
+No production migration, deployment, external message or hosted configuration
+change has been performed yet. Preserve exact-candidate CI,
+protected backup/restore rehearsal, security checks and bounded rollout for the
+accumulated migrations when release resumes.
+
+The subsequent visitor-ending/follow-up request is implemented locally. The owner
+confirmed that ending messaging keeps the request available for staff calls.
+Migration 111 and the Active chats / Follow-up / Resolved interface require local
+visual acceptance of this addition, then refreshed release evidence including 111.
+The existing deployment request remains valid; no production write has occurred.
+
+The subsequent profile-search/results-drawer revision (FEAT-MKT-001, ADR-071)
+adds migration 112. The owner clarified profile-only text results, no result-type
+selector, and truck filtering on the map. Local visual acceptance is still
+required for this interface. Rehearse pending migrations 102–114 from a fresh
+protected backup and verify the immutable release candidate before publication;
+the previous rehearsal through 110 does not cover these additions.
+
+The fleet/location audit adds migration 113 and revised first-location/duty controls
+(ADR-072). These are local only and require owner visual review. The earlier
+rehearsal and CI do not cover this candidate; no hosted mutation is authorized
+merely by preparing this migration.
+
+Tracking simplification adds migration 114 (ADR-073): email-only OTP, a
+recipient-scoped shipment list and owner review command. Revised access/session
+screens require owner visual approval and exact-candidate security/browser gates.
+Apply only after a fresh protected backup and full 102–114 rehearsal; no hosted
+Auth or SMTP configuration change is part of this work.
 
 FEAT-SEC-001 / BASE-DEP-001 / ADR-063. Scope: Loadgistic only.
 
@@ -371,8 +427,11 @@ Preserve exact-candidate CI, encrypted backup and isolated migration rehearsal,
 security/runtime checks and monitored promotion. Existing hosted settings stay
 unchanged. Translation completeness is not claimed; the inventory remains open.
 
-Production runtime/private demo verification using the service key was separately
-rejected by automatic approval review earlier. Its narrow approval remains
-unresolved; this record does not bypass that decision or authorize another
-credential route. Prepare the exact current candidate and bounded verification
-plan before requesting the missing approval if still required.
+After the earlier automatic approval rejection, the owner explicitly approved
+“this bounded verification”: use the existing service key in memory for the
+compiled application health check and one login to the existing
+`falmatad97+lg-public-fleet-02@gmail.com` demo account. Close that test session
+when verification ends. This sends no email and changes no customer records,
+credentials or hosted settings; it grants no general service-key authority.
+The protected approval receipt and exact candidate verification plan are retained
+locally. Publication still requires every release gate above.

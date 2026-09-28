@@ -28,8 +28,8 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   await expect(page.getByText('Resolve or reassign active Tracking before retiring this truck.',{exact:true})).toBeVisible();
   expect(checked(await service.from('vehicles').select('active').eq('id',vehicles[0]).single()).active).toBe(true);
   guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const guestPage=await guest.newPage();
-  await guestPage.goto('/track');await guestPage.getByLabel('Approved email').fill(email);await guestPage.getByLabel('Tracking code').fill(shipment.trackingCode);
-  const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();await guestPage.getByLabel('One-time code').fill(await localMailpitNumericCode(email,requestedAt,'Your shipment Tracking code'));
+  await guestPage.goto('/track');await guestPage.getByLabel('Email',{exact:true}).fill(email);
+  const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));
   await guestPage.getByRole('button',{name:'Open tracking'}).click();await expect(guestPage.getByRole('heading',{name:'Shipment progress'})).toBeVisible({timeout:30000});
   const guestUrl=guestPage.url();
   await auditLogin(page,'admin@loadgistic.local');await page.goto(`/admin/operations/tracking/${shipment.id}`);

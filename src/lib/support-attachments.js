@@ -1,3 +1,4 @@
+import {canSendSupportMessage} from './support-policy.js';
 import path from 'node:path';
 import {z} from 'zod';
 import {createSupabaseAdminClient} from './supabase-adapter.js';
@@ -18,6 +19,7 @@ export function supportAttachmentInput(body,file){
   return {body:message,mimeType,name,size:file.size};
 }
 export async function sendSupportAttachment(user,conversationId,body,file){
+  if(!canSendSupportMessage(user))throw new Error('FORBIDDEN');
   const input=supportAttachmentInput(body,file);uuid.parse(conversationId);uuid.parse(user.id);
   const client=createSupabaseAdminClient();const reference=createPrivateUploadReference('member-support',input.mimeType);
   // Reservation authorizes persisted actor/conversation state before any Storage write.

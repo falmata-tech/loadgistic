@@ -331,3 +331,36 @@ export function trackingRecoveryActions(status){
   return ['CREATED','TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING','ISSUE'].includes(status)
     ?['CORRECT','REASSIGN','CANCEL']:[];
 }
+
+/** Four-field private callback request; this is not a shipment or public demand. */
+export function validateTransportRequest(input) {
+  if(!input||typeof input!=='object')throw new Error('INVALID_TRANSPORT_REQUEST');
+  const field=(value,max)=>{
+    if(typeof value!=='string'||value.length>max||/[\u0000-\u001f\u007f]/.test(value))throw new Error('INVALID_TRANSPORT_REQUEST');
+    const text=value.trim();if(!text)throw new Error('INVALID_TRANSPORT_REQUEST');return text;
+  };
+  const name=field(input.name,100),origin=field(input.origin,160),destination=field(input.destination,160);
+  const rawPhone=field(input.phone,30);
+  if(!/^\+?[0-9 ()-]+$/.test(rawPhone))throw new Error('INVALID_TRANSPORT_REQUEST');
+  const phone=rawPhone.replace(/[ ()-]/g,'');
+  if(!/^\+?[0-9]{7,15}$/.test(phone))throw new Error('INVALID_TRANSPORT_REQUEST');
+  if(typeof input.requestId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.requestId))throw new Error('INVALID_TRANSPORT_REQUEST');
+  return {requestId:input.requestId.toLowerCase(),name,origin,destination,phone};
+}
+
+export function validateTransportFollowUp(input) {
+  const status=String(input.status||'');
+  // Offline triage permits correcting or reopening any retained request.
+  if(!['NEW','CONTACTED','CLOSED'].includes(status)||!Number.isSafeInteger(input.version)||input.version<1||input.version>2147483646)throw new Error('INVALID_TRANSPORT_FOLLOW_UP');
+  const note=typeof input.note==='string'?input.note:'';
+  if(note.length>1000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(note))throw new Error('INVALID_TRANSPORT_FOLLOW_UP');
+  return {status,note:note.trim(),version:input.version};
+}
+
+
+export function validateTransportMessage(input) {
+  const id=String(input?.messageId||'');
+  const body=typeof input?.body==='string'?input.body.trim():'';
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)||!body||body.length>2000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(body))throw new Error('INVALID_TRANSPORT_MESSAGE');
+  return {messageId:id,body};
+}

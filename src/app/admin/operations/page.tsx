@@ -80,6 +80,6 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
       {!records.length?<div className="empty-state"><Text message="No "/>{views.find(item=>item.id===view)?.label.toLowerCase()}<Text message=" match this search."/></div>:null}
       <Pagination path="/admin/operations" query={{q:query.q,view}} page={data.pagination.page} pageCount={data.pagination.pageCount} total={data.pagination.total}/>
     </section>
-    <div className="admin-security-note"><Activity aria-hidden="true"/><Text message="Credentials, sessions, tracking secrets, exact coordinates, and private files are never shown here."/></div>
+
   </div>;
 }

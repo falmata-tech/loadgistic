@@ -27,7 +27,7 @@ const {data:vehicleCatalog,error:vehicleCatalogError}=await service.from('vehicl
   .select('id,cargo_configuration,trailer_interchangeable,supported_trailer_configurations').eq('active',true);
 if(vehicleCatalogError||vehicleCatalog.length!==143)throw new Error('SUPABASE_FIXTURE_VERIFY_VEHICLE_CATALOG_READ_FAILED');
 const vehicleCount=configuration=>vehicleCatalog.filter(vehicle=>vehicle.cargo_configuration===configuration).length;
-if(vehicleCount('Courier car')!==12
+if(vehicleCount('Courier car')!==0
   ||vehicleCount('Tractor + Container Trailer')!==2
   ||vehicleCount('Tractor + Dry Van Trailer')!==2
   ||vehicleCount('Tractor + Heavy Equipment Trailer')!==2

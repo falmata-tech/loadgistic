@@ -49,6 +49,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/capacity-network', label: 'Capacity network', icon: Network },
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
+    { href: '/brokerage', label: 'Brokerage', icon: Truck },
     { href: '/admin/settings', label: 'Settings', icon: Settings2 },
     { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
@@ -76,6 +77,10 @@ const roleLabels: Record<string, string> = {
 };
 
 function workspaceRoleLabel(user:any) {
+  if(user.role==='SUPPORT'){
+    const responsibilities=[['can_manage_featured','Featured'],['can_manage_brokerage','Brokerage'],['can_manage_support','Support'],['can_manage_customers','Customers'],['can_manage_operations','Operations'],['can_manage_trust','Trust'],['can_manage_billing','Billing']].filter(([field])=>user[field]);
+    return responsibilities.length===1?responsibilities[0][1]:'Platform team';
+  }
   if(user.provider_operating_model==='COMPANY_DRIVER')return 'Company driver';
   if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator';
   if(user.provider_operating_model==='SELF_MANAGED_DRIVER')return 'Self-managed driver';
@@ -103,7 +108,9 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
   let items = navigation[user.role] || navigation.SHIPPER;
   if(user.role==='SUPPORT'){
     items=[];
-    if(user.can_manage_support)items.push({href:'/support',label:'Inbox',icon:Headphones});
+    if(user.can_manage_support)items.push({href:'/support',label:'Support',icon:Headphones});
+    if(user.can_manage_brokerage)items.push({href:'/brokerage',label:'Brokerage',icon:Truck});
+    if(user.can_manage_featured)items.push({href:'/admin/featured',label:'Featured',icon:Sparkles});
     if(user.can_manage_customers||user.can_manage_operations)items.push({href:'/admin/operations',label:'Records',icon:Database});
     if(user.can_manage_trust||user.can_manage_billing)items.push({href:'/admin/reviews',label:'Review Center',icon:ClipboardCheck});
   }
@@ -114,6 +121,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     items = items
       .filter(item => ['/app/home','/app/more'].includes(item.href))
       .map(item => item.href === '/app/more' ? {...item,label:'Plan & billing',icon:CreditCard} : item);
+    if(['TRANSPORTER','DRIVER'].includes(user.role))items.push({href:'/app/support',label:'Support',icon:Headphones});
   }
   const activeHref = items.filter(item=>{
     const [itemPath,itemQuery]=item.href.split('?');
@@ -154,11 +162,11 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
       </aside>
       <main className="app-main">
         <header className="app-topbar">
-          <div className="topbar-leading"><WorkspaceBackButton/><span className="mobile-app-brand"><Logo href={homeHref}/></span><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{isSupport?<Text message="Customer support"/>:<Text message={workspaceRole}/>}</div></div></div>
+          <div className="topbar-leading"><WorkspaceBackButton/><span className="mobile-app-brand"><Logo href={homeHref}/></span><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{<Text message={workspaceRole}/>}</div></div></div>
           <div className="topbar-actions">
             <LanguagePicker/>
             {user.role==='DRIVER'?<Link className="button secondary small desktop-account" href="/"><ExternalLink aria-hidden="true"/><Text message="Exit dashboard"/></Link>:null}
-            {!isSupport&&!['ADMIN'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/><Text message="Support"/></Link>:null}
+            {['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/><Text message="Support"/></Link>:null}
             {!isSupport?<Link className="button secondary small desktop-account" href="/app/menu"><MoreHorizontal aria-hidden="true"/><Text message="More"/></Link>:null}
           </div>
           {['DRIVER','TRANSPORTER'].includes(user.role)?<Link className="mobile-dashboard-exit" href="/"><ExternalLink aria-hidden="true"/><span><Text message="Exit dashboard"/></span></Link>:null}

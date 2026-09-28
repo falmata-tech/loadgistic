@@ -14,9 +14,8 @@ async function completionCode(email:string,requestedAt:number){
       &&item.To?.some((to:any)=>to.Address===email));
     if(message){
       const detail=await (await fetch(`http://127.0.0.1:55324/api/v1/message/${encodeURIComponent(message.ID)}`)).json();
-      const code=String(detail.Text||'').match(/LG-RV-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}/)?.[0];
-      const trackingCode=String(detail.Text||'').match(/LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}/)?.[0];
-      if(code&&trackingCode)return {reviewCode:code,trackingCode};
+      expect(String(detail.Text||'')).toContain('leave a review');
+      expect(String(detail.Text||'')).not.toMatch(/LG-RV-|Tracking code/);return true;
     }
     await new Promise(resolve=>setTimeout(resolve,250));
   }
@@ -50,16 +49,14 @@ test('completed delivery emails its customer and accepts exactly one visible cus
       await expect(page.locator('.alert.success')).toContainText(status==='COMPLETED'?'Tracking complete.':'Tracking status updated.');
       expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe(status);
     }
-    const {reviewCode,trackingCode}=await completionCode(email,completedAfter);
+    await completionCode(email,completedAfter);
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize()!,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.248'}});
     const customer=await guest.newPage();await customer.goto('/track');
-    await customer.getByLabel('Approved email').fill(email);await customer.getByLabel('Tracking code',{exact:true}).fill(trackingCode);
+    await customer.getByLabel('Email',{exact:true}).fill(email);
     const requested=Date.now();await customer.getByRole('button',{name:'Email me a code'}).click();
-    await customer.getByLabel('One-time code').fill(await localMailpitNumericCode(email,requested,'Your shipment Tracking code'));
+    await customer.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requested,'Your Loadgistic tracking sign-in code'));
     await customer.getByRole('button',{name:'Open tracking'}).click();
-    await expect(customer.getByRole('heading',{name:'Verify your review'})).toBeVisible();
-    await customer.getByLabel('Review code',{exact:true}).fill(reviewCode);
-    await customer.getByRole('button',{name:'Continue to review'}).click();
+    await expect(customer.getByLabel('Review code',{exact:true})).toHaveCount(0);
     await expect(customer.getByRole('heading',{name:'Review the provider'})).toBeVisible();
     await customer.getByLabel('Rating',{exact:true}).selectOption('4');
     await customer.getByLabel('Comment').fill('Synthetic customer review after delivery.');

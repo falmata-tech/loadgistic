@@ -12,10 +12,10 @@ do $test$
 declare member uuid; agent uuid; outsider uuid; admin_id uuid; chat uuid:=gen_random_uuid(); other_chat uuid:=gen_random_uuid();
  upload uuid; abandoned uuid; pending uuid; message uuid; retry uuid; result jsonb; signature text; role_name text; n integer;
 begin
- select id into strict member from profiles where email='driver@loadgistic.local';
- select id into strict agent from profiles where email='support@loadgistic.local';
- select id into strict outsider from profiles where email='transporter@loadgistic.local';
- select id into strict admin_id from profiles where email='admin@loadgistic.local';
+ select id into strict member from profiles where active and role='DRIVER' order by created_at,id limit 1;
+ select id into strict agent from profiles where active and role='SUPPORT' order by created_at,id limit 1;
+ select id into strict outsider from profiles where active and role='TRANSPORTER' order by created_at,id limit 1;
+ select id into strict admin_id from profiles where active and role='ADMIN' order by created_at,id limit 1;
  update support_conversations set status='CLOSED' where customer_user_id=member and status<>'CLOSED';
  insert into support_conversations(id,customer_user_id,assigned_agent_user_id,category,status) values(chat,member,agent,'ACCOUNT','OPEN'),(other_chat,outsider,null,'ACCOUNT','CLOSED');
  perform pg_temp.expect_attachment_denied(format('select reserve_support_attachment(%L,%L,pg_temp.attachment_command())',outsider,chat));

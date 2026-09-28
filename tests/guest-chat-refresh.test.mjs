@@ -11,8 +11,10 @@ test('chat polling only runs for visible enabled work and slows minimized conver
   assert.equal(delay({...active,status:null}),30000);
 });
 
-test('current-chat read distinguishes missing access from a database outage',()=>{
+test('retired public help returns Gone without reopening a guest conversation',()=>{
   const route=readFileSync(new URL('../src/app/api/guest-support/current/route.ts',import.meta.url),'utf8');
-  assert.match(route,/error\.message==='NOT_FOUND'/);
-  assert.match(route,/status:503/);
+  assert.match(route,/PUBLIC_SUPPORT_CLOSED_MESSAGE/);
+  assert.match(route,/status:410/);
+  assert.match(route,/'Cache-Control':'no-store'/);
+  assert.doesNotMatch(route,/getGuestSupport|createGuestSupport/);
 });

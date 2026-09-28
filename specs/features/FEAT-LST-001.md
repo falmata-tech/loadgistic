@@ -307,3 +307,68 @@ And retry uses the existing capacity adapter without losing the selected truck
 And chat, zoom, summary close and contact actions remain available
 And phone maps reserve a compact support action in the header, clear of both
 account navigation and map content, with its accessible name retained.
+
+
+### Release regression: document summaries must preserve mobile map access
+
+Given a selected truck with company, Driver and truck evidence on a phone\
+When capacity refresh loads or fails, or the visitor pans and zooms\
+Then the selected-truck card stays below the filter handle\
+And document summaries use the available width without stacking unnecessary rows\
+And route/area strokes remain separately reachable with normal map gestures\
+And retry, close, Profile and Call retain their existing actions and touch targets.
+
+September 23 release CI caught this interaction after adding company evidence.
+Keep `map-feedback`, `map-shared-segment` and `map-signal-overlap` browser checks;
+do not remove the exposed-stroke assertions or use forced clicks. Any visible
+correction requires a fresh local owner review before the release resumes.
+
+## Explicit visitor location — owner approved 2026-09-24
+
+Given any new public or private map visit, including a filtered reload
+Then the browser does not request device location automatically
+When the visitor chooses the location control
+Then the existing local-only precision, approximate proximity filtering,
+centering, refresh and permission-denial recovery apply. City filtering never
+requires GPS. This supersedes earlier automatic-entry centering (FEAT-LUX-001).
+
+
+### Search drawer revision — 2026-09-27
+
+FEAT-MKT-001's owner-requested ranked profile results replace the main-filter drawer
+contents. All filter fields now live together in the existing modal with a light
+tinted backdrop. Sliding/collapsing and map gestures remain unchanged. Results
+use bounded server pages independent of viewport loading; matching and permission
+checks precede limits. This supersedes the September 21 main/detail field split.
+
+
+### Illustrated truck configuration — owner request, 2026-09-27
+
+Given the capacity filter dialog, when choosing Truck configuration, then each
+available configuration displays its existing catalogue illustration and name.
+The collapsed picker shows the selected illustration/name, with Any configuration
+as the neutral choice. Selection is single-valued, keyboard-operable and submits
+the unchanged vehicleCategory value; Clear restores Any configuration. Public
+and private maps reuse this control. Retired courier types remain absent. Keep
+phone choices readable and preserve dialog scrolling, focus and other filters.
+Plan: reuse catalogue assets → illustrated disclosure/radio choices → focused
+selection/reset/keyboard/phone checks → local owner visual review before release.
+
+
+### Shipment-focused capacity filters — 2026-09-27
+
+Owner requested removing the visitor-facing Capacity signal choice. Given a
+visitor's load-space requirement and optional pickup/delivery locations, when
+filtering, then match the provider's accepted full/shared loads and automatically
+consider both current and regular routes/service areas. Do not require a visitor
+to understand signal geometry or choose Area versus Route. Preserve provider-side
+signal editing and the map legend. This supersedes manual geometry selection in
+the visitor filter; old geometry/area-only page parameters no longer narrow it.
+
+Use Space needed: Any load size / Full truck / Shared truck space, backed by the
+existing neutral/FTL/PTL values. Full truck cannot be combined with Partial truck
+availability; changing to Full truck clears that conflicting draft. These are
+load-space requirements, not a new goods/commodity classification or suitability
+guarantee. Truck configuration, stops, location, documents and freshness remain.
+Plan: reuse existing load and geography matching → simplify shared filter UI and
+locales → focused public/private matching and desktop/phone checks → owner review.

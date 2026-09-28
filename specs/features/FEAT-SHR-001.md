@@ -202,3 +202,30 @@ And the session is neither discarded nor widened to another recipient or public 
 
 Shared reset semantics and desktop/phone regression evidence are specified in
 FEAT-LST-001. A query URL change must not retain the previous component's state.
+
+## Unified capacity map — 2026-09-26
+
+Given a visitor opens the capacity page
+When no view is selected
+Then Open to the public is selected and only public signals are loaded
+And the same introduction explains transporters sharing capacity, routes and availability with brokers, shippers and receivers
+And a top-level Open to the public / Privately shared with you choice replaces the separate menu destinations
+And Track, Featured, About and account destinations keep their existing behavior.
+
+Given Privately shared with you is selected without a verified recipient session
+When the page renders
+Then a real empty map and email-code form are visible
+And no public or private capacity feed is requested or embedded in that locked page
+And entering an email alone grants no access
+And a valid existing shared-capacity OTP unlocks only current grants for that email
+And a no-share result leaves the map empty without revealing trucks or providers.
+
+Given Privately shared with you is unlocked
+When a visitor filters, clears filters, reloads, logs out or reaches idle expiry
+Then the selected private view is retained
+And logout/expiry removes private results and restores the empty-map email gate
+And switching to Open removes all private map state
+And old /shared-capacity links resolve to the private view while preserving query parameters
+And existing grant, OTP, session, no-store and browser-denial rules remain in force.
+
+Local UI change only: no database migration, new network/group membership model or hosted settings change.

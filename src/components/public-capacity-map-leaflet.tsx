@@ -254,7 +254,7 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
   const currentClosed=selected?.availability_geometry==='RADIUS'||Boolean(currentPoints?.length&&currentPoints[0].lat===currentPoints.at(-1)?.lat&&currentPoints[0].lng===currentPoints.at(-1)?.lng);
   const currentPath:SignalPath|undefined=selected?.current_signal_geometry_visible!==false&&currentPoints&&currentPoints.length>=2?{positions:currentPoints.map(point=>[point.lat,point.lng]),closed:currentClosed,offset:currentClosed?-12:-6}:undefined;
   const visibleSignalInfos=pinnedInfo?[pinnedInfo]:hoveredInfo?[hoveredInfo]:[];
-  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available trucks">
+  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available trucks" onPointerLeave={()=>setHoveredInfo(null)} onBlurCapture={(event:React.FocusEvent<HTMLDivElement>)=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setHoveredInfo(null);}}>
     <MapContainer center={[9.1,40.2]} zoom={7} minZoom={5} maxZoom={15} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom>
       <BaseMapTiles/>
       <ResizeMap/>
@@ -270,7 +270,7 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
       <CapacityMarkers items={items} selectedId={selectedId} onSelect={onSelect}/>
     {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<Localized as="button" copy={["aria-label"]} type="button" onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</Localized>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}
     </MapContainer>
-    <div className="ethiopia-map-label"><Text message="Ethiopia capacity · East Africa view"/></div>
+
 
     <details className="public-map-legend" open={legendOpen} onToggle={event=>setLegendOpen(event.currentTarget.open)}><summary><Text message="Map key"/></summary><div className="public-map-legend-items"><span className="empty-status"><Text message="Empty truck"/></span><span className="partial-status"><Text message="Partial truck"/></span><span className="privacy"><Text message="Approximate location"/></span><span className="radius"><Text message="Empty service area"/></span><span className="empty-route"><Text message="Empty capacity route"/></span><span className="partial-route"><Text message="Partial capacity route"/></span><span className="corridor"><Text message="Regular service"/></span></div></details>
   </Localized>;

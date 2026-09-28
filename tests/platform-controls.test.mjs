@@ -29,7 +29,9 @@ test('platform settings reject non-admin application callers before database acc
 });
 test('automatic programme uses the same seven themes and protects retries and manual work',()=>{
   const sql=fs.readFileSync(new URL('../supabase/migrations/080_automatic_featured_rosters.sql',import.meta.url),'utf8');
-  for(const theme of FEATURED_TRUCK_DAYS){assert.ok(sql.includes(theme.key));for(const configuration of theme.configurations)assert.ok(sql.includes(configuration));}
+  const currentThemes=fs.readFileSync(new URL('../supabase/migrations/109_freight_vehicle_catalogue.sql',import.meta.url),'utf8').split('create or replace function public.featured_truck_theme')[1];
+  for(const theme of FEATURED_TRUCK_DAYS){assert.ok(currentThemes.includes(theme.key));for(const configuration of theme.configurations)assert.ok(currentThemes.includes(configuration));}
+  assert.doesNotMatch(currentThemes,/Courier car|Courier motorcycle/);
   assert.match(sql,/pg_try_advisory_xact_lock/);assert.match(sql,/on conflict\(feature_date\) do nothing/);
   assert.match(sql,/partition by link\.driver_user_id/);assert.match(sql,/last_featured nulls first/);
   assert.match(sql,/configuration_position/);assert.match(sql,/selection_source=''MANUAL''/);

@@ -6,10 +6,10 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const supportRoutes=[
   'src/app/app/support/page.tsx','src/app/support/page.tsx','src/app/support/[id]/page.tsx',
   'src/app/support/assisted/page.tsx','src/app/support/assisted/[id]/page.tsx','src/app/admin/support/page.tsx',
-  'src/app/help/page.tsx','src/app/help/[id]/page.tsx','src/app/api/support/availability/route.ts',
+  'src/app/help/[id]/page.tsx','src/app/api/support/availability/route.ts',
   'src/app/api/support/conversations/route.ts','src/app/api/support/conversations/[id]/claim/route.ts',
   'src/app/api/support/conversations/[id]/close/route.ts','src/app/api/support/conversations/[id]/messages/route.ts',
-  'src/app/api/guest-support/route.ts','src/app/api/guest-support/current/route.ts','src/app/api/guest-support/access/route.ts',
+  'src/app/api/guest-support/access/route.ts',
   'src/app/api/guest-support/[id]/messages/route.ts','src/app/api/guest-support/[id]/claim/route.ts',
   'src/app/api/guest-support/[id]/close/route.ts','src/app/api/guest-support/[id]/end/route.ts',
   'src/app/api/guest-support/[id]/attachments/[attachmentId]/route.ts',

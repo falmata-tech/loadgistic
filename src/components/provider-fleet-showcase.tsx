@@ -83,13 +83,13 @@ export function ProviderFleetShowcase({providerName,trucks,total=trucks.length,s
   return <section className="provider-fleet-showcase" aria-labelledby="provider-fleet-title">
     <header className="provider-fleet-heading">
       <div>
-        <span><Truck aria-hidden="true"/><Text message="Active fleet"/></span>
+
         <h2 id="provider-fleet-title"><Text message="Trucks and published capacity"/></h2>
-        <p><Text message="Review each "/>{providerName}<Text message=" truck, check when its capacity and approximate location were updated, then open its map for geographic context."/></p>
+
       </div>
       <div className="provider-fleet-counts" aria-label={`${trucks.length} of ${total} active trucks shown, ${availableCount} published capacity signals on this page`}>
         <span><strong>{trucks.length}</strong><Text message=" of "/>{total}<Text message=" trucks"/></span>
-        <span className="available"><strong>{availableCount}</strong><Text message=" signals on this page"/></span>
+        <span className="available"><strong>{availableCount}</strong><Text message=" with published capacity"/></span>
       </div>
     </header>
 
@@ -147,7 +147,7 @@ export function ProviderFleetShowcase({providerName,trucks,total=trucks.length,s
             <div className="provider-truck-map-actions"><button type="button" className="button secondary" onClick={requestLocation} disabled={locationState==='locating'}><RefreshCw aria-hidden="true"/>{locationState==='ready'?<Text message="Refresh my location"/>:<Text message="Use my location"/>}</button><button type="button" className="button ghost" onClick={()=>closeMap(truck.platform_number)}><X aria-hidden="true"/><Text message="Close map"/></button></div>
           </header>
           <div className="provider-truck-relative-map"><PublicCapacityMap items={[capacity]} viewer={viewer} selectedId={capacity.id} onSelect={()=>{}}/></div>
-          <p className="provider-truck-map-note"><ShieldCheck aria-hidden="true"/><Text message="The violet boundary shows the Driver-selected approximate location. Confirm the truck's position, capacity, cargo fit, documents, price, and timing directly with the transporter."/></p>
+          <p className="provider-truck-map-note"><ShieldCheck aria-hidden="true"/><Text message="Blue outlines show the driver’s approximate location. Confirm availability directly with the transporter."/></p>
         </section>:null}
       </article>;
     })}</div>

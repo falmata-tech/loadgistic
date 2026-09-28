@@ -6,12 +6,12 @@ import {featuredTruckTypeForDate} from '../featured-trucks.js';
 import {loadFeaturedTruckCandidates} from '../featured-truck-candidates.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
-  CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT'
+  CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT',FEATURED:'FEATURED'
 });
 
 const PERMISSION_FIELDS=Object.freeze({
   CUSTOMERS:'can_manage_customers',OPERATIONS:'can_manage_operations',TRUST:'can_manage_trust',
-  BILLING:'can_manage_billing',SUPPORT:'can_manage_support'
+  BILLING:'can_manage_billing',SUPPORT:'can_manage_support',FEATURED:'can_manage_featured'
 });
 
 const MANAGED_ERRORS=[
@@ -38,7 +38,7 @@ export function hasPlatformPermission(user,permission){
   return Boolean(field&&user?.role==='SUPPORT'&&user[field]);
 }
 
-function assertAdministrator(user){if(user?.role!=='ADMIN')throw new Error('FORBIDDEN');}
+function assertFeaturedManager(user){if(!hasPlatformPermission(user,'FEATURED'))throw new Error('FORBIDDEN');}
 
 function validateDate(value){
   const date=String(value||'');
@@ -102,7 +102,7 @@ function scheduleForDay(day,featureDate,keys){
   const mode=String(day?.schedule_mode||'AUTO').toUpperCase();
   const config=scheduleValue(day?.schedule_config_json,{});
   const manualSchedule=scheduleValue(day?.manual_schedule_json,[]);
-  return buildFeaturedDaySchedule(featureDate,keys,{mode,config,manualSchedule});
+  return buildFeaturedDaySchedule(featureDate,keys,{mode,config,manualSchedule,allowLegacyWindow:true});
 }
 
 function assignSponsors(schedule,sponsors,featureDate){
@@ -177,7 +177,7 @@ export function grantSponsoredBusinessAccess(user,organizationId){
 }
 
 export async function getAdminFeaturedProviderDay(user,date){
-  assertAdministrator(user);const featureDate=validateDate(date);const expo=regionalExpoGroupForDate(featureDate);
+  assertFeaturedManager(user);const featureDate=validateDate(date);const expo=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('managed_admin_featured_day',{actor_user_id:user.id,requested_date:featureDate,
     requested_group_key:expo.key,requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)});
@@ -205,7 +205,7 @@ export async function listFeaturedProviderCandidates(user,date){
 }
 
 export async function saveFeaturedProviderDay(user,input={}){
-  assertAdministrator(user);const featureDate=validateDate(input.featureDate);const theme=featuredTruckTypeForDate(featureDate);
+  assertFeaturedManager(user);const featureDate=validateDate(input.featureDate);const theme=featuredTruckTypeForDate(featureDate);
   const truckKeys=(Array.isArray(input.truckKeys)?input.truckKeys:[]).map(String).filter(Boolean);
   if(new Set(truckKeys).size!==truckKeys.length)throw new Error('FEATURED_TRUCK_DUPLICATE');
   const scheduleMode=String(input.scheduleMode||'AUTO').toUpperCase();
@@ -227,7 +227,7 @@ export async function saveFeaturedProviderDay(user,input={}){
 }
 
 export async function saveProviderSponsorship(user,input={}){
-  assertAdministrator(user);const featureDate=validateDate(input.featureDate);const startsOn=validateDate(input.startsOn);
+  assertFeaturedManager(user);const featureDate=validateDate(input.featureDate);const startsOn=validateDate(input.startsOn);
   const endsOn=validateDate(input.endsOn);const span=(Date.parse(`${endsOn}T12:00:00Z`)-Date.parse(`${startsOn}T12:00:00Z`))/86400000;
   if(startsOn>endsOn||span>365)throw new Error('SPONSORSHIP_DATE_RANGE_INVALID');
   const position=Number(input.position);if(!Number.isInteger(position)||position<1||position>5)throw new Error('SPONSORSHIP_POSITION_INVALID');
@@ -251,7 +251,7 @@ export async function saveProviderSponsorship(user,input={}){
 }
 
 export async function disableProviderSponsorship(user,sponsorshipId){
-  assertAdministrator(user);const client=createSupabaseAdminClient();
+  assertFeaturedManager(user);const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('disable_managed_sponsorship',{actor_user_id:user.id,sponsorship_id:String(sponsorshipId||'')});
   if(error)throw managedError('SUPABASE_SPONSORSHIP_DISABLE_FAILED',error);return data;
 }

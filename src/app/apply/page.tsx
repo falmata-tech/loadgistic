@@ -83,7 +83,7 @@ function ProviderDetailsForm({selectedType}:{selectedType:string|undefined}){
           const Icon=type.icon;
           return <label className="signup-role" key={type.value}>
             <input type="radio" name="applicationType" value={type.value} defaultChecked={selectedType===type.value} required/>
-            <Icon aria-hidden="true"/><strong>{type.title}</strong><span>{type.hint}</span>
+            <Icon aria-hidden="true"/><strong><Text message={type.title}/></strong><span><Text message={type.hint}/></span>
           </label>;
         })}
       </div>

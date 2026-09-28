@@ -1,9 +1,9 @@
 ---
 id: FEAT-SUP-001
-title: Native authenticated customer support inbox
+title: Transport-provider support inbox
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-ADM-001, FEAT-GST-001, BASE-DEP-001]
 problem: Members need simple in-app help while platform owners need bounded assignment, scoped support-agent access, and accountable resolution without per-agent fees or a second operational platform.
-behavior: Loadgistic presents signed-in Support as a simple New chat, Continue chat, and Past chats workflow; stores authoritative conversations, messages and private optional reply attachments; lets either participant end an owned chat; routes one open conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration. FEAT-GST-001 extends the same queue with clearly labeled account-free Assisted matching conversations and private requested attachments without changing member ownership.
+behavior: Loadgistic presents signed-in Support as a simple New chat, Continue chat, and Past chats workflow; stores authoritative conversations, messages and private optional reply attachments; lets either participant end an owned chat; routes one open conversation to the least-loaded available support agent within an explicit limit; and keeps support authority separate from platform administration. New member conversations and replies require TRANSPORTER or DRIVER, including company and self-managed drivers. FEAT-GST-001 retains historical guest conversations for authorized read-only guest access and staff closure; no new public chat is accepted.
 contracts: [SupportConversation, SupportMessage, SupportCategory, SupportAgentState, SupportQueueAssignment, SupportAccessPolicy, SupportAudit]
 observability: [support_conversation_created, support_message_sent, support_conversation_assigned, support_conversation_claimed, support_conversation_closed, support_agent_availability_changed, support_assignment_capacity_reached, denied_support_access]
 rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Preview, and Production with visibility-aware bounded refreshes and message/query windows; durable database records remain authoritative so authorized Realtime notifications can be enabled without changing ownership, and managed failure never falls back to SQLite.
@@ -31,7 +31,7 @@ Member reply attachments are specified separately below.
 
 ### Scenario: authenticated member requests help
 
-Given an active signed-in Business, Fleet Transporter, or Driver has no open support conversation\
+Given an active signed-in Fleet Transporter, owner-operator, self-managed Driver or company Driver has no open support conversation\
 When the member selects a short help category and starts a conversation\
 Then one open conversation owned by that user is created\
 And the first message is stored with a bounded body\
@@ -72,10 +72,10 @@ And another member's conversation remains inaccessible.
 
 ### Scenario: support authority is not administration
 
-Given a user has the SUPPORT role\
-When they request an application, document, billing, Operations, account-edit, or client-suspension page or command\
-Then access is denied\
-And the support role can access only its inbox, assigned conversations, availability, and account/logout controls.
+Given a staff user has only the Support responsibility\
+When they request billing, Operations, customer account administration or Brokerage\
+Then access is denied unless an administrator separately enabled that responsibility\
+And adding Featured does not revoke any independently assigned permission.
 
 ### Scenario: message and lifecycle mutations remain strict
 
@@ -210,3 +210,59 @@ no Realtime channel or new provider is required. Migration 094 introduces a
 service-only conversation revision port. Rollout requires it before clients;
 rollback restores polling without changing messages or attachments. SQL denial,
 conditional HTTP, visibility/backoff and browser draft tests remain required.
+
+## Private transport request inbox
+
+FEAT-TRQ-001 adds an ADMIN-only Transport requests list linked from Customer
+Support. It retains phone follow-up and referral notes separately from member
+and guest conversations, assignment limits and email delivery.
+
+Brokerage permissions and transport request ownership are independent of Support;
+see FEAT-TRQ-001. Staff shells must receive their persisted permissions, and a
+brokerage-only login opens Brokerage rather than an unauthorized Support page.
+
+### Scenario: staff setup remains usable on phones
+
+Given an administrator opens Add member on a phone\
+When they select Support or Brokerage and scroll the form\
+Then Create member stays above fixed navigation and is reachable with a normal tap.
+
+Featured is a separate default-off team responsibility (FEAT-FTR-001, migration
+106). Admin creation/edit forms persist it and log the grant/revocation. A
+Featured-only member signs in to Featured, with no Support/Brokerage or other
+administrative access. Negative SQL and real browser grant/revoke checks are in
+`tests/sql/featured-team-permission.sql` and
+`tests/e2e/featured-team-permission.spec.ts`.
+
+
+### Provider-only live support — owner policy, 2026-09-24 (supersedes public chat)
+
+Given a public visitor (including a returning browser with an old chat session)
+When they browse or request assistance
+Then only Arrange transport → Send request is offered as an asynchronous Brokerage
+request, with no Help launcher, chat polling, presence, composer or internal switch.
+Public chat creation and guest replies are denied before uploads/email, including
+stale clients and direct API/database commands. Existing private transcripts and
+attachments remain accessible with their original authorization; no history is deleted.
+Staff may finish/close existing records without accepting new guest messages.
+
+Given an active transport company user, company driver or self-managed owner-driver
+When they open dashboard Support
+Then existing live conversations, attachments, staff assignment and history work.
+New member conversations/replies require TRANSPORTER or DRIVER; staff retain their
+existing scoped permissions. SHIPPER/RECEIVER and anonymous users cannot bypass
+this through member endpoints. Database commands enforce the same actor scope.
+
+Migration 108 changes commands only, preserving tables, records, assignments and
+ACLs. Apply locally first; retain protected function definitions for reviewed rollback.
+Full gates and hosted changes follow owner visual approval and release authorization.
+
+
+### Scenario: providers can find support with limited plan access
+
+Given an active transport provider has no current plan or limited billing access
+When they open their dashboard on a phone or desktop
+Then Support remains available in navigation and the More menu
+And they can start or continue the same authorized support conversation
+And this does not unlock paid capacity, fleet or shipment actions.
+Tests: `tests/e2e/provider-support.spec.ts` enters Support from limited dashboard navigation.

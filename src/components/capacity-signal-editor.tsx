@@ -45,6 +45,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
   const needsCoverage=!current?.availability_geometry||current.status==='OFF_DUTY'||(status==='PARTIAL'&&current.availability_geometry!=='ROUTE');
   const showCoverage=onDuty&&(section==='ROUTE'||needsCoverage);
   const needsLocation=onDuty&&allowDeviceLocation&&!location;
+  const waitingForDriverLocation=onDuty&&!allowDeviceLocation&&!location;
   const draftLocation=captured||location;
   const invalidCoverage=showCoverage&&(geometry==='ROUTE'?routePoints.some((point:EditablePlace)=>!point.place_ref):!areaCenter.place_ref||areaBoundary.some((point:EditablePlace)=>!point.place_ref));
 
@@ -74,7 +75,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
     <input type="hidden" name="acceptsMultiPick" value={multiPick?'on':''}/><input type="hidden" name="acceptsMultiDrop" value={multiDrop?'on':''}/>
     <div className="capacity-signal-dialog-body">
       <fieldset disabled={busy} className="capacity-signal-fields">
-        {onDuty&&!hasAssignedDriver?<p className="alert warning"><Text message="Assign a driver before publishing this truck. "/><Link href="/app/fleet#driver-access"><Text message="Assign driver"/></Link></p>:null}
+        {onDuty&&!hasAssignedDriver?<p className="alert warning"><Text message="Assign a driver before publishing this truck. "/><Link href={`/app/fleet?vehicle=${vehicleId}#driver-access`}><Text message="Assign driver"/></Link></p>:null}
         {section==='AVAILABILITY'?<section className="capacity-signal-group">
           <h3><Text message="Capacity now"/></h3>
           <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong>{label}</strong></button>)}</div>
@@ -92,7 +93,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
         </section>:null}
         {showCoverage?<section className="capacity-signal-group">
           <h3>{geometry==='ROUTE'?<Text message="Availability route"/>:<Text message="Availability area"/>}</h3>
-          {section==='AVAILABILITY'?<p className="meta">{status==='PARTIAL'?<Text message="Partial capacity needs a route. Choose the cities below."/>:<Text message="Add where this truck is available to publish this signal."/>}</p>:null}
+          {section==='AVAILABILITY'?<p className="meta">{status==='PARTIAL'?<Text message="Partial capacity needs a route. Choose the cities below."/>:<Text message="Choose where this truck is available."/>}</p>:null}
           <div className="segmented-control geometry-choice">{status==='EMPTY'?<button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong><Text message="Service area"/></strong></button>:null}<button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong><Text message="Capacity route"/></strong></button></div>
           {geometry==='RADIUS'?<><div className="form-group"><label htmlFor="capacity-area-center"><MapPin aria-hidden="true"/><Text message="Area center"/></label><EthiopiaPlaceInput id="capacity-area-center" name="capacityAreaCenter" placeRefName="capacityAreaCenterPlaceRef" defaultPlaceRef={areaCenter.place_ref} defaultValue={areaCenter.label} onChange={event=>setAreaCenter({place_ref:'',label:event.target.value})} onPlaceSelect={place=>setAreaCenter({place_ref:place.id,label:place.display_name})} required/></div><PlaceSequenceEditor items={areaBoundary} setItems={setAreaBoundary} name="capacityAreaBoundary" refName="capacityAreaBoundaryPlaceRef" min={3} label="Boundary city"/></>:<PlaceSequenceEditor items={routePoints} setItems={setRoutePoints} name="currentRoutePlace" refName="currentRoutePlaceRef" min={2} label="City"/>}
         </section>:<>
@@ -100,10 +101,11 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
           <input type="hidden" name="capacityAreaCenter" value={current?.capacity_area_center_label||''}/><input type="hidden" name="capacityAreaCenterPlaceRef" value={current?.capacity_area_center_place_ref||''}/>
           {(current?.capacity_area_boundary||[]).map(point=><React.Fragment key={point.place_ref}><input type="hidden" name="capacityAreaBoundary" value={point.label}/><input type="hidden" name="capacityAreaBoundaryPlaceRef" value={point.place_ref}/></React.Fragment>)}
         </>}
+        {waitingForDriverLocation?<p className="alert warning"><Text message="Ask the assigned driver to open Home and share the truck’s location. Then refresh this page to finish publishing."/></p>:null}
         {needsLocation?<section className="capacity-signal-group"><h3><Text message="Approximate current location"/></h3><p className="meta"><Text message="A Driver location is needed to publish this truck."/></p><label htmlFor="new-location-radius"><Text message="Approximate location radius"/><select id="new-location-radius" value={radius} onChange={event=>{setRadius(Number(event.target.value));setCaptured(null);}}>{capacityPrivacyRadii('BOTH').map(value=><option key={value} value={value}>{value}<Text message=" km"/></option>)}</select></label><button type="button" className="button secondary" onClick={capture}><RefreshCw aria-hidden="true"/>{captured?<Text message="Refresh location"/>:<Text message="Use my location"/>}</button>{captured?<p role="status" className="meta"><Text message="Location ready · within "/>{captured.radius}<Text message=" km"/></p>:null}</section>:null}
       </fieldset>
-      {error?<p className="alert error" role="alert">{error}</p>:null}
+      {error?<p className="alert error" role="alert"><Text message={error}/></p>:null}
     </div>
-    <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message="Cancel"/></button><button className="button" disabled={busy||(onDuty&&!hasAssignedDriver)||Boolean(invalidCoverage)||(needsLocation&&!draftLocation)}><Save aria-hidden="true"/>{busy?<Text message="Saving…"/>:<Text message="Save"/>}</button></footer>
+    <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message="Cancel"/></button><button className="button" disabled={busy||waitingForDriverLocation||(onDuty&&!hasAssignedDriver)||Boolean(invalidCoverage)||(needsLocation&&!draftLocation)}><Save aria-hidden="true"/>{busy?<Text message="Saving…"/>:<Text message="Save"/>}</button></footer>
   </form>;
 }

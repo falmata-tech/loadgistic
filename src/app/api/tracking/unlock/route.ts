@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server.js';
-import {setProviderTrackingGrant} from '@/lib/auth';
-import {verifyProviderTrackingOtp} from '@/lib/provider-tracking.js';
+import {setTrackingEmailSession} from '@/lib/auth';
+import {verifyTrackingEmailSession,listTrackingEmailShipments} from '@/lib/provider-tracking.js';
 import {checkOriginBeforeScopedLimit} from '@/lib/guest-rate-limit.js';
 import {requestKey} from '@/lib/rate-limit';
 import {text} from '@/lib/redirects';
@@ -22,14 +22,13 @@ export async function POST(request:NextRequest) {
   );
   try {
     const {form,email}=rate.scope||{form:new FormData(),email:''};
-    const shipment=await verifyProviderTrackingOtp(
-      email,text(form,'trackingCode'),text(form,'challengeId'),text(form,'code')
-    );
-    await setProviderTrackingGrant(shipment.id,shipment.recipientDigest);
-    return NextResponse.json({ok:true,path:`/track/${shipment.id}`},{headers:{'Cache-Control':'no-store'}});
+    const shipment=await verifyTrackingEmailSession(email,text(form,'challengeId'),text(form,'code'));
+    await setTrackingEmailSession(shipment.recipientDigest);
+    const shared=await listTrackingEmailShipments(shipment.recipientDigest);
+    return NextResponse.json({ok:true,path:shared.total===1?`/track/${shared.items[0].id}`:'/track'},{headers:{'Cache-Control':'no-store'}});
   } catch {
     return NextResponse.json(
-      {ok:false,error:'That email, Tracking code, and one-time code could not be verified.'},
+      {ok:false,error:'That email and one-time code could not be verified.'},
       {status:401,headers:{'Cache-Control':'no-store'}}
     );
   }

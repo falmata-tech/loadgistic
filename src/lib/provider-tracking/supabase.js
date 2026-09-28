@@ -294,3 +294,41 @@ export async function resolveSupabaseProviderReview(user,reviewId,status,note=''
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_RESOLUTION_FAILED',error);
 }
+
+
+export async function requestTrackingEmailSession(emailValue){
+ const email=normalizePrivateContactEmail(emailValue),challengeId=randomUUID();
+ const accessCode=providerTrackingOtpCode(challengeId);
+ const {data,error}=await createSupabaseAdminClient().rpc('request_tracking_email_session',{
+  challenge_id:challengeId,normalized_recipient_email:email,recipient_digest:providerTrackingRecipientDigest(email),
+  challenge_code_digest:hashTrackingAccessCode(accessCode),challenge_expires_at:new Date(Date.now()+10*60*1000).toISOString()
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_OTP_REQUEST_FAILED',error);
+ return data?{deliveryQueued:true,challengeId,accessCode}:{deliveryQueued:false,challengeId};
+}
+
+export async function verifyTrackingEmailSession(emailValue,challengeId,otp){
+ const {data,error}=await createSupabaseAdminClient().rpc('consume_tracking_email_session',{
+  challenge_id:String(challengeId||''),recipient_digest:providerTrackingRecipientDigest(normalizePrivateContactEmail(emailValue)),
+  submitted_code_digest:hashTrackingAccessCode(String(otp||'').trim())
+ });
+ if(error||!data)throw trackingError('TRACKING_ACCESS_DENIED',error);
+ return data;
+}
+
+/** @returns {Promise<{total:number,items:Array<{id:string,code:string,origin:string,destination:string,operational_status:string,created_at:string}>}>} */
+export async function listTrackingEmailShipments(recipientDigest,offset=0){
+ const {data,error}=await createSupabaseAdminClient().rpc('list_tracking_email_shipments',{
+  requested_recipient_digest:recipientDigest,requested_offset:offset
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_GUEST_TRACKING_FAILED',error);
+ return data;
+}
+
+export async function submitTrackingEmailReview(shipmentId,recipientDigest,rating,note){
+ const {data,error}=await createSupabaseAdminClient().rpc('submit_tracking_email_review',{
+  target_shipment_id:shipmentId,requested_recipient_digest:recipientDigest,requested_rating:rating,requested_note:note
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_SUBMIT_FAILED',error);
+ return data;
+}

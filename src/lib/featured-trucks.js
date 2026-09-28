@@ -8,7 +8,7 @@ const FEATURED_TRUCK_DAYS=Object.freeze([
     'Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer','Tractor + Container Trailer',
     'Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer'
   ]},
-  {key:'courier-cars',label:'Courier cars',shortLabel:'Courier',configurations:['Courier car']}
+  {key:'mixed-trucks',label:'Mixed trucks',shortLabel:'Mixed',configurations:["Cargo van", "Pickup truck", "Pickup stake body", "Mini Open Body Truck", "Mini Stake Body Truck", "Mini Box Truck", "Light Stake Body Truck", "Light Box Truck", "Medium Stake Body Truck", "Medium Box Truck", "Heavy Rigid Stake Body Truck", "Heavy Rigid Stake Body Truck + Trailer", "Tractor + Container Trailer", "Tractor + Dry Van Trailer", "Tractor + Heavy Equipment Trailer"]}
 ]);
 
 function validDate(date){

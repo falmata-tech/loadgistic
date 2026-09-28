@@ -9,6 +9,7 @@ export async function GET(request:NextRequest){
  const headers={'Cache-Control':'private, no-store'};
  try{
   const query=new URL(request.url).searchParams;const guest=query.get('kind')==='GUEST';const conversationId=query.get('conversation');
+  if(guest&&query.get('participant')==='GUEST')return NextResponse.json({error:'Public live support is no longer available.'},{status:410,headers});
   const user=await getCurrentUser({allowLimited:true});let state:unknown;
   if(conversationId){
    if(!/^[0-9a-f-]{36}$/.test(conversationId))return NextResponse.json({error:'Updates unavailable.'},{status:400,headers});

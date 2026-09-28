@@ -4,19 +4,18 @@
 import {Localized,Text} from '@/components/localization';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, Info, LayoutDashboard, LockKeyhole, LogIn, MapPinned, Route, Users } from 'lucide-react';
+import { FileText, Info, LayoutDashboard, LockKeyhole, Truck, MapPinned, Route, Users } from 'lucide-react';
 import React from 'react';
 
 const destinations = [
-  { key: 'market', href: '/', label: 'Open', desktopLabel: 'Open capacity', icon: MapPinned },
-  { key: 'shared', href: '/shared-capacity', label: 'Private', desktopLabel: 'Private capacity', icon: LockKeyhole },
+  { key: 'market', href: '/', label: 'Capacity', desktopLabel: 'Capacity', icon: MapPinned },
   { key: 'track', href: '/track', label: 'Track', desktopLabel: 'Track', icon: Route },
   { key: 'featured', href: '/featured', label: 'Featured', desktopLabel: 'Featured', icon: Users },
   { key: 'about', href: '/about', label: 'About', desktopLabel: 'About', icon: Info }
 ] as const;
 
 function routeDestination(pathname: string) {
-  if (pathname.startsWith('/shared-capacity')) return 'shared';
+  if (pathname.startsWith('/shared-capacity')) return 'market';
   if (pathname.startsWith('/help')) return 'help';
   if (pathname.startsWith('/track')) return 'track';
   if (pathname.startsWith('/featured')) return 'featured';
@@ -56,22 +55,22 @@ export function PublicMobileNav({signedIn=false}:{signedIn?:boolean}) {
 
   const sessionDestination=signedIn
     ?{key:'dashboard',href:'/app/home',label:'Dashboard',desktopLabel:'Dashboard',icon:LayoutDashboard}
-    :{key:'login',href:'/login',label:'Log in',desktopLabel:'Log in',icon:LogIn};
+    :{key:'login',href:'/login',label:'Transporter login',desktopLabel:'Transporter login',icon:Truck};
 
   return <>
     <Localized as="nav" copy={["aria-label"]} className="public-workspace-nav" aria-label="Public workspace navigation">
       <span className="public-nav-group"><Text message="Explore"/></span>
-      {destinations.slice(0,4).map(destination=>destinationLink(destination,false))}
+      {destinations.slice(0,3).map(destination=>destinationLink(destination,false))}
       <span className="public-nav-group"><Text message="Account"/></span>
       {destinationLink(sessionDestination,false,'public-nav-secondary')}
       <span className="public-nav-group"><Text message="Loadgistic"/></span>
-      {destinationLink(destinations[4],false)}
+      {destinationLink(destinations[3],false)}
       {destinationLink({key:'privacy',href:'/privacy',label:'Privacy',desktopLabel:'Privacy',icon:LockKeyhole},false,'public-nav-secondary')}
       {destinationLink({key:'terms',href:'/terms',label:'Terms',desktopLabel:'Terms',icon:FileText},false,'public-nav-secondary')}
     </Localized>
     <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Public mobile navigation">
-      {destinations.slice(0,4).map(destination=>destinationLink(destination,true))}
-      {destinationLink(destinations[4],true)}
+      {destinations.slice(0,3).map(destination=>destinationLink(destination,true))}
+      {destinationLink(destinations[3],true)}
     </Localized>
   </>;
 }

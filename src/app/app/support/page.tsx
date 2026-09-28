@@ -21,7 +21,7 @@ const categories=[
 ];
 
 export default async function MemberSupportPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
-  const user=await requireUser(['SHIPPER','RECEIVER','TRANSPORTER','DRIVER'],{allowLimited:true});
+  const user=await requireUser(['TRANSPORTER','DRIVER'],{allowLimited:true});
   const query=await searchParams;
   const result:any=await listMemberSupportConversations(user,{page:query.page,pageSize:10,status:'CLOSED'});
   const open:any=await getOpenMemberSupportConversation(user);

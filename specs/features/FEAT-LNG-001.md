@@ -77,3 +77,14 @@ Then static messages and unresolved dynamic presentation boundaries are reported
 And status labels are translated before insertion into whole named messages\
 And user names, descriptions, notes and persisted enum values remain unchanged\
 And an unresolved dynamic boundary cannot be counted as complete localization.
+
+## Contextual wording — owner request 2026-09-24
+
+Write labels for the action the screen enables in each language, not by replacing
+English words individually. Distinguish truck space/availability from ability,
+private sharing from secrecy, shipment progress from surveillance, and document
+review from a service guarantee. Prefer familiar phrasing and short buttons;
+retain proper names and useful loanwords. Maintain an explicit language/meaning
+review guide and prioritized message set, test user content unchanged, and keep
+unreviewed surfaces visible in the coverage inventory. FEAT-LUX-001 governs the
+launch journey changes. Automated catalog parity does not prove native fluency.

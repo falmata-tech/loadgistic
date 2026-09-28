@@ -4,9 +4,9 @@ begin begin execute command;exception when others then if sqlerrm='NOT_FOUND' th
 do $test$
 declare member_id uuid; agent_id uuid; outsider uuid; chat uuid:=gen_random_uuid(); guest_chat uuid:=gen_random_uuid(); revision text; next_revision text;
 begin
- select id into strict member_id from profiles where email='driver@loadgistic.local';
- select id into strict outsider from profiles where email='transporter@loadgistic.local';
- select id into strict agent_id from profiles where email='support@loadgistic.local';
+ select id into strict member_id from profiles where active and role='DRIVER' order by created_at,id limit 1;
+ select id into strict outsider from profiles where active and role='TRANSPORTER' order by created_at,id limit 1;
+ select id into strict agent_id from profiles where active and role='SUPPORT' order by created_at,id limit 1;
  insert into support_conversations(id,customer_user_id,assigned_agent_user_id,category,status) values(chat,member_id,agent_id,'ACCOUNT','CLOSED');
  insert into guest_support_conversations(id,email,email_digest,phone,status,assigned_agent_user_id) values(guest_chat,'poll@example.test',repeat('a',64),'+251911000000','OPEN',agent_id);
  revision:=support_conversation_revision(member_id,chat,false);

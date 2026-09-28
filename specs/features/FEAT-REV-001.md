@@ -14,7 +14,7 @@ rollout: Add provider-review ownership and guest authorization additively, purge
 ### Scenario: emailed shipment owner submits one review
 
 Given provider-owned Tracking is Complete and the customer owner received its completion email\
-When that party follows an unexpired, shipment-bound review authorization and submits a rating\
+When that party verifies their authorized email and opens the completed shipment within an active Tracking session and submits a rating\
 Then exactly one review of the owning provider is accepted for that shipment and party\
 And the shared Tracking code alone cannot authorize a review\
 And the review is marked as arising from a completed shipment\
@@ -54,9 +54,9 @@ And the response reveals no private shipment or party data.
 
 ### Scenario: managed review commands preserve authorization and publication rules
 
-Given the server has verified the shipment-bound review browser grant or an authenticated provider actor\
+Given the server has verified the recipient-bound Tracking session or an authenticated provider actor\
 When it submits a review or opens a dispute through the managed repository\
-Then a service-role-only PostgreSQL command rechecks completion, guest expiry, one-review uniqueness, provider ownership, rating range, and dispute state\
+Then a service-role-only PostgreSQL command rechecks current recipient OWNER role, completion, guest expiry, one-review uniqueness, provider ownership, rating range, and dispute state\
 And unrelated providers, assigned company Drivers, expired grants, duplicate reviews, and four- or five-star disputes are denied\
 And every accepted rating is Published immediately while an accepted low-rating dispute remains Pending without hiding the rating.
 
@@ -81,6 +81,17 @@ backend negative tests remain responsible for duplicate and grant denial.
 
 Given a completed shipment queues its customer owner completion email
 When the email is delivered
-Then it includes separately labelled Tracking and Review codes with instructions to verify the approved email before entering the Review code
+Then it includes a Tracking link and concise guidance to verify the customer-owner email once
 And the customer does not need to retrieve the earlier start email
-And the separate OTP, owner grant and review authorization checks remain unchanged.
+And current owner role, completion, expiry and one-review limits remain enforced without a second code.
+
+### Scenario: no second code after owner email verification (ADR-073)
+
+Given the customer owner already has an active email-verified Tracking session
+When they open their completed shipment
+Then the review form is available without entering another code
+And another recipient, a revoked owner, an expired session or an incomplete shipment cannot submit
+And the database command locks and rechecks the owner recipient before accepting one review.
+
+The 2026-09-23 browser evidence above describes the superseded separate-code UI.
+Migration 114 and Tracking email-session regression tests replace that access flow.

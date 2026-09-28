@@ -1,5 +1,623 @@
 # Progress
 
+## Simpler Tracking access — local review ready, 2026-09-28
+
+FEAT-TRK-001 / FEAT-REV-001, ADR-073. Owner requested fewer codes and a
+30-minute session like private capacity. Ordered plan:
+
+- [x] Inspect current access, email, recipient/review authorization and session controls; consult OWASP session guidance.
+- [x] Add email-only OTP and a paginated authorized-shipment list; keep all reads and reviews recipient-scoped.
+- [x] Replace repeated shipment/review codes with the verified email session; add activity-only 30-minute renewal, logout and an eight-hour absolute limit.
+- [x] Update provider handoff, emails and four language dictionaries.
+- [x] Verify SQL denial, OTP replay/expiry/revocation, cookie/session behavior, visible email delivery and desktop/phone flows.
+- [ ] Owner visual approval, then full release gates and reviewed rollout. No hosted writes in this task.
+
+
+Evidence: [Tracking access review](TRACKING_ACCESS_REVIEW_2026-09-28.md).
+47 focused unit tests, rollback SQL, catalog security, TypeScript and source/spec
+checks pass. Eight distinct desktop/phone workflows pass across recorded runs,
+including visible Mailpit verification, owner-only reviews, private proof access
+and 30-minute inactivity expiry. Early navigation/server/harness failures remain
+recorded with their corrections. Screenshots:
+`artifacts/tracking-session-expiry-20260928/`. Preview:
+http://127.0.0.1:3100/track. Owner visual approval is pending; no deployment,
+production email, hosted configuration/database change or Git publication.
+
+## Fleet and location audit — local review ready, 2026-09-28
+
+See [the audit and evidence](FLEET_WORKFLOW_AUDIT_2026-09-27.md). Migration 113
+removes the driver-location/owner-publication dead end, preserves restricted-driver
+Off Duty recovery and rejects incomplete GPS. Assignment links retain the truck;
+saves have bounded failure handling; location guidance is translated. The owner
+map preserves its center on layout changes, and successful Tracking saves are no
+longer aborted during cleanup.
+
+Thirty-five focused unit tests, seven rollback SQL suites, catalog security,
+TypeScript and source/spec checks pass. Twenty-six distinct desktop/phone cases
+pass across recorded runs, including real local email-code onboarding for all
+three provider types, driver assignment/permissions, publication, recovery and
+retirement. Separate failed/interrupted runs and external tile availability are
+recorded rather than counted as passes. Final map screenshots:
+`artifacts/fleet-first-map-review-20260928/`.
+
+No hosted changes, commit or deployment. Owner visual approval remains pending
+at http://127.0.0.1:3100 before extensive release gates and fresh migration
+102–113 rehearsal. GPS is simulated in automation; real-device GPS and native
+language review are separate limits. The same preview is running; see the Tracking follow-up for its latest server log.
+
+## Shipment-focused load filters — local review ready, 2026-09-27
+
+Remove the visitor Capacity signal selector, expose load-space needs prominently,
+and let existing current/regular route and area matching run automatically.
+Owner confirmed space needed (full truck/shared space), not goods categories. Verify full/shared load
+matching, geographic inclusion, reset and phone UI before owner review.
+
+Implemented Space needed (Any load size / Full truck / Shared truck space),
+removed visitor geometry/area selection, retained provider-side signal editing,
+and prevented conflicting Partial availability when Full truck is chosen. Two
+desktop/phone browser cases pass, including all four translated catalogs, actual
+map/profile results and reset. Rollback SQL verifies automatic route and area
+inclusion through public and private matching functions, plus accepted full/shared
+load restrictions. TypeScript/source/spec checks pass. Evidence:
+`artifacts/capacity-load-needs-final-20260927/`; logs `.local/discovery-search/load-needs-*`.
+Local preview remains running; owner visual approval and rollout are pending.
+
+## Illustrated configuration picker — local review ready, 2026-09-27
+
+Owner requested truck pictures in the map configuration selector. Reuse the
+existing catalogue art and preserve single-selection filter values. Desktop/phone
+checks pass for all catalogue images, selected preview, keyboard arrow selection,
+apply, actual map filtering and Any configuration reset. TypeScript/source/spec
+checks pass. Screenshots: `artifacts/capacity-configuration-pictures-review-20260927/`.
+Fixed keyboard-triggered premature collapse and desktop fieldset width during
+verification. Preview remains at http://127.0.0.1:3100, Filters → Truck configuration.
+Owner visual review and deployment remain pending.
+
+## Profile search and matching truck map — local review ready, 2026-09-27
+
+- [x] Record FEAT-MKT-001 / FEAT-LST-001 acceptance and owner choice: only entities with matching available trucks.
+- [x] Add safe ranked PostgreSQL search, office city and reviewed-document filters across open/private maps.
+- [x] Replace sidebar filter inputs with distinct paginated search cards; move all filters into the lightly shaded modal.
+- [x] Translate UI and verify relevance, privacy, document scope, pagination and desktop/phone workflows.
+- [ ] Present the running local preview for owner visual approval, then resume accumulated release gates.
+
+
+Owner simplification: remove Office city and its Search filters group from the
+dialog. Main search continues matching published profile office cities; reported
+truck-location filters remain separate. Four focused desktop/phone cases pass,
+including city search and all translated filter layouts, in
+`artifacts/capacity-city-search-20260927/`. Rollback SQL confirms office-city text
+matches profiles and associated map trucks; TypeScript and source/spec checks pass.
+
+Owner clarified: the list contains user/company profiles only; the map contains
+matching available truck/driver pairs. Search matches public profile details,
+while truck filters control matching capacity. Remove the result-type selector
+and truck result cards. Companies remain result cards only. Eight focused drawer/map/reset cases passed before the final profile-only
+revision. All six revised desktop/phone cases now pass across
+`artifacts/capacity-profile-search-20260927/` and
+`artifacts/capacity-profile-search-final-20260927/`, covering public/private
+profiles, company map scoping, filters, pagination, access revocation, retry and
+all four non-English layouts. Rollback SQL confirms driver-specific map scope,
+complete company pairs, no truck-only text matching and no private-contact search.
+Nine focused unit checks, TypeScript and source/spec checks pass. One initial
+desktop attempt exceeded the UI timeout during local recompilation; its unchanged
+case passed on the controlled retry. Migration 112 remains local only. Preview:
+http://127.0.0.1:3100; owner visual approval precedes extensive release gates.
+
+## End chat and keep telephone follow-up — local review ready, 2026-09-27
+
+Owner chose to retain the request for staff calls after a visitor ends messaging.
+
+- [x] Record separate chat-ending and request-resolution acceptance in FEAT-TRQ-001.
+- [x] Add scoped, idempotent visitor ending; preserve request ownership, contact and history.
+- [x] Add Active chats / Follow-up / Resolved views and usable contact/history/resolution controls.
+- [x] Translate the ending/confirmation/history flow in all supported languages.
+- [x] Verify database permissions, real customer/staff flows, retries and phone layouts.
+- [ ] Keep the local preview available for review, then resume the authorized web release with migration 111 included in fresh rehearsal and exact-candidate gates.
+
+Focused evidence: all four waiting/assigned end-chat browser scenarios pass on
+desktop and phone in `artifacts/chat-follow-up-final-20260927/`, covering cancel,
+failed-end retry, preserved drafts/history, new chats before old request resolution,
+staff phone follow-up and Resolved. Locale confirmation screenshots cover all four
+non-English catalogs. Eight focused unit checks, three rollback SQL suites,
+database security, source/spec and TypeScript checks pass. Evidence logs:
+`.local/chat-follow-up/`. Migration 111 is local only; the prior isolated release
+rehearsal covers 102–110 and must be refreshed to include 111. Local preview stays
+at http://127.0.0.1:3100; new flow approval is requested before extensive gates.
+
+## Live chat presentation — active, 2026-09-27
+
+Owner paused the requested web deployment to make the transport conversation clear
+and welcoming. Preserve the existing protected Brokerage workflow and four fields.
+
+- [x] Record FEAT-TRQ-001 acceptance: visible Live chat entry, one panel title, clear Start chat action and useful conversation prompt; no invented presence.
+- [x] Update responsive UI and all four non-English catalogs.
+- [x] Verify entry, draft recovery, submission and actual two-party replies on desktop/phone; keep local preview running.
+- [x] Owner approved the revised chat and explicitly instructed deployment to resume.
+- [ ] Finish focused verification, pass exact-candidate release gates, rehearse pending migrations against a fresh backup, then publish and verify live.
+
+Focused evidence: 14 distinct browser cases pass across
+`artifacts/brokerage-chat-entry-20260927/` and
+`artifacts/brokerage-chat-entry-final-20260927/`, including real replies,
+reconnect, draft recovery, map-control separation and all five languages at 320px.
+The first run loaded two outdated test assertions; the corrected cases passed in
+the final focused run. Source/spec, localization and TypeScript checks pass.
+Full quality also passes all 363 cases after correcting four stale source-contract
+checks for already-approved Help retirement, map routing, theme and OTP copy.
+
+The owner then requested a way for visitors to end a waiting/assigned chat and
+start again, and confirmed that staff should retain telephone follow-up. That
+addition is implemented locally in migration 111 and awaits visual approval.
+Production is unchanged; read-only
+security checks pass (ledger 101, PostGIS in extensions, no ERROR advisor findings).
+
+Release preparation: fresh encrypted database backup passed authenticated recovery
+and a complete isolated restore; all nine pending migrations 102–110 and their
+focused rollback regressions passed in a network-disabled disposable container.
+Catalog, API guard and spatial checks pass before/after. Evidence:
+`.local/release-web-20260927-{backup,restore-evidence,preflight}.json`.
+The container was removed. Live site remains deployment
+`6ab3aaa9668f9644dcba97d8` at https://loadgistic.com, database ledger 101.
+
+The broad legacy local SQL suite stopped because the manually reviewed local
+preview uses owner Gmail aliases while that suite expects original `.local` fixture
+emails. No database reset or assertion weakening was performed; run this suite in
+CI's clean fixture environment. Full CI/immutable build, visitor-ending visual approval,
+production migrations and publication remain incomplete. No commit or push yet.
+
+
+## Live Brokerage and mobile readiness — active, 2026-09-27
+
+- [x] Confirm live brokerage conversation, separate from provider Support; specify FEAT-TRQ-001.
+- [x] Add durable private messages, browser recovery, staff replies and queue attention indicators.
+- [x] Verify authorization, duplicate prevention, reconnect, handoff/closure and desktop/phone interactions locally.
+- [x] Record Expo monorepo readiness, reusable code and native-specific gaps without moving the web app yet. See `docs/MOBILE_MONOREPO_READINESS.md`.
+- [x] Keep http://127.0.0.1:3100 running: Arrange transport → send the four-field form → conversation. Brokerage → Unassigned → claim → Mine → Open conversation.
+- [ ] Owner visual approval, then full release gates and separately authorized hosted migration/deployment.
+
+Evidence: ten focused unit/localization/provider-support cases, rollback-only
+Brokerage conversation and assignment SQL checks, catalog security, source/spec
+and TypeScript checks. Eight distinct browser cases pass across
+`artifacts/brokerage-live-reviewed-20260927/` (two-party messaging, restored history,
+reconnect, translations, error/double-submit) and `artifacts/brokerage-followup-20260927/`
+(retained admin follow-up, stale saves and closure), covering desktop and phone.
+Logs and protected pre-change local schema snapshot: `.local/brokerage-live/`.
+
+Migration 110 is local only. Active chats poll every three seconds with conditional
+responses, visibility/panel pauses and backoff. No Supabase Realtime publication,
+production settings, native dependencies or mobile app was added. Recovery is
+same-browser for seven days; there are no push/SMS/email alerts or fabricated agent
+presence. Staffing the queue remains an operational requirement. Fixed during review:
+restoration was unmounting unsent forms on reopen, and the modal could clip its
+composer; draft retention and translated full-button checks now cover both.
+
+
+## Unified capacity map — local review ready, 2026-09-27
+
+- [x] Record FEAT-SHR-001 / FEAT-LUX-001: Open to the public by default; Privately shared with you starts with an empty map until email-code verification.
+- [x] Combine routes, navigation and introduction; preserve legacy links and recipient scope through filters, Clear all, switching views and logout.
+- [x] Translate the choices, access copy, screen-reader labels and related About narrative in Amharic, Afaan Oromo, Somali and Tigrinya; English remains the source language.
+- [x] Verify the real local email-code flow, recipient isolation, no-share behavior, navigation history and responsive layouts. Keep the email action clear of the floating transport-request button on phones.
+- [x] Keep http://127.0.0.1:3100 running for owner review. Choose both views and use the language selector; `/shared-capacity` remains a compatible private-view entry.
+- [ ] Owner visual approval, then full release gates and separately authorized deployment. No hosted changes.
+
+Evidence: ten distinct desktop/phone browser cases in `map-introduction.spec.ts`
+and `unified-capacity.spec.ts` pass across the final run and the focused copy rerun.
+Artifacts: `artifacts/unified-capacity-final-20260927/` (map dimensions, HTML,
+OTP/recipient/filter/logout) and `artifacts/unified-capacity-copy-20260927/`
+(final labels, translations, About, 320px phone action clickability).
+Ten focused localization/private-access unit tests, source/spec checks and TypeScript
+pass. Logs: `.local/unified-capacity/`. The unchanged 30-minute expiry logic has
+unit coverage; this task does not claim a new browser idle-expiry run.
+
+Verification repairs: an interrupted old dev process was restarted on the same
+local port; streaming/loading duplicates and an inline-text selector were corrected
+in tests. Temporary local grants from interrupted checks were revoked. A phone
+screenshot exposed the floating action crowding the form; spacing and an actionable
+button assertion now cover it. Translation checks establish coverage and layout,
+not native-speaker approval. The earlier no-JavaScript streaming limitation remains.
+
+## Map introduction — local review ready, 2026-09-25
+
+- [x] Confirm Loadgistic-only scope and record FEAT-LUX-001 acceptance.
+- [x] Replace header slogan with a compact introduction above Open capacity; update descriptive metadata and all supported languages.
+- [x] Check initial HTML, responsive layouts, translated copy and map/filter controls locally.
+- [x] Keep http://127.0.0.1:3100 running for owner review.
+- [ ] Owner visual approval; no deployment or full release gates yet.
+
+Evidence: four introduction/HTML browser cases and two existing map-shell cases
+pass across desktop and phone, including 320–2560px breakpoints and all five
+languages. Source/spec, localization and TypeScript checks pass. Screenshots:
+`artifacts/map-introduction-final-20260925/`; logs: `.local/map-introduction/`.
+
+Existing limitation discovered: root route loading uses Next streamed HTML. The
+introduction is present in the response, but a browser with JavaScript disabled
+leaves the streamed route hidden. The focused SEO check verifies real HTML text
+and metadata; the normal browser test separately verifies visible copy. Full
+no-JavaScript route rendering would require a loading-boundary change beyond this
+presentation task; record for a later SEO/accessibility review, not as fixed.
+
+
+## Freight vehicle catalogue — local review ready, 2026-09-25
+
+- [x] Remove courier choices; database guard rejects new/changed courier configurations.
+- [x] Use Mixed trucks for Sunday's preview; preserve Mon–Sat and global no-repeat selection.
+- [x] Convert 16 verified local demo vehicles, preserving driver identities, assignments, 12 existing signals and the entire selection ledger. Add four demo signals for the recently added pairs; retain eight Sunday slots.
+- [x] Replace the container illustration with a half-length container on a visibly exposed flatbed; change public entry to Transporter login in all five languages.
+- [x] Focused unit/SQL and desktop/phone review; preview remains http://127.0.0.1:3100.
+- [ ] Owner visual approval, then extensive release gates. No hosted changes or deployment.
+
+Evidence: 41 focused unit/catalog/localization tests; SQL registration/edit rejection
+and browser-role denial; catalog security; six desktop/phone browser cases across
+`artifacts/freight-catalogue-20260925/` and
+`artifacts/freight-catalogue-featured-20260925/`. Protected plan, pre-change backup,
+rollback rehearsal, apply receipt and projection checks: `.local/freight-catalogue/`.
+All 16 pairs remain Featured-eligible; map projection retains eight public and eight
+private signals; Sunday projection has eight cards. Global-round SQL regression, source/spec checks and TypeScript also pass. First review harness incorrectly
+expected the closed Week disclosure to expose a long label and exceeded the map's
+12-ID scope limit; corrected tests use the actual disclosure and bounded batches.
+
+The following older courier inventory plan is superseded by this retirement.
+The broader per-category versus global repeat-policy decision remains unresolved;
+this task preserves the global rule and does not promise eight pairs every future day.
+
+## Featured demo inventory — active, 2026-09-24
+
+Owner requests enough correctly typed demo truck/driver pairs to fill eight daily
+showcases with different pairs the following week. This is local demo setup only;
+no production/customer inventory is created. Preserve current assignments/history.
+
+- [x] Inspect theme eligibility and rotation: 61 mini, 15 van, 15 pickup, 15 light,
+  9 medium, 16 heavy, 12 courier pairs; current global round creates sparse days.
+- [ ] Owner decision: independent category rounds versus balanced global rounds.
+- [x] Add 14 eligible local demo pairs using owner Gmail aliases and verified existing demo
+  fleets; protected plan/receipt/backup retained in `.local/featured-demo-inventory/`.
+  Existing accounts, assignments, history and all production data are unchanged.
+- [ ] Verify eligibility, category matching, two-week coverage and no repeats.
+- [x] Fill saved local automatic Friday (+7) and Sunday (+4) to eight with unselected
+  new demo pairs; rollback rehearsal preserved old slots/history and past/manual days.
+- [ ] Keep local preview running for visual review; no hosted writes/deployment.
+
+
+## Provider-only live support — local review ready, 2026-09-24
+
+- [x] Record owner clarification: all transport-provider users, including company drivers, retain dashboard live support.
+- [x] Replace public chat with the single asynchronous transport request.
+- [x] Deny new guest chats/replies and restrict member writes to providers, retaining authorized history.
+- [x] Verify guest denial, provider/staff conversations and mobile/desktop request flows.
+- [ ] Local visual approval before extensive gates or deployment.
+
+Current policy supersedes the former public Help/dual-button evidence below.
+Local migration 108 is applied; protected function backup and rollback rehearsal
+preserved every record in all six support tables. No remote changes.
+Eighteen focused unit/catalog tests, four SQL regressions, catalog security and
+managed Support verifier pass. Desktop/phone public request, archived history and
+Brokerage staff workflows pass. Three provider identity types pass on both viewports. The final navigation checks
+also pass for limited-plan dashboards and More menus. Twenty-six distinct focused
+browser cases pass across the final relevant runs (18 public/archive/request,
+six team/Brokerage, two provider workflows). Source/spec checks and TypeScript pass.
+A cold-render test tried typing before client hydration; the corrected check waits
+for visible messages and the enabled language control and verifies the actual POST.
+Logs: `.local/provider-support/`. Screenshots: `artifacts/provider-support-20260924/`,
+`artifacts/provider-support-teams-20260924/`, provider identity/navigation captures.
+Preview: http://127.0.0.1:3100 (Arrange transport); dashboard /app/support.
+Owner visual approval remains required before extensive gates or deployment.
+No commit, push or hosted writes this pass. Existing unrelated edits are preserved.
+
+The owner's one-truck Featured question was investigated read-only: local Ethiopia
+Friday September 25 has one remaining medium-duty pair out of nine, with eight
+selected September 18; Thursday has seven. Live still shows eight under the older
+schedule. Sparse-day pacing is recorded in FEATURED_READINESS_2026-09-24.md;
+no unapproved repeats, mixed categories or roster edits were made.
+
+## Transport form simplification — 2026-09-24
+
+Owner refinement: keep only “Let us arrange your transport”; remove the repeated
+Managed transport heading and label submission “Send request”, including all four
+translations. Existing private Brokerage submission and follow-up are unchanged.
+Focused desktop/phone form verification passed; no deployment.
+
+## Managed transport request wording — local review ready, 2026-09-24
+
+- [x] Record approved wording and preserve the four-field Brokerage callback contract (FEAT-TRQ-001).
+- [x] Update launcher, request window, fee note, receipt and all four translations.
+- [x] Check desktop/phone submission, separate Help and private follow-up; capture review evidence.
+- [ ] Owner visual review before extensive release gates or deployment.
+
+“Arrange transport” opens “Let us arrange your transport”, with Managed transport,
+document review/coordination/shared tracking description, agreed-service/fee note,
+“Request a callback” and transport-team phone receipt. The same four fields feed
+the private Brokerage queue. Help remains separate; no automatic verification,
+shipment creation, tracking access, fee collection or email was added.
+
+Seven focused unit/catalog tests, TypeScript and source/spec checks pass. Eight
+existing desktop/phone browser cases pass, including actual request → private admin
+follow-up, no email, duplicate protection, error recovery, separate Help and draft
+preservation. Four language phone previews fit; translations have contextual entries
+in all supported catalogs, without a native-speaker approval claim.
+Screenshots: `artifacts/managed-transport-20260924/` and
+`artifacts/managed-transport-languages-20260924/`; logs: `.local/managed-transport/`.
+Local review: http://127.0.0.1:3100 — choose Arrange transport. No production writes,
+full release gates, commit, push or deployment in this wording pass.
+
+## Official Featured broadcast window — local review ready, 2026-09-24
+
+- [x] Inspect automatic timing, sponsor insertion, manual editing and saved-day compatibility.
+- [x] Set 08:30–12:00 EAT, eight-showcase ceiling and four two-minute mentions.
+- [x] Preserve historical/manual days and retime future automatic days without redrawing pairs.
+- [x] Verify timing, persistence, permissions and desktop/phone editing; keep preview running.
+- [ ] Owner visual review before extensive release checks or deployment.
+
+Owner confirmed eight showcases and four two-minute sponsor mentions. Existing no-repeat selection is retained.
+
+Migration 107 is local only. Four future automatic days retimed; all 17 saved days,
+106 slots and 100 selection-history rows retained. Historical/manual content was
+compared in a rollback rehearsal. Eighteen focused unit tests, three SQL suites,
+catalog security, source/spec and TypeScript checks pass. Four desktop/phone
+browser cases verify real save/publish/reopen/resave, four sponsor mentions and
+public historical-hour rendering. The test caught and fixed an existing native
+JSONB manual-time parsing bug; reordering now preserves slot times. Synthetic
+future days and sponsors were removed (both counts zero).
+
+Review: http://127.0.0.1:3100/admin/featured?date=2026-09-26#featured-day-editor
+(eight-truck local saved day). Screenshots: `artifacts/featured-broadcast-complete-20260924/`
+and `artifacts/featured-broadcast-public-20260924/`. Logs: `.local/featured-broadcast/`.
+Automatic timing prepares a running order; staff still conduct TikTok and arrange
+sponsors. No full quality/build/remote gates, commit, push or deployment this pass.
+
+
+
+## UI wording and Featured readiness — local review ready, 2026-09-24
+
+FEAT-LUX-001 / FEAT-FTR-001 / FEAT-LNG-001. Only Loadgistic.
+
+- [x] Inspect public/member/admin copy and automatic Featured/manual controls.
+- [x] Owner clarification: transport is a callback request; remove shared chat-presence wording and verify separate receipt/Brokerage workflow.
+- [x] Remove redundant map/UI captions and correct misleading/internal wording.
+- [x] Make automatic Featured status, upcoming days and manual intervention understandable.
+- [x] Verify random-round preservation, telemetry, permissions and manual override.
+- [x] Add the owner-approved separate Featured team permission (migration 106), including grant/revoke and narrow settings access.
+- [x] Capture desktop/phone and provide the running preview for owner review.
+- [ ] After visual approval, run release gates; deployment remains a later step.
+
+The scheduled worker is configured every 15 minutes in Netlify source. That alone
+does not prove a healthy hosted worker. Preserve random weekly subsets, no-repeat
+rounds, the 07:30–09:00 Ethiopia window and existing manual days. Owner approved
+separate default-off Featured authority. It combines with other independently
+assigned responsibilities; revoking it does not revoke Support, Brokerage, Billing
+or customer access. A multi-responsibility account is labeled Platform team.
+
+Focused evidence: 33 unit tests, source/spec checks and TypeScript pass. Local
+migrations 105–106 and the catalog gate pass, including run failure rollback,
+active authority, grant/revoke/suspension, combined permissions, settings isolation,
+changed truck type, saved days and no-repeat rounds. All four SQL suites pass:
+featured-operation-status, featured-team-permission, featured-random-rounds and
+brokerage-assignment. No hosted migration or provider configuration changed.
+
+Six desktop/phone UI-copy/Featured cases pass. Two new staff workflow cases pass
+real email-code login through local Mailpit, admin grant, Featured settings/Prepare,
+manual draft/publish, sponsors, combined navigation and independent revocation.
+Four callback submission/recovery cases and four public-panel cases pass: transport
+is a phone callback into Brokerage, never a live-help conversation. Four Open/Private
+map-drawer cases pass, including the unchanged mobile city-filter recheck.
+
+Initial runs exposed a mobile hidden explanation (fixed), five-second assertions
+against still-loading dev pages (bounded readiness waits), and synthetic cleanup
+blocked by its last-editor FK (restore the prior test metadata before deletion).
+An interrupted local run is retained as failed evidence; later final cases pass.
+A fresh read-only Featured console inspection reports no hydration/nesting/key or
+page-error categories and no issue button. Local test accounts/days/sponsors are
+cleaned; newly prepared current-week days and existing fixtures are preserved.
+
+Final captures: artifacts/featured-readiness-final-20260924/,
+artifacts/ui-copy-polish-20260924/, artifacts/featured-public-polish-20260924/,
+artifacts/featured-permissions-verified-20260924/,
+artifacts/featured-callback-final-20260924/, artifacts/callback-dock-verified-20260924/
+and artifacts/map-drawer-verified-20260924/. Earlier failing captures remain for
+honest comparison; see .local/featured-review/ for logs.
+
+Preview: http://127.0.0.1:3100 — inspect Open capacity, Request transport versus
+Ask for help, and /admin/featured. At /admin/support → Platform team, Featured is a
+separate responsibility. Staff guide: docs/operations/FEATURED_PROGRAMME.md.
+Findings/limits: docs/FEATURED_READINESS_2026-09-24.md. Themed no-repeat rounds can
+leave days empty; saved manual drafts block automatic publication. Do not silently
+change those policies. Hosted job execution still needs post-rollout observation.
+
+Owner visual approval, then extensive release checks and explicit deployment
+remain open. No deployment, external mail or production write in this pass.
+
+
+## Separate brokerage and support teams — local review ready, 2026-09-24
+
+FEAT-TRQ-001 / FEAT-GST-001 / FEAT-SUP-001. User requires both enquiries to
+reach working team queues, with assignment and admin oversight. Brokerage is
+a separate staff permission (off by default), independent of Support.
+
+- [x] Inspect existing guest assignment, admin-only transport queue and staff capabilities.
+- [x] Add reviewed assignment/scope contracts and additive local migration 104.
+- [x] Implement brokerage queue, claims, admin reassignment, activity and staff setup/navigation.
+- [x] Verify negative SQL permissions, concurrent/stale actions and permission revocation.
+- [x] Exercise both public enquiries through their real local team workflows and capture phone/desktop.
+- [x] Present running preview and focused screenshots.
+- [ ] Owner visual approval, then extensive release gates and a separately authorized rollout.
+
+Evidence: local migration 104 and its refinement rehearsed in rollback before
+applying to `supabase_db_loadgistic-local`; resulting catalog security gate passes.
+`tests/sql/transport-requests.sql` and `brokerage-assignment.sql` pass, including
+cross-team denial, scoped contacts, stale writes, requeue/reopen after access loss,
+private history, unavailable Support staff and chat-capacity rejection.
+
+Six brokerage browser cases pass across desktop and phone (submission-to-teams,
+competing claims/revocation, responsive navigation/header). The final complete
+workflows additionally verify real email-code staff login through local Mailpit,
+admin account creation/handoff, a reply reaching the public guest, closure,
+conditional 304 polling, and an assignment draft rejected after a background update.
+Four public assistance dock cases also pass. Thirty focused unit tests pass.
+TypeScript and source/spec checks pass; full release checks await owner review.
+
+Captures: `artifacts/brokerage-final-20260924/` (complete workflows),
+`artifacts/team-queue-final-20260924/` (final header/navigation/FIFO claim),
+`artifacts/team-workflows-final-20260924/` (dock and claim race).
+The phone check caught a staff-create form behind fixed navigation; it now stays
+above it. The initial cold dev login exceeded a five-second assertion but reached
+the correct page; the test now allows a bounded 30-second redirect wait.
+Screenshots also caught a long guest email crowding its status; wrapping now keeps
+both in the viewport. Synthetic test records were cleaned, including one receipt-
+assertion leftover. Existing fixtures and accounts were preserved.
+
+Preview: http://127.0.0.1:3100 — admin Support → Platform team for responsibilities,
+Brokerage for transport requests, Support → Guest support for general enquiries.
+A final existing-queue defect is corrected: Support Waiting previously offered
+Claim on every row although the command accepts only the oldest. The projection
+now exposes eligibility from current availability, shared chat capacity and FIFO
+order; other rows stay visible without an invalid Claim button. SQL verifies that
+closing work preserves automatic assignment of the next waiting chat. The focused
+phone/desktop queue test verifies normal Claim and persisted ownership. Staff-
+selector scaling limits remain documented in the guide.
+
+Staff guide: `docs/operations/TEAM_INQUIRY_WORKFLOWS.md`. No production writes,
+real team invitations or deployment. Local migration 104 is not a hosted repair
+or release claim.
+
+## General help wording correction — 2026-09-24
+
+Owner clarification: Ask for help is for general questions, issues and disputes;
+Request transport remains a separate enquiry. Update the chat introduction and
+example, related recovery/staff labels and all four translations, preserving
+existing permissions, contact requirements and conversation history.
+
+- [x] Apply contextual support copy and verify desktop/phone preview.
+- [ ] Owner review before release gates; no deployment requested.
+
+## Launch clarity and contextual language — revised entry ready for local review, 2026-09-24
+
+FEAT-LUX-001 / FEAT-LNG-001. Preserve pending callback/map work and production.
+
+Latest correction: select the task only with the outside floating buttons; remove
+the internal Help options tabs and preserve the selected task when reopening.
+
+- [x] Implement one-task panels and focused desktop/phone verification.
+
+One-task panel evidence: eight focused desktop/phone checks pass for initial
+hydration, chat start/reply/attachment/end/restart, outside-button selection,
+draft retention, no internal selector, restored request mode and unread support
+messages remaining unread while only the request panel is open. TypeScript,
+source/spec and whitespace checks pass. Captures:
+`artifacts/single-assistance-panel-20260924/` (help-panel and request-panel for
+desktop and phone). Local preview remains on port 3100; revised visual approval
+and release gates remain pending. No deployment or production changes.
+
+Owner correction: remove the added map-top action strip. Label guest login
+Share your trucks. Join Ask for help and Request transport as two distinct
+floating buttons, each opening its own panel immediately.
+
+- [x] Record the corrected placement and direct-open contract.
+- [x] Implement joined floating actions and localized guest entry.
+- [x] Check desktop/phone interactions, draft retention and control clearance.
+- [x] Present the revised local preview for owner approval.
+
+Revision evidence: 14 focused browser cases passed across desktop and phone:
+joined buttons, direct destinations, retained drafts, existing chat, hydration,
+explicit GPS, localized request flows, selected-truck recovery and header/dock
+clearance at 320/390/760px in all five languages. Five catalog tests, TypeScript,
+source/spec and whitespace checks pass. Captures are in
+`artifacts/assistance-dock-20260924/` and
+`artifacts/assistance-dock-flows-20260924/`. Existing-chat presentation checks use
+a local browser response fixture; draft checks do not submit new requests.
+No hosted changes or deployment. Owner approval of this revised layout remains
+pending before extensive release checks. Dev server remains on port 3100.
+
+- [x] Record owner-authorized entry, location, recovery and language contracts.
+- [x] Implement clear entry actions, accurate role/code guidance and callback summary.
+- [x] Bound access waits and protect against blind retries after uncertain creation.
+- [x] Rewrite priority language by UI meaning and mark missing dynamic boundaries.
+- [x] Run focused workflow, permission and desktop/phone language checks.
+- [x] Present the running local preview for owner visual/language review.
+- [ ] Owner visual approval of the new entry, guidance, summary and wording.
+- [ ] After approval, complete the existing release process; no publication yet.
+
+
+Previously implemented entry strip is superseded by the owner correction above;
+explicit GPS; accurate fleet-driver and shipment/email code guidance; New callback
+count and oldest request on admin Overview/Support; 15-second access waits;
+preserved Tracking draft and blocked repeat after uncertain creation. Saved
+Tracking returns success independently of subsequent outbox mail delivery.
+119 priority message groups were edited contextually in all four catalogs.
+
+Evidence: nine focused unit tests, TypeScript, source/spec and whitespace checks
+pass. Twenty-four distinct desktop/phone cases passed across focused runs:
+entry/GPS, all four language flows, access timeouts, uncertain save, map gestures
+and recovery, actual email-code provider login and two-recipient shipment access,
+callback persistence/admin follow-up/retry, and fresh owner/driver onboarding.
+Local email was exercised through Mailpit; no production email or settings changed.
+Both empty-fleet journeys reached Add truck, assigned an unverified driver,
+verified their email and published first capacity with preserved permissions.
+
+Review captures: `artifacts/launch-reviewed-20260924/` (entry/languages),
+`artifacts/launch-workflows-20260924/` (map and Tracking checks),
+`artifacts/launch-admin-fleet-20260924/` (phone first-truck/driver/admin), and
+`artifacts/launch-admin-review-20260924/` (final desktop admin).
+The first desktop first-truck capture caught the loading placeholder and is not
+visual evidence; the subsequent visible phone capture and both interaction tests
+are valid. Current map recovery captures also live in the existing
+`artifacts/map-feedback-2026-09-14/` test output directory.
+
+Initial runs exposed a real narrow-map overlap and lingering transient preview;
+fixed with bounded summary layout, early recovery feedback and pointer/focus exit
+cleanup, retaining pinned details and map gestures. Test corrections distinguish
+Next's announcement from form errors, close persisted dialogs between journeys,
+await actual route/readiness states and use normal email login instead of the
+optional disabled fixture-password panel. A final desktop callback recheck passed
+after an intermittent development hydration delay; required assertions remain.
+
+Preview stays at `http://127.0.0.1:3100/`. Review Request transport, the language
+picker, `/login`, `/track`, empty-fleet Home and admin Support → Transport requests.
+Full quality/build/CI and production rollout remain behind owner visual approval.
+Strict language inventory remains incomplete: 427 missing fixed messages and 137
+dynamic boundaries across 1,372 marked messages; 1,064 catalog entries per locale.
+See `docs/LOCALIZATION_REVIEW.md` and `resources/i18n/CONTEXTUAL_COPY.md`.
+Native-speaker review, actual launch inventory, callback staffing and pricing
+confirmation remain outstanding. Production and existing demo identities preserved.
+
+
+## Transport callback requests — local review ready, 2026-09-23
+
+FEAT-TRQ-001. Owner requests a simple no-email form and a separate admin Support
+list for offline calls/referrals. Preserve the pending map correction and release.
+
+- [x] Inspect existing chat, Support permissions and record the private request contract.
+- [x] Add service-only persistence, input/idempotency and admin follow-up boundaries.
+- [x] Add four-field public form and separate paginated admin inbox.
+- [x] Verify SQL denial and real desktop/phone submission-to-admin workflows.
+- [x] Keep local preview running and capture desktop/phone review evidence.
+- [ ] Owner visual approval of request/inbox UI and pending map correction.
+- [ ] After approval, resume full gates and reviewed migrations 102/103 rollout.
+
+
+Local evidence: migration 103 applied only to local Loadgistic. Rollback-only
+`tests/sql/transport-requests.sql` and resulting catalog security checks pass.
+Six focused domain/catalog tests, typecheck, spec and source checks pass. Final
+browser run: eight desktop/phone cases pass for real public submission, no email,
+private admin read/follow-up, saved statuses, stale-edit rejection, retry deduplication,
+input retention, bounded API input, cross-origin denial, throttling and existing
+chat history recovery. The eight existing assisted-chat cases also pass.
+Initial browser failures were test-harness SSR import and label-selector issues;
+resolved with a normal local verified session and accessible combobox selector.
+Only exact failed-test synthetic rows were cleaned up; existing demo data remains.
+
+Preview: `http://127.0.0.1:3100/about` → Ask Loadgistic → Request transport.
+Admin: `http://127.0.0.1:3100/admin/support/transport-requests`.
+Desktop/phone form and inbox captures:
+`artifacts/transport-requests-final-20260923/`. New fixed copy uses the four draft
+language catalogs; requester names/routes/notes remain unchanged. Native-speaker
+wording review remains part of the existing localization limitation.
+
+Production is unchanged (application `200c783`, database ledger 101). The previous
+release candidate failed CI; its prepared artifact must not be published. After
+owner visual approval, create a fresh candidate, pass full gates, and rehearse
+both pending migrations 102/103 against a fresh protected backup before rollout.
+
+
 ## Accumulated release — requested, 2026-09-23
 
 Owner requests deployment after reviewing the local work and disclosure of
@@ -10,7 +628,7 @@ profiles and the current draft catalogs with English fallback.
 - [x] Full local quality (345 tests), current-candidate SQL checks and production build.
 - [ ] Commit explicit task scope, push PR 15 and pass exact-commit CI.
 - [x] Fresh encrypted backup, isolated restore and migration 102 rehearsal.
-- [ ] Resolve prior bounded production runtime/private-demo approval.
+- [x] Explicit owner approval for bounded in-memory runtime/private-demo verification.
 - [ ] Apply reviewed migration, publish immutable artifact and verify live.
 
 First candidate `9cdc0a1` / CI `35925609765` stopped at a legacy fixture
@@ -22,6 +640,26 @@ The new migration regression remains mandatory; no security gate is relaxed.
 The fresh encrypted backup restores successfully in a network-disabled container;
 migration 102, document regressions, catalog/API-guard/spatial checks all pass.
 Production remains at migration 101 and the previous application.
+
+Candidate `1a7b350` / CI `35926387780`: validation and container checks pass;
+browser suite has 223 passed, 8 skipped and 5 failures. Two login localization
+cases use an ambiguous selector in CI's two-form login page; three mobile map
+cases reproduce locally with the larger three-subject document card. Production
+is unchanged. Fix the selector and map crowding, retain all interaction assertions,
+and obtain fresh local visual review before rerunning the full release gates.
+
+Local correction ready for review: the existing document controls now use two
+columns below 600px, retaining all three subjects and their detail actions. All
+three mobile map tests pass; desktop feedback/shared-leg tests pass, and the
+closed-area desktop test passes on one controlled rerun after a hydration timeout
+while two local servers compiled. No assertions, click force or timeouts changed.
+The login selector is scoped to the real email-code form; desktop and phone tests
+pass with CI's additional fixture form present. Source/spec and TypeScript checks
+pass. Captures: `artifacts/release-map-review-20260923/{phone,desktop,phone-error}.png`.
+Fresh owner visual approval is required before full gates, a new immutable build
+and deployment. The previous 1a7b350 release scripts/artifacts are blocked by its
+failed CI and must not be published. No production test login has been used yet;
+the separately approved compiled-app health check passed.
 
 Logo files were supplied to the owner before continuing this release. Local app
 remains available. Existing `.next-upload-audit/` remains excluded.
@@ -1607,3 +2245,10 @@ text nodes in the scanned app/components. This excludes dynamic-copy coverage
 and therefore is not an overall completion percentage. Final source/spec and
 repository TypeScript checks pass. Changes remain uncommitted and undeployed;
 the pre-existing `.next-upload-audit/` directory is untouched.
+
+Focused chat regression completion (2026-09-27): all 12 distinct desktop/phone
+cases pass across `artifacts/chat-follow-up-final-20260927/` (11 passed) and
+`artifacts/chat-follow-up-claim-20260927/` (remaining desktop conversation passed).
+The first run's claim/navigation test raced the save; it now waits for the successful
+claim response and refreshed queue before choosing Mine. No permission or product
+assertion was weakened. Logs: `.local/chat-follow-up/browser-{final,claim}.log`.

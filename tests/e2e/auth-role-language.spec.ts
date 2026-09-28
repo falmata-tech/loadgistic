@@ -16,7 +16,7 @@ test('public account access stays unified and follows session state',async({page
   const publicNavigation=desktop
     ?page.getByRole('navigation',{name:'Public workspace navigation'})
     :page.locator('.public-session-compact');
-  await expect(publicNavigation.getByRole('link',{name:/Account access|Log in|Transporter login/,exact:true})).toBeVisible();
+  await expect(publicNavigation.getByRole('link',{name:/Transporter login/,exact:true})).toBeVisible();
   await expect(publicNavigation.getByRole('link',{name:'Dashboard',exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
 
@@ -42,7 +42,7 @@ test('public account access stays unified and follows session state',async({page
     ?page.getByRole('navigation',{name:'Public workspace navigation'})
     :page.locator('.public-session-compact');
   await expect(signedInNavigation.getByRole('link',{name:'Dashboard',exact:true})).toBeVisible();
-  await expect(signedInNavigation.getByRole('link',{name:/Account access|Log in|Transporter login/,exact:true})).toHaveCount(0);
+  await expect(signedInNavigation.getByRole('link',{name:/Transporter login/,exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
 });
 

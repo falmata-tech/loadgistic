@@ -17,6 +17,8 @@ async function verifyShell(page:any,testInfo:any,surface:string){
   mkdirSync(captures,{recursive:true});
   for(const [width,height] of viewports){
     await page.setViewportSize({width,height});
+    // The introduction can scroll away on short screens while the map keeps its usable height.
+    if(surface==='open')await page.locator('main.public-market-introduced').evaluate((el:HTMLElement)=>el.scrollTop=el.scrollHeight);
     await openCapacityFilters(page);
     await expect.poll(async()=>page.evaluate(()=>{
       const box=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();
@@ -41,8 +43,8 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       navigationClear:true,headerClear:true,withinViewport:true,
       toolsContained:true,sessionClear:true,usableMap:true,noDocumentOverflow:true,
     });
-    await page.getByRole('button',{name:'More filters',exact:true}).click();
-    const dialog=page.getByRole('dialog',{name:'More filters',exact:true});
+    await page.getByRole('button',{name:'Filters',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Filters',exact:true});
     await expect(dialog).toBeVisible();
     const bounds=await dialog.boundingBox();
     expect(bounds).toBeTruthy();
@@ -88,9 +90,9 @@ test('email-unlocked private map reserves navigation and logout space',async({pa
     await page.getByLabel('Email',{exact:true}).fill(email);
     const requestedAt=Date.now();
     await page.getByRole('button',{name:'Continue with email'}).click();
-    await expect(page.getByLabel('One-time code')).toBeVisible({timeout:30_000});
-    await page.getByLabel('One-time code').fill(await localMailpitNumericCode(email,requestedAt,'Your Private capacity code'));
-    await page.getByRole('button',{name:'Open private capacity'}).click();
+    await expect(page.getByLabel('6-digit email code')).toBeVisible({timeout:30_000});
+    await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Private capacity code'));
+    await page.getByRole('button',{name:'View shared signals'}).click();
     await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible({timeout:30_000});
     await verifyShell(page,testInfo,'private');
     await page.goto('/shared-capacity');

@@ -12,14 +12,15 @@ begin
   if eligible_count<13 then raise exception 'FEATURED_ROTATION_FIXTURE_TOO_SMALL';end if;
   delete from public.featured_provider_days where feature_date between today and today+6;
   delete from public.featured_rotation_selections;
-  update public.platform_controls set featured_mode='AUTO',featured_target_count=12 where singleton;
+  update public.platform_controls set featured_mode='AUTO',featured_target_count=8 where singleton;
 
   perform setseed(0.125);
   result:=public.generate_managed_featured_days();
   if (result->>'created')::int<1 then raise exception 'NO_RANDOM_ROSTER';end if;
   if exists(select 1 from public.featured_provider_days d where d.feature_date between today and today+6
-    and (d.target_count>12 or d.target_count<>(select count(*) from public.featured_provider_slots s where s.day_id=d.id)
+    and (d.target_count>8 or d.target_count<>(select count(*) from public.featured_provider_slots s where s.day_id=d.id)
     or (d.schedule_config_json->>'targetCount')::int<>d.target_count)) then raise exception 'ROSTER_COUNT_NOT_ACTUAL';end if;
+  if exists(select 1 from public.featured_provider_days where selection_source='AUTO' and feature_date between today and today+6 and (broadcast_start_time<>'08:30' or broadcast_end_time<>'12:00' or schedule_config_json->>'sponsorBreakCount'<>'4' or schedule_config_json->>'sponsorBreakMinutes'<>'2')) then raise exception 'AUTOMATIC_BROADCAST_WINDOW';end if;
   if exists(select day_id from public.featured_provider_slots group by day_id having count(*)<>count(distinct driver_user_id)) then raise exception 'DUPLICATE_DAILY_DRIVER';end if;
   select array_agg(s.vehicle_id::text||':'||s.driver_user_id::text order by d.feature_date,s.slot_position) into first_draw
     from public.featured_provider_slots s join public.featured_provider_days d on d.id=s.day_id where d.feature_date between today and today+6;
@@ -76,12 +77,12 @@ begin
   if not exists(select 1 from public.featured_eligible_truck_links(configs) where vehicle_id=first_pair.vehicle_id) then raise exception 'RETURNING_PAIR_INELIGIBLE';end if;
 
   -- Saved manual days remain protected, including drafts; no read-side generation.
-  select id into strict admin_id from public.profiles where email='admin@loadgistic.local';
+  select id into strict admin_id from public.profiles where active and role='ADMIN' limit 1;
   delete from public.featured_provider_days where feature_date=today;
   manual_id:=public.save_managed_featured_truck_day(admin_id,jsonb_build_object('feature_date',today,'target_count',3,
     'theme_key',public.featured_truck_theme(today)->>'key','theme_label',public.featured_truck_theme(today)->>'label',
     'theme_configurations',public.featured_truck_theme(today)->'configurations','truck_keys','[]'::jsonb,'publish',false,
-    'schedule_config',jsonb_build_object('dayStart','07:30','dayEnd','09:00','targetCount',3,'sponsorBreakEvery',2,'sponsorBreakMinutes',2)));
+    'schedule_config',jsonb_build_object('dayStart','08:30','dayEnd','12:00','targetCount',3,'sponsorBreakCount',4,'sponsorBreakMinutes',2)));
   perform public.generate_managed_featured_days();
   if not exists(select 1 from public.featured_provider_days where id=manual_id and status='DRAFT' and selection_source='MANUAL') then raise exception 'MANUAL_DAY_OVERWRITTEN';end if;
 

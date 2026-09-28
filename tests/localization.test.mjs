@@ -40,3 +40,14 @@ test('tracking progression and corrected visible messages have all four translat
   for(const label of labels){assert.ok(messages[label],`${locale}: ${label}`);assert.notEqual(messages[label],label,`${locale}: ${label}`);}
  }
 });
+
+test('launch journeys have contextual messages in every supported non-English locale',()=>{
+ const keys=[...JSON.parse(readFileSync(new URL('../resources/i18n/launch-message-keys.json',import.meta.url))),...JSON.parse(readFileSync(new URL('../resources/i18n/featured-review-message-keys.json',import.meta.url)))];
+ assert.equal(new Set(keys).size,keys.length);
+ for(const locale of ['am','om','so','ti']){
+  const messages=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url)));
+  for(const key of keys){assert.ok(messages[key]?.trim(),`${locale}: ${key}`);assert.notEqual(messages[key],key,`${locale}: ${key}`);}
+  const value='Home · Adama · +251900000001';
+  assert.ok(translateMessage(messages,'Oldest request: {time}',{time:value}).includes(value));
+ }
+});

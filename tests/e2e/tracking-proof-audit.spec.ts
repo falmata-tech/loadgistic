@@ -1,3 +1,4 @@
+import {auditIdentity,auditLogin} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
@@ -7,15 +8,7 @@ import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib
 import {localMailpitNumericCode} from './mailpit-helper';
 
 async function login(page:any,email:string){
-  // Each role uses a fresh test-only session; /login redirects signed-in users.
-  await page.context().clearCookies();
-  await page.goto('/login');await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(email==='admin@loadgistic.local'?/\/admin$/:/\/app\/home$/,{timeout:30000});
-  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
-  if(email==='admin@loadgistic.local')await expect(page.getByRole('heading',{name:'Administration',exact:true})).toBeVisible({timeout:30000});
+ await page.context().clearCookies();await auditLogin(page,email);
 }
 
 test('uploaded Tracking proof opens for provider, admin and email-verified guest only',async({page,browser}:{page:any;browser:any},info:any)=>{
@@ -24,8 +17,7 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
   const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
   if(!['127.0.0.1','localhost'].includes(new URL(endpoint).hostname))throw new Error('REMOTE_PROOF_TEST_REFUSED');
   const service=createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:actor,error}=await service.from('profiles').select('id,role').eq('email','driver@loadgistic.local').single();
-  expect(error).toBeNull();
+  const actor=await auditIdentity(service,'driver@loadgistic.local');
   const workspace=await getProviderTrackingWorkspace(actor);
   const origin=await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single();
   const destination=await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single();
@@ -52,9 +44,9 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
     await page.screenshot({path:info.outputPath('provider-proof.png')});
 
     const guestPage=await guest.newPage();await guestPage.goto('/track');
-    await guestPage.getByLabel('Approved email').fill(email);await guestPage.getByLabel('Tracking code').fill(shipment.trackingCode);
+    await guestPage.getByLabel('Email',{exact:true}).fill(email);
     const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();
-    await guestPage.getByLabel('One-time code').fill(await localMailpitNumericCode(email,requestedAt,'Your shipment Tracking code'));
+    await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));
     await guestPage.getByRole('button',{name:'Open tracking'}).click();
     await expect(guestPage.getByRole('heading',{name:'Shipment progress'})).toBeVisible({timeout:30000});
     await expect(guestPage.getByRole('link',{name:'Open proof (new tab)'})).toBeVisible();

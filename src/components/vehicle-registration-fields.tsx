@@ -29,7 +29,6 @@ export function VehicleRegistrationFields(){
         {FIXED_CONFIGURATIONS.map(item=><option value={item.name} key={item.name}>{item.name}</option>)}
         <option value={INTERCHANGEABLE_TRACTOR}><Text message="Interchangeable tractor"/></option>
       </select>
-      <small><Text message="Courier cars carry small shipments; passenger booking is not offered."/></small>
     </div>
     {tractor?<fieldset className="trailer-configuration-fields full">
       <legend><Text message="Trailer setup"/></legend>

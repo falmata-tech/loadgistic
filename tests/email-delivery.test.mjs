@@ -224,10 +224,10 @@ test('Shared Capacity and Tracking use distinct customer-safe application templa
     shipment:{code:'LGX-TEST',providerName:'Example Transporter',origin:'Addis Ababa',destination:'Adama',cargoSummary:'Workshop inputs'}
   });
   assert.equal(tracking.subject,'Your Loadgistic tracking access');
-  assert.match(tracking.text,/Tracking code/);
-  assert.match(tracking.text,/LG-0000-1111-2222-3333/);
-  assert.match(tracking.text,/Ask the transporter to add each other person/i);
-  assert.doesNotMatch(tracking.text,/six-digit|sign-in|create an account/i);
+  assert.match(tracking.text,/verify this email/);
+  assert.doesNotMatch(tracking.text,/LG-0000-1111-2222-3333/);
+  assert.match(tracking.text,/Ask the transporter to add anyone else/i);
+  assert.match(tracking.text,/six-digit code/i);
 });
 
 test('completion email escapes customer-visible data and excludes private event fields',()=>{
@@ -242,9 +242,9 @@ test('completion email escapes customer-visible data and excludes private event 
     }
   });
   assert.match(message.text,/Status timeline/);
-  assert.match(message.text,/Tracking code\nLG-1111-2222-3333-4444/);
-  assert.match(message.text,/Review code\nreview-code/);
-  assert.match(message.text,/verify the one-time code/);
+  assert.doesNotMatch(message.text,/LG-1111-2222-3333-4444/);
+  assert.doesNotMatch(message.text,/review-code/);
+  assert.match(message.text,/already verified, no new code/);
   assert.match(message.text,/In Transit/);
   assert.doesNotMatch(message.html,/<script>|<strong>safely<\/strong>/);
   assert.match(message.html,/&lt;script&gt;|&lt;strong&gt;/);

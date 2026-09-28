@@ -132,8 +132,7 @@ When demonstration capacity geometry is rebuilt\
 Then every current Capacity route contains two through five distinct cities in a plausible road-travel sequence\
 And the route passes through or immediately beside the truck's approximate current city rather than jumping to an unrelated part of Ethiopia\
 And every Service area uses a center near the truck's approximate current city and a boundary that contains that center\
-And cargo vans, pickups, mini trucks, and most courier cars expose current capacity geography within 30 kilometres of their base city or town\
-And a bounded minority of courier cars demonstrate small-shipment service on plausible intercity or regional road corridors\
+And cargo vans, pickups, and mini trucks expose current capacity geography within 30 kilometres of their base city or town\
 And every provider regular-service signal contains or closely approaches the approximate current location of every one of that provider's demonstration trucks\
 And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a nearby center and enclosing boundary\
 And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
@@ -321,3 +320,38 @@ When Home opens
 Then it explains that the fleet owner must configure capacity first
 And Available is disabled rather than offering a submission the server must reject
 And changing capacity/tracking permissions takes effect on the next read or write without a new login.
+
+
+## First location for owner-managed capacity — audit correction, 2026-09-27
+
+Given an active assigned company driver whose owner manages capacity, when the
+truck has never published capacity, then the driver can explicitly save their
+approximate device location without acquiring capacity-edit permission. The owner
+can then configure and publish the first signal using that driver-provided fix.
+Saving location alone never publishes availability or changes sharing, coverage,
+accepted loads, capacity age, or tracking permissions. Independent drivers can
+also save their own truck location. Unassigned, removed, inactive, foreign-fleet,
+retired-truck and owner-device submissions remain denied by PostgreSQL.
+
+Keep the latest approximate fix separately from capacity publication in a
+service-only RLS-protected vehicle/driver location record. Only the current active
+driver's record is visible to the authorized workspace or used for publication;
+reassignment cannot reuse another driver's snapshot. New fixes update location
+age only. Existing capacity history remains available as a compatibility source.
+No exact device coordinates or coordinates in audit logs. No automatic GPS prompt
+for an unassigned or restricted driver's first visit; explicit Save/Use location
+and bounded failure/retry controls explain the next setup step.
+
+Migration 113 is additive and local first. Rollback the app before separately
+reviewing removal of helpers/data; retain location/capacity/audit history. Verify
+browser-role denial, tenant/assignment scope, first restricted-driver location →
+owner publication, and unchanged capacity metadata/location freshness.
+
+Location audit validation: GIVEN a direct capacity or duty request omits a GPS coordinate, radius or source, THEN reject it without publishing or resuming capacity. SQL NULL comparisons must not bypass validation. Regression: `tests/sql/driver-location-bootstrap.sql`.
+
+Owner-map resize regression: GIVEN the saved truck-location map is visible, WHEN
+its container changes width (including the first-location layout and phone/desktop
+resize), THEN preserve the geographic center against the actual container size so the truck
+marker remains visible. Opening/cancelling an editor without a container resize
+must retain the map view. Saved coordinates and marker appearance are unchanged.
+Focused regression: `tests/e2e/fleet-location-map-resize.spec.ts`.

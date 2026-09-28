@@ -42,6 +42,7 @@ export default async function LoginPage({
         {codeStep?<EmailCodeForm localInbox={localInbox}/>:<EmailRequestForm localInbox={localInbox}/>}
       </div>
       {fixturePassword?<LocalFixtureLogin/>:null}
+      <p className="auth-driver-hint"><Text message="Added by your company? Use the email your fleet owner registered for you."/></p>
       <p className="auth-privacy-note"><LockKeyhole aria-hidden="true"/><Text message="Your login email stays private."/></p>
     </PublicAuthShell>
   </>;

@@ -1,4 +1,12 @@
 const messages: Record<string,string> = {
+  SUPPORT_ASSIGNEE_UNAVAILABLE:'Choose an active, available support team member.',
+  SUPPORT_ASSIGNEE_AT_CAPACITY:'That team member is at their chat limit. Choose someone else.',
+  INVALID_BROKERAGE_ASSIGNEE:'Choose an active brokerage team member.',
+  INVALID_TRANSPORT_REQUEST:'Check your route, name and phone number.',
+  INVALID_TRANSPORT_FOLLOW_UP:'Choose a status and keep your note under 1,000 characters.',
+  TRANSPORT_REQUEST_CHANGED:'Another team member updated this record. Reload before saving your changes.',
+  TRANSPORT_REQUEST_UNAVAILABLE:'We could not confirm your request. Please try again.',
+  INVALID_TRANSPORT_VIEW:'Choose a valid request list.',
   VEHICLE_OWNER_INACTIVE:'The provider account must be active before this truck can return to service.',
   INVALID_WORKSPACE_CORRECTION:'Enter a business name of 2–120 characters and a reason of 5–500 characters.',
   WORKSPACE_CHANGED:'The business name changed while you were editing. Reload and review it before trying again.',
@@ -146,7 +154,8 @@ const messages: Record<string,string> = {
   SUBSCRIPTION_ACCESS_REQUIRED: 'Your trial or paid access has expired. Open Plan & billing to restore access.',
   SPONSORED_ACCESS_BUSINESS_ONLY: 'Sponsored free access is available only to approved Businesses.',
   PAYMENT_NOT_REQUIRED: 'Payment is not required for this workspace.',
-  INVALID_PLATFORM_CONTROLS: 'Choose a valid mode and a daily count between 1 and 12.',
+  PUBLIC_SUPPORT_CLOSED: 'Live support is available to transport providers in their dashboard.',
+  INVALID_PLATFORM_CONTROLS: 'Choose a valid mode and a daily count between 1 and 8.',
   ACCESS_ACTIVATION_CONFIRMATION_REQUIRED: 'Confirm the seven-day trial before activating payments.',
   PLATFORM_CONTROLS_FAILED: 'Settings could not be saved. Please try again.',
   FEATURED_AUTOMATION_FAILED: 'The daily selection could not be prepared. Please try again.',
@@ -188,8 +197,9 @@ const messages: Record<string,string> = {
   ,FEATURED_BROADCAST_WINDOW_INVALID: 'The livestream end time must be later than its start time.'
   ,FEATURED_SCHEDULE_MODE_INVALID: 'Choose Automatic or Manual scheduling.'
   ,FEATURED_SCHEDULE_TIME_INVALID: 'Choose valid daily schedule times.'
-  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep the programme between 07:30 and 09:00 EAT.'
-  ,FEATURED_TARGET_COUNT_INVALID: 'Choose between 1 and 12 featured trucks.'
+  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep the programme between 08:30 and 12:00 EAT.'
+  ,FEATURED_SPONSOR_BREAK_COUNT_INVALID: 'Choose between zero and four sponsor mentions.'
+  ,FEATURED_TARGET_COUNT_INVALID: 'Choose between 1 and 8 featured trucks.'
   ,FEATURED_TARGET_COUNT_MISMATCH: 'Select the exact number of trucks set for this programme.'
   ,FEATURED_TRUCK_THEME_INVALID: 'Choose the truck type assigned to this date.'
   ,FEATURED_TRUCK_INVALID: 'One selected truck is no longer available.'
@@ -201,7 +211,7 @@ const messages: Record<string,string> = {
   ,FEATURED_SCHEDULE_CAPACITY_EXCEEDED: 'These trucks and interludes do not fit inside the morning programme.'
   ,FEATURED_MANUAL_SCHEDULE_INVALID: 'Give every selected truck a valid start and end time.'
   ,FEATURED_MANUAL_SCHEDULE_INCOMPLETE: 'Give every selected truck one programme interval.'
-  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Manual intervals must stay between 07:30 and 09:00 EAT.'
+  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Manual intervals must stay between 08:30 and 12:00 EAT.'
   ,FEATURED_MANUAL_SCHEDULE_OVERLAP: 'Manual presentation intervals cannot overlap or change roster order.'
   ,FEATURED_MANUAL_BREAK_INVALID: 'Keep programme interludes to four or fewer, with no interlude longer than two minutes.'
   ,SPONSORSHIP_DATE_RANGE_INVALID: 'Choose an inclusive sponsored-placement period of no more than one year.'
