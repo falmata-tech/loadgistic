@@ -275,3 +275,14 @@ And successful CI, an agent-authored spec and earlier release permission do not 
 NR-13 and `docs/MAP_PERFORMANCE_REGRESSION_2026-09-21.md` record the map incident,
 local evidence and remaining repair. Repository rules are workflow requirements,
 not installed provider-level enforcement.
+
+### Scenario: all browser shards must pass before release
+
+Given the complete desktop and phone Playwright suite runs across four isolated CI runners\
+When any shard fails, is cancelled or is skipped\
+Then the aggregate `e2e` release gate fails\
+And each shard owns its Supabase fixtures and runs one worker without sharing mutable test data.
+
+Evidence: `.github/workflows/ci.yml`, `tests/ci-browser-gate.test.mjs`, and the
+exact-candidate CI run recorded in the release handoff. Sharding changes scheduling,
+not test selection or the required all-tests-pass release outcome.

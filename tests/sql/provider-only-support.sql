@@ -12,14 +12,14 @@ begin
  -- The entire test rolls back; free this fixture's active-chat slot temporarily.
  update public.support_conversations set status='CLOSED' where customer_user_id=provider_id and status in ('OPEN','WAITING');
  foreach role_value in array array['DRIVER','TRANSPORTER'] loop
-  update public.profiles set role=role_value::public.user_role where id=provider_id;
+  update public.profiles set role=role_value::public.user_role,driver_portrait_preset=null where id=provider_id;
   chat_id:=public.create_managed_support_conversation(provider_id,'{"category":"ACCOUNT","body":"Provider-only regression"}');
   perform public.send_managed_support_message(provider_id,chat_id,'Provider follow-up');
   perform public.send_managed_support_message(admin_id,chat_id,'Staff reply');
   perform public.close_managed_support_conversation(provider_id,chat_id);
  end loop;
  foreach role_value in array array['SHIPPER','RECEIVER'] loop
-  update public.profiles set role=role_value::public.user_role where id=provider_id;
+  update public.profiles set role=role_value::public.user_role,driver_portrait_preset=null where id=provider_id;
   perform pg_temp.expect_provider_support_denied(format('select public.create_managed_support_conversation(%L,%L::jsonb)',provider_id,'{"category":"ACCOUNT","body":"Denied"}'),'FORBIDDEN');
   perform pg_temp.expect_provider_support_denied(format('select public.send_managed_support_message(%L,%L,''Denied'')',provider_id,chat_id),'NOT_FOUND');
   perform pg_temp.expect_provider_support_denied(format('select public.support_attachment_reply_scope(%L,%L)',provider_id,chat_id),'NOT_FOUND');

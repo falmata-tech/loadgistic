@@ -100,11 +100,14 @@ jobs:
         if: always()
         run: supabase stop --no-backup
 
-  e2e:
+  e2e-shards:
     needs: validate
     runs-on: ubuntu-latest
-    # The expanded 166-case suite takes about 21 minutes per viewport locally;
-    # reserve time for both serial projects and isolated Supabase setup.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    # Every shard owns its database and retains one Playwright worker.
     timeout-minutes: 60
     env:
       CI: true
@@ -147,11 +150,19 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run desktop and mobile browser workflows
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
 
       - name: Stop isolated Supabase
         if: always()
         run: supabase stop --no-backup
+
+  e2e:
+    needs: e2e-shards
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every browser shard to pass
+        run: test '${{ needs.e2e-shards.result }}' = 'success'
 
   container:
     needs: validate

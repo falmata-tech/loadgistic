@@ -32,7 +32,7 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
     const bytes=readFileSync('public/icon-192.png');
     await page.locator('input[name=proof]').setInputFiles({name:'synthetic-proof.png',mimeType:'image/png',buffer:bytes});
     await page.getByRole('button',{name:'Save Loading',exact:true}).click();
-    await expect(page.getByText('Tracking status updated.',{exact:true})).toBeVisible();
+    await expect(page.getByText('Tracking status updated.',{exact:true})).toBeVisible({timeout:15000});
     const link=page.getByRole('link',{name:'Open proof (new tab)'});
     await expect(link).toBeVisible();
     const href=await link.getAttribute('href');

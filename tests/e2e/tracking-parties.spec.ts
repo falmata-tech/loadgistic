@@ -55,7 +55,7 @@ test('added Tracking party saves inline, receives invitation and OTP, and loses 
     const stranger=await guest.request.post('/api/tracking/otp',{headers:{origin:info.project.use.baseURL},form:{email:`unapproved-${actor.suffix}@example.test`}});expect(stranger.status()).toBe(200);
     expect(checked(await service.from('access_email_deliveries').select('id').eq('recipient_email',`unapproved-${actor.suffix}@example.test`))).toHaveLength(0);
     await page.locator('.tracking-party-row').filter({hasText:email}).getByRole('button',{name:'Revoke'}).click();await expect(page.getByText('Tracking access revoked.',{exact:true})).toBeVisible();
-    await customer.reload();await expect(customer.getByText('Private shipment tracking')).toHaveCount(0);await expect(customer.getByRole('heading',{name:/Track LGX-/})).toHaveCount(0);
+    await customer.reload();await expect(customer).toHaveURL(/\/track\?error=/,{timeout:15000});await expect(customer.getByText('No shipments are currently shared with this email.',{exact:true})).toBeVisible({timeout:15000});await expect(customer.getByText('Private shipment tracking')).toHaveCount(0);await expect(customer.getByRole('heading',{name:/Track LGX-/})).toHaveCount(0);
     expect(checked(await service.from('provider_tracking_recipients').select('revoked_at').eq('id',recipient.id).single()).revoked_at).not.toBeNull();
   }finally{
     if(guest)await guest.close();
