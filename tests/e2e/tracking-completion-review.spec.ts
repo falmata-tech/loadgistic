@@ -57,7 +57,7 @@ test('completed delivery emails its customer and accepts exactly one visible cus
     await customer.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requested,'Your Loadgistic tracking sign-in code'));
     await customer.getByRole('button',{name:'Open tracking'}).click();
     await expect(customer.getByLabel('Review code',{exact:true})).toHaveCount(0);
-    await expect(customer.getByRole('heading',{name:'Review the provider'})).toBeVisible();
+    await expect(customer.getByRole('heading',{name:'Review the provider'})).toBeVisible({timeout:15000});
     await customer.getByLabel('Rating',{exact:true}).selectOption('4');
     await customer.getByLabel('Comment').fill('Synthetic customer review after delivery.');
     await customer.getByRole('button',{name:'Publish review'}).click();

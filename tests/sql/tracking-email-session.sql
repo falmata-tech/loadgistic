@@ -3,9 +3,25 @@ do $test$
 declare ids uuid[]; s uuid; actor uuid; challenge uuid; newer uuid; digest text:=repeat('c',64);
  result jsonb; role_name text; signature text; i integer;
 begin
- select array_agg(id) into ids from (select id from provider_shipments order by id limit 2) q;
- if cardinality(ids)<>2 then raise exception 'TWO_FIXTURE_SHIPMENTS_REQUIRED'; end if;
- select assigned_driver_user_id into actor from provider_shipments where id=ids[1];
+ -- Own rollback-only shipment fixtures: a production restore may have no shipments.
+ ids:=array[gen_random_uuid(),gen_random_uuid()];
+ select p.user_id into strict actor from provider_profiles p
+ join profiles u on u.id=p.user_id and u.active
+ join vehicles v on v.provider_profile_id=p.id and v.active limit 1;
+ insert into provider_shipments(id,code,provider_profile_id,assigned_vehicle_id,
+ assigned_driver_user_id,origin,origin_place_ref,origin_lat,origin_lng,
+ destination,destination_place_ref,destination_lat,destination_lng,cargo_summary,
+ shipper_email,receiver_email,operational_status,created_by,review_code_hash)
+ select fixture_id,'LGX-'||upper(substr(md5(fixture_id::text),1,8)),v.provider_profile_id,v.id,
+ actor,o.name,o.id,o.latitude,o.longitude,d.name,d.id,d.latitude,d.longitude,
+ 'Isolated email-session regression','email-session@example.test','email-session@example.test',
+ 'CREATED',actor,md5(fixture_id::text)||md5(fixture_id::text)
+ from unnest(ids) fixture_id
+ cross join lateral (select vehicle.* from vehicles vehicle join provider_profiles provider
+ on provider.id=vehicle.provider_profile_id where provider.user_id=actor and vehicle.active limit 1) v
+ cross join lateral (select * from place_catalog order by id limit 1) o
+ cross join lateral (select * from place_catalog where id<>o.id order by id limit 1) d;
+ if (select count(*) from provider_shipments where id=any(ids))<>2 then raise exception 'TWO_SYNTHETIC_SHIPMENTS_REQUIRED'; end if;
  delete from provider_tracking_recipients where shipment_id=any(ids);
  delete from provider_reviews where shipment_id=any(ids);
  update provider_shipments set guest_expires_at=now()+interval '1 day',operational_status='CREATED' where id=any(ids);

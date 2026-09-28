@@ -43,7 +43,7 @@ begin
   theme:=public.featured_truck_theme(today);
   manual_id:=public.save_managed_featured_truck_day(admin_id,jsonb_build_object('feature_date',today,'target_count',5,
     'theme_key',theme->>'key','theme_label',theme->>'label','theme_configurations',theme->'configurations','truck_keys','[]'::jsonb,'publish',false,
-    'schedule_config',jsonb_build_object('dayStart','07:30','dayEnd','09:00','targetCount',5,'sponsorBreakEvery',2,'sponsorBreakMinutes',2)));
+    'schedule_config',jsonb_build_object('dayStart','08:30','dayEnd','12:00','targetCount',5,'sponsorBreakCount',4,'sponsorBreakMinutes',2)));
   perform public.save_managed_platform_controls(admin_id,'{"section":"FEATURED","mode":"MANUAL","target_count":5}');
   if (public.generate_managed_featured_days()->>'created')::integer<>0 then raise exception 'MANUAL_MODE_GENERATED';end if;
   perform public.save_managed_platform_controls(admin_id,'{"section":"FEATURED","mode":"AUTO","target_count":5}');

@@ -101,8 +101,8 @@ try{
   const savedFeatured=await saveFeaturedProviderDay(adminUser,{
     featureDate:featuredDate.date,targetCount:1,truckKeys:[featuredDate.candidate.truck_key],
     publicHeadline:'Managed truck feature',publicIntroduction:'Meet a featured truck and the Driver operating it.',
-    tiktokUrl:null,scheduleMode:'AUTO',scheduleConfig:{dayStart:'07:30',dayEnd:'09:00',targetCount:1,
-      sponsorBreakEvery:2,sponsorBreakMinutes:2},manualSchedule:[],publish:true
+    tiktokUrl:null,scheduleMode:'AUTO',scheduleConfig:{dayStart:'08:30',dayEnd:'12:00',targetCount:1,
+      sponsorBreakCount:4,sponsorBreakMinutes:2},manualSchedule:[],publish:true
   });
   if(!savedFeatured?.day?.id)throw new Error('PLATFORM_ADMIN_FEATURED_SAVE_FAILED:EMPTY');featuredDayId=savedFeatured.day.id;
   const {data:savedPlacement,error:placementError}=await service.rpc('save_managed_sponsorship',{actor_user_id:admin.id,command:{
