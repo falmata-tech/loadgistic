@@ -45,7 +45,7 @@ from generate_series(1,:scale_count) series;
 
 insert into public.profiles(id,email,full_name,role,active)
 select md5('loadgistic-scale-driver-'||series)::uuid,
-  'scale-driver-'||series||'@example.invalid','Scale driver '||series,'DRIVER',true
+  'scale-driver-'||series||'@example.invalid','Scaleaudit driver '||series,'DRIVER',true
 from generate_series(1,:scale_count) series
 on conflict(id) do update set full_name=excluded.full_name,role=excluded.role,active=true;
 
@@ -54,7 +54,7 @@ select md5('loadgistic-scale-driver-'||series)::uuid,owner.organization_id,'DRIV
 from generate_series(1,:scale_count) series cross join scale_owner owner;
 
 insert into public.drivers(user_id,organization_id,name,active)
-select md5('loadgistic-scale-driver-'||series)::uuid,owner.organization_id,'Scale driver '||series,true
+select md5('loadgistic-scale-driver-'||series)::uuid,owner.organization_id,'Scaleaudit driver '||series,true
 from generate_series(1,:scale_count) series cross join scale_owner owner;
 
 insert into public.driver_vehicle_assignments(driver_user_id,vehicle_id,assigned_by)
@@ -98,10 +98,11 @@ declare
   route_rows integer;
   payload_bytes bigint;
 begin
+  -- Search the synthetic public Driver name: truck identifiers are no longer searchable.
   started_at:=clock_timestamp();
   select count(*),coalesce(sum(octet_length(payload::text)),0)
     into result_rows,payload_bytes
-  from public.public_capacity_page('{"q":"lg-scale"}'::jsonb,null,null,14);
+  from public.public_capacity_page('{"q":"scaleaudit"}'::jsonb,null,null,14);
   query_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
 
   started_at:=clock_timestamp();
