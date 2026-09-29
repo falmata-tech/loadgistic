@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Localized,Text} from '@/components/localization';
 import React from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -37,15 +39,15 @@ export function WorkspaceBackButton() {
   },[current]);
 
   if(!fallback)return null;
-  return <a
+  return <Localized as="a" copy={["title","aria-label"]}
     href={fallback}
     className="workspace-back"
     title="Back"
     aria-label="Back to previous workspace page"
-    onClick={event=>{
+    onClick={(event:React.MouseEvent<HTMLAnchorElement>)=>{
       event.preventDefault();
       if(previous&&previous!==current&&window.history.length>1)router.back();
       else router.push(fallback);
     }}
-  ><ArrowLeft aria-hidden="true"/><span>Back</span></a>;
+  ><ArrowLeft aria-hidden="true"/><span><Text message="Back"/></span></Localized>;
 }

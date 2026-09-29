@@ -82,7 +82,7 @@ test('managed import assigns every independent truck to its owning Driver and su
   }
 });
 
-test('managed vehicle policy reuses icon-only assignments for courier cars and interchangeable tractors',()=>{
+test('managed vehicle policy preserves freight vehicles and reuses icon-only assignments for interchangeable tractors',()=>{
   const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
   const users=assignFixtureDriverPortraits(fixture.tables.users);
   const assignments=ensureIndependentVehicleAssignments(
@@ -100,23 +100,18 @@ test('managed vehicle policy reuses icon-only assignments for courier cars and i
   const changed=[...courier,...tractors];
 
   assert.equal(vehicles.length,143);
-  assert.equal(courier.length,12);
+  assert.equal(courier.length,0);
   assert.equal(tractors.length,6);
   assert.equal((counts['Cargo van']||[]).length+(counts['Pickup truck']||[]).length
     +(counts['Pickup stake body']||[]).length+(counts['Mini Open Body Truck']||[]).length
-    +(counts['Mini Stake Body Truck']||[]).length+(counts['Mini Box Truck']||[]).length,91);
-  assert.equal((counts['Light Box Truck']||[]).length+(counts['Light Stake Body Truck']||[]).length,15);
+    +(counts['Mini Stake Body Truck']||[]).length+(counts['Mini Box Truck']||[]).length,100);
+  assert.equal((counts['Light Box Truck']||[]).length+(counts['Light Stake Body Truck']||[]).length,18);
   assert.equal((counts['Medium Box Truck']||[]).length+(counts['Medium Stake Body Truck']||[]).length,9);
   assert.equal((counts['Heavy Rigid Stake Body Truck']||[]).length,5);
   assert.equal((counts['Heavy Rigid Stake Body Truck + Trailer']||[]).length,5);
   assert.equal((counts['Tractor + Container Trailer']||[]).length,2);
   assert.equal((counts['Tractor + Dry Van Trailer']||[]).length,2);
   assert.equal((counts['Tractor + Heavy Equipment Trailer']||[]).length,2);
-  assert.equal(courier.filter(vehicle=>SMALL_LOCAL_VEHICLE_CONFIGURATIONS.has(
-    originalById.get(vehicle.id)?.cargo_configuration
-  )).length,9);
-  assert.equal(courier.filter(vehicle=>String(originalById.get(vehicle.id)?.cargo_configuration)
-    .startsWith('Light ')).length,3);
   assert.equal(changed.every(vehicle=>!userById.get(assignmentByVehicle.get(vehicle.id))
     ?.driver_portrait_preset),true);
   assert.equal(tractors.every(vehicle=>vehicle.trailer_interchangeable===true),true);

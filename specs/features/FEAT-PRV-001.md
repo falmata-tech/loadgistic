@@ -1,7 +1,7 @@
 ---
 id: FEAT-PRV-001
 title: Truck-linked public transporter microsites
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001, FEAT-LST-001]
 problem: Transport providers need to be represented as credible businesses, while visitors need rich public context before making contact.
 behavior: Fleet transporters and self-managed providers with current public trucks receive canonical `/@handle` microsites reached from truck details rather than a Provider Market, provider map, Area Market, or provider list. Providers manage accurate public contacts, business content, one general base region or federal city, and one validated profile image. Every microsite uses one Loadgistic-controlled white-space template and presents each active truck through a detailed safe card with a lazily opened relative map when that truck has current public capacity.
 contracts: [ProviderMicrosite, MicrositeTruckCard, MicrositeTruckMap, PublicProviderHandle, ProviderBaseRegion, ProviderOperatingModel, ProviderProfileImage, SeededTransporterPortrait, SharedProviderTemplate, PublicContactPolicy, YouTubeVideoReference, ProviderPageCommand, PublicFleetProjection]
@@ -67,12 +67,13 @@ And each claim is based on owner input or current records rather than invented m
 And a low rating that is awaiting review remains visible and included in the public count and average\
 And the page remains usable on mobile and without playing media.
 
-### Scenario: the profile hierarchy puts usable fleet information first
+### Scenario: owner details precede the truck list
 
 Given a visitor opens a transporter microsite on a wide or narrow screen\
 When the profile renders\
 Then a compact identity header presents the operating model, public base, fleet count, review summary, and provider-controlled contact actions without a marketing-sized hero\
-And the active fleet and current-capacity section follows that identity header before longer company, credential, media, regular-service, and review content\
+And About, transport services, reviewed company/owner documents, introduction media, regular service and shipment reviews appear next, before the truck list
+And provider regular service stays the same when the truck page changes\
 And each later section has one descriptive heading and a visually distinct purpose rather than repeating the provider name or page title\
 And desktop uses the available width without compressing truck details into small tiles\
 And phone layouts use one readable column with no horizontal overflow, clipped action, or hidden truck detail.
@@ -80,11 +81,30 @@ And phone layouts use one readable column with no horizontal overflow, clipped a
 ### Scenario: every active truck receives a detailed public card
 
 Given a published provider owns one or more active trucks\
-When a visitor opens the provider microsite\
-Then every active truck receives its own detailed card with platform truck number, make, model, cargo configuration, latest Empty or Partial state when published, reported Service area or Capacity route, provider regular service, separate capacity and approximate-location age, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
+When a visitor views the truck list\
+Then every active truck can be reached through the existing bounded pagination and receives its own detailed card with platform truck number, make, model, cargo configuration, latest Empty or Partial state when published, reported Service area or Capacity route, provider regular service, separate capacity and approximate-location age, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
 And a Company driver names the employing fleet transporter while an Owner-operator or Self-managed driver remains clearly independent\
 And plate, Driver surname, private account details, exact coordinates, proof files, and inactive trucks remain absent\
 And trucks with no published Empty or Partial signal remain visible as part of the provider's fleet but show Ask about this truck instead of an old location or availability claim.
+
+### Scenario: a single truck appears directly while fleets expand on request
+
+Given a published transporter profile has one active truck\
+When the visitor opens its profile\
+Then that truck and its assigned Driver appear below all owner details without an expand button or a one-result pagination footer.
+
+Given a published transporter profile has more than one active truck\
+When the visitor opens the profile without a truck-page request\
+Then a keyboard-accessible View trucks and drivers control appears after owner details\
+And the truck list and pagination are initially collapsed\
+When the visitor opens it\
+Then the existing cards show at most twelve active trucks and their Driver details\
+And the visitor can collapse the list again\
+And page links, reloads and bookmarked truck pages keep the list expanded and preserve the provider scope\
+And page links move to the list, without requiring another click or scrolling past owner details\
+And the decision uses the provider's total active truck count, not the number on the current page\
+And a final page containing one truck still belongs to the expandable fleet\
+And a profile with no eligible truck never displays an empty fleet button.
 
 ### Scenario: a truck map compares public capacity with the visitor
 
@@ -158,3 +178,75 @@ And arbitrary embed HTML or non-allowlisted hosts are rejected.
 - Compatibility: legacy profile URLs redirect to canonical provider handles
 - Application services: safe public provider/fleet projection, provider operating model, and owner-scoped page update
 - Tests: repository, authorization, truck-linked microsite and truck-map E2E, focused visual review, and release visual audit
+
+## Complete bounded public fleet (verified locally; rollout pending)
+
+Given a published transporter owns more than 96 active trucks\
+When a visitor opens its canonical microsite and follows fleet page navigation\
+Then each response renders at most 12 trucks ordered by platform number and ID\
+And every active owned truck remains reachable through numbered pages\
+And the header reports the whole active-fleet count while capacity counts describe
+only the displayed page\
+And page-specific capacity reads select those vehicle IDs before latest-state
+selection, retaining existing Open/Empty/Partial/active-Driver privacy rules\
+And a truck beyond the previous 96-capacity boundary still shows its current
+public capacity and can open its map\
+And private, Full, Off Duty and unassigned capacity never becomes a public signal.
+
+Given a visitor changes fleet page or requests an invalid or now-empty page\
+When the server resolves the public provider\
+Then invalid page syntax starts at page one and an out-of-range positive page
+clamps to the last available page\
+And provider type, aggregate truck evidence, business details and review totals
+remain independent of the selected fleet page\
+And aggregate truck evidence uses each truck's latest approval, including expiry,
+before selecting the fleet summary\
+And page navigation uses /@handle with browser Back support\
+And unpublished/unknown providers remain unavailable and no private plate, account
+contact, proof path or exact location is added to the public projection.
+
+Contracts: service-only `public_provider_fleet_page` returns a 12-row owner-scoped
+page, exact count and bounded aggregate evidence; `public_capacity_page` accepts
+an optional server-owned vehicle ID restriction before its latest-state query.
+No public API exposes that internal filter. Apply additive migration 088 before
+app rollout. The migration is read-only apart from function/index definitions;
+rollback hides pagination while retaining schema. No remote apply is authorized.
+Tests: `tests/public-provider-paging.test.mjs`, `tests/sql/public-provider-paging.sql`,
+`tests/e2e/public-provider-paging.spec.ts`; SQL, browser, quality and build gates
+passed locally. Final counts, screenshots and limits are in
+`docs/BUILD_VERIFICATION.md`.
+
+### Scenario: public rendering receives no hidden intermediate data (F19)
+
+Given a published provider hides a contact and a Driver has a private surname\
+When its public profile is rendered, including development RSC serialization\
+Then PostgreSQL projects hidden contacts as null before the application receives them\
+And public Driver-name reads contain only the first name\
+And image presence is a boolean, never a private Storage object path.
+
+Contracts: migration 095 adds service-only bounded public metadata/name queries.
+Publication and exactly-one-owner scope are checked before metadata projection.
+Observability remains generic read failures without private values. Apply 095
+before the public-page adapter; rollback removes the adapter exposure while
+retaining additive RPCs. Regression evidence: rollback SQL
+`tests/sql/public-provider-privacy.sql` and desktop/phone full-paging HTML privacy
+assertions in `tests/e2e/public-provider-paging.spec.ts`.
+
+
+## Owner-first profile layout — local evidence, 2026-09-23
+
+Tests: `tests/public-provider-paging.test.mjs` and
+`tests/e2e/public-provider-paging.spec.ts` cover unchanged bounded paging,
+provider-scoped regular-service labels, privacy, collapse/keyboard expansion,
+105-truck and 13-truck traversal, and a single truck without a toggle. All six
+focused desktop/phone cases pass (initial selector correction retained in
+PROGRESS). `tests/e2e/smoke.spec.ts` now expects owner details before fleet and
+opens the disclosure before interacting with a truck map; it remains part of
+the post-approval gate. Actual Rift Valley screenshots and bookmarked reload
+checks are in `artifacts/provider-layout-owner-20260923/`.
+
+Regular-service projection returns labels only from at most one provider-scoped
+row; it does not expose arbitrary record fields, author IDs or storage references.
+No schema or authorization change belongs to the profile-layout adjustment.
+Rollback restores the prior layout while retaining all fleet and document records.
+Owner visual approval and full release gates remain pending; nothing is deployed.

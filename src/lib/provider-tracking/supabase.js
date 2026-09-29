@@ -1,6 +1,8 @@
+import {readWindowedPage} from '../pagination.js';
 import {randomUUID} from 'node:crypto';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {normalizePrivateContactEmail} from '../domain.js';
+import {readPrivateUpload} from '../private-storage.js';
 import {
   hashProviderTrackingCode,
   hashTrackingAccessCode,
@@ -186,6 +188,18 @@ export async function getSupabaseProviderGuestTracking(id,recipientDigest){
   return data?payload(data):null;
 }
 
+export async function readSupabaseProviderTrackingProof(user,shipmentId,eventId,recipientDigest=/** @type {string|null} */(null)){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('provider_tracking_proof_file',{
+    actor_user_id:user?.id||null,target_shipment_id:shipmentId,target_event_id:eventId,
+    requested_recipient_digest:recipientDigest
+  });
+  if(error)throw trackingError('SUPABASE_TRACKING_PROOF_READ_FAILED',error);
+  if(!data)return null;
+  const bytes=await readPrivateUpload(data.storage_path);
+  return bytes?{bytes,mimeType:data.mime_type,originalName:data.original_name}:null;
+}
+
 export async function addSupabaseProviderTrackingRecipient(user,shipmentId,emailValue){
   const email=normalizePrivateContactEmail(emailValue);
   const client=createSupabaseAdminClient();
@@ -261,18 +275,15 @@ export async function disputeSupabaseProviderReview(user,reviewId,reason){
 }
 
 export async function listSupabaseProviderReviewModeration(user,status='PENDING',options={}){
-  const pageSize=Math.max(1,Math.min(100,Number(options.pageSize)||12));
-  const page=Math.max(1,Number(options.page)||1);
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('provider_review_moderation_queue',{
-    actor_user_id:user.id,requested_status:String(status||'PENDING').toUpperCase(),
-    requested_offset:(page-1)*pageSize,requested_limit:pageSize
-  });
-  if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_QUEUE_FAILED',error);
-  const rows=data||[];
-  const items=rows.map(row=>payload(row));
-  const total=Number(rows[0]?.total_count||0);
-  return {items,total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize))};
+  return readWindowedPage(async(offset,limit)=>{
+    const {data,error}=await client.rpc('provider_review_moderation_queue',{
+      actor_user_id:user.id,requested_status:String(status||'PENDING').toUpperCase(),
+      requested_offset:offset,requested_limit:limit
+    });
+    if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_QUEUE_FAILED',error);
+    return data||[];
+  },options,100);
 }
 
 export async function resolveSupabaseProviderReview(user,reviewId,status,note=''){
@@ -282,4 +293,42 @@ export async function resolveSupabaseProviderReview(user,reviewId,status,note=''
     requested_resolution:String(status||'').toUpperCase(),requested_note:String(note||'')
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_RESOLUTION_FAILED',error);
+}
+
+
+export async function requestTrackingEmailSession(emailValue){
+ const email=normalizePrivateContactEmail(emailValue),challengeId=randomUUID();
+ const accessCode=providerTrackingOtpCode(challengeId);
+ const {data,error}=await createSupabaseAdminClient().rpc('request_tracking_email_session',{
+  challenge_id:challengeId,normalized_recipient_email:email,recipient_digest:providerTrackingRecipientDigest(email),
+  challenge_code_digest:hashTrackingAccessCode(accessCode),challenge_expires_at:new Date(Date.now()+10*60*1000).toISOString()
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_OTP_REQUEST_FAILED',error);
+ return data?{deliveryQueued:true,challengeId,accessCode}:{deliveryQueued:false,challengeId};
+}
+
+export async function verifyTrackingEmailSession(emailValue,challengeId,otp){
+ const {data,error}=await createSupabaseAdminClient().rpc('consume_tracking_email_session',{
+  challenge_id:String(challengeId||''),recipient_digest:providerTrackingRecipientDigest(normalizePrivateContactEmail(emailValue)),
+  submitted_code_digest:hashTrackingAccessCode(String(otp||'').trim())
+ });
+ if(error||!data)throw trackingError('TRACKING_ACCESS_DENIED',error);
+ return data;
+}
+
+/** @returns {Promise<{total:number,items:Array<{id:string,code:string,origin:string,destination:string,operational_status:string,created_at:string}>}>} */
+export async function listTrackingEmailShipments(recipientDigest,offset=0){
+ const {data,error}=await createSupabaseAdminClient().rpc('list_tracking_email_shipments',{
+  requested_recipient_digest:recipientDigest,requested_offset:offset
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_GUEST_TRACKING_FAILED',error);
+ return data;
+}
+
+export async function submitTrackingEmailReview(shipmentId,recipientDigest,rating,note){
+ const {data,error}=await createSupabaseAdminClient().rpc('submit_tracking_email_review',{
+  target_shipment_id:shipmentId,requested_recipient_digest:recipientDigest,requested_rating:rating,requested_note:note
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_SUBMIT_FAILED',error);
+ return data;
 }

@@ -16,7 +16,7 @@ test('public account access stays unified and follows session state',async({page
   const publicNavigation=desktop
     ?page.getByRole('navigation',{name:'Public workspace navigation'})
     :page.locator('.public-session-compact');
-  await expect(publicNavigation.getByRole('link',{name:/Account access|Log in|Transporter login/,exact:true})).toBeVisible();
+  await expect(publicNavigation.getByRole('link',{name:/Transporter login/,exact:true})).toBeVisible();
   await expect(publicNavigation.getByRole('link',{name:'Dashboard',exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
 
@@ -26,12 +26,9 @@ test('public account access stays unified and follows session state',async({page
   const emailForm=page.getByTestId('email-code-request-form');
   const google=page.getByRole('button',{name:'Continue with Google'});
   await expect(emailForm).toBeVisible();
-  await expect(google).toBeVisible();
+  await expect(google).toHaveCount(0);
   await expect(page.getByText(/Existing account email|only if this address has a transporter account/i)).toHaveCount(0);
-  const [emailBox,googleBox]=await Promise.all([emailForm.boundingBox(),google.boundingBox()]);
-  expect(emailBox).not.toBeNull();
-  expect(googleBox).not.toBeNull();
-  expect(emailBox!.y).toBeLessThan(googleBox!.y);
+  await expect(page.locator('.auth-context-panel')).toHaveCount(0);
   await expect(page.getByRole('link',{name:/Create a transporter account|Join/i})).toHaveCount(0);
   await expect(page.getByText(/New to Loadgistic\?|Already have an account\?/i)).toHaveCount(0);
 
@@ -45,7 +42,7 @@ test('public account access stays unified and follows session state',async({page
     ?page.getByRole('navigation',{name:'Public workspace navigation'})
     :page.locator('.public-session-compact');
   await expect(signedInNavigation.getByRole('link',{name:'Dashboard',exact:true})).toBeVisible();
-  await expect(signedInNavigation.getByRole('link',{name:/Account access|Log in|Transporter login/,exact:true})).toHaveCount(0);
+  await expect(signedInNavigation.getByRole('link',{name:/Transporter login/,exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
 });
 

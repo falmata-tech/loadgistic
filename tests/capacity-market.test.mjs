@@ -51,18 +51,18 @@ test('managed fixture presents a busy, supply-only Ethiopian freight market',()=
   assert.equal(tables.capacities.every(capacity=>['OPEN','SAVED_PARTNERS'].includes(capacity.visibility)),true);
 });
 
-test('mini trucks lead a compact-delivery mix that includes courier cars but no motorcycles',()=>{
+test('mini trucks lead a freight mix without courier cars or motorcycles',()=>{
   const small=tables.vehicles.filter(vehicle=>smallVehicleTypes.has(vehicle.cargo_configuration));
   const courier=tables.vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
-  assert.equal(small.length,91);
-  assert.equal(courier.length,12);
-  assert.ok((small.length+courier.length)/tables.vehicles.length>=0.7);
+  assert.equal(small.length,100);
+  assert.equal(courier.length,0);
+  assert.ok((small.length+courier.length)/tables.vehicles.length>=2/3);
   for(const type of smallVehicleTypes){
     assert.ok(small.some(vehicle=>vehicle.cargo_configuration===type),type);
   }
   const counts=Object.fromEntries([...new Set(tables.vehicles.map(vehicle=>vehicle.cargo_configuration))]
     .map(configuration=>[configuration,tables.vehicles.filter(vehicle=>vehicle.cargo_configuration===configuration).length]));
-  assert.equal((counts['Light Stake Body Truck']||0)+(counts['Light Box Truck']||0),15);
+  assert.equal((counts['Light Stake Body Truck']||0)+(counts['Light Box Truck']||0),18);
   assert.equal((counts['Medium Stake Body Truck']||0)+(counts['Medium Box Truck']||0),9);
   assert.equal(counts['Heavy Rigid Stake Body Truck'],5);
   assert.equal(counts['Heavy Rigid Stake Body Truck + Trailer'],5);
@@ -70,7 +70,7 @@ test('mini trucks lead a compact-delivery mix that includes courier cars but no 
   assert.equal(counts['Tractor + Dry Van Trailer'],2);
   assert.equal(counts['Tractor + Heavy Equipment Trailer'],2);
   assert.equal(counts['Courier motorcycle'],undefined);
-  assert.equal(counts['Courier car'],12);
+  assert.equal(counts['Courier car'],undefined);
   assert.equal(JSON.stringify(tables).includes('Courier motorcycle'),false);
   assert.equal(tables.vehicles.filter(vehicle=>vehicle.trailer_interchangeable).every(vehicle=>
     /^(FAW J6P|Shacman X3000|Sinotruk HOWO)$/.test(`${vehicle.make} ${vehicle.model}`)

@@ -1,3 +1,4 @@
+import {reviewQueueReturnPath} from '@/lib/review-navigation.js';
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { resolveProviderReview } from '@/lib/provider-tracking.js';
@@ -9,10 +10,11 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   const form=await request.formData();
+  const returnTo=reviewQueueReturnPath(text(form,'returnTo'),'ratings');
   try {
     await resolveProviderReview(user,id,text(form,'status'),text(form,'reviewNote'));
-    return redirectWith(request,'/admin/reviews?tab=ratings','success','Rating review completed.');
+    return redirectWith(request,returnTo,'success','Rating review completed.');
   } catch(error) {
-    return redirectWith(request,'/admin/reviews?tab=ratings','error',errorMessage(error));
+    return redirectWith(request,returnTo,'error',errorMessage(error));
   }
 }

@@ -1,10 +1,14 @@
 'use client';
 
+
+import {browserRequest} from '@/lib/browser-request';
+import {Text,Localized,useTranslation} from '@/components/localization';
 import {KeyRound,Mail} from 'lucide-react';
 import React from 'react';
 import {useRouter} from 'next/navigation';
 
 export function SharedCapacityAccessForm({localInbox=null}:{localInbox?:string|null}){
+  const {t}=useTranslation();const pending=React.useRef(false);
   const router=useRouter();
   const [email,setEmail]=React.useState('');
   const [code,setCode]=React.useState('');
@@ -14,41 +18,41 @@ export function SharedCapacityAccessForm({localInbox=null}:{localInbox?:string|n
   const [localTestCode,setLocalTestCode]=React.useState('');
   const [error,setError]=React.useState('');
   const [busy,setBusy]=React.useState(false);
+  const [ready,setReady]=React.useState(false);
+  React.useEffect(()=>setReady(true),[]);
 
   async function requestCode(event:React.FormEvent){
-    event.preventDefault();setBusy(true);setError('');setMessage('');setNotice('');setLocalTestCode('');
+    event.preventDefault();if(pending.current)return;pending.current=true;setBusy(true);setError('');setMessage('');setNotice('');setLocalTestCode('');
     const form=new FormData();form.set('email',email);
     try{
-      const response=await fetch('/api/shared-capacity/otp',{method:'POST',body:form,headers:{accept:'application/json'}});
-      const result=await response.json();
+      const {response,data:result}=await browserRequest<{error?:string;challengeId?:string;message?:string;localTestCode?:string;verificationRequired?:boolean;path:string}>('/api/shared-capacity/otp',{method:'POST',body:form,headers:{accept:'application/json'}});
       if(!response.ok)throw new Error(result.error||'The code could not be sent.');
       if(!result.verificationRequired){
         setStage('EMAIL');setCode('');setNotice(result.message||'No transporter has shared capacity with this email yet.');return;
       }
-      setStage('VERIFY');setMessage(result.message);setLocalTestCode(result.localTestCode||'');if(result.localTestCode)setCode(result.localTestCode);
-    }catch(caught){setError(caught instanceof Error?caught.message:'The code could not be sent.');}
-    finally{setBusy(false);}
+      setStage('VERIFY');setMessage(result.message||'Check your email for a one-time code.');setLocalTestCode(result.localTestCode||'');if(result.localTestCode)setCode(result.localTestCode);
+    }catch(caught){setError(caught instanceof Error&&caught.name==='Error'&&caught.message!=='REQUEST_TIMEOUT'?caught.message:'The connection took too long. Try again.');}
+    finally{pending.current=false;setBusy(false);}
   }
 
   async function verifyCode(event:React.FormEvent){
-    event.preventDefault();setBusy(true);setError('');
+    event.preventDefault();if(pending.current)return;pending.current=true;setBusy(true);setError('');
     const form=new FormData();form.set('email',email);form.set('code',code);
     try{
-      const response=await fetch('/api/shared-capacity/access',{method:'POST',body:form,headers:{accept:'application/json'}});
-      const result=await response.json();
+      const {response,data:result}=await browserRequest<{error?:string;challengeId?:string;message?:string;localTestCode?:string;verificationRequired?:boolean;path:string}>('/api/shared-capacity/access',{method:'POST',body:form,headers:{accept:'application/json'}});
       if(!response.ok)throw new Error(result.error||'The code could not be verified.');
       router.refresh();
-    }catch(caught){setError(caught instanceof Error?caught.message:'The code could not be verified.');}
-    finally{setBusy(false);}
+    }catch(caught){setError(caught instanceof Error&&caught.name==='Error'&&caught.message!=='REQUEST_TIMEOUT'?caught.message:'The connection took too long. Try again.');}
+    finally{pending.current=false;setBusy(false);}
   }
 
-  return <div className="card shared-capacity-access-card"><Mail aria-hidden="true"/><div><h2>Open your private capacity map</h2><p>Use an email a transporter approved. One code opens every active truck shared with that email—no account or dashboard.</p></div>
-    {stage==='EMAIL'?<form onSubmit={requestCode}><label>Email<input name="email" type="email" autoComplete="email" value={email} onChange={event=>{setEmail(event.target.value);setNotice('');}} required/></label><button className="button" disabled={busy}><Mail aria-hidden="true"/>{busy?'Checking…':'Continue with email'}</button></form>
-      :<form onSubmit={verifyCode}><label>Email<input name="email" type="email" autoComplete="email" value={email} onChange={event=>setEmail(event.target.value)} required/></label>{localTestCode?<p className="shared-capacity-local-code" role="status"><small>Local test code</small><strong>{localTestCode}</strong><span>This appears only because email delivery is not configured locally.</span></p>:null}<label>One-time code<input name="code" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} onChange={event=>setCode(event.target.value.replace(/\D/g,'').slice(0,6))} required/></label><button className="button" disabled={busy}><KeyRound aria-hidden="true"/>{busy?'Checking…':'Open private capacity'}</button><button type="button" className="text-button" onClick={()=>{setStage('EMAIL');setCode('');setMessage('');setLocalTestCode('');}}>Use another email</button>{localInbox?<LocalInboxLink url={localInbox}/>:null}</form>}
-    {message?<p className="form-success" role="status">{message}</p>:null}{notice?<p className="form-notice" role="status">{notice}</p>:null}{error?<p className="form-error" role="alert">{error}</p>:null}
+  return <div className="card shared-capacity-access-card"><Mail aria-hidden="true"/><div><h2><Text message="Trucks shared with you"/></h2><p><Text message="Enter the email a transporter shared with. Verify it with a code to see their capacity, routes and availability. No account needed."/></p></div>
+    {stage==='EMAIL'?<form onSubmit={requestCode}><label><Text message="Email"/><input name="email" type="email" autoComplete="email" value={email} disabled={!ready||busy} onChange={event=>{setEmail(event.target.value);setNotice('');}} required/></label><button className="button" disabled={!ready||busy}><Mail aria-hidden="true"/>{busy?<Text message="Checking…"/>:<Text message="Continue with email"/>}</button></form>
+      :<form onSubmit={verifyCode}><label><Text message="Email"/><input name="email" type="email" autoComplete="email" value={email} disabled={!ready||busy} onChange={event=>setEmail(event.target.value)} required/></label>{localTestCode?<p className="shared-capacity-local-code" role="status"><small><Text message="Local test code"/></small><strong>{localTestCode}</strong><span><Text message="This appears only because email delivery is not configured locally."/></span></p>:null}<label><Text message="6-digit email code"/><input name="code" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} value={code} disabled={!ready||busy} onChange={event=>setCode(event.target.value.replace(/\D/g,'').slice(0,6))} required/></label><button className="button" disabled={!ready||busy}><KeyRound aria-hidden="true"/>{busy?<Text message="Checking…"/>:<Text message="View shared signals"/>}</button><button type="button" className="text-button" disabled={!ready||busy} onClick={()=>{setStage('EMAIL');setCode('');setMessage('');setLocalTestCode('');}}><Text message="Use another email"/></button>{localInbox?<LocalInboxLink url={localInbox}/>:null}</form>}
+    {message?<p className="form-success" role="status">{t(message)}</p>:null}{notice?<p className="form-notice" role="status">{t(notice)}</p>:null}{error?<p className="form-error" role="alert">{t(error)}</p>:null}
   </div>;
 }
 
 function LocalInboxLink({url}:{url:string}){
-  return <a className="auth-inline-link" href={url} target="_blank" rel="noreferrer" aria-label="Open the local inbox in a new tab">Local testing: open the local inbox <span aria-hidden="true">↗</span></a>;
+  return <Localized as="a" copy={["aria-label"]} className="auth-inline-link" href={url} target="_blank" rel="noreferrer" aria-label="Open the local inbox in a new tab"><Text message="Local testing: open the local inbox "/><span aria-hidden="true">↗</span></Localized>;
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import React from 'react';
-import { LoaderCircle, MapPin } from 'lucide-react';
+import {useTranslation} from './localization';
+import {LoadingIndicator} from './loading-state';
+import { MapPin } from 'lucide-react';
 
 type PlaceResult={
   id:string;
@@ -29,6 +31,7 @@ function cachePlaces(query:string,results:PlaceResult[]){
 }
 
 export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,placeRefName,defaultPlaceRef='',onPlaceSelect,...props}:Props) {
+  const {t}=useTranslation();
   const [text,setText]=React.useState(String(value ?? defaultValue ?? ''));
   const [results,setResults]=React.useState([] as PlaceResult[]);
   const [open,setOpen]=React.useState(false);
@@ -85,11 +88,11 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,placeR
 
   return <div className="place-combobox">
     {placeRefName?<input type="hidden" name={placeRefName} value={placeRef}/>:null}
-    <input {...props} id={id} value={text} onChange={update} onFocus={()=>setOpen(true)} onBlur={event=>{
+    <input {...props} placeholder={props.placeholder?t(props.placeholder):undefined} aria-label={props['aria-label']?t(props['aria-label']):undefined} id={id} value={text} onChange={update} onFocus={()=>setOpen(true)} onBlur={event=>{
       window.setTimeout(()=>setOpen(false),120);
       onBlur?.(event);
     }} autoComplete="off" role="combobox" aria-autocomplete="list" aria-expanded={open&&Boolean(results.length)} aria-controls={`${id}-results`}/>
-    {loading?<LoaderCircle className="place-loading" aria-label="Searching places"/>:null}
+    {loading?<LoadingIndicator className="place-loading" label="Searching places"/>:null}
     {open&&results.length?<div className="place-results" id={`${id}-results`} role="listbox">
       {results.map((place:PlaceResult)=><button type="button" role="option" className="place-result" key={place.id} onMouseDown={event=>event.preventDefault()} onClick={()=>choose(place)}>
         <MapPin aria-hidden="true"/><span><strong>{place.display_name}</strong><small>{place.place_type}</small></span>

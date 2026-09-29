@@ -7,6 +7,14 @@ import {scanPrivateUpload,uploadScannerStatus} from '../src/lib/upload-scanner.j
 const root=process.cwd();
 const png=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00]);
 
+test('explicit validation-only inspection never claims antivirus and never calls a vendor',async()=>{
+  const environment={NODE_ENV:'production',UPLOAD_SCANNER_BACKEND:'validation-only'};
+  assert.deepEqual(uploadScannerStatus(environment),{backend:'validation-only',configured:true,productionSafe:false});
+  assert.deepEqual(await scanPrivateUpload(png,'image/png',{environment,fetchImpl:()=>{throw new Error('Unexpected vendor call');}}),{clean:null,provider:'validation-only'});
+  await assert.rejects(()=>scanPrivateUpload(png,'image/png',{environment:{NODE_ENV:'production'}}),/UPLOAD_SCANNER_NOT_CONFIGURED/);
+  assert.throws(()=>uploadScannerStatus({UPLOAD_SCANNER_BACKEND:'disabled'}),/INVALID_UPLOAD_SCANNER_BACKEND/);
+});
+
 test('production scanning requires the managed adapter while local testing stays explicit',()=>{
   assert.deepEqual(uploadScannerStatus({NODE_ENV:'development',UPLOAD_SCANNER_BACKEND:'local'}),{
     backend:'local',configured:true,productionSafe:false

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 export const SMALL_LOCAL_VEHICLE_CONFIGURATIONS=new Set([
-  'Courier car','Cargo van','Pickup truck','Pickup stake body',
+  'Cargo van','Pickup truck','Pickup stake body',
   'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
 ]);
 
@@ -30,11 +30,6 @@ function stableRows(rows,count){
   return rows.filter(row=>ids.has(row.id));
 }
 
-const ORIGINAL_SMALL_CONFIGURATIONS=new Set([
-  'Cargo van','Pickup truck','Pickup stake body',
-  'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
-]);
-const LIGHT_CONFIGURATIONS=new Set(['Light Stake Body Truck','Light Box Truck']);
 const MEDIUM_CONFIGURATIONS=new Set(['Medium Stake Body Truck','Medium Box Truck']);
 
 export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){
@@ -42,10 +37,6 @@ export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){
   const driverByVehicleId=new Map(assignments.filter(assignment=>Number(assignment.active)!==0)
     .map(assignment=>[assignment.vehicle_id,assignment.driver_user_id]));
   const iconOnly=vehicle=>!userById.get(driverByVehicleId.get(vehicle.id))?.driver_portrait_preset;
-  const courierLocal=stableTake(vehicles.filter(vehicle=>iconOnly(vehicle)
-    &&ORIGINAL_SMALL_CONFIGURATIONS.has(vehicle.cargo_configuration)),9);
-  const courierRegional=stableTake(vehicles.filter(vehicle=>iconOnly(vehicle)
-    &&LIGHT_CONFIGURATIONS.has(vehicle.cargo_configuration)),3);
   const tractorSources=[
     ...stableRows(vehicles.filter(vehicle=>iconOnly(vehicle)
       &&MEDIUM_CONFIGURATIONS.has(vehicle.cargo_configuration)),2),
@@ -54,22 +45,15 @@ export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){
     ...stableRows(vehicles.filter(vehicle=>iconOnly(vehicle)
       &&vehicle.cargo_configuration==='Heavy Rigid Stake Body Truck + Trailer'),2)
   ].sort((first,second)=>stableScore(first.id)-stableScore(second.id)||String(first.id).localeCompare(String(second.id)));
-  if(courierLocal.size!==9||courierRegional.size!==3||tractorSources.length!==6){
+  if(tractorSources.length!==6){
     throw new Error('MANAGED_FIXTURE_VEHICLE_CATALOG_SOURCE_MISSING');
   }
-  const courierIds=new Set([...courierLocal,...courierRegional]);
   const tractorConfigurationById=new Map(tractorSources.map((vehicle,index)=>[
     vehicle.id,TRACTOR_TRAILER_CONFIGURATIONS[index%TRACTOR_TRAILER_CONFIGURATIONS.length]
   ]));
-  const courierModels=[['Toyota','Corolla'],['Toyota','Vitz'],['Suzuki','Dzire']];
 
   return vehicles.map(vehicle=>{
-    if(courierIds.has(vehicle.id)){
-      const [make,model]=courierModels[stableScore(vehicle.id)%courierModels.length];
-      return {...vehicle,label:`${make} ${model}`,category:'Courier car',make,model,
-        cargo_configuration:'Courier car',trailer_interchangeable:false,
-        supported_trailer_configurations:[]};
-    }
+
     const attachedTrailer=tractorConfigurationById.get(vehicle.id);
     if(attachedTrailer){
       const tractorModels=[['FAW','J6P'],['Shacman','X3000'],['Sinotruk','HOWO']];

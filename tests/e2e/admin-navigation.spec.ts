@@ -1,14 +1,7 @@
 import {expect,test} from '@playwright/test';
 
-async function loginAsAdministrator(page:any){
-  await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill('admin@loadgistic.local');
-  await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(/\/admin$/);
-}
+import {auditLogin} from './audit-helpers';
+async function loginAsAdministrator(page:any){await auditLogin(page,'admin@loadgistic.local');}
 
 test('administrator More navigation reaches one role-complete menu',async({page}:{page:any})=>{
   await loginAsAdministrator(page);
@@ -39,6 +32,7 @@ test('administrator More navigation reaches one role-complete menu',async({page}
 test('featured management previews its canonical public programme',async({page}:{page:any})=>{
   await loginAsAdministrator(page);
   await page.goto('/admin/featured');
+  await page.locator('#featured-day-editor>summary').click();
   const preview=page.getByRole('link',{name:'View public programme'});
   await expect(preview).toBeVisible();
   await expect(preview).toHaveAttribute('href','/featured');
@@ -58,7 +52,7 @@ test('administrator primary destinations resolve to working pages',async({page}:
 test('administrator Overview exposes every core record and management area',async({page}:{page:any})=>{
   await loginAsAdministrator(page);
   const overview=page.locator('.admin-overview-page');
-  await expect(overview.getByRole('heading',{name:'Administration'})).toBeVisible();
+  await expect(overview.getByRole('heading',{name:'Platform overview'})).toBeVisible();
   for(const label of ['Clients','Users','Trucks','Drivers','Tracking','Capacity','Routes','Plans']){
     await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toBeVisible();
   }

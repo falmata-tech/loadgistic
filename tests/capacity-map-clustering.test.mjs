@@ -114,3 +114,33 @@ test('thousands of markers retain bounded groups without pairwise placement',()=
   assert.ok(groups.every(group=>group.memberIds.length<=MAX_CLUSTER_MEMBERS));
   assert.ok(groups.every(group=>Math.abs(group.visualOffset.x)<=MAX_VISUAL_OFFSET_PX&&Math.abs(group.visualOffset.y)<=MAX_VISUAL_OFFSET_PX));
 });
+
+test('a same-status neighbor cannot push a group into the opposite-status label',()=>{
+  const entries=[['west','EMPTY',87],['east','EMPTY',100],['partial','PARTIAL',89]]
+    .flatMap(([id,status,x])=>[0,1].map(index=>marker(`${id}-${index}`,status,x,200)));
+  const groups=buildCapacityMarkerGroups(entries,9);
+  const centers=groups.map(group=>({status:group.status,x:group.projectedAnchor.x+group.visualOffset.x,y:group.projectedAnchor.y+group.visualOffset.y}));
+  for(const first of centers)for(const second of centers){
+    if(first.status!==second.status)assert.ok(Math.abs(first.x-second.x)>=40||Math.abs(first.y-second.y)>=14,'Opposite-status labels must stay readable across cell boundaries');
+  }
+  assert.deepEqual(buildCapacityMarkerGroups([...entries].reverse(),9),groups);
+  assert.ok(groups.every(group=>Math.hypot(group.visualOffset.x,group.visualOffset.y)<=MAX_VISUAL_OFFSET_PX));
+});
+
+test('status separation checks final positions when opposite display offsets cross',()=>{
+  // Phone reproduction: anchors differ by 41px horizontally and 12px vertically;
+  // independent 32px horizontal shifts cross, leaving labels only 23px apart.
+  const entries=[
+    ...Array.from({length:6},(_,i)=>marker(`empty-${i}`,'EMPTY',105,248)),
+    ...Array.from({length:7},(_,i)=>marker(`partial-${i}`,'PARTIAL',64,236))
+  ];
+  const groups=buildCapacityMarkerGroups(entries,6);
+  for(const a of groups)for(const b of groups){
+    if(a.status===b.status)continue;
+    assert.ok(Math.abs(a.projectedAnchor.x+a.visualOffset.x-b.projectedAnchor.x-b.visualOffset.x)>=44||
+      Math.abs(a.projectedAnchor.y+a.visualOffset.y-b.projectedAnchor.y-b.visualOffset.y)>=18);
+  }
+  assert.equal(groups.reduce((n,g)=>n+g.memberIds.length,0),13);
+  assert.ok(groups.every(g=>Math.hypot(g.visualOffset.x,g.visualOffset.y)<=MAX_VISUAL_OFFSET_PX+1e-9));
+  assert.deepEqual(buildCapacityMarkerGroups([...entries].reverse(),6),groups);
+});

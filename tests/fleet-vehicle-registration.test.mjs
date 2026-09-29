@@ -24,7 +24,6 @@ test('truck registration is one owner-scoped managed command without inferred op
   assert.match(create,/INVALID_VEHICLE_CONFIGURATION/);
   assert.match(create,/PROVIDER_VEHICLE_CREATED/);
   assert.match(create,/Heavy Rigid Stake Body Truck \+ Trailer/);
-  assert.match(create,/Courier car/);
   assert.match(create,/Tractor \+ Container Trailer/);
   assert.match(create,/Tractor \+ Dry Van Trailer/);
   assert.match(create,/Tractor \+ Heavy Equipment Trailer/);
@@ -58,18 +57,17 @@ test('an owner can switch only a registered tractor to a compatible attached tra
 test('a fixed truck detail keeps map tools but omits its redundant selected-truck overlay',()=>{
   const capacity=fs.readFileSync(path.join(root,'src/components/capacity-form.tsx'),'utf8');
   const detail=fs.readFileSync(path.join(root,'src/app/app/fleet/[id]/page.tsx'),'utf8');
-  assert.match(capacity,/showTruckIdentity\?<header className="capacity-summary-map-header">\{truckBar\}<\/header>:null/);
+  assert.match(capacity,/showTruckIdentity\?<header className="capacity-summary-map-header"><section className="capacity-truck-bar">[\s\S]*?<\/header>:null/);
   assert.match(detail,/capacity-home-page fleet-truck-capacity-workspace/);
   assert.match(detail,/lockVehicleSelection/);
   assert.match(detail,/showTruckIdentity=\{false\}/);
 });
 
-test('the public catalogue has courier cars and distinct attached tractor trailers but no motorcycle',()=>{
+test('the public catalogue has freight configurations and distinct trailers without courier vehicles',()=>{
   const catalog=fs.readFileSync(path.join(root,'src/lib/vehicle-configurations.ts'),'utf8');
   const registration=fs.readFileSync(path.join(root,'src/components/vehicle-registration-fields.tsx'),'utf8');
   for(const [name,file] of [
-    ['Courier car','courier-car.jpg'],
-    ['Tractor + Container Trailer','tractor-container-trailer.jpg'],
+    ['Tractor + Container Trailer','tractor-container-flatbed.jpg'],
     ['Tractor + Dry Van Trailer','tractor-dry-van-trailer.jpg'],
     ['Tractor + Heavy Equipment Trailer','tractor-heavy-equipment-trailer.jpg']
   ]){
@@ -79,7 +77,7 @@ test('the public catalogue has courier cars and distinct attached tractor traile
   assert.match(registration,/Interchangeable tractor/);
   assert.match(registration,/Compatible trailers/);
   assert.match(registration,/Currently attached trailer/);
-  assert.doesNotMatch(catalog,/Courier motorcycle/);
+  assert.doesNotMatch(catalog,/Courier/);
 });
 
 test('fleet pages expose add and detail destinations while company drivers are filtered out',()=>{

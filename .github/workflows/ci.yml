@@ -42,11 +42,42 @@ jobs:
       - name: Start isolated Supabase
         run: npm run supabase:start
 
+      - name: Apply provider-owned PostGIS containment on isolated local services
+        run: node scripts/prepare-local-security.mjs
+
+      - name: Reject unsafe public RLS, browser relation grants and definer RPCs
+        run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
+
+      - name: Prove the security gate rejects reintroduced browser grants
+        run: node scripts/verify-database-security-gate.mjs
+
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
 
+      - name: Verify the Data API guard through SQL, REST and GraphQL
+        run: node scripts/verify-data-api-guard.mjs
+
       - name: Audit high-severity dependency advisories
         run: npm audit --audit-level=high
+
+      - name: Verify Driver linkage and optional documents without retaining test writes
+        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/capacity-driver-eligibility.sql
+
+      - name: Verify platform activation and automatic Featured with rollback
+        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/platform-controls.sql
+
+      - name: Verify audit authorization and privacy regressions with rollback
+        run: |
+          for suite in security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds \
+            fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
+            public-provider-privacy support-attachments support-history support-polling tracking-proof-access tracking-email-session truck-document-alternatives transport-requests brokerage-assignment brokerage-conversations transport-chat-follow-up capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue; do
+            echo "::group::SQL regression: $suite"
+            docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+            echo "::endgroup::"
+          done
+
+      - name: Verify queued authorization and account closure races
+        run: node scripts/verify-audit-concurrency.mjs
 
       - name: Validate specifications and source
         run: npm run check
@@ -69,10 +100,15 @@ jobs:
         if: always()
         run: supabase stop --no-backup
 
-  e2e:
+  e2e-shards:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    # Every shard owns its database and retains one Playwright worker.
+    timeout-minutes: 60
     env:
       CI: true
       SESSION_SECRET: ci-only-session-secret-not-for-production-123456
@@ -98,18 +134,35 @@ jobs:
       - name: Start isolated Supabase
         run: npm run supabase:start
 
+      - name: Apply provider-owned PostGIS containment on isolated local services
+        run: node scripts/prepare-local-security.mjs
+
+      - name: Reject unsafe public RLS, browser relation grants and definer RPCs
+        run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
+
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
+
+      - name: Verify the Data API guard through SQL, REST and GraphQL
+        run: node scripts/verify-data-api-guard.mjs
 
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
 
       - name: Run desktop and mobile browser workflows
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
 
       - name: Stop isolated Supabase
         if: always()
         run: supabase stop --no-backup
+
+  e2e:
+    needs: e2e-shards
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every browser shard to pass
+        run: test '${{ needs.e2e-shards.result }}' = 'success'
 
   container:
     needs: validate
@@ -118,6 +171,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Add non-secret build-context canaries
+        run: |
+          mkdir -p .local .netlify supabase/.temp supabase/.branches
+          touch .local/context-canary .netlify/context-canary supabase/.temp/context-canary supabase/.branches/context-canary
 
       - name: Build standalone container
         run: docker build --tag loadgistic:${{ github.sha }} .

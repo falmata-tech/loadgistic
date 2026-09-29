@@ -105,20 +105,22 @@ test('provider creation and management support bounded distinct tracking parties
 });
 
 test('public Tracking uses a staged email OTP and a recipient-bound short session',()=>{
-  assert.match(requestRoute,/requestProviderTrackingOtp\(email,trackingCode\)/);
+  assert.match(requestRoute,/requestTrackingEmailSession\(email\)/);
   assert.match(requestRoute,/if\(challenge\.deliveryQueued\)/);
   assert.match(requestRoute,/deliverTargetedAccessEmail\('TRACKING_OTP',challenge\.challengeId\)/);
   assert.match(requestRoute,/tracking-otp-recipient:/);
-  assert.match(verifyRoute,/verifyProviderTrackingOtp/);
-  assert.match(verifyRoute,/setProviderTrackingGrant\(shipment\.id,shipment\.recipientDigest\)/);
+  assert.match(verifyRoute,/verifyTrackingEmailSession/);
+  assert.match(verifyRoute,/setTrackingEmailSession\(shipment\.recipientDigest\)/);
   assert.match(auth,/provider-tracking:\$\{shipmentId\}:\$\{recipientDigest\}/);
   assert.match(auth,/\(\[a-f0-9\]\{64\}\)/);
-  assert.match(publicForm,/Approved email/);
-  assert.match(publicForm,/One-time code/);
+  assert.match(publicForm,/message="Email"/);
+  assert.match(publicForm,/6-digit email code/);
+  assert.match(publicForm,/autoComplete="one-time-code"/);
   assert.match(publicForm,/\/api\/tracking\/otp/);
   assert.match(publicForm,/\/api\/tracking\/unlock/);
   assert.match(publicTrackingPage,/isCustomerOwner=shipment\.recipient_role==='OWNER'/);
-  assert.match(publicTrackingPage,/needsReviewCode=isCustomerOwner&&/);
+  assert.match(publicTrackingPage,/canReview=Boolean\(isCustomerOwner&&shipment\.can_review\)/);
+  assert.doesNotMatch(publicForm,/Shipment access code/);
   assert.doesNotMatch(facade,/unlockSupabaseProviderTracking|unlockProviderTracking/);
 });
 

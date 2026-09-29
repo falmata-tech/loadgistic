@@ -1,7 +1,7 @@
 import {getSupabasePublicProvider,getSupabasePublicProviderProfileImage} from './repository/supabase.js';
 
-export async function getPublicProvider(handle){
-  return getSupabasePublicProvider(handle);
+export async function getPublicProvider(handle,options={}){
+  return getSupabasePublicProvider(handle,options);
 }
 
 export async function getPublicProviderProfileImage(handle){

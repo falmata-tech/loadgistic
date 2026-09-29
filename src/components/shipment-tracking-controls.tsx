@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text} from '@/components/localization';
 import React from 'react';
 import {
   Check,
@@ -111,12 +113,12 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
             : 'Starts after Loading';
 
   return <section className="card tracking-control-panel">
-    <div className="control-panel-title"><div className="panel-title-copy"><PackageSearch aria-hidden="true"/><div><h2>Shipment update</h2><p>Choose one available action</p></div></div></div>
+    <div className="control-panel-title"><div className="panel-title-copy"><PackageSearch aria-hidden="true"/><div><h2><Text message="Shipment update"/></h2><p><Text message="Choose one available action"/></p></div></div></div>
 
-    {requiresLocation?<div className={`automatic-location ${locationFinished?'saved':allowDeviceLocation?locationState:'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{locationFinished?'Location finished':allowDeviceLocation?locationTitle:'Driver location'}</strong><small>{locationFinished?'Stopped after Unloading.':allowDeviceLocation?`Approximate location within ${privacyRadius} km · updates while this screen is open`:'The assigned Driver sends this automatically from their phone.'}</small></span>{allowDeviceLocation&&!locationFinished&&['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setLocationAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/>Retry location</button>:null}</div>:null}
+    {requiresLocation?<div className={`automatic-location ${locationFinished?'saved':allowDeviceLocation?locationState:'driver-managed'}`}><LocateFixed aria-hidden="true"/><span><strong>{locationFinished?<Text message="Location finished"/>:allowDeviceLocation?locationTitle:<Text message="Driver location"/>}</strong><small>{locationFinished?<Text message="Stopped after Unloading."/>:allowDeviceLocation?`Approximate location within ${privacyRadius} km · updates while this screen is open`:<Text message="The assigned Driver sends this automatically from their phone."/>}</small></span>{allowDeviceLocation&&!locationFinished&&['denied','error'].includes(locationState)?<button type="button" className="button secondary small icon-button-label" onClick={()=>setLocationAttempt((value:number)=>value+1)}><RefreshCw aria-hidden="true"/><Text message="Retry location"/></button>:null}</div>:null}
 
     <form action={`/api/shipments/${shipmentId}/status`} method="post" encType="multipart/form-data" className="tracking-action-form">
-      <fieldset className="form-group tracking-action-fieldset"><legend><Check aria-hidden="true"/>Shipment actions</legend><div className="tracking-action-grid">{trackingActions.map(action=>{
+      <fieldset className="form-group tracking-action-fieldset"><legend><Check aria-hidden="true"/><Text message="Shipment actions"/></legend><div className="tracking-action-grid">{trackingActions.map(action=>{
         const enabled=availableStatuses.has(action.status);
         const selected=selectedStatus===action.status;
         const Icon=action.Icon;
@@ -128,10 +130,10 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
         </label>;
       })}</div></fieldset>
 
-      {selectedAction?.acceptsProof?<div className="form-group tracking-proof-input"><label htmlFor="status-proof"><Upload aria-hidden="true"/>Proof <span className="meta">(optional)</span></label><input id="status-proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div>:null}
-      {selectedStatus==='ASSIGNED'&&needsReceiverContact?<div className="alert">Business must add the receiver name and phone first.</div>:null}
-      {selectedStatus==='ASSIGNED'&&needsShipmentVehicle?<div className="alert">Choose a truck and Driver first.</div>:null}
-      {firstAvailable?<button className="button" disabled={!selectedStatus||(selectedStatus==='ASSIGNED'&&(needsReceiverContact||needsShipmentVehicle))}><Check aria-hidden="true"/>Save {selectedAction?.label||'update'}</button>:<div className="tracking-finished"><CircleCheckBig aria-hidden="true"/><span><strong>No action needed</strong><small>This shipment has no next tracking action.</small></span></div>}
+      {selectedAction?.acceptsProof?<div className="form-group tracking-proof-input"><label htmlFor="status-proof"><Upload aria-hidden="true"/><Text message="Proof "/><span className="meta"><Text message="(optional)"/></span></label><input id="status-proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div>:null}
+      {selectedStatus==='ASSIGNED'&&needsReceiverContact?<div className="alert"><Text message="Business must add the receiver name and phone first."/></div>:null}
+      {selectedStatus==='ASSIGNED'&&needsShipmentVehicle?<div className="alert"><Text message="Choose a truck and Driver first."/></div>:null}
+      {firstAvailable?<button className="button" disabled={!selectedStatus||(selectedStatus==='ASSIGNED'&&(needsReceiverContact||needsShipmentVehicle))}><Check aria-hidden="true"/><Text message="Save "/>{selectedAction?.label||'update'}</button>:<div className="tracking-finished"><CircleCheckBig aria-hidden="true"/><span><strong><Text message="No action needed"/></strong><small><Text message="This shipment has no next tracking action."/></small></span></div>}
     </form>
   </section>;
 }

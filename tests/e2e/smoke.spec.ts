@@ -1,5 +1,31 @@
+import {openCapacityFilters,openCapacityFilterDialog} from './capacity-drawer-helper';
 import { test, expect } from '@playwright/test';
+import {mkdirSync} from 'node:fs';
+import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
+import {localAuditService,checked} from './audit-helpers';
+import {addLocalSmokeSponsor,temporarilyHideLocalSponsors} from './sponsor-fixture-helper';
+
+let cleanupSmokeSponsor:(()=>Promise<void>)|undefined;
+test.beforeEach(async({},info:{title:string})=>{
+  if(info.title==='public entry makes capacity immediately usable without an account')cleanupSmokeSponsor=await addLocalSmokeSponsor();
+});
+test.afterEach(async()=>{
+  try{await cleanupSmokeSponsor?.();}finally{cleanupSmokeSponsor=undefined;}
+});
+
+test('Featured without sponsors keeps the truck board usable',async({page}:{page:any})=>{
+  const restore=await temporarilyHideLocalSponsors();
+  try{
+    await page.goto('/featured');
+    await expect(page.locator('.featured-truck-tile').first()).toBeVisible();
+    await expect(page.locator('.transport-expo-experience')).toHaveClass(/without-sponsors/);
+    await expect(page.locator('.expo-sponsored-rail')).toHaveCount(0);
+    const mobile=(page.viewportSize()?.width||0)<=760;
+    const navigation=page.getByRole('navigation',{name:mobile?'Public mobile navigation':'Public workspace navigation'});
+    await expect(navigation.getByRole('link',{name:'Capacity',exact:true})).toBeVisible();
+  }finally{await restore();}
+});
 
 async function login(page:any,email:string){
   await page.goto('/login');
@@ -37,44 +63,31 @@ async function findCapacitySignal(page:any,query:Record<string,string>,predicate
 
 test('public entry makes capacity immediately usable without an account',async({page}:{page:any})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Open Transport Capacity',includeHidden:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('a[href="/featured"]:visible').first()).toHaveAttribute('href','/featured');
   await expect(page.locator('.featured-provider-section')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Providers',exact:true})).toHaveCount(0);
-  await expect(page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
-  await page.getByRole('button',{name:'Filters'}).click();
-  const filterDialog=page.getByRole('dialog',{name:'Filters'});
-  await expect(filterDialog).toBeVisible();
-  await expect(filterDialog.getByRole('radio',{name:'Empty Full truck available'})).toBeVisible();
-  await expect(filterDialog.getByRole('combobox',{name:/^Origin(?: \(optional\))?$/})).toBeVisible();
-  await expect(filterDialog.getByRole('combobox',{name:/^Destination(?: \(optional\))?$/})).toBeVisible();
+  const drawer=await openCapacityFilters(page);
+  await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toBeVisible();
+  const filterDialog=await openCapacityFilterDialog(page);
+  await expect(filterDialog.getByLabel('Availability',{exact:true})).toBeVisible();
   await choosePlace(filterDialog,'Origin','Adama',/Adama, Ethiopia/i);
   await choosePlace(filterDialog,'Destination','Hawassa',/Hawassa, Ethiopia/i);
-  await expect(filterDialog.getByLabel('Origin range')).toBeVisible();
-  await expect(filterDialog.getByLabel('Destination range')).toBeVisible();
-  await filterDialog.getByText('Service area',{exact:true}).click();
-  await expect(filterDialog.getByLabel('Service area place')).toBeVisible();
-  await expect(filterDialog.getByLabel('Area range')).toBeVisible();
-  await choosePlace(filterDialog,'Service area place','Addis',/Addis Ababa, Ethiopia/i);
-  await expect(filterDialog.getByLabel('Direction')).toBeVisible();
-  await filterDialog.getByText('Partial',{exact:true}).click();
-  await expect(filterDialog.getByRole('radio',{name:'Service area Empty trucks only'})).toBeDisabled();
-  await expect(filterDialog.getByRole('radio',{name:'Capacity route Empty or Partial'})).toBeChecked();
-  await expect(filterDialog.locator('.capacity-vehicle-picker')).not.toHaveAttribute('open','');
-  await filterDialog.locator('.capacity-vehicle-picker>summary').click();
-  await expect(filterDialog.getByRole('radio',{name:'Cargo van'})).toBeVisible();
-  await expect(filterDialog.getByLabel('Truck configuration')).toBeVisible();
-  await expect(filterDialog.getByLabel('Load type')).toBeVisible();
-  await expect(filterDialog.getByLabel('Minimum available space')).toHaveCount(0);
-  await expect(filterDialog.getByLabel('Stops')).toBeVisible();
-  await expect(filterDialog.getByLabel('Updated')).toBeVisible();
+  await expect(filterDialog.getByRole('group',{name:'Truck configuration',exact:true})).toBeVisible();
+  await filterDialog.locator('.capacity-configuration-picker summary').click();await expect(filterDialog.getByRole('radio',{name:'Cargo van',exact:true})).toHaveCount(1);await filterDialog.locator('.capacity-configuration-picker summary').click();
   const nearToggle=filterDialog.getByLabel('Show trucks near my area');
   await expect(nearToggle).toBeVisible();
-  if(await nearToggle.isEnabled()){
-    await nearToggle.check();
-    await expect(filterDialog.getByLabel('Distance')).toBeVisible();
-  }
+  if(await nearToggle.isEnabled()){await nearToggle.check();await expect(filterDialog.locator('#capacity-near-radius')).toBeVisible();}
+
+  await expect(filterDialog.getByRole('combobox',{name:'Origin range',exact:true})).toBeVisible();
+  await expect(filterDialog.getByRole('combobox',{name:'Destination range',exact:true})).toBeVisible();
+  await expect(filterDialog.getByRole('radiogroup',{name:'Capacity signal'})).toHaveCount(0);
+  await expect(filterDialog.getByRole('combobox',{name:'Direction',exact:true})).toBeVisible();
+  await expect(filterDialog.getByRole('combobox',{name:'Space needed',exact:true})).toBeVisible();
+  await expect(filterDialog.getByLabel('Minimum available space')).toHaveCount(0);
+  await expect(filterDialog.getByRole('combobox',{name:'Stops',exact:true})).toBeVisible();
+  await expect(filterDialog.getByRole('combobox',{name:'Updated',exact:true})).toBeVisible();
   await filterDialog.getByRole('button',{name:'Close filters'}).click();
   await expect(filterDialog).toBeHidden();
   await expect(page.getByRole('button',{name:'Map',exact:true})).toHaveCount(0);
@@ -157,14 +170,19 @@ test('public entry makes capacity immediately usable without an account',async({
     await expect(page).toHaveURL(/\?q=.+$/);
     await expect(providerDialog).toBeHidden();
     await expect(page.locator('.public-capacity-map')).toBeVisible();
-    await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+    await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster,.capacity-overview-cell').count()).toBeGreaterThan(0);
   }else{
     await expect(providerDialog.getByRole('link')).toHaveCount(1);
     await providerDialog.getByRole('button',{name:'Close featured truck details'}).click();
   }
+});
+
+test('legacy capacity URL preserves search in the filter drawer',async({page}:{page:any})=>{
   await page.goto('/capacity?q=Fuso');
   await expect(page).toHaveURL(/\?q=Fuso$/);
-  await expect(page.getByRole('combobox',{name:'Search published truck capacity'})).toHaveValue('Fuso');
+  await page.locator('.capacity-drawer-handle').waitFor({state:'attached',timeout:15000});
+  const drawer=await openCapacityFilters(page);
+  await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toHaveValue('Fuso');
 });
 
 test('public mobile shell keeps every visitor destination directly reachable',async({page}:{page:any})=>{
@@ -175,9 +193,9 @@ test('public mobile shell keeps every visitor destination directly reachable',as
     await expect(appNav).toBeHidden();
     const workspaceNav=page.getByRole('navigation',{name:'Public workspace navigation'});
     await expect(workspaceNav).toBeVisible();
-    await expect(workspaceNav.getByRole('link',{name:'Open capacity',exact:true})).toHaveAttribute('aria-current','page');
-    await expect(workspaceNav.getByRole('link')).toHaveCount(8);
-    for(const label of ['Private capacity','Featured','Track','Log in','About','Privacy','Terms'])await expect(workspaceNav.getByRole('link',{name:label,exact:true})).toBeVisible();
+    await expect(workspaceNav.getByRole('link',{name:'Capacity',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(workspaceNav.getByRole('link')).toHaveCount(7);
+    for(const label of ['Featured','Track','Transporter login','About','Privacy','Terms'])await expect(workspaceNav.getByRole('link',{name:label,exact:true})).toBeVisible();
     await expect(workspaceNav.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
     await Promise.all([
       page.waitForURL(/\/privacy$/),
@@ -190,14 +208,14 @@ test('public mobile shell keeps every visitor destination directly reachable',as
   }
 
   await expect(appNav).toBeVisible();
-  await expect(appNav.getByRole('link')).toHaveCount(5);
-  for(const label of ['Open','Private','Featured','Track','About']){
+  await expect(appNav.getByRole('link')).toHaveCount(4);
+  for(const label of ['Capacity','Featured','Track','About']){
     const destination=appNav.getByRole('link',{name:label,exact:true});
     await expect(destination).toBeVisible();
     const box=await destination.boundingBox();
     expect(box?.height).toBeGreaterThanOrEqual(44);
   }
-  await expect(page.locator('.public-session-compact').getByRole('link',{name:'Log in'})).toBeVisible();
+  await expect(page.locator('.public-session-compact').getByRole('link',{name:'Transporter login'})).toBeVisible();
   await expect(page.locator('.home-footer')).toBeHidden();
   const marketTop=await page.locator('#capacity-market').evaluate((section:any)=>section.getBoundingClientRect().top);
   expect(marketTop).toBeLessThan(page.viewportSize()!.height);
@@ -206,27 +224,22 @@ test('public mobile shell keeps every visitor destination directly reachable',as
   await expect(page).toHaveURL(/\/featured$/);
   await expect(page.locator('#featured-providers')).toBeInViewport();
   await expect(page.locator('.public-capacity-map')).toHaveCount(0);
+  await expect(appNav.getByRole('link',{name:'Featured',exact:true})).toHaveAttribute('aria-current','page');
   await appNav.getByRole('link',{name:'Track',exact:true}).click();
   await expect(page).toHaveURL(/\/track$/);
   await expect(page.getByRole('navigation',{name:'Public mobile navigation'})).toBeVisible();
   await expect(page.getByRole('navigation',{name:'Public mobile navigation'}).getByRole('link',{name:'Track',exact:true})).toHaveAttribute('aria-current','page');
 });
 
-test('Truck Market search suggests transporters and trucks and opens the selected truck',async({page}:{page:any})=>{
-  await page.goto('/');
-  const search=page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'});
-  await search.fill('BlueLine');
-  const suggestions=page.getByRole('listbox',{name:'Search suggestions'});
-  await expect(suggestions).toBeVisible();
-  await expect(suggestions.getByText('Transporter',{exact:true}).first()).toBeVisible();
-  const truckSuggestion=suggestions.locator('a').filter({has:page.locator('.capacity-suggestion-icon.truck')}).first();
-  await expect(truckSuggestion).toBeVisible();
-  await truckSuggestion.click();
-  await expect(page).toHaveURL(/\?q=.+&truck=.+$/);
-  await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveCount(1);
-  const selectedSummary=page.getByRole('complementary',{name:/truck summary$/i});
-  await expect(selectedSummary).toBeVisible();
-  await expect(selectedSummary.getByRole('link',{name:'Profile'})).toBeVisible();
+test('Truck Market profile results focus the provider trucks',async({page}:{page:any})=>{
+  await page.goto('/');const drawer=await openCapacityFilters(page);
+  await drawer.getByRole('searchbox',{name:'Search transporters'}).fill('BlueLine');
+  await drawer.getByRole('button',{name:'Search',exact:true}).click();await openCapacityFilters(page);
+  const profile=page.locator('[data-result-kind="COMPANY"]').first();await expect(profile).toBeVisible();
+  await expect(profile.getByRole('link',{name:'Profile',exact:true})).toBeVisible();
+  await profile.getByRole('link',{name:'Show trucks on map',exact:true}).click();
+  await expect(page).toHaveURL(/provider=/);await expect(page.locator('.leaflet-container')).toBeVisible();
+  await expect(page.locator('[data-result-kind="TRUCK"]')).toHaveCount(0);
 });
 
 test('public search and filters use every multi-city route and Service-area point',async({page}:{page:any})=>{
@@ -266,69 +279,75 @@ test('public search and filters use every multi-city route and Service-area poin
   expect((await areaMatchResponse.json()).items.some((item:any)=>item.id===areaSignal.id)).toBe(true);
 
   await page.goto('/');
-  const search=page.locator('.market-command-column').getByRole('combobox',{name:'Search published truck capacity'});
-  await search.fill(origin.label.split(',')[0]);
-  const suggestions=page.getByRole('listbox',{name:'Search suggestions'});
-  await expect(suggestions).toBeVisible();
-  await expect(suggestions.locator('a').filter({has:page.locator('.capacity-suggestion-icon.truck')}).first()).toBeVisible({timeout:10_000});
+  await openCapacityFilters(page);
+  const search=page.locator('.market-command-column').getByRole('searchbox',{name:'Search transporters'});
+  await search.fill(routeSignal.provider_name);
+  await page.locator('.market-command-column').getByRole('button',{name:'Search',exact:true}).click();await openCapacityFilters(page);
+  await expect(page.locator('.capacity-result-card').first()).toBeVisible({timeout:30_000});
 });
 
 test('route filters accept either endpoint without requiring the other',async({page}:{page:any})=>{
   await page.goto('/capacity');
-  await page.getByRole('button',{name:'Filters'}).click();
-  const filterDialog=page.getByRole('dialog',{name:'Filters'});
+  await openCapacityFilters(page);
+  const filterDialog=await openCapacityFilterDialog(page);
   await choosePlace(filterDialog,'Origin','Adama',/Adama, Ethiopia/i);
   await filterDialog.getByRole('button',{name:'Show matching trucks'}).click();
-  await expect(filterDialog).toBeHidden();
   await expect(page).toHaveURL(/originPlaceRef=/);
   expect(new URL(page.url()).searchParams.get('destinationPlaceRef')).toBe('');
   await expect(page.locator('.public-capacity-map')).toBeVisible();
-  await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+  await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster,.capacity-overview-cell').count()).toBeGreaterThan(0);
 
   await page.goto('/capacity');
-  await page.getByRole('button',{name:'Filters'}).click();
+  await openCapacityFilterDialog(page);
   await choosePlace(filterDialog,'Destination','Hawassa',/Hawassa, Ethiopia/i);
   await filterDialog.getByRole('button',{name:'Show matching trucks'}).click();
-  await expect(filterDialog).toBeHidden();
   await expect(page).toHaveURL(/destinationPlaceRef=/);
   expect(new URL(page.url()).searchParams.get('originPlaceRef')).toBe('');
-  await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+  await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster,.capacity-overview-cell').count()).toBeGreaterThan(0);
 });
 
 test('administrator can review and publish an ordered daily truck-and-Driver roster',async({page}:{page:any})=>{
   await login(page,'admin@loadgistic.local');
   await page.goto('/admin/featured');
   await expect(page.getByRole('heading',{name:'Daily Featured Trucks'})).toBeVisible();
+  await page.locator('#featured-day-editor>summary').click();
   await expect(page.getByText(/eligible truck-and-Driver choices/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:"Choose today's trucks and Drivers"})).toBeVisible();
-  await expect(page.getByText('07:30–09:00 EAT')).toBeVisible();
+  await expect(page.getByText('08:30–12:00 EAT',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Automatic'})).toHaveClass(/active/);
-  await expect(page.locator('.featured-schedule-timeline .programme-break').first()).toBeVisible();
+  await page.locator('.featured-sponsor-disclosure>summary').click();
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Schedule sponsor'})).toBeVisible();
   const date=new Date();date.setUTCDate(date.getUTCDate()+7);
   await page.getByLabel('Feature date').fill(date.toISOString().slice(0,10));
   await page.getByRole('button',{name:'Load day'}).click();
   await expect(page).toHaveURL(new RegExp(`date=${date.toISOString().slice(0,10)}`));
-  const initialFeaturedCount=await page.locator('.featured-roster-list>li').count();
   await expect(page.getByLabel('Add truck and Driver')).toBeEnabled();
   await expect.poll(()=>page.getByLabel('Add truck and Driver').locator('option').count()).toBeGreaterThan(1);
-  await page.getByLabel('Add truck and Driver').selectOption({index:1});
-  await expect(page.getByRole('button',{name:'Add',exact:true})).toBeEnabled();
-  await page.getByRole('button',{name:'Add',exact:true}).click();
-  await expect(page.locator('.featured-roster-list>li')).toHaveCount(initialFeaturedCount+1);
-  await page.getByLabel('Featured trucks').selectOption(String(initialFeaturedCount+1));
+  // A streamed URL can arrive before the saved roster. Wait for the hydrated
+  // editor, then prepare a known three-driver roster without relying on today
+  // already having a schedule or appending another truck on every test run.
+  const remove=page.locator('.featured-roster-actions button.danger');
+  while(await remove.count())await remove.first().click();
+  for(let count=1;count<=3;count++){
+    await page.getByLabel('Add truck and Driver').selectOption({index:1});
+    await page.getByRole('button',{name:'Add',exact:true}).click();
+    await expect(page.locator('.featured-roster-list>li')).toHaveCount(count);
+  }
+  await page.getByLabel('Featured trucks').selectOption('3');
+  await page.getByLabel('Sponsor mentions').selectOption('2');
+  await expect(page.locator('.featured-schedule-timeline .programme-break').first()).toBeVisible();
   await page.getByLabel('Headline').fill('Today’s featured trucks');
   await page.getByLabel('Short introduction').fill('Meet today’s featured trucks and the Drivers operating them.');
   await page.getByRole('button',{name:'Publish this day'}).click();
   await expect(page.getByText('Daily feature published.')).toBeVisible();
-  await expect(page.getByText(/PUBLISHED/)).toBeVisible();
+  await expect(page.locator('.featured-admin-status').getByText('Published',{exact:true})).toBeVisible();
 });
 
-test('capacity Market is map-only and loads bounded truck batches',async({page}:{page:any})=>{
+test('capacity Market keeps truck markers and bounded map batches alongside search results',async({page}:{page:any})=>{
   await page.goto('/capacity');
-  const commandColumn=page.locator('.market-command-column');
-  await expect(commandColumn.getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
+  const commandColumn=await openCapacityFilters(page);
+  await expect(commandColumn.getByRole('searchbox',{name:'Search transporters'})).toBeVisible();
   await expect(commandColumn.getByRole('button',{name:'Filters'})).toBeVisible();
   await expect(commandColumn.getByRole('button',{name:/location/i})).toBeVisible();
   await expect(page.locator('.public-capacity-map')).toBeVisible();
@@ -336,15 +355,13 @@ test('capacity Market is map-only and loads bounded truck batches',async({page}:
   await expect(page.getByRole('button',{name:'Map',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.getByRole('navigation',{name:'Truck list pagination'})).toHaveCount(0);
-  await expect(commandColumn.getByRole('combobox',{name:'Search published truck capacity'})).toBeVisible();
-  await page.getByRole('button',{name:/Filters/}).click();
-  const vehiclePicker=page.locator('.capacity-vehicle-picker');
-  await vehiclePicker.locator('summary').click();
-  await expect(vehiclePicker.getByRole('radio',{name:'Courier motorcycle'})).toHaveCount(0);
-  await expect(vehiclePicker.getByRole('radio',{name:'Courier car'})).toHaveCount(1);
-  await expect(vehiclePicker.getByRole('radio',{name:'Mini Open Body Truck'})).toHaveCount(1);
-  await expect(vehiclePicker.getByRole('radio',{name:'Heavy Rigid Stake Body Truck + Trailer'})).toHaveCount(1);
-  await page.getByRole('button',{name:'Close filters'}).click();
+  await expect(commandColumn.getByRole('searchbox',{name:'Search transporters'})).toBeVisible();
+  const filters=await openCapacityFilterDialog(page);
+  const configurations=filters.getByRole('group',{name:'Truck configuration',exact:true});await configurations.locator('summary').click();
+  await expect(configurations.getByRole('radio',{name:'Courier motorcycle',exact:true})).toHaveCount(0);
+  await expect(configurations.getByRole('radio',{name:'Courier car',exact:true})).toHaveCount(0);
+  await expect(configurations.getByRole('radio',{name:'Mini Open Body Truck',exact:true})).toHaveCount(1);
+  await expect(configurations.getByRole('radio',{name:'Heavy Rigid Stake Body Truck + Trailer',exact:true})).toHaveCount(1);
   const response=await page.request.get('/api/public/capacity');
   expect(response.ok()).toBeTruthy();
   const result=await response.json();
@@ -365,9 +382,16 @@ test('heavy rigid trailer trucks keep their own recognizable map artwork',async(
   await expect(page.locator('.map-capacity-sheet')).toContainText('Trailer');
 });
 
-test('map clusters dense capacity and keeps truck and overlapping signal details inside the map',async({page}:{page:any})=>{
+test('map clusters dense capacity and keeps truck and overlapping signal details inside the map',async({page}:{page:any},info:any)=>{
+  test.setTimeout(90000);
   await page.goto('/capacity');
-  await expect(page.locator('.public-capacity-map')).toBeVisible();
+  await expect(page.locator('.public-capacity-map')).toBeVisible({timeout:20000});
+  await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible({timeout:20000});
+  await expect(page.getByText('Loading trucks in this map area…',{exact:true})).toHaveCount(0,{timeout:30000});
+  await expect(page.getByRole('button',{name:/Show area summaries|More trucks in this area|^Show trucks$/})).toHaveCount(0);
+  await expect.poll(()=>page.locator('.leaflet-tile:visible').evaluateAll((tiles:any[])=>tiles.length>0&&tiles.every(tile=>tile.complete&&tile.naturalWidth>0)),{timeout:20000}).toBe(true);
+  const captures=path.resolve('artifacts/capacity-viewport-2026-09-14');mkdirSync(captures,{recursive:true});
+  await page.screenshot({path:path.join(captures,`${info.project.name}-map.png`),scale:'css'});
   const initialMapCanvasBox=await page.locator('.public-map-canvas').boundingBox();
   expect(initialMapCanvasBox).toBeTruthy();
   await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible();
@@ -378,15 +402,14 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
     expect(clusterStatuses.every((cluster:{empty:boolean;partial:boolean;label?:string})=>/Empty|Partial/.test(cluster.label||''))).toBe(true);
     expect(clusterStatuses.every((cluster:{label?:string})=>Number.parseInt(cluster.label||'0',10)<=8)).toBe(true);
   }
-  const initialMarkerLabels=await page.locator('.capacity-map-cluster small:visible').evaluateAll((labels:any[])=>labels.map(label=>{const box=label.getBoundingClientRect();const marker=label.closest('.capacity-map-cluster');return{status:marker?.classList.contains('partial')?'PARTIAL':'EMPTY',left:box.left,right:box.right,top:box.top,bottom:box.bottom};}));
-  expect(initialMarkerLabels.every((label:{status:string;left:number;right:number;top:number;bottom:number},index:number)=>initialMarkerLabels.slice(index+1).every((other:{status:string;left:number;right:number;top:number;bottom:number})=>label.status===other.status||label.right<=other.left||other.right<=label.left||label.bottom<=other.top||other.bottom<=label.top))).toBe(true);
-  const mapContextLabel=page.locator('.ethiopia-map-label');
-  if((page.viewportSize()?.width||0)<=620&&await mapContextLabel.isVisible()){
-    const mapLabel=await mapContextLabel.boundingBox();
-    const zoomControl=await page.locator('.leaflet-control-zoom').boundingBox();
-    expect(mapLabel&&zoomControl).toBeTruthy();
-    expect(mapLabel!.x).toBeGreaterThanOrEqual(zoomControl!.x+zoomControl!.width+4);
-  }
+  // Assert settled labels after automatic viewport loading.
+  await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+  await expect(page.getByText('Loading trucks in this map area…',{exact:true})).toHaveCount(0,{timeout:20000});
+  await expect.poll(async()=>{
+    const labels=await page.locator('.capacity-map-cluster small:visible').evaluateAll((elements:any[])=>elements.map(label=>{const box=label.getBoundingClientRect();const marker=label.closest('.capacity-map-cluster');return{status:marker?.classList.contains('partial')?'PARTIAL':'EMPTY',left:box.left,right:box.right,top:box.top,bottom:box.bottom};}));
+    return labels.every((label:any,index:number)=>labels.slice(index+1).every((other:any)=>label.status===other.status||label.right<=other.left||other.right<=label.left||label.bottom<=other.top||other.bottom<=label.top));
+  },{timeout:10000}).toBe(true);
+  await expect(page.locator('.ethiopia-map-label')).toHaveCount(0);
   for(let attempt=0;attempt<8;attempt+=1){
     if(await page.locator('.capacity-truck-map-marker.vehicle-image-marker:visible').count())break;
     const cluster=page.locator('.capacity-map-cluster:visible').first();
@@ -418,11 +441,11 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   const legendColors=await page.locator('.public-map-legend').evaluate((legend:any)=>Object.fromEntries(['empty-status','partial-status','privacy','radius','empty-route','partial-route','corridor'].map(className=>{const style=getComputedStyle(legend.querySelector(`.${className}`),'::before');return [className,{background:style.backgroundColor,border:style.borderColor,borderTop:style.borderTopColor}];})));
   expect(legendColors['empty-status'].background).toBe('rgb(22, 163, 74)');
   expect(legendColors['partial-status'].background).toBe('rgb(250, 204, 21)');
-  expect(legendColors.privacy.border).toContain('rgb(124, 58, 237)');
+  expect(legendColors.privacy.border).toContain('rgb(26, 115, 232)');
   expect(legendColors.radius.border).toContain('rgb(22, 163, 74)');
   expect(legendColors['empty-route'].borderTop).toBe('rgb(22, 163, 74)');
   expect(legendColors['partial-route'].borderTop).toBe('rgb(234, 179, 8)');
-  expect(legendColors.corridor.borderTop).toBe('rgb(37, 99, 235)');
+  expect(legendColors.corridor.borderTop).toBe('rgb(192, 102, 32)');
   const partialTruck=await findCapacitySignal(page,{status:'PARTIAL'},(item:any)=>item.current_signal_geometry_visible!==false&&item.current_route_points?.length>=2);
   expect(partialTruck).toBeTruthy();
   await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(partialTruck.id)}`);
@@ -462,7 +485,18 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(publicCall).toHaveAttribute('href',/^tel:\+251/);
   const sheetMetrics=await page.locator('.map-capacity-sheet').evaluate((element:any)=>({clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,height:element.getBoundingClientRect().height,viewport:window.innerHeight,overflow:getComputedStyle(element).overflowY}));
   expect(sheetMetrics.scrollHeight).toBeLessThanOrEqual(sheetMetrics.clientHeight+1);
-  expect(sheetMetrics.overflow).not.toBe('auto');
+  // Preserve the fit assertion above and prove the actual gesture, rather
+  // than assuming overflow:auto intercepts a fitting summary's body.
+  const summaryZoom=()=>page.locator('.leaflet-proxy').evaluate((element:HTMLElement)=>Number(element.style.transform.match(/scale\(([\d.]+)\)/)?.[1]));
+  const initialZoom=await summaryZoom();expect(initialZoom).toBeGreaterThan(0);
+  const identityBounds=await page.locator('.map-truck-identity strong').boundingBox();
+  await page.mouse.move(identityBounds.x+identityBounds.width/2,identityBounds.y+identityBounds.height/2);
+  await page.mouse.wheel(0,-120);
+  await expect.poll(summaryZoom).toBeGreaterThan(initialZoom);
+  await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+  await page.mouse.wheel(0,120);
+  await expect.poll(summaryZoom).toBe(initialZoom);
+  await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
   const truckSummaryTargets=await page.locator('.map-capacity-sheet').locator('button,a').evaluateAll((elements:any[])=>elements.map(element=>{const box=element.getBoundingClientRect();return {width:box.width,height:box.height};}));
   for(const target of truckSummaryTargets){expect(target.width).toBeGreaterThanOrEqual(44);expect(target.height).toBeGreaterThanOrEqual(44);}
   await expect(page.locator('.map-location-privacy-circle')).toBeVisible();
@@ -504,13 +538,14 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(page.locator('.public-map-legend')).toContainText('Partial capacity route');
   await expect(page.locator('.public-map-legend')).toContainText(/Regular service/i);
   await expect(page.locator('.public-map-legend')).not.toContainText('Next trip');
+  await page.screenshot({path:path.join(captures,`${info.project.name}-selected-truck.png`),scale:'css'});
   const closeCard=page.getByRole('button',{name:'Close truck summary'});
   await expect(closeCard).toBeVisible();
   await closeCard.click();
   await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
   await expect.poll(async()=>Math.round((await page.locator('.public-map-canvas').boundingBox())?.width||0)).toBe(Math.round(initialMapCanvasBox!.width));
   await expect.poll(async()=>page.locator('.public-map-canvas,.leaflet-container').evaluateAll((elements:any[])=>{const [map,leaflet]=elements.map(element=>element.getBoundingClientRect().width);return Math.abs(map-leaflet);})).toBeLessThanOrEqual(2);
-  await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible();
+  await expect(page.locator('.capacity-overview-cell,.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible();
 
   const emptyTruck=await findCapacitySignal(page,{status:'EMPTY'},(item:any)=>item.current_signal_geometry_visible!==false&&(item.current_route_points?.length>=2||item.capacity_area_boundary?.length>=3));
   expect(emptyTruck).toBeTruthy();
@@ -524,10 +559,12 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(page.locator('.capacity-truck-map-marker.selected .vehicle-marker-image')).toHaveCSS('background-color','rgb(22, 163, 74)');
 });
 
-test('visitor location is requested on entry, centers the map, and may be refreshed',async({page,context}:{page:any;context:any})=>{
+test('visitor location is requested explicitly, centers the map, and may be refreshed',async({page,context}:{page:any;context:any})=>{
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:9.03,longitude:38.74});
-  await page.goto('/');
+  await page.goto('/');await openCapacityFilters(page);
+  await expect(page.getByTestId('visitor-location-state')).toHaveCount(0);
+  await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');
   await expect(page.getByRole('button',{name:'Refresh my location'})).toBeVisible();
   await expect(page.locator('.capacity-location-tooltip')).toHaveCount(0);
@@ -547,17 +584,15 @@ test('visitor location is requested on entry, centers the map, and may be refres
   await page.waitForTimeout(250);
   expect(proximityRequests).toBe(0);
   if((page.viewportSize()?.width||0)>760)await expect(page.getByText('Your precise location remains on this device.',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:/Filters/}).evaluate((button:any)=>button.click());
-  await expect(page.getByRole('dialog',{name:'Filters'})).toBeVisible();
+  await openCapacityFilters(page);
+  await openCapacityFilterDialog(page);
   const nearby=page.getByLabel('Show trucks near my area');
   await expect(nearby).toBeEnabled();
   await nearby.check();
-  await page.getByLabel('Distance').selectOption('50');
-  const filterDialog=page.getByRole('dialog',{name:'Filters'});
+  await page.locator('#capacity-near-radius').selectOption('50');
   await page.getByRole('button',{name:'Show matching trucks'}).click();
-  await expect(filterDialog).toBeHidden();
   await expect(page).toHaveURL(/nearLat=.*nearLng=.*nearRadiusKm=50/);
-  await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');
+  await expect(page.getByTestId('visitor-location-state')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible();
 });
@@ -569,7 +604,9 @@ test('denied visitor location keeps the map usable and exposes a real retry',asy
       getCurrentPosition:(_success:any,failure:any)=>{(window as any).__locationRequestCount+=1;failure({code:1,PERMISSION_DENIED:1,TIMEOUT:3,POSITION_UNAVAILABLE:2});}
     }});
   });
-  await page.goto('/');
+  await page.goto('/');await openCapacityFilters(page);
+  await expect(page.getByTestId('visitor-location-state')).toHaveCount(0);
+  await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   const retry=page.getByRole('button',{name:'Retry location permission'});
@@ -593,12 +630,14 @@ test('provider-name search filters the one Truck Market and truck details reach 
   await page.goto(`/@${blueLineTrucks[0].provider_handle}`);
   await expect(page.locator('.provider-handle')).toContainText('/@');
   await expect(page.getByRole('heading',{name:'Reviewed documents'})).toBeVisible();
+  const fleetToggle=page.locator('.provider-fleet-disclosure>summary');
+  if(await fleetToggle.count())await fleetToggle.click();
   await expect(page.getByRole('heading',{name:'Trucks and published capacity'})).toBeVisible();
   await expect.poll(()=>page.locator('.provider-truck-card').count()).toBeGreaterThan(0);
   await expect(page.locator('.provider-truck-relative-map')).toHaveCount(0);
   const fleetTop=await page.locator('.provider-fleet-showcase').evaluate((element:any)=>element.getBoundingClientRect().top+window.scrollY);
   const aboutTop=await page.locator('.provider-about-card').evaluate((element:any)=>element.getBoundingClientRect().top+window.scrollY);
-  expect(fleetTop).toBeLessThan(aboutTop);
+  expect(fleetTop).toBeGreaterThan(aboutTop);
   const mapButton=page.getByRole('button',{name:'View capacity on map'}).first();
   await expect(mapButton).toBeVisible();
   await mapButton.click();
@@ -624,7 +663,8 @@ test('transporter map action keeps its trucks visible after visitor location ref
   await context.setGeolocation({latitude:14.0,longitude:40.0});
   await page.goto('/?q=BlueLine%20Transport%20PLC&provider=blueline-transport#capacity-market');
   await expect(page).toHaveURL(/provider=blueline-transport#capacity-market$/);
-  await expect(page.getByTestId('visitor-location-state')).toContainText('The map is centered around your area');
+  await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
+  await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');
   const response=await page.request.get('/api/public/capacity?q=BlueLine%20Transport%20PLC&provider=blueline-transport');
   expect(response.ok()).toBeTruthy();
   const trucks=(await response.json()).items;
@@ -669,33 +709,43 @@ test('administrator Operations shows provider-owned Tracking and no retired Netw
 
 test('public Tracking submission shows progress and a visible invalid-code result',async({page}:{page:any})=>{
   await page.goto('/track');
-  await page.getByLabel('Approved email').fill('unknown.tracking@example.test');
-  await page.getByLabel('Tracking code').fill('LG-0000-0000-0000-0000');
+  await page.getByLabel('Email',{exact:true}).fill('unknown.tracking@example.test');
+
   await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('One-time code').fill('000000');
+  await page.getByLabel('6-digit email code').fill('000000');
   await page.getByRole('button',{name:'Open tracking'}).click();
   await expect(page.getByRole('alert').filter({hasText:/could not be verified/i})).toBeVisible();
   await expect(page.getByRole('button',{name:'Open tracking'})).toBeEnabled();
 });
 
 test('provider starts Tracking for multiple parties with one stable shipment code and ordered status actions',async({page}:{page:any})=>{
-  test.slow();
-  await login(page,'transporter@loadgistic.local');
+  test.setTimeout(120000);
+  // Exercise ordinary email login, including when the optional fixture-password
+  // disclosure is disabled in the owner's local preview.
+  const service=localAuditService();
+  const provider=checked(await service.from('profiles').select('id').eq('role','TRANSPORTER').eq('active',true).limit(1).single());
+  const email=checked(await service.auth.admin.getUserById(provider.id)).user.email;
+  await page.goto('/login',{waitUntil:'domcontentloaded'});
+  const access=page.getByTestId('email-code-request-form');await access.getByLabel('Email',{exact:true}).fill(email);
+  const loginRequested=Date.now();await access.getByRole('button',{name:'Email me a code'}).click();
+  await expect(page.getByTestId('email-code-form')).toBeVisible({timeout:30000});
+  await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(email,loginRequested,['Your Loadgistic signup code','Your Loadgistic sign-in code']));
+  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page).toHaveURL(/\/app\/home/,{timeout:30000});await expect(page.locator('.app-main')).toBeVisible();
   await page.goto('/app/provider-shipments/new');
   await page.getByLabel('Truck').selectOption({index:1});
   await page.getByLabel('Cargo summary').fill('Workshop machine parts');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
-  const ownerEmail='owner.e2e@example.test';
-  const trackingPartyEmail='dispatch.e2e@example.test';
-  await page.getByLabel('Customer owner email').fill(ownerEmail);
+  const ownerEmail=`owner-${Date.now()}@example.test`;
+  const trackingPartyEmail=`dispatch-${Date.now()}@example.test`;
+  await page.getByLabel('Main customer email').fill(ownerEmail);
   await page.getByLabel('Additional tracking emails').fill(trackingPartyEmail);
   const createResponse=page.waitForResponse((response:any)=>response.url().endsWith('/api/provider-shipments')&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Start Tracking'}).click();
   expect((await createResponse).status()).toBe(201);
   await expect(page.getByText('Tracking started')).toBeVisible({timeout:10_000});
-  const trackingCode=(await page.locator('.party-code-grid article').first().locator('code').textContent())!;
-  expect(trackingCode).toMatch(/^LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/);
+  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Copy code',exact:true})).toHaveCount(0);
   const openTracking=page.getByRole('link',{name:'Open Tracking'});
   const trackingHref=await openTracking.getAttribute('href');
   expect(trackingHref).toMatch(/^\/app\/provider-shipments\/[0-9a-f-]{36}$/);
@@ -705,31 +755,39 @@ test('provider starts Tracking for multiple parties with one stable shipment cod
   ]);
   await expect(page.getByRole('heading',{name:/Tracking · LGX-/})).toBeVisible({timeout:10_000});
   await expect(page.getByText(trackingPartyEmail,{exact:true})).toBeVisible();
-  await expect(page.locator('.tracking-action-choice')).toHaveCount(6);
-  await expect(page.locator('.tracking-action-choice strong')).toHaveText(['Going to pickup','Loading','En route','Unloading','Complete','Problem']);
+  await expect(page.locator('.tracking-journey li')).toHaveCount(5);
+  await expect(page.getByLabel('Report a problem')).toBeEnabled();
+  await expect(page.locator('.tracking-journey strong')).toHaveText(['Going to pickup','Loading','En route','Unloading','Complete']);
   await page.locator('input[name="nextStatus"][value="LOADING"]').check();
   await expect(page.getByLabel('Photo (optional)')).toBeVisible();
   await page.getByRole('button',{name:'Save Loading'}).click();
   await expect(page.getByText('Tracking status updated.')).toBeVisible();
   await page.getByLabel('En route').check();
   await expect(page.getByLabel('Photo (optional)')).toHaveCount(0);
-  await expect(page.getByText(trackingCode)).toBeVisible();
+  await expect(page.getByText('Each person opens the link and verifies their email with one code.')).toBeVisible();
   await page.goto('/track');
-  await page.getByLabel('Approved email').fill(ownerEmail);
-  await page.getByLabel('Tracking code').fill(trackingCode);
+  await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
+
   const requestedAt=Date.now();
   await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('One-time code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your shipment Tracking code'));
-  await page.getByRole('button',{name:'Open tracking'}).click();
+  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
+  await Promise.all([
+    page.waitForURL(/\/track\/[0-9a-f-]{36}$/,{timeout:15_000}),
+    page.getByRole('button',{name:'Open tracking'}).click()
+  ]);
   await expect(page.getByText('Private shipment tracking')).toBeVisible();
   await expect(page.getByRole('heading',{name:/Track LGX-/})).toBeVisible();
-  await page.goto('/track');
-  await page.getByLabel('Approved email').fill(trackingPartyEmail);
-  await page.getByLabel('Tracking code').fill(trackingCode);
+  await page.getByRole('button',{name:'Log out',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Follow your shipment'})).toBeVisible();
+  await page.getByLabel('Email',{exact:true}).fill(trackingPartyEmail);
+
   const partyRequestedAt=Date.now();
   await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('One-time code').fill(await localMailpitNumericCode(trackingPartyEmail,partyRequestedAt,'Your shipment Tracking code'));
-  await page.getByRole('button',{name:'Open tracking'}).click();
+  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(trackingPartyEmail,partyRequestedAt,'Your Loadgistic tracking sign-in code'));
+  await Promise.all([
+    page.waitForURL(/\/track\/[0-9a-f-]{36}$/,{timeout:15_000}),
+    page.getByRole('button',{name:'Open tracking'}).click()
+  ]);
   await expect(page.getByText('Private shipment tracking')).toBeVisible();
 });
 
@@ -743,11 +801,11 @@ test('assigned Driver shares only an approximate location during travel',async({
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
   const ownerEmail='location.owner.e2e@example.test';
-  await page.getByLabel('Customer owner email').fill(ownerEmail);
+  await page.getByLabel('Main customer email').fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   await page.getByRole('button',{name:'Start Tracking'}).click();
   await expect(page.getByText('Tracking started')).toBeVisible();
-  const trackingCode=(await page.locator('.party-code-grid article').first().locator('code').textContent())!;
+  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Open Tracking'}).click();
   await expect(page.getByLabel('Going to pickup')).toBeChecked();
   const statusUpdate=page.waitForResponse((response:any)=>response.url().includes('/status')&&response.request().method()==='POST');
@@ -755,11 +813,11 @@ test('assigned Driver shares only an approximate location during travel',async({
   expect((await statusUpdate).status()).toBe(303);
   await expect(page.getByText('Tracking status updated.')).toBeVisible();
   await page.goto('/track');
-  await page.getByLabel('Approved email').fill(ownerEmail);
-  await page.getByLabel('Tracking code').fill(trackingCode);
+  await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
+
   const requestedAt=Date.now();
   await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('One-time code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your shipment Tracking code'));
+  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
   await page.getByRole('button',{name:'Open tracking'}).click();
   await expect(page.getByText('Approximate Driver location',{exact:true})).toBeVisible();
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible();
@@ -776,7 +834,7 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
   await page.getByLabel('Cargo summary').fill('Fabricated window frames');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Bishoftu',/Bishoftu, Ethiopia/i);
-  await page.getByLabel('Customer owner email').fill('driver.owner.e2e@example.test');
+  await page.getByLabel('Main customer email').fill('driver.owner.e2e@example.test');
   await page.getByRole('button',{name:'Start Tracking'}).click();
   await expect(page.getByText('Tracking started')).toBeVisible();
   const trackingCode=(await page.locator('.tracking-code-reveal-heading h1').textContent())!;
@@ -810,7 +868,7 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
     page.waitForURL(/\/app\/provider-shipments$/),
     primaryNavigation.getByRole('link',{name:'Tracking',exact:true}).click()
   ]);
-  await expect(page.getByText(trackingCode)).toBeVisible();
+  await expect(page.getByText('Keep brokers and customers informed with private shipment updates.')).toBeVisible();
 });
 
 test('capacity summary keeps the map visible and Driver refresh persists location',async({page,context}:{page:any;context:any})=>{
@@ -867,14 +925,18 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   const expectedCapacityColor=emptyAvailability?'#16a34a':'#eab308';
   await expect(summary.locator(`path[stroke="${expectedCapacityColor}"]`).first()).toBeVisible();
   await expect(summary.locator('.capacity-setting-truck-marker-halo')).toHaveAttribute('stroke',expectedCapacityColor);
-  await expect(summary.locator('path[stroke="#7c3aed"]').first()).toBeVisible();
+  await expect(summary.locator('path[stroke="#1a73e8"]').first()).toBeVisible();
   await expect(summary.locator('.capacity-map-key')).toContainText(emptyAvailability?'Empty availability':'Partial availability');
-  const privacy=page.getByLabel('Approximate location radius');
+  await page.getByRole('button',{name:'Edit approximate location radius',exact:true}).click();
+  const privacyDialog=page.getByRole('dialog',{name:'Approximate location',exact:true});
+  const privacy=privacyDialog.getByLabel('Approximate location radius');
   const currentPrivacy=await privacy.inputValue();
   const nextPrivacy=currentPrivacy==='5'?'10':'5';
   const privacySave=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location')&&response.request().method()==='POST');
   await privacy.selectOption(nextPrivacy);
+  await privacyDialog.getByRole('button',{name:'Save location'}).click();
   expect((await privacySave).ok()).toBe(true);
+  await expect(privacyDialog).toHaveCount(0);
   await expect(summary).toContainText(`${nextPrivacy} km radius`);
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
   const save=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location')&&response.request().method()==='POST');
@@ -892,8 +954,8 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
   await page.getByRole('button',{name:/^Edit regular service:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
-  await expect(page.getByTestId('capacity-planning-editor')).toContainText('one undated Service area or Capacity route');
-  await page.getByTestId('capacity-planning-editor').getByRole('button',{name:'Back to summary'}).click();
+  await expect(page.getByTestId('capacity-planning-editor')).toContainText('The area or two-way route you serve regularly');
+  await page.getByRole('button',{name:'Close editor'}).click();
   await page.getByRole('button',{name:/^Edit current capacity:/}).click();
   await expect(page.getByRole('heading',{name:'Capacity now'})).toBeVisible();
   await page.getByRole('button',{name:'Partial',exact:true}).click();
@@ -904,7 +966,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('heading',{name:'Approximate current location'})).toHaveCount(0);
   await page.goto('/app/capacity');
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading',{name:'Open Transport Capacity',includeHidden:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();

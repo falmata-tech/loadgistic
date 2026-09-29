@@ -19,23 +19,27 @@ const PURPOSE_BUCKET={
   'tracking-proof':'shipment-proof',
   'load-proof':'shipment-proof',
   'provider-profile':'provider-profile',
+  'driver-portrait':'provider-profile',
   'guest-support':'support-attachment',
+  'member-support':'support-attachment',
   file:'shipment-proof'
 };
 const QUARANTINE_BUCKET='private-upload-quarantine';
 
-function supabaseClient(){
+function supabaseClient(timeoutMs){
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!serviceKey)throw new Error('SUPABASE_NOT_CONFIGURED');
   return createClient(url,serviceKey,{
     auth:{persistSession:false,autoRefreshToken:false},
-    global:{headers:{'X-Client-Info':'loadgistic-private-storage'}}
+    global:{headers:{'X-Client-Info':'loadgistic-private-storage'},...(timeoutMs?{
+      fetch:(input,init)=>fetch(input,{...init,signal:AbortSignal.timeout(Math.max(1,Math.min(30000,timeoutMs)))})
+    }:{})}
   });
 }
 
 function validatePurpose(purpose){
-  if(!PURPOSE_BUCKET[purpose])throw new Error('INVALID_UPLOAD_PURPOSE');
+  if(!Object.hasOwn(PURPOSE_BUCKET,purpose))throw new Error('INVALID_UPLOAD_PURPOSE');
   return purpose;
 }
 
@@ -67,7 +71,14 @@ export function privateStorageStatus(environment=process.env){
   };
 }
 
-export async function storePrivateUpload(file,purpose='file'){
+export function createPrivateUploadReference(purpose,mimeType){
+  validatePurpose(purpose);
+  const config=MIME_CONFIG[mimeType];
+  if(!config)throw new Error('UNSUPPORTED_FILE_TYPE');
+  return `supabase://${PURPOSE_BUCKET[purpose]}/${purpose}/${new Date().toISOString().slice(0,10)}/${crypto.randomUUID()}${config.extension}`;
+}
+
+export async function storePrivateUpload(file,purpose='file',options={}){
   if(!file||typeof file.arrayBuffer!=='function'||!file.size)return null;
   validatePurpose(purpose);
   if(file.size>privateUploadMaxBytes())throw new Error('FILE_TOO_LARGE');
@@ -78,10 +89,13 @@ export async function storePrivateUpload(file,purpose='file'){
   if(bytes.length!==file.size||!config.matches(bytes))throw new Error('FILE_CONTENT_MISMATCH');
 
   const date=new Date().toISOString().slice(0,10);
-  const objectPath=`${purpose}/${date}/${crypto.randomUUID()}${config.extension}`;
+  const reserved=supabaseParts(options.reference||createPrivateUploadReference(purpose,mimeType));
+  const expectedPath=new RegExp(`^${purpose}/[0-9]{4}-[0-9]{2}-[0-9]{2}/[a-f0-9-]{36}\\${config.extension}$`);
+  if(reserved.bucket!==PURPOSE_BUCKET[purpose]||!expectedPath.test(reserved.objectPath))throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
+  const objectPath=reserved.objectPath;
   const quarantinePath=`incoming/${date}/${crypto.randomUUID()}${config.extension}`;
   const bucket=PURPOSE_BUCKET[purpose];
-  const client=supabaseClient();
+  const client=supabaseClient(options.timeoutMs);
   let quarantined=false;let released=false;let reference;
   try{
     const {error:quarantineError}=await client.storage.from(QUARANTINE_BUCKET).upload(quarantinePath,bytes,{
@@ -106,11 +120,11 @@ export async function storePrivateUpload(file,purpose='file'){
   return {path:reference,name:path.basename(objectPath),originalName:cleanOriginalName(file.name),mimeType,size:bytes.length};
 }
 
-export async function readPrivateUpload(reference){
+export async function readPrivateUpload(reference,options={}){
   if(!reference)return null;
   const {bucket,objectPath}=supabaseParts(String(reference));
   if(bucket===QUARANTINE_BUCKET)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
-  const {data,error}=await supabaseClient().storage.from(bucket).download(objectPath);
+  const {data,error}=await supabaseClient(options.timeoutMs).storage.from(bucket).download(objectPath);
   if(error){
     if(String(error.statusCode||'')==='404')return null;
     throw new Error('PRIVATE_STORAGE_READ_FAILED');
@@ -118,9 +132,20 @@ export async function readPrivateUpload(reference){
   return Buffer.from(await data.arrayBuffer());
 }
 
-export async function removePrivateUpload(reference){
+export function privateDocumentHeaders(mimeType,originalName='document'){
+  const safeName=cleanOriginalName(originalName);
+  return {
+    'Content-Type':mimeType||'application/octet-stream',
+    'Content-Disposition':`${mimeType==='application/pdf'?'attachment':'inline'}; filename="${safeName}"`,
+    'Cache-Control':'private, no-store',
+    'X-Content-Type-Options':'nosniff',
+    'Content-Security-Policy':"sandbox; default-src 'none'; frame-ancestors 'none'"
+  };
+}
+
+export async function removePrivateUpload(reference,options={}){
   if(!reference)return;
   const {bucket,objectPath}=supabaseParts(String(reference));
   if(bucket===QUARANTINE_BUCKET)throw new Error('INVALID_PRIVATE_STORAGE_REFERENCE');
-  await removeSupabaseObject(supabaseClient(),bucket,objectPath);
+  await removeSupabaseObject(supabaseClient(options.timeoutMs),bucket,objectPath);
 }

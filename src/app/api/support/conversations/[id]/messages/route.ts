@@ -1,3 +1,5 @@
+import {canSendSupportMessage} from '@/lib/support-policy.js';
+import {sendSupportAttachment} from '@/lib/support-attachments.js';
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { sendSupportMessage } from '@/lib/support.js';
@@ -12,12 +14,18 @@ function returnPath(user:any,id:string) {
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}) {
   const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
+  if(!canSendSupportMessage(user))return NextResponse.json({error:'Forbidden'},{status:403});
   const {id}=await params;
   const rate=await checkRateLimit(`${requestKey(request,'support-message')}:${user.id}`,20,60_000);
   if(!rate.allowed)return redirectWith(request,returnPath(user,id),'error','Too many messages. Wait a minute and try again.');
   const form=await request.formData();
   try {
-    await sendSupportMessage(user,id,text(form,'body'));
+    const keys=[...form.keys()];
+    if(keys.length!==new Set(keys).size||keys.some(key=>!['body','file'].includes(key)))throw new Error('INVALID_SUPPORT_MESSAGE');
+    const file=form.get('file');
+    if(file!==null&&(!(file instanceof File)||(!file.size&&file.name)))throw new Error('INVALID_SUPPORT_MESSAGE');
+    if(file instanceof File&&file.size)await sendSupportAttachment(user,id,text(form,'body'),file);
+    else await sendSupportMessage(user,id,text(form,'body'));
     return redirectWith(request,returnPath(user,id),'success','Message sent.');
   } catch(error) {
     return redirectWith(request,returnPath(user,id),'error',errorMessage(error));

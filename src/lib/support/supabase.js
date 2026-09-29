@@ -1,13 +1,16 @@
-import {normalizeOptionalCallbackPhone,normalizePrivateContactEmail} from '../domain.js';
+import {isTransportSupportMember,canSendSupportMessage} from '../support-policy.js';
+import {normalizePrivateContactEmail} from '../domain.js';
 import {removePrivateUpload,readPrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {guestSupportAccessCode,privateContactDigest,verifyPrivateAccessCode} from '../security.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
+import {requireTeamCreator} from './team-authorization.js';
+import {supportHistoryCursor,supportMessageWindow} from '../support-history.js';
 
-const ERRORS=['FORBIDDEN','NOT_FOUND','INVALID_SUPPORT_CATEGORY','INVALID_SUPPORT_MESSAGE','SUPPORT_CONVERSATION_ALREADY_OPEN',
+const ERRORS=['PUBLIC_SUPPORT_CLOSED','FORBIDDEN','NOT_FOUND','INVALID_SUPPORT_CATEGORY','INVALID_SUPPORT_MESSAGE','SUPPORT_CONVERSATION_ALREADY_OPEN',
   'SUPPORT_MESSAGE_RATE_LIMITED','SUPPORT_CONVERSATION_CLOSED','SUPPORT_AGENT_UNAVAILABLE','SUPPORT_AGENT_AT_CAPACITY',
   'SUPPORT_CONVERSATION_NOT_WAITING','INVALID_SUPPORT_VIEW','CALLBACK_PHONE_REQUIRED','GUEST_CONVERSATION_ALREADY_OPEN',
   'GUEST_SUPPORT_ACCESS_DENIED','INVALID_SUPPORT_AGENT_LIMIT','MISSING_REQUIRED_FIELDS','EMAIL_ALREADY_EXISTS',
-  'MANAGED_IDENTITY_NOT_FOUND','INVALID_PRIVATE_STORAGE_REFERENCE'];
+  'MANAGED_IDENTITY_NOT_FOUND','INVALID_PRIVATE_STORAGE_REFERENCE','INVALID_SUPPORT_CURSOR'];
 
 function managedError(fallback,error){
   const message=String(error?.message||'');
@@ -37,6 +40,7 @@ function uploadCommand(stored){
 }
 
 export async function createSupportConversation(user,input){
+  if(!isTransportSupportMember(user))throw new Error('FORBIDDEN');
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('create_managed_support_conversation',{actor_user_id:user.id,command:{category:String(input.category||''),body:String(input.body||'')}});
   if(error)throw managedError('SUPABASE_SUPPORT_CREATE_FAILED',error);return data;
@@ -54,10 +58,12 @@ export async function getOpenMemberSupportConversation(user){
 }
 
 export async function getSupportConversation(user,conversationId,options={}){
-  const client=createSupabaseAdminClient();const {data,error}=await client.rpc('managed_support_conversation',{
-    actor_user_id:user.id,conversation_id:conversationId,requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),mark_read:options.markRead!==false
+  const before=supportHistoryCursor(options.beforeMessageId);
+  const client=createSupabaseAdminClient();const {data,error}=await client.rpc(before?'managed_support_history':'managed_support_conversation',{
+    actor_user_id:user.id,conversation_id:conversationId,requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),
+    ...(before?{requested_before:before}:{mark_read:options.markRead!==false})
   });
-  if(error)throw managedError('SUPABASE_SUPPORT_CONVERSATION_FAILED',error);return data;
+  if(error)throw managedError('SUPABASE_SUPPORT_CONVERSATION_FAILED',error);return supportMessageWindow(data);
 }
 
 export async function listSupportInbox(user,view='ASSIGNED',options={}){
@@ -68,6 +74,7 @@ export async function listSupportInbox(user,view='ASSIGNED',options={}){
 }
 
 export async function sendSupportMessage(user,conversationId,body){
+  if(!canSendSupportMessage(user))throw new Error('FORBIDDEN');
   const client=createSupabaseAdminClient();const {error}=await client.rpc('send_managed_support_message',{actor_user_id:user.id,conversation_id:conversationId,message_body:String(body||'')});
   if(error)throw managedError('SUPABASE_SUPPORT_MESSAGE_FAILED',error);
 }
@@ -93,14 +100,7 @@ export async function getAssistedMatchingAvailability(){
 }
 
 export async function createGuestSupportConversation(input,file=/** @type {File|null} */(null)){
-  const email=normalizePrivateContactEmail(input.email);const emailDigest=privateContactDigest(email);
-  const phone=normalizeOptionalCallbackPhone(input.phone);if(!phone)throw new Error('CALLBACK_PHONE_REQUIRED');
-  const stored=file&&typeof file.arrayBuffer==='function'&&file.size?await storePrivateUpload(file,'guest-support'):null;
-  const client=createSupabaseAdminClient();const {data,error}=await client.rpc('create_managed_guest_support',{command:{
-    email,email_digest:emailDigest,phone,body:String(input.body||''),...uploadCommand(stored)
-  }});
-  if(error){if(stored)await removePrivateUpload(stored.path).catch(()=>undefined);throw managedError('SUPABASE_GUEST_SUPPORT_CREATE_FAILED',error);}
-  return {id:data.id,emailDigest,accessCode:guestSupportAccessCode(data.id)};
+  throw new Error('PUBLIC_SUPPORT_CLOSED');
 }
 
 export async function verifyGuestSupportAccess(email,code){
@@ -112,11 +112,13 @@ export async function verifyGuestSupportAccess(email,code){
 }
 
 async function getGuestConversation(actor,conversationId,emailDigest,options={}){
-  const client=createSupabaseAdminClient();const {data,error}=await client.rpc('managed_guest_support_conversation',{
+  const before=supportHistoryCursor(options.beforeMessageId);
+  const client=createSupabaseAdminClient();const {data,error}=await client.rpc(before?'managed_guest_support_history':'managed_guest_support_conversation',{
     actor_user_id:actor?.id||null,conversation_id:conversationId,requested_email_digest:emailDigest||null,
-    requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),mark_read:options.markRead!==false
+    requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),
+    ...(before?{requested_before:before}:{mark_read:options.markRead!==false})
   });
-  if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CONVERSATION_FAILED',error);return data;
+  if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CONVERSATION_FAILED',error);return supportMessageWindow(data);
 }
 
 export function getGuestSupportConversationForGuest(conversationId,emailDigest,options={}){return getGuestConversation(null,conversationId,emailDigest,options);}
@@ -135,6 +137,7 @@ export async function claimGuestSupportConversation(user,conversationId){
 }
 
 export async function sendGuestSupportMessage(actor,conversationId,body,emailDigest=/** @type {string|null} */(null),file=/** @type {File|null} */(null)){
+  if(!actor||emailDigest||!['ADMIN','SUPPORT'].includes(actor.role))throw new Error('PUBLIC_SUPPORT_CLOSED');
   const stored=file&&typeof file.arrayBuffer==='function'&&file.size?await storePrivateUpload(file,'guest-support'):null;
   const client=createSupabaseAdminClient();const {error}=await client.rpc('send_managed_guest_support_message',{
     actor_user_id:actor?.id||null,conversation_id:conversationId,requested_email_digest:emailDigest||null,message_body:String(body||''),command:uploadCommand(stored)
@@ -171,12 +174,14 @@ function agentCommand(input){return {
   name:String(input.name||''),email:String(input.email||'').trim().toLowerCase(),max_open_conversations:Number(input.maxOpenConversations)||3,
   active:Boolean(input.active),available:Boolean(input.available),can_manage_customers:Boolean(input.canManageCustomers),
   can_manage_operations:Boolean(input.canManageOperations),can_manage_trust:Boolean(input.canManageTrust),
-  can_manage_billing:Boolean(input.canManageBilling),can_manage_support:Boolean(input.canManageSupport??true)
+  can_manage_billing:Boolean(input.canManageBilling),can_manage_support:Boolean(input.canManageSupport??true),can_manage_brokerage:Boolean(input.canManageBrokerage),can_manage_featured:Boolean(input.canManageFeatured)
 };}
 
 export async function createSupportAgent(user,input){
+  const client=createSupabaseAdminClient();
+  await requireTeamCreator(client,user);
   const command=agentCommand({...input,active:true,available:true});if(!command.name||!command.email)throw new Error('MISSING_REQUIRED_FIELDS');
-  const client=createSupabaseAdminClient();const {data:created,error:createError}=await client.auth.admin.createUser({
+  const {data:created,error:createError}=await client.auth.admin.createUser({
     email:command.email,email_confirm:true,user_metadata:{full_name:command.name},app_metadata:{role:'SUPPORT',provisioned_by:'loadgistic-admin'}
   });
   if(createError||!created.user)throw managedError('SUPABASE_SUPPORT_IDENTITY_CREATE_FAILED',createError);

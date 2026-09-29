@@ -1,11 +1,16 @@
+import {cookies} from 'next/headers';
+import {LanguageProvider} from '@/components/localization';
+import {LOCALE_COOKIE,supportedLocale} from '@/lib/i18n/core.js';
+import {loadMessages,type Locale} from '@/lib/i18n/catalogs';
 import type { Metadata } from 'next';
 import './globals.css';
+import {NativeFormFeedback} from '@/components/native-form-feedback';
 
 export const runtime = 'nodejs';
 
 export const metadata: Metadata = {
   title: { default: 'Loadgistic', template: '%s | Loadgistic' },
-  description: 'Find public or privately shared truck capacity for local, regional, and long-distance freight across Ethiopia, then track work agreed directly with the transporter.',
+  description: 'Share truck capacity with your network or the open market. Keep brokers, shippers and receivers informed with private shipment tracking across Ethiopia.',
   manifest: '/manifest.webmanifest',
   applicationName: 'Loadgistic',
   icons: {
@@ -28,11 +33,16 @@ export const viewport = {
   themeColor: '#0c2a43'
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale=supportedLocale((await cookies()).get(LOCALE_COOKIE)?.value) as Locale;
+  const messages=await loadMessages(locale);
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body>
-        {children}
+        <LanguageProvider locale={locale} messages={messages}>
+          {children}
+          <NativeFormFeedback/>
+        </LanguageProvider>
         <script src="/register-sw.js" defer />
       </body>
     </html>
