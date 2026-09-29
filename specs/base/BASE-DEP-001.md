@@ -286,3 +286,14 @@ And each shard owns its Supabase fixtures and runs one worker without sharing mu
 Evidence: `.github/workflows/ci.yml`, `tests/ci-browser-gate.test.mjs`, and the
 exact-candidate CI run recorded in the release handoff. Sharding changes scheduling,
 not test selection or the required all-tests-pass release outcome.
+
+
+### Scenario: cold local schema reads recover without repeating imports
+
+Given local PostgREST returns query timeout 57014 during its initial schema GET\
+When the fixture preflight reads the schema\
+Then it may retry that read once after one second, retaining both request timeouts\
+And a second failure or any other error fails before fixture writes begin.
+
+Evidence: `tests/fixture-schema.test.mjs`. This applies only to loopback local
+fixture preflight; it grants no hosted retries or repeated mutations.

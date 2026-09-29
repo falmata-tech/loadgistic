@@ -87,7 +87,7 @@ async function exercise(page:any,info:any,path:string,api:string){
   expect(await page.evaluate(({x,y}:any)=>Boolean(document.elementFromPoint(x,y)?.closest('.capacity-filter-actions')),{x:submit.x+submit.width-8,y:submit.y+submit.height/2})).toBe(true);
   await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-drawer.png`),scale:'css'});
   await dialog.getByRole('button',{name:'Show matching trucks'}).click();
-  await expect(page).toHaveURL(/truckCityPlaceRef=/);
+  await expect(page).toHaveURL((url:URL)=>url.pathname==='/'&&url.searchParams.has('truckCityPlaceRef')&&(path==='/'||url.searchParams.get('view')==='private'));
   const url=new URL(page.url());expect(url.pathname).toBe('/');if(path!=='/')expect(url.searchParams.get('view')).toBe('private');expect(url.searchParams.getAll('q')).toHaveLength(1);
   for(const [name,value] of [['status','EMPTY'],['vehicleCategory','Mini Box Truck'],['loadType','PTL'],['directionMode','EITHER'],['truckLocationRadiusKm','25'],['truckCityPlaceRef',city]])expect(url.searchParams.get(name)).toBe(value);
   expect(url.searchParams.get('originPlaceRef')).toBeTruthy();expect(url.searchParams.has('nearLat')).toBe(false);

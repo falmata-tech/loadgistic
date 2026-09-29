@@ -83,7 +83,7 @@ test('selected truck feedback stays readable through location denial and refresh
     await assertReadableFeedback(page);
     await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
     await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
-    await page.getByRole('button',{name:'Close'}).click();
+    await page.getByRole('button',{name:'Close',exact:true}).click();
     await page.getByRole('button',{name:'Close truck summary'}).click();
     await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
     await openCapacityFilters(page);

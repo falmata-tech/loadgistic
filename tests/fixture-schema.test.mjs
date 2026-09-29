@@ -50,3 +50,17 @@ test('schema helper rejects remote targets and credentials before sending a key'
     await assert.rejects(readFixtureSchema(target,key,{fetchImpl:async()=>{assert.fail('No request allowed');}}),{message:'SUPABASE_SCHEMA_TARGET_INVALID'});
   }
 });
+
+
+test('cold local schema timeout retries one read only and remains fail closed',async()=>{
+  for(const recover of [true,false]){
+    let requests=0,waits=0;const definitions={profiles:{type:'object'}};
+    const result=readFixtureSchema(url,key,{wait:async ms=>{assert.equal(ms,1000);waits++;},fetchImpl:async(_endpoint,options)=>{
+      assert.equal(options.method,'GET');requests++;
+      return recover&&requests===2?Response.json({definitions}):Response.json({code:'57014',message:key},{status:500});
+    }});
+    if(recover)assert.deepEqual(await result,definitions);
+    else await assert.rejects(result,{message:'SUPABASE_SCHEMA_READ_FAILED:500:57014'});
+    assert.equal(requests,2);assert.equal(waits,1);
+  }
+});

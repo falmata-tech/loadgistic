@@ -1,3 +1,4 @@
+import {localSupportLogin} from './provider-support-helper';
 import {test,expect} from '@playwright/test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
@@ -16,9 +17,8 @@ function localService(){
 }
 function checked(result:any){expect(result.error).toBeNull();return result.data;}
 async function login(page:any,email:string){
-  await page.context().clearCookies();await page.goto('/login');await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');await form.getByLabel('Email',{exact:true}).fill(email);
-  await form.getByLabel('Password').fill('Loadgistic123!');await form.getByRole('button',{name:'Log in',exact:true}).click();
+  const identity=checked(await localService().from('profiles').select('id').eq('email',email).single());
+  await localSupportLogin(page,identity.id);await page.goto('/app/home');
   await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
 }
 async function post(page:any,values:Record<string,string>){
@@ -30,7 +30,7 @@ async function post(page:any,values:Record<string,string>){
 }
 for(const kind of ['independent','company'])test(`${kind} Driver controls their public portrait through real Storage and Featured`,async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(150000);const service=localService();const suffix=randomUUID().slice(0,8);const ids:string[]=[];
-  let actorId='';let orgId='';let providerId='';let vehicleId='';let slotId='';let ownedDay='';
+  let actorId='';let orgId='';let providerId='';let vehicleId='';let slotId='';let ownedDay='';let originalSlot:any=null;
   const visitor=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize()||undefined});
   const publicPage=await visitor.newPage();
   const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -70,11 +70,14 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
       document_name:'Synthetic portrait browser fixture',storage_path:'synthetic-portrait-fixture',original_name:'fixture.txt',mime_type:'text/plain',status:'APPROVED',submitted_by:actorId
     }))));
     let day=checked(await service.from('featured_provider_days').select('id,status').eq('feature_date',date).maybeSingle());
-    if(!day){day=checked(await service.from('featured_provider_days').insert({feature_date:date,status:'PUBLISHED',base_place_ref:base.city_place_ref,base_place_label:base.city,created_by:actorId}).select('id,status').single());ownedDay=day.id;}
+    if(!day){day=checked(await service.from('featured_provider_days').insert({feature_date:date,status:'PUBLISHED',base_place_ref:base.city_place_ref,base_place_label:base.city,expo_group_key:theme.key,expo_group_label:theme.label,target_count:1,schedule_config_json:{dayStart:'08:30',dayEnd:'12:00',targetCount:1,sponsorBreakCount:4,sponsorBreakMinutes:2},created_by:actorId}).select('id,status').single());ownedDay=day.id;}
     expect(day.status).toBe('PUBLISHED');
-    const positions=checked(await service.from('featured_provider_slots').select('slot_position').eq('day_id',day.id));
-    slotId=checked(await service.from('featured_provider_slots').insert({day_id:day.id,slot_position:Math.max(0,...positions.map((p:any)=>p.slot_position))+1,
-      provider_organization_id:orgId||null,provider_profile_id:providerId||null,vehicle_id:vehicleId,driver_user_id:actorId,created_by:actorId}).select('id').single()).id;
+    const slots=checked(await service.from('featured_provider_slots').select('*').eq('day_id',day.id).order('slot_position'));
+    const synthetic={provider_organization_id:orgId||null,provider_profile_id:providerId||null,vehicle_id:vehicleId,driver_user_id:actorId,created_by:actorId};
+    // Keep the official eight-showcase limit; temporarily substitute one local
+    // fixture slot and restore it in finally instead of appending a ninth.
+    if(slots.length>=8){originalSlot=slots.at(-1);slotId=originalSlot.id;checked(await service.from('featured_provider_slots').update(synthetic).eq('id',slotId));}
+    else slotId=checked(await service.from('featured_provider_slots').insert({day_id:day.id,slot_position:Math.max(0,...slots.map((p:any)=>p.slot_position))+1,...synthetic}).select('id').single()).id;
 
     await login(page,driver.email);await page.goto('/app/more');
     const card=page.getByRole('region',{name:'Public Driver photo'});await expect(card).toBeVisible();
@@ -126,7 +129,8 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     await page.context().clearCookies();await page.goto('/about');expect((await post(page,{command:'REMOVE'})).status).toBe(401);
   }finally{
     await visitor.close();
-    if(slotId)checked(await service.from('featured_provider_slots').delete().eq('id',slotId));
+    if(originalSlot)checked(await service.from('featured_provider_slots').update(originalSlot).eq('id',slotId));
+    else if(slotId)checked(await service.from('featured_provider_slots').delete().eq('id',slotId));
     if(ownedDay)checked(await service.from('featured_provider_days').delete().eq('id',ownedDay));
     if(actorId){
       const uploads=checked(await service.from('driver_portrait_uploads').select('file_path').eq('user_id',actorId));

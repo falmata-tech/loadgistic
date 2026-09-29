@@ -12,25 +12,29 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
   await expect(page.locator('.map-current-route')).toHaveAttribute('stroke','#eab308');
   for(let zoom=0;zoom<2;zoom++){
     if(zoom){
-      const next=page.waitForResponse((r:any)=>r.url().includes('/api/public/capacity?'));
-      await page.locator('.leaflet-control-zoom-in').click();await next;
+      // Search keeps its complete result set; zoom must change geometry, not refetch it.
+      const before=await page.locator('.map-current-route').getAttribute('d');
+      await page.locator('.leaflet-control-zoom-in').click();
+      await expect(page.locator('.map-current-route')).not.toHaveAttribute('d',before!);
     }
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
     await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
     if(info.project.name.includes('mobile')){
-      // Pan normally into the space below the existing truck card. This tests
-      // stroke separation without pretending an overlay is transparent visually.
+      // Pan into the visible strip beside the current document summary; its
+      // height varies with real document badges and translated copy.
       const map=await page.locator('.public-map-canvas').boundingBox(),line=await page.locator('.map-current-route').boundingBox();
-      const dx=map.x+map.width*.42-line.x-line.width/2,dy=map.y+map.height*.74-line.y-line.height/2;
+      const card=await page.locator('.map-capacity-sheet').boundingBox();
+      const dx=map.x+(card.x-map.x)/2-line.x-line.width/2,dy=map.y+map.height*.65-line.y-line.height/2;
       const start={x:map.x+map.width*.2,y:map.y+map.height*.5};
-      const next=page.waitForResponse((r:any)=>r.url().includes('/api/public/capacity?'));
+      const pane=page.locator('.leaflet-map-pane');const before=await pane.getAttribute('style');
       const touch=await page.context().newCDPSession(page);
       await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
       for(let i=1;i<=8;i++){
         await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+dx*i/8,y:start.y+dy*i/8}]});
         await page.evaluate(()=>new Promise(requestAnimationFrame));
       }
-      await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touch.detach();await next;
+      await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touch.detach();await expect(pane).not.toHaveAttribute('style',before!);
+      await expect(page.locator('.leaflet-pan-anim')).toHaveCount(0);
       await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
     }
     const geometry=await page.evaluate(()=>{

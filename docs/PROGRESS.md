@@ -1,3 +1,28 @@
+## September 29 release verification follow-up — not deployed
+
+CI `36394072342` at `1690d10` passed validation (including scale/build) and
+container checks, but failed the required browser gate. Release remains pending.
+The follow-up corrects pre-hydration input races in private email access and
+brokerage assignment/follow-up, isolates a chat test from shared rate-limit
+buckets, keeps portrait test data within the eight-showcase maximum, and updates
+browser assertions for the previously approved navigation/copy/disclosures.
+A cold local PostgREST schema timeout gets one bounded read-only retry before
+any fixture writes. No hosted settings, database writes or deployment occurred.
+Map-search diagnostic evidence shows real zoom changes with no extra request;
+geometry and real touch-target checks remain intact. A real short-viewport defect
+also passed gestures through the signal description to document controls beneath
+it; the description now receives gestures inside Leaflet and bubbles them to the
+map. Desktop/phone wheel, drag and swipe checks pass without a layout change.
+
+The final focused rerun passed 10/10 desktop/phone checks for private OTP/filter
+reset, portraits, closed-area/route overlap and summary wheel zoom. The refreshed
+preview also verified admin navigation, Featured controls and disabled-before-
+hydration fields with the first assignment persisted. Evidence is in ignored
+`.local/release-20260929-*.log` and `artifacts/release-*-20260929/` files. A new
+exact-candidate CI result is still pending. Read-only production checks at
+2026-09-29 05:26 UTC passed with PostGIS in `extensions` and no unprotected public
+tables. The earlier backup/rehearsal is being refreshed before any mutation.
+
 # Progress
 
 ## Simpler Tracking access — local review ready, 2026-09-28

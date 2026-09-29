@@ -158,7 +158,7 @@ test('fleet owners edit capacity but cannot substitute their device location',as
   await page.getByRole('link',{name:'View truck',exact:true}).first().click();
   await page.getByRole('button',{name:'Edit approximate location',exact:true}).click();
   const location=page.getByRole('dialog',{name:'Approximate location',exact:true});
-  await expect(location).toContainText('The assigned Driver updates this location');
+  await expect(location).toContainText('The assigned driver updates this truck’s approximate location from Home.');
   await expect(location.getByRole('button',{name:'Save location'})).toHaveCount(0);
   await location.getByRole('button',{name:'Close',exact:true}).click();
   await page.getByRole('button',{name:/^Edit current capacity:/}).click();

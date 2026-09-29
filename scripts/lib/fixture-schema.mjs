@@ -1,5 +1,5 @@
 // Fixture setup is local-only. Failure here must precede every reset/import.
-export async function readFixtureSchema(url,serviceRoleKey,{fetchImpl=fetch}={}){
+export async function readFixtureSchema(url,serviceRoleKey,{fetchImpl=fetch,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))}={}){
   let endpoint;
   try{endpoint=new URL(url);}catch{throw new Error('SUPABASE_SCHEMA_TARGET_INVALID');}
   if(endpoint.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(endpoint.hostname)
@@ -7,16 +7,20 @@ export async function readFixtureSchema(url,serviceRoleKey,{fetchImpl=fetch}={})
     throw new Error('SUPABASE_SCHEMA_TARGET_INVALID');
   }
   let response,body;
-  try{
-    response=await fetchImpl(new URL('/rest/v1/',endpoint),{
-      method:'GET',redirect:'error',signal:AbortSignal.timeout(10000),
-      headers:{apikey:serviceRoleKey,authorization:`Bearer ${serviceRoleKey}`}
-    });
-  }catch{
-    throw new Error('SUPABASE_SCHEMA_READ_FAILED:TRANSPORT');
-  }
-  try{body=await response.json();}catch{
-    throw new Error(`SUPABASE_SCHEMA_READ_FAILED:${response.status}:INVALID_JSON_OR_TIMEOUT`);
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      response=await fetchImpl(new URL('/rest/v1/',endpoint),{
+        method:'GET',redirect:'error',signal:AbortSignal.timeout(10000),
+        headers:{apikey:serviceRoleKey,authorization:`Bearer ${serviceRoleKey}`}
+      });
+    }catch{
+      throw new Error('SUPABASE_SCHEMA_READ_FAILED:TRANSPORT');
+    }
+    try{body=await response.json();}catch{
+      throw new Error(`SUPABASE_SCHEMA_READ_FAILED:${response.status}:INVALID_JSON_OR_TIMEOUT`);
+    }
+    if(response.status===500&&body?.code==='57014'&&attempt===0){await wait(1000);continue;}
+    break;
   }
   if(!response.ok){
     const code=typeof body?.code==='string'&&/^(?:PGRST(?:[0-9]{3}|X00)|[0-9A-Z]{5})$/.test(body.code)?body.code:'UNKNOWN';

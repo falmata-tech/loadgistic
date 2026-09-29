@@ -18,7 +18,7 @@ async function verifyShell(page:any,testInfo:any,surface:string){
   for(const [width,height] of viewports){
     await page.setViewportSize({width,height});
     // The introduction can scroll away on short screens while the map keeps its usable height.
-    if(surface==='open')await page.locator('main.public-market-introduced').evaluate((el:HTMLElement)=>el.scrollTop=el.scrollHeight);
+    await page.locator('main.public-market-introduced').evaluate((el:HTMLElement)=>el.scrollTop=el.scrollHeight);
     await openCapacityFilters(page);
     await expect.poll(async()=>page.evaluate(()=>{
       const box=(selector:string)=>document.querySelector(selector)!.getBoundingClientRect();

@@ -229,3 +229,13 @@ And old /shared-capacity links resolve to the private view while preserving quer
 And existing grant, OTP, session, no-store and browser-denial rules remain in force.
 
 Local UI change only: no database migration, new network/group membership model or hosted settings change.
+
+
+### Scenario: private access waits for client readiness
+
+Given the private map email form has rendered before its scripts load\
+When a visitor tries to enter their email or request a code\
+Then fields and actions remain disabled until their handlers attach\
+And the first enabled submission sends the entered email and advances to verification.
+
+Evidence: `tests/e2e/form-readiness.spec.ts` (delayed scripts, enabled input and actual submission).

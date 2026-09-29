@@ -20,8 +20,8 @@ export function TransportRequestFollowUp({request,canReopen=true}:{request:Pick<
   }
   return <form className="transport-follow-up" onSubmit={save} aria-label={t('Request follow-up')}>
     <input type="hidden" name="version" value={version}/>
-    <label><Text message="Status"/><select name="status" value={status} onChange={event=>{setStatus(event.target.value as TransportRequest['status']);setDirty(true);}} disabled={busy}><option value="NEW" disabled={!canReopen&&request.status==='CLOSED'}>{t('New')}</option><option value="CONTACTED" disabled={!canReopen&&request.status==='CLOSED'}>{t('Contacted')}</option><option value="CLOSED">{t('Resolved')}</option></select></label>
-    <label className="transport-follow-up-note"><Text message="Follow-up note"/><textarea name="note" rows={2} maxLength={1000} value={note} onChange={event=>{setNote(event.target.value);setDirty(true);}} disabled={busy} placeholder={t('Who you called or referred the request to')}/></label>
+    <label><Text message="Status"/><select name="status" value={status} onChange={event=>{setStatus(event.target.value as TransportRequest['status']);setDirty(true);}} disabled={!ready||busy}><option value="NEW" disabled={!canReopen&&request.status==='CLOSED'}>{t('New')}</option><option value="CONTACTED" disabled={!canReopen&&request.status==='CLOSED'}>{t('Contacted')}</option><option value="CLOSED">{t('Resolved')}</option></select></label>
+    <label className="transport-follow-up-note"><Text message="Follow-up note"/><textarea name="note" rows={2} maxLength={1000} value={note} onChange={event=>{setNote(event.target.value);setDirty(true);}} disabled={!ready||busy} placeholder={t('Who you called or referred the request to')}/></label>
     <button className="button small" disabled={!ready||busy}><Save aria-hidden="true"/><Text message={busy?'Saving…':'Save follow-up'}/></button>
     {feedback?<p role={error?'alert':'status'} className={error?'form-error':'form-success'}>{t(feedback)}</p>:null}
   </form>;

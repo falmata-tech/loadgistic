@@ -79,7 +79,7 @@ for(const kind of ['independent','company','single'])test(`public ${kind} fleet 
     expect(seen.size).toBe(count);
     const html=await page.content();for(const hidden of [`PRIVATE-PLATE-${suffix}`,'PRIVATE-ACCOUNT-PHONE','PRIVATE-LAST-NAME','PRIVATE-WHATSAPP','private-website.invalid','hidden-business@example.invalid','Private hidden area','synthetic-private-paging-proof'])expect(html.includes(hidden),`Private field appeared in public HTML: ${hidden.replace(suffix,'fixture')}`).toBe(false);
     if(provider&&count>1){
-      await expect(page.locator('.provider-fleet-counts')).toContainText('5 signals on this page');
+      await expect(page.locator('.provider-fleet-counts')).toContainText('5 with published capacity');
       const finalAvailable=cards.filter({hasText:vehicles[100].platform_number});
       await expect(finalAvailable.getByRole('button',{name:'View capacity on map',exact:true})).toBeVisible();
       await finalAvailable.getByRole('button',{name:'View capacity on map',exact:true}).click();

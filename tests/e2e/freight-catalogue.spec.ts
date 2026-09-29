@@ -6,7 +6,7 @@ import {openCapacityFilterDialog} from './capacity-drawer-helper';
 
 test('public freight filters and Transporter login retain their destinations',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);
- await page.goto('/');await expect(page.locator('.language-picker select')).toBeEnabled();
+ await page.goto('/');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
  const drawer=await openCapacityFilterDialog(page),config=drawer.getByRole('group',{name:'Truck configuration',exact:true});await config.locator('summary').click();
  await expect(config.getByRole('radio',{name:/Courier/})).toHaveCount(0);
  await expect(config.getByRole('radio',{name:'Cargo van',exact:true})).toHaveCount(1);
@@ -25,7 +25,7 @@ test('provider registration previews the container flatbed without courier choic
  const logout=await localSupportLogin(page,owner.user_id);
  try{
   await page.goto('/app/fleet/new');const config=page.getByLabel('Vehicle configuration',{exact:true});
-  await expect(config).toBeVisible();await expect(page.locator('.language-picker select')).toBeEnabled();
+  await expect(config).toBeVisible();await expect(page.locator('.language-picker select:visible')).toBeEnabled();
   await expect(config.getByRole('radio',{name:/Courier/})).toHaveCount(0);
   await config.selectOption({label:'Interchangeable tractor'});
   await expect(page.getByLabel('Currently attached trailer',{exact:true})).toHaveValue('Tractor + Container Trailer');

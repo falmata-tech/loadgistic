@@ -310,10 +310,12 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
   await login(page,'admin@loadgistic.local');
   await page.goto('/admin/featured');
   await expect(page.getByRole('heading',{name:'Daily Featured Trucks'})).toBeVisible();
+  await page.locator('#featured-day-editor>summary').click();
   await expect(page.getByText(/eligible truck-and-Driver choices/).first()).toBeVisible();
   await expect(page.getByRole('heading',{name:"Choose today's trucks and Drivers"})).toBeVisible();
   await expect(page.getByText('08:30–12:00 EAT',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Automatic'})).toHaveClass(/active/);
+  await page.locator('.featured-sponsor-disclosure>summary').click();
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Schedule sponsor'})).toBeVisible();
   const date=new Date();date.setUTCDate(date.getUTCDate()+7);
@@ -333,13 +335,13 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
     await expect(page.locator('.featured-roster-list>li')).toHaveCount(count);
   }
   await page.getByLabel('Featured trucks').selectOption('3');
-  await page.getByLabel('Interlude after').selectOption('2');
+  await page.getByLabel('Sponsor mentions').selectOption('2');
   await expect(page.locator('.featured-schedule-timeline .programme-break').first()).toBeVisible();
   await page.getByLabel('Headline').fill('Today’s featured trucks');
   await page.getByLabel('Short introduction').fill('Meet today’s featured trucks and the Drivers operating them.');
   await page.getByRole('button',{name:'Publish this day'}).click();
   await expect(page.getByText('Daily feature published.')).toBeVisible();
-  await expect(page.getByText(/PUBLISHED/)).toBeVisible();
+  await expect(page.locator('.featured-admin-status').getByText('Published',{exact:true})).toBeVisible();
 });
 
 test('capacity Market keeps truck markers and bounded map batches alongside search results',async({page}:{page:any})=>{
@@ -483,7 +485,18 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(publicCall).toHaveAttribute('href',/^tel:\+251/);
   const sheetMetrics=await page.locator('.map-capacity-sheet').evaluate((element:any)=>({clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,height:element.getBoundingClientRect().height,viewport:window.innerHeight,overflow:getComputedStyle(element).overflowY}));
   expect(sheetMetrics.scrollHeight).toBeLessThanOrEqual(sheetMetrics.clientHeight+1);
-  expect(sheetMetrics.overflow).not.toBe('auto');
+  // Preserve the fit assertion above and prove the actual gesture, rather
+  // than assuming overflow:auto intercepts a fitting summary's body.
+  const summaryZoom=()=>page.locator('.leaflet-proxy').evaluate((element:HTMLElement)=>Number(element.style.transform.match(/scale\(([\d.]+)\)/)?.[1]));
+  const initialZoom=await summaryZoom();expect(initialZoom).toBeGreaterThan(0);
+  const identityBounds=await page.locator('.map-truck-identity strong').boundingBox();
+  await page.mouse.move(identityBounds.x+identityBounds.width/2,identityBounds.y+identityBounds.height/2);
+  await page.mouse.wheel(0,-120);
+  await expect.poll(summaryZoom).toBeGreaterThan(initialZoom);
+  await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+  await page.mouse.wheel(0,120);
+  await expect.poll(summaryZoom).toBe(initialZoom);
+  await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
   const truckSummaryTargets=await page.locator('.map-capacity-sheet').locator('button,a').evaluateAll((elements:any[])=>elements.map(element=>{const box=element.getBoundingClientRect();return {width:box.width,height:box.height};}));
   for(const target of truckSummaryTargets){expect(target.width).toBeGreaterThanOrEqual(44);expect(target.height).toBeGreaterThanOrEqual(44);}
   await expect(page.locator('.map-location-privacy-circle')).toBeVisible();
@@ -855,7 +868,7 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
     page.waitForURL(/\/app\/provider-shipments$/),
     primaryNavigation.getByRole('link',{name:'Tracking',exact:true}).click()
   ]);
-  await expect(page.getByText('Each person opens the link and verifies their email with one code.')).toBeVisible();
+  await expect(page.getByText('Keep brokers and customers informed with private shipment updates.')).toBeVisible();
 });
 
 test('capacity summary keeps the map visible and Driver refresh persists location',async({page,context}:{page:any;context:any})=>{

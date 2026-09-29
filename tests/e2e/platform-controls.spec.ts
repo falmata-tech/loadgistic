@@ -1,17 +1,7 @@
 import {expect,test} from '@playwright/test';
 
-async function login(page:any,email:string){
-  await page.goto('/login');await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in',exact:true}).click();
-  await page.waitForURL(email==='admin@loadgistic.local'?/\/admin$/:/\/app\/home/,{waitUntil:'domcontentloaded'});
-  await expect(page).toHaveURL(email==='admin@loadgistic.local'?/\/admin$/:/\/app\/home/);
-  // Wait for the redirected page, not just its URL while a streamed loading
-  // boundary is still completing the authentication navigation.
-  if(email==='admin@loadgistic.local')await expect(page.getByRole('heading',{name:'Administration',exact:true})).toBeVisible();
-  else await expect(page.getByTestId('capacity-summary')).toBeVisible({timeout:20_000});
-}
+import {auditLogin} from './audit-helpers';
+async function login(page:any,email:string){await auditLogin(page,email);}
 
 test('admin access controls are responsive and native saves retain submitted values',async({page}:{page:any},info:any)=>{
   await login(page,'admin@loadgistic.local');await page.goto('/admin/settings');
@@ -41,29 +31,35 @@ test('admin access controls are responsive and native saves retain submitted val
 
 test('Featured automatic selection can be switched off and prepared without losing manual controls',async({page}:{page:any},info:any)=>{
   test.setTimeout(60000);await login(page,'admin@loadgistic.local');await page.goto('/admin/featured');
+  await page.locator('.featured-settings-disclosure>summary').click();
   const controls=page.getByRole('region',{name:'Featured selection settings'});
   const originalCount=await controls.getByLabel('Maximum Drivers per day').inputValue();
   try{
     await controls.getByLabel('Selection',{exact:true}).selectOption('MANUAL');
     await controls.getByRole('button',{name:'Save selection settings'}).click();
     await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
-    await expect(controls.getByRole('button',{name:'Prepare upcoming days'})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toHaveCount(0);
   }finally{
+    const settings=page.locator('.featured-settings-disclosure');
+    if(await settings.getAttribute('open')===null)await settings.locator('summary').click();
     await controls.getByLabel('Selection',{exact:true}).selectOption('AUTO');
     await controls.getByLabel('Maximum Drivers per day').fill(originalCount);
     await controls.getByRole('button',{name:'Save selection settings'}).click();
   }
-  await expect(controls.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
-  await controls.getByRole('button',{name:'Prepare upcoming days'}).click();
+  await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
+  await page.getByRole('button',{name:'Prepare upcoming days'}).click();
   await expect(page.getByText(/days prepared\./)).toBeVisible();
+  await page.locator('#featured-day-editor>summary').click();
   await expect(page.getByRole('button',{name:'Save draft',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Publish this day',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const settings=page.locator('.featured-settings-disclosure');
+  if(await settings.getAttribute('open')===null)await settings.locator('summary').click();
   await controls.screenshot({path:info.outputPath('featured-selection.png')});
   await page.goto('/featured');
   const trucks=page.locator('.featured-truck-tile');
   await expect(trucks.first()).toBeVisible();
-  expect(await trucks.count()).toBeLessThanOrEqual(12);
+  expect(await trucks.count()).toBeLessThanOrEqual(8);
   await expect(trucks.first()).toContainText(/Company driver|Owner-operator|Self-managed driver/);
   await trucks.first().click();
   await expect(page.locator('.featured-truck-dialog')).toBeVisible();

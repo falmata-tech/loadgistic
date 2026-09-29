@@ -64,7 +64,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
 
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
-  await expect(page.getByRole('heading',{name:'Network'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
   await expect(page.getByText('Share with Loadgistic').first()).toBeVisible();
   const shareEmail=page.getByLabel('Share with an email').first();
   await shareEmail.fill(sharedEmail);
@@ -151,7 +151,7 @@ test('capture focused transport request and Network review',async({page}:{page:a
 
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
-  await expect(page.getByRole('heading',{name:'Network'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:path.join(output,`${project}-network.png`),fullPage:true});
 });

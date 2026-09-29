@@ -13,7 +13,7 @@ test('coincident closed areas and routes remain separately tappable through zoom
   let routeMode=false;
   await page.route('**/api/public/capacity?**',(route:any)=>{
     const loop=[...points,points[0]],reverseLoop=[...loop].reverse();
-    const truck={...original,status:'EMPTY',current_signal_geometry_visible:true,location_precision_km:20,
+    const truck={...original,status:'EMPTY',current_signal_geometry_visible:true,location_precision_km:20,work_radius_km:20,
       availability_geometry:routeMode?'ROUTE':'RADIUS',capacity_area_boundary:routeMode?[]:points,current_route_points:routeMode?loop:[],
       recurring_corridors:[{id:'overlap-renderer-fixture',geometry:routeMode?'ROUTE':'RADIUS',area_boundary:[...points].reverse(),route_points:reverseLoop,area_center_label:'Synthetic overlap test'}]};
     return route.fulfill({json:{items:[truck],hasMore:false,nextCursor:null}});
@@ -24,18 +24,35 @@ test('coincident closed areas and routes remain separately tappable through zoom
     // then select it. Bounds and accessibility metadata use that exact geometry.
     await page.goto('/?q=overlap-renderer-fixture');
     await closeCapacityFilters(page);
-    const selectedViewport=page.waitForResponse((response:any)=>response.url().includes('/api/public/capacity?'));
     await page.locator('.capacity-truck-map-marker').click();
-    await selectedViewport;
     await expect(page.locator('.map-regular-corridor')).toHaveAttribute('aria-label',/Test boundary/);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});
     const current=mode==='area'?'.map-service-area':'.map-current-route';
     await expect(page.locator(current)).toBeVisible();
     for(let zoom=0;zoom<2;zoom++){
       if(zoom){
-        const nextViewport=page.waitForResponse((response:any)=>response.url().includes('/api/public/capacity?'));
-        await page.locator('.leaflet-control-zoom-in').click();await nextViewport;
+        // Search keeps its complete result set; zoom must change geometry, not refetch it.
+        const before=await page.locator(current).getAttribute('d');
+        await page.locator('.leaflet-control-zoom-in').click();
+        await expect(page.locator(current)).not.toHaveAttribute('d',before!);
         await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+      }
+      if(info.project.name.includes('mobile')){
+        // The document summary can cover the initial fit on a phone. Pan the
+        // boundary into the measured exposed strip, retaining the real card.
+        const map=await page.locator('.public-map-canvas').boundingBox(),card=await page.locator('.map-capacity-sheet').boundingBox(),line=await page.locator(current).boundingBox();
+        const identity=await page.locator('.map-truck-identity strong').boundingBox();
+        const start={x:identity.x+identity.width/2,y:identity.y+identity.height/2};
+        const dx=map.x+(card.x-map.x)/2-line.x,dy=map.y+map.height*.55-line.y-line.height/2;
+        const pane=page.locator('.leaflet-map-pane'),before=await pane.getAttribute('style');
+        const touch=await page.context().newCDPSession(page);
+        await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
+        for(let i=1;i<=8;i++){
+          await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+dx*i/8,y:start.y+dy*i/8}]});
+          await page.evaluate(()=>new Promise(requestAnimationFrame));
+        }
+        await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touch.detach();
+        await expect(pane).not.toHaveAttribute('style',before!);await expect(page.locator('.leaflet-pan-anim')).toHaveCount(0);
       }
       for(const [selector,label] of [[current,mode==='area'?'Service area':'Capacity route'],['.map-regular-corridor',mode==='area'?'Regular service area':'Regular capacity route'],['.map-location-privacy-circle','approximate location']]){
         const signal=page.locator(selector);
@@ -52,7 +69,8 @@ test('coincident closed areas and routes remain separately tappable through zoom
           const map=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
           const card=document.querySelector('.map-capacity-sheet')!.getBoundingClientRect();
           for(let i=0;i<300;i++){
-            const p=path.getPointAtLength(length*i/300).matrixTransform(matrix);
+            const raw=path.getPointAtLength(length*i/300).matrixTransform(matrix);
+            const p={x:Math.round(raw.x),y:Math.round(raw.y)};
             if(p.x<map.left+15||p.x>map.right-15||p.y<map.top+15||p.y>map.bottom-15)continue;
             if(p.x>=card.left&&p.x<=card.right&&p.y>=card.top&&p.y<=card.bottom)continue;
             if(document.elementFromPoint(p.x,p.y)===element)return{x:p.x,y:p.y};

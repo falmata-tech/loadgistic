@@ -5,7 +5,7 @@ import {createChunks} from '@supabase/ssr/dist/main/utils/chunker.js';
 import {localAuditService,checked} from './audit-helpers';
 
 test('private truck access recovers from a stalled request without losing email',async({page}:{page:Page})=>{
- await page.goto('/shared-capacity');await expect(page.locator('.language-picker select')).toBeEnabled();await page.clock.install();
+ await page.goto('/shared-capacity');await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.clock.install();
  let calls=0,release=()=>{};const held=new Promise<void>(r=>{release=r});
  await page.route('**/api/shared-capacity/otp',async route=>{calls++;await held;await route.abort().catch(()=>{});});
  try{
@@ -26,7 +26,7 @@ test('uncertain Tracking creation preserves the draft and prevents another save'
  await page.context().addCookies(cookies.map(c=>({name:c.name,value:c.value,url:'http://127.0.0.1:3100',sameSite:'Lax' as const})));
  let calls=0,release=()=>{};const held=new Promise<void>(r=>{release=r});
  try{
-  await page.goto('/app/provider-shipments/new');await expect(page.locator('.language-picker select')).toBeEnabled();
+  await page.goto('/app/provider-shipments/new');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
   await page.getByLabel('Truck',{exact:true}).selectOption({index:1});await page.getByLabel('Cargo summary').fill('Retain this cargo draft');
   for(const [label,query] of [['Origin','Adama'],['Destination','Addis Ababa']]){await page.getByRole('combobox',{name:label,exact:true}).fill(query);await page.getByRole('option',{name:new RegExp(query)}).first().click();}
   await page.getByLabel('Main customer email').fill('held@example.test');

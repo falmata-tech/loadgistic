@@ -321,3 +321,15 @@ Owner simplification: office city is searched using the main public-profile sear
 box. The filter dialog has no Office city field or empty Search filters group.
 Published office-city matches still constrain both profiles and their associated
 available trucks. Truck-location geography remains an independent truck filter.
+
+
+### Scenario: overlapping map descriptions preserve native gestures
+
+Given a short viewport places a signal description above truck document controls\
+When the visitor wheels, drags or swipes across the description body\
+Then Leaflet zooms or pans without activating the obscured controls\
+And the description close button remains independently usable.
+
+Evidence: `tests/e2e/map-clarity.spec.ts` desktop and phone native gestures;
+the description remains inside the Leaflet container and bubbles body gestures
+to it. This changes event handling, not its visible layout.

@@ -6,6 +6,9 @@ import {createChunks} from '@supabase/ssr/dist/main/utils/chunker.js';
 import {randomUUID} from 'node:crypto';
 import {localAuditService,checked} from './audit-helpers';
 
+// Keep the happy-path browser separate from other suites' intentional rate-limit probes.
+test.use({extraHTTPHeaders:{'x-forwarded-for':'127.0.0.233'}});
+
 test('transport request goes from the four-field public form to private admin follow-up without email',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(120000);page.setDefaultTimeout(15000);const service=localAuditService(),name=`Callback test ${randomUUID().slice(0,8)}`;let id='',session:ReturnType<typeof createClient>|undefined;
  const phone=`+2519${String(Math.floor(Math.random()*100000000)).padStart(8,'0')}`;
@@ -28,7 +31,7 @@ test('transport request goes from the four-field public form to private admin fo
   await form.getByRole('button',{name:'Start chat'}).click();const response=await submitted;expect(response.status()).toBe(200);
   await expect(dialog.getByText('Waiting for brokerage',{exact:true})).toBeVisible();await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();expect(helpWrites).toHaveLength(0);await expect(dialog.locator(':scope > header')).not.toContainText(/Team available|Leave a message/);await page.screenshot({path:info.outputPath('request-receipt.png'),fullPage:true});
   const row=checked(await service.from('transport_service_requests').select('*').eq('requester_name',name).single());id=row.id;expect(row).toMatchObject({phone,origin:'Adama',destination:'Dire Dawa',status:'NEW'});
-  const repeat=await page.request.post('/api/transport-requests',{data:JSON.parse(response.request().postData()!)});expect(repeat.ok()).toBe(true);
+  const repeat=await page.request.post('/api/transport-requests',{data:JSON.parse(response.request().postData()!)});expect(repeat.status()).toBe(200);
   expect((await service.from('transport_service_requests').select('id',{count:'exact',head:true}).eq('requester_name',name)).count).toBe(1);
   expect((await service.from('access_email_deliveries').select('id',{count:'exact',head:true})).count).toBe(emailCount.count);
   expect((await page.request.post(`/api/admin/transport-requests/${id}`,{form:{version:'1',status:'CLOSED',note:''}})).status()).toBe(403);

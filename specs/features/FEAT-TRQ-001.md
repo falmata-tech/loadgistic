@@ -272,3 +272,13 @@ RPC remain mandatory. Rollback keeps new fields/history; do not drop stored chat
 Evidence required: rollback SQL for state/permissions/retries/queues, real two-party
 browser flows for ending while waiting/assigned and staff callback/resolution,
 translated narrow-phone checks, then owner local preview review before release.
+
+
+### Scenario: assignment inputs wait for client readiness
+
+Given a staff request page has rendered but its scripts are still loading\
+When staff try to edit assignment or follow-up fields\
+Then those fields and save actions remain disabled until handlers attach\
+And the first enabled selection and save persist the selected assignee without losing input.
+
+Evidence: `tests/e2e/form-readiness.spec.ts` (delayed scripts, enabled input and actual submission).
