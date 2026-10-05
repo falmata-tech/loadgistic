@@ -355,3 +355,7 @@ Then the map searches its transporter handle and selects the matching capacity I
 Given the phone programme includes its How Featured works disclosure and a sponsor\
 When the board renders\
 Then compact heading spacing keeps the first truck row within the existing 281px board-offset budget, retaining readable text and 44px controls.
+
+The public Featured projection exposes a bounded relative map link only for an
+Open Empty/Partial signal. It strips the internal capacity field with the other
+internal identifiers; private/unavailable signals never produce a map link.

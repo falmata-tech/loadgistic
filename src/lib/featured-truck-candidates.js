@@ -1,6 +1,11 @@
 import {featuredTruckTypeForDate} from './featured-trucks.js';
 import {driverPortraitUrl,uploadedDriverPortraitUrl} from './driver-portraits.js';
 
+export function featuredTruckMapHref(candidate){
+  if(!candidate.public_capacity_available||!candidate.public_capacity_id||!candidate.handle)return null;
+  return `/?q=${encodeURIComponent(candidate.handle)}&truck=${encodeURIComponent(candidate.public_capacity_id)}`;
+}
+
 function providerKey(candidate){return candidate.provider_organization_id?`organization:${candidate.provider_organization_id}`:`profile:${candidate.provider_profile_id}`;}
 
 export async function loadFeaturedTruckCandidates(client,date,providers){
@@ -58,7 +63,7 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
       vehicle_make:vehicle.make,
       vehicle_model:vehicle.model,
       cargo_configuration:vehicle.cargo_configuration,
-      public_capacity_id:capacity?.visibility==='OPEN'?capacity.id:null,
+      public_capacity_id:capacity?.visibility==='OPEN'&&['EMPTY','PARTIAL'].includes(capacityStatus)?capacity.id:null,
       public_capacity_available:capacity?.visibility==='OPEN'&&['EMPTY','PARTIAL'].includes(capacityStatus),
       eligible:true,
       theme

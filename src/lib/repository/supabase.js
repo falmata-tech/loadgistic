@@ -9,7 +9,7 @@ import {capacityGeographicMatch} from '../capacity-geographic-match.js';
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
 import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
 import {featuredTruckTypeForDate,featuredTruckWeekForDate} from '../featured-trucks.js';
-import {loadFeaturedTruckCandidates} from '../featured-truck-candidates.js';
+import {loadFeaturedTruckCandidates,featuredTruckMapHref} from '../featured-truck-candidates.js';
 import {capacityUpdatePresentation,distanceBetweenKm,normalizePrivateContactEmail} from '../domain.js';
 import {hashTrackingAccessCode,privateContactDigest,sharedCapacityOtpCode} from '../security.js';
 
@@ -644,8 +644,8 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});
   const featured=[];const truckKeys=[];const aliases=new Map();
   for(const slot of slots||[]){const key=`vehicle:${slot.vehicle_id}`;const candidate=truckByKey.get(key);if(!candidate?.eligible||candidate.driver_user_id!==slot.driver_user_id)continue;
-    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,driver_user_id:unusedDriver,vehicle_id:unusedVehicle,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,theme:unusedTheme,...safe}=candidate;
-    featured.push({...safe,position:slot.slot_position});truckKeys.push(key);aliases.set(key,key);
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,driver_user_id:unusedDriver,vehicle_id:unusedVehicle,public_capacity_id:unusedCapacity,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,theme:unusedTheme,...safe}=candidate;
+    featured.push({...safe,map_href:featuredTruckMapHref(candidate),position:slot.slot_position});truckKeys.push(key);aliases.set(key,key);
   }
   const {data:placements,error:placementError}=await client.from('sponsor_placements').select('sponsor_id,position').eq('expo_group_key',sponsorGroup.key).eq('active',true).lte('starts_on',featureDate).gte('ends_on',featureDate).order('position').limit(5);
   if(placementError)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:placementError});

@@ -1,5 +1,11 @@
 ## October 4 release follow-up — pending verification
 
+CI 37255530257 correctly rejected the new raw capacity identifier in the public
+Featured projection. The follow-up keeps that field internal and exposes only a
+relative map link for Open Empty/Partial signals. The unchanged private-key gate
+and direct local signal checks pass; both browser handoffs pass again. Quality
+now passes 371 tests plus source/spec/type checks. No privacy check was relaxed.
+
 CI 36526691594 passed validation, container and browser shards 1/3; shards 2/4
 identified the remaining blockers. Featured's Find this truck action incorrectly
 used a vehicle number after search became profile-only. The correction searches
