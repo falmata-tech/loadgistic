@@ -5,7 +5,7 @@ export function getManagedWorkspaceAccess(user,at=new Date()){
     return {granted:true,status:user.role,ends_at:null,days_remaining:null,subscription:null};
   }
   const subscription=user.workspace_subscription||null;
-  return {...subscriptionAccess(subscription,at),subscription};
+  return {...subscriptionAccess(subscription,at,user.access_policy),subscription};
 }
 
 export function getManagedDriverAccess(user){

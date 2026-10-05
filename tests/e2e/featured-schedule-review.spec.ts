@@ -23,6 +23,7 @@ test('Sponsors stay separate, compact, and schedule-attributed',async({page}:{pa
   await localLogin.getByLabel('Password').fill('Loadgistic123!');
   await Promise.all([page.waitForURL(/\/(?:admin|app\/home)/),localLogin.getByRole('button',{name:'Log in'}).click()]);
   await page.goto('/admin/featured');
+  await page.getByText('Manage sponsors',{exact:true}).click();
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect(page.getByLabel('Sponsor type')).toContainText('Outside advertiser');
 });
@@ -51,9 +52,11 @@ test('capture focused featured schedule review',async({page}:{page:any})=>{
   await localLogin.getByLabel('Password').fill('Loadgistic123!');
   await Promise.all([page.waitForURL(/\/(?:admin|app\/home)/),localLogin.getByRole('button',{name:'Log in'}).click()]);
   await page.goto('/admin/featured');
+  await page.getByText('Review or edit a day',{exact:true}).click();
   const scheduler=page.locator('.featured-roster-editor');
   await expect(scheduler.getByRole('button',{name:'Automatic'})).toBeVisible();
   await scheduler.screenshot({path:path.join(output,`${project}-admin.png`)});
+  await page.getByText('Manage sponsors',{exact:true}).click();
   await page.getByLabel('Sponsor type').selectOption('ADVERTISER');
   await page.locator('.featured-sponsor-admin').screenshot({path:path.join(output,`${project}-admin-sponsors.png`)});
 });

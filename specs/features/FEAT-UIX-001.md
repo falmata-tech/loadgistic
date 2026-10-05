@@ -11,6 +11,48 @@ rollout: Apply shared primitives before page-specific simplification; retain pri
 
 # Low-friction interface
 
+### Scenario: map workspaces reserve navigation space
+
+Given a visitor opens Open capacity or an unlocked Private capacity map\
+When the viewport is resized across phone, tablet, desktop, or wide desktop sizes\
+Then the map and search panel remain beside the desktop navigation rail, never over it\
+And the map uses the remaining height below the header and tablet navigation\
+And phone navigation stays below the map without clipping its controls\
+And opening and closing Filters leaves the navigation and workspace geometry intact\
+And the unlocked Private capacity session bar and Log out remain above its map\
+And both maps retain at least 300 CSS pixels of height at 320 by 640\
+And the document has no horizontal overflow or forced vertical scrolling.
+
+Implementation plan: derive desktop content spacing from the same rail inset and
+width as navigation; let the map shell consume actual remaining flex height rather
+than subtracting a fixed header estimate. Verify bounding boxes, navigation clicks,
+and filter dialog dismissal in `tests/e2e/public-map-shell-layout.spec.ts`.
+No data, authorization, or deployment contracts change.
+Focused verification includes real local email-code entry for Private capacity,
+revocation of the synthetic access grant afterward, and Open/Private map and
+Filters screenshots at 320, 390, 1024, and 1920 CSS pixels. Release-wide visual
+audits remain a separate gate; these checks do not authorize deployment.
+
+### Scenario: loading stays local to the pending task
+
+Given a route, map module, conversation, search, or save is pending\
+When loading feedback appears\
+Then a shared neutral, geometry-matched skeleton or compact progress indicator
+occupies only that task's space\
+And authenticated navigation remains available during nested route loading\
+And existing map results remain visible while additional results load\
+And no fake percentage, full-screen blocking overlay, or large loading headline appears\
+And skeleton decoration is hidden from assistive technology with one concise status\
+And reduced-motion preference disables decorative animation\
+And a pending native POST form preserves its submitted button command and prevents
+duplicate submissions while announcing progress.
+
+Implementation plan: shared lightweight skeleton/status components, nested route
+fallbacks for provider/admin/support and public workflows, map-module and chat
+fallbacks, and a document-level native-form pending enhancement. Retain existing
+fetch-driven form state and errors. Verify phone/desktop layout, reduced motion,
+delayed navigation, and actual form payloads before claiming completion.
+
 ### Scenario: public value is usable immediately
 
 Given a capacity seeker opens Loadgistic\
@@ -96,9 +138,10 @@ And one summary shows how the truck appears publicly together with the same curr
 And the privacy-obscured truck-area marker remains obvious above overlapping area polygons and routes\
 And each summary section has a focused Edit action that opens only that section\
 And regular Capacity route controls live inside that same capacity console rather than in a second planning block\
-And Edit current capacity opens the full ordered current-capacity workflow\
+And each edit opens only the selected signal's inputs over the still-mounted map, with no Edit all action\
+And Capacity, Coverage, Sharing, Loads, Regular service, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
 And the selected truck, focused Edit actions, visible map key, and combined location controls occupy distinct top-left, top-right, bottom-left, and bottom-right map zones\
-And location refresh and approximate-location accuracy remain directly available from that combined dock without opening the capacity editor.
+And location refresh remains a direct action while the radius shortcut opens the focused Location modal.
 
 ### Scenario: Tracking uses one ordered status control
 
@@ -218,7 +261,8 @@ And one compact selected-truck control stays at top-left while one aligned icon-
 And the complete map key stays visible at bottom-left while one combined approximate-location, radius, and refresh dock stays at bottom-right\
 And these floating zones do not overlap one another, required attribution, or essential capacity geometry\
 And automatic location refresh is silent while manual refresh feedback appears transiently beside the location dock\
-And focused or complete editing opens in an accessible modal whose Save or Cancel action returns to the map summary\
+And focused editing opens in a viewport-bounded native modal whose Save, Cancel, Close, or Escape action returns to the map summary with focus restored\
+And failed saves stay in that modal with the entered values and a readable error while successful saves refresh the server-owned map without page navigation\
 And no Tracking list, Tracking action panel, or Start Tracking prompt is embedded in Home\
 And the fixed Tracking navigation destination remains directly available.
 
@@ -354,3 +398,45 @@ And every confirmed defect is recorded with its affected actor, viewport, route,
 - Public pages: homepage, Capacity, Providers, Track, About, account access, and provider setup
 - Provider pages: `/app/**` excluding `/admin/**`
 - Tests: E2E and visual audit
+
+
+### Scenario: loading feedback matches the surface being loaded
+
+Given content is loading in a map or search result surface\
+When the user waits for its response\
+Then a restrained teal horizontal activity indicator communicates ongoing work\
+And an accessible text label remains available without displaying a text-only loading notice\
+And the indicator does not fabricate a percentage or block existing controls\
+And reduced-motion preference replaces animation with a static treatment\
+And a map's initial skeleton resembles its canvas, zoom controls and map key rather than crossed diagonal bands\
+And route-level map loading preserves the desktop toolbar and phone overlay layout\
+And existing form, records, chat and Featured skeletons retain their content-shaped layouts.
+
+Scope: shared loading component, map/search loading feedback and map skeletons.
+Focused desktop/phone delayed-response captures precede owner review; full release
+gates follow approval. Rollback restores components/styles; no data changes.
+
+### Provider dashboard facts — 2026-09-21
+
+Given a provider opens Home after Tracking activity
+When a shipment is cancelled or completed
+Then it is excluded from Active Tracking; Completed Tracking counts only completion.
+And Recent Tracking orders by last update so an older shipment updated today is visible.
+And On-duty Trucks counts current Empty/Partial signals on active owned trucks.
+
+Implementation: scoped migration 100 corrects only the existing dashboard projection;
+its persisted authorization, tenant scope and six-row limit remain. Rollback restores
+the prior function without changing shipments. Verify rollback-only status/order/
+vehicle tests, denial and catalog checks, then the local browser presentation.
+
+### Scenario: email-only login stays focused
+
+Given a visitor opens login on desktop or phone
+When email-only account access is enabled
+Then one compact card contains the email field and primary code action
+And code entry uses the same card with a different-email action
+And no Google action, choice divider or large marketing panel competes with login
+And labels, inline errors, keyboard focus, 44px targets and public navigation remain usable.
+
+FEAT-IAM-001 preserves the real email-code identity contract. Capture request,
+code and invalid-code states locally; obtain owner visual review before release.

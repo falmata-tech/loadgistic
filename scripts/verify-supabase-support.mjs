@@ -55,12 +55,17 @@ try{
 
   const guestDigest=crypto.createHash('sha256').update(`guest:${suffix}`).digest('hex');
   const fakeReference=`supabase://support-attachment/guest-support/${new Date().toISOString().slice(0,10)}/${suffix}.pdf`;
-  const {data:guestCreated,error:guestCreateError}=await service.rpc('create_managed_guest_support',{command:{
-    email:guestEmail,email_digest:guestDigest,phone:'+251911000000',body:'I need help finding a suitable truck.',
-    storage_path:fakeReference,original_name:'request.pdf',mime_type:'application/pdf',size_bytes:32
-  }});
-  if(guestCreateError||!guestCreated?.id)throw new Error(`SUPPORT_VERIFY_GUEST_CREATE_FAILED:${guestCreateError?.message||'EMPTY'}`);
-  guestConversationId=guestCreated.id;
+  const {error:guestCreateError}=await service.rpc('create_managed_guest_support',{command:{email:guestEmail,body:'Public chat must stay closed'}});
+  if(!guestCreateError?.message.includes('PUBLIC_SUPPORT_CLOSED'))throw new Error('SUPPORT_VERIFY_PUBLIC_CREATION_ALLOWED');
+  // Retained-history fixture, not a new guest submission. No email or live guest writes.
+  guestConversationId=crypto.randomUUID();const historicalMessageId=crypto.randomUUID();
+  for(const result of [
+    await service.from('guest_support_conversations').insert({id:guestConversationId,email:guestEmail,email_digest:guestDigest,phone:'+251911000000',status:'OPEN',assigned_agent_user_id:agentId}),
+    await service.from('guest_support_messages').insert({id:historicalMessageId,conversation_id:guestConversationId,sender_kind:'GUEST',body:'Retained support history'}),
+    await service.from('guest_support_attachments').insert({conversation_id:guestConversationId,message_id:historicalMessageId,file_path:fakeReference,original_name:'request.pdf',mime_type:'application/pdf',size_bytes:32})
+  ])if(result.error)throw new Error('SUPPORT_VERIFY_HISTORY_FIXTURE_FAILED');
+  const {error:guestWriteError}=await service.rpc('send_managed_guest_support_message',{actor_user_id:null,conversation_id:guestConversationId,requested_email_digest:guestDigest,message_body:'Must fail'});
+  if(!guestWriteError?.message.includes('PUBLIC_SUPPORT_CLOSED'))throw new Error('SUPPORT_VERIFY_PUBLIC_REPLY_ALLOWED');
   const {data:guestProjection,error:guestProjectionError}=await service.rpc('managed_guest_support_conversation',{
     actor_user_id:null,conversation_id:guestConversationId,requested_email_digest:guestDigest,requested_limit:50,mark_read:true
   });
@@ -90,7 +95,7 @@ try{
   await expectRpcDenied('managed_support_conversation',{actor_user_id:memberId,conversation_id:memberConversationId,requested_limit:50,mark_read:false});
   await expectRpcDenied('managed_guest_support_conversation',{actor_user_id:null,conversation_id:guestConversationId,requested_email_digest:guestDigest,requested_limit:50,mark_read:false});
   await expectRpcDenied('managed_support_agent_page',{actor_user_id:admin.id,requested_offset:0,requested_limit:5});
-  process.stdout.write('Supabase member Support, Assisted matching, private attachment authorization, bounded queues, atomic assignment, terminal closure, passwordless team provisioning, and browser denial checks passed.\n');
+  process.stdout.write('Supabase provider Support, public write denial, retained guest history, private attachment authorization, bounded queues, atomic assignment, terminal closure, passwordless team provisioning, and browser denial checks passed.\n');
 }finally{
   if(memberConversationId)await service.from('support_conversations').delete().eq('id',memberConversationId);
   if(guestConversationId){await service.from('access_email_deliveries').delete().eq('entity_id',guestConversationId);await service.from('guest_support_conversations').delete().eq('id',guestConversationId);}

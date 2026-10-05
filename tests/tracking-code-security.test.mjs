@@ -60,12 +60,13 @@ test('Tracking code derivation fails closed without a dedicated strong Productio
   assert.match(trackingAccessCode('shipment-one',{NODE_ENV:'development'}),/^LG-/);
 });
 
-test('Tracking and review entry fields communicate the complete code formats',()=>{
+test('Tracking uses an email OTP and owner reviews require no reusable code',()=>{
   const root=process.cwd();
   const trackingForm=fs.readFileSync(path.join(root,'src/components/tracking-unlock-form.tsx'),'utf8');
   const reviewPage=fs.readFileSync(path.join(root,'src/app/track/[id]/page.tsx'),'utf8');
-  assert.match(trackingForm,/placeholder="LG-XXXX-XXXX-XXXX-XXXX"/);
-  assert.match(trackingForm,/maxLength=\{22\}/);
-  assert.match(reviewPage,/placeholder="LG-RV-XXXX-XXXX-XXXX-XXXX"/);
-  assert.match(reviewPage,/maxLength=\{25\}/);
+  assert.match(trackingForm,/autoComplete="one-time-code"/);
+  assert.match(trackingForm,/maxLength=\{6\}/);
+  assert.doesNotMatch(trackingForm,/LG-XXXX|Shipment access code/);
+  assert.doesNotMatch(reviewPage,/LG-RV-|Review access code/);
+  assert.match(reviewPage,/recipient_role==='OWNER'/);
 });

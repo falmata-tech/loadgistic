@@ -1,12 +1,13 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship } from '@/lib/platform-admin.js';
+import { hasPlatformPermission,disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship } from '@/lib/platform-admin.js';
 import { redirectWith,text } from '@/lib/redirects';
 import { errorMessage } from '@/lib/errors';
 
 export async function POST(request:NextRequest) {
   const user=await getCurrentUser();
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
+  if(!hasPlatformPermission(user,'FEATURED'))return NextResponse.json({error:'Forbidden'},{status:403});
   const form=await request.formData();
   const featureDate=text(form,'featureDate');
   const command=text(form,'command');
@@ -40,7 +41,7 @@ export async function POST(request:NextRequest) {
       scheduleConfig:{
         dayStart:text(form,'scheduleDayStart'),
         dayEnd:text(form,'scheduleDayEnd'),
-        sponsorBreakEvery:text(form,'sponsorBreakEvery'),
+        sponsorBreakCount:text(form,'sponsorBreakCount'),
         sponsorBreakMinutes:text(form,'sponsorBreakMinutes')
       },
       targetCount:text(form,'targetCount'),

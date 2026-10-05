@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import {SurfaceSkeleton} from './loading-state';
 
-const CapacityLocationMapLeaflet=dynamic(()=>import('./capacity-location-map-leaflet').then(module=>module.CapacityLocationMapLeaflet),{ssr:false,loading:()=> <div className="capacity-location-map loading-map" aria-label="Loading capacity map">Loading map…</div>});
+const CapacityLocationMapLeaflet=dynamic(()=>import('./capacity-location-map-leaflet').then(module=>module.CapacityLocationMapLeaflet),{ssr:false,loading:()=> <SurfaceSkeleton kind="map" className="capacity-location-map loading-map" label="Loading capacity map"/>});
 type Point={lat:number;lng:number};
 type PlacePoint=Point&{place_ref?:string;label:string};
 type RegularSignal={id:string;geometry:'ROUTE'|'RADIUS';route_points:PlacePoint[];area_boundary:PlacePoint[];area_center_lat?:number;area_center_lng?:number;area_center_label?:string};

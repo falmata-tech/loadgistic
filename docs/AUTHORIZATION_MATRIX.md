@@ -1,12 +1,33 @@
 # Authorization matrix
 
+## Audit boundaries (090–095 applied locally; SQL/concurrency/browser verified)
+
+Public profile metadata (095) is filtered in PostgreSQL before rendering: hidden
+contacts are null, private image paths are omitted, and bounded Driver names
+contain only the first name. The public renderer never receives those private
+values in intermediate responses, including development RSC debug data.
+
+| Action | Required current authority | Preserved boundary |
+|---|---|---|
+| Retire/restore truck; recover nonterminal Tracking | Independent provider owner, transporter OWNER, or current Operations permission; locked record, reason and Tracking revision | Same owner replacement; Company drivers denied; terminal history retained; cancellation revokes guest access; assignment location reset |
+| Correct workspace name | Customers permission, exact workspace kind/id, observed name and reason | No ownership, handle, contact, role or identity editing |
+| Admin Tracking map | Operations permission and a permitted travel-phase LOCATION_AND_STATUS record | Current obscured events after reassignment fence only |
+| Change own login email | Active provider, fresh current-email code, signed actor/action/target handoff, own Auth session plus email confirmation | No admin identity shortcut or public-contact update |
+| Deactivate own account | Active provider, recent proof, explicit confirmation and no active-work blockers | Retain identity/history/files; platform-team denial; prevent new active work after closure |
+| Public viewport overview | Existing latest public-capacity eligibility | At most 200 aggregate cells; no per-truck contact/identity payload |
+| Private viewport/detail | Current email grant or Operations authority in SQL on every page | All filters precede bounded pagination; invalid bounds do not broaden |
+| Unchanged Support response | Current member/assigned-team/guest scope verified before ETag comparison | No transcript or file metadata in revision; revoked access never receives 304 |
+
 The active product is supply-first. Capacity seekers are anonymous visitors; only transport providers and platform-team users authenticate.
 
 | Action | Allowed actor and scope | Denial behavior |
 |---|---|---|
+| Edit own account details | Active TRANSPORTER, DRIVER (including Company driver), or ADMIN; session actor only, including limited subscription access; bounded shared name and optional private phone | Inactive/signed-out/SUPPORT or tampered fields denied; no email, role, membership, permission or public-phone write; browser RPC execution denied |
+| Manage public Driver photo | Active DRIVER, self only, including Company drivers and limited plans; explicit consent for uploads; persisted checks before Storage and activation | Non-Driver/inactive/other-account actors denied; no account/contact/assignment changes; browser table/RPC grants denied |
+| Read public Driver photo | Anyone with its opaque current portrait URL; current ACTIVE image and active DRIVER identity rechecked each time | Old, removed, pending, unknown or inactive portraits return 404; no-store response; raw private bucket objects inaccessible |
 | Browse public capacity | Anyone; only the latest published Empty or Partial provider signal, with separate capacity and approximate-location age labels | Off Duty, inactive, unpublished, and unauthorized private records are omitted; older active signals stay visible with confirmation guidance |
 | Use visitor proximity | Anyone who grants browser geolocation; exact visitor point stays in browser and only a bounded query point is sent | No prompt loop; normal Board remains usable |
-| View provider microsite | Anyone; published provider-selected fields and contact channels only | `NOT_FOUND` for unpublished/unknown handle |
+| View provider microsite | Anyone; published provider-selected fields and contact channels only; 12 active owned trucks per fleet page, current public capacity scoped to those IDs | `NOT_FOUND` for unpublished/unknown handle |
 | Read Shared capacity | Anonymous browser with a valid email-OTP session that has not been idle for 30 minutes; only trucks actively shared with that normalized email | Generic invalid-code or expired-session response; no grant or truck existence leak |
 | Manage truck Capacity access | Assigned Driver for that truck or owning fleet/provider; owner may view/revoke all owned-truck grants | `FORBIDDEN` or `NOT_FOUND`; no grant mutation |
 | Read Loadgistic private capacity map | Platform administrator with Operations permission; only trucks explicitly shared with Loadgistic | `FORBIDDEN`; no private-capacity projection |
@@ -23,13 +44,15 @@ The active product is supply-first. Capacity seekers are anonymous visitors; onl
 | Add tracking event | Owning provider/authorized Driver; explicit state transition only | `INVALID_TRANSITION` or `FORBIDDEN`; no event |
 | Share Tracking location | Assigned Driver for a location-enabled session, only during Going to pickup or En route | `ASSIGNED_DRIVER_LOCATION_REQUIRED`, `TRACKING_LOCATION_NOT_ENABLED`, or a throttled no-op; no unauthorized location event |
 | Upload status proof | Same provider scope, and only Loading, Unloading, or Issue events | `PROOF_NOT_ALLOWED`; no file record |
+| Read status proof | Current owning provider/assigned permitted Driver, active Operations-authorized team member, or verified active shipment recipient; event must belong to that exact shipment | Same 404 for absent/expired/unrelated access; recheck in service-only SQL before Storage; no public paths or caching |
+| Create platform team member | Active administrator, verified in persisted profiles before any Auth mutation | `FORBIDDEN`; no external identity created by a non-admin, inactive actor, or failed authority lookup; SQL repeats the check |
 | Request guest Tracking OTP | Anonymous visitor supplies one exact active recipient email and the matching shipment Tracking code | Generic outward response; an unknown or revoked email or wrong code creates no challenge or email delivery |
 | Unlock guest Tracking | Anonymous visitor supplies the same approved email and Tracking code plus its unexpired single-use OTP | Generic denial; no customer detail leak or Auth account creation |
 | Read guest Tracking | Browser session holding the short recipient-bound Tracking grant | Revoked/expired recipient or mismatched shipment returns no projection and the visitor must verify again |
 | Submit provider review | Emailed customer owner for completed Tracking, once | `FORBIDDEN` or `REVIEW_ALREADY_SUBMITTED` |
 | Dispute review | Rated provider, only for one- to three-star review | `REVIEW_NOT_DISPUTABLE`; rating stays visible/counted |
 | Review evidence, ratings, billing, support | Platform role with the corresponding server-side permission | `FORBIDDEN`; action audited when allowed |
-| Start Assisted matching | Account-free visitor with valid email, optional phone, and bounded message | Rate-limited generic validation response; no public demand or account |
+| Start Assisted matching | Account-free visitor with valid email, required callback phone, and bounded message | Rate-limited generic validation response; no public demand or account |
 | Read or reply to Assisted matching | Signed guest session or matching email/recovery code; assigned Support actor; administrator with Support permission | `NOT_FOUND` or generic access denial; no contact, message, assignment, or file leak |
 | Read Assisted matching attachment | Same guest-conversation session, assigned Support actor, or Support-authorized administrator | `NOT_FOUND`; every read reauthorizes the conversation |
 
@@ -41,17 +64,34 @@ The active product is supply-first. Capacity seekers are anonymous visitors; onl
 - The owner grant expires 30 days after completion.
 - The customer-owner email is private and is scrubbed with expired guest access; the provider retains the operational record.
 - Verification files and tracking proof paths are never included in public projections.
-- Private current-capacity grants are truck-scoped and revocable. Current
-  geometry and approximate location are excluded from the public Market; only
-  categorical status and the provider's separate public regular Service area
-  or Capacity route may retain a clearly labeled non-location marker. A Shared capacity guest receives the Driver-selected
+- Private current-capacity grants are truck-scoped and revocable. A private truck
+  is absent from anonymous discovery, including its identity, capacity and
+  regular-service geometry. An Open truck may also be explicitly shared with a
+  private recipient. A Shared capacity guest receives the Driver-selected
   approximate radius, never an exact device point or another email's grants.
   Background map traffic cannot renew the 30-minute idle boundary, and logout
   clears the restricted cookie immediately.
 - Guest Assisted matching is private support. It creates no Load, demand post,
   ranking record, transaction, or account, and access codes are never stored or
   logged in plaintext.
+- Member and guest message-history cursors identify a boundary inside an
+  already-authorized conversation; they never grant access. Every page repeats
+  current member ownership, assigned Support permission, administrator scope,
+  or the guest's session-bound email digest. Unassigned Support actors cannot
+  read a guest transcript or attachment, reply, or close it before a claim.
+  Historical reads do not acknowledge newer messages. Attachments retain a
+  separate authorized download and private no-store response.
 - Guest Tracking projects only the Driver's already-obscured point and selected uncertainty radius, and only during Going to pickup or En route; no exact device coordinate is stored.
 - Retired demand-side member-network and Business-profile routes do not
   authorize reads or writes. The current provider `Network` is a distinct,
   truck-scoped private-capacity access feature.
+
+## Member Support attachment scope (migration 089)
+
+| Action | Required current authority |
+|---|---|
+| Reserve/upload/attach reply | Active conversation owner, assigned active Support actor with Support permission, or administrator; conversation must allow reply; authorization before Storage and again at commit |
+| Download recent/older/closed-chat file | Active conversation owner, currently assigned active Support actor with Support permission, or administrator; attachment and message must belong to that conversation |
+| Reassigned staff, other member, anonymous download | Denied without bytes or private Storage path |
+| Reservation/table/cleanup RPC access | Service role only; browser roles have no table or function permission |
+| Background deletion | Claimed RETIRED/stale PENDING/retryable DELETING files only; never ATTACHED history |

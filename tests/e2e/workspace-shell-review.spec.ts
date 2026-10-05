@@ -70,11 +70,11 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await page.getByRole('button',{name:/^Edit regular service:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
   await capture(page,path.join(output,`${project}-driver-regular-service.png`));
-  await page.getByRole('button',{name:'Back to summary'}).click();
+  await page.getByRole('button',{name:'Close editor'}).click();
   await page.getByRole('button',{name:/^Edit current capacity:/}).click();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await capture(page,path.join(output,`${project}-driver-capacity-editor.png`));
-  await page.getByRole('button',{name:'Back to summary'}).click();
+  await page.getByRole('button',{name:'Close editor'}).click();
   await page.goto('/app/menu');
   await settleDevelopmentOverlay(page);
   await capture(page,path.join(output,`${project}-more.png`));
@@ -88,19 +88,19 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
   const ownerEmail=`${project}@shell-review.test`;
-  await page.getByLabel('Customer owner email').fill(ownerEmail);
+  await page.getByLabel('Main customer email').fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   await page.getByRole('button',{name:'Start Tracking'}).click();
-  const code=(await page.locator('.party-code-grid article').first().locator('code').textContent())!;
+  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Open Tracking'}).click();
   await page.getByRole('button',{name:'Save Going to pickup'}).click();
   await expect(page.getByText('Tracking status updated.')).toBeVisible();
   await page.goto('/track');
-  await page.getByLabel('Approved email').fill(ownerEmail);
-  await page.getByLabel('Tracking code').fill(code);
+  await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
+
   const requestedAt=Date.now();
   await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('One-time code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your shipment Tracking code'));
+  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
   await page.getByRole('button',{name:'Open tracking'}).click();
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible({timeout:15_000});
   await waitForMapTiles(page,'.tracking-location-map');

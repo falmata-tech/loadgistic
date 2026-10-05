@@ -106,3 +106,19 @@ test('the guarded local Supabase verification chain includes platform administra
   const source=fs.readFileSync(path.join(root,'scripts/configure-local-supabase.mjs'),'utf8');
   assert.match(source,/runScript\('scripts\/verify-supabase-platform-admin\.mjs'\)/);
 });
+
+
+test('Featured authority does not imply any other platform responsibility',()=>{
+ const staff={role:'SUPPORT',can_manage_featured:true};
+ assert.equal(hasPlatformPermission(staff,PLATFORM_PERMISSIONS.FEATURED),true);
+ for(const permission of [PLATFORM_PERMISSIONS.CUSTOMERS,PLATFORM_PERMISSIONS.OPERATIONS,PLATFORM_PERMISSIONS.TRUST,PLATFORM_PERMISSIONS.BILLING,PLATFORM_PERMISSIONS.SUPPORT])assert.equal(hasPlatformPermission(staff,permission),false);
+ assert.equal(hasPlatformPermission({role:'SUPPORT'},PLATFORM_PERMISSIONS.FEATURED),false);
+ assert.equal(hasPlatformPermission({role:'DRIVER',can_manage_featured:true},PLATFORM_PERMISSIONS.FEATURED),false);
+});
+
+
+test('Featured combines with independently assigned staff responsibilities',()=>{
+ const staff={role:'SUPPORT',can_manage_featured:true,can_manage_customers:true,can_manage_billing:true,can_manage_support:true};
+ for(const permission of ['FEATURED','CUSTOMERS','BILLING','SUPPORT'])assert.equal(hasPlatformPermission(staff,permission),true);
+ assert.equal(hasPlatformPermission(staff,'OPERATIONS'),false);
+});

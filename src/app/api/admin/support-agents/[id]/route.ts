@@ -18,7 +18,9 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       canManageOperations:checked(form,'canManageOperations'),
       canManageTrust:checked(form,'canManageTrust'),
       canManageBilling:checked(form,'canManageBilling'),
-      canManageSupport:checked(form,'canManageSupport')
+      canManageSupport:checked(form,'canManageSupport'),
+      canManageBrokerage:checked(form,'canManageBrokerage'),
+      canManageFeatured:checked(form,'canManageFeatured')
     });
     return redirectWith(request,'/admin/support','success','Support agent updated.');
   } catch(error) {

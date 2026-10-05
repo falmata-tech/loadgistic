@@ -28,7 +28,7 @@ Given the assigned Driver chooses a supported privacy radius and grants browser 
 When current radius availability is refreshed\
 Then the exact device coordinate is displaced in the browser before submission\
 And only the displaced center, chosen privacy radius, safe general-area label, and timestamp are stored\
-And the public map always shows a violet privacy circle sized by that chosen accuracy\
+And the public map always shows a blue privacy circle sized by that chosen accuracy\
 And all user-facing copy names that circle the Approximate current location or Approximate location radius rather than exposing the internal privacy-control term\
 And Empty Service-area availability adds a separate green hollow working polygon whose interior does not block route interaction\
 And Fleet owners may preserve but cannot replace that Driver location with their own device position.
@@ -73,7 +73,7 @@ When the Market renders\
 Then one shared map is loaded and synchronized with the current filtered feed\
 And no per-truck tile map or ranked List view is instantiated\
 And its initial framing remains focused on Ethiopia while public and provider views may be panned only within a practical East Africa envelope\
-And violet approximate location, status-colored current Service area or Capacity route, and blue regular service use shape, line style, icon, and text in addition to color\
+And blue approximate location, status-colored current Service area or Capacity route, and muted-orange regular service use shape, line style, icon, and text in addition to color\
 And selecting a truck removes other truck markers and clusters until the selected card is closed\
 And the selected marker remains visually distinct and above its signal layers at every fitted zoom while a compact in-map information window carries its essential truck actions\
 And hovering or focusing one signal shows a temporary readable light-surface explanation with a restrained neutral border and signal-matched accent\
@@ -81,6 +81,54 @@ And clicking or pressing a signal pins the explanation until it is dismissed or 
 And clicking or pressing one signal pins only that signal's compact explanation until it is dismissed or another signal is chosen\
 And overlapping current and regular Capacity routes use small opposite visual offsets without changing their stored cities so each remains independently selectable\
 And Service-area and approximate-location interiors remain non-interactive while their wide outlines remain available to pointer and keyboard users.
+
+### Closed signal outlines — owner request, 2026-09-22
+
+Given a selected truck has coincident current and regular service-area boundaries
+or a Capacity route that returns to its starting city
+When the map renders or zooms
+Then the current and regular outlines occupy separate small screen-space lanes,
+including the closing edge, regardless of vertex order or starting vertex
+And each can be activated directly by pointer, touch or keyboard without a chooser
+And the blue approximate-location circle retains its original center and radius
+And stored cities, geographic matching, location precision and fit bounds do not change.
+
+The map currently draws outlines only for the selected truck, with at most one
+location circle. Current and regular closed outlines use inward/outward lanes up
+to 12px, with corner displacement capped at 24px; open routes retain 6px lanes.
+The inward lane reduces for tiny areas to avoid inverting their boundary.
+Interiors remain transparent to map gestures. Crossings can intersect at a point;
+they must not hide an entire coincident outline. Degenerate paths remain finite.
+
+Plan: share a bounded pixel-path offset helper, close its joins consistently,
+reuse existing signal interactions, and prove coincident boundaries/closed routes
+with focused desktop/phone hit tests and screenshots. Local owner visual approval
+is required before resuming full release gates. No database change; rollback is
+the preceding renderer. Pure geometry and browser tests map to this acceptance.
+
+### Partially shared segments — owner screenshot, 2026-09-22
+
+The JAC X200 local fixture exposes a missed case: its current route is Dire Dawa
+to Shinile, while regular service continues through Melka Jebdu to Dengego.
+Canonicalizing each whole route from its endpoints places both strokes on the
+same side of the shared first leg. Identical whole-route tests are insufficient.
+
+Given current and regular signals share only a segment or part of a segment
+When either path reverses, adds intermediate points, bends sharply, or shares a
+polygon edge
+Then the regular stroke chooses its display lane against the rendered current
+segments, keeping at least 12px between parallel shared centerlines where a
+bounded lane exists, regardless of overall endpoint order
+And joins preserve the chosen segment lanes, using short bevels at sharp turns
+instead of pulling a long shared segment back onto another stroke
+And isolated crossings remain crossings, with no new chooser or loading step.
+
+Prefer the existing lane when clear; choose the nearest clear alternative within
+24px of the original edge, with corner displacement capped at 48px for those
+clearance adjustments. Otherwise the normal 6/12px lanes and 24px corner cap remain. Test both synthetic edge
+cases and actual mouse/touch selection along the shared Dire Dawa–Shinile leg.
+The earlier local review request is superseded until this correction is verified.
+
 
 ### Scenario: tile delivery is centralized and attributable
 
@@ -105,3 +153,5 @@ And unresolved data stays preserved for rollback without inventing coordinates o
 - Persistence: current capacity, one regular Service area or Capacity route, and structured location fields
 - Frontend: provider editor, public Capacity Board filters, cards, and one shared map
 - Tests: domain, repository, authorization, E2E, and visual audit
+
+September 21 owner-requested palette and interaction update: blue identifies location; muted orange identifies regular service, with green/yellow availability unchanged. FEAT-LST-001 defines compact map-key, non-blocking details and catalog-city proximity acceptance. Local verification precedes owner visual approval and rollout.

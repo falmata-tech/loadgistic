@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { privateStorageStatus,readPrivateUpload,storePrivateUpload } from '../src/lib/private-storage.js';
+import { privateDocumentHeaders,privateStorageStatus,readPrivateUpload,storePrivateUpload } from '../src/lib/private-storage.js';
 import {PRIVATE_UPLOAD_MAX_BYTES,privateUploadMaxBytes} from '../src/lib/upload-policy.js';
 
 const pngBytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00]);
@@ -10,6 +10,25 @@ const pngBytes=Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00]);
 function upload(name,type,bytes,size=bytes.length){
   return {name,type,size,arrayBuffer:async()=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)};
 }
+
+test('private PDF responses download without sniffing or active embedded content',()=>{
+  const headers=privateDocumentHeaders('application/pdf','../unsafe"\r\n.pdf');
+  assert.match(headers['Content-Disposition'],/^attachment; filename="unsafe___\.pdf"$/);
+  assert.equal(headers['X-Content-Type-Options'],'nosniff');
+  assert.equal(headers['Cache-Control'],'private, no-store');
+  assert.match(headers['Content-Security-Policy'],/sandbox; default-src 'none'/);
+  assert.match(privateDocumentHeaders('image/png','photo.png')['Content-Disposition'],/^inline;/);
+});
+
+test('validation-only mode retains MIME, signature and size denials before storage',async()=>{
+  const previous=process.env.UPLOAD_SCANNER_BACKEND;
+  process.env.UPLOAD_SCANNER_BACKEND='validation-only';
+  try{
+    await assert.rejects(()=>storePrivateUpload(upload('fake.png','image/png',Buffer.from('not an image')),'verification'),/FILE_CONTENT_MISMATCH/);
+    await assert.rejects(()=>storePrivateUpload(upload('script.html','text/html',Buffer.from('<script>')),'verification'),/UNSUPPORTED_FILE_TYPE/);
+    await assert.rejects(()=>storePrivateUpload(upload('large.png','image/png',pngBytes,PRIVATE_UPLOAD_MAX_BYTES+1),'verification'),/FILE_TOO_LARGE/);
+  }finally{if(previous===undefined)delete process.env.UPLOAD_SCANNER_BACKEND;else process.env.UPLOAD_SCANNER_BACKEND=previous;}
+});
 
 test('private uploads stay beneath the Netlify buffered binary boundary',async()=>{
   assert.equal(PRIVATE_UPLOAD_MAX_BYTES,4*1024*1024);

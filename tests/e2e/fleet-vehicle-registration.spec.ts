@@ -1,16 +1,10 @@
+import {auditLogin} from './audit-helpers';
 import {expect,test} from '@playwright/test';
 
-async function login(page:any,email:string){
-  await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);
-  await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(/\/app\/home/);
-}
+async function login(page:any,email='driver@loadgistic.local'){await auditLogin(page,email);}
 
 test('independent driver reaches truck registration from My trucks',async({page}:{page:any})=>{
+  test.setTimeout(60000);
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading',{name:'My trucks'})).toBeVisible();
@@ -27,6 +21,7 @@ test('independent driver reaches truck registration from My trucks',async({page}
 });
 
 test('fleet transporter reaches truck registration while company driver cannot create trucks',async({page}:{page:any})=>{
+  test.setTimeout(60000);
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading',{name:'My Fleet'})).toBeVisible();

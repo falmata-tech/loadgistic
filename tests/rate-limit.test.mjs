@@ -100,7 +100,7 @@ test('guest code verification and review routes use bounded shared PostgreSQL li
   assert.match(shared,/requestKey\(request,'shared-capacity-access'\),originLimit:12,windowMs:10\*60_000,scopedLimit:5/);
   assert.match(shared,/shared-capacity-access-email:\$\{email\}/);
   assert.match(trackingOtp,/requestKey\(request,'tracking-otp'\),originLimit:10,windowMs:10\*60_000,scopedLimit:3/);
-  assert.match(trackingOtp,/tracking-otp-recipient:\$\{email\}:\$\{trackingCode\}/);
+  assert.match(trackingOtp,/tracking-otp-recipient:\$\{email\}/);
   assert.match(tracking,/requestKey\(request,'tracking-unlock'\),originLimit:12,windowMs:10\*60_000,scopedLimit:5/);
   assert.match(tracking,/tracking-unlock-email:\$\{email\}/);
   assert.match(reviewUnlock,/requestKey\(request,'tracking-review-unlock'\),originLimit:12,windowMs:10\*60_000,scopedLimit:5/);

@@ -1,7 +1,7 @@
 {
   "name": "Loadgistic",
   "short_name": "Loadgistic",
-  "description": "Share transport capacity and track agreed shipments across Ethiopia.",
+  "description": "Share transport capacity and keep shipment partners informed across Ethiopia.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

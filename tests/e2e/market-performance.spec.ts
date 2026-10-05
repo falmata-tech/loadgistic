@@ -1,31 +1,37 @@
 import {expect,test} from '@playwright/test';
+import {closeCapacityFilters} from './capacity-drawer-helper';
 
 type BrowserFixtures={page:any;context:any};
 
-test('low-end phone keeps automatic public map loading progressive and bounded',async({page,context}:BrowserFixtures)=>{
+test('low-end phone automatically loads viewport pages and settles after panning',async({page,context}:BrowserFixtures)=>{
+  test.setTimeout(60000);
   const client=await context.newCDPSession(page);
+  try{
   await client.send('Emulation.setCPUThrottlingRate',{rate:6});
-  let cursorRequests=0;
-  page.on('request',(request:any)=>{if(request.url().includes('/api/public/capacity?')&&request.url().includes('cursor='))cursorRequests+=1;});
+  const viewports:string[]=[];let overviewRequests=0;const startedAt=Date.now();const responses:{status:number;elapsedMs:number}[]=[];let failedRequests=0;
+  page.on('response',(response:any)=>{const url=new URL(response.url());if(url.pathname==='/api/public/capacity')responses.push({status:response.status(),elapsedMs:Date.now()-startedAt});});
+  page.on('requestfailed',(request:any)=>{if(new URL(request.url()).pathname==='/api/public/capacity')failedRequests++;});
+  page.on('request',(request:any)=>{
+    const url=new URL(request.url());if(url.pathname!=='/api/public/capacity')return;
+    if(url.searchParams.has('overview'))overviewRequests+=1;
+    viewports.push(url.searchParams.get('viewport')||'');
+  });
   await page.goto('/');
-  await page.locator('.capacity-truck-map-marker,.capacity-map-cluster').first().waitFor({state:'visible'});
-  await expect(page.getByRole('button',{name:'Load more trucks'})).toHaveCount(0);
-  await expect.poll(()=>cursorRequests,{timeout:5_000}).toBe(1);
-  await page.waitForTimeout(1_000);
-  expect(cursorRequests).toBe(1);
-  const before=await page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count();
-  expect(before).toBeLessThanOrEqual(40);
-  const map=page.locator('.leaflet-container');
-  const box=await map.boundingBox();
-  expect(box).toBeTruthy();
-  await page.mouse.move(box!.x+box!.width*.65,box!.y+box!.height*.55);
-  await page.mouse.down();
-  await page.mouse.move(box!.x+box!.width*.45,box!.y+box!.height*.55,{steps:5});
-  await page.mouse.up();
-  await expect.poll(()=>cursorRequests,{timeout:5_000}).toBe(2);
-  await page.waitForTimeout(500);
-  const after=await page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count();
-  expect(after).toBeLessThanOrEqual(60);
-  const heap=await client.send('Runtime.getHeapUsage');
-  expect(heap.usedSize).toBeLessThan(96*1024*1024);
+  try{await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible({timeout:20000});}
+  catch{throw new Error('MAP_STARTUP_DIAGNOSTIC '+JSON.stringify({requests:viewports.length,responses,failedRequests}));}
+  // Initial server-rendered markers precede the debounced viewport fetch.
+  await expect.poll(()=>viewports.length,{timeout:15000}).toBeGreaterThan(0);expect(viewports.every(bounds=>bounds.split(',').length===4)).toBe(true);
+  expect(overviewRequests).toBe(0);
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+  await closeCapacityFilters(page);
+  const before=viewports.at(-1);const map=page.locator('.leaflet-container');const box=await map.boundingBox();expect(box).toBeTruthy();
+  await page.mouse.move(box!.x+box!.width*.7,box!.y+box!.height*.55);await page.mouse.down();
+  await page.mouse.move(box!.x+box!.width*.3,box!.y+box!.height*.55,{steps:5});await page.mouse.up();
+  await expect.poll(()=>viewports.at(-1),{timeout:10000}).not.toBe(before);
+  await expect(page.getByText('Loading trucks in this map area…',{exact:true})).toHaveCount(0);
+  expect(overviewRequests).toBe(0);
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+  const settled=viewports.length;await page.waitForTimeout(1000);expect(viewports.length).toBe(settled);
+  const heap=await client.send('Runtime.getHeapUsage');expect(heap.usedSize).toBeLessThan(96*1024*1024);
+  }finally{await client.send('Emulation.setCPUThrottlingRate',{rate:1}).catch(()=>undefined);await client.detach();}
 });

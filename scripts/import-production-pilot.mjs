@@ -170,9 +170,9 @@ function projectRow(sourceTable,targetTable,row){
     if(column.endsWith('_geog'))continue;
     const sourceColumn=aliases[column]||column;let value=row[sourceColumn];
     if(sourceTable==='users'&&column==='id')value=userIds.get(row.id);
-    if(sourceTable==='users'&&column==='email')value=pilotEmail(row.id);
+    if(sourceTable==='users'&&column==='email')value=pilotEmail(row.id,existingPilotUsers.get(row.id));
     if(sourceTable==='subscriptions'&&column==='plan_id')value=planIds.get(String(value))||value;
-    if(sourceTable==='verification_requests'&&column==='storage_path'&&value)value=`${PRODUCTION_PILOT_SOURCE}/verification-placeholder.jpg`;
+    if(sourceTable==='verification_requests'&&column==='storage_path'&&value)value=`supabase://verification/${PRODUCTION_PILOT_SOURCE}/verification-placeholder.jpg`;
     if(['phone','contact_phone','contact_whatsapp'].includes(column)&&value)value=safePhone;
     if(value!==undefined)result[column]=convertValue(value,property);
   }

@@ -20,7 +20,7 @@ export function localAccessCodeForDevelopment(challenge,delivery,environment=pro
 
 const SHARED_CAPACITY_REQUEST_MESSAGE='Check your email for a one-time code.';
 const SHARED_CAPACITY_NO_SHARE_MESSAGE='No transporter has shared capacity with this email yet. Ask a transporter to share capacity with this email address.';
-const TRACKING_OTP_REQUEST_MESSAGE='Request received. A one-time code is sent only when this exact email is approved for that shipment. If no code arrives, confirm the email and Tracking code with your transporter.';
+const TRACKING_OTP_REQUEST_MESSAGE='If shipments are shared with this email, a code will arrive shortly. If it does not arrive, check spam or confirm your email with the transporter.';
 
 export function sharedCapacityOtpRequestResponse(challenge,{
   configured=emailDeliveryConfigured(),
@@ -70,7 +70,7 @@ export async function deliverPendingShipmentEmails(limit=10){
         template:delivery.delivery_kind==='TRACKING_ACCESS'?'tracking-started':'tracking-completed',
         to:delivery.recipient_email,
         customerRole:delivery.party_role==='SHIPPER'?'OWNER':'TRACKING_PARTY',
-        tracking:delivery.delivery_kind==='TRACKING_ACCESS'?{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)}:undefined,
+        tracking:{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)},
         review:delivery.delivery_kind==='COMPLETION'?{url:publicUrl('/track'),code:reviewAccessCode(delivery.shipment_id)}:undefined,
         shipment:{
           code:delivery.code,providerName:delivery.provider_name,origin:delivery.origin,

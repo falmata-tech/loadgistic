@@ -2,16 +2,7 @@ import {expect,test} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-async function login(page:any,email:string,expected=/\/app\/home/){
-  await page.goto('/login');
-  const fixtureLogin=page.locator('details.auth-fixture-login');
-  if(await fixtureLogin.count()&&!(await fixtureLogin.getAttribute('open')))await fixtureLogin.locator('summary').click();
-  const fixtureForm=page.getByTestId('login-form');
-  await fixtureForm.getByLabel('Email',{exact:true}).fill(email);
-  await fixtureForm.getByLabel('Password').fill('Loadgistic123!');
-  await fixtureForm.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(expected);
-}
+import {auditLogin as login} from './audit-helpers';
 
 async function localMailpitCode(email:string,requestedAt:number){
   for(let attempt=0;attempt<40;attempt+=1){
@@ -36,52 +27,25 @@ async function localMailpitCode(email:string,requestedAt:number){
   throw new Error('Expected a recent Shared capacity message in the isolated local inbox.');
 }
 
-test('Assisted matching behaves as an immediate private chat',async({page,browser}:{page:any;browser:any})=>{
-  test.setTimeout(60_000);
-  const email=`guest-${test.info().project.name}-${Date.now()}@example.test`;
-  await page.goto('/');
-  await page.getByRole('button',{name:'Ask Loadgistic'}).click();
-  const dialog=page.getByRole('dialog',{name:'Ask Loadgistic'});
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByLabel('Callback phone')).toBeVisible();
-  await dialog.getByLabel('Email',{exact:true}).fill(email);
-  await dialog.getByLabel('Callback phone').fill('+251 911 222 333');
-  await dialog.getByLabel('What do you need?').fill('I need a local cargo van from Adama to Bishoftu tomorrow morning.');
-  await dialog.getByRole('button',{name:'Start chat'}).click();
-  await expect(dialog.getByText('I need a local cargo van from Adama to Bishoftu tomorrow morning.')).toBeVisible();
-  await page.goto('/featured');
-  await expect(page.getByRole('dialog',{name:'Ask Loadgistic'}).getByText('I need a local cargo van from Adama to Bishoftu tomorrow morning.')).toBeVisible();
-
-  const teamContext=await browser.newContext({baseURL:new URL(page.url()).origin});
-  const teamPage=await teamContext.newPage();
-  await login(teamPage,'support@loadgistic.local',/\/support/);
-  await teamPage.goto('/support/assisted?view=ASSIGNED');
-  const conversationHref=await teamPage.getByText(email,{exact:true}).locator('xpath=ancestor::article[1]').getByRole('link',{name:'Open'}).getAttribute('href');
-  await teamPage.goto(conversationHref!);
-  await expect(teamPage).toHaveURL(/\/support\/assisted\/[0-9a-f-]{36}$/);
-  await expect(teamPage.getByText('I need a local cargo van from Adama to Bishoftu tomorrow morning.')).toBeVisible();
-  await teamPage.getByLabel('Message').fill('I am checking nearby vans now.');
-  await teamPage.getByRole('button',{name:'Send'}).click();
-  await expect(page.getByRole('dialog',{name:'Ask Loadgistic'}).getByText('I am checking nearby vans now.')).toBeVisible({timeout:7000});
-  await page.getByRole('dialog',{name:'Ask Loadgistic'}).getByRole('button',{name:'End chat'}).click();
-  await page.getByRole('dialog',{name:'Ask Loadgistic'}).getByRole('button',{name:'Confirm end'}).click();
-  await expect(page.getByRole('dialog',{name:'Ask Loadgistic'}).getByText(/This chat has ended/)).toBeVisible({timeout:7000});
-  await page.getByRole('dialog',{name:'Ask Loadgistic'}).getByRole('button',{name:'Start a new chat'}).click();
-  await expect(page.getByRole('dialog',{name:'Ask Loadgistic'}).getByLabel('Callback phone')).toBeVisible();
-  await teamContext.close();
+test('public route changes keep only the asynchronous transport request',async({page}:{page:any})=>{
+ await page.goto('/');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
+ await page.goto('/featured');await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
+ await expect(page.locator('.public-chat-start,.public-chat-composer')).toHaveCount(0);
+ await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.locator('.public-assistance-dock button')).toHaveCount(1);
 });
 
 test('provider Network and public Shared capacity remain distinct',async({page}:{page:any})=>{
   test.setTimeout(60_000);
   const sharedEmail=`shared-${Date.now()}-${test.info().project.name}@example.test`;
   await page.goto('/shared-capacity');
-  await expect(page.getByRole('heading',{name:'Private Transport Capacity',includeHidden:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   await page.getByLabel('Email').fill(sharedEmail);
   await page.getByRole('button',{name:'Continue with email'}).click();
-  await expect(page.getByText('No transporter has shared capacity with this email yet.')).toBeVisible();
-  await expect(page.getByLabel('One-time code')).toHaveCount(0);
+  await expect(page.locator('.shared-capacity-access-card .form-notice')).toBeVisible();
+  await expect(page.getByLabel('6-digit email code')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   if(process.env.CAPTURE_VISUAL_REVIEW==='1'){
     const output=path.resolve(process.cwd(),'artifacts/private-capacity-assisted-chat-v1');
@@ -91,7 +55,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
 
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
-  await expect(page.getByRole('heading',{name:'Network'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
   await expect(page.getByText('Share with Loadgistic').first()).toBeVisible();
   const shareEmail=page.getByLabel('Share with an email').first();
   await shareEmail.fill(sharedEmail);
@@ -105,8 +69,8 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await expect(page.getByText('Local test code',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Check your email for a one-time code.')).toBeVisible();
   await expect(page.getByRole('link',{name:'Open the local inbox in a new tab'})).toBeVisible();
-  await page.getByLabel('One-time code').fill(await localMailpitCode(sharedEmail,requestedAt));
-  await page.getByRole('button',{name:'Open private capacity'}).click();
+  await page.getByLabel('6-digit email code').fill(await localMailpitCode(sharedEmail,requestedAt));
+  await page.getByRole('button',{name:'View shared signals'}).click();
   await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible();
   await expect(page.getByLabel(/access ends after 30 minutes without activity/i)).toBeVisible();
   const initialViewport=page.viewportSize();
@@ -136,7 +100,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   expect(mapBox).toBeTruthy();
   expect(mapBox!.y).toBeGreaterThanOrEqual(logoutBox!.y+logoutBox!.height);
   await logout.click();
-  await expect(page).toHaveURL(/\/shared-capacity\?session=logout/);
+  await expect(page).toHaveURL((url:URL)=>url.pathname==='/'&&url.searchParams.get('view')==='private'&&url.searchParams.get('session')==='logout');
   await expect(page.getByText('You have logged out of Private capacity.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   expect((await page.context().cookies()).some((cookie:any)=>cookie.name==='lg_shared_capacity')).toBe(false);
@@ -158,7 +122,7 @@ test('public Market returns only trucks that expose their current signal',async(
   expect(count).toBeGreaterThan(0);
 });
 
-test('capture focused Assisted matching and Network review',async({page}:{page:any})=>{
+test('capture focused transport request and Network review',async({page}:{page:any})=>{
   test.setTimeout(60_000);
   test.skip(process.env.CAPTURE_VISUAL_REVIEW!=='1','Focused visual capture only');
   const output=path.resolve(process.cwd(),'artifacts/private-capacity-assisted-chat-v1');
@@ -166,24 +130,11 @@ test('capture focused Assisted matching and Network review',async({page}:{page:a
   const project=test.info().project.name;
 
   await page.goto('/');
-  await page.getByRole('button',{name:'Ask Loadgistic'}).click();
-  const dialog=page.getByRole('dialog',{name:'Ask Loadgistic'});
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByLabel('Callback phone')).toBeVisible();
+  await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.screenshot({path:path.join(output,`${project}-assisted-matching-widget.png`),fullPage:true});
-
-  await dialog.getByLabel('Email',{exact:true}).fill(`visual-${project}@example.test`);
-  await dialog.getByLabel('Callback phone').fill('+251 911 333 444');
-  await dialog.getByLabel('What do you need?').fill('I need a local cargo van between Adama and Bishoftu tomorrow morning.');
-  await dialog.getByRole('button',{name:'Start chat'}).click();
-  await expect(dialog.getByText('I need a local cargo van between Adama and Bishoftu tomorrow morning.')).toBeVisible();
-  await page.goto('/featured');
-  await expect(page.getByRole('dialog',{name:'Ask Loadgistic'}).getByText('I need a local cargo van between Adama and Bishoftu tomorrow morning.')).toBeVisible();
-  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.screenshot({path:path.join(output,`${project}-persistent-live-chat.png`),fullPage:true});
-
-  await page.getByRole('dialog',{name:'Ask Loadgistic'}).getByRole('button',{name:'Minimize chat'}).click();
+  await page.screenshot({path:path.join(output,`${project}-transport-request.png`),fullPage:true});
+  await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.goto('/shared-capacity');
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
@@ -191,7 +142,7 @@ test('capture focused Assisted matching and Network review',async({page}:{page:a
 
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
-  await expect(page.getByRole('heading',{name:'Network'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:path.join(output,`${project}-network.png`),fullPage:true});
 });

@@ -1,5 +1,8 @@
+
+import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
-import { LayoutDashboard, LogIn } from 'lucide-react';
+import {LanguagePicker} from './localization';
+import { LayoutDashboard, Truck } from 'lucide-react';
 import { Logo } from './logo';
 import { getCurrentUser } from '@/lib/auth';
 import { PublicMobileNav } from './public-mobile-nav';
@@ -12,11 +15,11 @@ export async function PublicHeader() {
       <header className="public-header">
         <div className="container public-nav">
           <Logo />
-          <span className="public-app-context">Capacity sharing · Shipment tracking</span>
+          <div className="public-header-language"><LanguagePicker/></div>
           <div className="public-session-compact" data-testid="public-session-action">
             {user
-              ? <Link className="button public-dashboard-action" href="/app/home" aria-label="Dashboard" title="Dashboard"><LayoutDashboard aria-hidden="true"/><span>Dashboard</span></Link>
-              : <Link className="button secondary public-login-action" href="/login" aria-label="Log in" title="Log in"><LogIn aria-hidden="true"/><span>Log in</span></Link>}
+              ? <Localized as="link" copy={["aria-label","title"]} className="button public-dashboard-action" href="/app/home" aria-label="Dashboard" title="Dashboard"><LayoutDashboard aria-hidden="true"/><span><Text message="Dashboard"/></span></Localized>
+              : <Localized as="link" copy={["aria-label","title"]} className="button secondary public-login-action" href="/login" aria-label="Transporter login" title="Transporter login"><Truck aria-hidden="true"/><span><Text message="Transporter login"/></span></Localized>}
           </div>
         </div>
       </header>

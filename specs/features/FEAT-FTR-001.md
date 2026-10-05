@@ -1,15 +1,69 @@
 ---
 id: FEAT-FTR-001
 title: Daily Featured Trucks programme
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001, FEAT-IAM-001, FEAT-SUP-001]
 problem: Capacity seekers need a concise daily introduction to useful truck types and the Drivers operating them, while Loadgistic needs a manageable live programme that does not consume the entire day or turn provider eligibility into an endorsement.
-behavior: Each Ethiopia calendar day has one truck-type theme and one administrator-curated ordered roster of exact active trucks with assigned Drivers. The default target is eight entries and may be changed by an administrator before publication. The deterministic 07:30–09:00 Ethiopia-time schedule divides the remaining airtime equally between selected trucks and inserts no more than four interludes of at most two minutes, naming an active sponsor when available. Public cards lead with the assigned Driver's first name, role, and portrait while keeping the exact selected truck and owning transporter unmistakable. Sponsors remain a separately managed presentation surface.
+behavior: Each Ethiopia calendar day has one truck-type theme and an ordered roster of exact active trucks with distinct assigned Drivers. Automatic selection prepares weekly subsets across the next seven days using a persisted random no-repeat round of exact eligible truck-and-Driver pairs. The saved daily count is a ceiling (default eight, one through eight), and the actual eligible selected count determines slots and airtime. Manual-only mode and individual curated days remain available; routine automation never changes a saved day. The deterministic 08:30–12:00 Ethiopia-time schedule divides airtime equally between selected trucks with four two-minute mentions by default (including a closing mention), or fewer for a sparse roster, naming an active sponsor when available. Public cards lead with the Driver's name, role, and portrait while retaining the exact truck and provider. Sponsors stay separate.
 contracts: [FeaturedTruckTypeRotation, FeaturedTruckCandidate, FeaturedTruckDay, FeaturedTruckSlot, FeaturedTruckAdminCommand, PublicFeaturedTruckProjection, FeaturedTruckBoardLayout, FeaturedDaySchedule, FeaturedScheduleEntry, FeaturedScheduleConfig, DailyTikTokBroadcast]
-observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, administrator roster-gap state]
+observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, FEATURED_DAY_AUTO_PUBLISHED audit, PLATFORM_CONTROLS_UPDATED audit, bounded worker counts, administrator roster-gap state]
 rollout: Add exact truck-and-Driver slot references additively, migrate the disposable demonstration roster to current truck candidates, retain historical provider-slot identifiers only for rollback integrity, and publish the new projection only after local Supabase, authorization, schedule, and responsive board checks pass.
 ---
 
 # Daily Featured Trucks programme
+
+### Scenario: automatic daily selection with a manual day override
+
+Given automatic Featured selection is enabled with a target from one to twelve\
+When the scheduled managed-operations worker prepares the next seven Ethiopia dates\
+Then it persists one ordered daily roster from active eligible trucks and Drivers
+matching each day's existing truck-type theme\
+And random selection draws from exact truck-and-Driver pairs not yet selected in the current round\
+And no automatic pair repeats until every currently eligible pair has been selected in that round\
+And a new round starts only after the global eligible pool is exhausted\
+And each daily roster still avoids duplicate Drivers\
+And fewer eligible candidates produces a smaller honest roster, never invented entries\
+And retries do not change a saved roster, target, or its audit history\
+And a manually saved draft or published day is never overwritten by automation\
+And public reads do not create or overwrite a roster.
+
+Given an administrator opens Featured\
+When they choose Automatic selection or Manual only and set the daily count\
+Then the policy is saved with an audit and applies to unprepared dates\
+And Prepare upcoming days runs the same bounded generator immediately\
+And existing manual selection and publishing remain available for individual days\
+And automatic selection is distinct from automatic allocation of presentation time\
+And unauthorized callers cannot change policy or generate rosters.
+
+### Scenario: random weekly subsets retain round history
+
+Given some eligible truck-and-Driver pairs have already been chosen\
+When automation prepares an unsaved date\
+Then only remaining pairs in the current round may be chosen, using a random draw without a learned score\
+And a day with no remaining pairs in its theme stays unscheduled instead of repeating before other themes finish\
+And the same truck with a newly assigned Driver is a different eligible pair\
+And newly eligible pairs may join the current round while inactive/unassigned pairs do not block its completion\
+And saved rosters and their random order remain unchanged on retries\
+And selection history survives a later manual roster edit or deletion\
+And public/authenticated browser roles cannot read or write the history or invoke generation.
+
+Given the current eligible pool has all been selected\
+When automation needs the next unsaved roster\
+Then it begins a new round and pairs become eligible for a fresh random draw\
+And the ledger records the round, pair and selection date atomically with its day\
+And the existing generation lock and unique round/pair key prevent concurrent duplicates.
+
+The user chose weekly subsets on September 21. Preserve daily themes and the
+08:30–12:00 window. A smaller eligible subset produces fewer, longer intervals;
+no made-up entries fill a daily target. Historical published pairs bootstrap the
+first round, and manual overrides remain independently available. The no-repeat
+policy governs automatic selection; manual curation may deliberately override it.
+
+Implemented locally: migration 098 adds a private, RLS-protected selection ledger and replaces
+only the generator's selection policy. Keep existing roster snapshots and public
+projections unchanged. Verify local round exhaustion, changed eligibility,
+concurrency/idempotence, manual-history retention and negative permissions;
+reuse count-dependent schedule tests. No hosted migration without a reviewed
+release. Rollback restores the prior generator while retaining the ledger.
 
 ### Scenario: each day has one understandable truck-type theme
 
@@ -21,7 +75,7 @@ And Wednesday features pickups, including open and stake configurations\
 And Thursday features light-duty trucks\
 And Friday features medium-duty trucks\
 And Saturday features all heavy configurations: rigid trucks, fixed-trailer rigid trucks, and tractors with Container, Dry van, or Heavy equipment trailers\
-And Sunday features courier cars for small-shipment capacity\
+And Sunday features mixed freight trucks from the remaining eligible pairs\
 And the rotation describes the vehicle configuration being discussed rather than ranking regions, transporters, or Drivers.
 
 ### Scenario: an administrator selects exact truck-and-Driver entries
@@ -30,7 +84,7 @@ Given an administrator prepares a featured day\
 When candidates are listed\
 Then each candidate is an active truck matching that day's theme with one active assigned Driver\
 And each candidate includes the truck configuration and image, Driver first name and role label, general operating place, and owning transporter when one exists\
-And each candidate includes a safe public Driver portrait preset when the account has one\
+And each candidate includes the Driver-selected public portrait, or an allowlisted demo preset when present\
 And a Driver without a portrait uses a clear person silhouette with a three-spoke steering wheel in front rather than a generic disc\
 And the administrator chooses an ordered set of exact candidates rather than selecting a transporter and allowing the public projection to guess a truck\
 And the default publication target is eight entries while an administrator may set a bounded target from one through twelve\
@@ -53,7 +107,7 @@ And private contacts, plates, evidence files, exact coordinates, account data, a
 Given the current day has no published roster or a selected truck or Driver is no longer eligible\
 When the Featured route renders\
 Then the daily truck-type theme and programme window remain visible\
-And the page states concisely that the roster is being prepared\
+And the page states concisely that no trucks are scheduled today\
 And the empty-state message uses the available board width on desktop and phone without collapsed text columns\
 And one clear action returns the visitor to Open capacity\
 And no truck, Driver, or transporter is invented or substituted\
@@ -63,7 +117,7 @@ And an administrator draft is never published or overwritten by a public read.
 
 Given a published ordered roster contains the saved target number of eligible trucks\
 When Loadgistic generates the automatic schedule\
-Then the programme starts at 07:30 and ends at 09:00 in `Africa/Addis_Ababa`\
+Then the programme starts at 08:30 and ends at 12:00 in `Africa/Addis_Ababa`\
 And every selected truck receives exactly one contiguous presentation interval in roster order\
 And presentation time is divided as evenly as whole minutes permit\
 And short programme interludes are inserted between configured groups of presentations\
@@ -77,12 +131,13 @@ And the same date, roster, target, and interlude configuration always produce th
 
 Given an administrator is preparing a featured day\
 When programme controls are used\
-Then the administrator may change the target entry count, interlude frequency, and one- or two-minute interlude duration within bounded values\
+Then the administrator may change the target entry count, sponsor mention count (zero to four), and one- or two-minute interlude duration within bounded values\
 And Auto schedule recalculates equal presentation intervals from the ordered roster\
-And Manual schedule may adjust each truck interval only inside 07:30–09:00 without overlap or reordering\
+And Manual schedule may adjust each truck interval only inside 08:30–12:00 without overlap; reordered trucks use chronological intervals\
 And a manual gap is presented as a programme interlude rather than unexplained dead time\
 And saving or publishing persists the target, selected truck IDs, resolved Driver IDs, schedule mode, configuration, intervals, and audit record atomically\
-And non-administrators are denied without changing the roster or schedule.
+And members without administrator or explicitly granted Featured authority are
+denied without changing the roster or schedule.
 
 ### Scenario: the truck being discussed live is unmistakable
 
@@ -133,6 +188,174 @@ And each independently loaded map, schedule, card collection, or dialog owns its
 
 - Public page: dedicated Featured route, daily theme, compact schedule, Driver-led selected-truck detail, and separate Sponsors panel
 - Administrator: day-derived truck theme, bounded target count, ordered exact truck-and-Driver roster, public message, TikTok reference, automatic/manual schedule, and interlude settings
-- Application services: candidate eligibility, Driver assignment and safe portrait resolution, Ethiopia-day activation, deterministic 07:30–09:00 schedule, sponsor interlude assignment, and public safe projection
+- Application services: candidate eligibility, Driver assignment and safe portrait resolution, Ethiopia-day activation, deterministic 08:30–12:00 schedule, sponsor interlude assignment, and public safe projection
 - Persistence: additive day configuration and ordered slot references to exact vehicle and Driver identities, with service-role-only commands and audit
 - Tests: schedule boundaries and equality, candidate ownership/assignment, authorization, projection privacy, responsive board/loading geometry, and focused desktop/mobile visual review
+
+## Self-managed public Driver portraits (verified locally; rollout pending)
+
+### Scenario: a Driver chooses a public portrait
+
+Given an active DRIVER identity, including a Company driver or a limited-plan account\
+When they upload a JPG, PNG or WebP of at most four MiB through Account & plan
+and explicitly confirm that the photo may be public\
+Then persisted authority is checked before Storage writes and again at activation\
+And the server decodes a single-frame raster within 25 million pixels, applies
+orientation, crops to a 512-pixel square and re-encodes JPEG without EXIF/GPS metadata\
+And the normalized image passes the existing quarantine/inspection policy\
+And one active portrait replaces the Driver's previous photo and demo preset\
+And the account preview and eligible Featured cards display the chosen image\
+And no vehicle assignment, verification, fleet permission or public phone changes.
+
+### Scenario: portrait permission and validation fail safely
+
+Given a signed-out, inactive, non-Driver or different account actor, missing public
+consent, oversized/invalid/mismatched/animated input or failed Storage inspection\
+When a portrait mutation is attempted\
+Then no other Driver's portrait can be changed and the current portrait remains\
+And a safe error explains the failed action without exposing paths or decoder errors\
+And browser roles cannot read portrait metadata, execute commands or access bucket objects.
+
+### Scenario: replacement and removal revoke future image reads
+
+Given a Driver has a public portrait or a demo preset\
+When they replace or remove it from Account & plan\
+Then only a newly generated opaque portrait ID may resolve to the current photo\
+And old IDs return 404 and removal clears the demo preset to a neutral icon\
+And every public image read checks current portrait state and active DRIVER identity\
+And responses use no-store and nosniff, with no account IDs or storage paths\
+And already downloaded copies cannot be recalled.
+
+### Scenario: interrupted uploads and deletion retries preserve the current image
+
+Given a registered portrait upload or a replaced/removed portrait\
+When activation fails, its response is ambiguous, or object deletion fails\
+Then an active image is never deleted as speculative failure cleanup\
+And registered pending uploads older than one hour and finished retired images are claimed
+in bounded cleanup batches, with retry after five minutes for failed deletion\
+And removing a still-writing upload prevents activation but defers deletion until
+that attempt settles or the one-hour stale boundary passes\
+And a claimed image cannot later become active\
+And the signed existing operations worker retries deletion with count-only results.
+
+Contracts: `DriverPortraitWorkspace`, `DriverPortraitUpload`, `PublicDriverPortrait`.
+Migration 087 uses service-only upload states PENDING → ACTIVE → RETIRED → DELETING
+(or PENDING → RETIRED/DELETING), profile-row locks and one active image per Driver.
+Portrait Storage requests have a 30-second per-request timeout.
+Storage references are reserved before object writes in the existing private
+provider-profile bucket under a distinct driver-portrait prefix. Public consent
+covers access to the photo's opaque URL even when the Driver is not on today's
+roster; roster eligibility remains unchanged. Owners/admins cannot edit another
+Driver's portrait. Portrait upload/remove audits record no contacts or file paths.
+Sharp 0.35.4, already installed through Next, becomes an explicit pinned dependency
+for server normalization (ADR-054). Apply 087 before app/worker rollout; UI rollback
+retains metadata and cleanup. Retire portraits before future account deletion.
+No hosted rollout is authorized. Verification: `tests/driver-portrait-upload.test.mjs`,
+`tests/sql/driver-portraits.sql`, `tests/e2e/driver-portraits.spec.ts` and existing
+managed-operations/Storage tests. Real local browser upload/download and the
+quality/build gates passed; evidence is in `docs/BUILD_VERIFICATION.md`.
+
+
+### September 24: automatic operation and launch readiness
+
+Given staff open Featured in automatic mode
+When they inspect the overview
+Then it shows upcoming saved days, drafts protected from automation, missing days,
+current eligible/remaining pair counts, and the latest recorded automatic run
+And a stale, failed, paused or never-recorded run is distinguished from healthy operation
+And the no-repeat policy explains theme exhaustion without silently repeating pairs
+And manual day editing stays available through one clear disclosure.
+
+Given a worker prepares Featured
+When generation completes, fails, is paused or another run holds the lock
+Then a private bounded status record captures actual completion/counters or safe failure
+And failures do not publish a partial roster or expose database error details
+And existing random-round, concurrency and retry invariants remain unchanged
+And public reads do not generate days or expose worker status.
+
+Given an admin edits an automatic day
+When they save or publish it
+Then it becomes a protected manual day and the overview makes that clear
+And the staff guide explains how automatic selection, airtime and optional video differ.
+
+Changes remain local until owner visual review and normal migration/release gates.
+
+### September 24 owner addition: separate Featured responsibility
+
+Given an active team member has only the Featured permission
+When they sign in and manage the programme
+Then Featured is their available workspace, with overview, automatic preparation,
+selection settings, manual draft/publish and sponsor controls
+And they cannot access account administration, billing/access mode, Support or Brokerage
+And separately granted Support, Brokerage, Billing or account responsibilities
+remain available to the same member; revoking Featured does not revoke them
+And only an administrator can grant/revoke this default-off permission
+And current database authority is checked and locked before every Featured mutation
+And revocation or suspension denies subsequent requests, even with an existing session.
+
+Migration 106 adds the narrow capability without backfilling existing staff access.
+Identity and team projections expose it, with permission-change audit evidence.
+No public/browser SQL grants are broadened. App rollback retains the default-off
+column and guarded commands; never promote staff to ADMIN as a workaround.
+
+### Official broadcast hours — owner change, 2026-09-24
+
+The official programme is 08:30–12:00 Africa/Addis_Ababa (EAT). Use a maximum
+of eight showcases by default, with four two-minute sponsor mentions. This is
+schedule preparation only; staff conduct the actual TikTok broadcast.
+
+Given automatic timing has eight selected truck/driver pairs
+When the programme is built
+Then four two-minute mentions are reserved, including the closing mention
+And the remaining 202 minutes are divided fairly between the eight showcases
+And entries are contiguous, ordered, and end at noon without exceeding the window
+And smaller rosters use their actual size, with at most one mention per showcase
+And no phantom truck or early repeat is added to fill a sparse day.
+
+Given an authorized member edits a day
+When they use Automatic timing or switch to Manual
+Then the preview shows the exact truck and sponsor intervals in Ethiopia time
+And manual mode starts from the current automatic timetable, allows reordered
+showcases and explicit times, and rejects overlaps/out-of-window intervals
+And opening, between-showcase and closing gaps count toward at most four mentions,
+each no longer than two minutes; saved drafts stay private until publication.
+
+Historical saved programmes retain their recorded hours and timing. Future saved
+AUTO-selected/AUTO-timed days are retimed without changing pairs, selection history,
+headlines, sponsors or publication status. Manually curated/timed days are preserved;
+legacy hours require an explicit timing reset/review before saving under the new rule.
+No migration truncates an existing roster. An oversized future automatic day stops
+migration for review rather than silently dropping pairs. Migrations and UI stay
+local until visual approval and the normal reviewed release workflow.
+
+Given a manual day has been saved or published
+When staff reopen it
+Then native database JSON arrays populate every saved start/end input
+And moving a truck changes order while preserving chronological slot times
+And saving again retains those times and the closing mention.
+
+## Courier retirement: mixed Sunday preview — 2026-09-25
+
+Given the retired Courier car catalogue option
+When a Sunday roster is prepared
+Then its theme is Mixed trucks and accepts the supported freight configurations
+And Monday through Saturday retain their existing themes
+And the global no-repeat ledger, distinct-driver limit and eight-showcase ceiling still apply.
+
+The bounded local demo conversion relabels upcoming automatic courier days as mixed
+without replacing their exact vehicle/driver pairs. Past and manual days remain historical.
+A hosted rollout must separately review any existing upcoming courier roster and actual
+vehicle records; this migration does not reclassify real vehicles or rewrite saved days.
+
+### Featured map handoff regression
+Given a featured truck has a public available signal\
+When a visitor chooses Find this truck\
+Then the map searches its transporter handle and selects the matching capacity ID, without searching a truck number through profile-only text search.
+
+Given the phone programme includes its How Featured works disclosure and a sponsor\
+When the board renders\
+Then compact heading spacing keeps the first truck row within the existing 281px board-offset budget, retaining readable text and 44px controls.
+
+The public Featured projection exposes a bounded relative map link only for an
+Open Empty/Partial signal. It strips the internal capacity field with the other
+internal identifiers; private/unavailable signals never produce a map link.

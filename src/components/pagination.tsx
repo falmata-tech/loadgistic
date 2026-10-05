@@ -1,4 +1,5 @@
-import Link from 'next/link';
+
+import {Text,Localized} from '@/components/localization';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function Pagination({
@@ -7,7 +8,8 @@ export function Pagination({
   page,
   pageCount,
   total,
-  pageParam='page'
+  pageParam='page',
+  fragment
 }:{
   path:string;
   query:Record<string,string|undefined>;
@@ -15,20 +17,21 @@ export function Pagination({
   pageCount:number;
   total:number;
   pageParam?:string;
+  fragment?:string;
 }){
   if(total===0)return null;
-  if(pageCount<=1)return <p className="pagination-summary">{total} results</p>;
+  if(pageCount<=1)return <p className="pagination-summary"><Text message="{count} results" values={{count:total}}/></p>;
   const href=(target:number)=>{
     const params=new URLSearchParams();
     for(const [key,value] of Object.entries(query)){
       if(value&&key!==pageParam)params.set(key,value);
     }
     params.set(pageParam,String(target));
-    return `${path}?${params.toString()}`;
+    return `${path}?${params.toString()}${fragment?`#${encodeURIComponent(fragment)}`:''}`;
   };
-  return <nav className="pagination" aria-label="Results pages">
-    {page>1?<Link href={href(page-1)} className="button secondary icon-only" aria-label="Previous page" title="Previous page"><ChevronLeft aria-hidden="true"/></Link>:<span className="button secondary icon-only disabled" aria-hidden="true"><ChevronLeft/></span>}
-    <span>Page {page} of {pageCount} · {total} results</span>
-    {page<pageCount?<Link href={href(page+1)} className="button secondary icon-only" aria-label="Next page" title="Next page"><ChevronRight aria-hidden="true"/></Link>:<span className="button secondary icon-only disabled" aria-hidden="true"><ChevronRight/></span>}
-  </nav>;
+  return <Localized as="nav" copy={["aria-label"]} className="pagination" aria-label="Results pages">
+    {page>1?<Localized as="link" copy={["aria-label","title"]} href={href(page-1)} className="button secondary icon-only" aria-label="Previous page" title="Previous page"><ChevronLeft aria-hidden="true"/></Localized>:<span className="button secondary icon-only disabled" aria-hidden="true"><ChevronLeft/></span>}
+    <span><Text message="Page {page} of {pages} · {count} results" values={{page,pages:pageCount,count:total}}/></span>
+    {page<pageCount?<Localized as="link" copy={["aria-label","title"]} href={href(page+1)} className="button secondary icon-only" aria-label="Next page" title="Next page"><ChevronRight aria-hidden="true"/></Localized>:<span className="button secondary icon-only disabled" aria-hidden="true"><ChevronRight/></span>}
+  </Localized>;
 }
