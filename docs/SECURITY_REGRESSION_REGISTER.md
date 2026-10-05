@@ -322,3 +322,21 @@ secrets remain absent from URLs and logs. Negative regressions:
 owner visual review and exact-candidate release rehearsal. Focused SQL/catalog,
 47 units and eight desktop/phone cases pass; see
 `docs/TRACKING_ACCESS_REVIEW_2026-09-28.md`.
+
+### October 4 dependency refresh — email parsing (NR-08/10)
+
+Fresh CI blocked Nodemailer 9.1.1 after updated advisories reported address-parser
+denial-of-service and SMTP TLS-name reuse risks. A previously green audit is not
+current release evidence. Upgrade only the locked email package to 10.0.14;
+retain TLS validation, bounded SMTP timeouts and credential-free error output.
+Primary references: [advisory](https://github.com/advisories/GHSA-v53p-9fqp-m79j)
+and [release](https://github.com/nodemailer/nodemailer/releases/tag/v10.0.14).
+Owner: release maintainer. Required evidence: a fresh zero-advisory audit, bounded
+parser regression, email adapter tests and local visible OTP delivery. Production
+rollout remains pending; no SMTP settings or credentials are changed.
+
+October 5 evidence: the adversarial dotted free-text input times out after five
+seconds with 9.1.1, while 10.0.14 completes in under one second. All 24 focused
+email tests, isolated SMTP delivery and both desktop/phone real local OTP flows
+pass. Fresh audit has zero findings; quality passes 372 tests. Exact-candidate CI
+and production rollout remain outstanding. No external test email was sent.

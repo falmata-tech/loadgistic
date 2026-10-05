@@ -206,6 +206,7 @@ And no application path proxies, prefetches, or bulk-copies map tiles.
 Given a supported framework line receives security updates\
 When launch dependencies are reviewed\
 Then the lockfile has no high-severity advisories\
+And the pinned SMTP library parses adversarial address input within a bounded subprocess timeout without sending email\
 And Next.js runs on an Active or Maintenance LTS line\
 And major framework upgrades are not mixed into launch stabilization without their own migration evidence.
 

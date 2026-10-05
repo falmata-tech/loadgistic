@@ -1,3 +1,27 @@
+## October 5 release verification — deployment pending
+
+The owner reconnected the Supabase CLI and restricted operations to Loadgistic.
+The refreshed login independently verifies project `tpwyyzoqijjmbvsmmvcm` as
+`loadgistic`, ACTIVE_HEALTHY. Read-only catalog, guard and spatial checks pass:
+ledger 101, PostGIS 3.3.7 in extensions, no unprotected public tables. Advisors
+have no ERROR findings; the existing identity-function and password-protection
+warnings remain visible. No hosted settings or database records were changed.
+
+CI 37261732055 blocked the previous candidate on new Nodemailer advisories.
+The exact 10.0.14 upgrade passes a zero-vulnerability audit, 372 quality tests,
+source/spec/type checks, 24 focused email checks and two desktop/phone Tracking
+email-session workflows. Local SMTP delivery to the isolated Mailpit inbox also
+passes. The parser regression times out against 9.1.1 and completes in under one
+second against the patched version. The interrupted prior browser run is not
+counted as passing evidence; its controlled rerun passes without test changes.
+
+Evidence: `.local/release-20261005-quality.log`,
+`.local/release-20261005-email-session-recheck.log`,
+`.local/release-20261005-dependency-audit.json`, and
+`.local/release-web-20261005-preflight.json`. Exact-candidate CI, immutable build,
+fresh backup/restore rehearsal and bounded production rollout remain required.
+The local preview remains at http://127.0.0.1:3100.
+
 ## October 4 release follow-up — pending verification
 
 CI 37255530257 correctly rejected the new raw capacity identifier in the public
