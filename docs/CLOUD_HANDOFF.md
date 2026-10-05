@@ -4,12 +4,18 @@ This is a credential-free owner handoff. Never put real secrets, customer data, 
 
 ## Release boundary
 
-Local Tracking follow-up (2026-09-28, ADR-073): email-only verification and
-30-minute idle sessions require additive migration 114 before the app. No hosted
-write or deployment has occurred. Owner visual review remains pending; fresh
-backup/restore rehearsal must include all pending migrations 102–114. See
-[Tracking access review](TRACKING_ACCESS_REVIEW_2026-09-28.md) and
-[production authority](PRODUCTION_AUTHORITY.md) for current evidence and gates.
+Current verified release (2026-10-05): application `fe47a09` is live at
+https://loadgistic.com as deployment `6ac37aebd908dd516d4b6152`; hosted database
+ledger is 114. CI `37291784154`, fresh backup/restore/migration rehearsal,
+security and live desktop/phone checks passed. Email-only Tracking and its
+30-minute idle session are deployed. The owner accepted the local presentation
+and authorized this rollout. No hosted Auth/SMTP/settings change was included.
+
+The previous ready application deployment is `6ab3aaa9668f9644dcba97d8`; rollback
+must preserve the compatible database migrations and private-file history.
+Protected release evidence is `.local/release-web-20261005-final-*`. Existing
+pilot limitations below are not waived by this deployment. See
+[production authority](PRODUCTION_AUTHORITY.md) and [progress](PROGRESS.md).
 
 The owner selected Netlify Free for the initial commercial pilot and Supabase
 Free for managed Postgres, Auth, private Storage, and bounded Realtime. The same

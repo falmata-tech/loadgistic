@@ -1,3 +1,13 @@
+## October 5 release completed
+
+The owner-authorized release is complete: application `fe47a09` is independently
+verified live as Netlify deployment `6ac37aebd908dd516d4b6152` on loadgistic.com.
+CI `37291784154`, fresh backup/restore rehearsal, atomic migrations 102–114,
+security, immutable packaging, production runtime and live desktop/phone/private
+file checks passed. No hosted Auth/SMTP/settings changes were made. This scoped
+release authority is consumed; owner-only defaults remain for future operations.
+See docs/PROGRESS.md for evidence and existing pilot limitations.
+
 ## September 28 release resumed after Tracking review
 
 The owner’s latest instruction, “ok now deploy after checking any issues you see
@@ -10,10 +20,10 @@ No hosted Auth/SMTP or unrelated configuration changes are authorized.
 
 Release checklist:
 - [x] Owner accepted the local presentation and requested deployment.
-- [ ] Full quality, SQL, browser and exact-candidate remote CI pass.
-- [ ] Fresh backup restores and all 102–114 migrations rehearse atomically.
-- [ ] Immutable draft, runtime, security and browser checks pass.
-- [ ] Bounded database upgrade and production promotion are verified.
+- [x] Full quality, SQL, browser and exact-candidate remote CI pass.
+- [x] Fresh backup restores and all 102–114 migrations rehearse atomically.
+- [x] Immutable draft, runtime, security and browser checks pass.
+- [x] Bounded database upgrade and production promotion are verified.
 
 # Production authority and security operations
 

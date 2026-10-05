@@ -1,3 +1,30 @@
+## October 5 release completed — verified live
+
+Application commit `fe47a09e100917216f084d99e45bc029fe763ca4` is live at
+https://loadgistic.com as Netlify deployment `6ac37aebd908dd516d4b6152`.
+CI `37291784154` passed validation, container, all four browser shards and the
+aggregate browser gate. The exact source and five packaged server functions
+passed integrity/privacy checks. The fresh encrypted backup restored and
+rehearsed all 13 migrations before the bounded atomic production upgrade from
+101 to 114. Catalog, Data API guard and spatial checks passed afterward;
+PostGIS remains in extensions and no public tables lack RLS.
+
+Independent live checks passed: health 200, www redirect, desktop/phone map
+filters and Clear all, private map access, Tracking entry, brokerage intake,
+email-only login, five-language switching, the authorized synthetic workspace,
+private-document byte verification and guest denial. The synthetic verification
+session was closed. This release did not retest external email delivery or change
+hosted Auth, SMTP, credentials or unrelated settings. Existing pilot limitations
+(upload scanning, SMTP delivery semantics and community map tiles) remain.
+
+The runtime verification harness needed missing Docker mountpoints and a longer
+bounded cold-start wait; neither change altered the deployed application. The
+rollout then retained one credential read in memory for its remaining checks.
+Protected evidence uses `.local/release-web-20261005-final-*`. Application rollback
+remains deployment `6ab3aaa9668f9644dcba97d8`; retain database history and migration
+114 rather than applying a destructive downgrade. The local preview remains
+http://127.0.0.1:3100. No release work remains pending.
+
 ## October 5 restored-data rehearsal
 
 The fresh encrypted backup restores successfully. Migrations 102–114 and all
