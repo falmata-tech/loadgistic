@@ -43,7 +43,7 @@ test('old public chat state cannot restore chat or start background polling',asy
  const requests:string[]=[];page.on('request',r=>{if(r.url().includes('/api/guest-support')||r.url().includes('/api/support/updates'))requests.push(r.url());});
  await page.addInitScript(()=>{sessionStorage.setItem('loadgistic-public-chat-open','1');sessionStorage.setItem('loadgistic-assistance-mode','help');});
  await page.goto('/about');const dock=page.locator('.public-assistance-dock');
- await expect(dock.getByText('Live chat', {exact:true})).toBeVisible();
+ await expect(dock.getByRole('button',{name:'Arrange transport',exact:true}).getByText('Live chat', {exact:true})).toBeVisible();
  await expect(dock.getByRole('button')).toHaveCount(1);await expect(page.locator('dialog[open]')).toHaveCount(0);
  await dock.getByRole('button',{name:'Arrange transport',exact:true}).click();await expect(page.locator('.transport-request-form')).toBeVisible();
  await page.reload();await expect(page.getByRole('dialog',{name:'Let us arrange your transport',exact:true})).toBeVisible();

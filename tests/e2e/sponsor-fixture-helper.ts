@@ -1,10 +1,10 @@
 import {randomUUID} from 'node:crypto';
-import {localAuditService,checked} from './audit-helpers';
+import {localAuditService,checked,auditIdentity} from './audit-helpers';
 import {regionalExpoGroupForDate} from '../../src/lib/provider-regions.js';
 
 export async function addLocalSmokeSponsor(){
   const service=localAuditService();
-  const admin=checked(await service.from('profiles').select('id').eq('email','admin@loadgistic.local').single());
+  const admin=await auditIdentity(service,'admin@loadgistic.local');
   const id=randomUUID();
   const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const group=regionalExpoGroupForDate(date);

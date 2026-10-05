@@ -1,3 +1,28 @@
+## October 4 release follow-up — pending verification
+
+CI 36526691594 passed validation, container and browser shards 1/3; shards 2/4
+identified the remaining blockers. Featured's Find this truck action incorrectly
+used a vehicle number after search became profile-only. The correction searches
+the provider handle and selects the public capacity ID. Phone heading spacing
+retains the existing first-row budget. Private logout now checks the canonical
+unified route. Measured private-map edge discrepancies were fractional scroll
+rounding (0.03125px tablet bottom, 0.84375px phone top); only those comparisons
+allow one CSS pixel, preserving minimum map height and overflow checks.
+
+- [x] Inspect failures and reproduce against the retained local fixtures.
+- [x] Verify focused desktop/phone workflows and quality checks.
+- [ ] Pass exact-candidate CI and immutable draft checks.
+- [ ] Refresh backup/rehearsal/security evidence, apply bounded migrations and deploy.
+
+No production database write or publication has occurred. Prior September 29
+backup evidence is stale for rollout and must be refreshed.
+Eight focused browser workflows and all 370 unit/contract tests, source/spec
+checks and typecheck pass (`.local/release-20261004-focused.log` and
+`.local/release-20261004-quality.log`). Netlify confirms the previous deployment
+6ab3aaa9668f9644dcba97d8 remains ready. The saved Supabase management credential
+now returns HTTP 401; owner reconnection is pending before fresh advisor checks
+and any production operation.
+
 ## September 29 release verification follow-up — not deployed
 
 CI `36394072342` at `1690d10` passed validation (including scale/build) and

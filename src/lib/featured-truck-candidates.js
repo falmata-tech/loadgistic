@@ -58,6 +58,7 @@ export async function loadFeaturedTruckCandidates(client,date,providers){
       vehicle_make:vehicle.make,
       vehicle_model:vehicle.model,
       cargo_configuration:vehicle.cargo_configuration,
+      public_capacity_id:capacity?.visibility==='OPEN'?capacity.id:null,
       public_capacity_available:capacity?.visibility==='OPEN'&&['EMPTY','PARTIAL'].includes(capacityStatus),
       eligible:true,
       theme

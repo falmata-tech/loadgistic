@@ -1,3 +1,4 @@
+import {auditIdentity} from './audit-helpers';
 import {openCapacityFilters} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import nextEnv from '@next/env';
@@ -28,11 +29,14 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       const tools=box('.market-command-column');
       const map=box('.public-map-shell');
       const sessionBar=document.querySelector('.shared-capacity-session-bar')?.getBoundingClientRect();
+      // scrollTop rounds to whole CSS pixels; measured edges retain fractions.
+      // Diagnostics: tablet bottom 768.03125 / viewport 768; phone top 58.15625 / header 59.
+      const rounding=1;
       return {
         navigationClear:innerWidth>1180?workspace.left>=nav.right+8:
           innerWidth>760?workspace.top>=nav.bottom:workspace.bottom<=nav.top,
-        headerClear:workspace.top>=header.bottom,
-        withinViewport:workspace.right<=innerWidth&&workspace.bottom<=innerHeight,
+        headerClear:workspace.top+rounding>=header.bottom,
+        withinViewport:workspace.right<=innerWidth+rounding&&workspace.bottom<=innerHeight+rounding,
         toolsContained:tools.left>=workspace.left&&tools.right<=workspace.right,
         sessionClear:!sessionBar||(sessionBar.bottom<=workspace.top&&sessionBar.left>=workspace.left&&sessionBar.right<=workspace.right),
         usableMap:map.width>=Math.min(280,innerWidth-10)&&map.height>=(innerHeight<=640?300:400),
@@ -79,8 +83,7 @@ test('email-unlocked private map reserves navigation and logout space',async({pa
   const target=new URL(endpoint);
   if(!['127.0.0.1','localhost'].includes(target.hostname)||target.port!=='55321')throw new Error('LOCAL_LOADGISTIC_REQUIRED');
   const service=createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:actor,error}=await service.from('profiles').select('id,role').eq('email','transporter@loadgistic.local').single();
-  expect(error).toBeNull();
+  const actor=await auditIdentity(service,'transporter@loadgistic.local');
   const vehicles=await listPrivateCapacityNetwork(actor);
   expect(vehicles.length).toBeGreaterThan(0);
   const email=`shell-${randomUUID()}@example.test`;

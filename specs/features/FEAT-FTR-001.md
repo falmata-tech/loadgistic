@@ -346,3 +346,12 @@ The bounded local demo conversion relabels upcoming automatic courier days as mi
 without replacing their exact vehicle/driver pairs. Past and manual days remain historical.
 A hosted rollout must separately review any existing upcoming courier roster and actual
 vehicle records; this migration does not reclassify real vehicles or rewrite saved days.
+
+### Featured map handoff regression
+Given a featured truck has a public available signal\
+When a visitor chooses Find this truck\
+Then the map searches its transporter handle and selects the matching capacity ID, without searching a truck number through profile-only text search.
+
+Given the phone programme includes its How Featured works disclosure and a sponsor\
+When the board renders\
+Then compact heading spacing keeps the first truck row within the existing 281px board-offset budget, retaining readable text and 44px controls.

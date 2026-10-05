@@ -165,12 +165,13 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(featuredProfile).toHaveAttribute('href',/^\/@[a-z0-9-]+$/);
   const featuredMap=providerDialog.getByRole('link',{name:'Find this truck'});
   if(await featuredMap.count()){
-    await expect(featuredMap).toHaveAttribute('href',/^\/?\?q=.+$/);
+    await expect(featuredMap).toHaveAttribute('href',/^\/\?q=.+&truck=.+$/);
     await featuredMap.click();
     await expect(page).toHaveURL(/\?q=.+$/);
     await expect(providerDialog).toBeHidden();
     await expect(page.locator('.public-capacity-map')).toBeVisible();
-    await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster,.capacity-overview-cell').count()).toBeGreaterThan(0);
+    await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+    await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   }else{
     await expect(providerDialog.getByRole('link')).toHaveCount(1);
     await providerDialog.getByRole('button',{name:'Close featured truck details'}).click();

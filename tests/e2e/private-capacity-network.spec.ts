@@ -2,16 +2,7 @@ import {expect,test} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-async function login(page:any,email:string,expected=/\/app\/home/){
-  await page.goto('/login');
-  const fixtureLogin=page.locator('details.auth-fixture-login');
-  if(await fixtureLogin.count()&&!(await fixtureLogin.getAttribute('open')))await fixtureLogin.locator('summary').click();
-  const fixtureForm=page.getByTestId('login-form');
-  await fixtureForm.getByLabel('Email',{exact:true}).fill(email);
-  await fixtureForm.getByLabel('Password').fill('Loadgistic123!');
-  await fixtureForm.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(expected);
-}
+import {auditLogin as login} from './audit-helpers';
 
 async function localMailpitCode(email:string,requestedAt:number){
   for(let attempt=0;attempt<40;attempt+=1){
@@ -109,7 +100,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   expect(mapBox).toBeTruthy();
   expect(mapBox!.y).toBeGreaterThanOrEqual(logoutBox!.y+logoutBox!.height);
   await logout.click();
-  await expect(page).toHaveURL(/\/shared-capacity\?session=logout/);
+  await expect(page).toHaveURL((url:URL)=>url.pathname==='/'&&url.searchParams.get('view')==='private'&&url.searchParams.get('session')==='logout');
   await expect(page.getByText('You have logged out of Private capacity.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   expect((await page.context().cookies()).some((cookie:any)=>cookie.name==='lg_shared_capacity')).toBe(false);
