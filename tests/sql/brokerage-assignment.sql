@@ -82,6 +82,13 @@ begin
  perform close_managed_guest_support(support_id,chat,null);
  perform pg_temp.expect_brokerage_denied(format('select assign_guest_support_agent(%L,%L,%L,null)',admin_id,chat,support_id),'SUPPORT_CONVERSATION_CLOSED');
  -- Waiting list must offer only valid FIFO claims, including the shared chat limit.
+ -- Closing the earlier chat can automatically assign an existing queued chat
+ -- from the restored database. Reserve exactly one remaining slot relative to
+ -- that real baseline; the claim below must still fill it and deny another.
+ update support_agent_profiles set max_open_conversations=1+
+   (select count(*) from support_conversations where assigned_agent_user_id=support_id and status='OPEN')+
+   (select count(*) from guest_support_conversations where assigned_agent_user_id=support_id and status='OPEN')
+ where user_id=support_id;
  insert into guest_support_conversations(id,email,email_digest,phone,status,created_at) values
  (fifo_first,'fifo-first@example.test',repeat('c',64),'+251900000015','WAITING','1900-01-01'),
  (fifo_next,'fifo-next@example.test',repeat('d',64),'+251900000016','WAITING','1900-01-02');

@@ -1,3 +1,16 @@
+## October 5 restored-data rehearsal
+
+The fresh encrypted backup restores successfully. Migrations 102–114 and all
+13 focused SQL suites pass in the network-disabled rehearsal, with catalog,
+Data API guard and spatial checks passing before and after migration.
+The first rehearsal exposed a test assumption: closing a support chat may assign
+an existing queued chat to the synthetic agent. The FIFO test now reserves one
+remaining slot relative to the current shared workload, retaining oldest-first,
+full-agent denial and automatic next-assignment assertions. No application or
+production data change was needed. Evidence:
+`.local/release-web-20261005-rehearsal-recheck.log` and
+`.local/release-web-20261005-restore-evidence.json`.
+
 ## October 5 release verification — deployment pending
 
 The owner reconnected the Supabase CLI and restricted operations to Loadgistic.
