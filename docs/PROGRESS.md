@@ -1,3 +1,19 @@
+## October 7 signal gesture repair before rollout
+
+Revised CI 37580938507 passed validation, container, mobile and three browser
+shards; the phone shared-leg zoom regression failed. A three-run measured local
+probe confirmed that rapid adjacent signal taps also reached Leaflet's double-tap
+zoom handler underneath the info modal. This is an interaction defect, not merely
+a stale SVG check. Stop signal click/dblclick propagation; preserve background
+zoom gestures and the accepted appearance. Add camera-stability assertions to
+the existing touch/separation regression, run focused checks and fresh exact-
+candidate CI before promotion. Native APK input files are unaffected.
+
+Focused camera/separation checks passed on desktop and phone (4). Additional
+shared-leg checks confirm that background double-tap still zooms normally (2).
+Full local quality passes: specs/source, 415 tests and types. The fix stops
+Leaflet event propagation, not merely DOM propagation; no appearance changed.
+
 ## October 7 release browser regression corrections
 
 Focused evidence: portrait/modal checks passed (6); corrected workflow run passed

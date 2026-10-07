@@ -309,7 +309,10 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
   const routeInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selected.id}:route`,accent:availabilityAccent,label:'Capacity route',title:selected.capacity_confirmation_needed?`Reported ${availableLabel.toLowerCase()} route`:`Latest ${availableLabel.toLowerCase()} route`,primary:`${(selected.current_route_points||[]).map(point=>point.label).join(' → ')} · ${selected.capacity_updated_label||'Capacity update unavailable'}`,detail:`The ${availabilityColorName} route shows the last published ${availableLabel.toLowerCase()} signal. Confirm pickup, delivery, timing, and fit.`}:null;
   const regularInfos:MapSignalInfo[]=(selected?.recurring_corridors||[]).slice(0,1).map(signal=>signal.geometry==='RADIUS'?{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Regular service area',title:signal.area_center_label||'Regular service area',primary:(signal.area_boundary||[]).map((point:PlacePoint)=>point.label).join(' · '),detail:'This is regular service, not current availability. Confirm the truck and timing.'}:{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Regular capacity route',title:'Regular two-way service',primary:(signal.route_points||[]).map((point:PlacePoint)=>point.label).join(' ↔ '),detail:'This is a regular route, not current availability. Confirm the truck and timing.'});
   const signalEvents=(info:MapSignalInfo)=>({
-    click:(event:any)=>{L.DomEvent.stopPropagation(event.originalEvent);setPinnedInfo(info);},
+    click:(event:any)=>{L.DomEvent.stopPropagation(event);setPinnedInfo(info);},
+    // Adjacent touch inspections can be recognized as a double tap by Leaflet.
+    // Consume that gesture on the signal, preserving background double-tap zoom.
+    dblclick:(event:any)=>{L.DomEvent.stopPropagation(event);L.DomEvent.preventDefault(event.originalEvent);},
     add:(event:any)=>{
       const layer=event.target;
       const element=layer.getElement?.();

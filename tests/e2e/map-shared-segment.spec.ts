@@ -67,13 +67,33 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
     expect(geometry.minimum,'separation along the shared leg, not an unrelated exposed segment').toBeGreaterThanOrEqual(10);
     expect(geometry.target,'both shared strokes need an unobscured test point').toBeTruthy();
     for(const [selector,key,label] of [['.map-current-route','yellow','Capacity route'],['.map-regular-corridor','brown','Regular capacity route']]){
+      const cameraBefore=await page.locator('.leaflet-proxy').getAttribute('style');
       const point=geometry.target[key];
       if(info.project.name.includes('mobile'))await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);
       const panel=page.getByRole('dialog');
       await expect(panel.locator('header>strong')).toHaveText(label);
       await panel.getByRole('button',{name:'Close map signal details'}).click();
+      await expect(page.locator('.leaflet-proxy'),'signal inspection must not become a double-tap zoom').toHaveAttribute('style',cameraBefore!);
+      await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
     }
     await page.mouse.move(0,0);
     await page.screenshot({path:info.outputPath(`actual-shared-leg-${zoom}.png`),scale:'css'});
   }
+  // Consume inspection gestures only; ordinary background double-tap remains usable.
+  const background=await page.evaluate(()=>{
+    const box=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
+    for(const fx of [.2,.4,.6,.8])for(const fy of [.3,.5,.7,.8]){
+      const point={x:Math.round(box.left+box.width*fx),y:Math.round(box.top+box.height*fy)};
+      const target=document.elementFromPoint(point.x,point.y);
+      if(target?.closest('.leaflet-container')&&!target.closest('.leaflet-interactive,.leaflet-control,.leaflet-marker-icon,.map-info-bubble'))return point;
+    }
+    return null;
+  });
+  expect(background,'a real unobscured background zoom target').toBeTruthy();
+  const zoomScale=()=>page.locator('.leaflet-proxy').evaluate((element:HTMLElement)=>Number(element.style.transform.match(/scale\(([\d.]+)\)/)?.[1]));
+  const beforeBackground=await zoomScale();expect(beforeBackground).toBeGreaterThan(0);expect(beforeBackground).toBeLessThan(16384);
+  if(info.project.name.includes('mobile')){await page.touchscreen.tap(background!.x,background!.y);await page.touchscreen.tap(background!.x,background!.y);}
+  else await page.mouse.dblclick(background!.x,background!.y);
+  await expect.poll(zoomScale).toBe(beforeBackground*2);
+
 });

@@ -441,3 +441,23 @@ Ordinary collapsed content should use horizontal space before requiring scrollin
 long names, translations and expanded evidence must wrap/scroll without clipping.
 Preserve the centered modal, dismiss/return behavior and unchanged map camera.
 Focused desktop/phone review plus native static checks precede owner visual review.
+
+### Scenario: signal inspection does not become a map zoom gesture
+
+Given a selected truck has adjacent capacity and regular-service signals.
+
+When a phone visitor taps one signal, closes its detail modal and quickly taps another signal.
+
+Then both details are individually readable and the map camera stays unchanged.
+
+And a subsequent zoom-button action still increases zoom normally.
+
+And double-tap zoom on the map background remains available.
+
+October 7 evidence: a disposable real-fixture browser probe measured the Leaflet
+camera scaling from 1024 to 2048 on the second signal tap. Stop the signal's
+Leaflet event propagation (`originalEvent._stopped`), rather than only DOM
+propagation, for click and dblclick. The shared-leg
+regression now asserts unchanged camera state across each inspection as well as
+separation and touchability at successive explicit zoom levels. No new map mode,
+layout or user action is introduced.
