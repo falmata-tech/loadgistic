@@ -33,7 +33,7 @@ test('fresh email verification changes login identity and deactivation retains h
   expect(checked(await service.auth.admin.getUserById(actor.id)).user.email).toBe(actor.email);
   for(const link of links){
    try{await page.goto(link);}catch{throw new Error('The local email confirmation did not reach the account page.');}
-   await expect(page.getByRole('heading',{name:'Account & plan',exact:true})).toBeVisible({timeout:20000});
+   await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible({timeout:20000});
    const confirmed=checked(await service.auth.admin.getUserById(actor.id)).user;
    if(confirmed.email===newEmail&&!confirmed.new_email)break;
   }

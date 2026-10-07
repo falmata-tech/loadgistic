@@ -122,7 +122,7 @@ async function mailboxCode(email:string,since:number){
 test('Private capacity uses the same drawer with real local OTP and scoped results',async({page}:{page:any},info:any)=>{
   test.setTimeout(180000);const db=localAuditService();const actor=await auditProvider(db,'drawer');const email=`drawer-${randomUUID()}@example.test`;const ids:string[]=[];
   try{
-    checked(await db.from('company_pages').insert({provider_profile_id:actor.provider_profile_id,published:true}));
+    checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
     const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Audit',model:'Drawer',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
     const places=checked(await db.from('place_catalog').select('id,name').in('normalized_name',['addis ababa','adama']));
     const from=places.find((p:any)=>p.name==='Addis Ababa'),to=places.find((p:any)=>p.name==='Adama');expect(from&&to).toBeTruthy();

@@ -22,7 +22,7 @@ test('transport companies, owner-operators and company drivers retain dashboard 
    checked(await service.from('profiles').update({role,active:true,full_name:'Provider support review'}).eq('id',id));
    signouts.push(await localSupportLogin(page,id));await page.goto('/app/home');
    await page.getByRole('link',{name:'Support',exact:true}).filter({visible:true}).first().click();await expect(page).toHaveURL(/\/app\/support/);
-   await page.goto('/app/menu');await page.locator('.workspace-menu-card').filter({has:page.getByText('Support',{exact:true})}).click();
+   await page.goto('/app/more');await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();await page.locator('.workspace-support-shortcut').click();
    await page.getByRole('link',{name:'New chat',exact:true}).click();
    await page.getByLabel('What do you need?').fill(`Help with ${role} capacity`);await page.getByRole('button',{name:'Send to support'}).click();
    await expect(page.getByText(`Help with ${role} capacity`,{exact:true})).toBeVisible();await expect(page.getByRole('combobox',{name:'Language'})).toBeEnabled();chat=new URL(page.url()).searchParams.get('conversation')!;expect(chat).toBeTruthy();

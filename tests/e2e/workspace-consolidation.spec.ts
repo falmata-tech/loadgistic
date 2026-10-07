@@ -8,7 +8,7 @@ test('Account contains business controls and retains drafts without an extra men
  const service=localAuditService(),actor=await auditProvider(service,'grouped-account');
  let signOut:(()=>Promise<unknown>)|undefined;
  try{
-  checked(await service.from('company_pages').insert({provider_profile_id:actor.provider_profile_id,published:false}));
+  checked(await service.from('company_pages').update({published:false}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
   signOut=await localSupportLogin(page,actor.id);
   await page.goto('/app/more');
   await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();

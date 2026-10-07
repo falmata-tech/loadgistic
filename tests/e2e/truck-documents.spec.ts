@@ -8,7 +8,7 @@ test('truck document alternatives submit private evidence and show only its revi
  test.setTimeout(150000);const service=localAuditService(),actor=await auditProvider(service,'truck-doc');
  let truckId='';const paths:string[]=[];const ids:string[]=[];
  try{
-  checked(await service.from('company_pages').insert({provider_profile_id:actor.provider_profile_id,published:false}));
+  checked(await service.from('company_pages').update({published:false}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
   truckId=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Home',model:'Account',plate:`DOC-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}})).id;
   await page.goto('/login');const form=page.getByTestId('email-code-request-form');
   await form.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();await form.getByRole('button',{name:'Email me a code'}).click();

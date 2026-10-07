@@ -441,3 +441,12 @@ access tests, then owner review before release gates. Not deployed.
 Phone acceptance: Support, language and Exit dashboard remain inside the header,
 with distinct touch targets and no overlap at 320px or the standard phone width.
 Support may use its familiar icon with an accessible name on narrow screens.
+
+### October 7 synthetic signup parity
+
+Browser audit providers include the unpublished company page created by the real
+managed signup command (migration 045), alongside identity, provider and plan.
+Opening Account must exercise its embedded profile and security controls rather
+than fail because an artificial fixture skipped a required signup record.
+`tests/e2e/account-security.spec.ts` still verifies both-inbox confirmation,
+active-work blockers, forged-target denial and retained-history deactivation.

@@ -33,6 +33,9 @@ export async function auditProvider(service:any,prefix:string){
   checked(await service.from('profiles').update({active:true,role:'DRIVER',full_name:`Audit Driver ${suffix}`}).eq('id',id));
   const base=checked(await service.from('provider_profiles').select('city,city_place_ref').not('city_place_ref','is',null).limit(1).single());
   const provider=checked(await service.from('provider_profiles').insert({user_id:id,business_name:`Audit Provider ${suffix}`,handle:`${prefix}-${suffix}`,city:base.city,city_place_ref:base.city_place_ref}).select('id').single());
+  // Real managed signup creates the unpublished company page atomically.
+  // Keep synthetic providers valid when Account embeds their profile editor.
+  checked(await service.from('company_pages').insert({provider_profile_id:provider.id,headline:'Self-managed transport services',about:'Complete this transporter profile before publishing.',published:false}));
   const plan=checked(await service.from('plans').select('id').eq('audience','DRIVER').eq('active',true).limit(1).single());
   checked(await service.from('subscriptions').insert({provider_profile_id:provider.id,plan_id:plan.id,status:'SPONSORED',billing_model:'SPONSORED_FREE',starts_at:new Date().toISOString()}));
   return {id,email,role:'DRIVER',driver_kind:'SELF_MANAGED',provider_profile_id:provider.id,suffix};

@@ -21,6 +21,12 @@ async function login(page:any,email:string){
   await localSupportLogin(page,identity.id);await page.goto('/app/home');
   await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
 }
+async function openPortrait(page:any){
+ const section=page.locator('details.workspace-related-section').filter({has:page.locator('.driver-portrait-editor')});
+ await expect(section).toHaveCount(1);
+ if(await section.getAttribute('open')===null)await section.locator(':scope > summary').click();
+ await expect(section.getByRole('region',{name:'Public Driver photo'})).toBeVisible();
+}
 async function post(page:any,values:Record<string,string>){
   return page.evaluate(async(input:Record<string,string>)=>{
     const body=new FormData();for(const [key,value] of Object.entries(input))body.set(key,value);
@@ -79,7 +85,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     if(slots.length>=8){originalSlot=slots.at(-1);slotId=originalSlot.id;checked(await service.from('featured_provider_slots').update(synthetic).eq('id',slotId));}
     else slotId=checked(await service.from('featured_provider_slots').insert({day_id:day.id,slot_position:Math.max(0,...slots.map((p:any)=>p.slot_position))+1,...synthetic}).select('id').single()).id;
 
-    await login(page,driver.email);await page.goto('/app/more');
+    await login(page,driver.email);await page.goto('/app/more');await openPortrait(page);
     const card=page.getByRole('region',{name:'Public Driver photo'});await expect(card).toBeVisible();
     await expect(page.getByText('No plan assigned',{exact:true})).toBeVisible();
     const imageBytes=await sharp({create:{width:720,height:480,channels:3,background:'#06787c'}}).jpeg().withExif({IFD0:{Artist:'Synthetic private author'}}).toBuffer();
@@ -88,7 +94,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     await card.getByRole('button',{name:'Upload Driver photo',exact:true}).click();
     await expect(consent).not.toBeChecked();expect(checked(await service.from('driver_portrait_uploads').select('id').eq('user_id',actorId))).toHaveLength(0);
     await consent.check();await card.getByRole('button',{name:'Upload Driver photo',exact:true}).click();
-    await expect(page.getByRole('status').filter({hasText:'Public Driver photo updated.'})).toBeVisible();
+    await expect(page.getByRole('status').filter({hasText:'Public Driver photo updated.'})).toBeVisible();await openPortrait(page);
     const photo=card.getByRole('img',{name:'Your public Driver photo'});await expect(photo).toBeVisible();
     await expect.poll(()=>photo.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth)).toBe(512);
     const firstUrl=await photo.getAttribute('src');
@@ -109,20 +115,20 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     // A forged target is rejected; the current photo and bytes remain available.
     const forged=await post(page,{command:'REMOVE',actor_user_id:randomUUID()});expect(new URL(forged.url).searchParams.get('error')).toContain('not available');
     expect((await visitor.request.get(firstUrl)).status()).toBe(200);
-    await page.reload();await input.setInputFiles({name:'broken.jpg',mimeType:'image/jpeg',buffer:Buffer.from('not an image')});await consent.check();
+    await page.reload();await openPortrait(page);await input.setInputFiles({name:'broken.jpg',mimeType:'image/jpeg',buffer:Buffer.from('not an image')});await consent.check();
     await card.getByRole('button',{name:'Replace Driver photo',exact:true}).click();
-    await expect(page.getByRole('alert').filter({hasText:'valid, still'})).toBeVisible();await expect(photo).toHaveAttribute('src',firstUrl);
+    await expect(page.getByRole('alert').filter({hasText:'valid, still'})).toBeVisible();await openPortrait(page);await expect(photo).toHaveAttribute('src',firstUrl);
     const replacement=await sharp({create:{width:480,height:640,channels:3,background:'#ca962d'}}).png().toBuffer();
     await input.setInputFiles({name:'replacement.png',mimeType:'image/png',buffer:replacement});await consent.check();
     await card.getByRole('button',{name:'Replace Driver photo',exact:true}).click();
-    await expect(page.getByRole('status').filter({hasText:'Public Driver photo updated.'})).toBeVisible();
+    await expect(page.getByRole('status').filter({hasText:'Public Driver photo updated.'})).toBeVisible();await openPortrait(page);
     const nextUrl=await photo.getAttribute('src');expect(nextUrl).not.toBe(firstUrl);
     expect((await visitor.request.get(firstUrl)).status()).toBe(404);expect((await visitor.request.get(nextUrl)).status()).toBe(200);
     checked(await service.from('profiles').update({active:false}).eq('id',actorId));
     expect((await visitor.request.get(nextUrl)).status()).toBe(404);expect((await post(page,{command:'REMOVE'})).status).toBe(401);
     checked(await service.from('profiles').update({active:true}).eq('id',actorId));
-    await page.reload();await card.getByRole('button',{name:'Remove Driver photo',exact:true}).click();
-    await expect(page.getByRole('status').filter({hasText:'Driver photo removed.'})).toBeVisible();await expect(photo).toHaveCount(0);
+    await page.reload();await openPortrait(page);await card.getByRole('button',{name:'Remove Driver photo',exact:true}).click();
+    await expect(page.getByRole('status').filter({hasText:'Driver photo removed.'})).toBeVisible();await openPortrait(page);await expect(photo).toHaveCount(0);
     expect((await visitor.request.get(nextUrl)).status()).toBe(404);
     await publicPage.reload();await expect(tile.locator('.driver-portrait-fallback')).toBeVisible();
     expect(checked(await service.from('driver_portrait_uploads').select('id').eq('user_id',actorId))).toHaveLength(0);

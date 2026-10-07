@@ -20,9 +20,9 @@ test('priority language follows UI meaning while route and contact input stay un
  test.setTimeout(120000);
  for(const locale of ['am','om','so','ti']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
-  await page.goto('/',{waitUntil:'domcontentloaded'});const picker=page.locator('.language-picker select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled({timeout:15000});await picker.selectOption(locale);
+  await page.goto('/',{waitUntil:'domcontentloaded'});const picker=page.locator('.public-header-language select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled({timeout:15000});await picker.selectOption(locale);
   await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['Find truck capacity in Ethiopia']);
-  await page.locator('.public-assistance-request').click();const form=page.locator('.transport-request-form');await expect(form).toBeVisible();
+  const entry=page.locator('.public-assistance-dock .public-assistance-request');await expect(entry).toHaveCount(1);await entry.click();const form=page.locator('.transport-request-form');await expect(form).toBeVisible({timeout:15000});
   await form.locator('[name=origin]').fill('Adama');await form.locator('[name=destination]').fill('Dire Dawa');await form.locator('[name=name]').fill('Home');await form.locator('[name=phone]').fill('+251900000001');
   await expect(form.getByRole('button')).toHaveText(messages['Start chat']);await expect(form.locator('[name=name]')).toHaveValue('Home');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath(`${locale}-request.png`)});
@@ -33,7 +33,7 @@ test('priority language follows UI meaning while route and contact input stay un
 });
 
 test('stalled shipment email access ends its busy state and keeps the entered details',async({page}:{page:Page})=>{
- await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('.language-picker select')).toBeEnabled();await page.clock.install();
+ await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('.public-header-language select')).toHaveCount(1);await expect(page.locator('.public-header-language select')).toBeEnabled();await page.clock.install();
  let calls=0;await page.route('**/api/tracking/otp',async route=>{calls++;await new Promise<void>(resolve=>setTimeout(resolve,20000));await route.abort().catch(()=>{});});
  await page.getByLabel('Email',{exact:true}).fill('timeout@example.test');await page.getByRole('button',{name:'Email me a code'}).click();
  await expect.poll(()=>calls).toBe(1);await page.clock.runFor(16000);await expect(page.locator('.form-error[role=alert]')).toContainText('Try again');await expect(page.getByRole('button',{name:'Email me a code'})).toBeEnabled();await expect(page.getByLabel('Email',{exact:true})).toHaveValue('timeout@example.test');expect(calls).toBe(1);await page.unrouteAll({behavior:'ignoreErrors'});

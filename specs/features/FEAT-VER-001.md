@@ -240,3 +240,10 @@ remains available for older records; private-file and mutation checks are unchan
 Invalid return paths fall back to Verification; no foreign origin or arbitrary
 application path is accepted. Test cross-kind/unknown entity isolation, local
 submission/readback/return context, multiple-form labels and existing denial tests.
+
+### October 7 browser evidence alignment
+
+The selected-truck document scenario opens the owner-approved truck info modal
+before inspecting the distinct Driver and truck badge groups. The Driver name
+is read from that modal's current identity row; private file links remain absent.
+`tests/e2e/driver-document-clarity.spec.ts` preserves the original assertions.

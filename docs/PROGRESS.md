@@ -1,3 +1,28 @@
+## October 7 release browser regression corrections
+
+Focused evidence: portrait/modal checks passed (6); corrected workflow run passed
+20 cases, with its two timing failures subsequently covered by a sequential
+desktop/phone rerun (4 passed); all changed fixture consumers passed (3). Type,
+specification and source checks pass. Required revised-candidate CI remains next.
+
+CI 37575463681 stopped promotion. Driver document/portrait scenarios still
+addressed the former automatic truck panel and expanded Account photo editor.
+Update the tests to tap the approved truck info control, verify the current
+Driver identity row, and open Driver photo before working with it. Preserve
+badge/private-file denial, consent, actual Storage/Featured bytes, replacement,
+revocation and removal assertions. Wait for a unique hydrated public control
+before brokerage/language interactions; retain uniqueness assertions. The
+language scenario allows the existing 12-second conversation-restore request
+window before requiring the actual form, rather than assuming a five-second
+local compile/load. Run the
+focused desktop/phone scenarios and exact revised-candidate CI before release.
+The Account failure was an incomplete synthetic provider: real managed signup
+creates an unpublished company page, while `auditProvider` omitted it. Bring the
+fixture into parity; do not weaken Account security or add production writes.
+Provider Support now follows the Account header shortcut rather than the retired
+provider More menu. No production mutation has occurred. The signed internal APK is built; its
+application upload remains unchanged by these test/documentation corrections.
+
 ## Web and Expo release in progress — October 7
 
 The owner explicitly requested publishing the accepted web/native layout and

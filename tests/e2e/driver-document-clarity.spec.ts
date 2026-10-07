@@ -1,14 +1,6 @@
 import {expect,test} from '@playwright/test';
 
-async function login(page:any,email:string){
-  await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);
-  await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(/\/app\/home/);
-}
+import {auditLogin as login} from './audit-helpers';
 
 test('truck management names its Driver and verification stays optional',async({page}:{page:any},testInfo:any)=>{
   await login(page,'transporter@loadgistic.local');
@@ -31,8 +23,9 @@ test('selected public truck separates Driver and truck review categories',async(
   const truck=(await response.json()).items[0];
   expect(truck.assigned_driver_first_name).toBeTruthy();
   await page.goto(`/?truck=${encodeURIComponent(truck.id)}`);
+  await page.locator('.map-info-bubble.truck').click();
   const sheet=page.locator('.map-capacity-sheet');
-  await expect(sheet.locator('.public-truck-driver')).toContainText(truck.assigned_driver_first_name);
+  await expect(sheet.locator('.truck-inspection-person.driver')).toContainText(truck.assigned_driver_first_name);
   for(const [label,key] of [['Driver documents','driver_verification_badges'],['Truck documents','truck_verification_badges']]){
     const badges=truck[key]||[];
     const reviewed=badges.filter((badge:any)=>badge.verified&&!badge.expired).length;
