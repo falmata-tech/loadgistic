@@ -1,3 +1,4 @@
+import {commitPrivateUpload} from '../private-upload-commit.js';
 import {readWindowedPage} from '../pagination.js';
 import {removePrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
@@ -27,14 +28,14 @@ export async function submitSupabasePaymentProof(user,amountEtb,reference,file){
   if(!Number.isFinite(amount)||amount<=0)throw new Error('INVALID_ETB_AMOUNT');
   const stored=file&&typeof file.arrayBuffer==='function'&&file.size?await storePrivateUpload(file,'payment'):null;
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('submit_managed_payment_proof',{actor_user_id:user.id,command:{
+  const data=await commitPrivateUpload(stored,async()=>{
+    const {data,error}=await client.rpc('submit_managed_payment_proof',{actor_user_id:user.id,command:{
     amount_minor:Math.round(amount*100),reference:String(reference||''),storage_path:stored?.path||'',
     original_name:stored?.originalName||'',mime_type:stored?.mimeType||''
   }});
-  if(error){
-    if(stored)await removePrivateUpload(stored.path).catch(()=>undefined);
-    throw managedError('SUPABASE_PAYMENT_SUBMIT_FAILED',error);
-  }
+    if(error)throw managedError('SUPABASE_PAYMENT_SUBMIT_FAILED',error);
+    return data;
+  },removePrivateUpload);
   return data;
 }
 

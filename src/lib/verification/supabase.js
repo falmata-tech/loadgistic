@@ -1,3 +1,4 @@
+import {commitPrivateUpload} from '../private-upload-commit.js';
 import {readWindowedPage} from '../pagination.js';
 import {removePrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
@@ -22,16 +23,16 @@ export async function submitSupabaseVerification(user,input,file){
   const stored=await storePrivateUpload(file,'verification');
   if(!stored)throw new Error('VERIFICATION_DOCUMENT_REQUIRED');
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('submit_managed_verification',{actor_user_id:user.id,command:{
+  const data=await commitPrivateUpload(stored,async()=>{
+    const {data,error}=await client.rpc('submit_managed_verification',{actor_user_id:user.id,command:{
     subject_type:String(input.subjectType||''),subject_id:String(input.subjectId||''),
     verification_type:String(input.verificationType||''),related_vehicle_id:String(input.relatedVehicleId||''),
     expires_on:String(input.expiresOn||''),document_name:String(input.documentName||''),
     storage_path:stored.path,original_name:stored.originalName,mime_type:stored.mimeType
   }});
-  if(error){
-    await removePrivateUpload(stored.path).catch(()=>undefined);
-    throw managedError('SUPABASE_VERIFICATION_SUBMIT_FAILED',error);
-  }
+    if(error)throw managedError('SUPABASE_VERIFICATION_SUBMIT_FAILED',error);
+    return data;
+  },removePrivateUpload);
   return data;
 }
 

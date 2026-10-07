@@ -40,7 +40,11 @@ begin
  select s.vehicle_id,v.cargo_configuration,d.feature_date into vehicle_id_value,old_configuration,day_value
  from featured_provider_slots s join featured_provider_days d on d.id=s.day_id join vehicles v on v.id=s.vehicle_id
  where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6
- and (featured_truck_theme(d.feature_date)->'configurations') ? v.cargo_configuration limit 1;
+ and (featured_truck_theme(d.feature_date)->'configurations') ? v.cargo_configuration
+ -- Sunday's mixed theme also contains Monday's first type. Choose a saved day
+ -- where the replacement really is outside that day's theme, not just another day.
+ and not ((featured_truck_theme(d.feature_date)->'configurations') ? (featured_truck_theme(d.feature_date+1)->'configurations'->>0))
+ limit 1;
  if vehicle_id_value is not null then
   new_configuration:=featured_truck_theme(day_value+1)->'configurations'->>0;
   update vehicles set cargo_configuration=new_configuration where id=vehicle_id_value;

@@ -1272,5 +1272,16 @@
   "Verify your email once to view shared shipments. Tracking closes after 30 minutes without activity. Access ends 30 days after completion; the transporter retains shipment history.": "የተጋሩልዎትን ጭነቶች ለማየት ኢሜይልዎን አንድ ጊዜ ያረጋግጡ። ለ30 ደቂቃ ካልተጠቀሙበት ክትትሉ ይዘጋል። ጭነቱ ከደረሰ ከ30 ቀናት በኋላ የማየት ፈቃዱ ያበቃል፤ አጓጓዡ የጭነቱን ታሪክ ያስቀምጣል።",
   "Verify your email to continue.": "ለመቀጠል ኢሜይልዎን ያረጋግጡ።",
   "Verify your email again.": "ኢሜይልዎን እንደገና ያረጋግጡ።",
-  "Tracking access changed. Verify your email again.": "የክትትል ፈቃድዎ ተቀይሯል። ኢሜይልዎን እንደገና ያረጋግጡ።"
+  "Tracking access changed. Verify your email again.": "የክትትል ፈቃድዎ ተቀይሯል። ኢሜይልዎን እንደገና ያረጋግጡ።",
+  "Results": "ውጤቶች",
+  "The transporter chose this location accuracy. This is not an exact or live position.": "ይህ አጓጓዡ የመረጠው ግምታዊ አካባቢ ነው። ትክክለኛ ወይም ቀጥታ የሚታይ አካባቢ አይደለም።",
+  "This is regular service, not current availability. Confirm the truck and timing.": "ይህ መደበኛ አገልግሎት የሚሰጥበት አካባቢ ነው። አሁን መኪና መኖሩንና የሥራውን ጊዜ በቀጥታ ያረጋግጡ።",
+  "Map details": "የካርታ ዝርዝር",
+  "Back to map": "ወደ ካርታው ተመለስ",
+  "Regular two-way service": "በሁለቱም አቅጣጫ የሚሰጥ መደበኛ አገልግሎት",
+  "The outline marks the service area. These places define its boundary, not a trip.": "መስመሩ አገልግሎቱ የሚሰጥበትን ክልል ያሳያል። እነዚህ ቦታዎች የክልሉን ወሰን ይገልጻሉ፤ የጉዞ መስመር አይደሉም።",
+  "This route is served in both directions. Contact the transporter to confirm availability.": "በዚህ መስመር በሁለቱም አቅጣጫ አገልግሎት ይሰጣል። መኪና መኖሩን ለማረጋገጥ አጓጓዡን ያነጋግሩ።",
+  "Follow the route in the order shown. Contact the driver to confirm pickup, delivery and available space.": "መስመሩ በተዘረዘረው ቅደም ተከተል ይሄዳል። የመጫኛና ማራገፊያ ቦታን እና ያለውን ቦታ ከአሽከርካሪው ጋር ያረጋግጡ።",
+  "Regular service is not a current capacity update.": "መደበኛ አገልግሎት መኖሩ አሁን የጭነት ቦታ እንዳለ አያረጋግጥም።",
+  "Phone not published": "ስልክ ቁጥር አልታተመም"
 }

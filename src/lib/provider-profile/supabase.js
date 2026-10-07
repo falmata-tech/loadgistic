@@ -1,4 +1,5 @@
-import {removePrivateUpload,storePrivateUpload} from '../private-storage.js';
+import {commitPrivateUpload} from '../private-upload-commit.js';
+import {readPrivateUpload,removePrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 
 const MANAGED_ERRORS=[
@@ -63,13 +64,13 @@ export async function updateSupabaseProviderProfileImage(user,file){
   const stored=await storePrivateUpload(file,'provider-profile');
   if(!stored)throw new Error('PROFILE_IMAGE_REQUIRED');
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('update_provider_profile_image',{
+  const data=await commitPrivateUpload(stored,async()=>{
+    const {data,error}=await client.rpc('update_provider_profile_image',{
     actor_user_id:user.id,storage_reference:stored.path,mime_type:stored.mimeType,file_size:stored.size
   });
-  if(error){
-    await removePrivateUpload(stored.path).catch(()=>undefined);
-    throw managedError('SUPABASE_PROVIDER_PROFILE_IMAGE_UPDATE_FAILED',error);
-  }
+    if(error)throw managedError('SUPABASE_PROVIDER_PROFILE_IMAGE_UPDATE_FAILED',error);
+    return data;
+  },removePrivateUpload);
   if(data?.previous_reference){
     await removePrivateUpload(data.previous_reference).catch(()=>undefined);
   }
@@ -84,4 +85,17 @@ export async function removeSupabaseProviderProfileImage(user){
     await removePrivateUpload(data.previous_reference).catch(()=>undefined);
   }
   return data;
+}
+
+// Authorize through the managed workspace before reading an owner's unpublished image.
+// The page ID comes from the actor-scoped RPC, never from a client parameter.
+export async function readSupabaseOwnProviderProfileImage(user){
+  const page=await getSupabaseOwnCompanyPage(user);
+  if(!page?.id||!page.profile_image_is_custom)return null;
+  const {data,error}=await createSupabaseAdminClient().from('company_pages')
+    .select('profile_image_path,profile_image_mime').eq('id',page.id).maybeSingle();
+  if(error)throw new Error('SUPABASE_PROVIDER_IMAGE_READ_FAILED',{cause:error});
+  if(!data?.profile_image_path)return null;
+  const bytes=await readPrivateUpload(data.profile_image_path);
+  return bytes?{bytes,mimeType:data.profile_image_mime}:null;
 }

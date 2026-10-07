@@ -1,5 +1,49 @@
 # Architecture Decisions
 
+## October 6 truck detail composition — FEAT-CAP-001 / FEAT-MOB-001
+
+Owner rejected a flat vertical truck-info stack. Use an illustrated identity header,
+parallel transporter/driver groups with related actions, paired update ages, and
+compact web document disclosures. Keep a centered modal and all existing details.
+Native reuses the same hierarchy for available projection fields; this visual task
+does not widen its API or invent unavailable call/document controls. The web
+fallback company phone belongs with the transporter, not the driver. Preserve
+entity-specific review meaning, translations, privacy and map-return behavior.
+Focused browser evidence is in `.local/truck-profile-verified.log`; owner review
+of this composition and native device verification remain outstanding.
+
+## October 6 map inspection revision — FEAT-CAP-001 / FEAT-MOB-001
+
+The owner replaced the automatic selected-truck drawer/sheet with one on-demand
+compact detail card shared by truck, location, capacity and regular-service info.
+Selection itself shows permitted geometry only. Closing details keeps selection;
+Results/selection close restores discovery. Preserve account-free/public and
+email-private access boundaries, map instance/camera, drafts and contact/profile
+and document access. Selected truck uses teal; signal colors retain their meanings.
+
+Owner accepted moving information controls to the side, then requested an X
+attached to the truck circle and a centered information modal with light dimming.
+The modal's close action retains selection. The truck's exit restores the camera
+saved before selection without clearing filters/search/drafts. These are separate
+actions; the results handle still opens results deliberately. Query/private scope
+changes remount the map and discard the old camera snapshot.
+
+Web uses native HTML dialog modality with an explicit keyboard focus loop and
+focus return. Native uses React Native Modal/onRequestClose, positioned from the
+map's measured frame. The modal blocks map gestures until dismissed. Ordinary
+content sizes naturally; only records exceeding available height scroll. Route
+places are ordered with direction connectors, area boundary places form a set,
+and update age is separate. Applications translate explanations, never record
+labels. These changes need fresh visual review and native device verification.
+
+Research: ArcGIS explicitly supports edge-docked popups, especially for mobile
+(https://developers.arcgis.com/javascript/latest/references/map-components/components/arcgis-popup/).
+Mapbox supports interaction-triggered contextual detail
+(https://docs.mapbox.com/mapbox-gl-js/example/popup/). The labeled side controls
+are our design inference for this task, not a prescription from either source.
+No map SDK or backend changes are required for this presentation.
+
+
 ## ADR-072 — Driver location before owner-managed capacity
 
 FEAT-FLT-001 / FEAT-CAP-001: an assigned driver can save a device-obscured
@@ -1612,3 +1656,74 @@ Migration 114 is additive, reusing private OTP/outbox tables and their existing
 expiry/attempt/cleanup controls. Deploy migration before app; rollback app first,
 retain data and helpers. Rehearse 102–114 together before hosted rollout.
 Reference: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html.
+
+## ADR-074 — Android-first native application alongside the deployed web
+
+Implement FEAT-MOB-001 with Expo/React Native and MapLibre, retaining the current
+web root and independent mobile dependency lock during the compatibility proof.
+Use existing server application services through versioned native adapters; do
+not open business-table grants or ship server secrets. Provider and visitor
+workflows are in scope; staff administration is excluded. Android development
+build and owner review precede complete workflow gates and test APK distribution.
+Google Play publishing is deferred by the owner. No production settings change
+is part of the development setup.
+
+
+ADR-074 implementation detail: native capacity uses the same existing pure
+location-privacy function as web, imported from the scoped shared source directory
+while dependencies remain separate. Foreground-only capture obscures coordinates
+before transmission. Native adapters reuse current assignment/permission commands;
+no new database grant or hosted Auth change is needed for the local proof.
+
+ADR-074 visitor implementation: mobile email-verified Tracking and capacity use
+separate signed subjects and SecureStore entries from provider login and browser
+cookies. Existing OTP, rate limits, recipient grants and review commands remain
+authoritative. Renewal follows foreground user activity, not background timers;
+Tracking retains an eight-hour maximum and both scopes expire after thirty minutes
+idle. Profile publication and private sharing reuse existing owner/assignment
+commands rather than granting broader native access or changing discovery rules.
+
+ADR-074 clock handling: native visitor credentials include server issue time.
+The client conservatively anchors server lifetime to local request start and keeps
+that clock offset in scoped secure storage. Device clocks need not exactly match
+the API clock. This changes display/session handling only; server expiry and grant
+checks retain their existing limits. Test both skew directions and restart before
+claiming native OTP completion; cold-start stateful controller changes after edits.
+
+ADR-074 native public services: reuse published Featured/provider projections and
+PostgreSQL capacity profile search through explicit mobile DTOs. Native private
+search uses only its capacity grant, never client-selected staff authority. Native
+geometry imports web’s pure display-offset logic; changes cannot alter matching
+coordinates. Native guest brokerage uses a separately purposed signed capability,
+SDK-matched Expo Crypto and SecureStore-persisted idempotency keys. Its request
+and messaging authority remains in the existing transport-chat services. No new
+hosted Realtime, search vendor, database grant or staff-native screen is required.
+
+
+ADR-074 native continuation: normalize external native intents before Router; known
+route identifiers never grant account or visitor authority. Preserve the unresolved
+transitive audit findings until compatible fixes are verified. Native translations
+reuse explicit shared app-copy catalogs bundled for offline use, with a separate
+device preference and native-only additions. Generic text components never translate
+user records. About is native; published legal documents remain browser links while
+WEB-MOB-006 awaits review. Full language coverage is tracked separately.
+
+ADR-074 navigation continuation (October 6): owner chose two native areas,
+Marketplace and My workspace. Stable Expo Router tabs own one Stack per area;
+the header switches the parent tab without choosing a new child screen. Existing
+public/provider URLs remain unchanged through route groups. Workspace navigation
+is keyed by account identity; tab visibility does not grant backend permissions.
+Native forms must not overwrite unsaved fields on refocus. Public browsing stays
+account-free; admin/staff operations remain web-only. This supersedes the earlier
+implicit Dashboard/public navigation switch, not the accepted resource grouping.
+
+
+ADR-074 release continuation (October 6): localhost Expo Web reuses native screens
+with browser-only MapLibre GL and tab-scoped storage; native keeps MapLibre Native
+and SecureStore. Browser evidence is distinct from Android permission/install
+checks. Pin patched decode-uri-component 0.5.0 with a hash-checked query-string
+7.1.3 export adapter until Router supplies a compatible upstream consumer. Native
+CI retains raw audit findings and rejects new/critical findings, version drift or
+affected npm packages in the actual Android bundle; reviewed tooling paths permit
+internal builds only. Expo target is @falmatad/loadgistic, ID
+a2d7e0a9-2fe4-4188-804e-40d8c3486ac7, package com.loadgistic.app. Google Play remains deferred.

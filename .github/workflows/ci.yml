@@ -14,6 +14,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  mobile-internal:
+    name: Mobile internal-build boundaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      CI: true
+      EXPO_PUBLIC_API_URL: https://loadgistic.com
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up mobile Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - name: Install locked mobile dependencies and checked decoder adapter
+        run: npm ci
+      - name: Check native types, lint, permissions and state invariants
+        run: npm run typecheck && npm run lint && npm test
+      - name: Reject missing fixed-copy translations
+        run: node --experimental-strip-types scripts/audit-translations.mjs --strict
+      - name: Export actual Android runtime
+        run: npx expo export --platform android --source-maps --output-dir dist
+      - name: Retain raw dependency audit status
+        run: |
+          MOBILE_AUDIT_EXIT=0
+          npm audit --json > audit-report.json || MOBILE_AUDIT_EXIT=$?
+          printf '%s\n' "$MOBILE_AUDIT_EXIT" > audit-exit-status.txt
+      - name: Reject unreviewed findings or affected packages in Android runtime
+        run: |
+          MOBILE_MAP_PATH=$(find dist/_expo/static/js/android -name '*.map' -type f -print -quit)
+          test -n "$MOBILE_MAP_PATH"
+          node scripts/review-runtime-dependencies.mjs --audit audit-report.json --map "$MOBILE_MAP_PATH" > dependency-review.json
+          cat dependency-review.json
+      - name: Retain mobile audit and disposition evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-dependency-evidence
+          retention-days: 14
+          path: |
+            apps/mobile/audit-report.json
+            apps/mobile/audit-exit-status.txt
+            apps/mobile/dependency-review.json
+
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 30

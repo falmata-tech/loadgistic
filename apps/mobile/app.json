@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Loadgistic",
+    "slug": "loadgistic",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/loadgistic-icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.loadgistic.app"
+    },
+    "android": {
+      "package": "com.loadgistic.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/loadgistic-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "ACCESS_BACKGROUND_LOCATION",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Loadgistic to use your location when you choose to update your truck location or find nearby trucks.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a truck, profile or document image to upload.",
+          "cameraPermission": "Take a truck, profile or document photo.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-sharing"
+    ],
+    "owner": "falmatad",
+    "scheme": "loadgistic",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a2d7e0a9-2fe4-4188-804e-40d8c3486ac7"
+      }
+    }
+  }
+}

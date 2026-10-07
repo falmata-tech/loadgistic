@@ -359,3 +359,13 @@ Then compact heading spacing keeps the first truck row within the existing 281px
 The public Featured projection exposes a bounded relative map link only for an
 Open Empty/Partial signal. It strips the internal capacity field with the other
 internal identifiers; private/unavailable signals never produce a map link.
+
+### Release regression fixture — October 7
+
+The changed-truck-type SQL regression must choose a replacement configuration
+that is outside the saved day's actual theme. Sunday intentionally mixes weekday
+configurations; moving to the next weekday's first type does not necessarily
+invalidate Sunday. Preserve the invalid-roster assertion and staff permission
+checks; no production schedule or vehicle change is part of this test correction.
+Evidence: tests/sql/featured-team-permission.sql and the isolated production-backup
+restore/rehearsal.

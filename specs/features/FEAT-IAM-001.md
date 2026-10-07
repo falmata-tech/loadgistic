@@ -426,3 +426,18 @@ Local evidence for the owner-added Driver contract: migration 099,
 `tests/sql/driver-preverification.sql` and both desktop/phone real-Mailpit
 `tests/e2e/fleet-onboarding.spec.ts` pass. See `specs/TRACEABILITY.md`; owner
 visual review, full release gates and production rollout remain pending.
+
+## Consolidated provider Account — October 6 owner request (in progress)
+
+Given a provider opens Account on web or native
+When they edit personal details, security, photo, business information or plan
+Then related controls operate within that common workspace, with expandable long
+sections and role/plan restrictions preserved. Company drivers do not receive the
+owner business editor. More is not a duplicate catalog of provider settings.
+Existing standalone URLs remain compatible. Server-side authorization is unchanged.
+Verification: local phone/desktop same-page saves and navigation, role and limited
+access tests, then owner review before release gates. Not deployed.
+
+Phone acceptance: Support, language and Exit dashboard remain inside the header,
+with distinct touch targets and no overlap at 320px or the standard phone width.
+Support may use its familiar icon with an accessible name on narrow screens.

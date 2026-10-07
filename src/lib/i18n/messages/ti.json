@@ -1272,5 +1272,16 @@
   "Verify your email once to view shared shipments. Tracking closes after 30 minutes without activity. Access ends 30 days after completion; the transporter retains shipment history.": "ዝተኻፈሉልኩም ጽዕነታት ንምርኣይ ኢሜይልኩም ሓደ ግዜ ኣረጋግጹ። ን30 ደቓይቕ እንተዘይተጠቒምኩምሉ ክትትል ይዕጾ። ጽዕነት ምስ በጽሐ ድሕሪ 30 መዓልታት ፍቓድ ምርኣይ የብቅዕ፤ ኣጓዓዚ ታሪኽ ጽዕነት ይዕቅብ።",
   "Verify your email to continue.": "ንምቕጻል ኢሜይልኩም ኣረጋግጹ።",
   "Verify your email again.": "ኢሜይልኩም ዳግማይ ኣረጋግጹ።",
-  "Tracking access changed. Verify your email again.": "ፍቓድ ክትትልኩም ተቐይሩ። ኢሜይልኩም ዳግማይ ኣረጋግጹ።"
+  "Tracking access changed. Verify your email again.": "ፍቓድ ክትትልኩም ተቐይሩ። ኢሜይልኩም ዳግማይ ኣረጋግጹ።",
+  "Results": "ውጽኢታት",
+  "The transporter chose this location accuracy. This is not an exact or live position.": "እዚ ኣጓዓዚ ዝመረጾ ግምታዊ ከባቢ እዩ። ትኽክለኛ ወይ ብቐጥታ ዝከታተል ቦታ ኣይኮነን።",
+  "This is regular service, not current availability. Confirm the truck and timing.": "እዚ ስሩዕ ኣገልግሎት የመልክት። ሕጂ መኪና ከም ዘላን ግዜ ስራሕን ብቐጥታ ኣረጋግጹ።",
+  "Map details": "ዝርዝር ካርታ",
+  "Back to map": "ናብ ካርታ ተመለስ",
+  "Regular two-way service": "ናብ ክልቲኡ ኣንፈት ዝወሃብ ስሩዕ ኣገልግሎት",
+  "The outline marks the service area. These places define its boundary, not a trip.": "እቲ መስመር ኣገልግሎት ዝወሃበሉ ከባቢ የርኢ። እዞም ቦታታት ዶብ እቲ ከባቢ እዮም፤ መስመር ጉዕዞ ኣይኮኑን።",
+  "This route is served in both directions. Contact the transporter to confirm availability.": "ኣብዚ መስመር ናብ ክልቲኡ ኣንፈት ኣገልግሎት ይወሃብ። መኪና ምህላዋ ንምርግጋጽ ነቲ ኣጓዓዓዚ ርኸብዎ።",
+  "Follow the route in the order shown. Contact the driver to confirm pickup, delivery and available space.": "እቲ መስመር በቲ ዝተሓበረ ቅደም ተኸተል ይኸይድ። መጽዓንን መራገፍን ቦታን ዘሎ ናይ ጽዕነት ቦታን ምስ ኣሽከርካሪ ኣረጋግጹ።",
+  "Regular service is not a current capacity update.": "ስሩዕ ኣገልግሎት ምህላዉ ሕጂ ናይ ጽዕነት ቦታ ከምዘሎ ኣየረጋግጽን።",
+  "Phone not published": "ቁጽሪ ስልኪ ኣይተዘርግሐን"
 }

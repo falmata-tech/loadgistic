@@ -1,3 +1,385 @@
+## Web and Expo release in progress — October 7
+
+The owner explicitly requested publishing the accepted web/native layout and
+Expo Android distribution for testing/demo. Web quality passes 415 tests; mobile
+92 tests and Doctor 21/21 pass. The release audit found newly published sharp and
+source-map-js advisories; narrow patches (sharp 0.35.5, source-map-js 1.2.2) reduce
+the web audit to zero findings. Mobile's reviewed build-tool findings remain
+visible and are absent from the Android runtime.
+
+A fresh encrypted read-only backup restores in a network-disabled disposable
+PostgreSQL container at ledger 114. One Featured regression assumed adjacent
+weekday categories differ; Sunday's mixed theme includes Monday's category.
+The fixture now selects a genuinely incompatible replacement, preserving the
+invalid-roster assertion. No production data/schema/configuration write is part
+of that correction. Restore/security checks and exact-candidate CI are refreshed
+before promotion. Netlify rollback target is 6ac37aebd908dd516d4b6152.
+
+Expo account falmatad and exact project a2d7e0a9-2fe4-4188-804e-40d8c3486ac7 are
+verified. The reviewed archive excludes env/credentials/local data/generated
+native folders and other projects. Internal APK uses https://loadgistic.com;
+Google Play publication remains deferred. No release is claimed complete yet.
+
+## Map-first driver Home and simpler controls — October 6
+
+Implemented a full-height driver Home map with compact truck/status identity and
+three right-side floating tasks: Available space, Usual routes, Truck location.
+Capacity combines current space/coverage/sharing, with optional load preferences;
+regular service stays provider-level. Existing location offset, foreground cadence,
+permissions, first setup, duty controls and navigation remain connected. Local UI
+save/readback and map-state checks pass, including a fresh actual OTP onboarding,
+company-driver permission and tracking/photo workflow. Thirteen focused
+permission/privacy/location/coverage tests pass. Native manual location now saves and moves to the new synthetic area with
+only an obscured fix; repeated permission prompts and stale browser fixes are
+repaired. Native captures show the map/rail and focused modals. Lint/types pass,
+399/399 marked translations cover four non-English languages,
+and source checks pass for 458 files. Evidence is in MOBILE_IMPLEMENTATION.md.
+
+The owner found the initial six categories confusing, then accepted the simpler
+three-task presentation by explicitly requesting web and Expo publication.
+Release gates and the scoped rollout are now authorized. Local previews remain running. Native
+emulator adb/accessibility checks are intermittent; native photo-picker
+verification and standalone APK are unfinished. No production deployment or
+configuration/database write in this change; Suqpage remains untouched.
+
+## Driver completion and physical phone review — October 6
+
+Repaired missing native driver Home capacity controls and automatic foreground
+capacity location. The saved approximate map/route, localized location wording,
+server offset readback, ten-minute cadence, manual first location, preserved
+capacity/sharing and Off Duty pause pass focused checks. Actual browser tracking
+status/photo-picker upload, private proof reopening and consented driver portrait
+save pass. New company-driver first location, owner grant, Partial save, revocation
+and Off Duty also pass, including session cleanup in the final rerun
+(`.local/mobile-driver-home-browser-final.log`).
+Seven focused native policy/privacy/copy tests, four capacity projection/command
+cases, lint/typecheck and 394/394 marked translations pass. Full release evidence
+must be refreshed after Home visual approval; these are focused checks.
+
+The scoped ARM64 development client built and installed on the authorized Pixel
+8a. Native Marketplace map, real email-code login and driver Home passed. Two
+physical-only layout defects (logo overlap and invisible search hint) are corrected
+in source, awaiting recheck. The USB cable disconnected; ADB still reports no
+device after the owner reconnect/retry. Native permissions, actual GPS and file
+picker upload remain unverified. This APK requires Metro; it is not the final
+standalone production APK. No new web/mobile production deployment. Keep local
+API 3100, browser preview 8084 and native Metro 8083 running.
+
+Fresh read-only Supabase checks on tpwyyzoqijjmbvsmmvcm pass catalog, grants,
+guards and PostGIS service behavior; ledger 114, PostGIS in extensions and zero
+public tables without RLS. Advisors have no ERROR findings. The two WARN findings
+remain visible (authenticated SECURITY DEFINER execution and leaked-password
+protection); no hosted setting or database write was made.
+
+## Final web/mobile candidate — October 6
+
+Web quality passes 414 tests and typecheck; the production build passes. All 58
+changed web browser cases have passing evidence across the original run and
+focused retries. Updated stale fixture/login, navigation and readiness assertions
+retain the tested behavior rather than changing product behavior.
+
+Mobile APIs pass the extended local permission/file/tracking/fleet walkthrough.
+The final SDK-matched app passes Expo Doctor 21/21, lint/typecheck and 84 tests.
+Four selected languages render translated phone sign-in controls without overflow
+or browser errors; the fixed-copy audit passes 382/382. Android runtime export
+includes the patched URI decoder and current copy. Remaining tooling findings
+stay in the raw audit (27 entries, 19 high/8 moderate) and a tested gate limits
+that assessed graph to internal builds, rejecting unknown findings/runtime exposure.
+
+Created and independently verified only @falmatad/loadgistic, project ID
+a2d7e0a9-2fe4-4188-804e-40d8c3486ac7, Android package com.loadgistic.app. The requested
+permission set is unchanged. The candidate is being prepared for exact-source CI,
+protected backup/security checks, web publication and a signed test APK. Those
+remote release stages and owner phone verification are not yet complete. Google
+Play remains deferred. Preview remains http://localhost:8084 with local backend
+http://127.0.0.1:3100. No changes were made to other applications/Expo projects.
+
+## Expo localhost preview and release verification — 2026-10-06
+
+Owner approved the truck-detail composition and requested web/mobile release,
+then chose browser testing after Android's launcher/system services froze.
+The actual Expo mobile screens now run at http://localhost:8084 against the local
+backend on port 3100. Browser-only MapLibre GL and tab storage adapters preserve
+the native MapLibre/SecureStore paths. The proxy only reaches the fixed local
+backend and strips cookies; hosted configuration is unchanged.
+
+Verified phone-size truck selection, centered details, close/return-to-map and
+menu, with zero browser errors. Visible email OTP login, onboarding, session
+restoration and sign-out pass using local Mailpit. Mobile lint/typecheck and all
+78 tests pass. The expanded browser flow also passes provider onboarding, both
+area switches and server-confirmed sign-out. It caught and fixed collapsed area
+switcher sizing and logo spacing in React Native Web. Web quality passes 414 tests;
+the broad browser run returned 43 passes / 15 failures, with all 15 failures subsequently passing focused retries after test
+readiness/fixture/navigation corrections. All 58 cases now have passing evidence. Screenshots are `.local/mobile-web-preview-{phone,truck-modal,menu,onboarding}.png`.
+This is browser evidence, not native installation/distribution evidence.
+
+Release work found the recorded ambiguous-upload failure could delete a file
+whose database reference had committed. Verification/payment/profile and shipment
+proof adapters now retain files after uncertain commit outcomes and clean only
+explicit database rejections. Eight focused runtime/fault-injection checks pass;
+orphan reconciliation remains separately recorded in WEB-MOB-001. Broader web
+checks are still in progress with cold-compilation failures being investigated.
+No production deployment, EAS project linking, signing or APK distribution yet.
+
+## Truck detail composition — 2026-10-06
+
+Replaced the flat truck-detail stack with a configuration illustration/identity
+header, parallel transporter and driver sections with their respective actions,
+paired freshness information, and a compact row of entity document disclosures.
+Ordinary local fixture content fits without scrolling on desktop and phone; long
+records and expanded evidence remain bounded and scrollable. A fallback company
+phone now appears with the transporter rather than looking like the driver's number.
+Hidden current-location notes and document category scope are retained.
+
+Native has corresponding identity/people/update groups using only existing mobile
+projection fields. Web/native typecheck and native lint pass. Six focused browser
+cases pass in `.local/truck-profile-verified.log`; spec links and whitespace checks
+pass. Captures: `.local/truck-profile-{desktop,mobile}.png`, with Amharic and document
+expansion variants alongside them. Local preview remains http://127.0.0.1:3100.
+New visual review requested; no full release gate/deployment. Native device review
+remains open due to the previously recorded emulator instability.
+
+## Centered map information and attached exit — 2026-10-06
+
+Owner accepted side information controls and requested the truck-attached X,
+centered/lightly dimmed modal and readable route structure. Implemented locally
+on web and native. Desktop/phone browser checks pass 2/2 for modal readability,
+focus/dismissal and camera restoration; six focused map regressions and two
+modal-scroll/map-zoom cases also pass (10 browser cases total).
+Web/native typecheck, native lint, three native projection/focus tests and 33-spec
+validation pass. Modal close preserves selection;
+truck exit restores pre-selection camera and retains search/filter state. Route
+places/directions, area boundaries and update age are separated; ordinary content
+fits naturally, long content has bounded scrolling. Existing private projection
+and API scope are unchanged. Four non-English catalogs include the new copy.
+
+The unresponsive task-owned Next preview was restarted with the same local
+Supabase config, port 3100 and ignored webpack output. No other project process
+was changed. Native emulator verification remains unavailable following the
+previous recorded app/System UI ANRs; type/lint success is not a device pass.
+No release/deployment or APK distribution performed. Older side-card captures
+below are historical, superseded by this owner-requested modal.
+
+## On-demand map details and side controls — 2026-10-06
+
+Owner rejected automatic truck sheets because they hide the selected signal
+geometry. Public/private web and native now keep detail cards closed on selection,
+show permitted geometry, and open one compact shared card on explicit inspection.
+Closing the card retains selection; Results restores discovery and its drafts.
+Truck details retain profile/contact/document controls. Selected truck is teal;
+location, capacity and regular-service colors retain their existing meanings.
+
+The first white “…” speech-bubble preview was rejected as too close to the shapes
+and too conversational. The current comparison uses small labeled controls on the
+map's right side, with matching accents and ellipses. Popup and controls occupy
+separate space. This is a review candidate, not owner-approved. Preview remains
+http://127.0.0.1:3100; .local/map-side-controls-mobile.png and
+.local/map-side-controls-desktop.png show the current design. Details captures:
+.local/map-side-info-mobile.png and .local/map-side-info-desktop.png.
+
+Final side-control/shared-route browser cases pass 4/4 across desktop/phone
+(.local/map-side-final.log). Final feedback/error/retry and closed-area selection
+cases also pass 4/4 (.local/map-side-feedback.log), including six responsive widths. The shared-leg test now waits for map inertia to
+settle before measuring touch coordinates, and uses real mouse input on desktop.
+Native typecheck/lint and 11 focused projection/privacy/focus/pagination tests pass;
+web typecheck and 33-spec validation pass. Updated broader smoke expectations have
+not been run: owner visual review precedes extensive gates. WEB-MOB-010 records the
+corrected web fit that previously omitted regular-service geometry.
+
+Native device verification remains incomplete: the isolated emulator repeated app
+ANRs, DNS failures and a broken shared-storage mount after a data-preserving cold
+restart. Temporary UI dumps now use /data/local/tmp and still require a fresh
+successful dump; a failed dump never authorizes stale taps. Stopped only verified
+Loadgistic_Pixel_API_35 after the controlled recovery failed; its data is preserved.
+Web/Metro remain running, and no other app/emulator/global SDK setting was changed.
+No production deployment, remote configuration, signing or APK distribution.
+
+## Marketplace/workspace switch and truck details — 2026-10-06
+
+Owner selected two mobile areas: Marketplace and My workspace. Implemented a
+consistent header switch with separate nested navigation histories and unchanged
+public/provider deep links. Workspace state resets by account identity. Refocusing
+Account no longer replaces an unsaved name/phone draft with a server response.
+All five navigation languages include the new labels.
+
+Web selected-truck details now occupy the results drawer. X restores the mounted
+results, search draft and scroll position; selecting the same marker reopens a
+hidden drawer. Loading/retry feedback remains reachable. Fixed a discovered hover
+preview that intercepted the next route-selection click (WEB-MOB-009).
+
+Focused evidence: 17 native navigation/language/link/text tests; native and web
+typechecks; native lint; 33-spec validation and whitespace checks pass. Desktop
+and phone drawer/Clear all checks pass 4/4. Feedback/retry, overlap selection,
+map key and gesture checks also passed as recorded in docs/MOBILE_IMPLEMENTATION.md.
+Preview: http://127.0.0.1:3100. Review captures: .local/mobile-area-switch.png,
+.local/web-truck-details-desktop.png and .local/web-truck-details-mobile.png.
+Owner visual review of these changes is requested, not yet received.
+
+Final Android area/draft/Back verification is incomplete. Loadgistic's emulator
+experienced app input and Android System UI ANRs; after a reboot its emulated Wi-Fi
+was disconnected. Reconnected only Loadgistic_Pixel_API_35 to AndroidWifi, verified
+connection/IP, but fresh UIAutomator hierarchy capture still failed. Network
+recovery does not establish the ANR cause or a passing app test. No unrelated
+emulator, Expo project, shared SDK setting, remote configuration or production
+record was changed. Full release gates and standalone APK remain outstanding.
+
+## Map focus and refresh corrections — 2026-10-06
+
+Owner approved the common-page layout and resumed mobile work. Native selection
+now hides background truck/cluster render layers and touch targets immediately,
+including stale rendered-feature responses. Completing initial loading cannot
+refit over a selected truck. Android selected/close/reselect checks passed with
+the local populated feed; overview restoration does not request new discovery data.
+
+Web viewport refresh previously replaced all loaded trucks with each partial page,
+causing marker disappearance/reappearance and cluster churn. It now keeps the last
+window while replacement pages accumulate, then prunes at successful completion.
+Query/private-identity changes still reset the feed; cancellation/error handling
+and automatic pagination remain intact. No new modes or manual loading steps.
+
+23 focused native/loading tests pass; native/root typechecks and native lint pass.
+Repeated desktop/phone refresh tests pass (4/4), verifying marker retention, final
+pruning, persistent map instance, stable camera and no request loop after settling.
+Existing cluster/pagination and failure/retry cases pass on both sizes (one cold
+compile timeout passed its controlled retry). Earlier intermittent test failures
+were an initial-load race; the test now waits for the real initial window to finish
+before intercepting the separate refresh. No product loop is inferred from that race.
+
+Local screenshots: `.local/mobile-map-focused-truck.png`,
+`.local/mobile-map-overview-restored.png`, `.local/playwright-map-final/`.
+The emulator still intermittently reports OSM tile DNS failures; offline map recovery
+is a remaining mobile item, not a claimed pass. The full native application/APK
+remains in progress. No production release or remote configuration changes.
+
+## Provider workspace consolidation — 2026-10-06
+
+Implemented locally on web and native after the owner clarified that related
+controls belong on common pages, rather than another directory of links. Account
+contains personal/security, portrait, business/profile/document and plan controls
+as permitted by role. Fleet keeps capacity and truck/driver documents with their
+entity. Provider More navigation is removed; old routes remain compatible and
+Support stays directly accessible. Admin/staff management is unchanged.
+
+Focused desktop/phone tests passed Account draft retention and same-page saves,
+company-driver isolation, and contextual truck document upload/review. Android
+Account retained a collapsed draft and saved/read back the restored synthetic name;
+truck capacity/documents opened inline. Native navigation/document-scope tests,
+typechecks and lint passed. These are local focused checks, not full release gates.
+The phone visual check also caught header wrapping; the compact Support correction
+and its 320px/standard-phone bounds test pass.
+
+Initial native navigation was owner-approved. The subsequently consolidated common
+pages were also owner-approved before resuming mobile map corrections. Local web preview:
+http://127.0.0.1:3100/app/more. No production deployment or standalone phone APK.
+The full mobile checklist and remaining localization/device/release work remain in
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md). Earlier counts below describe
+earlier slices rather than current whole-app coverage.
+
+Mobile continuation (October 6): native Support send/end/history/new-intake and
+Somali closure verified against local persisted data; truck test value restored.
+Support/file controls translated into all four requested languages; 62 native tests,
+mobile typecheck/lint and specs pass. Translation coverage is 163/358 marked messages,
+not full localization. The development preview recovered after restart; a controlled
+cold launch reached the visible map and 104 results, though startup was slow and
+standalone startup performance remains unverified. No standalone APK or hosted changes. See
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md).
+
+Native brokerage messaging, assigned staff reply, ending, restart/history and new
+intake passed the local Android walkthrough. Fixed a stale-refresh race and added
+regression coverage. Native About and a persisted language preference are connected;
+Android Amharic rendering passed after replacing dynamic catalog loading with bundled
+imports. Full localization remains in progress. Incoming native links now have a
+validated boundary; dependency advisories remain visible in
+[MOBILE_DEPENDENCY_REVIEW.md](MOBILE_DEPENDENCY_REVIEW.md).
+
+61 native tests pass. Android map clipping and invalid-path recovery are also fixed;
+the new translation audit keeps the remaining 215 marked phrases visible. The app still needs the remaining role/device matrix, owner
+visual approval and release work before a standalone phone APK. See the active
+[mobile checklist](MOBILE_IMPLEMENTATION.md). No production/Expo remote writes.
+
+## Mobile public discovery and chat continuation — 2026-10-05
+
+Native Featured/profiles, driver portraits, account security and guest brokerage
+are connected to existing services with local privacy/permission/workflow evidence.
+Public/private profile search, detailed truck filters, native geometry, cluster
+counts and truck images now run on the dedicated Android emulator. Configuration
+filtering and Clear all passed the device walkthrough; it also caught a raw-text
+rendering defect that is fixed with regression coverage. Native brokerage device
+checks continue. The rebuilt x86_64 development client is installed and requires
+Metro; no standalone phone APK, EAS upload or production change.
+
+See [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md) for evidence, running
+processes and the unchecked full-app checklist; documentation does not claim the
+remaining localization, role/device checks or release gates are complete.
+
+## Web gaps recorded during mobile work — 2026-10-05
+
+[WEB_GAPS_FOUND_DURING_MOBILE.md](WEB_GAPS_FOUND_DURING_MOBILE.md) records six
+source-backed findings for later investigation: uncertain-commit file cleanup,
+web multipart parsing limits, payment retry deduplication, legacy capacity-photo
+flow, inconsistent payment amount rules, and conflicting Terms/brokerage narrative. Evidence strength, shared mobile impact,
+responsible roles and closure tests are explicit. No production incident is inferred;
+no web repair or hosted change was made. Keep extending this register as native
+workflows are connected. The full mobile app remains in progress.
+
+## Mobile continuation — native files and fleet controls (in progress)
+
+Loadgistic-only local work continues under FEAT-MOB-001. Expanded fleet lifecycle,
+trailer and driver-control integration passed. Native documents, Tracking photo
+proofs, private file viewing, profile images and plan/payment screens are connected;
+foreground travel cadence and the guest uncertainty-area map are implemented.
+Focused file/billing/Tracking contract tests and area/cadence tests pass. The updated Android
+development binary built and is installed; device verification continues. The
+complete extended local integration rerun passed after a backend restart.
+See docs/MOBILE_IMPLEMENTATION.md for precise evidence and remaining scope. No
+production/EAS changes, external APK or complete-mobile claim.
+
+## Native device retry and visitor login fix — 2026-10-05
+
+The dedicated Loadgistic emulator is responsive again. Android verification now
+covers profile publishing, truck sharing, private-email map access/selection/logout,
+and guest Tracking detail plus session restoration after a cold app restart.
+The device test caught and fixed clock-skew rejection of valid visitor credentials;
+server expiry and grant checks remain unchanged. All 23 native tests, native lint
+and both typechecks pass. See [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md)
+for evidence and remaining full-app/APK work. The local preview remains running;
+there was no deployment or other-project change.
+
+## Native visitor access and discovery setup — 2026-10-05
+
+Implemented email-authorized Tracking/private capacity, separate secure visitor
+sessions, truck-specific sharing controls and transporter profile editing/publishing.
+The complete local account/fleet/capacity/Tracking integration passes, including
+profile draft visibility, scoped email OTPs, grant revocation and contact privacy.
+Native type/lint and server type checks pass; device review of the new screens is
+in progress. No production changes or standalone phone APK. Full remaining scope
+and evidence are recorded in [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md).
+
+## Native Tracking and recovery — 2026-10-05
+
+Added connected mobile shipment creation, journey/status updates, recipients and
+owner-only correction/reassignment/cancellation. Focused local integration checks
+pass for authorization, current permissions, driver location, recipients/mail,
+state transitions, revision conflict and retained history. Android creation is
+verified; remaining interactions are still under device review. See
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md) for precise evidence and gaps.
+Private proofs, automatic foreground updates, visitor device verification and the broader
+mobile checklist remain incomplete. No release APK or native API production
+deployment; no other project or hosted settings were changed.
+
+## Mobile isolation and native preview — 2026-10-05
+
+Expo Android-first work continues under FEAT-MOB-001. The ordered scope and
+current evidence are in [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md).
+[Mobile guardrails](../apps/mobile/AGENTS.md) explicitly separate project-local
+repairs from shared tools, prohibit other-project cleanup, and require precise
+process/device/account targeting. Native OTP → onboarding → add truck → approximate
+location → first private capacity save, account edit and logout now have emulator
+evidence. Multi-role local API tests cover owner/driver permissions, cross-provider
+denial and revocation. Navigation refresh and compact dashboard totals are fixed.
+The full app, native API production release and standalone phone APK remain
+unfinished; dependency advisories and the remaining workflow matrix are recorded.
+
 ## October 5 release completed — verified live
 
 Application commit `fe47a09e100917216f084d99e45bc029fe763ca4` is live at

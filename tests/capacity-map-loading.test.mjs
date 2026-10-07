@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {loadCapacityMapWindow,preserveSelectedMapTruck} from '../src/lib/capacity-map-loading.js';
+import {loadCapacityMapWindow,preserveSelectedMapTruck,reconcileCapacityMapWindow} from '../src/lib/capacity-map-loading.js';
 
 test('viewport pages load automatically in sequence without dropping results beyond 140',async()=>{
   const cursors=[];let result;let active=0;
@@ -45,4 +45,15 @@ test('invalid continuation and page failures stop instead of hiding failure or l
     if(cursor)throw new Error('offline');return{items:[{id:'a'}],hasMore:true,nextCursor:'next'};
   }}),/offline/);
   assert.equal(snapshots,1);
+});
+
+test('refresh keeps all loaded trucks through partial pages, then prunes only at completion',async()=>{
+ let visible=[{id:'old'},{id:'a',version:1},{id:'selected'}];const snapshots=[];
+ await loadCapacityMapWindow({signal:new AbortController().signal,requestPage:async cursor=>cursor
+  ?{items:[{id:'b'}],hasMore:false}:{items:[{id:'a',version:2}],hasMore:true,nextCursor:'next'},
+  onPage:(items,{complete})=>{visible=reconcileCapacityMapWindow(visible,items,'selected',complete);snapshots.push(visible);}});
+ assert.deepEqual(snapshots[0],[{id:'old'},{id:'a',version:2},{id:'selected'}]);
+ assert.deepEqual(visible,[{id:'selected'},{id:'a',version:2},{id:'b'}]);
+ assert.deepEqual(reconcileCapacityMapWindow(visible,[],null,true),[]);
+ assert.deepEqual(reconcileCapacityMapWindow(visible,[],null,false),visible);
 });

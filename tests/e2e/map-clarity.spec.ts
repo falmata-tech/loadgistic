@@ -75,43 +75,19 @@ test('blue location feedback stays by controls and the small map key opens withi
   await summary.click();await expect(key.locator('.public-map-legend-items')).toBeHidden();
 });
 
-test('signal detail card preserves wheel zoom and drag across its body',async({page}: {page:any},info:any)=>{
-  test.setTimeout(90000);mkdirSync(captures,{recursive:true});
-  const data=await (await page.request.get('/api/public/capacity')).json();
-  const truck=data.items.find((t:any)=>t.current_signal_geometry_visible!==false&&t.location_lat!=null);expect(truck).toBeTruthy();
-  const windows:string[]=[];page.on('request',(r:any)=>{const u=new URL(r.url());if(u.pathname==='/api/public/capacity'&&u.searchParams.has('viewport'))windows.push(u.searchParams.get('viewport')!);});
-  await page.goto(`/?truck=${encodeURIComponent(truck.id)}`);
-  const circle=page.locator('.map-location-privacy-circle');await expect(circle).toBeVisible();await expect(circle).toHaveAttribute('stroke','#1a73e8');
-  await circle.focus();await expect(page.locator('.capacity-signal-inspector:not(.pinned)')).toBeVisible();
-  await page.locator('.public-header a').first().focus();await expect(page.locator('.capacity-signal-inspector:not(.pinned)')).toHaveCount(0);
-  await circle.focus();await page.keyboard.press('Enter');
-  const panel=page.locator('.capacity-signal-inspector.pinned');await expect(panel).toBeVisible();
-  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
-  await expect.poll(()=>windows.length,{timeout:20000}).toBeGreaterThan(0);
-  await expect.poll(()=>page.locator('.leaflet-tile').evaluateAll((tiles:HTMLImageElement[])=>tiles.length>0&&tiles.every(tile=>tile.complete&&tile.naturalWidth>0)),{timeout:20000}).toBe(true);
-  await page.screenshot({path:path.join(captures,`${info.project.name}-signal-detail.png`),scale:'css'});
-  const before=windows.at(-1);expect(before).toBeTruthy();
-  let box=await panel.boundingBox();
-  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,-350);
-  await expect.poll(()=>windows.at(-1)).not.toBe(before);
-  const zoomed=windows.at(-1)!;const width=(v:string)=>{const b=v.split(',').map(Number);return b[2]-b[0];};expect(width(zoomed)).toBeLessThan(width(before!));
-  await expect(panel).toBeVisible();box=await panel.boundingBox();
-  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2-70,box.y+box.height/2,{steps:8});await page.mouse.up();
-  await expect.poll(()=>windows.at(-1)).not.toBe(zoomed);
-  if(info.project.name.includes('mobile')){
-    const beforeTouch=windows.at(-1);box=await panel.boundingBox();
-    const cdp=await page.context().newCDPSession(page);
-    const point={x:box.x+box.width/2,y:box.y+box.height/2};
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});
-    for(let i=1;i<=6;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:point.x-i*12,y:point.y}]});
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-    await expect.poll(()=>windows.at(-1)).not.toBe(beforeTouch);await cdp.detach();
-  }
-  await panel.getByRole('button',{name:'Close map signal details'}).click();await expect(panel).toHaveCount(0);
-  const sheet=page.locator('.map-capacity-sheet');await expect(sheet).toBeVisible();
-  const beforeSheet=windows.at(-1);const copy=await sheet.locator('.map-truck-identity').boundingBox();
-  await page.mouse.move(copy.x+copy.width/2,copy.y+copy.height/2);await page.mouse.down();await page.mouse.move(copy.x+copy.width/2-55,copy.y+copy.height/2,{steps:6});await page.mouse.up();
-  await expect.poll(()=>windows.at(-1)).not.toBe(beforeSheet);
-  await sheet.getByRole('button',{name:'Close truck summary'}).click();await expect(sheet).toHaveCount(0);
-
+test('modal scroll leaves camera still and map zoom resumes after dismissal',async({page}:{page:any},info:any)=>{
+ test.setTimeout(90000);mkdirSync(captures,{recursive:true});
+ const data=await(await page.request.get('/api/public/capacity')).json();
+ const truck=data.items.find((t:any)=>t.current_signal_geometry_visible!==false&&t.location_lat!=null);expect(truck).toBeTruthy();
+ await page.goto(`/?truck=${encodeURIComponent(truck.id)}`);
+ const circle=page.locator('.map-location-privacy-circle'),panel=page.locator('.capacity-info-card');
+ await expect(circle).toBeVisible({timeout:30000});await circle.focus();await expect(panel).toHaveCount(0);
+ await page.keyboard.press('Enter');await expect(panel).toBeVisible();
+ await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+ const map=page.locator('.leaflet-proxy'),zoom=()=>map.evaluate((el:HTMLElement)=>el.style.transform);
+ const before=await zoom();const box=await panel.boundingBox();await page.mouse.move(box.x+30,box.y+55);await page.mouse.wheel(0,180);await page.waitForTimeout(400);expect(await zoom()).toBe(before);
+ await panel.getByRole('button',{name:'Close map signal details'}).click();await expect(panel).toHaveCount(0);await expect(circle).toBeVisible();
+ await page.locator('.leaflet-control-zoom-in').click();await expect.poll(zoom).not.toBe(before);
+ await page.locator('.map-info-bubble.truck').click();await expect(panel).toHaveClass(/truck/);
+ await page.screenshot({path:path.join(captures,`${info.project.name}-signal-detail.png`),scale:'css'});
 });

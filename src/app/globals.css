@@ -3538,3 +3538,141 @@ html:not(:lang(en)) :is(.button,.nav-link,.mobile-nav a,.public-mobile-nav a){wh
 @media(max-width:600px){.capacity-configuration-options{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.capacity-configuration-option img{height:86px}}
 
 .tracking-session-workspace{width:100%;min-width:0}.tracking-session-workspace>.shared-capacity-session-bar{max-width:1060px}.tracking-session-workspace .card{overflow-wrap:anywhere}.tracking-session-workspace .text-button{display:inline-flex;margin-block:12px}
+
+/* Provider resources stay with the account, truck or driver being managed. */
+.workspace-related-section{border:1px solid #d5e2df;border-radius:14px;background:#fff;padding:16px;min-width:0}
+.workspace-related-section>summary{cursor:pointer;color:#172c46;font-weight:750;min-height:44px;align-content:center}
+.workspace-related-section[open]>summary{margin-bottom:16px}
+.workspace-related-section>.stack{min-width:0}
+.workspace-related-section .two-col{grid-template-columns:1fr}
+.workspace-related-section .form-card{min-width:0;box-shadow:none}
+.workspace-support-shortcut{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+
+@media(max-width:760px){
+  .provider-topbar{gap:8px}
+  .provider-topbar .topbar-leading{flex:1;min-width:0}
+  .provider-topbar .topbar-actions{display:flex;flex-wrap:nowrap;flex-shrink:0;gap:6px}
+  .provider-topbar .workspace-support-shortcut{width:44px;height:44px;padding:0;flex-shrink:0}
+  .provider-topbar .workspace-support-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .provider-topbar .language-picker select{max-width:100px}
+  .provider-topbar .language-picker label>svg{display:none}
+  .provider-topbar .mobile-dashboard-exit{flex-shrink:0}
+}
+
+/* Truck selection shares the existing results drawer instead of covering the map. */
+.capacity-filter-drawer .map-capacity-sheet{position:static;inset:auto;display:flex;flex-direction:column;gap:14px;width:100%;min-width:0;max-width:none;max-height:none;transform:none;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;pointer-events:auto}
+.capacity-filter-drawer .map-capacity-sheet>*{min-width:0}
+.capacity-filter-drawer .map-truck-identity{padding-right:0}
+.capacity-filter-drawer .map-truck-documents{display:grid;grid-template-columns:1fr;gap:8px}
+.capacity-filter-drawer .public-card-actions{display:flex;flex-wrap:wrap;gap:8px}
+.capacity-filter-drawer .public-card-actions .button{flex:1;min-height:44px}
+.capacity-truck-detail>.public-feed-overlay{position:static;inset:auto;transform:none;width:100%;max-width:none;margin:0;flex:none}
+/* A hover preview must not steal the click that pins its underlying signal. */
+.capacity-signal-inspector:not(.pinned){pointer-events:none}
+
+/* On-demand map inspection: one compact card, no automatic truck sheet. */
+.map-info-controls{position:absolute;z-index:1100;right:10px;top:88px;display:flex;flex-direction:column;gap:6px;width:112px;max-height:calc(100% - 100px);overflow-y:auto;overscroll-behavior:contain}
+.map-info-controls .map-info-bubble{display:flex;align-items:center;justify-content:space-between;gap:5px;width:100%;min-height:44px;padding:7px 9px;border:1px solid #d6e1e1;border-left:4px solid var(--signal-color);border-radius:8px;background:#fff;color:#172c46;text-align:left;box-shadow:0 2px 6px #172c4614;cursor:pointer}
+.map-info-bubble>span{font-size:.7rem;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.map-info-bubble>b{font-size:18px;color:var(--signal-color);line-height:1}
+.map-info-bubble[aria-pressed=true]{outline:2px solid var(--signal-color);outline-offset:-2px;background:#f6fafa}
+.map-info-bubble:focus-visible{outline:3px solid #172c46;outline-offset:-3px}
+.capacity-truck-map-marker.vehicle-image-marker.selected:is(.empty,.partial) .vehicle-marker-image{background:#0c7275;box-shadow:0 0 0 3px #fff,0 0 0 6px #0c7275}
+.capacity-truck-map-marker.vehicle-image-marker.selected:is(.empty,.partial)::after{border-top-color:#0c7275}
+.capacity-info-card{position:absolute;z-index:1200;left:12px;bottom:12px;width:min(350px,calc(100% - 142px));max-height:min(240px,36%);display:flex;flex-direction:column;border:2px solid var(--signal-color);border-radius:12px;background:#fff;box-shadow:0 4px 16px #172c4626;overflow:hidden;color:#172c46;pointer-events:auto}
+.capacity-info-card>header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding-left:12px;flex:none;border-bottom:1px solid #e5eded}
+.capacity-info-card>header strong{font-size:.8rem}
+.capacity-info-card>header>button{border:0;background:transparent;min-height:44px;min-width:44px;font-size:24px;color:#172c46;cursor:pointer}
+.capacity-info-content{min-height:0;overflow:auto;overscroll-behavior:contain;padding:10px 12px;touch-action:pan-y}
+.capacity-info-content article{display:grid;gap:6px;font-size:.78rem;overflow-wrap:anywhere}
+.capacity-info-content article em{font-size:.73rem;font-style:normal;color:#526875}
+.capacity-info-content .map-capacity-sheet{position:static;inset:auto;transform:none;display:flex;flex-direction:column;gap:10px;width:100%;min-width:0;max-width:none;max-height:none;padding:0;margin:0;border:0;box-shadow:none;background:transparent;pointer-events:auto}
+.capacity-info-content .map-truck-documents{display:grid;grid-template-columns:1fr}
+.capacity-info-content .public-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.capacity-info-content .public-card-actions a{min-height:44px}
+.capacity-info-content .map-truck-identity strong{font-size:.92rem}
+.capacity-info-content .map-signal-age{font-size:.7rem}
+@media(max-width:760px){.capacity-info-card{left:8px;bottom:8px;width:min(330px,calc(100% - 132px));max-height:34%}}
+
+.capacity-info-content .map-truck-identity{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center}
+.capacity-info-content .map-truck-identity small{grid-column:1/-1;font-size:.75rem}
+.capacity-info-content .map-signal-age{border:0;padding:0;background:transparent;display:block;color:#526875}
+.capacity-info-content .map-signal-age>svg{display:none}
+.capacity-info-content .map-signal-age strong{font-size:.72rem;font-weight:600}
+/* Keep automatic viewport loading off the detail text and signal controls. */
+.public-map-shell>.public-feed-overlay.loading{top:0;bottom:auto;left:0;right:0;width:100%;max-width:none;transform:none;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.public-map-shell>.public-feed-overlay.loading .loading-progress-track{height:3px;border-radius:0}
+
+/* Selection exit stays attached to the truck; information is a true modal. */
+.capacity-truck-exit{display:grid;place-items:center;border:2px solid #0c7275;border-radius:50%;background:#fff;color:#0c7275;font-size:29px;line-height:1;box-shadow:0 2px 8px #172c4626;cursor:pointer}
+.capacity-truck-exit:focus-visible{outline:3px solid #172c46;outline-offset:3px}
+dialog.capacity-info-card{position:fixed;margin:0;padding:0;bottom:auto;transform:translate(-50%,-50%);max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);}
+dialog.capacity-info-card:not([open]){display:none}
+dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
+
+.map-selection-exit-fallback{position:absolute;left:12px;top:90px;z-index:1100;width:44px;height:44px}
+.capacity-info-card>header{padding-left:18px;min-height:52px}
+.capacity-info-card>header strong{font-size:.95rem}
+.capacity-info-content{padding:18px;font-size:.9rem;line-height:1.5}
+.capacity-info-content article.map-signal-details{gap:12px;font-size:.9rem}
+.map-signal-details p{margin:0}
+.signal-summary{font-size:1.12rem;line-height:1.3}
+.signal-capacity-status{justify-self:start;border-radius:6px;background:#f1f6f6;padding:4px 9px;font-size:.8rem;font-weight:700}
+.signal-route-stops{margin:0;padding:0;list-style:none;display:grid;gap:0}
+.signal-route-stops li{display:grid;grid-template-columns:28px 1fr;column-gap:10px;align-items:center;font-weight:600;line-height:1.35}
+.signal-stop-number{display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--signal-color);border-radius:50%;font-size:.75rem;color:#172c46;background:#f6fafa}
+.signal-route-direction{grid-column:1;justify-self:center;font-size:19px;font-weight:400;line-height:24px;color:var(--signal-color)}
+.signal-area-places{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+.signal-area-places li{border:1px solid #dae5e5;border-radius:6px;padding:5px 8px;font-size:.85rem}
+.signal-update{padding-top:10px;border-top:1px solid #e5eded;font-size:.8rem;color:#526875}
+
+/* Truck inspection: identity, people/actions and evidence form distinct groups. */
+.capacity-info-card.truck .capacity-info-content{padding:12px 14px}
+.capacity-info-content .truck-inspection{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.truck-inspection-hero{display:grid;grid-template-columns:92px minmax(0,1fr);align-items:center;gap:16px}
+.truck-inspection-image{display:grid;place-items:center;height:64px;background:#f2f7f7;border:1px solid #e1eaea;border-radius:12px}
+.truck-inspection-image img{width:100%;height:60px;object-fit:contain}
+.truck-inspection-identity{min-width:0}
+.truck-inspection-identity h3{margin:5px 0 3px;font-size:1.16rem;line-height:1.2;color:#172c46;overflow-wrap:anywhere}
+.truck-inspection-identity p{margin:0;font-size:.76rem;line-height:1.35;color:#526875;overflow-wrap:anywhere}
+.truck-inspection-identity .status{font-size:.66rem;line-height:1.2;padding:4px 7px;white-space:normal}
+.truck-inspection-people{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 0;border-top:1px solid #e2ebeb;border-bottom:1px solid #e2ebeb}
+.truck-inspection-person{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:5px 8px;min-width:0}
+.truck-inspection-person>svg{width:20px;height:20px;margin-top:3px;color:#0c7275}
+.truck-inspection-person>div{min-width:0;display:grid;gap:2px}
+.truck-inspection-person small{font-size:.65rem;line-height:1.25;color:#526875}
+.truck-inspection-person strong{font-size:.85rem;line-height:1.3;overflow-wrap:anywhere}
+.truck-inspection-phone{font-size:.67rem;color:#526875;overflow-wrap:anywhere}
+.truck-inspection-action{grid-column:2;display:flex;align-items:center;justify-content:center;align-self:end;gap:6px;min-height:44px;padding:6px 8px;border:1px solid #bad0d0;border-radius:8px;color:#0c7275;font-size:.75rem;font-weight:700;text-decoration:none;white-space:normal;text-align:center;line-height:1.25}
+.truck-inspection-action svg{width:16px;height:16px;flex-shrink:0}
+.truck-inspection-action.call{background:#0c7275;border-color:#0c7275;color:#fff}
+.truck-inspection-action:hover{filter:brightness(.95)}
+.truck-inspection-updates{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:0;min-width:0}
+.truck-inspection-updates>div{display:flex;align-items:flex-start;gap:6px;min-width:0}
+.truck-inspection-updates svg{width:16px;height:16px;flex:none;color:#677d82;margin-top:1px}
+.truck-inspection-updates>div:last-of-type svg{color:#1a73e8}
+.truck-inspection-updates p{margin:0;font-size:.7rem;line-height:1.4;color:#526875;overflow-wrap:anywhere}
+.truck-inspection-updates .truck-inspection-confirm{grid-column:1/-1;font-size:.7rem;color:#8a6500}
+.truck-inspection-private{display:grid;gap:3px;margin:0;font-size:.76rem;line-height:1.4;background:#f3f7fa;padding:10px;border-radius:8px}
+.capacity-info-content .truck-inspection .map-truck-documents{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-items:start}
+.truck-inspection .truck-document-summary>summary{display:grid;grid-template-columns:16px minmax(0,1fr);gap:5px;min-height:58px;padding:8px;text-align:left;align-content:start}
+.truck-inspection .truck-document-summary>summary>svg{width:16px;height:16px}
+.truck-inspection .truck-document-summary>summary strong{font-size:.68rem;line-height:1.25;overflow-wrap:anywhere}
+.truck-inspection .truck-document-summary>summary small{font-size:.62rem;line-height:1.3}
+.truck-inspection .truck-document-summary[open]{grid-column:1/-1}
+.truck-inspection .truck-document-summary[open]>summary{display:flex;min-height:44px}
+@media(max-width:380px){
+ .truck-inspection-hero{grid-template-columns:72px minmax(0,1fr);gap:10px}
+ .truck-inspection-people{gap:8px}
+ .truck-inspection-person{grid-template-columns:16px minmax(0,1fr);column-gap:5px}
+ .truck-inspection-person>svg{width:16px;height:16px}
+ .truck-inspection-action{grid-column:1/-1}
+}
+
+.truck-inspection .truck-document-summary>summary{position:relative;padding-right:8px}
+.truck-inspection .truck-document-summary>summary::after{content:"";position:absolute;right:8px;bottom:8px;width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg)}
+.truck-inspection .truck-document-summary[open]>summary::after{transform:rotate(225deg)}
+
+.truck-inspection-person>.truck-inspection-person-actions{grid-column:2;display:flex;align-self:end;flex-wrap:wrap;gap:5px}
+.truck-inspection-person-actions>a{flex:1;min-width:44px}
+@media(max-width:380px){.truck-inspection-person>.truck-inspection-person-actions{grid-column:1/-1}}

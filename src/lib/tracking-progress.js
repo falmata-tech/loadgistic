@@ -12,3 +12,14 @@ export function trackingProgress(status, currentStatus, recordedStatuses, nextSt
   if (nextStatuses.includes(status)) return currentStatus === 'CREATED' && status === 'LOADING' ? 'Or start here' : 'Next';
   return 'Remaining';
 }
+
+
+// Presentation choices only. PostgreSQL remains the mutation authority.
+export function trackingNextStatuses(status) {
+  const transitions = {
+    CREATED: ['TO_PICKUP', 'LOADING', 'ISSUE'], TO_PICKUP: ['LOADING', 'ISSUE'],
+    LOADING: ['IN_TRANSIT', 'ISSUE'], IN_TRANSIT: ['UNLOADING', 'ISSUE'],
+    UNLOADING: ['COMPLETED', 'ISSUE'], ISSUE: ['TO_PICKUP', 'LOADING', 'IN_TRANSIT', 'UNLOADING']
+  };
+  return Object.hasOwn(transitions, status) ? [...transitions[status]] : [];
+}

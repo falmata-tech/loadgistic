@@ -31,7 +31,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/network', label: 'Network', icon: Network },
     { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/more', label: 'Account', icon: UserRound },
-    { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
@@ -40,7 +39,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/app/network', label: 'Network', icon: Network },
     { href: '/app/support', label: 'Support', icon: Headphones },
     { href: '/app/more', label: 'Account', icon: UserRound },
-    { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   ADMIN: [
     { href: '/admin', label: 'Overview', icon: Home },
@@ -61,8 +59,8 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
 const mobileNavigation: Record<string, string[]> = {
   SHIPPER: ['/app/home', '/app/more'],
   RECEIVER: ['/app/home', '/app/more'],
-  TRANSPORTER: ['/app/home', '/app/fleet', '/app/network', '/app/provider-shipments', '/app/menu'],
-  DRIVER: ['/app/home', '/app/provider-shipments', '/app/network', '/app/support', '/app/menu'],
+  TRANSPORTER: ['/app/home', '/app/fleet', '/app/network', '/app/provider-shipments', '/app/more'],
+  DRIVER: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/network', '/app/more'],
   ADMIN: ['/admin', '/admin/operations', '/admin/capacity-network', '/admin/reviews', '/app/menu'],
   SUPPORT: ['/support']
 };
@@ -161,13 +159,13 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         </div>
       </aside>
       <main className="app-main">
-        <header className="app-topbar">
+        <header className={`app-topbar ${['TRANSPORTER','DRIVER'].includes(user.role)?'provider-topbar':''}`}>
           <div className="topbar-leading"><WorkspaceBackButton/><span className="mobile-app-brand"><Logo href={homeHref}/></span><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{<Text message={workspaceRole}/>}</div></div></div>
           <div className="topbar-actions">
             <LanguagePicker/>
-            {user.role==='DRIVER'?<Link className="button secondary small desktop-account" href="/"><ExternalLink aria-hidden="true"/><Text message="Exit dashboard"/></Link>:null}
-            {['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/support"><Headphones aria-hidden="true"/><Text message="Support"/></Link>:null}
-            {!isSupport?<Link className="button secondary small desktop-account" href="/app/menu"><MoreHorizontal aria-hidden="true"/><Text message="More"/></Link>:null}
+            {['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small desktop-account" href="/"><ExternalLink aria-hidden="true"/><Text message="Exit dashboard"/></Link>:null}
+            {['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small workspace-support-shortcut" href="/app/support"><Headphones aria-hidden="true"/><span className="workspace-support-label"><Text message="Support"/></span></Link>:null}
+            {!isSupport&&!['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/menu"><MoreHorizontal aria-hidden="true"/><Text message="More"/></Link>:null}
           </div>
           {['DRIVER','TRANSPORTER'].includes(user.role)?<Link className="mobile-dashboard-exit" href="/"><ExternalLink aria-hidden="true"/><span><Text message="Exit dashboard"/></span></Link>:null}
         </header>

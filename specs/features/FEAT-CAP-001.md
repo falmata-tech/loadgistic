@@ -355,3 +355,89 @@ resize), THEN preserve the geographic center against the actual container size s
 marker remains visible. Opening/cancelling an editor without a container resize
 must retain the map view. Saved coordinates and marker appearance are unchanged.
 Focused regression: `tests/e2e/fleet-location-map-resize.spec.ts`.
+
+## Stable map refresh — October 6 defect correction
+
+Given loaded public or authorized private capacity markers
+When panning or zooming automatically requests multiple viewport pages
+Then previously displayed records remain while new pages accumulate, the map
+instance and user's camera remain stable, and successful completion replaces the
+snapshot with exactly the new window (plus an explicitly selected truck). A failed
+or superseded request must not clear loaded records or overwrite newer results.
+Changing filters/private identity still discards the old query's records. Preserve
+automatic full pagination and error/retry behavior; no new manual loading controls.
+Verify partial-page preservation, final pruning, stale-request cancellation and
+real desktop/phone idle/zoom behavior. Performance improvements must preserve NR-13.
+
+## On-demand selected-truck details — October 6 owner revision
+
+Supersedes the earlier automatic truck-details drawer: it obscured selected signals.
+GIVEN a public or authorized private capacity map, WHEN a truck is selected,
+THEN close the results drawer and retain only the selected truck and its permitted
+lines/circles/polygons, with small white information buttons outlined in each
+signal's color. The truck's information button uses distinct teal. No details
+card opens automatically, including via a truck deep link.
+
+WHEN a truck or signal information button (or the signal itself) is activated,
+THEN open exactly one compact, scroll-bounded detail card at the same map-edge
+position. Its content and border change to that item; no camera movement or data
+request is caused by opening, replacing or closing details. X closes only that
+card and keeps the selected geometry. Hover alone must not open a panel.
+A separate back-to-results action restores the mounted results, search draft,
+pagination and scroll. Profile/contact/document access remains available from
+truck details. Labels identify each item without requiring color perception.
+
+Use the same interaction on desktop web, phone web and native. Preserve signal
+separation, map pan/zoom, privacy boundaries and loading/error feedback. Information
+buttons have accessible names and 44px touch targets; avoid coincident buttons.
+Verify no automatic card, single shared position/content/color, close without
+selection reset, results restoration, gestures and public/private geometry limits.
+Owner visual review is required before release gates/deployment (NR-13).
+
+Owner clarification: information targets are small white speech bubbles with a
+pointer toward their object and “…” inside, indicating more detail on activation.
+
+Owner visual correction: move information controls away from the signal strokes;
+the speech tails look conversational. Current preview uses small labeled controls
+at the map's side with color accents and “…”; no speech tails or leader lines.
+This replaces the anchored-bubble presentation above, preserving the exact same
+on-demand shared-card contract. Keep controls clear of map zoom and the card,
+including small screens. Visual approval remains outstanding.
+
+## Selection exit and centered information modal — October 6 owner follow-up
+
+GIVEN an already panned/zoomed or filtered capacity map, WHEN a visitor selects a
+truck and then activates the X attached to its circle, THEN deselect the truck and
+restore the pre-selection camera without clearing search, filters or result drafts.
+Changing the selected truck must not overwrite that original camera; changing the
+query/private identity must not restore a camera from a previous data scope.
+A direct selected-truck link has no prior camera and may return to the initial map.
+
+WHEN any truck/signal information target is activated, THEN show one modal centered
+over the map with a light backdrop, signal-colored border and scrollable details.
+Background map controls cannot receive touches/keyboard input while it is open.
+X, backdrop or Escape/Android Back closes only the modal and preserves selection
+and camera. Web focus is contained in the modal and returns to its trigger.
+The attached selection-exit X remains a separate, accessible 44px target.
+This supersedes the earlier bottom-edge detail card. Verify desktop/phone web and
+native separately; owner review of side controls does not approve this new modal.
+
+Modal content follows the owner's readability correction: ordinary details fit
+without scrolling; only long records scroll within the available map height.
+Show ordered route places with direction connectors, distinguish regular two-way
+service from a current capacity route, show area boundary places as a set rather
+than an itinerary, and separate update age from route names. Keep user-provided
+place/profile labels unchanged and localize application explanations.
+
+## Truck information composition — October 6 owner correction
+
+GIVEN the selected truck information modal, WHEN it opens, THEN use an intentional
+visual hierarchy: configuration illustration beside truck identity/status, clearly
+identified transporter and driver with adjacent existing actions, grouped freshness
+information, and compact entity-specific document summaries on web. Use available
+native projection fields only; do not invent contact/review data or widen APIs.
+Keep all existing profile/call/document actions and hidden-location safeguards.
+Ordinary collapsed content should use horizontal space before requiring scrolling;
+long names, translations and expanded evidence must wrap/scroll without clipping.
+Preserve the centered modal, dismiss/return behavior and unchanged map camera.
+Focused desktop/phone review plus native static checks precede owner visual review.

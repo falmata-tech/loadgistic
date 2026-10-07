@@ -1,0 +1,5 @@
+export type TrackingSummary = { id: string; code: string; origin: string; destination: string; cargo: string; status: string; driver: string; truck: string; updatedAt: string };
+export type TrackingWorkspace = { canManage: boolean; vehicles: { id: string; label: string }[]; shipments: TrackingSummary[] };
+export type TrackingDetail = TrackingSummary & { mode: string; canRecover: boolean; nextStatuses: string[]; canLocate: boolean; pickupDate: string; deliveryDate: string; canManageRecipients: boolean; location: { area: string; radius: number; updatedAt: string } | null; events: { id: string; status: string; note: string; hasProof: boolean; createdAt: string }[]; recipients: { id: string; email: string; owner: boolean; revoked: boolean }[]; deliveries: { kind: string; status: string }[] };
+const labels: Record<string, string> = { CREATED: 'Ready to start', TO_PICKUP: 'Going to pickup', LOADING: 'Loading', IN_TRANSIT: 'On the way', UNLOADING: 'Unloading', COMPLETED: 'Completed', ISSUE: 'Issue reported', CANCELLED: 'Cancelled' };
+export const statusLabel = (value: string) => labels[value] || value;

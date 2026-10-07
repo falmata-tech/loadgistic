@@ -1,7 +1,7 @@
 "use client";
 
 
-import {Text,Localized} from '@/components/localization';
+import {Text,Localized,useTranslation} from '@/components/localization';
 import React from 'react';
 import L from 'leaflet';
 import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
@@ -13,7 +13,7 @@ import { offsetSignalPath } from '@/lib/map-signal-offset';
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
 type Signal={id:string;provider_name:string;platform_number?:string;status:string;cargo_configuration?:string;availability_geometry?:string|null;current_signal_geometry_visible?:boolean;location_lat?:number;location_lng?:number;location_precision_km?:number;work_radius_km?:number;location_updated_at?:string|null;capacity_updated_label?:string;capacity_confirmation_needed?:boolean;location_updated_label?:string;location_is_last_reported?:boolean;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];current_route_points?:PlacePoint[];recurring_corridors?:any[]};
-type MapSignalInfo={id:string;accent:'location'|'empty'|'partial'|'regular';label:string;title:string;primary:string;detail:string};
+type MapSignalInfo={id:string;accent:'truck'|'location'|'empty'|'partial'|'regular';label:string;title:string;primary:string;detail:string};
 type SignalPath={positions:[number,number][];closed:boolean;offset:number};
 
 function hasCoordinate(value:unknown){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));}
@@ -84,17 +84,51 @@ function Bounds({items,viewer,selectedId,keepItemsInView}:{items:Signal[];viewer
   const fittedInitial=React.useRef(false);
   const fittedSelected=React.useRef('');
   const fittedViewer=React.useRef('');
+  const previousView=React.useRef(null as {center:L.LatLng;zoom:number}|null);
+  const pendingRestore=React.useRef(null as {center:L.LatLng;zoom:number}|null);
+  const zoomInFlight=React.useRef(false);
+  const restoreFrame=React.useRef(0);
+  React.useEffect(()=>()=>cancelAnimationFrame(restoreFrame.current),[]);
+  useMapEvents({
+    zoomstart:()=>{zoomInFlight.current=true;},
+    zoomend:()=>{
+      zoomInFlight.current=false;
+      const previous=pendingRestore.current;
+      if(previous){pendingRestore.current=null;map.setView(previous.center,previous.zoom,{animate:false});}
+    }
+  });
   React.useEffect(()=>{
-    if(!selectedId)fittedSelected.current='';
+    if(!selectedId){
+      fittedSelected.current='';
+      if(previousView.current){
+        const previous=previousView.current;previousView.current=null;
+        fittedInitial.current=true;
+        map.stop();pendingRestore.current=previous;
+        // A zoom click may be queued for the next animation frame, or already
+        // animating. Neither is cancelled by stop(). Let it start, then restore
+        // after zoomend; without a zoom, restore on the next frame.
+        cancelAnimationFrame(restoreFrame.current);
+        restoreFrame.current=requestAnimationFrame(()=>{
+          const pending=pendingRestore.current;
+          if(pending&&!zoomInFlight.current){pendingRestore.current=null;map.setView(pending.center,pending.zoom,{animate:false});}
+        });
+        return;
+      }
+    }
     const selected=items.find(item=>item.id===selectedId);
     if(selected){
+      if(pendingRestore.current&&!previousView.current)previousView.current=pendingRestore.current;
+      pendingRestore.current=null;
+      if(!previousView.current)previousView.current={center:map.getCenter(),zoom:map.getZoom()};
       if(fittedSelected.current!==selected.id){
         const selectedBounds=L.latLngBounds([]);
-        if(hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))selectedBounds.extend(L.latLng(Number(selected.location_lat),Number(selected.location_lng)).toBounds(Math.max(Number(selected.location_precision_km)||20,selected.availability_geometry==='RADIUS'?Number(selected.work_radius_km)||50:0)*2200));
-        (selected.current_route_points||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
-        (selected.capacity_area_boundary||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
-        if(viewer)selectedBounds.extend([viewer.lat,viewer.lng]);
-        if(selectedBounds.isValid()){fittedSelected.current=selected.id;map.fitBounds(selectedBounds,{padding:[48,48],maxZoom:12,animate:false});}
+        if(selected.current_signal_geometry_visible!==false){
+          if(hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))selectedBounds.extend(L.latLng(Number(selected.location_lat),Number(selected.location_lng)).toBounds((Number(selected.location_precision_km)||20)*2200));
+          (selected.current_route_points||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
+          (selected.capacity_area_boundary||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
+        }
+        (selected.recurring_corridors||[]).slice(0,1).forEach(signal=>(signal.geometry==='RADIUS'?signal.area_boundary||[]:signal.route_points||[]).forEach((point:PlacePoint)=>selectedBounds.extend([point.lat,point.lng])));
+        if(selectedBounds.isValid()){fittedSelected.current=selected.id;map.fitBounds(selectedBounds,{paddingTopLeft:[58,125],paddingBottomRight:[130,60],maxZoom:12,animate:false});}
       }
       return;
     }
@@ -174,7 +208,8 @@ function markerActivation(activate:()=>void){
   }};
 }
 
-function CapacityMarkers({items,selectedId,onSelect}:{items:Signal[];selectedId:string|null;onSelect:(id:string)=>void}){
+function CapacityMarkers({items,selectedId,onSelect,onDeselect}:{items:Signal[];selectedId:string|null;onSelect:(id:string)=>void;onDeselect:()=>void}){
+  const {t}=useTranslation();
   const map=useMap();
   const [revision,setRevision]=React.useState(0);
   useMapEvents({zoomend:()=>setRevision((value:number)=>value+1),moveend:()=>setRevision((value:number)=>value+1)});
@@ -196,7 +231,11 @@ function CapacityMarkers({items,selectedId,onSelect}:{items:Signal[];selectedId:
     return clusteredGroups.filter(group=>renderBounds.contains([group.anchor.lat,group.anchor.lng]));
   },[clusteredGroups,map,revision]) as MarkerGroup[];
   const itemById:Map<string,Signal>=React.useMemo(()=>new Map(items.map(item=>[item.id,item])),[items]) as Map<string,Signal>;
-  if(selected){const point=markerPoint(selected);return point?<Marker position={point} icon={truckMarker(selected,true)} zIndexOffset={2000} title={truckMarkerAccessibleLabel(selected)} alt={truckMarkerAccessibleLabel(selected)}/>:null;}
+  if(selected){
+    const point=markerPoint(selected);
+    const exitIcon=L.divIcon({className:'capacity-truck-exit',html:'<span aria-hidden="true">×</span>',iconSize:[44,44],iconAnchor:[-27,110]});
+    return point?<><Marker position={point} icon={truckMarker(selected,true)} eventHandlers={markerActivation(()=>onSelect(selected.id))} zIndexOffset={2000} title={truckMarkerAccessibleLabel(selected)} alt={truckMarkerAccessibleLabel(selected)}/><Marker position={point} icon={exitIcon} eventHandlers={markerActivation(onDeselect)} zIndexOffset={2100} title={t('Back to map')} alt={t('Back to map')}/></>:null;
+  }
   return <>{groups.map(group=>{
     const groupItems=group.memberIds.map(id=>itemById.get(id)).filter((item):item is Signal=>Boolean(item));
     const groupPoint:[number,number]=[group.anchor.lat,group.anchor.lng];
@@ -218,12 +257,50 @@ function CapacityMarkers({items,selectedId,onSelect}:{items:Signal[];selectedId:
   })}</>;
 }
 
-export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInView=false,onSelect,onExplore}:{items:Signal[];viewer:Point|null;selectedId:string|null;keepItemsInView?:boolean;onSelect:(id:string)=>void;onExplore?:(bounds:number[])=>void}){
+function SignalDetails({info,selected}:{info:MapSignalInfo;selected:Signal}){
+  const regular=info.accent==='regular';
+  const signal=regular?selected.recurring_corridors?.[0]:null;
+  const area=regular?signal?.geometry==='RADIUS':selected.availability_geometry==='RADIUS';
+  const points:PlacePoint[]=regular?(area?signal?.area_boundary:signal?.route_points)||[]:(area?selected.capacity_area_boundary:selected.current_route_points)||[];
+  if(info.accent==='location')return <article className="map-signal-details"><strong className="signal-summary"><Text message="Within {distance} km" values={{distance:selected.location_precision_km||20}}/></strong><p><Text message="The transporter chose this location accuracy. This is not an exact or live position."/></p><p className="signal-update">{selected.location_updated_label||<Text message="Location update unavailable"/>}</p></article>;
+  const explanation=area?'The outline marks the service area. These places define its boundary, not a trip.':regular?'This route is served in both directions. Contact the transporter to confirm availability.':'Follow the route in the order shown. Contact the driver to confirm pickup, delivery and available space.';
+  return <article className="map-signal-details">
+    {regular&&!area?<strong className="signal-summary"><Text message="Regular two-way service"/></strong>:null}
+    {!regular?<span className="signal-capacity-status"><Text message={selected.status==='PARTIAL'?'Partial capacity':'Empty truck'}/></span>:null}
+    <p><Text message={explanation}/></p>
+    {area?<ul className="signal-area-places">{points.map((point,index)=><li key={index}>{point.label}</li>)}</ul>:<ol className="signal-route-stops">{points.map((point,index)=><li key={index}><span className="signal-stop-number" aria-hidden="true">{index+1}</span><span>{point.label}</span>{index<points.length-1?<span className="signal-route-direction" aria-hidden="true">{regular?'↕':'↓'}</span>:null}</li>)}</ol>}
+    <p className="signal-update">{regular?<Text message="Regular service is not a current capacity update."/>:selected.capacity_updated_label||<Text message="Capacity update unavailable"/>}</p>
+  </article>;
+}
+
+function MapInfoModal({accent,label,onClose,children}:{accent:MapSignalInfo['accent'];label:string;onClose:()=>void;children:React.ReactNode}){
+  const dialog=React.useRef(null as HTMLDialogElement|null);
+  const {t}=useTranslation();
+  React.useEffect(()=>{
+    const element=dialog.current;if(!element)return;
+    const host=element.parentElement!;
+    const previousFocus=document.activeElement as HTMLElement|null;
+    const place=()=>{const box=host.getBoundingClientRect();element.style.left=`${box.left+box.width/2}px`;element.style.top=`${box.top+box.height/2}px`;element.style.maxHeight=`${Math.max(100,Math.min(box.height,window.innerHeight)-32)}px`;element.style.width=`${Math.min(accent==='truck'?540:430,box.width-32)}px`;};
+    place();element.showModal();
+    const observer=new ResizeObserver(place);observer.observe(host);
+    window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
+    return()=>{observer.disconnect();window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true);element.close();if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});};
+  },[]);
+  return <dialog ref={dialog} className={`capacity-info-card ${accent}`} style={{'--signal-color':signalColors[accent]} as React.CSSProperties} aria-label={t(label)} onKeyDown={event=>{
+    if(event.key!=='Tab')return;
+    const targets=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]')).filter(element=>element.getClientRects().length);
+    const first=targets[0],last=targets.at(-1);
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+  }} onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{if(event.target!==event.currentTarget)return;const box=event.currentTarget.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)onClose();}}>{children}</dialog>;
+}
+
+const signalColors={truck:'#0c7275',location:'#1a73e8',empty:'#16a34a',partial:'#eab308',regular:'#c06620'};
+export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInView=false,onSelect,onDeselect,onExplore,truckDetails}:{items:Signal[];viewer:Point|null;selectedId:string|null;keepItemsInView?:boolean;onSelect:(id:string)=>void;onDeselect:()=>void;onExplore?:(bounds:number[])=>void;truckDetails?:React.ReactNode}){
   const selected=items.find(item=>item.id===selectedId)||null;
-  const [hoveredInfo,setHoveredInfo]=React.useState(null as MapSignalInfo|null);
   const [pinnedInfo,setPinnedInfo]=React.useState(null as MapSignalInfo|null);
   const [legendOpen,setLegendOpen]=React.useState(false);
-  React.useEffect(()=>{setHoveredInfo(null);setPinnedInfo(null);},[selectedId]);
+  React.useEffect(()=>{setPinnedInfo(null);},[selectedId]);
   const availableLabel=selected?.status==='PARTIAL'?'Partial capacity':'Empty truck';
   const availabilityAccent:'empty'|'partial'=selected?.status==='PARTIAL'?'partial':'empty';
   const availabilityColorName=availabilityAccent==='partial'?'yellow':'green';
@@ -232,9 +309,7 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
   const routeInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selected.id}:route`,accent:availabilityAccent,label:'Capacity route',title:selected.capacity_confirmation_needed?`Reported ${availableLabel.toLowerCase()} route`:`Latest ${availableLabel.toLowerCase()} route`,primary:`${(selected.current_route_points||[]).map(point=>point.label).join(' → ')} · ${selected.capacity_updated_label||'Capacity update unavailable'}`,detail:`The ${availabilityColorName} route shows the last published ${availableLabel.toLowerCase()} signal. Confirm pickup, delivery, timing, and fit.`}:null;
   const regularInfos:MapSignalInfo[]=(selected?.recurring_corridors||[]).slice(0,1).map(signal=>signal.geometry==='RADIUS'?{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Regular service area',title:signal.area_center_label||'Regular service area',primary:(signal.area_boundary||[]).map((point:PlacePoint)=>point.label).join(' · '),detail:'This is regular service, not current availability. Confirm the truck and timing.'}:{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Regular capacity route',title:'Regular two-way service',primary:(signal.route_points||[]).map((point:PlacePoint)=>point.label).join(' ↔ '),detail:'This is a regular route, not current availability. Confirm the truck and timing.'});
   const signalEvents=(info:MapSignalInfo)=>({
-    mouseover:()=>{if(!pinnedInfo)setHoveredInfo(info);},
-    mouseout:()=>{if(!pinnedInfo)setHoveredInfo(null);},
-    click:(event:any)=>{L.DomEvent.stopPropagation(event.originalEvent);setHoveredInfo(null);setPinnedInfo(info);},
+    click:(event:any)=>{L.DomEvent.stopPropagation(event.originalEvent);setPinnedInfo(info);},
     add:(event:any)=>{
       const layer=event.target;
       const element=layer.getElement?.();
@@ -244,17 +319,22 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
       element.setAttribute('aria-label',`${info.label}: ${info.primary}. ${info.detail}`);
       if(element.dataset.capacitySignalBound)return;
       element.dataset.capacitySignalBound='true';
-      element.addEventListener('focus',()=>{if(!pinnedInfo)setHoveredInfo(info);});
-      element.addEventListener('blur',()=>{if(!pinnedInfo)setHoveredInfo(null);});
-      element.addEventListener('keydown',(keyboardEvent:KeyboardEvent)=>{if(keyboardEvent.key==='Enter'||keyboardEvent.key===' '){keyboardEvent.preventDefault();setHoveredInfo(null);setPinnedInfo(info);}});
+      element.addEventListener('keydown',(keyboardEvent:KeyboardEvent)=>{if(keyboardEvent.key==='Enter'||keyboardEvent.key===' '){keyboardEvent.preventDefault();setPinnedInfo(info);}});
     }
   });
   const currentSignalColor=availabilityAccent==='partial'?'#eab308':'#16a34a';
   const currentPoints=selected?.availability_geometry==='ROUTE'?selected.current_route_points:selected?.status==='EMPTY'?selected?.capacity_area_boundary:undefined;
   const currentClosed=selected?.availability_geometry==='RADIUS'||Boolean(currentPoints?.length&&currentPoints[0].lat===currentPoints.at(-1)?.lat&&currentPoints[0].lng===currentPoints.at(-1)?.lng);
   const currentPath:SignalPath|undefined=selected?.current_signal_geometry_visible!==false&&currentPoints&&currentPoints.length>=2?{positions:currentPoints.map(point=>[point.lat,point.lng]),closed:currentClosed,offset:currentClosed?-12:-6}:undefined;
-  const visibleSignalInfos=pinnedInfo?[pinnedInfo]:hoveredInfo?[hoveredInfo]:[];
-  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available trucks" onPointerLeave={()=>setHoveredInfo(null)} onBlurCapture={(event:React.FocusEvent<HTMLDivElement>)=>{if(!event.currentTarget.contains(event.relatedTarget as Node|null))setHoveredInfo(null);}}>
+  const truckInfo:MapSignalInfo|null=selected?{id:`${selected.id}:truck`,accent:'truck',label:'Truck details',title:'Truck details',primary:'',detail:''}:null;
+  const infoChoices:MapSignalInfo[]=[];
+  if(truckInfo)infoChoices.push(truckInfo);
+  if(locationInfo&&selected&&hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))infoChoices.push(locationInfo);
+  if(currentPath&&currentPath.positions.length>=(currentPath.closed?3:2))infoChoices.push((selected?.availability_geometry==='RADIUS'?radiusInfo:routeInfo)!);
+  (selected?.recurring_corridors||[]).slice(0,1).forEach((signal,index)=>{const closed=signal.geometry==='RADIUS',points=closed?signal.area_boundary:signal.route_points;if(points?.length>=(closed?3:2))infoChoices.push(regularInfos[index]);});
+  const shortLabel=(info:MapSignalInfo)=>info.accent==='truck'?'Truck':info.accent==='location'?'Location':info.accent==='regular'?'Regular service':'Capacity';
+  const activeInfo:MapSignalInfo|null=pinnedInfo&&selected&&pinnedInfo.id.startsWith(`${selected.id}:`)?pinnedInfo:null;
+  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available trucks" onKeyDown={(event:React.KeyboardEvent<HTMLDivElement>)=>{if(event.key==='Escape'&&activeInfo){event.stopPropagation();setPinnedInfo(null);}}}>
     <MapContainer center={[9.1,40.2]} zoom={7} minZoom={5} maxZoom={15} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom>
       <BaseMapTiles/>
       <ResizeMap/>
@@ -267,9 +347,15 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,keepItemsInVie
         {routeInfo&&item.availability_geometry==='ROUTE'&&(item.current_route_points||[]).length>=2?<OffsetPolyline positions={(item.current_route_points||[]).map(point=>[point.lat,point.lng])} offset={-6} eventHandlers={signalEvents(routeInfo)} pathOptions={{className:`map-current-route map-interactive-signal capacity-${availabilityAccent}`,color:currentSignalColor,weight:8,opacity:.95}}/>:null}
         {(item.recurring_corridors||[]).slice(0,1).map((signal,index)=>{const info=regularInfos[index];if(!info)return null;if(signal.geometry==='RADIUS'){const points=signal.area_boundary||[];if(points.length<3)return null;return <OffsetPolyline avoid={currentPath} closed offset={12} key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:8,dashArray:'5 9',fill:false}}/>;}const points=signal.route_points||[];if(points.length<2)return null;return <OffsetPolyline avoid={currentPath} key={signal.id} positions={points.map((point:PlacePoint)=>[point.lat,point.lng])} offset={6} eventHandlers={signalEvents(info)} pathOptions={{className:'map-regular-corridor map-interactive-signal',color:'#c06620',weight:7,dashArray:'5 9',opacity:.9}}/>;})}
       </React.Fragment>)}
-      <CapacityMarkers items={items} selectedId={selectedId} onSelect={onSelect}/>
-    {visibleSignalInfos.length?<section className={`capacity-signal-inspector${pinnedInfo?' pinned':''}`} aria-label={pinnedInfo?'Selected map signal':'Map signal details'} aria-live="polite">{pinnedInfo?<Localized as="button" copy={["aria-label"]} type="button" onMouseDown={(event:React.MouseEvent<HTMLButtonElement>)=>event.stopPropagation()} onTouchStart={(event:React.TouchEvent<HTMLButtonElement>)=>event.stopPropagation()} onClick={()=>setPinnedInfo(null)} aria-label="Close map signal details">×</Localized>:null}{visibleSignalInfos.map(info=><article key={info.id} className={info.accent}><small>{info.label}</small><strong>{info.title}</strong><span>{info.primary}</span><em>{info.detail}</em></article>)}</section>:null}
+      <CapacityMarkers items={items} selectedId={selectedId} onDeselect={onDeselect} onSelect={id=>{if(id===selectedId&&truckInfo)setPinnedInfo(truckInfo);else onSelect(id);}}/>
+
     </MapContainer>
+    {selected&&!markerPoint(selected)?<Localized as="button" copy={["aria-label"]} type="button" className="capacity-truck-exit map-selection-exit-fallback" aria-label="Back to map" onClick={onDeselect}>×</Localized>:null}
+    {infoChoices.length?<Localized as="div" copy={["aria-label"]} className="map-info-controls" role="group" aria-label="Map details">{infoChoices.map(info=><Localized as="button" copy={["aria-label"]} key={info.id} type="button" className={`map-info-bubble ${info.accent}`} style={{'--signal-color':signalColors[info.accent]} as React.CSSProperties} aria-label={info.label} aria-pressed={activeInfo?.id===info.id} onClick={()=>setPinnedInfo(info)}><span><Text message={shortLabel(info)}/></span><b aria-hidden="true">…</b></Localized>)}</Localized>:null}
+    {activeInfo?<MapInfoModal accent={activeInfo.accent} label={activeInfo.label} onClose={()=>setPinnedInfo(null)}>
+      <header><strong><Text message={activeInfo.label}/></strong><Localized as="button" copy={["aria-label"]} type="button" aria-label="Close map signal details" onClick={()=>setPinnedInfo(null)}>×</Localized></header>
+      <div className="capacity-info-content" tabIndex={0}>{activeInfo.accent==='truck'?truckDetails:<SignalDetails info={activeInfo} selected={selected!}/>}</div>
+    </MapInfoModal>:null}
 
 
     <details className="public-map-legend" open={legendOpen} onToggle={event=>setLegendOpen(event.currentTarget.open)}><summary><Text message="Map key"/></summary><div className="public-map-legend-items"><span className="empty-status"><Text message="Empty truck"/></span><span className="partial-status"><Text message="Partial truck"/></span><span className="privacy"><Text message="Approximate location"/></span><span className="radius"><Text message="Empty service area"/></span><span className="empty-route"><Text message="Empty capacity route"/></span><span className="partial-route"><Text message="Partial capacity route"/></span><span className="corridor"><Text message="Regular service"/></span></div></details>

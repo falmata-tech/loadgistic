@@ -227,3 +227,16 @@ release validation, protected production migration and deployment remain pending
 Rollback the application to its prior artifact if necessary; retain added
 functions, existing evidence and private files until a reviewed database rollback.
 No destructive document rewrite is part of this change.
+
+## Contextual document submission — October 6 (in progress)
+
+Given an authorized provider manages a business, truck or driver
+When they open that entity's document section
+Then review badges, submission and recent history appear with that entity, narrowed
+by both subject type and ID. Submission returns to that workspace. Every form has
+unique control IDs even when multiple drivers appear. Existing centralized history
+remains available for older records; private-file and mutation checks are unchanged.
+
+Invalid return paths fall back to Verification; no foreign origin or arbitrary
+application path is accepted. Test cross-kind/unknown entity isolation, local
+submission/readback/return context, multiple-form labels and existing denial tests.

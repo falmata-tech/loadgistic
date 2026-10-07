@@ -203,7 +203,8 @@ test('Clear all removes applied filters and the selected truck before loading th
   expect(sample).toBeTruthy();
   const filtered=new URLSearchParams({q:sample.provider_name,provider:sample.provider_handle,truck:sample.id,status:sample.status});
   await page.goto(`/?${filtered}`);
-  await expect(page.locator('.map-capacity-sheet')).toBeVisible();
+  await expect(page.locator('.capacity-truck-map-marker.selected')).toBeVisible({timeout:30000});
+  await expect(page.locator('.capacity-info-card')).toHaveCount(0);
   const drawer=await openDrawer(page),dialog=page.locator('.capacity-filter-dialog');
   const unfiltered=page.waitForResponse((r:any)=>{
     const url=new URL(r.url());

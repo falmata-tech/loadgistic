@@ -19,8 +19,12 @@ test('managed provider profile projection exposes an application image URL witho
 });
 
 test('managed profile routes use the dedicated application port instead of the SQLite repository',()=>{
+  const page=fs.readFileSync(path.join(root,'src/app/app/company-page/page.tsx'),'utf8');
+  assert.match(page,/requireUser\(\['TRANSPORTER','DRIVER'\]\)/);
+  assert.match(page,/components\/provider-profile-workspace/);
+  assert.doesNotMatch(page,/lib\/repository\.js/);
   for(const file of [
-    'src/app/app/company-page/page.tsx','src/app/api/company-page/route.ts','src/app/api/company-page/image/route.ts'
+    'src/components/provider-profile-workspace.tsx','src/app/api/company-page/route.ts','src/app/api/company-page/image/route.ts'
   ]){
     const source=fs.readFileSync(path.join(root,file),'utf8');
     assert.match(source,/lib\/provider-profile\.js/);

@@ -14,8 +14,8 @@ test('truck document alternatives submit private evidence and show only its revi
   await form.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();await form.getByRole('button',{name:'Email me a code'}).click();
   await expect(page.getByTestId('email-code-form')).toBeVisible();await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
   await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForURL(/\/app\/home/);
-  await page.goto(`/app/fleet/${truckId}`);await page.getByRole('link',{name:'Submit a truck document'}).click();
-  const subject=page.locator('#verification-subject'),type=page.locator('#verification-type');
+  await page.goto(`/app/fleet/${truckId}`);await page.locator('details.workspace-related-section>summary').filter({hasText:'Truck documents'}).click();
+  const subject=page.locator('select[id$="-verification-subject"]'),type=page.locator('select[name=verificationType]');
   await expect(subject).toBeEnabled();await expect(subject).toHaveValue(`VEHICLE:${truckId}`);
   await expect(type.locator('option')).toHaveCount(2);await type.selectOption('VEHICLE_AUTHORIZATION');
   await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(truckId);await page.getByLabel('Permission expires').fill('2099-01-01');
@@ -25,19 +25,19 @@ test('truck document alternatives submit private evidence and show only its revi
   await page.locator('.language-picker select').selectOption('am');await expect(subject.locator('option:checked')).toContainText('Home Account');
   await expect(page.locator('input[name=documentName]')).toHaveValue('Home');await expect(type).toHaveValue('VEHICLE_AUTHORIZATION');
   await page.locator('.language-picker select').selectOption('en');
-  await page.locator('#verification-file').setInputFiles({name:'permission.png',mimeType:'image/png',buffer:readFileSync('public/icon-192.png')});
+  await page.locator('input[name=file]').setInputFiles({name:'permission.png',mimeType:'image/png',buffer:readFileSync('public/icon-192.png')});
   await page.screenshot({path:info.outputPath('truck-permission-form.png'),fullPage:true});
-  await page.getByRole('button',{name:'Submit for review',exact:true}).click();await expect(page.locator('.alert.success')).toBeVisible();
+  await page.getByRole('button',{name:'Submit for review',exact:true}).click();await expect(page.locator('.alert.success')).toBeVisible();expect(new URL(page.url()).pathname).toBe(`/app/fleet/${truckId}`);
   const stored=checked(await service.from('verification_requests').select('id,status,storage_path,subject_type,subject_id').eq('submitted_by',actor.id).single());ids.push(stored.id);paths.push(stored.storage_path.replace('supabase://verification/',''));
   expect(stored).toMatchObject({status:'PENDING',subject_type:'VEHICLE',subject_id:truckId});
   await page.goto(`/app/verification?truck=${truckId}`);await expect(type).toBeEnabled();await expect(type.locator('option[value=VEHICLE_AUTHORIZATION]')).toHaveCount(0);await expect(type.locator('option[value=VEHICLE_OWNERSHIP]')).toHaveCount(1);
   const admin=checked(await service.from('profiles').select('id').eq('role','ADMIN').eq('active',true).limit(1).single());
   checked(await service.rpc('review_managed_verification',{actor_user_id:admin.id,request_id:stored.id,review_status:'APPROVED',review_note:'Synthetic local document review'}));
-  await page.goto(`/app/fleet/${truckId}`);const badge=page.locator('.verification-badge');await expect(badge).toHaveCount(1);await expect(badge).toContainText('Permission to use truck');await expect(badge).toContainText('Loadgistic reviewed');
+  await page.goto(`/app/fleet/${truckId}`);await page.locator('details.workspace-related-section>summary').filter({hasText:'Truck documents'}).click();const badge=page.locator('.verification-badge');await expect(badge).toHaveCount(1);await expect(badge).toContainText('Permission to use truck');await expect(badge).toContainText('Loadgistic reviewed');
   await badge.locator('summary').click();await expect(badge).toContainText('Review applies to this document category only.');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('truck-permission-reviewed.png'),fullPage:true});
-  await page.goto('/app/company-page');const owner=page.locator('section.card').filter({has:page.getByRole('heading',{name:'Owner documents',exact:true})});
+  await page.goto('/app/company-page');const owner=page.locator('#documents');await owner.locator(':scope>summary').click();
   await expect(owner).toBeVisible();await expect(owner.locator('.verification-badge')).toHaveCount(2);await expect(owner).not.toContainText('Permission to use truck');
   await owner.screenshot({path:info.outputPath('owner-document-scope.png')});
  }finally{
@@ -56,7 +56,7 @@ test('public truck separates company, Driver and truck evidence without exposing
  expect(truck).toBeTruthy();expect(truck.owner_verification_badges.length).toBe(3);
  expect(truck.owner_verification_badges.map((badge:{type:string})=>badge.type)).toEqual(['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']);
  expect(JSON.stringify(result)).not.toMatch(/storage_path|original_name|supabase:\/\/verification/);
- await page.goto(`/?truck=${truck.id}`);const sheet=page.locator('.map-capacity-sheet');await expect(sheet).toBeVisible();
+ await page.goto(`/?truck=${truck.id}`);await page.locator('.map-info-bubble.truck').click({timeout:30000});const sheet=page.locator('.map-capacity-sheet');await expect(sheet).toBeVisible();
  await expect(sheet.getByText('Company documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Driver documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Truck documents',{exact:true})).toBeVisible();
  await sheet.getByText('Company documents',{exact:true}).click();await expect(sheet.locator('.badge-business_license, .badge-business-license')).toContainText('Business License');
  await page.screenshot({path:info.outputPath('public-entity-documents.png'),fullPage:true});

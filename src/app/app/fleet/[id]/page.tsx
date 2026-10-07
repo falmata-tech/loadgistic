@@ -11,7 +11,7 @@ import { CapacityForm } from '@/components/capacity-form';
 import { canManageProviderVehicles } from '@/lib/fleet.js';
 import {VehicleLifecycleControl} from '@/components/lifecycle-controls';
 import {getVerificationCenter} from '@/lib/verification.js';
-import {VerificationBadges} from '@/components/verification-badges';
+import {SubjectDocuments} from '@/components/subject-documents';
 import {TruckDetailsEditor} from '@/components/truck-details-editor';
 
 export default async function FleetTruckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}) {
@@ -31,7 +31,7 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
   return <div className="page fleet-truck-detail-page"><PageHeader icon={Truck} title={`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`} action={<Link className="button secondary small" href="/app/fleet"><ArrowLeft aria-hidden="true"/><Text message="My trucks"/></Link>}/><Flash error={query.error} success={query.success}/>
     <Localized as="section" copy={["aria-label"]} className="truck-driver-link" aria-label="Truck driver"><UserRound aria-hidden="true"/><div><small>{independent?<Text message="Driver"/>:<Text message="Assigned driver"/>}</small><strong>{vehicle.assigned_driver?.name||'No driver assigned'}</strong><span>{independent?<Text message="You operate this truck."/>:vehicle.assigned_driver?'Company driver · '+(user.organization_name||'Your fleet'):<Text message="Assign an active driver before publishing capacity."/>}</span></div>{!independent?<Link className="button secondary small" href={`/app/fleet?vehicle=${vehicle.id}#driver-access`}>{vehicle.assigned_driver?<Text message="Manage driver"/>:<Text message="Assign driver"/>}</Link>:null}</Localized>
     {vehicle.trailer_interchangeable?<form className="attached-trailer-card" action={`/api/fleet/vehicles/${vehicle.id}/trailer`} method="post"><div><span><Text message="Interchangeable tractor"/></span><strong><Text message="Attached trailer"/></strong><small><Text message="Capacity pages show this configuration only."/></small></div><label htmlFor="attached-trailer"><Text message="Currently attached trailer"/><select id="attached-trailer" name="cargoConfiguration" defaultValue={vehicle.cargo_configuration}>{(vehicle.supported_trailer_configurations||[]).map((configuration:string)=><option key={configuration} value={configuration}>{configuration.replace('Tractor + ','')}</option>)}</select></label><button className="button secondary"><RefreshCw aria-hidden="true"/><Text message="Update trailer"/></button></form>:null}
-    <section className="card stack"><h2><Text message="Truck documents"/></h2><VerificationBadges badges={truckEvidence?.badges}/><Link className="button secondary small" href={`/app/verification?truck=${vehicle.id}`}><Text message="Submit a truck document"/></Link></section>
+    <details className="workspace-related-section" open={Boolean(query.success||query.error)}><summary><Text message="Truck documents"/></summary>{truckEvidence?<SubjectDocuments center={verification} kind="VEHICLE" id={vehicle.id} returnTo={`/app/fleet/${vehicle.id}`}/>:null}</details>
     <TruckDetailsEditor vehicle={vehicle}/>
 
     <VehicleLifecycleControl id={vehicle.id}/>

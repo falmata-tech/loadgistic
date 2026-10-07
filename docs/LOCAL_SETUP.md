@@ -119,3 +119,29 @@ Run `npm run test:ui-audit` only after explicit approval and while the developme
   From address, or the optional HTTPS webhook adapter. Production ignores the
   local Mailpit variable, never returns OTP plaintext to the browser, and fails
   closed when its managed adapter is absent or incomplete.
+
+## Native account-security test prerequisites
+
+Local Auth explicitly requires email confirmation and confirmation from both
+inboxes for an email change. After updating this setting, restart only this
+project with `supabase stop --project-id loadgistic-local` (preserve data), then
+`npm run supabase:start` from the Loadgistic root. Do not reset the database or
+push local settings to a hosted project. The native account-security integration
+asserts the first link remains pending and the second completes the change.
+
+
+## Expo mobile preview in the browser
+
+Keep the local Loadgistic backend running on port 3100. In
+`/Users/falmata/Desktop/Dev/loadgistic/apps/mobile`, run `npm run preview:web`,
+then open **http://localhost:8084**. Use a narrow browser window or responsive
+phone view. This is the Expo app's shared mobile UI, including its MapLibre map,
+not the separate Next.js mobile layout. Local API requests go through an
+allowlisted proxy to port 3100. Public truck data and provider/visitor workflows
+use the local Supabase database. Read test sign-in codes from the local inbox at
+http://127.0.0.1:55324; this preview does not send them to Gmail.
+
+Sessions stay in the current browser tab and are cleared by sign-out or closing
+the tab. This development adapter refuses session persistence on hosted domains.
+Do not deploy this preview as another website. Native device permissions, Android
+Back, native sharing, deep links and APK installation still require Android checks.

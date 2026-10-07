@@ -1,0 +1,55 @@
+import {useLanguage} from '../localization/provider';
+import {WorkspaceSection} from '../components/workspace-section';
+import CapacityManagement from '../screens/manage-capacity';
+import Documents from '../screens/documents';
+import { TruckControls, VehicleLifecycle, DriverContact, TrailerSetup, FleetInvitation, type ManagedTruck } from '../components/fleet-management';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Redirect } from 'expo-router';
+import { apiOrigin } from '../api/http';
+import { useAccountQuery } from '../hooks/account-query';
+import { useAccount } from '../session/provider';
+import { Page, Card, Title, Copy, Field, Button, ErrorText } from '../components/ui';
+type Truck = ManagedTruck;
+type Driver = { id: string; name: string; email: string; phone: string; vehicleId: string; canManageCapacity: boolean; canManageTracking: boolean };
+type Fleet = { retired: { id: string; label: string }[]; retiredPage: number; retiredPageCount: number; invitations: { id: string; name: string; email: string; expiresAt: string; sentAt: string | null }[]; canManage: boolean; canManageDrivers: boolean; vehicles: Truck[]; drivers: Driver[]; configurations: { name: string; image: string }[]; driverPage: number; driverPageCount: number };
+export default function FleetScreen() {
+ const {t}=useLanguage();
+ const account = useAccount(), lock = useRef(false); const [retiredPage, setRetiredPage] = useState(1), [supported, setSupported] = useState<string[]>([]); const [error, setError] = useState(''), [revision, setRevision] = useState(0), [page, setPage] = useState(1), [mode, setMode] = useState<'truck' | 'driver' | null>(null), [saving, setSaving] = useState(false);
+ const [make, setMake] = useState(''), [model, setModel] = useState(''), [plate, setPlate] = useState(''), [configuration, setConfiguration] = useState('');
+ const [name, setName] = useState(''), [email, setEmail] = useState(''), [phone, setPhone] = useState(''), [choosing, setChoosing] = useState(false);
+ const { data, error: loadError, reload } = useAccountQuery<Fleet>(`/api/mobile/fleet?driverPage=${page}&retiredPage=${retiredPage}`);
+ if (account.busy) return <Page><ActivityIndicator /></Page>;
+ if (!account.session) return <Redirect href="/account" />;
+ const save = async () => { if (lock.current) return; lock.current = true; setSaving(true); setError(''); try {
+  await account.request('/api/mobile/fleet', mode === 'truck' ? { action: 'ADD_TRUCK', make, model, plate, cargoConfiguration: configuration, trailerInterchangeable: configuration.startsWith('Tractor + '), supportedTrailerConfigurations: configuration.startsWith('Tractor + ') ? [...new Set([...supported, configuration])] : [] } : { action: 'ADD_DRIVER', name, email, phone });
+  setMode(null); setMake(''); setModel(''); setPlate(''); setName(''); setEmail(''); setPhone(''); setRevision(value => value + 1); void reload();
+ } catch (error) { setError(error instanceof Error ? error.message : 'Could not save.'); } finally { lock.current = false; setSaving(false); } };
+ return <Page><Title>{t(data?.canManageDrivers ? 'My fleet' : 'My trucks')}</Title><ErrorText message={error || loadError} />
+  {!data && !loadError && <ActivityIndicator />}{!data && !!loadError && <Button message="Try again" onPress={() => { setError(''); setRevision(value => value + 1); void reload(); }} />}
+  {mode === 'truck' ? <Card><Title message={"Add truck"}/><Field message="Make" value={make} onChangeText={setMake} /><Field message="Model" value={model} onChangeText={setModel} /><Field message="Plate" value={plate} onChangeText={setPlate} /><Button secondary label={configuration || 'Choose truck configuration'} onPress={() => setChoosing(true)} />{configuration.startsWith('Tractor + ') && <TrailerSetup configuration={configuration} configurations={data?.configurations || []} supported={supported} onChange={setSupported} disabled={saving} />}<Button message="Add truck" busy={saving} onPress={save} /><Button secondary message="Cancel" busy={saving} onPress={() => setMode(null)} /></Card>
+  : mode === 'driver' ? <Card><Title message={"Add driver"}/><Copy message={"You can assign a truck immediately. The driver verifies their email when signing in."}/><Field message="Driver name" value={name} onChangeText={setName} /><Field message="Driver email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" /><Field message="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" /><Button message="Add driver" busy={saving} onPress={save} /><Button secondary message="Cancel" busy={saving} onPress={() => setMode(null)} /></Card>
+  : <>{data?.canManage && <Button message="Add truck" onPress={() => setMode('truck')} />}{data?.canManageDrivers && <Button secondary message="Add driver" onPress={() => setMode('driver')} />}</>}
+  {data?.vehicles.length === 0 && <Copy message={"No trucks added yet."}/>}
+  {data?.vehicles.map(truck => <Card key={truck.id}><Image source={{ uri: apiOrigin + truck.image }} style={{ width: 100, height: 80 }} resizeMode="contain" accessibilityLabel={truck.configuration} /><Title>{truck.make} {truck.model}</Title><Copy>{truck.configuration} · {truck.plate}</Copy><Copy>{truck.driver ? `Driver: ${truck.driver}` : 'No driver assigned'}</Copy>{data.canManage && <TruckControls truck={truck} configurations={data.configurations} reload={reload} />}
+   <WorkspaceSection message="Truck capacity" icon="location"><CapacityManagement embedded vehicleId={truck.id}/></WorkspaceSection>
+   <WorkspaceSection message="Truck documents" icon="documents"><Documents embedded scope={{kind:'ENTITY',subjectKind:'VEHICLE',id:truck.id}}/></WorkspaceSection></Card>)}
+  {data?.canManage && <><Title message={"Retired trucks"}/>{!data.retired.length && <Copy message={"No retired trucks."}/>}{data.retired.map(item => <Card key={item.id}><Title>{item.label}</Title><VehicleLifecycle id={item.id} retired reload={reload} /></Card>)}{data.retiredPage > 1 && <Button secondary message="Previous retired trucks" onPress={() => setRetiredPage(value => value - 1)} />}{data.retiredPage < data.retiredPageCount && <Button secondary message="More retired trucks" onPress={() => setRetiredPage(value => value + 1)} />}</>}
+  {data?.invitations.map(item => <FleetInvitation key={item.id} item={item} reload={reload} />)}
+  {data?.canManageDrivers && <Title message={"Drivers"}/>}{data?.drivers.map(driver => <DriverAssignment key={driver.id + revision} driver={driver} trucks={data.vehicles} onSaved={() => { setRevision(value => value + 1); void reload(); }} />)}
+  {!!data && data.driverPage > 1 && <Button secondary message="Previous drivers" onPress={() => setPage(value => value - 1)} />}{!!data && data.driverPage < data.driverPageCount && <Button secondary message="More drivers" onPress={() => setPage(value => value + 1)} />}
+  <Modal visible={choosing} animationType="slide" onRequestClose={() => setChoosing(false)}><SafeAreaView style={{ flex: 1 }}><ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}><Title message={"Truck configuration"}/><Button secondary message="Close" onPress={() => setChoosing(false)} />{data?.configurations.map(item => <Pressable key={item.name} accessibilityRole="button" onPress={() => { setConfiguration(item.name); setChoosing(false); }} style={{ flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: 1, borderColor: '#cbdadb', borderRadius: 12, gap: 12 }}><Image source={{ uri: apiOrigin + item.image }} style={{ width: 90, height: 70 }} resizeMode="contain" /><Text style={{ flex: 1 }}>{item.name}</Text></Pressable>)}</ScrollView></SafeAreaView></Modal>
+ </Page>;
+}
+function DriverAssignment({ driver, trucks, onSaved }: { driver: Driver; trucks: Truck[]; onSaved: () => void }) {
+ const account = useAccount(); const [vehicleId, setVehicleId] = useState(driver.vehicleId), [capacity, setCapacity] = useState(driver.canManageCapacity), [tracking, setTracking] = useState(driver.canManageTracking), [busy, setBusy] = useState(false), [error, setError] = useState(''), [choosing, setChoosing] = useState(false);
+ const save = async () => { setBusy(true); setError(''); try { await account.request('/api/mobile/fleet', { action: 'ASSIGN_DRIVER', driverId: driver.id, vehicleId, canManageCapacity: capacity, canManageTracking: tracking }); onSaved(); } catch (error) { setError(error instanceof Error ? error.message : 'Could not save.'); } finally { setBusy(false); } };
+ const truck = trucks.find(item => item.id === vehicleId);
+ return <Card><Title>{driver.name}</Title><Copy>{driver.email}</Copy><ErrorText message={error} /><Button secondary label={truck ? `${truck.make} ${truck.model} · ${truck.plate}` : 'Assign a truck'} onPress={() => setChoosing(value => !value)} />
+  {choosing && <><Button secondary message="No truck" onPress={() => { setVehicleId(''); setChoosing(false); }} />{trucks.map(item => <Button key={item.id} secondary label={`${item.make} ${item.model} · ${item.plate}`} onPress={() => { setVehicleId(item.id); setChoosing(false); }} />)}</>}
+  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Copy message={"Update capacity"}/><Switch accessibilityLabel="Driver can update capacity" value={capacity} onValueChange={setCapacity} disabled={busy} /></View>
+  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Copy message={"Update tracking"}/><Switch accessibilityLabel="Driver can update tracking" value={tracking} onValueChange={setTracking} disabled={busy} /></View>
+  <Button message="Save assignment and access" onPress={save} busy={busy} /><DriverContact driver={driver} reload={async () => { onSaved(); }} /><WorkspaceSection message="Driver documents" icon="documents"><Documents embedded scope={{kind:'ENTITY',subjectKind:'DRIVER',id:driver.id}}/></WorkspaceSection>
+ </Card>;
+}

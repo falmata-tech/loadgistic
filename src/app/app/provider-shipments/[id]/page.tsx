@@ -1,4 +1,5 @@
 
+import {trackingNextStatuses} from '@/lib/tracking-progress.js';
 import {Text} from '@/components/localization';
 import Link from 'next/link';
 import {getTrackingRecovery} from '@/lib/lifecycle.js';
@@ -14,14 +15,13 @@ import { StatusPill } from '@/components/status-pill';
 import { ProviderTrackingControls } from '@/components/provider-tracking-controls';
 import {TrackingPartyForm} from '@/components/tracking-party-form';
 
-const transitions:Record<string,string[]>={CREATED:['TO_PICKUP','LOADING','ISSUE'],TO_PICKUP:['LOADING','ISSUE'],LOADING:['IN_TRANSIT','ISSUE'],IN_TRANSIT:['UNLOADING','ISSUE'],UNLOADING:['COMPLETED','ISSUE'],ISSUE:['TO_PICKUP','LOADING','IN_TRANSIT','UNLOADING']};
 export default async function ProviderShipmentPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser();
   if(!['TRANSPORTER','DRIVER'].includes(user.role))redirect('/app/home');
   const {id}=await params,query=await searchParams;
   const shipment:any=await getProviderShipment(user,id);
   if(!shipment)notFound();
-  const next=transitions[shipment.operational_status]||[];
+  const next=trackingNextStatuses(shipment.operational_status);
   const recovery=await getTrackingRecovery(user,shipment.id);
   return <div className="page"><PageHeader icon={PackageCheck} title={`Tracking · ${shipment.code}`} subtitle={`${shipment.origin} → ${shipment.destination}`} action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/><Text message="Tracking"/></Link>}/><Flash error={query.error} success={query.success}/>
     <section className="provider-shipment-summary">

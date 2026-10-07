@@ -382,3 +382,11 @@ Assignment and recovery corrections: Assign driver links in the capacity editor
 retain the current truck. Location/capacity HTTP operations have bounded waiting
 and report an ambiguous timeout without automatically repeating a possible write.
 This audit changes no owner/driver commercial authority or shipment permissions.
+
+## Related truck and driver controls — October 6 (in progress)
+
+Given an owner manages a truck or driver
+Then capacity and truck documents stay with the truck, and driver documents stay
+with driver assignment/contact controls. Expanding native controls retains drafts
+on collapse and does not cancel active saves. Web saves retain the allowed fleet
+page/driver context. This regrouping adds no operating permission or hosted change.

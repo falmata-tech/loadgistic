@@ -5,29 +5,25 @@ import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import {
   Boxes,
-  Building2,
-  CalendarClock,
   PanelLeftClose,
   PanelLeftOpen,
   Clock3,
   LocateFixed,
   MapPinned,
-  Phone,
   RefreshCw,
   Route,
   Search,
   SlidersHorizontal,
   Truck,
-  UserRound,
   X
 } from 'lucide-react';
 import React from 'react';
-import {loadCapacityMapWindow,preserveSelectedMapTruck} from '@/lib/capacity-map-loading.js';
+import {loadCapacityMapWindow,reconcileCapacityMapWindow} from '@/lib/capacity-map-loading.js';
 import { BUSINESS_SEARCH_PRIVACY_KM, obscureCoordinate } from '@/lib/location-privacy.js';
 import {CapacityConfigurationPicker} from './capacity-configuration-picker';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 import { PublicCapacityMap } from './public-capacity-map';
-import { TruckDocumentSummary } from './truck-document-summary';
+import { MapTruckDetails } from './map-truck-details';
 import {LoadingIndicator} from './loading-state';
 import {CapacitySearchResults,CapacityDocumentFilters} from './capacity-search-results';
 
@@ -71,8 +67,18 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const [controlsReady,setControlsReady]=React.useState(false);
   const drawerTrigger=React.useRef(null as HTMLButtonElement|null);
   const drawer=React.useRef(null as HTMLElement|null);
+  const resultsScroll=React.useRef(null as HTMLDivElement|null);
+  const savedResultsScroll=React.useRef(0);
+  function selectTruck(id:string|null){
+    if(id){if(!selectedId)savedResultsScroll.current=resultsScroll.current?.scrollTop||0;setSelectedId(id);setDrawerOpen(false);}
+    else closeTruck();
+  }
+  function closeTruck(){
+    setSelectedId(null);setDrawerOpen(true);
+    requestAnimationFrame(()=>{if(resultsScroll.current)resultsScroll.current.scrollTop=savedResultsScroll.current;drawer.current?.focus();});
+  }
   const swipeStart=React.useRef(null as {x:number;y:number}|null);
-  React.useEffect(()=>{setDrawerOpen(window.matchMedia('(min-width:761px)').matches||Boolean(query.q));setControlsReady(true);},[]);
+  React.useEffect(()=>{setDrawerOpen(!selectedId&&(window.matchMedia('(min-width:761px)').matches||Boolean(query.q)));setControlsReady(true);},[]);
   function closeDrawer(){setDrawerOpen(false);requestAnimationFrame(()=>drawerTrigger.current?.focus());}
   function openDrawer(){setDrawerOpen(true);requestAnimationFrame(()=>drawer.current?.focus());}
   function startSwipe(event:React.PointerEvent<HTMLElement>){
@@ -115,9 +121,9 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
           if(!response.ok)throw new Error('Capacity could not be loaded.');
           return response.json();
         },
-        onPage:(incoming:FeedResult['items'])=>{
+        onPage:(incoming:FeedResult['items'],state:{complete:boolean})=>{
           if(version!==generation.current)return;
-          setItems((current:FeedResult['items'])=>preserveSelectedMapTruck(current,incoming,selectedRef.current));
+          setItems((current:FeedResult['items'])=>reconcileCapacityMapWindow(current,incoming,selectedRef.current,state.complete));
         }
       });
     }catch(problem){
@@ -264,22 +270,23 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       <header className="capacity-drawer-heading" onPointerDown={startSwipe} onPointerUp={event=>finishSwipe(event,true)} onPointerCancel={()=>{swipeStart.current=null;}}>
         <div><h2><Text message="Find transport"/></h2></div><Localized as="button" copy={["aria-label"]} type="button" aria-label="Close filter drawer" onClick={closeDrawer}><PanelLeftClose aria-hidden="true"/></Localized>
       </header>
-      <div className="capacity-drawer-scroll">
+      <div ref={resultsScroll} className="capacity-drawer-scroll">
         {searchControls}
         <Localized as="section" copy={["aria-label"]} className="public-capacity-toolbar" aria-label="Capacity map location controls"><button type="button" className="button location-action" onClick={useMyLocation} disabled={locationState==='locating'}><LocateFixed aria-hidden="true"/>{locationActionLabel}</button><span className="public-location-note"><Text message="Your precise location remains on this device."/></span></Localized>
         {locationNotice?<small className={`capacity-location-status ${locationState==='ready'?'ready':'attention'}`} role="status" data-testid="visitor-location-state">{locationNotice}</small>:null}
         <CapacitySearchResults query={query} view={apiPath==='/api/shared-capacity'?'private':apiPath==='/api/admin/capacity-network'?'loadgistic':'open'} searchPath={searchPath}/>
 
       </div>
+
       <footer className="capacity-drawer-actions"><button type="button" className="capacity-filter-trigger" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Filters"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</button><Link href={searchPath} onClick={clearUnappliedFilters}><Text message="Clear all"/></Link></footer>
     </Localized>
     </form>
     <div className="capacity-drawer-handle" hidden={drawerOpen}>
-      <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={openDrawer}><PanelLeftOpen aria-hidden="true"/><Text message="Filters"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</button>
+      <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={selected?closeTruck:openDrawer}><PanelLeftOpen aria-hidden="true"/><Text message={selected?"Results":"Filters"}/>{!selected&&activeFilterCount?<span>{activeFilterCount}</span>:null}</button>
     </div>
-      <section id="capacity-map-view" className={`public-map-shell${selected?' has-selected-truck':''}`}>
-        <div className="public-map-canvas"><PublicCapacityMap items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.q)} onSelect={(id:string|null)=>{setSelectedId(id);if(id&&window.matchMedia('(max-width:760px)').matches)setDrawerOpen(false);}} onExplore={explore}/>{selected?<aside className="map-capacity-sheet" aria-label={`${selected.provider_name} truck summary`}><Localized as="button" copy={["aria-label"]} type="button" className="map-focus-exit" onClick={()=>setSelectedId(null)} aria-label="Close truck summary"><X aria-hidden="true"/></Localized><div className="map-truck-identity"><span className={`status ${selected.status==='PARTIAL'?'yellow':'green'}`}>{selected.status==='PARTIAL'?<Text message="Partial"/>:<Text message="Empty"/>}</span><strong>{selected.vehicle_make} {selected.vehicle_model}</strong><small>{selected.provider_name}</small></div><div className={`map-signal-age ${selected.capacity_confirmation_needed?'confirm':''}`}><CalendarClock aria-hidden="true"/><span><strong>{selected.capacity_updated_label||'Capacity update unavailable'}</strong>{selected.current_signal_geometry_visible!==false?<small>{selected.location_updated_label||'Location update unavailable'}</small>:null}{selected.capacity_confirmation_needed?<small><Text message="Confirm availability directly."/></small>:null}</span></div>{selected.current_signal_geometry_visible===false?<p className="map-private-signal-note"><MapPinned aria-hidden="true"/><span><strong><Text message="Regular service—not current location"/></strong><Text message="Call for current details or ask the Driver to share private capacity with your email."/></span></p>:null}<div className="public-truck-driver"><UserRound aria-hidden="true"/><span><strong>{selected.assigned_driver_first_name||'Driver not named'}</strong><small>{selected.driver_kind_label}{selected.assigned_driver_phone?` · ${selected.assigned_driver_phone}`:<Text message=" · Phone not published"/>}</small></span></div><div className="map-truck-documents"><TruckDocumentSummary label={selected.provider_organization_id?"Company documents":"Owner documents"} badges={selected.owner_verification_badges}/><TruckDocumentSummary label="Driver documents" badges={selected.driver_verification_badges}/><TruckDocumentSummary label="Truck documents" badges={selected.truck_verification_badges}/></div><div className="public-card-actions"><Link className="button" href={`/@${selected.provider_handle}`}><Building2 aria-hidden="true"/><Text message="Profile"/></Link>{selected.assigned_driver_phone?<a className="button secondary" href={`tel:${selected.assigned_driver_phone}`}><Phone aria-hidden="true"/><Text message="Call driver"/></a>:selected.contact_phone?<a className="button secondary" href={`tel:${selected.contact_phone}`}><Phone aria-hidden="true"/><Text message="Call"/></a>:null}</div>{feedback}</aside>:null}</div>
-        {!selected?feedback:null}
+      <section id="capacity-map-view" className="public-map-shell">
+        <div className="public-map-canvas"><PublicCapacityMap items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.q)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
+        {feedback}
       </section>
     </div>;
 }

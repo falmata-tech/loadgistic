@@ -17,11 +17,13 @@ test('active Verification and Billing routes use managed application ports',()=>
   assert.match(read('src/lib/billing.js'),/billing\/supabase\.js/);
 });
 
-test('managed private-file commands clean failed uploads and hide storage paths from queues',()=>{
+test('managed private-file commands use guarded cleanup and hide storage paths from queues',()=>{
   const verification=read('src/lib/verification/supabase.js');
   const billing=read('src/lib/billing/supabase.js');
-  assert.match(verification,/removePrivateUpload\(stored\.path\)/);
-  assert.match(billing,/removePrivateUpload\(stored\.path\)/);
+  assert.match(verification,/commitPrivateUpload\(stored,/);
+  assert.match(verification, /},removePrivateUpload\)/);
+  assert.match(billing,/commitPrivateUpload\(stored,/);
+  assert.match(billing, /},removePrivateUpload\)/);
   const migration=read('supabase/migrations/051_managed_verification_billing.sql');
   assert.match(migration,/revoke all on function public\.managed_verification_file/);
   assert.match(migration,/revoke all on function public\.managed_payment_proof_file/);

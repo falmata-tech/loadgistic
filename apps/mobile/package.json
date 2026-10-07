@@ -1,0 +1,62 @@
+{
+  "name": "@loadgistic/mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo/metro-runtime": "~57.0.16",
+    "@maplibre/maplibre-react-native": "11.5.0",
+    "@types/geojson": "^7946.0.16",
+    "expo": "57.0.27",
+    "expo-constants": "~57.0.21",
+    "expo-crypto": "~57.0.3",
+    "expo-dev-client": "~57.0.19",
+    "expo-document-picker": "~57.0.3",
+    "expo-file-system": "~57.0.7",
+    "expo-font": "~57.0.4",
+    "expo-image-picker": "~57.0.20",
+    "expo-linking": "~57.0.12",
+    "expo-location": "~57.0.20",
+    "expo-router": "~57.0.25",
+    "expo-secure-store": "~57.0.4",
+    "expo-sharing": "~57.0.22",
+    "expo-status-bar": "~57.0.1",
+    "lucide-react-native": "1.52.0",
+    "maplibre-gl": "6.13.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2",
+    "react-native-worklets": "0.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "@types/react-dom": "~19.2.3",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "preview:web": "LOADGISTIC_WEB_PREVIEW=1 EXPO_PUBLIC_API_URL=http://127.0.0.1:8084 expo start --web --localhost --port 8084",
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx expo-doctor",
+    "build:android:test": "npx eas-cli@24.10.0 build --platform android --profile preview",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "lint": "expo lint",
+    "audit:translations": "node --experimental-strip-types scripts/audit-translations.mjs",
+    "postinstall": "node scripts/fix-query-decoder.cjs"
+  },
+  "private": true,
+  "overrides": {
+    "query-string@7.1.3": {
+      "decode-uri-component": "0.5.0"
+    }
+  }
+}

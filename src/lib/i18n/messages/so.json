@@ -1272,5 +1272,16 @@
   "Verify your email once to view shared shipments. Tracking closes after 30 minutes without activity. Access ends 30 days after completion; the transporter retains shipment history.": "Hal mar xaqiiji iimaylkaaga si aad u aragto shixnadaha lagula wadaagay. Dabagalka waa la xirayaa 30 daqiiqo oo aan la adeegsan kadib. Gelitaanku wuxuu dhammaadaa 30 maalmood kadib marka shixnaddu gaarto; gaadiidleyguna wuxuu haynayaa taariikhda shixnadda.",
   "Verify your email to continue.": "Xaqiiji iimaylkaaga si aad u sii waddo.",
   "Verify your email again.": "Mar kale xaqiiji iimaylkaaga.",
-  "Tracking access changed. Verify your email again.": "Oggolaanshaha dabagalka waa isbeddelay. Mar kale xaqiiji iimaylkaaga."
+  "Tracking access changed. Verify your email again.": "Oggolaanshaha dabagalka waa isbeddelay. Mar kale xaqiiji iimaylkaaga.",
+  "Results": "Natiijooyinka",
+  "The transporter chose this location accuracy. This is not an exact or live position.": "Gaadiidleyga ayaa doortay aaggan qiyaasta ah. Ma aha goob sax ah ama goob si toos ah loola socdo.",
+  "This is regular service, not current availability. Confirm the truck and timing.": "Tani waxay muujinaysaa adeegga joogtada ah. Si toos ah u xaqiiji gaariga hadda la heli karo iyo waqtiga.",
+  "Map details": "Faahfaahinta khariidadda",
+  "Back to map": "Ku noqo khariidadda",
+  "Regular two-way service": "Adeeg joogto ah oo labada jiho ah",
+  "The outline marks the service area. These places define its boundary, not a trip.": "Xariiqdu waxay muujinaysaa aagga adeegga. Goobahani waa xuduudaha aagga, mana aha jid safar.",
+  "This route is served in both directions. Contact the transporter to confirm availability.": "Jidkan waxaa looga adeegaa labada jiho. La xiriir gaadiidleyda si aad u hubiso in gaari la heli karo.",
+  "Follow the route in the order shown. Contact the driver to confirm pickup, delivery and available space.": "Jidku wuxuu raacayaa sida goobaha loo kala hormariyey. Darawalka ka xaqiiji halka laga qaadayo, halka la geynayo iyo booska bannaan.",
+  "Regular service is not a current capacity update.": "Adeeg joogto ahi ma xaqiijinayo in hadda boos bannaan jiro.",
+  "Phone not published": "Lambarka telefoonka lama shaacin"
 }

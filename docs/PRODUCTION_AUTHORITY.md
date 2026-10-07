@@ -1,3 +1,40 @@
+## October 7 web and Expo testing release — execution authorized
+
+Latest owner instruction: “we need to get this app in the hands of people on Expo
+distribution … for testing and demo … let's go prod in both web and mobile”. This
+accepts the revised local driver Home with three right-side signal tasks and
+resumes the reviewed accumulated Loadgistic release. Preserve required CI,
+security, backup/restore, immutable artifact and monitored rollout checks.
+
+Targets remain Supabase tpwyyzoqijjmbvsmmvcm, Netlify site
+ dbb0fcec-9ec9-4511-9737-db0e32849af5 / loadgistic.com, and Expo
+@falmatad/loadgistic (a2d7e0a9-2fe4-4188-804e-40d8c3486ac7), Android package
+com.loadgistic.app. Expo internal Android APK distribution against the production
+web API is authorized, including project-scoped managed Android signing if a key
+is needed. Google Play publication remains deferred; internal testing is not a
+store release. There are no new hosted database migrations or Auth/SMTP/settings
+changes. Other projects and credentials remain out of scope. Deployment and APK
+availability must be independently verified before completion is reported.
+
+## October 6 web/mobile release requested — not yet deployed
+
+The owner approved the reviewed truck-detail layout and explicitly requested
+matching mobile UI plus web/mobile production rollout. This is fresh authority
+for the accumulated Loadgistic changes, distinct from the consumed October 5
+release below. It does not authorize other projects, hosted Auth/SMTP changes,
+privilege expansion, unrelated settings or skipping required evidence.
+
+Complete exact-candidate CI, security/backup/build/rollout checks before web
+promotion. Review EAS upload contents and independently bind falmatad's Loadgistic
+project before signing or distribution. Google Play setup remains deferred by the
+owner; do not claim store publication. Following Android system ANRs, the owner
+requested a localhost Expo browser preview for hands-on review. Browser checks
+prove shared screens and API flows, not Android device permissions or installation.
+Current evidence and remaining release gates are in docs/MOBILE_IMPLEMENTATION.md.
+Only the exact Expo project @falmatad/loadgistic was created and independently
+verified (a2d7e0a9-2fe4-4188-804e-40d8c3486ac7). No hosted database/settings or
+production deployment mutation, remote signing or distribution has been made.
+
 ## October 5 release completed
 
 The owner-authorized release is complete: application `fe47a09` is independently

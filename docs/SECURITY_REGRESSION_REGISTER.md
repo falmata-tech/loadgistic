@@ -340,3 +340,55 @@ seconds with 9.1.1, while 10.0.14 completes in under one second. All 24 focused
 email tests, isolated SMTP delivery and both desktop/phone real local OTP flows
 pass. Fresh audit has zero findings; quality passes 372 tests. Exact-candidate CI
 and production rollout remain outstanding. No external test email was sent.
+
+## NR-16 — Treat external native links as untrusted input
+
+The mobile dependency review found Router's transitive malformed-URI decoder
+advisory GHSA-vcc3-ghjq-m6fr. A compatibility check does not establish that runtime
+links are safe, and a forced major override can break the module contract.
+
+Validate bounded native intents before Router parses them, allow known routes and
+parameters only, reject malformed encoding/credentials/foreign origins and return
+canonical relative paths to avoid an extra decoding pass. This is not authorization:
+every protected screen/API must still verify its current session. Never log incoming
+URLs or suppress the underlying audit finding. Keep web and native exposure separate.
+
+Evidence: `apps/mobile/tests/native-link.test.mjs` includes malformed UTF-8, nested
+percent values through the installed parser, duplicate/extra parameters, foreign
+hosts and development-only launcher boundaries. See
+[dependency review](MOBILE_DEPENDENCY_REVIEW.md). Device tests and compatible
+upstream remediation have separate status in the mobile implementation log.
+Owner: mobile/release maintainer. Next: complete device checks and upstream review
+before signing/distribution; preserve an equivalent guard during rollback.
+
+## NR-15 — Preserve referenced files after uncertain save outcomes
+
+October 6 mitigation: shared upload commit handling now cleans only explicit
+PostgreSQL rejection codes and retains private objects on unknown outcomes. Web
+Tracking notification/cache failures run outside that cleanup boundary. Focused
+fault injection through verification/payment/profile adapters passes; no automatic
+write retries occur. Reference-aware orphan reconciliation and release verification
+remain outstanding. Evidence: `tests/private-upload-commit.test.mjs`.
+
+Source review during mobile integration identified cleanup that deletes newly stored
+objects on RPC errors without distinguishing definite rejection from a committed
+operation whose response was lost. This is an open data-integrity risk, not a
+reported production incident. Web Tracking also includes post-command work in its
+cleanup catch; shared adapters expose mobile to the same class of failure.
+
+Responsible role: storage/application maintainer. Next action and source evidence:
+[WEB-MOB-001](WEB_GAPS_FOUND_DURING_MOBILE.md#web-mob-001--file-cleanup-does-not-distinguish-an-uncertain-commit).
+Required negative evidence: inject commit-then-response-loss and post-commit
+failure; committed records must retain readable attachments, while definite
+rejections are cleaned safely. Add operation/reference reconciliation before
+claiming this prevention is implemented. Normal upload success tests are insufficient.
+
+### October 7 release dependency refresh
+
+The unchanged high-severity audit gate caught newly published advisories
+GHSA-wq5f-xc86-pv6w (sharp/librsvg) and GHSA-68fv-2mgg-jv7q (source-map-js).
+Pinned sharp 0.35.5 and source-map-js 1.2.2 remove those findings; Next remains
+15.5.25. Retain locked installs, a fresh audit immediately before release, and
+exact-candidate CI/build/runtime checks. No forced major upgrade or audit
+suppression was used. Local web audit reports zero findings; production status
+must be confirmed after publication.

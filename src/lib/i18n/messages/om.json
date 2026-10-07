@@ -1272,5 +1272,16 @@
   "Verify your email once to view shared shipments. Tracking closes after 30 minutes without activity. Access ends 30 days after completion; the transporter retains shipment history.": "Fe’umsa siif qoodame ilaaluuf imeelii kee yeroo tokko mirkaneessi. Daqiiqaa 30 yoo hin fayyadamne hordoffiin ni cufama. Fe’umsi erga xumuramee guyyaa 30 booda hayyamni ilaalu ni xumurama; geejjibaan seenaa fe’umsaa ni tursa.",
   "Verify your email to continue.": "Itti fufuuf imeelii kee mirkaneessi.",
   "Verify your email again.": "Imeelii kee irra deebi’ii mirkaneessi.",
-  "Tracking access changed. Verify your email again.": "Hayyamni hordoffii jijjiirameera. Imeelii kee irra deebi’ii mirkaneessi."
+  "Tracking access changed. Verify your email again.": "Hayyamni hordoffii jijjiirameera. Imeelii kee irra deebi’ii mirkaneessi.",
+  "Results": "Buʼaawwan",
+  "The transporter chose this location accuracy. This is not an exact or live position.": "Kun naannoo tilmaamaa geejjibaan filate dha. Bakka sirrii ykn yeroo ammaa kallattiin hordofamu miti.",
+  "This is regular service, not current availability. Confirm the truck and timing.": "Kun tajaajila idilee agarsiisa. Konkolaataan amma jiraachuu fi yeroo hojii kallattiin mirkaneeffadhaa.",
+  "Map details": "Odeeffannoo kaartaa",
+  "Back to map": "Gara kaartaa deebi’i",
+  "Regular two-way service": "Tajaajila idilee kallattii lamaan",
+  "The outline marks the service area. These places define its boundary, not a trip.": "Sararaan naannoo tajaajilaa agarsiisa. Bakkeewwan kun daangaa naannichaa agarsiisu malee karaa imalaa miti.",
+  "This route is served in both directions. Contact the transporter to confirm availability.": "Karaa kana irratti kallattii lamaan tajaajilli ni kennama. Konkolaataan jiraachuu mirkaneeffachuuf geejjibsiisaa qunnamaa.",
+  "Follow the route in the order shown. Contact the driver to confirm pickup, delivery and available space.": "Karaan kun tartiiba agarsiifameen deema. Bakka fe’umsaa, buufataa fi iddoo jiru mirkaneeffachuuf konkolaachisaa qunnamaa.",
+  "Regular service is not a current capacity update.": "Tajaajilli idilee jiraachuun yeroo ammaa iddoo fe’umsaa jiraachuu hin mirkaneessu.",
+  "Phone not published": "Lakkoofsi bilbilaa hin maxxanfamne"
 }

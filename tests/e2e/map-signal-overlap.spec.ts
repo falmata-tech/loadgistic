@@ -25,6 +25,7 @@ test('coincident closed areas and routes remain separately tappable through zoom
     await page.goto('/?q=overlap-renderer-fixture');
     await closeCapacityFilters(page);
     await page.locator('.capacity-truck-map-marker').click();
+    await closeCapacityFilters(page);
     await expect(page.locator('.map-regular-corridor')).toHaveAttribute('aria-label',/Test boundary/);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});
     const current=mode==='area'?'.map-service-area':'.map-current-route';
@@ -38,12 +39,10 @@ test('coincident closed areas and routes remain separately tappable through zoom
         await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
       }
       if(info.project.name.includes('mobile')){
-        // The document summary can cover the initial fit on a phone. Pan the
-        // boundary into the measured exposed strip, retaining the real card.
-        const map=await page.locator('.public-map-canvas').boundingBox(),card=await page.locator('.map-capacity-sheet').boundingBox(),line=await page.locator(current).boundingBox();
-        const identity=await page.locator('.map-truck-identity strong').boundingBox();
-        const start={x:identity.x+identity.width/2,y:identity.y+identity.height/2};
-        const dx=map.x+(card.x-map.x)/2-line.x,dy=map.y+map.height*.55-line.y-line.height/2;
+        // Collapse details and pan the boundary into the open map on a phone.
+        const map=await page.locator('.public-map-canvas').boundingBox(),line=await page.locator(current).boundingBox();
+        const start={x:map.x+map.width*.5,y:map.y+map.height*.5};
+        const dx=map.x+map.width*.35-line.x,dy=map.y+map.height*.55-line.y-line.height/2;
         const pane=page.locator('.leaflet-map-pane'),before=await pane.getAttribute('style');
         const touch=await page.context().newCDPSession(page);
         await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
@@ -67,23 +66,21 @@ test('coincident closed areas and routes remain separately tappable through zoom
         const point=await signal.evaluate((element:SVGPathElement)=>{
           const path=element as SVGPathElement,length=path.getTotalLength(),matrix=path.getScreenCTM()!;
           const map=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
-          const card=document.querySelector('.map-capacity-sheet')!.getBoundingClientRect();
           for(let i=0;i<300;i++){
             const raw=path.getPointAtLength(length*i/300).matrixTransform(matrix);
             const p={x:Math.round(raw.x),y:Math.round(raw.y)};
             if(p.x<map.left+15||p.x>map.right-15||p.y<map.top+15||p.y>map.bottom-15)continue;
-            if(p.x>=card.left&&p.x<=card.right&&p.y>=card.top&&p.y<=card.bottom)continue;
             if(document.elementFromPoint(p.x,p.y)===element)return{x:p.x,y:p.y};
           }
           return null;
         });
         expect(point,`${mode}: ${label} needs an exposed touch point`).toBeTruthy();
-        const box=await signal.boundingBox();expect(box).toBeTruthy();
-        const position={x:point!.x-box!.x,y:point!.y-box!.y};
-        if(info.project.name.includes('mobile'))await signal.tap({position});
-        else await signal.click({position});
-        const panel=page.getByRole('region',{name:'Selected map signal'});
-        await expect(panel.locator('article>small'),`${mode} zoom ${zoom}: ${label}`).toContainText(new RegExp(label,'i'));
+        // Use the measured viewport point directly: locator-relative SVG clicks
+        // may scroll a clipped path and invalidate its screen-space coordinates.
+        if(info.project.name.includes('mobile'))await page.touchscreen.tap(point!.x,point!.y);
+        else await page.mouse.click(point!.x,point!.y);
+        const panel=page.getByRole('dialog');
+        await expect(panel.locator('header>strong'),`${mode} zoom ${zoom}: ${label}`).toContainText(new RegExp(label,'i'));
         await panel.getByRole('button',{name:'Close map signal details'}).click();
         await signal.focus();await page.keyboard.press('Enter');await expect(panel).toBeVisible();
         await panel.getByRole('button',{name:'Close map signal details'}).click();

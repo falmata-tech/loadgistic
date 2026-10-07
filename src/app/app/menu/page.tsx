@@ -1,3 +1,4 @@
+import {redirect} from 'next/navigation';
 
 import {Text} from '@/components/localization';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ import { Activity, BadgeCheck, ClipboardCheck, CreditCard, Database, ExternalLin
 
 export default async function WorkspaceMenuPage(){
   const user=await requireUser(undefined,{allowLimited:true});
+  if(['TRANSPORTER','DRIVER'].includes(user.role))redirect('/app/more');
   const access=await getWorkspaceAccess(user);
   const provider=['TRANSPORTER','DRIVER'].includes(user.role);
   const administrator=user.role==='ADMIN';

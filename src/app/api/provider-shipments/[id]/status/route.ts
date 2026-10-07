@@ -1,3 +1,4 @@
+import { commitPrivateUpload } from '@/lib/private-upload-commit.js';
 import { NextRequest, NextResponse } from 'next/server.js';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth';
@@ -25,14 +26,14 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       upload=await storePrivateUpload(file,'tracking-proof');
     }
     const proof=upload?{path:upload.path,originalName:upload.originalName,mimeType:upload.mimeType}:null;
-    const result=await updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{
+    const result=await commitPrivateUpload(upload,()=>updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{
       locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),
       locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')
-    });
+    }),removePrivateUpload);
     if(result.status==='COMPLETED')await deliverPendingShipmentEmails(2);
     revalidatePath('/app/provider-shipments');
     revalidatePath(`/app/provider-shipments/${id}`);
     revalidatePath('/app/home');
     return redirectWith(request,returnTo,'success',result.status==='COMPLETED'?'Tracking complete. The customer record is queued for email delivery.':'Tracking status updated.');
-  }catch(error){if(upload?.path){try{await removePrivateUpload(upload.path);}catch{}}const returnTo=text(form,'returnTo')==='/app/home'?'/app/home':`/app/provider-shipments/${id}`;return redirectWith(request,returnTo,'error',errorMessage(error));}
+  }catch(error){const returnTo=text(form,'returnTo')==='/app/home'?'/app/home':`/app/provider-shipments/${id}`;return redirectWith(request,returnTo,'error',errorMessage(error));}
 }
