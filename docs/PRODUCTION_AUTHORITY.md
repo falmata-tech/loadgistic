@@ -1,4 +1,20 @@
-## October 7 web and Expo testing release — execution authorized
+## October 7 web and Expo testing release — completed
+
+The scoped owner-authorized rollout is complete. Web application `415cb7d` is
+verified live as deployment `6ac64a35243e4f0c807487b0` at loadgistic.com; exact CI
+`37626365763`, fresh backup/restore, security, immutable packaging and live checks
+pass. Expo internal Android build `544cc916-c058-4bca-85a0-72a4d4b4e981` is signed,
+downloadable, installed and cold-started without Metro. EAS records `74df968`; all
+upload inputs also match `415cb7d`. See MOBILE_IMPLEMENTATION.md for installation
+and device/store limits. No hosted migrations, Auth/SMTP/settings or customer
+mutations were included. The bounded pilot test session was closed.
+
+This release authority is consumed; owner-only defaults apply to new production
+operations. Google Play publication and unrelated signing/configuration remain
+outside this exception. An empty current Featured programme is recorded for
+investigation, not silently populated or waived.
+
+## October 7 web and Expo testing release — authorization record
 
 Latest owner instruction: “we need to get this app in the hands of people on Expo
 distribution … for testing and demo … let's go prod in both web and mobile”. This

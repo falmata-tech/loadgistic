@@ -1,10 +1,11 @@
 # Loadgistic mobile and monorepo readiness
 
-Prepared 2026-09-27; implementation status updated 2026-10-06. The native Expo
-application now exists under `apps/mobile`, with a Metro-dependent Android
-development build and local API adapters. See [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md)
-for the current evidence and unfinished work. It is not yet a complete, distributed
-phone APK. This document retains the planned full monorepo migration; the web
+Prepared 2026-09-27; implementation status updated 2026-10-07. The native Expo
+application under `apps/mobile` now has a signed standalone Android internal-test
+APK using the deployed production API. Installation and cold start passed on the
+Loadgistic emulator; physical-device acceptance and Google Play remain separate.
+See [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md) for the download, verified
+evidence and remaining limits. This document retains the planned full monorepo migration; the web
 application remains at its current root with an independent dependency graph.
 
 ## Recommendation

@@ -1,3 +1,41 @@
+## October 7 web production and Android internal release — verified
+
+Web application `415cb7ddbde4d643108bec2175fe9b256065861d` is live at
+https://loadgistic.com, published as Netlify deployment `6ac64a35243e4f0c807487b0`
+at 13:37:52 UTC. Exact-candidate CI `37626365763` passed validation, container,
+mobile boundaries and all four browser shards. Fresh encrypted backup, isolated
+restore at ledger 114, catalog/guard/spatial checks, immutable Linux packaging,
+compiled runtime and deployed desktop/phone checks passed. No hosted migration,
+Auth, SMTP, billing or other settings were changed. Rollback application deployment
+is `6ac37aebd908dd516d4b6152`; preserve the database and file history.
+
+Live checks cover public discovery, filters/Clear all, private-access entry,
+email-only login/Tracking, chat intake, all five languages and unchanged user text.
+The approved synthetic pilot login verifies workspace/account security, private
+document bytes, guest denial and caller-bound Data API guards. Twelve authenticated
+mobile reads passed and the test session was closed. Anonymous public mobile reads
+passed; protected workspace/private-capacity/Tracking reads returned 401.
+Evidence: `.local/release-web-20261007-gesture-publication-receipt.json`,
+`*-production-public-evidence.json`, `*-deployed-browser-evidence.json` and
+`.local/release-mobile-production-api-evidence.json`.
+
+Expo internal build `544cc916-c058-4bca-85a0-72a4d4b4e981` is FINISHED. The signed
+1.0.0/code 1 APK downloads successfully, installs and cold-starts with native
+MapLibre/public signals without Metro. The EAS source commit is `74df968`; all
+290 uploaded files also match final web commit `415cb7d`, whose subsequent changes
+are web-only or test/documentation corrections. Installation, sharing, checksum,
+device limits and the deferred Google Play work are in
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md). This is internal Android
+testing/demo distribution, not store publication or physical-phone certification.
+
+Today's public Featured endpoint returns 200 but `published: false` and zero
+showcases. This verifies an honest empty state, not a populated automatic programme.
+The cause is not established; record WEB-MOB-013 for roster/scheduler investigation.
+Do not fabricate slots or change production settings to make the demo look full.
+Existing upload-scanning, SMTP at-least-once, community tile-service and two known
+security WARN limits remain visible. The immediate uncertain-upload deletion repair
+is deployed; reference-aware orphan reconciliation remains open.
+
 ## October 7 signal gesture repair before rollout
 
 Revised CI 37580938507 passed validation, container, mobile and three browser

@@ -4,16 +4,24 @@ This is a credential-free owner handoff. Never put real secrets, customer data, 
 
 ## Release boundary
 
-Current verified release (2026-10-05): application `fe47a09` is live at
-https://loadgistic.com as deployment `6ac37aebd908dd516d4b6152`; hosted database
-ledger is 114. CI `37291784154`, fresh backup/restore/migration rehearsal,
-security and live desktop/phone checks passed. Email-only Tracking and its
-30-minute idle session are deployed. The owner accepted the local presentation
-and authorized this rollout. No hosted Auth/SMTP/settings change was included.
+Current verified release (2026-10-07): application `415cb7d` is live at
+https://loadgistic.com as deployment `6ac64a35243e4f0c807487b0`; hosted database
+ledger remains 114. CI `37626365763`, fresh protected backup/isolated restore,
+security, immutable Linux packaging and live desktop/phone/private-file checks
+passed. Twelve authenticated mobile reads and anonymous denial checks pass.
+The owner accepted the local presentation and authorized this rollout. No hosted
+migration, Auth/SMTP, billing or other settings change was included.
 
-The previous ready application deployment is `6ab3aaa9668f9644dcba97d8`; rollback
+Expo internal Android build `544cc916-c058-4bca-85a0-72a4d4b4e981` is downloadable
+and independently verified as signed, installed and standalone. It uses this
+production API. Tester instructions and physical-device/store limitations are in
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md). Google Play remains deferred.
+Today's Featured programme is unpublished/empty; investigate WEB-MOB-013 rather
+than counting the 200 empty response as automatic programme completion.
+
+The previous ready application deployment is `6ac37aebd908dd516d4b6152`; rollback
 must preserve the compatible database migrations and private-file history.
-Protected release evidence is `.local/release-web-20261005-final-*`. Existing
+Protected release evidence is `.local/release-web-20261007-gesture-*`. Existing
 pilot limitations below are not waived by this deployment. See
 [production authority](PRODUCTION_AUTHORITY.md) and [progress](PROGRESS.md).
 

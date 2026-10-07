@@ -27,8 +27,8 @@ Priorities below are proposed triage order, not measured incident severity.
 
 ## WEB-MOB-001 — File cleanup does not distinguish an uncertain commit
 
-**Status:** Immediate deletion risk repaired locally on October 6; reference-aware
-orphan reconciliation remains open. Not deployed.
+**Status:** Immediate deletion risk repaired and deployed October 7 in `415cb7d`
+(Netlify `6ac64a35243e4f0c807487b0`); reference-aware orphan reconciliation remains open.
 **Priority:** Investigate first. **Owner:** Storage/application maintainer.
 
 After storing a private attachment, verification, payment and profile-image adapters
@@ -60,6 +60,10 @@ successful commits and no automatic mutation retry. Evidence:
 Retained private orphans need reference-aware reconciliation; do not delete solely
 by age. Full API/rollout checks and reconciliation remain separate from these
 focused tests. See NR-15 in the [security regression register](SECURITY_REGRESSION_REGISTER.md).
+
+Release evidence: exact-candidate CI `37626365763`, fresh protected backup/restore,
+live private-file byte/guest-denial checks and compiled/deployed mobile API checks
+pass. This closes the immediate deletion repair, not the reconciliation follow-up.
 
 ## WEB-MOB-002 — Web upload size enforcement happens after multipart parsing
 
@@ -190,8 +194,8 @@ with the actual operating model. No legal text was changed in this mobile pass.
 
 ## WEB-MOB-007 — Dashboard More menu exposes too many unrelated destinations
 
-**Status:** Implemented and owner visually approved locally on web and native;
-release remains pending. **Priority:** Before broad provider onboarding. **Owner:** Product/UI maintainer.
+**Status:** Deployed October 7 in `415cb7d` after owner visual approval and CI
+`37626365763`. **Priority:** Before broad provider onboarding. **Owner:** Product/UI maintainer.
 
 The previous web phone More menu mixed personal settings, operating tools and
 business resources. The owner explicitly extended the native correction to web,
@@ -209,12 +213,13 @@ phone. `tests/workspace-form-navigation.test.mjs` rejects unsafe return targets;
 native navigation/document-scope tests verify role policy and kind-plus-ID scoping.
 Android Account draft retention/save and inline truck-document controls were checked.
 
-Next: review the concrete common-page previews with the owner, then required release
-gates and separately authorized deployment. This does not close the other six gaps.
+Release evidence: CI and live desktop/phone workspace checks pass; the signed
+native internal APK is distributed. This does not close the other six gaps or
+substitute for the remaining physical-device matrix.
 
 ## WEB-MOB-008 — Partial viewport refresh removes loaded map trucks
 
-**Status:** Fixed locally, focused regressions passed; not deployed.
+**Status:** Deployed October 7 in `415cb7d`; focused regressions and final CI pass.
 **Owner:** Map/UI maintainer. **Priority:** Before the next map release.
 
 `PublicCapacityFeed` replaced the whole displayed window on every paginated
@@ -235,7 +240,8 @@ still requires normal device/release verification.
 
 ## WEB-MOB-009 — Hover signal preview can steal the confirming tap
 
-**Status:** Fixed locally; desktop/phone interaction regressions passed, not deployed.
+**Status:** Deployed October 7 in `415cb7d`; desktop/phone interaction regressions
+and final CI pass. Final UI uses explicit info controls instead of hover previews.
 **Owner:** Map/UI maintainer. **Priority:** Before the next map release.
 
 The unpinned hover preview accepted pointer input. At an overlapping stroke point,
@@ -249,7 +255,7 @@ zoom levels. No geometry, server matching or capacity visibility rules changed.
 
 ## WEB-MOB-010 — Selected map bounds omit regular service
 
-**Status:** Corrected locally during the on-demand detail revision; not deployed.
+**Status:** Deployed October 7 in `415cb7d`; focused regression and final CI pass.
 **Owner:** Map/UI maintainer. **Priority:** Before the next map release.
 
 Web selection fitted only the reported location and current capacity route/area.
@@ -266,7 +272,8 @@ touch and keyboard signal selection remain regression requirements.
 
 ## WEB-MOB-011 — Exiting truck selection loses the previous camera
 
-**Status:** Fixed locally with desktop/phone browser evidence; not deployed.
+**Status:** Deployed October 7 in `415cb7d`; desktop/phone browser evidence and
+final CI pass. Physical native camera acceptance remains a separate check.
 **Owner:** Map/UI maintainer. **Priority:** Before the next map release.
 
 Selection fitted truck geometry without recording the prior discovery camera.
@@ -301,3 +308,27 @@ Do not mark the web parity gap closed based on native tests. A later web repair
 should preserve first-location setup, current assignment/duty checks, offsets,
 manual recovery and unchanged capacity/sharing. Test permission denial, late GPS,
 revocation, Off Duty and visible/hidden transitions before owner visual review.
+
+## WEB-MOB-013 — Current Featured programme is unpublished
+
+**Status:** Open; reproduced public production state, cause not established.
+**Owner:** Featured/operations maintainer. **Priority:** Before a populated Featured demo.
+
+On October 7 at 13:45 UTC, `/api/mobile/public/featured` returns 200 for that
+Ethiopia date and Pickup trucks theme, but `published: false`, with zero trucks,
+sponsors and programme entries. Both web and mobile use the same Featured port.
+The native UI correctly offers Find capacity; HTTP success does not demonstrate
+a populated programme or functioning automatic generation.
+
+Source `getSupabaseDailyFeaturedTrucks` returns this unpublished shape when no
+published day exists or its theme does not match the current programme. The
+15-minute managed dispatcher includes `prepareAutomaticFeaturedDays`; source
+presence is not evidence it ran successfully on the host. Do not infer whether
+the mode, eligibility, theme, credits or dispatcher caused this state from the
+public response. Evidence: `.local/release-mobile-featured-current-evidence.json`.
+
+Next: project-scoped read-only review of the Featured overview, current day/theme,
+eligible assigned pairs and recent worker outcomes. If a setting/data correction
+is needed, prepare its exact plan and get new owner authority; the October 7
+release grants no unrelated configuration mutation. Verify an actual populated
+web/native programme plus exclusion and non-repeat behavior before closure.

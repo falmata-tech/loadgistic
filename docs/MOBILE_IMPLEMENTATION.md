@@ -1,4 +1,73 @@
-## Current step: map-dominant driver Home — October 6
+## Current release: standalone Android internal testing — October 7
+
+The web and mobile internal release is verified. This section supersedes the dated
+"not deployed", "Metro required" and build-pending notes below; historical device
+checklists are evidence limits, not claims that every physical workflow passed.
+Admin, staff and brokerage management remain web-only.
+
+- [x] Owner accepted the simplified driver Home and requested web/Expo publication.
+- [x] Mobile 92 tests, lint/typecheck, Doctor 21/21 and Android export pass.
+- [x] Final web commit `415cb7d`, CI `37626365763`, protected backup/isolated restore,
+  security, immutable build and live desktop/phone/private-file checks pass.
+- [x] Exact Expo account/project, upload exclusions and signed standalone APK verified.
+- [x] Signed APK installed and cold-started on Loadgistic_Pixel_API_35; native map and
+  public signals rendered without a Metro URL. Production mobile API checks pass.
+- [ ] Physical-phone GPS/movement, OS interruption/battery and full device workflow
+  acceptance. Emulator simulation is not physical travel or background tracking.
+- [ ] Google Play account/testing track/store review, explicitly deferred by owner.
+
+### Install and invite Android testers
+
+Share this [Expo installation page](https://expo.dev/accounts/falmatad/projects/loadgistic/builds/544cc916-c058-4bca-85a0-72a4d4b4e981)
+or the [direct signed APK](https://expo.dev/artifacts/eas/lp_Znck4miw4QQecunzfdQibDC6zOk7dsYTTEBC2cZs.apk).
+Open the link on Android, download the APK, and allow installation from the browser
+when Android asks. Open Loadgistic and use the normal email-code login. Expo Go and
+a local development server are unnecessary. Turn the browser's installation
+permission off afterward. This build uses real https://loadgistic.com data:
+use owner-designated demo accounts and synthetic requests, not customer credentials
+or documents. Staff tools remain at the web dashboard.
+
+Test public map/search/filter/select/close, Marketplace/My workspace switching,
+email login, assigned-truck space/routes/location, fleet permissions, Tracking
+recipient access/status/private photo, private capacity and chat history/end.
+Report screen, action, expected/actual result and phone/Android version; omit OTPs,
+credentials and private files. Invite by sharing the link; no unsolicited invitations
+were sent. Google Play distribution is a later, separately authorized task.
+
+Local installer: `.local/loadgistic-1.0.0-preview.apk` (152,343,233 bytes).
+SHA-256: `03b7206eccec3696e4fbd8814bbcb1c1a5ecccee585fa1ae8444e761cdabefbd`.
+EAS build `544cc916-c058-4bca-85a0-72a4d4b4e981`, preview/INTERNAL,
+@falmatad/loadgistic, project `a2d7e0a9-2fe4-4188-804e-40d8c3486ac7`, package
+`com.loadgistic.app`, version 1.0.0/code 1. EAS records source `74df968`; all 290
+upload files are byte-identical to final deployed web commit `415cb7d`.
+Evidence: `.local/release-mobile-eas-final-upload-evidence.json`,
+`.local/release-mobile-apk-evidence.json`, `.local/mobile-standalone-cold-start.png`.
+The saved EAS artifact expiry is October 21; retain the protected local APK and
+refresh the distribution link before a later test cohort.
+
+Native local GPS/save/readback and actual Android DocumentPicker → Tracking proof
+upload → private proof reopen passed, with `.local/mobile-native-proof-evidence.json`
+and the inspected `.local/mobile-native-proof-opened.png`. Final live API checks
+verify twelve authenticated read endpoints, public content and guest denials; they
+do not prove every production mutation from a physical phone. The test session
+was closed. Today Featured is unpublished/empty (WEB-MOB-013), not populated proof.
+
+After publication, one controlled restart of this same preserved AVD booted and
+opened the installed app, but UIAutomator timed out and subsequent foreground
+validation failed. No stale tap or screenshot was accepted. This repeats the
+recorded emulator infrastructure instability; retain the earlier signed cold-start
+evidence and leave the full final native interaction matrix unverified.
+
+Capacity location refresh is foreground-only, at ten-minute intervals on Home or
+Capacity; edit/blur/lock/Off Duty/revocation stop it. No background location service
+is claimed. The APK excludes background-location/microphone/media-library access;
+Expo dependencies add CAMERA/SYSTEM_ALERT_WINDOW and legacy storage permissions
+(storage max SDK 32). Review unused permissions before Play publication. Mobile's
+27 reviewed build-tool advisories remain recorded; the runtime assessment passes.
+Web audit has zero findings. Upload scanning, SMTP delivery and community tiles
+retain their existing pilot limits. Do not label this unrestricted launch readiness.
+
+## Previous step: map-dominant driver Home — October 6
 
 Implemented the owner's map-first Home with a compact assigned-truck/status row.
 Three small controls float vertically on the right: **Available space** manages
