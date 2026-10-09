@@ -796,7 +796,7 @@ test('assigned Driver shares only an approximate location during travel',async({
   await context.setGeolocation({latitude:9.03,longitude:38.76});
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/provider-shipments/new');
-  await expect(page.getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
+  await expect(page.locator('form.form-card').getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
   await page.getByLabel('Cargo summary').fill('Workshop steel inputs');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
@@ -831,7 +831,7 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
   await context.setGeolocation({latitude:9.07,longitude:38.76});
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/provider-shipments/new');
-  await expect(page.getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
+  await expect(page.locator('form.form-card').getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
   await page.getByLabel('Cargo summary').fill('Fabricated window frames');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Bishoftu',/Bishoftu, Ethiopia/i);

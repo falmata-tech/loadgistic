@@ -59,7 +59,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await expect(page.getByText('Share with Loadgistic').first()).toBeVisible();
   const shareEmail=page.getByLabel('Share with an email').first();
   await shareEmail.fill(sharedEmail);
-  await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Name or company',{exact:true}).fill('Synthetic partner');
+  await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Person or company name',{exact:true}).fill('Synthetic partner');
   await shareEmail.locator('xpath=ancestor::form[1]').getByRole('button',{name:'Add access'}).click();
   await expect(page.getByText('Capacity access added.')).toBeVisible();
 

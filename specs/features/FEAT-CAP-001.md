@@ -11,6 +11,14 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+### Scenario: fleet-managed drivers can reach duty controls on a phone
+
+Given a company driver cannot edit capacity and uses the location/duty panel
+When the phone's fixed workspace navigation is visible
+Then the panel scrolls normally and its final duty action remains reachable
+above the navigation, with the existing permissions and location prerequisites.
+Do not apply the fixed-height map container to this non-map panel.
+
 ### Scenario: map overview keeps load preferences in details
 
 Given public or private capacity discovery renders web or mobile markers

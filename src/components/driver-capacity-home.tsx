@@ -56,7 +56,7 @@ const current = capacities[0];
   const locationArea=locationTime===driverFix?.updatedAt?driverFix?.area:current?.location_area;
   const restricted=access?.kind==='COMPANY'&&!access.can_manage_capacity;
   if(!vehicles.length&&access?.kind==='SELF_MANAGED')return <div className="page capacity-home-page"><section className="driver-empty-fleet"><Truck aria-hidden="true"/><div><h1><Text message="Add your first truck"/></h1><p><Text message="Register the truck you control, then publish its capacity and approximate location."/></p></div><Link className="button success" href="/app/fleet/new"><Plus aria-hidden="true"/><Text message="Add truck"/></Link></section></div>;
-  return <div className="page capacity-home-page">
+  return <div className={`page ${restricted?'capacity-restricted-home-page':'capacity-home-page'}`}>
     <h1 className="sr-only"><Text message="Capacity management"/></h1>
     {query.error?<div className="alert error capacity-home-error" role="alert"><Text message={query.error}/></div>:null}
     <Localized as="section" copy={["aria-label"]} className="driver-home-section driver-capacity-workspace" aria-label="Capacity management">

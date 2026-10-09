@@ -1,3 +1,4 @@
+import {chooseDate} from './date-picker-helper';
 import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import type {Page} from 'playwright-core';
@@ -13,13 +14,13 @@ test('truck document alternatives submit private evidence and show only its revi
   truckId=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Home',model:'Account',plate:`DOC-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}})).id;
   await page.goto('/login');const form=page.getByTestId('email-code-request-form');
   await form.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();await form.getByRole('button',{name:'Email me a code'}).click();
-  await expect(page.getByTestId('email-code-form')).toBeVisible();await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
+  await expect(page.getByTestId('email-code-form')).toBeVisible({timeout:15000});await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
   await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForURL(/\/app\/home/);
   await page.goto(`/app/fleet/${truckId}`);await page.locator('details.workspace-related-section>summary').filter({hasText:'Truck documents'}).click();
   const subject=page.locator('select[id$="-verification-subject"]'),type=page.locator('select[name=verificationType]');
   await expect(subject).toBeEnabled();await expect(subject).toHaveValue(`VEHICLE:${truckId}`);
   await expect(type.locator('option')).toHaveCount(2);await type.selectOption('VEHICLE_AUTHORIZATION');
-  await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(truckId);await page.getByLabel('Permission expires').fill('2099-01-01');
+  await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(truckId);await chooseDate(page,'Permission expires',new Date(Date.now()+60*86400000).toISOString().slice(0,10));
   await page.getByLabel('Document name',{exact:true}).fill('Home');
   // A user's truck make/model and document title match English UI words deliberately.
   // They must remain unchanged when the interface language switches.

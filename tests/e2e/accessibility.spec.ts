@@ -1,20 +1,16 @@
 import {openCapacityFilters} from './capacity-drawer-helper';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import {auditLogin} from './audit-helpers';
 
 type Page = any;
-
-const password = 'Loadgistic123!';
 
 test.setTimeout(120_000);
 
 async function login(page: Page, email: string, destination = '/app/home') {
-  await page.goto('/login');
-  const fixtureLogin=page.locator('details.auth-fixture-login');
-  await fixtureLogin.locator('summary').click();
-  await fixtureLogin.getByLabel('Email').fill(email);
-  await fixtureLogin.getByLabel('Password').fill(password);
-  await fixtureLogin.getByRole('button', { name: 'Log in' }).click();
+  // This suite tests workspace accessibility, not the optional fixture widget.
+  // Use an actual caller-bound managed session, as the workflow suites do.
+  await auditLogin(page,email);
   await expect(page).toHaveURL(new RegExp(destination.replaceAll('/', '\\/')));
 }
 
@@ -140,6 +136,7 @@ test('transporter and Driver workspaces have no serious accessibility violations
   await login(page, 'transporter@loadgistic.local');
   for (const route of ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/company-page', '/app/verification', '/app/support', '/app/more', '/app/menu']) {
     await page.goto(route);
+    if(route==='/app/menu')await expect(page).toHaveURL(/\/app\/more$/,{timeout:20000});
     await expectAccessible(page, `fleet transporter ${route}`);
   }
 
@@ -147,6 +144,7 @@ test('transporter and Driver workspaces have no serious accessibility violations
   await login(page, 'driver@loadgistic.local');
   for (const route of ['/app/home', '/app/provider-shipments', '/app/verification', '/app/support', '/app/more', '/app/menu']) {
     await page.goto(route);
+    if(route==='/app/menu')await expect(page).toHaveURL(/\/app\/more$/,{timeout:20000});
     await expectAccessible(page, `self-managed Driver ${route}`);
   }
 });

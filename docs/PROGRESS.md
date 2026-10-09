@@ -1,3 +1,25 @@
+## October 9 phone workflow follow-up — verified locally; rollout pending
+
+CI 37878824597 confirmed the database/domain/scale, container and native boundaries
+but rejected obsolete browser selectors and a 32px phone truck-modal overflow.
+The corrected switch, assigned-truck form, named contacts, calendar and private
+documents pass through actual desktop/phone workflows. Phone modal spacing now
+fits the approved composition while retaining text, evidence and 44px actions.
+
+The complete phone fleet workflow found the non-map, owner-managed duty panel
+inheriting the fixed map container, hiding Off Duty under navigation. It now uses
+normal page scrolling. The regression verifies the action is above navigation,
+then saves duty/location, reassigns and removes the Driver. Workspace accessibility
+also passes after awaiting the actual Account redirect and using real managed
+sessions instead of relying on the optional local fixture widget.
+
+Standalone Expo build d1f893c2-556f-4f8f-9920-800f674d2f7c is finished: 1.0.2/code 3,
+com.loadgistic.app, signature verified against the existing installation. Subsequent
+follow-up changes touch only web/spec/browser files; prove all 353 native upload
+inputs match the final candidate before distributing this APK. Final exact-source
+CI, new web packaging, matched approved SQL/flag, live postchecks and installed
+startup remain required. No production write has occurred.
+
 ## October 8 final browser gate follow-up — in progress
 
 Candidate `8028574` passed validation, container and native boundaries, but full

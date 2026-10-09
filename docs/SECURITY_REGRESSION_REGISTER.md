@@ -691,3 +691,17 @@ denial, privacy, history and completion assertions. The SQL, domain, scale and
 native boundaries remain required alongside full desktop/phone CI.
 **Owner:** workflow author and release owner. **Next:** retain exact-candidate
 browser results and update fixtures together with future contract changes.
+
+## NR-22 — A non-map driver panel inherits a fixed map viewport
+
+**Cause:** The fleet-managed location/duty panel used the same fixed-height,
+overflow-hidden class as a map. Its final Off Duty action was covered by phone
+navigation, so a valid server command was unreachable.
+**Control:** Choose the container from the rendered layout. Non-map panels use
+normal scrolling and reserve navigation clearance; map panels retain their map
+viewport. Check the last primary action after role/permission changes, including
+its actual bounds and save, not just its presence in the DOM.
+**Evidence:** FEAT-CAP-001 and the complete desktop/phone fleet-onboarding workflow;
+the phone regression checks clearance, 44px height, saved duty and revoked access.
+**Owner:** provider workflow author. **Next:** retain complete candidate CI and
+live/installed verification; keep native/web layout parity audits separate.

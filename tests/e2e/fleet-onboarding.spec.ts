@@ -136,7 +136,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
       const denied=await driverPage.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:truckId,status:'OFF_DUTY'}});
       expect(denied.status()).toBe(400);expect(await denied.json()).toEqual({error:'You do not have permission to perform that action.'});
       await driverPage.goto('/app/provider-shipments/new');
-      if(trackingAllowed)await expect(driverPage.getByRole('combobox',{name:/Truck/})).toBeVisible();
+      if(trackingAllowed)await expect(driverPage.locator('input[name=vehicleId]')).toHaveValue(truckId);
       else{
         await expect(driverPage).toHaveURL(/\/app\/provider-shipments\?error=/);
         const rejected=await driverPage.request.post('/api/provider-shipments',{form:{vehicleId:truckId,cargoSummary:'Denied test',customerEmail:driverEmail}});
@@ -206,7 +206,8 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.screenshot({path:info.outputPath('new-driver-published-capacity.png')});
     await permissions(true,true);
     await driverPage.goto('/app/provider-shipments/new');
-    await expect(driverPage.getByRole('combobox',{name:/Truck/})).toBeVisible();
+    await expect(driverPage.locator('input[name=vehicleId]')).toHaveValue(truckId);
+    await expect(driverPage.getByRole('combobox',{name:/Truck/})).toHaveCount(0);
     await driverPage.goto('/app/network');
     await expect(driverPage.getByRole('button',{name:'Add access',exact:true})).toBeVisible();
 
@@ -265,7 +266,15 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     }).toBe(true);
     await page.screenshot({path:info.outputPath('owner-published-driver-location.png'),fullPage:true});
     await driverPage.reload();
-    await driverPage.getByRole('button',{name:'Off Duty',exact:true}).click();
+    const offDuty=driverPage.getByRole('button',{name:'Off Duty',exact:true});
+    await offDuty.scrollIntoViewIfNeeded();
+    if(info.project.name.includes('mobile')){
+      const action=await offDuty.boundingBox(),navigation=await driverPage.getByRole('navigation',{name:'Mobile navigation'}).boundingBox();
+      expect(action).not.toBeNull();expect(navigation).not.toBeNull();
+      expect(action!.y+action!.height).toBeLessThanOrEqual(navigation!.y);
+      expect(action!.height).toBeGreaterThanOrEqual(44);
+    }
+    await offDuty.click();
     await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeDisabled();
     await expect(driverPage.getByText('Refresh your truck location before marking it Available.')).toBeVisible();
     await driverPage.getByRole('button',{name:'Refresh truck location',exact:true}).click();

@@ -3740,3 +3740,11 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 .network-add-contact{flex-wrap:wrap}.network-add-contact label{min-width:min(100%,220px)}.network-access-list article>div{min-width:0;overflow-wrap:anywhere}.network-contact-edit summary{cursor:pointer;color:var(--teal,#0d6b6e);font-weight:700}.network-contact-edit form{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}.network-contact-edit label{display:grid;gap:.3rem;flex:1;min-width:0}.network-contact-edit input{width:100%;min-width:0}
 
 .truck-inspection-tags{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:.7rem;line-height:1.4;color:#526875}
+/* Keep the approved composition inside a phone map after adding sharing tags.
+   Text sizes and the 44px action targets stay the same. */
+@media(max-width:760px){
+ .capacity-info-card.truck .capacity-info-content{padding-top:6px;padding-bottom:6px}
+ .capacity-info-content .truck-inspection{gap:4px}
+ .truck-inspection-people{padding-top:2px;padding-bottom:2px}
+ .truck-inspection-identity h3{margin-top:3px;margin-bottom:1px}
+}

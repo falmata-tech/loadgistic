@@ -1279,3 +1279,11 @@ through Operations; guest access ends and history remains. Root quality and
 the final 118-test native types/lint/translation/export/runtime audit pass.
 Full exact-source desktop/phone CI and hosted/installed-artifact postchecks
 remain required; these local results do not claim a production rollout.
+
+October 9 follow-up: corrected desktop/phone navigation, private named sharing,
+assigned-truck Tracking, and truck-document calendar workflows pass. Normal and
+long phone truck modals pass the unchanged bounds/touch assertions. The full phone
+fleet workflow proves duty-button navigation clearance and saves/reassignment/
+revocation (FEAT-CAP-001, NR-22). All transporter/driver workspace serious-accessibility
+checks pass with a real managed session and completed Account redirects. Final
+candidate CI and hosted/installed postchecks remain pending.

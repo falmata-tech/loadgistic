@@ -407,3 +407,13 @@ revocation, durable delivery/deduplication, private lock-screen copy and tap
 reauthorization before credentials/build/testing. Google Play registration alone
 is not push setup, store signing or device delivery evidence. Keep this separate
 from Support/Brokerage chat authorization and staff’s web-only restriction.
+
+October 9 follow-up: the requested existing Support/Brokerage and shipment-owner
+handover push paths are now implemented locally (FEAT-NOT-001), with installation/
+recipient binding, opt-in, durable outbox, Expo ticket/receipt handling, dedupe,
+generic notification copy and tap reauthorization. The exact supplied FCM V1 key
+is associated only with Loadgistic. Android 1.0.2/code 3 is built and signed;
+matched hosted rollout and physical closed-phone acceptance remain pending.
+Direct visitor-to-transporter inquiries are still absent and were not invented.
+The restricted web driver's duty-action obstruction is fixed under NR-22; the
+separate map-presentation parity item above remains on its documented backlog.
