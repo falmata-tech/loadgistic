@@ -1,4 +1,5 @@
 import {createClient} from '@supabase/supabase-js';
+import {readFileSync} from 'node:fs';
 
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
@@ -50,7 +51,7 @@ const created=await tracking.createProviderShipment(driver,{
   vehicleId:driverWorkspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,
   cargoSummary:'Managed Tracking verification cargo',customerEmail:'tracking-owner@example.test',
   additionalRecipientEmails:['tracking-party@example.test'],
-  trackingMode:'LOCATION_AND_STATUS'
+  trackingMode:'LOCATION_AND_STATUS',expectedDeliveryDate:new Date(Date.now()+86400000).toISOString().slice(0,10)
 });
 if(!created.id||!/^LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/.test(created.trackingCode))throw new Error('SUPABASE_TRACKING_VERIFY_CREATE_FAILED');
 const {data:storedShipment,error:storedError}=await service.from('provider_shipments')
@@ -87,6 +88,7 @@ const unlocked=await tracking.verifyProviderTrackingOtp(
   'tracking-owner@example.test',created.trackingCode,ownerChallenge.challengeId,ownerChallenge.accessCode
 );
 if(unlocked.id!==created.id||unlocked.recipientRole!=='OWNER'||!unlocked.recipientDigest)throw new Error('SUPABASE_TRACKING_VERIFY_UNLOCK_FAILED');
+const ownerVerifiedAt=Date.now();
 const partyChallenge=await tracking.requestProviderTrackingOtp('tracking-party@example.test',created.trackingCode);
 const partyAccess=await tracking.verifyProviderTrackingOtp(
   'tracking-party@example.test',created.trackingCode,partyChallenge.challengeId,partyChallenge.accessCode
@@ -116,9 +118,19 @@ await tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP','Going
 let guest=await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest);
 if(!guest?.current_location||guest.current_location.location_precision_km!==10)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_LOCATION_MISSING');
 if(JSON.stringify(guest).includes('tracking-owner@example.test')||'assigned_driver_user_id' in guest)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_SECRET_LEAK');
-await tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading');
+const proofObject=`tracking-proof/${created.id}/local-verification.jpg`;
+const proofBytes=readFileSync('public/vehicle-configurations/cargo-van.jpg');
+const {error:proofUploadError}=await service.storage.from('shipment-proof').upload(proofObject,proofBytes,{contentType:'image/jpeg'});
+if(proofUploadError)throw new Error('SUPABASE_TRACKING_VERIFY_PROOF_UPLOAD_FAILED');
+const proof={path:`supabase://shipment-proof/${proofObject}`,originalName:'local-verification.jpg',mimeType:'image/jpeg'};
+await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading'),/TRACKING_HANDOVER_PROOF_REQUIRED/);
+await tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading',proof);
 guest=await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest);
-if(guest.current_location!==null)throw new Error('SUPABASE_TRACKING_VERIFY_LOCATION_STATE_LEAK');
+if(!guest.current_location||guest.current_location.location_precision_km!==10)throw new Error('SUPABASE_TRACKING_VERIFY_LOADING_LOCATION_MISSING');
+const loadingEvent=guest.events.find(event=>event.status==='LOADING');
+const loadingFile=await tracking.readProviderTrackingProof(null,created.id,loadingEvent.id,unlocked.recipientDigest);
+if(!loadingFile?.bytes.equals(proofBytes))throw new Error('SUPABASE_TRACKING_VERIFY_PROOF_READ_FAILED');
+if(await tracking.readProviderTrackingProof(owner,created.id,loadingEvent.id)!==null)throw new Error('SUPABASE_TRACKING_VERIFY_CROSS_PROVIDER_PROOF_LEAK');
 await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'IN_TRANSIT','',{
   path:'supabase://shipment-proof/tracking-proof/test.jpg',originalName:'test.jpg',mimeType:'image/jpeg'
 }),/PROOF_NOT_ALLOWED_FOR_STATUS/);
@@ -131,8 +143,15 @@ const throttled=await tracking.updateProviderShipmentLocation(driver,created.id,
   locationPrecisionKm:20,locationSource:'DEVICE_OBSCURED'
 });
 if(throttled.reason!=='THROTTLED')throw new Error('SUPABASE_TRACKING_VERIFY_LOCATION_THROTTLE_FAILED');
-await tracking.updateProviderShipmentStatus(driver,created.id,'UNLOADING','Unloading');
-await tracking.updateProviderShipmentStatus(driver,created.id,'COMPLETED','Complete');
+await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'UNLOADING','Unloading'),/TRACKING_HANDOVER_PROOF_REQUIRED/);
+await tracking.updateProviderShipmentStatus(driver,created.id,'UNLOADING','Unloading',proof);
+await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'COMPLETED','Complete'),/TRACKING_OWNER_APPROVAL_REQUIRED/);
+await expectCode(tracking.approveProviderHandover(created.id,unlocked.recipientDigest,Date.now()-300001),/TRACKING_SESSION_EXPIRED/);
+await expectCode(tracking.approveProviderHandover(created.id,partyAccess.recipientDigest,Date.now()),/TRACKING_APPROVAL_FORBIDDEN/);
+const approved=await tracking.approveProviderHandover(created.id,unlocked.recipientDigest,ownerVerifiedAt);
+if(!approved.approved)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_APPROVAL_FAILED');
+const completedShipment=await tracking.getProviderShipment(driver,created.id);
+if(completedShipment.operational_status!=='COMPLETED'||!completedShipment.handover_approved_at)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_APPROVAL_NOT_STORED');
 
 await expectCode(tracking.unlockProviderReview(created.id,created.trackingCode),/REVIEW_NOT_ALLOWED/);
 const reviewGrant=await tracking.unlockProviderReview(created.id,reviewAccessCode(created.id));
@@ -170,3 +189,4 @@ if(retainedRecipients.count!==0||retainedOtps.count!==0)throw new Error('SUPABAS
 const afterDemand=await service.from('shipments').select('id',{count:'exact',head:true});
 if(afterDemand.error||afterDemand.count!==beforeDemand.count)throw new Error('SUPABASE_TRACKING_VERIFY_DEMAND_MUTATED');
 process.stdout.write('Supabase provider Tracking recipients, email OTP, revocation, location, review, delivery, and cleanup checks passed.\n');
+// The disposable stack retains proof bytes with its tested history until teardown.

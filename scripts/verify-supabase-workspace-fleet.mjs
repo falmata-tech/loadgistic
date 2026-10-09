@@ -39,7 +39,7 @@ const {data:independent,error:independentError}=await service.from('provider_pro
   .select('id,user_id').not('user_id','is',null).limit(1).maybeSingle();
 if(independentError||!independent?.user_id)throw new Error('SUPABASE_WORKSPACE_FLEET_INDEPENDENT_ACTOR_MISSING');
 const createdVehicleIds=[];
-for(const [actor,expectedOwner] of [[owner,{organization_id:owner.organizationId,provider_profile_id:null}],[{id:independent.user_id},{organization_id:null,provider_profile_id:independent.id}]]){
+for(const [actor,expectedOwner] of [[owner,{organization_id:owner.organizationId,provider_profile_id:null}]]){
   const created=await createSupabaseProviderVehicle(actor,{
     make:'Test',model:'Verifier',cargoConfiguration:'Cargo van',plate:`VERIFY-${createdVehicleIds.length+1}`
   });
@@ -54,6 +54,9 @@ for(const [actor,expectedOwner] of [[owner,{organization_id:owner.organizationId
   const {count:assignmentCount,error:assignmentError}=await service.from('driver_vehicle_assignments').select('id',{count:'exact',head:true}).eq('vehicle_id',created.id);
   if(capacityError||assignmentError||capacityCount!==0||assignmentCount!==0)throw new Error('SUPABASE_WORKSPACE_FLEET_REGISTRATION_INFERRED_STATE');
 }
+await expectRejected(()=>createSupabaseProviderVehicle({id:independent.user_id},{
+  make:'Test',model:'Denied extra truck',cargoConfiguration:'Cargo van',plate:'DENIED-INDEPENDENT',useBasis:'OWNED'
+}),'SINGLE_TRUCK_LIMIT');
 await expectRejected(()=>createSupabaseProviderVehicle(companyDriver,{make:'Test',model:'Denied',cargoConfiguration:'Cargo van',plate:'DENIED'}),'FORBIDDEN');
 await expectRejected(()=>createSupabaseProviderVehicle(owner,{make:'Test',model:'Invalid',cargoConfiguration:'Imaginary truck',plate:'INVALID'}),'INVALID_VEHICLE_CONFIGURATION');
 const tractorConfigurations=[

@@ -3,7 +3,7 @@ id: FEAT-TRK-001
 title: Authorized-party tracking, email verification and retention
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-REV-001, FEAT-GEO-001]
 problem: Every party explicitly authorized for an agreed shipment needs a simple, private tracking handoff without creating a Loadgistic account or relying on a reusable code alone.
-behavior: A provider starts one Tracking session after agreeing work offline, assigns one stable shipment Tracking code, authorizes one owner plus any number of additional recipient emails, and exposes currently authorized shipments after one short-lived email OTP, with a 30-minute idle session and no reusable customer code entry. The provider can add or revoke recipients, one idempotent completion summary reaches the owner, guest access expires 30 days after completion, and the provider retains its operational history.
+behavior: A provider starts one Tracking session after agreeing work offline, assigns one stable shipment Tracking code, authorizes one owner plus any number of additional recipient emails, and exposes currently authorized shipments after one short-lived email OTP, with a five-minute verified session and no reusable customer code entry. The provider can add or revoke recipients, one idempotent completion summary reaches the owner, guest access expires 30 days after completion, and the provider retains its operational history.
 contracts: [CustomerTrackingCode, TrackingCodeSecret, TrackingCodeDigest, TrackingRecipient, TrackingEmailOtp, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort, ManagedTrackingRepository]
 observability: [tracking_recipient_added, tracking_recipient_revoked, tracking_otp_requested, tracking_otp_verified, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, tracking_location_saved, tracking_location_denied, completion_email_queued, completion_email_sent, completion_email_failed, completion_email_retry, guest_access_expired]
 rollout: Require one server-only Tracking code secret before Production creates its first Tracking row, keep only keyed digests in persistence, and send one owner delivery with bounded retries. The empty hosted project may cut over without a data migration; a later Tracking-secret rotation requires an explicit code-reissue migration or a compatibility key window. Keep guest access disabled in production until sender configuration, private storage, scanning, retention cleanup and monitoring are verified.
@@ -225,6 +225,21 @@ And the response is private, non-cacheable, MIME constrained, and cannot execute
 And no Storage path is included in the timeline projection or link.
 
 ## Contract ownership
+
+### Approval history survives guest retention
+
+Given a shipment owner approved proof-backed unloading in a fresh verified session\
+When the shipment's guest-access retention expires\
+Then cleanup removes recipient contact/OTP/access data and denies old guest access\
+And the completion event keeps a private OWNER approval marker even after its temporary recipient reference is cleared\
+And shipment status, approval timestamp, loading/unloading proof references and provider history remain intact\
+And an actorless event without an OWNER completion marker is still rejected.
+
+Migration 129 changes only the event snapshot, temporary-recipient FK deletion
+behavior and the existing completion command's snapshot insert. It does not alter
+approval authority, proof obligations, the five-minute limit or public grants.
+Verification: `tests/sql/tracking-owner-retention.sql` and the real local
+`scripts/verify-supabase-provider-tracking.mjs` proof/approval/cleanup round trip.
 
 - Public pages: `/track` and unlocked tracking view
 - Provider controls: owned Tracking list, Tracking detail, and Driver action panel

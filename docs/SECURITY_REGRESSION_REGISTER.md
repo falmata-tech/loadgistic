@@ -1,5 +1,18 @@
 # Security failures we must not repeat
 
+### October 8 approval retention blocked by an ephemeral recipient FK — NR-08/10
+
+Fresh managed workflow verification exercised proof-backed owner completion and
+then retention cleanup. The completion event's FK kept the temporary recipient
+row from being deleted. Migration 129 records an explicit, constrained OWNER/STAFF
+approval snapshot and uses SET NULL for the temporary recipient reference; actorless
+non-approval events remain forbidden. No authority, proof, session or browser grant
+is widened. `tests/sql/tracking-owner-retention.sql` verifies contact/OTP cleanup,
+expired guest denial and preserved timeline/proofs/completion after approval.
+The local verifier also uploads and reads actual proof bytes before completion.
+Owner: Tracking/release maintainer. Next: exact CI, refreshed full restore/rehearsal
+and scoped owner review of this additional migration before hosted rollout.
+
 ## NR-17 — Retired commercial models must not gate user access
 
 The October 7 audit found dormant paid-mode controls, plan/payment Account cards

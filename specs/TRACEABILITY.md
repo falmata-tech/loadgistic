@@ -1,5 +1,16 @@
 # Specification traceability
 
+October 8 release follow-up, FEAT-TRK-001 / FEAT-FLT-001 / NR-08/10: the fresh
+Tracking verifier now supplies a delivery date, uploads and reads real private
+proof bytes, rejects driver completion/expired owner approval and completes via
+the verified shipment owner. This revealed the temporary-recipient FK blocking
+retention cleanup. Migration 129 preserves a constrained private approval marker
+and clears the recipient reference on deletion. The rollback-only
+`tracking-owner-retention.sql` proves contact deletion, closed guest access and
+retained approval/timeline/proofs. Fleet verification now denies a second
+independent truck instead of expecting the retired fleet capability. These fixes
+are local; refreshed exact CI/rehearsal/owner rollout review remain required.
+
 October 8 release follow-up, FEAT-DAT-001 / NR-08: fresh CI correctly rejected
 empty public cursors after migrations preceded fixture import. Migration 116's
 existing-row backfill cannot initialize later-created fixture trucks. The local

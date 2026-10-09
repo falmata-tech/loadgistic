@@ -1,3 +1,19 @@
+## October 8 complete fresh-workflow verification and retention repair — local
+
+All twelve managed verification scripts now pass on a separate disposable
+Loadgistic stack (ports 56120–56124), with the developer preview preserved.
+The Tracking verifier supplies the required delivery date, uploads and reads real
+private proof bytes, rejects driver completion/expired owner approval, then
+completes through the verified shipment owner. Fleet verification denies a second
+independent truck. These correct obsolete expectations without relaxing the app.
+
+The real approval → expiry → cleanup check found a recipient FK blocking deletion.
+Additive migration 129 preserves a private approval marker and clears only the
+temporary recipient reference. Its rollback-only regression proves contact
+cleanup, guest denial and retained completion/proofs/history; it passes locally.
+Fresh exact CI, full 115–129 backup rehearsal and owner review of the additional
+SQL remain required. No production schema, setting, web deploy or final APK changed.
+
 ## October 8 release gate repair — fixture sharing
 
 Candidate 7f11b25 passed remote Android boundaries, but CI 37863621900 rejected
