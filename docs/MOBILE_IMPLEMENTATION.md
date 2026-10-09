@@ -1,3 +1,24 @@
+## October 9 Google Play preparation — active
+
+Owner has a ready developer account and requested help getting the app into Play
+Console. Existing release and its remaining read-only postchecks stay in scope.
+No console upload, public publication, signing change or policy waiver is claimed.
+
+1. [x] Inspect current Expo/package/profiles, exact APK and official requirements.
+   Existing signed APK is 1.0.2/code 3, API 36, com.loadgistic.app. Account type and
+   existing Console app/version-code state are requested from the owner.
+2. [x] Add a minimal store AAB profile preserving both APK profiles and API/key.
+   Resolved EAS configuration confirms store/app-bundle, production API and
+   remote existing credentials. Native types/lint and root quality473/473 pass.
+3. [ ] Validate native types/lint, exact upload exclusions/account/project, then
+   build and inspect the signed AAB and its native-library alignment.
+4. [ ] Prepare the real file, store-copy/declaration drafts and owner Console steps.
+5. [ ] Verify owner account/app and signing enrollment, then upload only the
+   reviewed internal release. Service-account automatic submission is not required.
+6. [ ] Complete separate closed/public review gaps: account/data deletion request,
+   background-location disclosure/privacy, reviewer access, device acceptance and
+   any account-specific closed-test requirement. Preserve existing data/authority.
+
 ## Android 1.0.2 internal test release — available October 9
 
 Install the new standalone build on Android:
@@ -25,12 +46,12 @@ Supabase ledger 130 and production-only native push flag enabled. Exact CI
 export/dependency boundary and 457/457 translation coverage pass. Backups and
 approved migration/rehearsal digests are protected locally.
 
-Remaining acceptance is explicit: full private live browser/advisor refresh is
-blocked on macOS Supabase CLI Keychain access; post-release SQL/catalog and live
-public/mobile checks already pass. Physical phone background alerts, notification
+Final private live browser/advisor refresh now passes: 32 boundary/browser
+checks, zero advisor errors and fresh ledger/RLS/ACL/guard/PostGIS checks. Public
+web/mobile and compiled workflows also pass; the synthetic pilot session is closed. Physical phone background alerts, notification
 tap, denied permission, logout/expiry and moving GPS remain unproven. Browser
-Notifications do not provide closed-browser Web Push. Current Featured is still
-unpublished/empty (WEB-MOB-013). The cold-start capture also shows adjacent Empty
+Notifications do not provide closed-browser Web Push. Current Featured is empty because today's theme has exhausted its turns while
+21 other pairs remain; the AUTO worker is healthy (WEB-MOB-013). The cold-start capture also shows adjacent Empty
 and Partial clusters overlapping at one position; reproduce and resolve that
 presentation case in a follow-up, without changing counts or search completeness.
 This is an internal testing release, not Play publication or broad-launch acceptance.

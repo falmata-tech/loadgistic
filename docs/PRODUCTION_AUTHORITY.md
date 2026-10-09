@@ -1,3 +1,18 @@
+## October 9 Google Play preparation — owner requested
+
+After the published web/Expo release, the owner requested help getting Loadgistic
+onto Google Play and confirmed only the developer account exists; there is no
+Loadgistic Console entry. Prepare a signed internal-test AAB using the existing
+EAS account/project/package and frozen credentials. This is new preparation
+authority, not reuse of the consumed web/database exception.
+
+No Play Console identity, app creation, signing enrollment, service-account
+permission or release rollout has been verified. Do not submit/publish until
+that target and the exact artifact/release are reviewable. No signing replacement,
+private-key export, Auth bypass, retention erasure or unrelated hosted change is
+included. `docs/operations/GOOGLE_PLAY_SETUP.md` distinguishes preparation from
+actual Console actions and preserves broader-review/device requirements.
+
 ## October 9 matched release — production writes completed
 
 The reviewed rollout is published: application `d443093`, Netlify deployment
@@ -14,10 +29,11 @@ original/default-request digests and both denials are protected in `.local`.
 
 This bounded production-write authority is consumed. No additional migrations,
 settings writes, signing changes or Play submission are authorized by this record.
-Public live, Android startup and post-deployment catalog checks pass. Remaining
-read-only private browser verification/refreshed advisors wait on macOS CLI
-Keychain access; physical-device delivery/location acceptance and the existing
-unpublished Featured programme remain separate. Owner-only defaults apply to any
+Public live, Android startup and post-deployment catalog checks pass. Final
+read-only private browser verification and refreshed advisors now pass; the
+bounded pilot session is closed and CLI credentials are no longer held by a
+verification process. Physical-device delivery/location acceptance and the
+documented sparse-theme Featured presentation remain separate. Owner-only defaults apply to any
 new production operation. No success is inferred for an unfinished check.
 
 ## October 8 matched backend/web and Android tester release — authorization history

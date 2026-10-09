@@ -360,27 +360,51 @@ revocation, Off Duty and visible/hidden transitions before owner visual review.
 
 ## WEB-MOB-013 — Current Featured programme is unpublished
 
-**Status:** Open; reproduced public production state, cause not established.
-**Owner:** Featured/operations maintainer. **Priority:** Before a populated Featured demo.
+**Status:** Open for empty-programme presentation and sparse-theme availability;
+October 9 automation is healthy and today's absence is explained by the no-repeat rule.
+**Owner:** Featured maintainer; product owner decides selection-policy changes.
+**Priority:** Before a populated Featured demo.
 
 On October 7 at 13:45 UTC, `/api/mobile/public/featured` returns 200 for that
 Ethiopia date and Pickup trucks theme, but `published: false`, with zero trucks,
 sponsors and programme entries. Both web and mobile use the same Featured port.
 The native UI correctly offers Find capacity; HTTP success does not demonstrate
-a populated programme or functioning automatic generation.
+a populated programme. Original evidence:
+`.local/release-mobile-featured-current-evidence.json`.
 
-Source `getSupabaseDailyFeaturedTrucks` returns this unpublished shape when no
-published day exists or its theme does not match the current programme. The
-15-minute managed dispatcher includes `prepareAutomaticFeaturedDays`; source
-presence is not evidence it ran successfully on the host. Do not infer whether
-the mode, eligibility, theme, credits or dispatcher caused this state from the
-public response. Evidence: `.local/release-mobile-featured-current-evidence.json`.
+October 9 follow-up: at 12:41:54 UTC the public endpoint again returned 200,
+`published: false`, and zero trucks, sponsors and programme entries, now for
+Medium-duty trucks. A project-scoped read-only diagnostic at 13:02:41 UTC confirmed
+Automatic selection with target eight, no saved day for October 9, and a successful
+13:00:58 UTC generation check (`READY`: created 0, kept 2, empty 5). Round 1 has
+131 eligible truck-and-Driver pairs, with 21 still awaiting selection globally.
+All nine currently eligible medium-duty pairs have already had their turn; none
+remain for today's theme. Protected count-only receipt:
+`.local/featured-diagnostic-20261009.json` (zero writes).
 
-Next: project-scoped read-only review of the Featured overview, current day/theme,
-eligible assigned pairs and recent worker outcomes. If a setting/data correction
-is needed, prepare its exact plan and get new owner authority; the October 7
-release grants no unrelated configuration mutation. Verify an actual populated
-web/native programme plus exclusion and non-repeat behavior before closure.
+This is the intended global-round wait in `FEAT-FTR-001` and
+`supabase/migrations/098_featured_random_rounds.sql`: an exhausted theme stays
+unscheduled while another theme has unseen eligible pairs. The generator prepares
+and publishes missing days across the next seven Ethiopia dates; it does not wait for the
+08:30–12:00 broadcast window. `src/lib/featured-status.js` classifies these counts
+as `ROUND_WAIT`. The successful status is recorded by the generator wrapper in
+`supabase/migrations/105_featured_operation_status.sql`, while
+`getSupabaseDailyFeaturedTrucks` in
+`src/lib/repository/supabase.js` returns the unpublished shape without a matching
+published day. Today's evidence establishes successful automation and expected
+rotation waiting, not a populated public programme. It does not retrospectively
+establish the cause of the October 7 Pickup gap.
+
+Next: the product owner should decide whether these sparse-theme empty days are
+acceptable or require an explicitly reviewed selection-policy change. Keep that
+product decision and web/native empty-state review separate from worker failure.
+Do not reset history, force a repeat, publish a manual override or change settings
+under the release approval. Preserve the negative regression in
+`tests/sql/featured-random-rounds.sql`: an exhausted theme must not repeat while
+another theme has unseen pairs, saved drafts/days remain untouched, and the next
+round begins only after global exhaustion. Verify actual populated web/native
+programme behavior when an eligible unscheduled theme has remaining pairs, plus
+exclusion and non-repeat behavior, before claiming the populated demo is ready.
 
 
 October 7 inspection follow-up to WEB-MOB-012: web restricted company-driver Home

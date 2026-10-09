@@ -17,11 +17,11 @@ the supported default-scope request succeeded and all unrelated fields match.
 Live desktop/phone public map, profile results, filters/Clear all, private entry,
 Tracking entry, email-only login and Brokerage intake pass. Public mobile reads
 and anonymous private denials pass. Compiled private/provider/file workflows pass
-against the exact artifact and production configuration. Fourteen authenticated
-live boundary checks passed before an invalid supplemental GET on the POST-only
-push registration endpoint stopped the harness. That harness error is corrected;
-the remaining complete live private browser run and refreshed advisor read are
-waiting for macOS Supabase CLI Keychain access. Do not call those checks complete.
+against the exact artifact and production configuration. The final live private run now passes all 32 boundary/browser checks: provider
+workspace and mobile APIs, five languages, actual protected document bytes and
+guest denial. The bounded synthetic pilot session is closed. Fresh hosted advisors
+report zero errors; ledger/RLS/ACL/guard/PostGIS checks pass. The invalid
+supplemental GET harness failure remains preserved separately, now corrected.
 
 Standalone internal Android build `d1f893c2-556f-4f8f-9920-800f674d2f7c` is
 available as 1.0.2/code 3, package `com.loadgistic.app`. Its existing signer and
@@ -29,8 +29,8 @@ all 353 native inputs match the verified candidate. Installed with data preserve
 on Loadgistic_Pixel_API_35/emulator-5580; cold-start, live map and filter dialog
 pass without Metro. Android System UI initially froze; one Wait retry cleared it,
 and fresh app evidence has no native fatal crash. Physical closed-phone alerts,
-tap and moving location remain unverified. Current Featured is still unpublished
-and empty (WEB-MOB-013). Neither Play publication nor unrestricted launch is claimed.
+tap and moving location remain unverified. Featured is empty for today because its nine eligible pairs already appeared
+in the round; 21 other pairs remain and the AUTO worker is healthy (WEB-MOB-013). Neither Play publication nor unrestricted launch is claimed.
 
 Tester link and exact remaining steps are in MOBILE_IMPLEMENTATION.md. Protected
 receipts are under `.local/release-20261008-*` and `.local/release-20261009-*`;
@@ -84,8 +84,8 @@ FEAT-SUP-001 and FEAT-MKT-001):
   Next tester build is 1.0.2/code 3 to distinguish it from the earlier candidate.
 - [x] Bind final source, full CI, packaging and existing owner-approved SQL to the
   verified result and publish web/Android tester artifacts.
-- [ ] Complete the final private browser/advisor readback after Keychain access,
-  then physical-phone notification/location acceptance; see current release record.
+- [x] Complete final private browser/advisor readback with actual session cleanup.
+- [ ] Complete physical-phone notification/location acceptance; see current release record.
 
 ## October 8 search boundary and scale follow-up — local
 

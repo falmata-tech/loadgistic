@@ -6,10 +6,45 @@ problem: Transport providers and visitors need the existing verified web workflo
 behavior: Native screens follow the reviewed phone web structure with Capacity, Featured, Tracking and transporter workspace entry; provider and verified-email visitor sessions retain the existing authorization and expiry rules.
 contracts: [MobileApiV1, NativeIdentity, NativeVisitorGrant, NativeMap, MobileReleaseEvidence]
 observability: [mobile_request_failed, mobile_session_expired, mobile_build_verified]
-rollout: Android development preview first; owner visual review before extensive release checks; signed test APK only after required workflows pass. Play publishing is deferred by owner. Keep production deployment unchanged; the owner separately authorized web workspace consolidation on October 6.
+rollout: Android development preview first; owner visual review before extensive release checks; signed test APK only after required workflows pass. The owner requested Google Play preparation on October 9; prepare an internal-test AAB, preserving existing keys/package and keeping console enrollment, store declarations and public publication separate. Keep production deployment unchanged; the owner separately authorized web workspace consolidation on October 6.
 ---
 
 # Native application — implementation in progress
+
+## Google Play internal-test preparation — October 9
+
+The owner has a developer account and requested help getting Loadgistic into
+Play Console. Prepare a store-compatible AAB first; the request does not authorize
+changing signing keys, exporting private keys to source/chat, inventing policy
+answers, adding a reviewer authentication bypass, or erasing retained records.
+Console account/app state and signing enrollment must be verified before upload.
+
+Given the reviewed native runtime and current production web/backend release
+When the `play-internal` EAS profile builds Android
+Then it creates a standalone Android App Bundle for `com.loadgistic.app` with
+https://loadgistic.com as its API and the existing frozen EAS signing credentials
+And development/preview APK profiles and their current settings remain unchanged
+And its package/version, signature, target SDK, native page alignment, archive
+exclusions and actual runtime are verified before an artifact is called ready.
+
+Given a bundle is prepared without verified Play Console access
+Then preparation is not reported as a Console upload or store publication
+And the owner receives the exact file and a short internal-testing upload path
+And any consumed Play version code or signing conflict stops that upload rather
+than resetting credentials, uninstalling test apps or changing another project.
+
+Given closed/public review is considered
+Then account/data deletion requests, native background-location disclosure,
+accurate privacy/data-safety declarations, reviewer access and device acceptance
+must have verified evidence; internal-test distribution does not close those gaps.
+Any new deletion or reviewer-authentication behavior requires its own reviewed
+contract. Store marketing must describe implemented features without guarantees.
+
+Verification: existing mobile typecheck/lint/tests and actual EAS upload/archive,
+App Bundle manifest/signature/runtime/native-library evidence. Record build ID,
+source commit, concrete console state and remaining policy/device gates in
+`docs/operations/GOOGLE_PLAY_SETUP.md` and MOBILE_IMPLEMENTATION.md. There is no
+new application UI or backend/schema change in this packaging slice.
 
 October 7 account correction: signup offers Fleet transporter and Independent
 driver only. Former owner-operator/self-managed identities normalize to the same

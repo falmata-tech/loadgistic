@@ -1,20 +1,33 @@
 # Specification traceability
 
+October 9 Google Play preparation, FEAT-MOB-001 / BASE-DEP-001:
+`play-internal` resolves to store/app-bundle, existing remote credentials,
+com.loadgistic.app1.0.2/code3 and https://loadgistic.com. Preview/development
+profiles remain unchanged. Native types/lint and root quality473/473 pass. The
+353-file inspected upload contains no private paths/keys; its only native input
+change from the published runtime is eas.json. Signed AAB/package/signature and
+Console verification are still pending. Operational steps, source-backed
+privacy/review findings and owner decisions are in GOOGLE_PLAY_SETUP.md. The
+simple RELRO-end formula's23 failures are safe whole-LOAD cases according to
+AOSP; no dependency change is justified, and actual16KB-device evidence remains
+separate from structural checks.
+
 October 9 published release, BASE-DEP-001 / FEAT-SEC-001 / FEAT-MOB-001:
 exact application `d443093` passes CI `37883805604` (all eight jobs/four browser
 shards); root 473/473, native 118/118, 457/457 translations and actual Android
 runtime/container boundaries pass. Approved 115–130 migration bytes restore and
 rehearse against the fresh protected backup and commit atomically in production.
 Postpublication catalog/RLS/ACL/API-guard/PostGIS checks pass at ledger 130 with
-zero unprotected public tables. Prepublication advisors have zero errors; their
-post-release refresh is pending Keychain access and is not claimed complete.
+zero unprotected public tables. Prepublication and fresh
+post-release advisors have zero errors; the two existing warnings remain visible.
 
 Netlify deploy `6ac876e7cffbaa5a92772381` serves loadgistic.com. Live desktop/phone
 public map/filter/reset/private/Tracking/login/Brokerage entry controls and mobile
 public reads/unauthorized denial pass. Compiled private provider/Tracking/file
 checks pass with production configuration. Full live private browser completion
-is pending the corrected harness and CLI Keychain access; an invalid supplemental
-GET on the POST-only push registration endpoint is retained as a harness failure.
+now passes all 32 checks, including actual protected bytes and anonymous denial;
+the bounded pilot session is closed. The invalid supplemental GET on the POST-only
+push registration endpoint is retained separately as a corrected harness failure.
 No endpoint or acceptance assertion was weakened to mask an application failure.
 
 Expo standalone build `d1f893c2-556f-4f8f-9920-800f674d2f7c` is signed 1.0.2/code 3,

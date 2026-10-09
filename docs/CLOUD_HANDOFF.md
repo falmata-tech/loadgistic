@@ -18,11 +18,13 @@ stay with Expo and outside web runtime, source and builds.
 Standalone Android 1.0.2/code 3 is ready for internal testers; link, preserved-data
 installation and physical-device limits are in MOBILE_IMPLEMENTATION.md. Live
 public/browser/mobile checks and compiled private workflows pass. Full live
-private browser completion and advisor refresh are waiting on Supabase CLI
-Keychain access; the postpublication SQL catalog check is already complete.
+private browser completion and advisor refresh now pass: 32 boundary/browser
+checks, zero advisor errors and fresh ledger/RLS/ACL/guard/PostGIS checks. The
+bounded pilot test session is closed; no credential-holding process remains.
 Browser alerts require a running site; closed-browser Web Push remains absent.
 Physical closed-phone Expo/FCM delivery/location acceptance remains pending.
-Current Featured is unpublished/empty (WEB-MOB-013), not silently populated.
+Current Featured is empty because today's theme is exhausted in the no-repeat
+round; healthy AUTO worker and aggregate counts are recorded in WEB-MOB-013.
 Production-write authority is consumed; Google Play and broad launch are not claimed.
 
 The following dated preparation/previous-release sections are historical.
