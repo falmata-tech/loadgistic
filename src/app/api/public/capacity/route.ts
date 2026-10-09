@@ -15,7 +15,7 @@ export async function GET(request:NextRequest){
     destinationPlaceRef:params.get('destinationPlaceRef')||'',destination:params.get('destination')||'',destinationRadiusKm:params.get('destinationRadiusKm')||'',directionMode:params.get('directionMode')||'',
     nearLat:params.get('nearLat')||'',nearLng:params.get('nearLng')||'',nearRadiusKm:params.get('nearRadiusKm')||''
   };
-  const result=await listPublicCapacityCursor(filters,{cursor:params.get('cursor')||'',pageSize:14,overview:params.get('overview')==='1'});
+  const result=await listPublicCapacityCursor(filters,{cursor:params.get('cursor')||'',pageSize:14});
   return NextResponse.json(result,{headers:{
     'Cache-Control':'private, no-store, max-age=0',
     'CDN-Cache-Control':'no-store',

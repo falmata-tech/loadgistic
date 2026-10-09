@@ -11,6 +11,29 @@ rollout: Release the public capacity surface with retired-route redirects, purge
 
 # Public marketplace
 
+### Scenario: ordinary text search avoids unnecessary document scans
+
+Given profile text or office-city search has no document filter\
+When matching evaluates eligible trucks\
+Then it reads the same public profile facts without loading document categories for every candidate\
+And any requested owner, driver or truck document filter still reads authoritative reviewed categories\
+And profile-card document presentation retains its complete metadata\
+And result eligibility, search score, privacy and user actions are unchanged.
+
+Verification: `tests/sql/capacity-search-metadata-cost.sql`, the existing ranked
+search/document regressions and the unchanged five-second 5,000-truck scale gate.
+
+### Scenario: obsolete overview requests preserve normal discovery
+
+Given a caller sends the retired overview parameter with public profile and truck filters\
+When the public capacity HTTP endpoint responds\
+Then it returns the normal authorized cursor page with the same matching truck IDs\
+And it does not expose legacy aggregation cells or their older search rules\
+And missing/private sharing policies remain excluded by the normal public query.
+
+Verification: `tests/e2e/public-capacity-contract.spec.ts`. The ordinary web and
+native interfaces already use cursor results; this correction adds no UI mode.
+
 ### Scenario: capacity is useful before login
 
 Given a visitor opens Loadgistic\

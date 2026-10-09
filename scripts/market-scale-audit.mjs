@@ -36,6 +36,10 @@ select
   'SCALE-'||lpad(series::text,5,'0'),true,'LG-SCALE-'||lpad(series::text,5,'0')
 from generate_series(1,:scale_count) series cross join scale_owner owner;
 
+insert into public.vehicle_capacity_sharing(vehicle_id,mode)
+select md5('loadgistic-scale-vehicle-'||series)::uuid,'PUBLIC'
+from generate_series(1,:scale_count) series;
+
 -- Publication now requires an active Driver. These no-password identities,
 -- memberships, and one-to-one assignments exist only inside this rollback.
 insert into auth.users(id,email,raw_user_meta_data)
@@ -116,9 +120,12 @@ begin
   started_at:=clock_timestamp();
   select count(*),coalesce(sum((payload->>'count')::bigint),0),coalesce(sum(octet_length(payload::text)),0)
     into overview_rows,overview_trucks,overview_bytes
+  -- Legacy aggregation is service-only and not an HTTP discovery mode. Its raw
+  -- performance fixture uses its legacy identifier predicate; the current
+  -- public page above is separately tested with the actual Driver-name search.
   from public.public_capacity_clusters('{"q":"lg-scale","viewport":[38,8,40,10]}'::jsonb);
   overview_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
-  if overview_rows>200 or overview_trucks<>${requested} or overview_bytes>100000 then raise exception 'SCALE_OVERVIEW_BOUND_FAILED';end if;
+  if overview_rows>200 or overview_trucks<>${requested} or overview_bytes>100000 then raise exception 'SCALE_OVERVIEW_BOUND_FAILED:cells=%,trucks=%,bytes=%',overview_rows,overview_trucks,overview_bytes;end if;
   if overview_ms>5000 then raise exception 'SCALE_OVERVIEW_TOO_SLOW:%',overview_ms;end if;
   raise notice 'LOADGISTIC_OVERVIEW_RESULT cells=% trucks=% bytes=% query_ms=%',overview_rows,overview_trucks,overview_bytes,round(overview_ms,3);
 

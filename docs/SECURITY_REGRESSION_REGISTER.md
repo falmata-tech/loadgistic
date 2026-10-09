@@ -1,5 +1,18 @@
 # Security failures we must not repeat
 
+### October 8 legacy overview/search drift — NR-08/13
+
+An obsolete public `overview=1` parameter reached an older aggregate predicate
+instead of the current profile/sharing-aware discovery path. Retire the HTTP
+switch while preserving normal results; keep the service-only raw aggregate
+separate from current search claims. Desktop/phone API regressions compare IDs,
+cursors, provider scope and absence of legacy cells. Do not fix scale tests by
+weakening profile/privacy gates or labelling old identifier matching as current
+profile search. Migration 130 instead removes unnecessary document work while
+preserving requested filters and default presentation. Local regression/scale
+evidence is in PROGRESS. Owner: search/release maintainer. Next: complete exact
+CI, scoped rehearsal/review and matched rollout.
+
 ### October 8 approval retention blocked by an ephemeral recipient FK — NR-08/10
 
 Fresh managed workflow verification exercised proof-backed owner completion and

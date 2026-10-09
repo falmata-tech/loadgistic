@@ -1,3 +1,21 @@
+## October 8 search boundary and scale follow-up — local
+
+The public endpoint's obsolete `overview=1` switch still selected an older
+aggregation search path. It now returns the same normal authorized cursor results;
+two real desktop/phone API cases pass. The existing interface is unchanged.
+The legacy service-only aggregate remains an internal performance probe, with its
+old identifier predicate distinguished from the current Driver-name search.
+
+The 5,000-truck text query took 6.6 seconds on a controlled local retry because
+eligibility loaded all document categories even with no document filter. Additive
+migration 130 skips those scans only for eligibility checks that do not need them;
+default profile metadata and all requested document filters stay complete. The
+same test passes at 4.8 seconds with all 5,000 aggregate records and 15 bounded
+results, unchanged size/count/five-second limits and zero retained synthetic rows.
+Metadata parity and document denial regressions pass. Reassignment/account closure
+races also pass after the old fixture supplied the now-required delivery date.
+Migration 130 still needs its full rehearsal and exact owner review before hosting.
+
 ## October 8 complete fresh-workflow verification and retention repair — local
 
 The owner approved migration 129 (“Approve the additional retention repair”).

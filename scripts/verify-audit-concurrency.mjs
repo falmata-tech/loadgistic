@@ -48,7 +48,7 @@ try{
  insert into driver_vehicle_assignments(driver_user_id,vehicle_id,assigned_by) values(${literal(oldDriver)},${literal(truck1)},${literal(owner)}),(${literal(newDriver)},${literal(truck2)},${literal(owner)});
  select create_provider_tracking_with_recipients(${literal(owner)},jsonb_build_object('id',${literal(tracking)},'code',${literal('LGX-'+suffix.toUpperCase())},'vehicle_id',${literal(truck1)},
  'origin_place_ref',(select id from place_catalog where normalized_name='addis ababa' limit 1),'destination_place_ref',(select id from place_catalog where normalized_name='adama' limit 1),
- 'cargo_summary','Concurrency regression','customer_email','audit-concurrency@example.invalid','customer_email_digest',repeat('c',64),'additional_recipients','[]'::jsonb,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',repeat('d',64),'review_code_hash',repeat('e',64)));
+ 'cargo_summary','Concurrency regression','customer_email','audit-concurrency@example.invalid','customer_email_digest',repeat('c',64),'additional_recipients','[]'::jsonb,'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',repeat('d',64),'review_code_hash',repeat('e',64)));
  commit;`);
  const location={area:'Around Addis Ababa',lat:'9',lng:'38.7',precision_km:'20',source:'DEVICE_OBSCURED'};
  for(const kind of ['status','location']){

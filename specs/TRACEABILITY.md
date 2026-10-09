@@ -1,5 +1,16 @@
 # Specification traceability
 
+October 8 search and scale follow-up, FEAT-MKT-001 / BASE-DEP-001 / NR-08/13:
+`public-capacity-contract.spec.ts` passes on desktop/phone for profile filtering
+with the retired overview parameter, identical IDs/cursors and no legacy cells.
+Migration 130's rollback-only metadata test proves unchanged public facts,
+complete default documents and enforcement even when a caller supplies a false
+internal hint with a requested document filter. The existing 5,000-truck scale
+gate passes at 4.8 seconds for text search, 3.1 for routes and 3.1 for the raw
+internal aggregate, with unchanged count/size/time bounds and complete rollback.
+The queued-authority and account-closure race check passes. This is local evidence;
+exact CI, migration rehearsal and owner review of 130 remain required.
+
 October 8 full SQL regression follow-up, FEAT-DAT-001 / FEAT-FLT-001 / NR-08/18:
 43 CI SQL suites pass in the disposable Loadgistic stack. Viewport stress still
 proves matching after 1,000 newer candidates, now with separate single-truck

@@ -1,5 +1,12 @@
 # Architecture Decisions
 
+ADR-071 follow-up, October 8: public HTTP discovery always uses the current
+profile/sharing-aware cursor query, including callers carrying the obsolete
+overview parameter. The older service-only raw aggregate is not an HTTP mode.
+Search eligibility may omit document-category work only when no document filter
+requires it; profile-card metadata retains complete default categories. This
+preserves the approved experience and authority while reducing measured SQL work.
+
 ### ADR-078 — Android Expo push with a private committed-event outbox (2026-10-08)
 
 The owner selected Expo/FCM closed-app notifications. Reuse current Support,
