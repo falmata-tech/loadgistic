@@ -1,5 +1,12 @@
 # Specification traceability
 
+October 8 release follow-up, FEAT-DAT-001 / NR-08: fresh CI correctly rejected
+empty public cursors after migrations preceded fixture import. Migration 116's
+existing-row backfill cannot initialize later-created fixture trucks. The local
+importer now writes explicit PUBLIC/BOTH/PRIVATE policies after demo grants, while
+the application still treats an absent policy as PRIVATE. Focused fixture policy
+tests pass; fresh isolated CI verification remains required before publication.
+
 ## Android push — local evidence and scoped FCM setup, October 8
 
 Native preview exposed a Zod/server-schema import in the phone routing graph.

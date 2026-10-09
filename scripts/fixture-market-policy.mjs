@@ -91,6 +91,19 @@ export function selectSharedFixtureVehicleIds(capacities,shareRatio=.25){
   return stableTake(unique,Math.ceil(unique.length*ratio),capacity=>capacity.vehicle_id);
 }
 
+export function managedFixtureSharingPolicies(capacities,sharedVehicleIds){
+  const latest=new Map();
+  for(const capacity of capacities){
+    const previous=latest.get(capacity.vehicle_id);
+    if(!previous||String(capacity.updated_at)>String(previous.updated_at)
+      ||capacity.updated_at===previous.updated_at&&String(capacity.id)>String(previous.id)){
+      latest.set(capacity.vehicle_id,capacity);
+    }
+  }
+  return [...latest.values()].map(capacity=>({vehicle_id:capacity.vehicle_id,
+    mode:capacity.visibility==='OPEN'?(sharedVehicleIds.has(capacity.vehicle_id)?'BOTH':'PUBLIC'):'PRIVATE'}));
+}
+
 export function normalizeDemoSharedEmails(value,{maximum=5}={}){
   const emails=[...new Set(String(value||'').split(',').map(email=>email.trim().toLowerCase()).filter(Boolean))];
   if(emails.length>maximum)throw new Error('DEMO_SHARED_EMAIL_LIMIT_EXCEEDED');

@@ -1,3 +1,16 @@
+## October 8 release gate repair — fixture sharing
+
+Candidate 7f11b25 passed remote Android boundaries, but CI 37863621900 rejected
+fresh public capacity cursors during fixture setup. Migration 116 backfills only
+existing trucks; the later local seed did not create authoritative sharing rows.
+The importer now initializes fixture PUBLIC/BOTH/PRIVATE policies after grants,
+and removes its old policy rows before a local reset. Missing application policies
+still default PRIVATE. No hosted customer policy or SQL changed.
+
+The focused fixture checks and Node 22 full quality gate pass (473 tests). A new
+exact candidate and fresh isolated CI run are required; web/backend/APK publication
+remain pending. The approved UI and 14 migration hashes are unchanged.
+
 ## October 8 Android push — local implementation and scoped FCM upload
 
 Private installation/session/guest registration, committed notification outbox,

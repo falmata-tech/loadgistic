@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds
+  selectSharedFixtureVehicleIds,managedFixtureSharingPolicies
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 import {readFixtureSchema} from './lib/fixture-schema.mjs';
@@ -181,7 +181,7 @@ const localResetTables=[
   'provider_sponsorships','sponsors','sponsor_placements','capacity_access_grants','shared_capacity_email_otps',
   'provider_tracking_recipients','provider_tracking_email_otps',
   'access_email_deliveries','guest_support_conversations','guest_support_messages','guest_support_attachments',
-  'guest_support_events','notifications','audit_logs'
+  'guest_support_events','notifications','audit_logs','vehicle_capacity_sharing'
 ].filter(table=>definitions[table]);
 
 const aliases={
@@ -201,7 +201,7 @@ function uuidFor(value){
 }
 
 async function deleteLocalFixtures(){
-  const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id'};
+  const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id',vehicle_capacity_sharing:'vehicle_id'};
   for(const table of [...localResetTables].reverse()){
     const deleteKey=deleteKeys[table]||'id';
     const {error}=await supabase.from(table).delete().not(deleteKey,'is',null);
@@ -416,6 +416,16 @@ for(let index=0;index<grantRows.length;index+=250){
   if(error)throw new Error(`FIXTURE_IMPORT_FAILED:capacity_access_grants:${error.message}`);
 }
 process.stdout.write(`capacity_access_grants: ${grantRows.length} across ${sharedVehicleIds.size} vehicles\n`);
+
+// Migration 116 backfills existing rows; a fresh fixture reset runs after it.
+// Initialize only these local fixture trucks. Missing real policies stay private.
+if(definitions.vehicle_capacity_sharing){
+  const sharingRows=managedFixtureSharingPolicies(fixtureTables.capacities,sharedVehicleIds)
+    .map(row=>({...row,vehicle_id:mapUuid(row.vehicle_id)}));
+  const {error}=await supabase.from('vehicle_capacity_sharing').insert(sharingRows);
+  if(error)throw new Error('FIXTURE_IMPORT_FAILED:vehicle_capacity_sharing');
+  process.stdout.write(`vehicle_capacity_sharing: ${sharingRows.length}\n`);
+}
 
 const demoDocument=fs.readFileSync(path.join(process.cwd(),'public','vehicle-configurations','cargo-van.jpg'));
 const {error:storageError}=await supabase.storage.from('verification').upload(

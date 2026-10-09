@@ -5,13 +5,30 @@ import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS
+  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
 import {FEATURED_TRUCK_DAYS} from '../src/lib/featured-trucks.js';
 
 const root=path.resolve(import.meta.dirname,'..');
 const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
+
+test('fresh local fixtures preserve public, both and private sharing without opening absent policies',()=>{
+  const capacities=[
+    {id:'a',vehicle_id:'public',visibility:'OPEN',updated_at:'2026-10-08T00:00:00Z'},
+    {id:'b',vehicle_id:'both',visibility:'OPEN',updated_at:'2026-10-08T00:00:00Z'},
+    {id:'c',vehicle_id:'private',visibility:'PRIVATE',updated_at:'2026-10-08T00:00:00Z'},
+    {id:'d',vehicle_id:'private',visibility:'OPEN',updated_at:'2026-10-07T00:00:00Z'}
+  ];
+  assert.deepEqual(managedFixtureSharingPolicies(capacities,new Set(['both','private'])),[
+    {vehicle_id:'public',mode:'PUBLIC'},{vehicle_id:'both',mode:'BOTH'},{vehicle_id:'private',mode:'PRIVATE'}
+  ]);
+  assert.deepEqual(managedFixtureSharingPolicies([],new Set(['absent'])),[]);
+  const text=fs.readFileSync(importer,'utf8');
+  assert.ok(text.indexOf("from('vehicle_capacity_sharing').insert(sharingRows)")>text.indexOf("from('capacity_access_grants').insert"));
+  const migration=fs.readFileSync(path.join(root,'supabase/migrations/116_capacity_sharing_policy.sql'),'utf8');
+  assert.match(migration,/coalesce\(\(select mode from public\.vehicle_capacity_sharing where vehicle_id=target_vehicle_id\),'PRIVATE'\)/);
+});
 
 test('local managed signup verification uses only the isolated mail sink and numeric signup OTP',()=>{
   const configure=fs.readFileSync(path.join(root,'scripts','configure-local-supabase.mjs'),'utf8');

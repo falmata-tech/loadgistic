@@ -93,6 +93,19 @@ And the public subset is weighted toward Empty medium and heavy trucks on plausi
 And enough fleet and independent profiles, current Service areas, current Capacity routes, and both regular-service geometries remain represented to exercise public discovery\
 And older fixture signals retain explicit age metadata while Off Duty and unpublished signals remain excluded.
 
+### Scenario: fresh local fixtures initialize authoritative sharing
+
+Given all migrations have been applied before the disposable fixture import\
+When the local-only importer creates trucks, capacity and demo access grants\
+Then each fixture truck receives its matching sharing policy\
+And an Open fixture uses BOTH only when it has a demo grant, otherwise PUBLIC\
+And a Private fixture remains PRIVATE even when a demo grant exists\
+And a truck without an explicit policy remains fail-closed in the application\
+And public cursor verification still requires a full first page and a distinct next page.
+
+Evidence: `tests/supabase-fixtures.test.mjs` and fresh isolated CI fixture setup.
+This is a local fixture repair, not permission to change hosted customer policies.
+
 ### Scenario: local private-share setup contains no tracked personal identity
 
 Given a developer explicitly supplies one or more normalized test emails to the local fixture configurator\
