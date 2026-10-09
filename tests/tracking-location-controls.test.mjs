@@ -4,8 +4,8 @@ import {createForegroundLocationRunner,trackingLocationResult,trackingPrivacyRad
 const deferred=()=>{let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve:value=>resolve(value)};};
 
 test('Tracking radius and recorded-result feedback fail closed',()=>{
-  for(const radius of [1,3,5,10,20,40])assert.equal(trackingPrivacyRadius(radius),radius);
-  for(const radius of [0,2,NaN,Infinity,null,undefined,'bad'])assert.equal(trackingPrivacyRadius(radius),20);
+  for(const radius of [1,3,5,10,20])assert.equal(trackingPrivacyRadius(radius),radius);
+  for(const radius of [0,2,40,NaN,Infinity,null,undefined,'bad'])assert.equal(trackingPrivacyRadius(radius),20);
   assert.equal(trackingLocationResult({recorded:true}),'saved');
   assert.equal(trackingLocationResult({recorded:false,reason:'THROTTLED'}),'waiting');
   for(const result of [null,{}, {recorded:false},{recorded:'true'}])assert.throws(()=>trackingLocationResult(result));

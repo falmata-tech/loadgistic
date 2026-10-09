@@ -11,7 +11,7 @@ import { redirectWith, text } from '@/lib/redirects';
 export const runtime='nodejs';
 
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}){
-  const user=await getCurrentUser();
+  const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   const form=await request.formData();

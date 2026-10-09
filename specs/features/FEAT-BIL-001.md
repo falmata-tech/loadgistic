@@ -1,145 +1,87 @@
 ---
 id: FEAT-BIL-001
-title: Free access and controlled trial/payment activation
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-APP-001, FEAT-TRK-001]
-problem: Self-managed Driver and fleet transporter workspaces need a useful trial, manually confirmed monthly access, and predictable limits after access expires.
-behavior: An administrator controls Free access or Trial then payment. Free access is the launch default, with no trial countdown or payment prompts. Enabling paid mode gives existing unpaid providers a fresh seven-day activation window; new providers receive their normal seven-day trial. A manually approved payment grants 30 days. Expired or unpaid providers retain login, Home, Account, and billing access in paid mode. Public discovery and guest tracking never require seeker payment.
-contracts: [WorkspaceSubscription, SubscriptionAccessPolicy, TrialPeriod, PaidPeriod, PaymentProofAggregate, EtbAmount, BillingReviewPolicy, BillingFilePort]
-observability: [PLATFORM_CONTROLS_UPDATED audit, billing_audit, subscription_access_denial, trial_provisioned, paid_period_started, submission_outcome, review_outcome]
-rollout: Keep review manual and plan prices undisclosed until a separately specified payment integration and commercial price schedule are approved; use private Supabase Storage plus actor-scoped PostgreSQL commands in every runtime, monitor expiry denials and renewal-review time, and never fall back to SQLite.
+title: Provider access without plans or platform payments
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-APP-001, FEAT-TRK-001, FEAT-TRQ-001, FEAT-MOB-001]
+problem: Retired trial, subscription and payment controls confuse transporters and can block an otherwise valid workspace without a plan.
+behavior: Loadgistic's current revenue service is arranging transport. Provider workspace access has no plan, subscription, trial countdown or platform payment requirement. Active account identity, workspace ownership and driver permissions still govern every operation. Old billing writes and paid-mode activation are retired; historical billing records and private proof files remain protected and retained.
+contracts: [WorkspaceAccessPolicy, RetiredBillingCommands, HistoricalBillingAccess]
+observability: [retired_billing_command_denied, workspace_authorization_denied, identifiers_only_audit]
+rollout: Additive local-first retirement of charge/activation commands and plan-dependent access; retain all historical rows, files, RLS and service-only boundaries. Hosted application and database rollout require reviewed backup, rollback and exact release authority.
 ---
 
-# Billing proof
+# Current commercial model
 
-### Scenario: administrator controls commercial activation
+Owner clarification, October 7: there are no provider payment plans. The platform
+earns revenue from arranging transport under FEAT-TRQ-001. This supersedes earlier
+trial/payment activation contracts, retained in Git history. No online checkout,
+automatic fee or payment processor is introduced by this correction.
 
-Given the administrator selects Free access in platform settings\
-When an active provider with an owned subscription uses the workspace\
-Then subscription expiry does not block authorized operations\
-And no trial deadline or payment-submission prompt is shown\
-And payment submission is rejected as unnecessary while history remains readable\
-And authentication, ownership, Driver linkage, and permission checks remain unchanged.
+### Scenario: active provider has no subscription
 
-Given the administrator enables Trial then payment\
-When the change is saved\
-Then a seven-day activation window begins for existing unpaid workspaces\
-And valid paid periods and all billing history are preserved\
-And saving the same mode does not restart the window\
-And disabling and later re-enabling starts a new explicitly described activation window\
-And UI and PostgreSQL commands enforce the same effective-access policy\
-And non-admin settings writes are denied and successful changes are audited.
+Given an active transporter or driver has an authorized provider/fleet workspace
+and no subscription record
+When they sign in on web or mobile and use an existing permitted operation
+Then Home, Account, fleet, capacity, documents, private network and Tracking work
+according to ownership and driver permissions
+And no plan assignment, trial deadline, payment prompt or expiry gate is shown
+And no fabricated subscription is needed to grant access.
 
-Implementation plan: additive service-only platform controls in migration `079`,
-shared effective-access policy in identity and PostgreSQL actor scopes, an admin
-Settings destination, and policy-aware account presentation. Existing expiry
-scenarios below apply while Trial then payment is enabled. Verify both modes,
-activation boundaries, permission denial, and history preservation before rollout.
-Rollback restores the policy/functions/client without deleting billing records.
+### Scenario: expired historical plan does not restrict the workspace
 
-### Scenario: workspace submits payment proof
+Given an authorized active provider has a missing, expired, rejected or pending
+historical billing record
+When an operating service or PostgreSQL command evaluates access
+Then billing status does not deny that operation
+And inactive, unlinked, unauthorized and cross-workspace actors remain denied
+And ADMIN and SUPPORT accounts remain web-only, including Transport agents.
 
-Given an authenticated workspace has a subscription\
-When a positive ETB amount and optional validated file are submitted\
-Then a pending proof is linked to that workspace\
-And an already active trial or paid period is not shortened\
-And bank passwords, PINs, or OTPs are never requested\
-And the submitting workspace and an authorized billing administrator may open an attached private proof through a reauthorized route.
+### Scenario: new signup does not create a trial
 
-### Scenario: plan page reflects workspace type
+Given a verified email completes eligible transporter signup
+When the application creates the owner/provider workspace atomically
+Then it creates the normal identity, profile, unpublished page and required
+ownership records without looking up a plan or inserting a subscription
+And it reports operating access without a trial end date
+And identity eligibility, duplicate prevention and tenant isolation are unchanged.
 
-Given an authenticated user opens More and billing information\
-When their workspace has an assigned subscription\
-Then Self-managed Driver / Owner-Operator and Fleet Transporter plans use distinct labels and descriptions appropriate to that workspace\
-And no standard plan price is displayed.
+### Scenario: billing entry points are retired
 
-### Scenario: payment history remains bounded
+Given web/mobile navigation, Account, Home and platform administration
+When they render
+Then no Plans, Billing, Payment proofs or trial-activation controls are offered
+And old billing screen links return to Account or the appropriate admin overview
+And a stale client cannot submit a payment proof, approve a subscription payment,
+create/change a plan/subscription or enable paid access
+And rejection occurs before any file upload, record mutation or access-period change.
 
-Given a workspace or administrator has many payment proofs\
-When payment history or the review queue changes page\
-Then one bounded server page is rendered\
-And the current plan access state remains visible\
-And every proof remains reachable without exposing another workspace's proof.
+### Scenario: retained history stays private
 
-### Scenario: new workspace receives a trial
+Given historical billing rows, audit events or private files exist
+When this retirement is applied
+Then those records and references are preserved
+And retained historical file reads continue to require their original owner or
+authorized administrator
+And no public/browser-direct relation or RPC grant is added
+And app rollback never silently deletes history or reactivates charging.
 
-Given a Fleet Transporter or Self-managed Driver completes signup\
-When the workspace and subscription are provisioned\
-Then access begins immediately as a seven-day trial\
-And company Drivers use their Fleet Transporter's workspace access rather than receiving separate subscriptions.
+### Scenario: a new app cannot claim readiness against the old billing schema
 
-### Scenario: administrator confirms a monthly payment
+Given this application runs before its database retirement migration is installed
+When health/release readiness is checked
+Then it fails with a provider-access-contract blocker
+And a missing marker or database error never reports a compatible runtime
+And the marker is compatibility evidence, not a substitute for permission,
+behavior, catalog, exact-artifact and backup checks.
 
-Given a pending payment proof and an authenticated administrator\
-When the administrator marks it approved\
-Then the result is persisted once\
-And the workspace receives access for 30 days from approval\
-And the paid-period start and end are audited.
+Evidence required: focused access/domain tests; rollback SQL proving new signup,
+no-subscription/expired-record access, retired writes, ownership/inactive/driver
+denials and retained records; actual web/Expo Account and Home controls at desktop
+and phone widths; owner visual review before full release gates.
 
-### Scenario: trial or paid access expires
-
-Given a non-sponsored workspace has no unexpired trial or paid period\
-When one of its members signs in or requests an operating page\
-Then sign-in succeeds and Home shows the expired or unpaid plan state\
-And Account and payment-proof submission remain available\
-And fleet, provider shipment, capacity, profile, verification, and tracking-operation workspace pages are denied\
-And protected commands are denied even if called without using the interface.
-
-### Scenario: public users do not inherit provider billing gates
-
-Given a visitor browses public capacity, a provider microsite, or valid guest tracking\
-When the related provider subscription is evaluated\
-Then public access is governed by publication, assignment, and guest-retention policy rather than a visitor account\
-And no visitor plan or payment screen is required.
-
-### Scenario: payment waits for review after expiry
-
-Given a workspace submits payment after its access period expired\
-When the proof remains Pending or More Information\
-Then the workspace is labeled Payment under review\
-And operating access remains limited until approval.
-
-### Scenario: cross-tenant billing access
-
-Given a non-admin user from another workspace\
-When they request or mutate a payment proof\
-Then access is denied without disclosing proof-file details.
-
-### Scenario: terminal payment review is immutable
-
-Given a payment proof has been approved or rejected\
-When an administrator attempts another review\
-Then the command is rejected\
-And the proof and subscription retain their terminal result.
-
-### Scenario: managed billing is actor scoped and durable
-
-Given local development, Preview, or Production uses the managed runtime\
-When a workspace reads payment history, submits a proof, opens its private file, or an authorized Billing actor reviews it\
-Then the active application route uses the dedicated Billing port, Supabase PostgreSQL, and private Supabase Storage\
-And PostgreSQL repeats current actor, workspace or Billing permission, subscription ownership, status, amount, and terminal-review checks\
-And a failed metadata command removes a newly released upload instead of leaving an unowned proof object\
-And every private-file read repeats workspace or Billing authorization without returning its storage reference to the browser\
-And browser roles cannot execute the service-only commands or read the private bucket directly\
-And managed failure never falls back to SQLite or a serverless local file.
-
-## Contract ownership
-
-- Pages and adapters: `/app/more`, `/admin/billing`, billing route handlers
-- Application services: dedicated managed Billing and workspace application ports; pure expiry policy in `src/lib/subscription-access.js`
-- Persistence and files: actor-scoped Supabase PostgreSQL commands plus private Storage quarantine/release/read/remove adapters
-- Tests: managed Billing contract and live Supabase verifier, `tests/domain.test.mjs`, `tests/repository.test.mjs`, `tests/authorization.test.mjs`, `tests/e2e/smoke.spec.ts`
-
-### Scenario: platform administration is not a customer subscription
-
-Given an administrator opens Account & plan
-When their platform role grants access without a provider subscription
-Then the page identifies platform administration access, does not say No plan
-assigned or ask them to contact support for a plan, and offers no payment form.
-This is a presentation correction; provider billing and authorization stay unchanged.
-
-### Scenario: monetary displays preserve minor units
-
-Given a stored payment amount of 125050 minor units
-When Account or Review Center displays it
-Then it displays ETB 1,250.50 without rounding away cents
-And whole-birr amounts retain their compact existing format.
+Tests: `tests/provider-access-without-plans.test.mjs`,
+`tests/sql/provider-billing-retired.sql`, `tests/managed-identity.test.mjs`,
+`apps/mobile/tests/navigation.test.mjs`, `tests/mobile-billing.test.mjs` and
+`tests/provider-access-health.test.mjs`, `scripts/verify-no-plans-local.mjs`
+(running browser/API acceptance), `scripts/verify-supabase-verification-billing.mjs`
+and `scripts/verify-supabase-platform-admin.mjs` (retained private history and
+retired mutation checks). See ADR-075 and traceability for local evidence/limits.

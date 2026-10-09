@@ -20,17 +20,61 @@ its own access-path review; PostgREST-only evidence does not cover either.
 
 ## Before the change
 
+- Independent drivers (including legacy owner-operators) have one current truck,
+  no driver/fleet management and no truck selector. Ownership/permission belongs
+  on that truck, never an inferred account role or approval badge. Enforce the
+  limit in PostgreSQL and service/API commands, including concurrent additions,
+  stale replacement, restoration and admin recovery. An explicit Change truck
+  archives/creates atomically, blocks unfinished Tracking and preserves all old
+  record/file subjects. Do not copy approvals, private recipients, locations or
+  signals to the replacement. Existing ambiguous multi-truck data must stop the
+  migration for an exact reviewed correction. FEAT-FLT-001 / ADR-076 / NR-18.
+
+- Owner's October 7 commercial rule: provider accounts have no plans,
+  subscriptions, trials or platform-payment requirement. Revenue is transport
+  arrangement. Do not restore paid-mode controls, automatic trial rows or
+  subscription-based access as an implementation shortcut. FEAT-BIL-001 requires
+  active identity, tenant links and driver permissions without a plan, and
+  protection/retention of historical billing data.
+
 - Identify the governing feature and base spec IDs.
 - Confirm the product remains B2B and does not introduce Internal Fleet, auctions, forced scanning, fabricated metrics, or complex capacity analytics.
 - Write the actor, tenant/record scope, preconditions, resulting state, denial behavior, and audit outcome.
 - For destructive or schema actions, name the exact target, backup, compatibility window, and rollback path.
 - For dependencies or workflows, pin versions and grant minimum permissions.
 
+## Chat visibility and delivery (NR-19)
+
+Fetching, sending or assigning is not Seen/joined. Use explicit focused-visible
+acknowledgements with exact current authority, monotonic cursors and a checked
+assignment epoch; retain a separate unread position for each assignment. Blocking
+menus/documents must pause reads, and closing them must refresh and resume. Test
+below-fold/history download and receipt transport failure against saved state.
+Unassigned backlog must not hide the current worker’s unread/assigned alerts from
+a bounded feed; totals remain full-scope. Initial/replayed old work must not ring.
+Notification transport failure cannot block chat or create optimistic Seen.
+Foreground polling is not phone push; background delivery requires its own
+recipient/device, permission, privacy, credential and physical-device evidence.
+
+Browser Notifications from a running site are distinct from Web Push. Request
+permission by a deliberate click, register only a notification worker under its
+unused `/_loadgistic-alerts/` scope (never root/app navigation), preserve
+the denied/unsupported fallback and validate click destinations at both ends.
+Never add a private offline cache while enabling alerts. Bind opt-in and delivery
+deduplication to identity, clear revoked scope, and never acknowledge chat from a
+system click. A driver approval alert must derive from a committed handover and
+say Tracking is completed; a release/cancellation is not owner approval. Opening
+that update acknowledges only the exact saved alert, with current driver authority.
+
 ## During the change
 
 - Keep transitions in `src/lib/domain.js` and mutation authorization in server application services.
 - Deny access by default and reauthorize private proof files on every read.
 - Keep secrets, session tokens, credentials, proof files, and local databases out of commits and logs.
+- Browser/API test failures can include Cookie and Authorization headers in their
+  exception call logs. Catch them at the runner boundary and record only a safe
+  stage/error name, status and counts; do not print raw Playwright request errors
+  or causes. Close disposable sessions and clean exact fixtures even on failure.
 - Use ETB or Quote Requested only. Display data derived from records or verified inputs.
 - Prefer additive migrations and reversible feature exposure.
 - Add tests with each permission, workflow, contract, or state change.
@@ -98,6 +142,15 @@ accepted interaction unless a change is explicitly reviewed.
   first publication and revocation through their real boundaries. Retain verified
   invitation acceptance tests for legacy invitations. Adding a driver must never
   auto-confirm email, create an owner-accessible session or adopt another account.
+- After a browser dependency/postinstall repair, a restarted Metro server and
+  fresh automated context do not prove an existing owner tab uses the new map
+  instance. Verify the Loadgistic server/port, restart that server when necessary
+  and fully reload its connected preview clients before owner confirmation. Never
+  clear shared caches, reset another app or suppress the overlay to simulate a fix.
+  Cancellation regressions must collect console errors and unhandled rejections,
+  require new counts from the intended interaction, and exercise native fetch
+  response-body cancellation; pre-existing totals or an in-memory Response are
+  insufficient for that contract. Preserve genuine HTTP/decode error feedback.
 - Check first-use layouts before a map or record exists. Floating saved-map
   headers must not cover empty-state instructions or actions. Assert visible
   geometry and a normal first click/tap, then verify the stored first record;

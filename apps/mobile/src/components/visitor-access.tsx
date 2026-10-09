@@ -25,11 +25,11 @@ function VisitorLogin({ scope }: { scope: VisitorScope }) {
   } catch (error) { setError(error instanceof Error ? error.message : 'Could not verify this email.'); }
   finally { lock.current = false; setBusy(false); }
  }
- return <Card><Title>{scope === 'tracking' ? 'Follow your shipment' : 'Privately shared with you'}</Title><Copy>{scope === 'tracking' ? 'Use the email your transporter added. One code opens your shared shipments.' : 'Enter the email your transporters share capacity with.'}</Copy>
+ return <Card>{scope==='tracking'?<><Title message="Follow your shipment"/><Copy message="Use the email your transporter added. One code opens your shared shipments."/></>:<><Title message="Privately shared with you"/><Copy message="Enter the email your transporters share capacity with."/></>}
   {handoff ? <Field message="Email verification code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" maxLength={6} editable={!busy} /> : <Field message="Your email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" editable={!busy} />}
-  {!!message && <Copy>{message}</Copy>}<ErrorText message={error || visitor.errors[scope] || visitor.error} /><Button label={handoff ? 'Open private access' : 'Send email code'} busy={busy} onPress={() => { void submit(); }} />
+  {!!message && <Copy>{message}</Copy>}<ErrorText message={error || visitor.errors[scope] || visitor.error} />{handoff?<Button message="Open private access" busy={busy} onPress={()=>void submit()}/>:<Button message="Send email code" busy={busy} onPress={()=>void submit()}/>}
   {!!handoff && <Button secondary message="Use another email or resend" busy={busy} onPress={() => { setHandoff(''); setCode(''); setMessage(''); setError(''); }} />}
   {visitor.errors[scope] && <Button secondary message="Retry clearing saved access" busy={busy} onPress={() => { void visitor.controller.clear(scope).catch(() => undefined); }} />}
-  <Copy message={"No transporter account needed. Access stays open while you use it and closes after 30 minutes of inactivity."}/>
+  {scope==='tracking'?<Copy message="No transporter account needed. Verify your email for five minutes of tracking access."/>:<Copy message="No transporter account needed. Access stays open while you use it and closes after 30 minutes of inactivity."/>}
  </Card>;
 }

@@ -90,9 +90,9 @@ Given a verified Tracking visitor
 When they refresh, reopen Track or move between currently shared shipments
 Then they do not need another code before session expiry
 And every list, detail, proof and review request checks current recipient access
-And 30 minutes without deliberate activity or eight hours after verification ends access server-side
+And five minutes after verification ends access server-side
 And reads, polling and background tabs cannot renew it
-And deliberate foreground activity may renew at most once per minute within the absolute limit
+And deliberate foreground activity may refresh the signed expiry at most once per minute but cannot move the five-minute verification deadline
 And Log out clears access and private UI; history restores revalidate
 And legacy shipment-only cookies never acquire email-wide access.
 
@@ -141,6 +141,16 @@ And En route and Complete do not request proof\
 And customer-safe events appear only to currently authorized email-verified recipients.
 
 ### Scenario: location sharing requires explicit agreement and an assigned Driver
+
+October 7 worldwide-location correction: consented, assigned-driver approximate
+fixes accept finite latitude [-90,90] and longitude [-180,180], including zero.
+On-device offsets wrap at the dateline; a distant catalog town is not used as the
+overseas location label. Both status-attached and standalone location commands
+retain their exact assignment, consent, travel-state, radius and ten-minute
+cadence checks. Migration 115 updates only the two named location guards alongside
+capacity constraints; retained history and private customer access remain intact.
+Regression: tests/sql/worldwide-capacity-loads.sql exercises real US and zero fixes,
+and foreign-driver denial; browser/native capture and readback remain required.
 
 Given the provider and customer choose Status and approximate location when Tracking is started\
 When the assigned Driver marks Going to pickup or En route and keeps the Tracking workspace open\
@@ -329,3 +339,56 @@ legacy functions, and grants new helpers only to service_role. Roll back the app
 before removing helpers; do not delete shipments, recipients or history. Pending
 owner visual review and focused tests: `tests/sql/tracking-email-session.sql`,
 `tests/tracking-session.test.mjs`, `tests/e2e/tracking-email-session.spec.ts`.
+
+## Owner-approved handover and driver appeal — October 7
+
+Given a provider starts a new shipment
+When its main recipient and tracking mode are saved and access email is queued
+Then the main recipient is the Shipment owner and the tracking mode cannot subsequently be changed
+And Loading and Unloading require private photo proof; the provider cannot self-complete
+And En route and Unloading require recorded loading proof so Issue recovery cannot skip that obligation.
+
+Given the assigned driver records Unloading with photo proof
+When the Shipment owner opens Tracking using their normal email code
+Then they can approve unloading in that same session without another code
+And only a currently authorized OWNER recipient with an email session no older than five minutes can approve
+And additional viewers, revoked recipients, expired sessions and other shipments are denied
+And approval locks the shipment, requires both proofs, records one audited completion and one idempotent completion email
+And replay does not duplicate history or delivery and location updates stop after completion.
+
+Given verified guest Tracking access on either client
+When five minutes have elapsed since verification
+Then all reads, proofs, reviews and approval require verification again
+And activity/polling cannot extend the absolute deadline; private capacity retains its thirty-minute policy
+And existing older Tracking cookies/tokens expire under this new limit.
+
+Given an agreed location-tracked shipment is still active
+When the assigned driver sends a new approximate fix from any valid world coordinate
+Then the accepted privacy radii are 1, 3, 5, 10 or 20 km
+And null, invalid and over-20-km fixes are rejected; existing wider history is retained
+And the current location remains visible in all active stages, including waiting for unloading approval
+And the web reports while open; installed background reporting requires OS permission and explicit device lifecycle checks
+And loss of updates is visible; force-stop, permission removal, missing GPS and network failure cannot be overridden.
+
+Given a driver is waiting for unloading approval
+When they explain the problem and submit an appeal
+Then one open appeal belongs to that shipment and existing proof/history remains available
+And Operations-authorized staff can inspect it in the existing Tracking management resource
+And a recorded investigation reason is mandatory before staff approve handover or release the disputed shipment
+And staff dismissal retains active Tracking; a release closes it without falsely claiming customer approval
+And unrelated staff, providers and guests cannot perform staff decisions.
+
+Overdue new-work restriction: ETA + two days is proposed; scope is awaiting the owner's
+answer. Do not disable existing login, Tracking or appeals or invent ETAs for legacy
+shipments. Native background device authority needs a separate bounded capability
+contract and ADR before implementation; no full account token in a background worker.
+
+Rollout: additive migration 117; local role/transition/proof/replay tests and actual
+web/native interaction checks first. Explicit local visual review before release gates.
+Retain event history and recipient rights; no production apply or broad settings sync.
+
+Driver handover updates follow FEAT-NOT-001: an actual saved owner/team approval
+can alert the currently authorized assigned driver on web and mobile and reopen
+the completed Tracking record. Approval already completes Tracking; there is no
+second driver completion action. Viewing or dismissing the alert changes only its
+private acknowledgement and never approval, proof, location or chat read state.

@@ -1,4 +1,5 @@
 
+import {listProviderTrackingAppeals} from '@/lib/provider-tracking.js';
 import {Text} from '@/components/localization';
 import Link from 'next/link';
 import {getTrackingRecovery,adminTrackingLocation} from '@/lib/lifecycle.js';
@@ -22,7 +23,6 @@ const views:Record<string,{label:string;permission:keyof typeof PLATFORM_PERMISS
   TRACKING:{label:'Tracking',permission:'OPERATIONS',icon:PackageSearch},
   CAPACITY:{label:'Capacity',permission:'OPERATIONS',icon:Gauge},
   ROUTES:{label:'Regular service',permission:'OPERATIONS',icon:Route},
-  SUBSCRIPTIONS:{label:'Plan',permission:'BILLING',icon:CalendarClock}
 };
 
 function text(value:any,fallback='Not recorded'){return value===null||value===undefined||value===''?fallback:String(value);}
@@ -35,26 +35,25 @@ function titleFor(record:any){
   if(record.view==='TRACKING')return `Tracking · ${record.code}`;
   if(record.view==='CAPACITY')return `${record.platform_number} · ${record.status}`;
   if(record.view==='ROUTES')return record.owner_name;
-  return record.owner_name||record.plan_name;
+  return record.owner_name;
 }
 function statusFor(record:any){
   if(record.view==='ROUTES')return record.geometry==='RADIUS'?'SERVICE_AREA':'ROUTE';
   return record.operational_status
     ||record.capacity_status
-    ||record.subscription_status
     ||record.status
     ||(typeof record.active==='boolean'?(record.active?'ACTIVE':'SUSPENDED'):record.record_kind||'RECORDED');
 }
 
 function factsFor(record:any){
   if(record.view==='USERS')return [['Email',record.email],['Phone',record.phone],['Role',record.role?.replaceAll('_',' ')],['Workspace',record.workspace_name],['Created',date(record.created_at)]];
-  if(record.view==='WORKSPACES')return [['Type',record.type?.replaceAll('_',' ')],['City',record.city],['Public handle',record.handle?`@${record.handle}`:null],['Users',record.user_count],['Active trucks',record.active_truck_count],['All trucks',record.truck_count],['Tracking sessions',record.tracking_count],['Plan',record.subscription_status]];
+  if(record.view==='WORKSPACES')return [['Type',record.type?.replaceAll('_',' ')],['City',record.city],['Public handle',record.handle?`@${record.handle}`:null],['Users',record.user_count],['Active trucks',record.active_truck_count],['All trucks',record.truck_count],['Tracking sessions',record.tracking_count]];
   if(record.view==='TRUCKS')return [['Owner',record.owner_name],['Cargo configuration',record.cargo_configuration],['Plate',record.plate],['Assigned Driver',record.driver_name],['Capacity',record.capacity_status],['Visibility',record.capacity_visibility],['Reported area',record.location_area],['Capacity updated',date(record.capacity_updated_at)],['Location updated',date(record.location_updated_at)]];
   if(record.view==='DRIVERS')return [['Email',record.email],['Phone',record.phone],['Fleet transporter',record.owner_name],['Assigned truck',record.platform_number],['Capacity updates',record.can_manage_capacity?'Allowed':'Not allowed'],['Tracking updates',record.can_manage_tracking?'Allowed':'Not allowed']];
   if(record.view==='TRACKING')return [['Cargo',record.cargo_summary],['Route',`${record.origin} → ${record.destination}`],['Transporter',record.provider_name],['Truck',record.platform_number],['Driver',record.driver_name],['Tracking mode',record.tracking_mode?.replaceAll('_',' ')],['Expected pickup',record.expected_pickup_date],['Expected delivery',record.expected_delivery_date],['Updated',date(record.updated_at)]];
   if(record.view==='CAPACITY')return [['Transporter',record.owner_name],['Truck',`${record.platform_number} · ${record.make} ${record.model}`],['Visibility',record.visibility?.replaceAll('_',' ')],['Signal type',record.availability_geometry==='RADIUS'?'Service area':'Capacity route'],['Reported area',record.location_area],['Capacity updated',date(record.updated_at)],['Location updated',date(record.location_updated_at)]];
   if(record.view==='ROUTES')return [['Transporter',record.owner_name],['Type',record.geometry==='RADIUS'?'Service area':'Regular route'],['Geometry',record.geometry==='RADIUS'?'Area':'Route'],['Service',record.geometry==='RADIUS'?`Area around ${record.origin}`:`${record.origin} → ${record.destination}`],['Added',date(record.created_at)]];
-  return [['Owner',record.owner_name],['Plan',record.plan_name],['Billing',record.billing_model?.replaceAll('_',' ')],['Starts',date(record.starts_at)],['Ends',date(record.ends_at)],['Updated',date(record.updated_at)]];
+  return [];
 }
 
 function RecordActions({record,returnTo,actorId}:{record:any;returnTo:string;actorId:string}){
@@ -64,7 +63,6 @@ function RecordActions({record,returnTo,actorId}:{record:any;returnTo:string;act
   if(record.view==='DRIVERS')return <div className="admin-record-action-stack"><form action={`/api/admin/records/driver_permissions/${record.id}`} method="post" className="admin-record-permissions"><input type="hidden" name="returnTo" value={returnTo}/><label><input name="canManageCapacity" type="checkbox" defaultChecked={Boolean(record.can_manage_capacity)}/><Text message="Capacity updates"/></label><label><input name="canManageTracking" type="checkbox" defaultChecked={Boolean(record.can_manage_tracking)}/><Text message="Tracking updates"/></label><button className="button"><Save aria-hidden="true"/><Text message="Save permissions"/></button></form><form action={`/api/admin/records/driver/${record.id}`} method="post"><input type="hidden" name="returnTo" value={returnTo}/>{!record.active?<input type="hidden" name="active" value="on"/>:null}<button className={`button ${record.active?'danger':'success'}`}>{record.active?<Text message="Suspend Driver"/>:<Text message="Restore Driver"/>}</button></form></div>;
   if(record.view==='CAPACITY'&&record.status!=='OFF_DUTY')return <form action={`/api/admin/records/capacity/${record.id}`} method="post"><input type="hidden" name="returnTo" value={returnTo}/><button className="button danger" name="command" value="OFF_DUTY"><Text message="Set Off Duty"/></button></form>;
   if(record.view==='ROUTES')return <form action={`/api/admin/records/${String(record.record_kind).toLowerCase()}/${record.id}`} method="post"><input type="hidden" name="returnTo" value={`/admin/operations?view=ROUTES`}/><button className="button danger" name="command" value="REMOVE"><Text message="Remove regular service"/></button></form>;
-  if(record.view==='SUBSCRIPTIONS')return <form action={`/api/admin/records/subscription/${record.id}`} method="post" className="button-row"><input type="hidden" name="returnTo" value={returnTo}/><button className="button success" name="command" value="PAID"><Text message="Paid · 30 days"/></button><button className="button danger" name="command" value="EXPIRE"><Text message="Expire"/></button></form>;
   return null;
 }
 
@@ -79,6 +77,7 @@ export default async function AdminOperationRecordPage({params,searchParams}:{pa
   const events=Array.isArray(record.events)?record.events:[];
   const actions=RecordActions({record,returnTo,actorId:user.id});
   const recovery=view==='TRACKING'?await getTrackingRecovery(user,id):null;
+  const appeals=view==='TRACKING'?await listProviderTrackingAppeals(user,id):[];
   const trackingMap=view==='TRACKING'?await adminTrackingLocation(user,id):null;
   return <div className="page admin-operation-record-page">
     <PageHeader icon={Icon} title={titleFor(record)} subtitle={`${config.label} record`} action={<Link className="button secondary small" href={listHref}><ArrowLeft aria-hidden="true"/>{config.label}<Text message=" list"/></Link>}/>
@@ -95,6 +94,7 @@ export default async function AdminOperationRecordPage({params,searchParams}:{pa
     </section>
     {view==='TRACKING'?<section className="admin-operation-timeline"><h2><CalendarClock aria-hidden="true"/><Text message="Status timeline"/></h2>{events.length?<ol>{events.map((event:any)=><li key={event.id}><span/><div><strong>{String(event.status).replaceAll('_',' ')}</strong><p>{event.note||'Status updated'}</p><small>{date(event.created_at)}</small>{event.has_proof?<TrackingProofLink shipmentId={id} eventId={event.id}/>:null}</div></li>)}</ol>:<div className="empty-state"><Text message="No status events recorded."/></div>}</section>:null}
     {trackingMap?<TrackingLocationMap shipment={trackingMap}/>:null}
+    {view==='TRACKING'&&appeals.length?<section className="card"><h2><Text message="Unloading appeals"/></h2>{appeals.map((appeal:any)=><article key={appeal.id}><p>{appeal.reason}</p><span className="status"><Text message={appeal.status}/></span>{appeal.status==='OPEN'?<form action={`/api/admin/tracking-appeals/${appeal.id}`} method="post" className="stack"><label><Text message="Investigation note"/><textarea name="note" minLength={5} maxLength={1000} required/></label><label><Text message="Decision"/><select name="decision" required defaultValue=""><option value="" disabled><Text message="Choose a decision"/></option><option value="APPROVED"><Text message="Approve handover after investigation"/></option><option value="RELEASED"><Text message="Release driver and close tracking"/></option><option value="DISMISSED"><Text message="Keep tracking active"/></option></select></label><button className="button"><Text message="Save decision"/></button></form>:<p>{appeal.resolution_note}</p>}</article>)}</section>:null}
     {view==='TRACKING'?<TrackingRecoveryControls context={recovery}/>:null}
     <aside className="admin-operation-actions"><h2><Text message="Management"/></h2>{actions||(view==='TRACKING'?<p>{recovery?.actions?.length?<Text message="Use the recovery controls above for corrections, reassignment or cancellation."/>:<Text message="This terminal record retains its history; recovery cannot change it."/>}</p>:<p><Text message="This record is read-only. Its related records and history remain available for investigation."/></p>)}</aside>
   </div>;

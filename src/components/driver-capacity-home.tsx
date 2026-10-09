@@ -68,7 +68,7 @@ const current = capacities[0];
         <span><small><Text message="Freshness"/></small>{current ? <StatusPill status={current.freshness}/> : <span className="status expired"><Text message="Not published"/></span>}</span>
       </div>
     </Localized>:null}
-    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection={vehicleOptions.length===1} corridors={corridors} returnTo="/app/home" allowCorridors={access?.kind==='SELF_MANAGED'} renderedAt={renderedAt}/>}
+    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection corridors={corridors} returnTo="/app/home" allowCorridors={access?.kind==='SELF_MANAGED'} renderedAt={renderedAt}/>}
     </Localized>
   </div>;
 }

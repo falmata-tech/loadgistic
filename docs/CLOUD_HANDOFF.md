@@ -1,6 +1,43 @@
+## October 8 contact-name and notification extensions — prepared locally only
+
+Local ledger 128 adds private push installations/bindings/outbox after 127's
+contact names and 126's handover alerts. New health requires `native_push_outbox`,
+`capacity_contact_names` and `driver_handover_alerts`, alongside the earlier provider,
+single-truck and chat markers. No hosted apply or build/publication occurred;
+last verified hosted ledger remains 114. Preserve rollout order and exact
+backup/restore/approval gates for 115–128 and matched clients. The native push
+dispatcher is a production Netlify schedule, once per minute, behind
+`LOADGISTIC_NATIVE_PUSH_ENABLED` (off by default). Enable only with the exact
+reviewed compatible backend/app rollout. Never place the Firebase private key in
+Netlify, application environment or a build; Expo stores the sending credential.
+
+Browser delivery is Notifications from a running site, using the separate
+`/_loadgistic-alerts/` registration. Preserve `/sw.js` and its static-only cache;
+never register the notification worker at root. Real local owner approval,
+web/Expo updates and saved acknowledgement pass. Review/evidence is in
+MOBILE_IMPLEMENTATION. Closed-browser Web Push is not configured. Closed-phone
+Expo/FCM has local backend/native code and verified public config plus the
+explicitly delegated FCM V1 upload to the exact falmatad/loadgistic app. It is not
+live or device-proven: hosted migration/flag, owner visual review, new compiled
+phone artifacts and closed-phone/tap/permission tests remain pending. Protected
+upload evidence is `.local/native-push-fcm-upload-review.md`; no private bytes
+were copied to repository/app/logs. Signing and Play credentials are unchanged.
+
 # Netlify and Supabase handoff
 
 This is a credential-free owner handoff. Never put real secrets, customer data, tracking codes, or private files in this document, commits, screenshots, or chat logs.
+
+## Unpublished local chat extension — October 7
+
+FEAT-NOT-001 / ADR-077 / NR-19 is local-only at ledger 125 (122–125 add honest Seen,
+assignment/unread/alert contracts). The compiled health route requires all chat
+markers alongside single-truck/provider-access markers. Do not publish those
+clients against the last-verified hosted ledger 114. Focused checks pass; owner
+visual review, full gates, exact restored-backup rehearsal and matched migrations/
+web/APK/AAB artifacts remain pending. Background push is now selected but requires
+configuration/implementation/device evidence; direct provider inquiry scope is
+unresolved. No hosted Auth/SMTP, provider, signing or other setting was
+changed. See MOBILE_IMPLEMENTATION for safe local evidence and running previews.
 
 ## Release boundary
 
@@ -15,7 +52,8 @@ migration, Auth/SMTP, billing or other settings change was included.
 Expo internal Android build `544cc916-c058-4bca-85a0-72a4d4b4e981` is downloadable
 and independently verified as signed, installed and standalone. It uses this
 production API. Tester instructions and physical-device/store limitations are in
-[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md). Google Play remains deferred.
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md). Owner reports the Google Play developer account is ready (October 7); correct
+account/app verification and internal testing setup remain pending.
 Today's Featured programme is unpublished/empty; investigate WEB-MOB-013 rather
 than counting the 200 empty response as automatic programme completion.
 
@@ -36,7 +74,7 @@ public Production. Broad launch remains blocked until remote application email,
 upload-scanning, backup/restore, Preview verification, and monitoring gates in
 `docs/LAUNCH_READINESS.md` pass. Public discovery, Shared capacity, provider
 Capacity, provider-owned Tracking, transporter-profile editing, managed signup,
-the authenticated workspace shell, Fleet management, Verification, Billing,
+the authenticated workspace shell, Fleet management, Verification,
 member Support, Assisted matching, platform-team management, Operations, and
 Featured/Sponsor administration all use the unconditional managed runtime.
 
@@ -129,7 +167,7 @@ Production-disabled local fixture-password boundary are the only identity
 runtime. Managed provider onboarding now provisions an inactive
 Auth subject, collects the short provider profile after Google or email-code
 identity proof, and then provisions the matching provider workspace, draft page,
-signup record, seven-day trial, and active role projection atomically.
+signup record and active role projection atomically, without a plan or subscription (FEAT-BIL-001).
 The hosted Production Auth callback, Google provider, numeric templates, and
 Gmail SMTP are configured, and one real account OTP was verified. Google login
 and the complete provider-signup path still require end-to-end verification

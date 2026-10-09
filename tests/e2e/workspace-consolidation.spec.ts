@@ -79,13 +79,15 @@ async function expectHeaderControlsFit(page:Page){
   const header=page.locator('.provider-topbar');
   const box=await header.boundingBox();expect(box).not.toBeNull();
   const boxes=[];
-  for(const selector of ['.language-picker select','.workspace-support-shortcut','.mobile-dashboard-exit']){
+  for(const selector of ['.language-picker select','.workspace-support-shortcut']){
    const control=header.locator(selector);await expect(control).toBeVisible();
    const rect=await control.boundingBox();expect(rect).not.toBeNull();
    expect(rect!.x).toBeGreaterThanOrEqual(0);expect(rect!.x+rect!.width).toBeLessThanOrEqual(width);
    expect(rect!.y).toBeGreaterThanOrEqual(box!.y);expect(rect!.y+rect!.height).toBeLessThanOrEqual(box!.y+box!.height+1);
    expect(rect!.height).toBeGreaterThanOrEqual(44);boxes.push(rect!);
   }
+  const area=page.getByRole('navigation',{name:'Switch view'});await expect(area.getByRole('link',{name:'Marketplace',exact:true})).toBeVisible();
+  expect((await area.boundingBox())!.width).toBeLessThanOrEqual(width);
   for(let index=1;index<boxes.length;index++)expect(boxes[index].x).toBeGreaterThanOrEqual(boxes[index-1].x+boxes[index-1].width);
  }
 }

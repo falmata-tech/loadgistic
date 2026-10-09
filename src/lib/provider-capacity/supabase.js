@@ -1,13 +1,17 @@
+import {privateCapacityContactName} from '../private-capacity-contact.js';
+import {privateContactDigest} from '../security.js';
+import {normalizePrivateContactEmail} from '../domain.js';
 import {capacitySignalFreshness} from '../domain.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
+import {isIndependentDriver} from '../independent-driver.js';
 
 const MANAGED_ERRORS=[
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','INVALID_VEHICLE','DRIVER_REQUIRED_FOR_CAPACITY',
   'DEVICE_LOCATION_DRIVER_ONLY','CAPACITY_DRIVER_LOCATION_REQUIRED','CAPACITY_LOCATION_ACTIVE_REQUIRED',
   'CAPACITY_CONFIGURATION_REQUIRED','INVALID_APPROXIMATE_LOCATION','INVALID_CAPACITY_INPUT',
   'INVALID_CAPACITY_STATUS','ACCEPTED_LOADS_REQUIRED','INVALID_AVAILABILITY_GEOMETRY',
-  'PARTIAL_CAPACITY_ROUTE_REQUIRED','CAPACITY_ROUTE_POINTS_REQUIRED','CAPACITY_AREA_BOUNDARY_REQUIRED',
-  'CAPACITY_PLACE_DUPLICATE','LOCALITY_REQUIRED','REGULAR_CAPACITY_LIMIT','NOT_FOUND'
+  'PARTIAL_CAPACITY_ROUTE_REQUIRED','CAPACITY_ROUTE_POINTS_REQUIRED','CAPACITY_AREA_BOUNDARY_REQUIRED','CAPACITY_AREA_BOUNDARY_INVALID',
+  'CAPACITY_PLACE_DUPLICATE','LOCALITY_REQUIRED','REGULAR_CAPACITY_LIMIT','NOT_FOUND','INVALID_SHARING_MODE','EXCLUSIVE_EMAIL_REQUIRED','EXCLUSIVE_RECIPIENT_ONLY','CONTACT_NAME_REQUIRED'
 ];
 
 function managedError(code,error){
@@ -63,10 +67,11 @@ export async function getSupabaseProviderCapacityWorkspace(user){
   const {data,error}=await client.rpc('provider_capacity_workspace',{actor_user_id:user.id});
   if(error)throw managedError('SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED',error);
   const workspace=projectSupabaseProviderCapacityWorkspace(data);
+  if(isIndependentDriver(user)&&workspace.vehicles.length>1)throw new Error('INDEPENDENT_MULTIPLE_CURRENT_TRUCKS');
   const vehicleIds=workspace.vehicles.map(vehicle=>vehicle.id).filter(Boolean);
   if(!vehicleIds.length)return workspace;
   const {data:trailerDetails,error:trailerError}=await client.from('vehicles')
-    .select('id,trailer_interchangeable,supported_trailer_configurations').in('id',vehicleIds);
+    .select('id,trailer_interchangeable,supported_trailer_configurations,use_basis').in('id',vehicleIds);
   if(trailerError)throw managedError('SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED',trailerError);
   const detailsById=new Map((trailerDetails||[]).map(vehicle=>[vehicle.id,vehicle]));
   return {...workspace,vehicles:workspace.vehicles.map(vehicle=>({...vehicle,...detailsById.get(vehicle.id)}))};
@@ -92,6 +97,14 @@ export async function publishSupabaseProviderCapacity(user,input,photo=/** @type
     accepts_multi_drop:Boolean(input.acceptsMultiDrop||input.acceptsMultiStop),
     photo_storage_path:photo?.path||null
   };
+  if(input.sharingMode){
+    command.sharing_mode=String(input.sharingMode);
+    if(input.sharingMode==='EXCLUSIVE'){
+      const email=normalizePrivateContactEmail(input.exclusiveEmail);
+      command.exclusive_email=email;command.exclusive_digest=privateContactDigest(email);
+      if(input.exclusiveName!==undefined)command.exclusive_name=privateCapacityContactName(input.exclusiveName);
+    }
+  }
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('publish_provider_capacity',{actor_user_id:user.id,command});
   if(error)throw managedError('SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED',error);

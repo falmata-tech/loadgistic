@@ -44,10 +44,10 @@ export function signalBounds(items:CapacitySignal[]):[number,number,number,numbe
  return[west-.005,south-.005,east+.005,north+.005];
 }
 /** Display-only offsets for coincident points after native clustering expands. */
-export function separateMarkers(points:{id:string;coordinate:LngLat}[],zoom:number):Record<string,[number,number]> {
+export function separateMarkers(points:{id:string;coordinate:LngLat}[],zoom:number,spacing=54):Record<string,[number,number]> {
  const groups:{x:number;y:number;members:string[]}[]=[];
- for(const row of [...points].sort((a,b)=>a.id.localeCompare(b.id))){const p=project(row.coordinate,zoom);const group=groups.find(g=>Math.hypot(g.x-p.x,g.y-p.y)<40);if(group)group.members.push(row.id);else groups.push({...p,members:[row.id]});}
+ for(const row of [...points].sort((a,b)=>a.id.localeCompare(b.id))){const p=project(row.coordinate,zoom);const group=groups.find(g=>Math.hypot(g.x-p.x,g.y-p.y)<spacing);if(group)group.members.push(row.id);else groups.push({...p,members:[row.id]});}
  const result:Record<string,[number,number]>={};
- for(const group of groups)group.members.forEach((id,i)=>{if(group.members.length===1){result[id]=[0,0];return;}const radius=Math.max(48,group.members.length*58/(Math.PI*2)),angle=i/group.members.length*Math.PI*2;result[id]=[Math.cos(angle)*radius,Math.sin(angle)*radius];});
+ for(const group of groups)group.members.forEach((id,i)=>{if(group.members.length===1){result[id]=[0,0];return;}const radius=Math.max(48,(spacing+4)/(2*Math.sin(Math.PI/group.members.length))),angle=i/group.members.length*Math.PI*2;result[id]=[Math.cos(angle)*radius,Math.sin(angle)*radius];});
  return result;
 }

@@ -9,6 +9,18 @@ observability: [transport_request_created, transport_request_updated, transport_
 rollout: Apply additive migrations 103, 104, 110 and 111 with RLS and service-only RPCs before application release. Verify isolated SQL denial and desktop/phone submission-to-admin workflows, obtain visual review, then use normal release gates. Roll back the app while retaining private requests and history.
 ---
 
+October 7 launcher presentation: primary “Need help with transport?” with smaller
+“Let us handle it · Live chat” beneath on web/native. The accessible action names
+the visible primary text; the smaller line describes the same live Brokerage
+conversation. Intake fields, staff assignment, history and provider-only Support
+remain unchanged. The chat uses the same primary question and smaller service/live-chat
+line, followed by one plain explanation of arranging a truck for the visitor’s
+load and route. Translations use local phrasing rather than word-for-word
+English, avoid invented availability promises, and preserve the service/fee
+agreement. Customer waiting text names the transport team, avoiding internal
+Brokerage terminology; assigned names and all message/route records stay intact.
+Verify phone/desktop fit, translated copy and the actual entry.
+
 # Transport callback requests
 
 ### Scenario: a visitor requests transport
@@ -282,3 +294,24 @@ Then those fields and save actions remain disabled until handlers attach\
 And the first enabled selection and save persist the selected assignee without losing input.
 
 Evidence: `tests/e2e/form-readiness.spec.ts` (delayed scripts, enabled input and actual submission).
+
+
+October 7 local evidence: three current `public-assistance-dock` cases and two
+`transport-requests` cases pass, including actual persisted local chat intake.
+The Expo preview's real navigation link, localized question/explanation, four
+fields, reachable Start chat, language checked state and 320px fit pass in all five
+languages without mocking APIs or creating chat records. Desktop and stable phone
+captures are in `.local/transport-copy-*.png`; exact logs and limits are recorded
+in MOBILE_IMPLEMENTATION / TRACEABILITY. Owner visual review and publication are
+pending; no native-speaker or physical-device approval is inferred.
+
+
+## Chat alert/read-receipt extension — October 7 (planned locally)
+
+FEAT-NOT-001 controls existing-chat unread alerts, explicit visible-message Seen
+cursors and actual assigned-agent joining. Fetching, prefetch/history or a hidden
+screen is not a new read receipt; old Support timestamps remain historical only.
+Keep Support/Brokerage scopes, guest capabilities, private files and staff-web-only
+access unchanged. Sound/system delivery is opt-in; closed-app push is not implied
+by polling. Local implementation/permission/device evidence and owner visual
+approval are required before publication.

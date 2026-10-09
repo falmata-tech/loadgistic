@@ -11,5 +11,5 @@ test('native location uses the shared web privacy function and exposes only an o
  }
 });
 test('unsupported, unavailable or too-inaccurate fixes never become capacity commands', () => {
- for (const input of [[0, 0, 10, 20], [9, 38, null, 20], [NaN, 38, 10, 20], [9, 38, 50000, 20], [9, 38, 10, 2]]) assert.throws(() => capacityLocation(...input));
+ for (const input of [[91, 0, 10, 20], [9, 38, null, 20], [NaN, 38, 10, 20], [9, 38, 50000, 20], [9, 38, 10, 2]]) assert.throws(() => capacityLocation(...input));
 });

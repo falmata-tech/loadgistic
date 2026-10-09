@@ -3,6 +3,7 @@ import { useLanguage } from '../localization/provider';
 import { uploadForm, uploadLimit } from '../api/upload';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {blockChatReading} from '../session/chat-visibility';
 import { AppState, Image, Modal, Platform, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
@@ -48,6 +49,7 @@ type FileData = { base64: string; mimeType: string };
 export function PrivateFile({ load, label }: { load: () => Promise<unknown>; label?: string }) {
  const {t}=useLanguage();
  const [data, setData] = useState<FileData | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
+ const overlay=useRef({});useEffect(()=>{const source=overlay.current;blockChatReading(source,!!data);return()=>blockChatReading(source,false);},[data]);
  const generation = useRef(0), lock = useRef(false), focused = useRef(false);
  useFocusEffect(useCallback(() => { focused.current = true; return () => { focused.current = false; generation.current++; setData(null); }; }, []));
  useEffect(() => { const subscription = AppState.addEventListener('change', state => { if (state !== 'active') { generation.current++; setData(null); } }); return () => subscription.remove(); }, []);

@@ -16,7 +16,7 @@ export default function SupportScreen() {
 }
 function ChatCard({ item }: { item: SupportSummary }) {
  const {t,locale}=useLanguage();
- return <Card><Title>{t(supportTopic(item.category))}</Title><Copy>{item.preview}</Copy><Copy>{item.status === 'CLOSED' ? t('Ended') : item.agent ? t('{agent} is helping',{agent:item.agent}) : t('Waiting for an available support agent')}</Copy><Copy>{new Date(item.updatedAt).toLocaleString(locale)}</Copy><Link href={{ pathname: '/support-chat', params: { id: item.id } }} style={{ paddingVertical: 12, color: '#0c7275' }}>{item.status === 'CLOSED' ? t('View past chat') : t('Continue chat')}</Link></Card>;
+ return <Card><Title>{t(supportTopic(item.category))}</Title><Copy>{item.preview}</Copy><Copy>{item.status === 'CLOSED' ? t('Ended') : item.agent ? t('Assigned to {agent}',{agent:item.agent}) : t('Waiting for an available support agent')}</Copy><Copy>{new Date(item.updatedAt).toLocaleString(locale)}</Copy><Link href={{ pathname: '/support-chat', params: { id: item.id } }} style={{ paddingVertical: 12, color: '#0c7275' }}>{item.status === 'CLOSED' ? t('View past chat') : t('Continue chat')}</Link></Card>;
 }
 function MemberSupport() {
  const {t}=useLanguage();

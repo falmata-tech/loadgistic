@@ -7,7 +7,7 @@ test('load space replaces signal geometry and filters profiles and trucks',async
  test.setTimeout(150000);
  await page.goto('/?geometry=RADIUS');const dialog=await openCapacityFilterDialog(page);
  await expect(dialog.locator('[name="geometry"]')).toHaveCount(0);await expect(dialog.locator('[name="currentArea"]')).toHaveCount(0);
- const load=dialog.getByRole('combobox',{name:'Space needed',exact:true}),status=dialog.getByRole('combobox',{name:'Availability',exact:true});
+ const load=dialog.getByRole('combobox',{name:'Space needed',exact:true}),status=dialog.getByRole('combobox',{name:"Truck's current load",exact:true});
  await status.selectOption('PARTIAL');await load.selectOption('FTL');await expect(status).toHaveValue('');await expect(status.locator('option[value="PARTIAL"]')).toBeDisabled();
  await page.screenshot({path:info.outputPath('shipment-load-filter.png'),scale:'css'});
  await dialog.getByRole('button',{name:'Show matching trucks',exact:true}).click();await expect(page).toHaveURL((url:URL)=>url.searchParams.get('loadType')==='FTL'&&!url.searchParams.has('geometry'));

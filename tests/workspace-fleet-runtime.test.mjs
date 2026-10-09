@@ -26,7 +26,7 @@ test('Fleet assignment and permission changes are one audited transaction',()=>{
 test('active workspace and Fleet routes do not import the SQLite repository',()=>{
   for(const file of [
     'src/app/app/layout.tsx','src/app/app/home/page.tsx','src/app/app/menu/page.tsx',
-    'src/app/app/more/page.tsx','src/app/app/fleet/page.tsx',
+    'src/app/app/more/page.tsx','src/app/app/fleet/page.tsx','src/components/provider-fleet-workspace.tsx',
     'src/app/api/fleet/drivers/[id]/permissions/route.ts'
   ]){
     const source=fs.readFileSync(file,'utf8');

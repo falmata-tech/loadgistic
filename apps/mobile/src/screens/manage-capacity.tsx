@@ -1,5 +1,7 @@
+import {CAPACITY_SHARING_CHOICES,capacitySharingMode,capacitySharingLabel} from '../../../../src/lib/capacity-sharing';
 import {useLanguage} from '../localization/provider';
 import {locationAreaLabel} from '../localization/location-copy';
+import {CAPACITY_LOAD_CHOICES,capacityLoadExplanation,capacityLoadLabel} from '../../../../src/lib/capacity-load-preferences';
 import {useCapacityLocation} from '../hooks/capacity-location';
 import type {CapacityTruck as Truck, CapacityWorkspace as Workspace} from '../api/capacity';
 import {CoveragePreview} from '../components/coverage-preview';
@@ -12,7 +14,7 @@ import { ActivityIndicator, AppState, Pressable, Switch, Text, View } from 'reac
 import { Redirect, useFocusEffect } from 'expo-router';
 import { useAccountQuery } from '../hooks/account-query';
 import { useAccount } from '../session/provider';
-import { Page, Card, Title, Copy, Button, ErrorText } from '../components/ui';
+import { Page, Card, Title, Copy, Field, Button, ErrorText } from '../components/ui';
 import { emptyPlace, PlacePicker } from '../components/place-picker';
 import { captureCapacityLocation } from '../location/capture';
 import { privacyRadii, type ApproximateFix } from '../location/privacy';
@@ -37,7 +39,8 @@ function TruckCapacity({truck,canPublish,editing,onEdit,onCancel,onSaved,refresh
   const automatic=useCapacityLocation(truck,editing,refresh);
   const when=(value:string)=>new Date(value).toLocaleString(locale==='om'?'en-ET':locale);
   return <Card><Title>{truck.label}</Title><Copy>{truck.plate} · {truck.driver||t('No driver assigned')}</Copy>
-    <Copy>{truck.current ? `${t(truck.current.status==='EMPTY'?'Empty':truck.current.status==='PARTIAL'?'Partial':'Off Duty')} · ${t(truck.current.visibility==='OPEN'?'Open to the public':'Private network')}` : t('No capacity published yet')}</Copy>
+    <Copy>{truck.current ? `${t(truck.current.status==='EMPTY'?'Empty':truck.current.status==='PARTIAL'?'Partial':'Off Duty')} · ${t(capacitySharingLabel(capacitySharingMode(truck.current.sharingMode,truck.current.visibility)))}` : t('No capacity published yet')}</Copy>
+    {truck.current?.status==='EMPTY'&&<Copy>{t(capacityLoadLabel(truck.current.acceptedLoads))}</Copy>}
     {truck.current&&<Copy>{t('Capacity updated {date}',{date:when(truck.current.updatedAt)})}</Copy>}
     <Copy>{truck.location ? `${locationAreaLabel(truck.location.area,t)} · ${t('{radius} km radius',{radius:truck.location.radius})}\n${t('Location updated {date}',{date:when(truck.location.updatedAt)})}` : t('No driver location shared yet')}</Copy>
     {!editing&&truck.location?.coordinate&&<TrackingMap location={{latitude:truck.location.coordinate[1],longitude:truck.location.coordinate[0],radius:truck.location.radius,area:truck.location.area,updatedAt:truck.location.updatedAt}} coverage={truck.current&&truck.current.status!=='OFF_DUTY'?{kind:truck.current.availabilityGeometry,places:truck.current.availabilityGeometry==='ROUTE'?truck.current.route:truck.current.boundary,partial:truck.current.status==='PARTIAL'}:undefined}/>}
@@ -57,7 +60,7 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
   const home=section==='HOME', [advanced,setAdvanced]=useState(false);
   const all=section==='ALL'||(home&&!canPublish);
   const show=(group:'CAPACITY'|'COVERAGE'|'SHARING'|'LOADS'|'LOCATION')=>all||section===group||(home&&(group==='CAPACITY'||group==='COVERAGE'||group==='SHARING'||(group==='LOADS'&&advanced)||(group==='LOCATION'&&!truck.location)));
-  const [status, setStatus] = useState(current?.status || 'EMPTY'), [loads, setLoads] = useState(current?.acceptedLoads || 'FTL'), [geometry, setGeometry] = useState(current?.availabilityGeometry || 'ROUTE'), [visibility, setVisibility] = useState(current?.visibility || 'PRIVATE');
+  const [status, setStatus] = useState(current?.status || 'EMPTY'), [loads, setLoads] = useState(current?.acceptedLoads || 'FTL'), [geometry, setGeometry] = useState(current?.availabilityGeometry || 'ROUTE'), [sharingMode, setSharingMode] = useState<string>(capacitySharingMode(current?.sharingMode,current?.visibility)), [exclusiveEmail,setExclusiveEmail]=useState(current?.exclusiveEmail||''),[exclusiveName,setExclusiveName]=useState(current?.exclusiveName||'');
   const [route, setRoute] = useState(current?.route.length ? current.route : [emptyPlace(), emptyPlace()]), [boundary, setBoundary] = useState(current?.boundary.length ? current.boundary : [emptyPlace(), emptyPlace(), emptyPlace()]), [center, setCenter] = useState(current?.areaCenter || emptyPlace());
   const [multiPick, setMultiPick] = useState(current?.acceptsMultiPick || false), [multiDrop, setMultiDrop] = useState(current?.acceptsMultiDrop || false), [radius, setRadius] = useState(truck.location?.radius || 20);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [locationSaved, setLocationSaved] = useState(false), [fix, setFix] = useState<ApproximateFix | null>(null);
@@ -82,7 +85,7 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
       const places = geometry === 'ROUTE' ? route : [center, ...boundary];
       if (places.some(place => !place.placeRef)) throw new Error('Choose each city from the suggestions.');
     }
-    await account.request('/api/mobile/capacity', { action: 'PUBLISH', vehicleId: truck.id, status, acceptedLoads: status === 'PARTIAL' ? 'PTL' : loads, availabilityGeometry: geometry, visibility,
+    await account.request('/api/mobile/capacity', { action: 'PUBLISH', vehicleId: truck.id, status, acceptedLoads: status === 'PARTIAL' ? 'PTL' : loads, availabilityGeometry: geometry, visibility:sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE', sharingMode, exclusiveEmail,...((show('SHARING')||exclusiveName)?{exclusiveName}:{}),
       currentRoutePlaces: route.filter(place => place.placeRef).map(place => ({ placeRef: place.placeRef })), capacityAreaCenterPlaceRef: center.placeRef,
       capacityAreaBoundaryPlaces: boundary.filter(place => place.placeRef).map(place => ({ placeRef: place.placeRef })), acceptsMultiPick: multiPick, acceptsMultiDrop: multiDrop });
     onSaved();
@@ -97,14 +100,24 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
     {fix&&!home&&show('LOCATION')&&<TrackingMap location={{latitude:fix.approximateLat,longitude:fix.approximateLng,radius:fix.locationPrecisionKm,area:'',updatedAt:''}}/>}
     {canPublish && section!=='LOCATION' ? <>{show('CAPACITY')&&<><Title message={"Available space"}/><Choices value={status} options={[['EMPTY', 'Empty'], ['PARTIAL', 'Partial'], ['OFF_DUTY', 'Off Duty']]} busy={busy} onChange={value => { setStatus(value); if (value === 'PARTIAL') setGeometry('ROUTE'); }} /></>}
       {status !== 'OFF_DUTY' && <>
+        {status==='EMPTY'&&(show('CAPACITY')||show('LOADS'))&&<><Title message="Which loads will you take?"/><Choices value={loads} options={CAPACITY_LOAD_CHOICES} busy={busy} onChange={setLoads}/><Copy>{t(capacityLoadExplanation(loads))}</Copy></>}
+        {status==='PARTIAL'&&show('CAPACITY')&&<Copy message="Remaining space is for shared loads."/>}
         {show('COVERAGE')&&<>{home?<Title message="Where can you take a load?"/>:all&&<Title message={"Availability coverage"}/>}<Choices value={geometry} options={status === 'PARTIAL' ? [['ROUTE', 'Route']] : [['ROUTE', 'Route'], ['RADIUS', 'Service area']]} busy={busy} onChange={setGeometry} />
         {geometry === 'ROUTE' ? <Cities items={route} onChange={setRoute} minimum={2} label={t('Route city')} busy={busy} /> : <><PlacePicker label={t('Area center')} value={center} onChange={setCenter} disabled={busy} /><Cities items={boundary} onChange={setBoundary} minimum={3} label={t('Boundary city')} busy={busy} /></>}
         {!home&&<CoveragePreview kind={geometry} places={geometry==='ROUTE'?route:boundary}/>}</>}
         {home&&<Button secondary message="Load preferences" onPress={()=>setAdvanced(value=>!value)} busy={busy}/>}
-        {show('LOADS')&&<>{status==='PARTIAL'&&<Copy message="Shared space"/>}{status === 'EMPTY' && <>{all&&<Title message={"Loads you accept"}/>}<Choices value={loads} options={[['FTL', 'Full truckload'], ['PTL', 'Shared space'], ['BOTH', 'Either']]} busy={busy} onChange={setLoads} /></>}
+        {show('LOADS')&&<>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Copy message={"Multiple pickups"}/><Switch accessibilityLabel={t('Multiple pickups')} value={multiPick} onValueChange={setMultiPick} disabled={busy} /></View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><Copy message={"Multiple drop-offs"}/><Switch accessibilityLabel={t('Multiple drop-offs')} value={multiDrop} onValueChange={setMultiDrop} disabled={busy} /></View>
-        </>}{show('SHARING')&&<>{(all||home)&&<Title message={"Who can see it?"}/>}<Choices value={visibility} options={[['PRIVATE', 'Private network'], ['OPEN', 'Open to the public']]} busy={busy} onChange={setVisibility} /></>}
+        </>}{show('SHARING')&&<>
+          {(all||home)&&<Title message="Who can see it?"/>}
+          <Choices value={sharingMode} options={CAPACITY_SHARING_CHOICES} busy={busy} onChange={setSharingMode}/>
+          {sharingMode==='EXCLUSIVE'?<><Field message="Person or company name" value={exclusiveName} onChangeText={setExclusiveName} maxLength={100} editable={!busy}/><Field message="Only this email can see the truck" value={exclusiveEmail} onChangeText={setExclusiveEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} editable={!busy}/></>
+            :sharingMode==='BOTH'?<Copy message="Invited contacts also see this truck in their private feed."/>
+            :sharingMode==='PUBLIC'?<Copy message="Anyone browsing the map can see this truck."/>
+            :<Copy message="Only approved contacts can see this truck."/>}
+          <Copy message="Manage contacts in Network. Changing sharing keeps their history and your location privacy."/>
+        </>}
         {!truck.canLocate && !truck.location && <Copy message={"Ask the assigned driver to share the truck’s location before publishing."}/>}
       </>}
       <ErrorText message={error?t(error):''} /><Button message="Save capacity" onPress={save} busy={busy} />

@@ -1,3 +1,4 @@
+import FleetScreen from './fleet';
 import {DriverHome} from './driver-home';
 import {ActionLink} from '../components/action-link';
 import {useLanguage} from '../localization/provider';
@@ -17,6 +18,7 @@ export default function AccountScreen() {
   if (account.session.state === 'ONBOARDING') return <Onboarding />;
   if (account.session.state === 'JOIN_FLEET') return <Invitations />;
   if (account.session.user.role === 'DRIVER' && account.session.access?.granted) return <DriverHome />;
+  if (account.session.user.role === 'TRANSPORTER' && account.session.access?.granted) return <FleetScreen />;
   return <Dashboard />;
 }
 function Login() {
@@ -43,7 +45,8 @@ function Onboarding() {
     <Field message="Your name" value={name} onChangeText={setName} autoComplete="name" editable={!busy} />
     <Field message="Transporter name" value={businessName} onChangeText={setBusinessName} editable={!busy} />
     <Field message="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" editable={!busy} />
-    {([['TRANSPORT_COMPANY', 'Transport company'], ['OWNER_OPERATOR', 'Owner-operator'], ['SELF_MANAGED_DRIVER', 'Self-managed driver']] as const).map(([value, label]) => <Button key={value} secondary={applicationType !== value} label={t(label)} onPress={() => setType(value)} busy={busy} />)}
+    {([['TRANSPORT_COMPANY', 'Transport company'], ['SELF_MANAGED_DRIVER', 'Independent driver']] as const).map(([value, label]) => <Button key={value} secondary={applicationType !== value} label={t(label)} onPress={() => setType(value)} busy={busy} />)}
+    {applicationType==='SELF_MANAGED_DRIVER'&&<Copy message="Drive one truck you own, rent or use with permission."/>}
     <Button message="Create account" onPress={submit} busy={busy} /><SignOut />
   </Page>;
 }
@@ -61,7 +64,7 @@ function Dashboard() {
   const account = useAccount(), session = account.session!;
   const { data, error, reload } = useAccountQuery<DashboardData>('/api/mobile/dashboard');
   return <Page><Title>{session.user.organizationName || session.user.businessName || session.user.name}</Title><Copy>{t(session.user.role === 'DRIVER' ? 'Your driving workspace' : 'Your transport workspace')}</Copy><ErrorText message={error} />
-    {!session.access?.granted ? <Card><Title message={"Workspace access is limited"}/><Copy message={"Your current plan needs attention before you can manage operations."}/><ActionLink href="/billing" message="Plan and payments" icon="billing"/></Card> : <>
+    {!session.access?.granted ? <Card><Title message={"Workspace access is limited"}/><Copy message={"This account is not linked to a transport workspace."}/><ActionLink href="/support" message="Support" icon="help"/></Card> : <>
       {!data && !error && <ActivityIndicator accessibilityLabel="Loading your dashboard" />}
       {!!error && <Button message="Try again" onPress={() => { void reload(); }} />}
       <ProfileSetup published={data?.profilePublished} /><ActionLink href="/manage-capacity" message="Truck capacity" icon="location"/>

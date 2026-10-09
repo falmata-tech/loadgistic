@@ -1,5 +1,133 @@
 # Specification traceability
 
+## Android push — local evidence and scoped FCM setup, October 8
+
+Native preview exposed a Zod/server-schema import in the phone routing graph.
+The destination port is now dependency-free and strict. Two phone contract tests
+(all event/screen combinations plus malformed/injected payload denial) and ten
+retained server push tests pass. Actual Android bundle/startup is being repeated;
+web-shim success is not counted as that proof. NR-08/19. The focused signed
+development APK is compiled and installed with preserved data and the existing
+signer; it remains Metro-dependent, not a standalone release or phone-delivery proof.
+
+FEAT-NOT/MOB/IAM/SUP/TRQ/TRK/SEC/LNG; ADR-078; NR-01/02/03/09/19.
+Local migration 128: backed up/rehearsed/applied, private RLS/service-only commands,
+verified Auth session or exact guest capability, atomic committed-event outbox,
+lease/recheck/finish and bounded retry/receipts. `native-push-outbox.sql` verifies
+scope/secret/session/staff denial, no replay/own-message push, no fabricated Seen,
+real join dedup, stale/crashed leases, retry exhaustion, guest expiry, logout,
+rotated-token receipt safety and browser ACL/RLS. `driver-handover-alerts.sql`
+now also verifies actual proof-backed approval enqueue and ack suppression.
+Fourteen focused push/readiness cases pass; root/native types, mobile lint,
+SDK compatibility, resolved public config, source/spec validation and fixed-copy
+audit pass (455/455 explicit boundaries; no fluency/dynamic-copy claim).
+
+Owner-delegated EAS FCM V1 upload is verified on @falmatad/loadgistic, package
+com.loadgistic.app, Firebase loadgistic-f082a; no prior FCM association or other
+credential change. Private bytes remain outside repository/app/logs. Exact local
+round-trip evidence, screenshots, native/device limits and protected upload receipt
+are recorded in MOBILE_IMPLEMENTATION. No hosted SQL/flag or new native artifact
+was published. Native visual review, matched rollout and physical closed-phone
+delivery/tap/permission evidence remain pending; this spec is not marked done.
+
+## Named private contacts and map overview — local evidence, October 8
+
+FEAT-SHR/CAP/MOB/LNG, NR-02/03/09/13: migration 127 adds private nullable contact
+labels, service-only same-ID rename/named-grant ports and atomic Exclusive labels.
+No new visitor data/identity authority. Rollback-only contact SQL covers foreign,
+inactive, revoked, malformed, duplicate and legacy cases, history and projection
+privacy; sharing-policy and worldwide-capacity-loads regressions remain passing.
+`verify-capacity-contact-names-local.mjs` passes real web/native add/edit/Exclusive
+save/readback with cleaned fixtures, zero browser exceptions and no overflow.
+Six unit/readiness cases, root/native types, lint and source/spec checks pass.
+Marker overview load tags are removed while selected-details/filter logic stays.
+Driver-Home raster/browser checks pass actual cancellations and genuine HTTP/decode
+failure feedback. Local screenshots/evidence are in MOBILE_IMPLEMENTATION.
+Local ledger 127 only, no hosted writes. Owner UI review/full release gates/new
+APK remain pending. Expo/FCM local code and scoped FCM setup are now recorded
+above; matched rollout and physical-device acceptance remain pending.
+
+## Independent-driver account and transport-chat wording — local evidence, 2026-10-07
+
+FEAT-APP/FLT/IAM/VER/MOB, ADR-076, NR-01/02/03/08/09/10/18: migration 121
+canonicalizes new/current independent identity while retaining historical records,
+requires explicit truck OWNED/PERMISSION declaration, serializes creation/change
+and enforces one active truck. Confirmed replacement preserves old entity/file
+subjects and blocks unfinished Tracking; no fleet/driver selector/control remains.
+
+19 final focused unit cases, 14 native language/navigation cases, root/native
+types, mobile lint and source/spec checks pass. New independent-truck rollback SQL
+and real concurrent additions/replacements pass, as do retained fleet lifecycle,
+truck-document alternatives and the resulting catalog gate. The actual local
+signup eligibility/rejection verifier passes. Real email-code web/Expo signup,
+first registration, replacement, previous history, Home and direct-command denials
+pass. Replacement GPS saves an obscured 20-km US fix through the actual browser
+control; no capacity is auto-published and exact disposable fixtures are cleaned.
+Two existing fleet/independent/company-driver web navigation cases pass.
+
+FEAT-TRQ/LNG/LUX: the requested primary question with smaller service/live-chat
+line appears in the launcher and chat, with plain route/load explanation and
+transport-team waiting copy. Three web narrow-phone cases, two real submission/
+recovery cases and all five Expo locales' launcher/intake/action-fit checks pass.
+Native web language radios now announce actual checked state. User text, private
+queue/intake/assignment and authorization remain unchanged.
+
+Receipts, failed early runs, preview processes and limits: MOBILE_IMPLEMENTATION.
+Local ledger 121 only; hosted remains 114. Owner visual approval, full exact-release
+checks, restored protected backup rehearsal, production preflight and compatible
+web/Android rollback/rollout remain pending. No new distribution/deployment claimed.
+Browser GPS/geometry does not prove native OS behavior or basemap recovery;
+WEB-MOB-015 records the observed tile-warning follow-up. Owner reports Google Play
+Console registration ready; intended account/app/internal-track setup is unverified.
+
+## Plan-free provider access — local evidence, 2026-10-07
+
+FEAT-BIL-001 / FEAT-APP-001 / FEAT-IAM-001 / FEAT-FLT-001 / FEAT-ADM-001 /
+FEAT-MOB-001, ADR-075, NR-01/02/03/08/09/10/17: migration 120 removes plan-dependent
+operating scopes and trial provisioning without deleting historical data. Retired
+HTTP/service/SQL charge and activation writes reject before uploads or mutation.
+Account/Home/menu/client/review UI removes plan/payment controls. Old billing
+destinations redirect; inactive/unlinked/cross-workspace and staff-mobile denials
+remain. New health compatibility check rejects absent/malformed retirement markers.
+
+`tests/provider-access-without-plans.test.mjs`, `tests/provider-access-health.test.mjs`,
+managed-identity/mobile-billing/auth/signup/private-upload/team tests: 32 focused
+cases pass. Six native navigation tests, root/native types, mobile lint and
+source/spec checks pass. `tests/sql/provider-billing-retired.sql`, revised
+`tests/sql/platform-controls.sql` and the resulting catalog-security check pass.
+Exact unpublished migration rehearsal/rollback passed; the subsequently added
+health marker is verified in the final local schema and retired-access regression.
+Actual local OTP signup and rejection/duplicate verifier passes without subscriptions.
+`verify-no-plans-local.mjs` proves three fresh provider models through actual
+onboarding/APIs/web/Expo Home/Account, desktop/phone captures and stale-write denial.
+Admin list/detail/overview/Reviews/legacy-menu and activation retirement pass
+both separately and in the final combined run. Existing verification-history and platform-admin setup verifiers pass
+with retired mutations and unchanged historical records; CI adds the SQL check.
+
+Receipts, non-passing early runs and limits are in MOBILE_IMPLEMENTATION.md.
+Local ledger 120 only; hosted remains 114. Owner visual approval, full exact-candidate
+gates, protected restored-backup rehearsal, compatible rollback and rollout are
+pending. No new APK/remote CI/deployment is implied by local success.
+
+## Support and transport-team chat round trips — local evidence, 2026-10-07
+
+FEAT-SUP-001 / FEAT-TRQ-001 / FEAT-ADM-001 / FEAT-MOB-001, NR-02/03/09/10:
+29 focused chat tests, eight identity/security tests and seven rollback SQL suites
+pass. Twenty desktop/phone web workflows pass across initial and corrected runs.
+`scripts/verify-chat-roundtrips-local.mjs` proves actual Expo customer and separate
+web staff intakes, claim, automatic replies, drafts, files where supported, history,
+end/continue, new conversation, callback/follow-up/resolution and stale/cross-team
+denials. `tests/e2e/staff-admin-account.spec.ts` proves owner email OTP, independently
+scoped staff creation, correct queues, mobile OTP/refresh/read denials and preserved
+web admin session. Brokerage admin-assignment E2E proves versioned handoff/requeue.
+
+Active-member Support handoff uses a disposable fixture; its absent admin control
+is recorded as WEB-MOB-014. Production owner identity inspection was read-only and
+found no conflicting association, requiring no live account deletion/change.
+Shared Expo browser screens are tested; native OS permissions/background delivery
+and production conversations are not certified. Exact receipts and cleanup are
+recorded in MOBILE_IMPLEMENTATION.md.
+
 ## Simplified Tracking email sessions — local evidence, 2026-09-28
 
 FEAT-TRK-001 / FEAT-REV-001, ADR-073, NR-01/02/03/08/10/13: migration 114
@@ -970,3 +1098,124 @@ the test without altering its reset assertion. `tests/sql/capacity-ranked-search
 adds rollback assertions for automatic route/area inclusion in public/private
 matching functions and accepted full/shared-load requirements. TypeScript and
 source/spec checks pass. No database migration or production change in this step.
+
+
+October 7 launch continuation — FEAT-MOB-001 / FEAT-MKT-001 / FEAT-CAL-001:
+local only. Direct area controls in navigation-shell/workspace-area-switch;
+account-settings/more contain contextual controls and authorized evidence.
+`navigation.test.mjs` + `document-scope.test.mjs`: 8 focused tests;
+`workspace-area-navigation.test.mjs`: 3 URL/camera-denial checks;
+`workspace-consolidation.spec.ts`: 4 actual desktop/phone save/draft/role passes;
+`verify-mobile-navigation-local.mjs`: native/web switch-return, native personal
+subject reachability, public camera/query restoration and Clear all pass.
+Types/lint and explicit native translations (426/426) pass. Calendar pure tests
+4 pass; native week/month/landscape and web ISO-selection/focus-return interactions pass.
+Local migrations 115–119, protected backup and six rollback-only DB regressions
+pass; launch matrix includes 292 combined/document expiry checks. Owner visual
+review, full gates, native background testing and hosted rollout remain pending.
+Do not treat the prior production evidence as evidence for these new contracts.
+
+October 7 Home clarification — FEAT-FLT-001 / FEAT-MOB-001: Home reuses the
+existing fleet workspace for transport-company owners; drivers retain their map.
+Native role labels and a four-destination owner primary bar clarify the distinction;
+legacy fleet routes remain valid. `verify-workspace-homes-local.mjs` passes on the
+owner's named local account and its existing driver alias, on native browser and
+web, without business writes/email. Driver map canvas survives area switching.
+16 focused native and 15 focused web fleet/runtime tests pass; phone Account
+security E2E confirms email change, deactivation and retained history. Owner
+hands-on review remains open; no new explicit visual approval or release gates.
+
+October 7 browser raster cancellation — FEAT-MOB-001: installed loader regression
+and actual browser failure reproduced before the fix. Six
+`apps/mobile/tests/maplibre-raster-abort.test.mjs` cases pass for cancel/success,
+HTTP/network/decode failure, fresh install/idempotency and project/version/hash
+denials. `verify-mobile-map-abort-local.mjs` passes cancellation+zoom+resize+area
+return and two genuine failure feedback scenarios using explicit raster fixtures.
+Browser console errors and pageerror are both checked. Native typecheck/lint pass.
+Local previews restarted; no production, APK or native background verification.
+
+Raster recurrence follow-up: `verify-mobile-map-stream-local.mjs` passes paused
+Chrome double-click zoom with 31 actual after-header body cancellations and zero
+console/page/unhandled events, plus area return. The prior synthetic regression
+now requires a new intended forced cancellation; all three feedback scenarios
+pass. A one-time unmodified real-fetch diagnostic observed 49 OSM cancellations
+without events. Full reload sent to the verified Loadgistic8084 client only.
+The originally reported runtime remains open until owner Chrome confirmation;
+fresh-context tests do not establish the cause of that existing-tab exception.
+
+Browser raster transport — FEAT-MOB-001: `verify-browser-raster-local.mjs` reproduces
+the uncaught abortTile exception with a broken recorder side-promise and then
+passes the scoped XHR port on desktop HiDPI driver Home: 63 body cancellations,
+zero tile fetch-observer calls, no global errors/overlay and preserved area return.
+Two further cases prove genuine HTTP and invalid PNG feedback. Evidence:
+`.local/browser-raster-recorder-check.log`, `.local/map-recorder-{before,repaired}.png`.
+Old browser verification names delegate to this actual-transport check. Dedicated
+raster-port tests cover canonical host/coordinate denial, cancellation/cleanup,
+expiry, empty responses and genuine failure, alongside installed-loader/drift tests.
+No native binary, production changes or browser extension/settings mutation.
+Final evidence: 11 focused unit tests, mobile typecheck/lint and spec links pass;
+`verify-workspace-homes-local.mjs` also passes four actual owner/driver Home checks
+on web/native browser with real OSM tiles and console-error collection. Before
+the controlled recorder baseline, delay headers to preserve the native abortTile
+creation stack; a cloned-body abort may instead have a stackless DOMException.
+The repaired case independently requires new after-header body cancellations.
+
+
+### FEAT-NOT-001 — Existing-chat alerts and Seen (October 7, local evidence)
+
+- Implemented: immutable local migrations 122–125, private RLS cursor storage,
+  authorized service/HTTP projections and explicit acknowledgements, assignment
+  epochs and independent assignee unread; web/native viewport/focus/overlay reads;
+  contextual unread/queue/assignment/join/end/resolve alerts and opt-in web audio.
+- Verified: `tests/chat-read-alerts.test.mjs`, `tests/mobile-support.test.mjs`,
+  `tests/provider-access-health.test.mjs`, native `chat-alerts.test.mjs` (18 cases);
+  `tests/sql/chat-read-receipts.sql` plus six existing Support/Brokerage suites;
+  catalog gate and real concurrent service commands. Schema 124 fails the 45-chat
+  backlog case; 125 passes without truncated totals or a permission expansion.
+- Actual local workflows: `verify-chat-roundtrips-local.mjs --support-only`,
+  `--brokerage-only`, `--receipts-only` pass using disposable identities, real
+  commands and exact cleanup. Receipts include actual join vs assignment,
+  unread away from chat, menu close recovery, below-fold/history neutrality,
+  scroll-to-See, forged/stale frame denial and staff mobile denial. Injected 503
+  delivery failure preserves Sent; restored real delivery saves Seen. Legacy
+  Support handoff is a fixture operation; missing admin control stays WEB-MOB-014.
+- Presentation: `verify-chat-alert-layouts-local.mjs` passes all five languages at
+  320px, usable actual intake, dialog close/overflow and real web audio opt-in.
+  Final web/native types, focused native lint and spec/source/whitespace checks pass.
+- Evidence: `.local/chat-read-*.log`, `.local/chat-alert-*.log` and focused screenshots
+  listed in MOBILE_IMPLEMENTATION. These ignored logs are local, not public data.
+- Pending: owner visual approval, full quality/release/native-device gates,
+  restored exact-backup rehearsal and matched hosted/web/APK/AAB rollout. No
+  production mutation/publication. Background push and direct provider inquiry
+  scope are undecided (WEB-MOB-016); in-app polling is not closed-app delivery.
+
+
+FEAT-NOT-001 final public-page/cache check: `--public-receipts-only` passes for a
+signed provider browsing About/Marketplace, scoped unread/bell without bodies,
+320px fit, actual private opening/Seen, and lifecycle-event-injected page hiding
+with a real revoked-permission reload. The existing public account/access filter
+is preserved. Evidence: `.local/chat-read-public-roundtrip.log` and
+`.local/chat-roundtrip-web-marketplace-member-alert.png`. Browser lifecycle events
+are simulated explicitly; the reload and backend authorization are real.
+
+### FEAT-NOT-001 / FEAT-TRK-001 — October 8 local extension
+
+- Migration 126 private approval reads/commands and readiness marker: rollback
+  rehearsal then backed-up local apply. Current catalog and scoped negative cases
+  pass in `tests/sql/driver-handover-alerts.sql`; owner-handover and device-location
+  rollback regressions also pass. Hosted ledger is not changed.
+- `tests/handover-browser-alerts.test.mjs`, chat policies and health contracts:
+  18 focused cases pass, including generic projection, stale/forged input,
+  silent baseline/replay, browser denial/failure and cross-adapter deduplication.
+- `verify-driver-browser-alerts-local.mjs --handover-only`: real API creation,
+  stored proof objects, actual local code email/verification and owner approval,
+  native/web/system updates, exact successful command and saved unread zero.
+- `--staff-only --slow-claim`: actual waiting/assignment/join/unread worker records,
+  real Claim delayed seven seconds, hidden-tab delivery without Seen and dedupe.
+  Visibility is test-injected; permission is automation-granted. System records
+  are real; an OS banner or physical-phone delivery is not claimed.
+- Existing Support/Brokerage local round trips pass for both web staff and Expo
+  customers: replies, drafts, files/history, handoff, end/callback/Resolved.
+- Final evidence and screenshots: MOBILE_IMPLEMENTATION. Owner visual review,
+  full release gates, hosted rollout/new native artifacts and configured
+  closed-phone push remain pending. No successful mocked backend response.

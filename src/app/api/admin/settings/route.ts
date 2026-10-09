@@ -12,7 +12,8 @@ export async function POST(request:NextRequest){
   const form=await request.formData();const section=text(form,'section');
   const featuredSection=section==='FEATURED'||section==='PREPARE_FEATURED';
   if(featuredSection?!hasPlatformPermission(user,'FEATURED'):user.role!=='ADMIN')return NextResponse.json({error:'Forbidden'},{status:403});
-  const destination=section==='ACCESS'?'/admin/settings':'/admin/featured';
+  if(section==='ACCESS')return NextResponse.json({error:'Platform payment plans are not offered.'},{status:410});
+  const destination='/admin/featured';
   try{
     if(section==='PREPARE_FEATURED'){
       const result=await prepareFeaturedDaysForUser(user);

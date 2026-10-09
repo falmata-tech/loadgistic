@@ -54,7 +54,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const [viewer,setViewer]:[Point|null,(value:Point|null)=>void]=React.useState(null);
   const parsedNearLat=Number(query.nearLat);
   const parsedNearLng=Number(query.nearLng);
-  const initialNear=query.nearLat!==''&&query.nearLng!==''&&Number.isFinite(parsedNearLat)&&parsedNearLat>=3&&parsedNearLat<=15&&Number.isFinite(parsedNearLng)&&parsedNearLng>=32&&parsedNearLng<=49
+  const initialNear=query.nearLat!==''&&query.nearLng!==''&&query.nearLat!==undefined&&query.nearLng!==undefined&&Number.isFinite(parsedNearLat)&&parsedNearLat>=-90&&parsedNearLat<=90&&Number.isFinite(parsedNearLng)&&parsedNearLng>=-180&&parsedNearLng<=180
     ?{lat:parsedNearLat,lng:parsedNearLng,radius:Number(query.nearRadiusKm)||20}
     :null;
   const [near,setNear]:[{lat:number;lng:number;radius:number}|null,(value:{lat:number;lng:number;radius:number}|null)=>void]=React.useState(initialNear);
@@ -226,9 +226,10 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       <div className="capacity-detail-fields">
         <div className="capacity-primary-selects">
           <label htmlFor="capacity-load-filter"><span><Boxes aria-hidden="true"/><Text message="Space needed"/></span><select id="capacity-load-filter" name="loadType" value={loadFilter} onChange={event=>{setLoadFilter(event.target.value);if(event.target.value==='FTL'&&statusFilter==='PARTIAL')setStatusFilter('');}}><option value=""><Text message="Any load size"/></option><option value="FTL"><Text message="Full truck"/></option><option value="PTL"><Text message="Shared truck space"/></option></select></label>
-          <div className="form-group"><label htmlFor="capacity-main-status"><Text message="Availability"/></label><select id="capacity-main-status" name="status" value={statusFilter} onChange={event=>chooseStatus(event.target.value)}><option value=""><Text message="Empty or Partial"/></option><option value="EMPTY"><Text message="Empty"/></option><option value="PARTIAL" disabled={loadFilter==='FTL'}><Text message="Partial"/></option></select></div>
+          <div className="form-group"><label htmlFor="capacity-main-status"><Text message="Truck's current load"/></label><select id="capacity-main-status" name="status" value={statusFilter} onChange={event=>chooseStatus(event.target.value)}><option value=""><Text message="Any available truck"/></option><option value="EMPTY"><Text message="Empty truck"/></option><option value="PARTIAL" disabled={loadFilter==='FTL'}><Text message="Partly loaded"/></option></select></div>
           <CapacityConfigurationPicker value={vehicleFilter} onChange={setVehicleFilter}/>
         </div>
+        <p className="meta"><Text message="Full truck: empty trucks accepting full loads. Shared space: trucks accepting smaller loads."/></p>
         <fieldset className="capacity-truck-location-filter">
           <legend><MapPinned aria-hidden="true"/><Text message="Truck location"/></legend>
           <p><Text message="Near the truck’s reported location, allowing for its location accuracy."/></p>
@@ -285,7 +286,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={selected?closeTruck:openDrawer}><PanelLeftOpen aria-hidden="true"/><Text message={selected?"Results":"Filters"}/>{!selected&&activeFilterCount?<span>{activeFilterCount}</span>:null}</button>
     </div>
       <section id="capacity-map-view" className="public-map-shell">
-        <div className="public-map-canvas"><PublicCapacityMap items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.q)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
+        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.q)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
         {feedback}
       </section>
     </div>;

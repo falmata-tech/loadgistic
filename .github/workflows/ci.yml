@@ -112,18 +112,22 @@ jobs:
       - name: Verify Driver linkage and optional documents without retaining test writes
         run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/capacity-driver-eligibility.sql
 
-      - name: Verify platform activation and automatic Featured with rollback
+      - name: Verify plan-free access and automatic Featured with rollback
         run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/platform-controls.sql
 
       - name: Verify audit authorization and privacy regressions with rollback
         run: |
-          for suite in security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds \
+          for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-device-location capacity-launch-matching \
+            independent-single-truck provider-billing-retired security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds \
             fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
-            public-provider-privacy support-attachments support-history support-polling tracking-proof-access tracking-email-session truck-document-alternatives transport-requests brokerage-assignment brokerage-conversations transport-chat-follow-up capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue; do
+            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives transport-requests brokerage-assignment brokerage-conversations transport-chat-follow-up capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue; do
             echo "::group::SQL regression: $suite"
             docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
             echo "::endgroup::"
           done
+
+      - name: Verify independent truck registration and replacement races
+        run: node scripts/verify-independent-truck-concurrency-local.mjs
 
       - name: Verify queued authorization and account closure races
         run: node scripts/verify-audit-concurrency.mjs

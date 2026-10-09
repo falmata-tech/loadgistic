@@ -1,15 +1,16 @@
+import {dateOnly} from '../src/lib/date-calendar.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { z } from 'zod';
 import { trackingNextStatuses, trackingProgress } from '../src/lib/tracking-progress.js';
-const source = readFileSync(new URL('../src/lib/mobile/tracking-contract.ts', import.meta.url), 'utf8').replace("import { z } from 'zod';", '').replaceAll('export ', '');
+const source = readFileSync(new URL('../src/lib/mobile/tracking-contract.ts', import.meta.url), 'utf8').replace("import { z } from 'zod';", '').replace("import {dateOnly} from '../date-calendar.js';",'').replaceAll('export ', '');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
-const { createTracking, trackingCommand, trackingDetail, trackingRecovery } = new Function('z', compiled + '; return { createTracking, trackingCommand, trackingDetail, trackingRecovery };')(z);
+const { createTracking, trackingCommand, trackingDetail, trackingRecovery } = new Function('z','dateOnly', compiled + '; return { createTracking, trackingCommand, trackingDetail, trackingRecovery };')(z,dateOnly);
 const id = '00000000-0000-4000-8000-000000000001';
 test('tracking inputs reject spoofed authority, secrets, exact location and unsupported commands', () => {
- const input = { vehicleId: id, originPlaceRef: 'origin', destinationPlaceRef: 'destination', cargoSummary: 'Cargo', customerEmail: 'test@loadgistic.local', trackingMode: 'STATUS_ONLY' };
+ const input = { vehicleId: id, originPlaceRef: 'origin', destinationPlaceRef: 'destination', cargoSummary: 'Cargo', customerEmail: 'test@loadgistic.local', trackingMode: 'STATUS_ONLY',expectedDeliveryDate:'2026-10-12' };
  assert.equal(createTracking.safeParse(input).success, true);
  for (const extra of [{ actor_user_id: id }, { trackingCode: 'secret' }, { trackingMode: 'INVALID' }]) assert.equal(createTracking.safeParse({ ...input, ...extra }).success, false);
  const command = { action: 'STATUS', nextStatus: 'LOADING' };

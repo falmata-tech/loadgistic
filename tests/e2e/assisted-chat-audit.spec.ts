@@ -10,13 +10,13 @@ test('transport request launcher waits for hydration before accepting its first 
   });
   try{
     await page.goto('/about',{waitUntil:'commit'});
-    const launcher=page.getByRole('button',{name:'Arrange transport',exact:true});
+    const launcher=page.getByRole('button',{name:'Need help with transport?',exact:true});
     await expect(launcher).toBeVisible();
     await expect(launcher).toBeDisabled();
     releaseScripts();
     await expect(launcher).toBeEnabled();
     await launcher.click();
-    const dialog=page.getByRole('dialog',{name:'Let us arrange your transport'});
+    const dialog=page.getByRole('dialog',{name:'Need help with transport?'});
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button',{name:'Start chat'})).toBeVisible();
   }finally{

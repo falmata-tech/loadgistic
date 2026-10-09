@@ -11,7 +11,71 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — implementation in progress
 
+October 7 account correction: signup offers Fleet transporter and Independent
+driver only. Former owner-operator/self-managed identities normalize to the same
+independent model without losing IDs/history. Independent My truck manages one
+active truck; Home retains its dominant map and floating signal controls without
+a truck selector. Ownership/permission is declared on registration. Change truck
+requires explicit confirmation and preserves historical records; unfinished
+Tracking blocks it. No independent add-driver/fleet/restoration control. See
+FEAT-FLT-001, including server/SQL authority and old-client/race denials.
+
+## Capacity status and accepted loads — October 7 owner correction
+
+The owner's later correction also requires explicit Public / Private network /
+Public + private network / Exclusive to one email sharing choices on web/native.
+Use the shared FEAT-SHR-001 server contract, keep recipients' identities private
+in visitor projections and preserve named contacts' private-feed inclusion in
+Both. Exclusive changes are atomic and enforce one email plus no public exposure;
+additional grant commands cannot bypass it. A mode badge describes actual saved
+authority, never a client draft or a claim that transport has been booked.
+
+Given available Empty and Partial trucks overlap on the public or authorized
+private map
+Then every native cluster contains exactly one status, names Empty or Partial,
+and uses the same green or yellow as that capacity signal. Opposite-status
+clusters and nearby truck markers remain separately touchable. Source-local
+cluster IDs cannot collide; expansion uses the source that produced that cluster.
+Selection still removes all other trucks/clusters and closing restores the map.
+
+Given an Empty truck accepts full-truck loads only, shared loads only, or either
+Then its unselected marker and on-demand details expose that saved preference;
+unknown flags never default to a full-load claim. Native public/private parsing
+retains only the authorized accepted-load flags, not private contacts.
+
+Given an authorized provider sets Empty capacity on Home or fleet capacity
+Then the three accepted-load choices are visible beside current space, not
+hidden among optional stop preferences. Partial exposes remaining shared space
+without a full-load option. Saving uses the same command and permissions as web.
+
+Given a visitor uses Space needed and Truck's current load
+Then full truck matches only Empty records accepting full loads; shared space
+matches Empty shared-only/either and Partial shared records. Physical occupancy
+is labeled separately, never presented as the driver's accepted-load preference.
+The existing contradictory-filter repair and scoped public/private search remain.
+All fixed labels are translated in the five supported languages; user data is not.
+
+Focused evidence must cover mixed/coincident cluster counts and expansion, saved
+preferences across both clients, partial exclusion, private/actor denials and map
+touchability. Owner visual review precedes full release gates/publication.
+
+Given the assigned driver tests from the U.S. or another valid worldwide position
+Then native capture, first location, projection/map and existing Tracking location
+commands accept the obscured fix using the shared world bounds. Zero coordinates
+are preserved; dateline longitude wraps safely. No nearby catalog town produces
+a neutral approximate-area label instead of a misleading Ethiopia label. Invalid,
+missing or non-finite values, invalid radii, revoked assignment and unauthorized
+owner device location remain denied. Physical travel/background claims remain out
+of scope; use controlled local GPS plus actual save/readback evidence.
+
 ## Local browser preview — owner request, October 6
+
+October 8 map/sharing correction: native overview markers omit accepted-load
+text; selected truck details and shipment-space matching retain it. Network asks
+for a private person/company label when adding an email and provides inline name
+editing for existing grants. Exclusive capacity requires the label in the same
+atomic save. Names are never visitor search/filter inputs or identity proof.
+Controlling scenarios and evidence: FEAT-CAP-001 / FEAT-SHR-001.
 
 Given the owner opens the dedicated localhost Expo preview
 Then render the same React Native screens, navigation, forms and detail modal;
@@ -60,8 +124,8 @@ Use `PublicMobileNav`, `PublicHeader` and `AppShell` as the design baseline:
 public Capacity / Track / Featured / About bottom navigation; the web's role-aware
 Home / Fleet or assigned truck / Tracking / Network / Account workspace destinations.
 Reuse Lucide line icons, teal active states, white surfaces, border colors and
-existing labels. A shared menu exposes account, documents, billing, profile and
-language choices. Do not design a separate mobile product or duplicate top-of-map
+existing labels. Account embeds personal, business, document and plan controls; the compact
+global menu exposes supplementary actions and a separate language panel. Do not design a separate mobile product or duplicate top-of-map
 navigation links. Native safe areas, keyboard avoidance and touch targets adapt
 the established web design. Customer content remains untranslated.
 
@@ -74,21 +138,21 @@ never appears. Menu visibility is not an authorization boundary; APIs still chec
 
 Owner approved the icon/navigation direction on October 6, with a correction:
 do not reproduce the web's overloaded More menu. Account groups personal details,
-security, public business profile, documents and plan management. Fleet groups
+security, public business profile, and documents. Fleet groups
 trucks/drivers with capacity and regular service; company drivers enter their
 assigned truck instead. Support remains one tap away in the workspace header.
-The global menu contains workspace entry and public browsing, not every settings
-page. Existing routes and server permissions remain intact. Dashboard work actions
+Both areas are directly selectable above the page; the global menu contains
+supplementary actions rather than repeating navigation or every settings page. Existing routes and server permissions remain intact. Dashboard work actions
 precede secondary statistics. The owner also authorized the analogous web correction (FEAT-IAM-001/FLT-001/VER-001).
 
 Given each provider role opens the new Account or Fleet section
 Then existing permitted controls remain reachable in their related section,
 company drivers do not gain fleet-owner controls, and restricted accounts retain
-account/security, plan recovery and Support without operating links.
+account/security and Support without operating links.
 
 Owner clarification: grouping links alone is insufficient. Account must contain
 the actual personal, photo/security, business-profile, regular-service, document
-and plan controls in expandable sections. Fleet truck/driver entries contain their
+in expandable sections. Fleet truck/driver entries contain their
 own relevant capacity and document controls. Mount a section when first requested,
 then preserve its unsaved draft when collapsed; never cancel an in-flight save by
 unmounting it. Avoid nested page scroll containers. Existing standalone routes remain
@@ -448,14 +512,12 @@ Then the existing reviewed image storage command applies; company drivers and
 unrelated users cannot update it. The mobile response exposes the same published
 image URL as the public profile, never a private storage reference.
 
-Given a provider opens native plan and payment history, including limited accounts
-When submitting an ETB payment reference and optional receipt
-Then current account/subscription scope is derived on the server; free or sponsored
-access does not accept payment proof. Existing payment review commands and private
-receipt authorization apply. The app shows pending review rather than claiming
-access was purchased, reloads persisted history, and supports pagination. An
-ambiguous submission requires checking history before retrying. No payment vendor,
-new charge, fee or administrative review action is introduced.
+Given a provider opens Account or an old billing deep link
+When the current app renders
+Then no plan, trial, subscription or payment form is shown
+And the old link returns to Account; stale billing writes are rejected before upload
+And workspace access depends on current identity/ownership/driver permissions,
+not billing status (FEAT-BIL-001). Historical records remain protected and retained.
 
 Given a transporter owner manages their regular service on mobile
 When adding, replacing or removing its route or service area
@@ -467,7 +529,7 @@ reloads saved data and asks before removal. Current truck availability stays sep
 
 ## Native transporter member support
 
-Given an active transporter or driver, including a plan-limited member
+Given an active transporter or driver, regardless of historical billing state
 When they open Support from their account
 Then their current chat and paginated closed history come from the existing member
 support service; no staff inbox or another member's conversation is exposed.
@@ -514,7 +576,7 @@ upload control; an HTTP integration test from Node is not native transport evide
 
 ## Native account security
 
-Given an active provider, including a plan-limited account
+Given an active provider, regardless of historical billing state
 When they request an email change or history-preserving account closure
 Then a short-lived native-only handoff binds the actor, action and target; a fresh
 code goes only to the current verified login email. Request/confirmation rates are
@@ -800,3 +862,116 @@ Ordinary collapsed content should use horizontal space before requiring scrollin
 long names, translations and expanded evidence must wrap/scroll without clipping.
 Preserve the centered modal, dismiss/return behavior and unchanged map camera.
 Focused desktop/phone review plus native static checks precede owner visual review.
+
+## Navigation simplification — October 7, implementation in progress
+
+Given an active transporter or driver browses Marketplace or My workspace
+Then both area names remain visible as directly selectable header controls.
+Selecting the other area takes one tap without a choice modal, keeps each native
+stack's position and drafts, and does not sign out or change authorization.
+
+Given the mobile menu is opened
+Then it contains supplementary actions only: Arrange transport, Language and
+legal links (plus account setup when needed). Primary destinations are not
+repeated. Language opens its existing separate selection panel. Support remains
+reachable in the provider workspace header; guests receive no staff/workspace
+controls. Each area retains at most five labeled primary destinations.
+
+Given the web provider returns between Marketplace and My workspace
+Then safe tab-local return URLs preserve the last eligible destination and applied
+query in each area. Only an allowlisted local route can become a return target;
+recipient codes, credentials and private data cannot be stored. Public camera
+position is restored on return; private feed results are always authorized afresh.
+Native unsaved forms remain mounted; web switching is page navigation and does
+not imply arbitrary web forms remain mounted. Deep links and staff menus stay
+compatible. No new dependency or backend permission change.
+
+Research: [Android layouts and navigation patterns](https://developer.android.com/design/ui/mobile/guides/layout-and-content/layout-and-nav-patterns?hl=en)
+recommends three to five peer primary destinations and contextual secondary
+controls; [Expo navigation](https://docs.expo.dev/router/basics/navigation/)
+distinguishes navigating an existing stack from replacing it. The installed
+SDK57 reference was checked; preserve the existing two-group Router design.
+
+Evidence required: focused role tests, web URL safety/camera restoration and
+actual desktop/phone/Expo preview switch-return. Owner visual review, full gates
+and rollout are separate pending states.
+
+Account grouping refinement: personal details contain the driver's photo and own
+documents; transporter profile contains usual service and company documents.
+Self-managed/owner-operator identity and driver license remain on their existing
+authorized PROVIDER_PROFILE subject and appear in the personal document section;
+company-driver evidence remains DRIVER. Grouping never migrates or duplicates it.
+Security remains a separate expandable section. Company drivers
+receive no business profile controls. Truck evidence stays on the truck; filtering
+a document section must match authorized subject kinds, never reassign evidence.
+Lazy sections remain mounted once opened so nested drafts survive collapse/switch.
+
+October 7 owner review clarification: the driver's Home in My workspace is the
+map, not Account settings. Self-managed drivers, owner-operators and company
+drivers retain map-dominant Home with ready signal controls. Account remains its
+own primary destination for personal/business settings. Verify actual Home and
+area-switch return, rather than presenting Account screenshots as Home evidence.
+
+
+## Browser raster cancellation defect — October 7
+
+Given the browser map no longer needs an in-flight raster image during zoom,
+resize, switching areas or teardown
+When the corresponding request is aborted, even if the retained tile's aborted
+flag is false
+Then cancellation is handled as an unloaded tile, not a failed image or uncaught
+console error/Expo overlay. Current needed tiles and map interactions continue.
+
+Given a genuine tile/network/decode failure without cancellation
+Then it remains a failure and existing map error feedback is retained. Do not
+suppress console/global errors or disable tile cancellation as a workaround.
+
+Any temporary browser dependency adapter must validate the exact installed
+package/version/source hash and target only Loadgistic's mobile folder. It is
+idempotent on reinstall, rejects unexpected code drift and is removed after an
+upstream-compatible fix is reviewed. It does not affect MapLibre Native, Auth,
+private data, settings or another Expo project. Prove negative/error behavior and
+actual browser console/zoom/return, not just absence of pageerror events.
+
+Recurrence acceptance: test real fetch response-body cancellation after headers
+as well as a loader rejection. A synthetic fetch returning an in-memory Response
+does not establish the browser body-stream cancellation contract. Require actual
+new cancellation counts after the intended interaction, and collect unhandled
+rejection plus console events without preventing or filtering them. Cached tiles
+or earlier cancellations must not accidentally satisfy the reproducer.
+
+During this unresolved local defect, a temporary localhost8084 development probe
+may report only map-code and browser-function booleans, viewport size, error class
+and event type. It must observe without preventing/suppressing exceptions, omit
+coordinates, identities, tokens, request URLs and error bodies, and remove its
+listeners on teardown. Remove the probe after the specific failure is verified.
+If needed to identify the injected fetch observer, the probe may temporarily add
+a read-through URL getter to public OSM tile Requests only. Return the original
+URL and exact fetch promise; inspect only script caller filenames/extension IDs,
+never request/response content. Restore the original fetch on the last teardown.
+For this investigation only, a bounded read-through getter may observe access to
+the native Promise.then method and report public caller script frames. Return
+the exact original method, attach no promise handlers and restore its descriptor
+on teardown; preserve any subsequently installed method instead of overwriting it.
+
+Browser raster transport: given a browser has a fetch observer that creates an
+unhandled side-promise for cancelled requests, map tiles may use MapLibre's scoped
+custom-protocol port and XMLHttpRequest. Only public OSM tile URLs are allowed;
+no proxy, new service, global fetch replacement, credential or native-map change.
+Cancellation settles once as AbortError, including pre-send and mid-body abort;
+listeners detach on completion. HTTP, network, timeout and decode errors retain
+normal map feedback. Keep browser caching and return expiry headers, attribution,
+map style and interaction. Test an intentionally broken recorder before/after,
+desktop HiDPI driver Home and marketplace, and real success/failure feedback.
+Rollback restores the original HTTPS raster style and removes only this port.
+
+
+## Chat alert/read-receipt extension — October 7 (planned locally)
+
+FEAT-NOT-001 controls existing-chat unread alerts, explicit visible-message Seen
+cursors and actual assigned-agent joining. Fetching, prefetch/history or a hidden
+screen is not a new read receipt; old Support timestamps remain historical only.
+Keep Support/Brokerage scopes, guest capabilities, private files and staff-web-only
+access unchanged. Sound/system delivery is opt-in; closed-app push is not implied
+by polling. Local implementation/permission/device evidence and owner visual
+approval are required before publication.

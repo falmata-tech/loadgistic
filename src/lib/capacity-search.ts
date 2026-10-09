@@ -10,5 +10,6 @@ export async function searchCapacity(filters:Record<string,string>,scope:{audien
  const query=capacityDatabaseFilters(filters,resolved.places);
  const {data,error}=await client.rpc('capacity_search_results',{query,requested_audience:scope.audience,requested_digest:scope.digest||null,actor_user_id:scope.actorId||null,requested_page:Math.max(1,Math.min(10000,Number(filters.page)||1))});
  if(error)throw new Error('CAPACITY_SEARCH_UNAVAILABLE');
- return data as CapacitySearchResult;
+ const result=data as CapacitySearchResult;
+ return {...result,items:result.items.map(item=>({...item,kind:item.kind==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER':item.kind}))};
 }

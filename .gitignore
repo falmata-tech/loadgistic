@@ -33,3 +33,8 @@ deno.lock
 # Local Supabase CLI state
 supabase/.branches/
 supabase/.temp/
+
+# Private FCM keys; google-services.json is public Android configuration.
+*firebase-adminsdk*.json
+*service-account*.json
+*service_account*.json

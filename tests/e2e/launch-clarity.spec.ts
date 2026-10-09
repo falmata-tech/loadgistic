@@ -9,7 +9,7 @@ test('launch actions are visible, callback is direct, and GPS needs an explicit 
  await page.goto('/',{waitUntil:'domcontentloaded'});await expect(page.locator('.leaflet-container')).toBeVisible();
  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Transporter login'}).filter({visible:true})).toBeVisible();
  expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(0);
- await page.locator('.public-assistance-dock').getByRole('button',{name:'Arrange transport'}).click();await expect(page.getByRole('form',{name:'Arrange transport',exact:true})).toBeVisible();
+ await page.locator('.public-assistance-dock').getByRole('button',{name:'Need help with transport?'}).click();await expect(page.getByRole('form',{name:'Arrange transport',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Close',exact:true}).click();await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
  await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(1);
  await page.reload({waitUntil:'domcontentloaded'});await expect(page.locator('.leaflet-container')).toBeVisible();expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(0);

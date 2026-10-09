@@ -7,12 +7,13 @@ import { VEHICLE_CONFIGURATIONS, vehicleConfigurationImage } from '@/lib/vehicle
 import { retiredVehiclePage, setVehicleLifecycle } from '@/lib/lifecycle.js';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { errorMessage } from '@/lib/errors';
+import {isIndependentDriver} from '@/lib/independent-driver.js';
 export const runtime = 'nodejs';
 const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-const createTruck = z.object({ action: z.literal('ADD_TRUCK'), make: z.string().trim().min(1).max(100), model: z.string().trim().min(1).max(100), plate: z.string().trim().max(40), cargoConfiguration: z.string().refine(value => VEHICLE_CONFIGURATIONS.some(item => item.name === value)), trailerInterchangeable: z.boolean().default(false), supportedTrailerConfigurations: z.array(z.string()).max(15).default([]) }).strict();
+const createTruck = z.object({ action: z.literal('ADD_TRUCK'), make: z.string().trim().min(1).max(100), model: z.string().trim().min(1).max(100), plate: z.string().trim().max(40), cargoConfiguration: z.string().refine(value => VEHICLE_CONFIGURATIONS.some(item => item.name === value)), trailerInterchangeable: z.boolean().default(false), supportedTrailerConfigurations: z.array(z.string()).max(15).default([]),useBasis:z.enum(['OWNED','PERMISSION']).optional() }).strict();
 const createDriver = z.object({ action: z.literal('ADD_DRIVER'), name: z.string().trim().min(2).max(100), email: z.string().trim().email().max(254), phone: z.string().trim().min(7).max(32) }).strict();
 const assignDriver = z.object({ action: z.literal('ASSIGN_DRIVER'), driverId: z.string().uuid(), vehicleId: z.union([z.string().uuid(), z.literal('')]), canManageCapacity: z.boolean(), canManageTracking: z.boolean() }).strict();
-const command = z.discriminatedUnion('action', [createTruck, createDriver, assignDriver,
+const command = z.discriminatedUnion('action', [createTruck,createTruck.extend({action:z.literal('CHANGE_TRUCK'),replaceVehicleId:z.string().uuid(),replacementConfirmed:z.literal(true),useBasis:z.enum(['OWNED','PERMISSION'])}), createDriver, assignDriver,
  createTruck.omit({ trailerInterchangeable: true, supportedTrailerConfigurations: true }).extend({ action: z.literal('EDIT_TRUCK'), vehicleId: z.string().uuid() }),
  z.object({ action: z.literal('TRAILER'), vehicleId: z.string().uuid(), cargoConfiguration: z.string().min(1).max(100) }).strict(),
  z.object({ action: z.literal('LIFECYCLE'), vehicleId: z.string().uuid(), active: z.boolean(), reason: z.string().trim().min(5).max(500), confirm: z.literal(true) }).strict(),
@@ -27,12 +28,12 @@ export async function GET(request: Request) {
     const retired = canManageProviderVehicles(user) ? await retiredVehiclePage(user, Number(new URL(request.url).searchParams.get('retiredPage')) || 1) : { items: [], page: 1, pageCount: 1 };
     const invitations = user.role === 'TRANSPORTER' ? await pendingFleetInvitations(user.id) : [];
     const drivers = user.role === 'TRANSPORTER' ? await getFleetDriverPage(user, { page, pageSize: 10 }) : { items: [], page: 1, pageCount: 1 };
-    return mobileJson({ canManage: canManageProviderVehicles(user), canManageDrivers: user.role === 'TRANSPORTER', configurations: VEHICLE_CONFIGURATIONS, invitations: invitations.map(item => ({ id: item.id, name: item.driver_name, email: item.email, expiresAt: item.expires_at, sentAt: item.email_sent_at })),
+    return mobileJson({ singleTruck:isIndependentDriver(user),canAddTruck:canManageProviderVehicles(user)&&(!isIndependentDriver(user)||workspace.vehicles.length===0),canManage: canManageProviderVehicles(user), canManageDrivers: user.role === 'TRANSPORTER', configurations: VEHICLE_CONFIGURATIONS, invitations: invitations.map(item => ({ id: item.id, name: item.driver_name, email: item.email, expiresAt: item.expires_at, sentAt: item.email_sent_at })),
       retired: retired.items.map((value: unknown) => { const item = object(value); return { id: String(item.id), label: [item.platform_number, item.make, item.model].filter(Boolean).join(" · ") }; }), retiredPage: retired.page, retiredPageCount: retired.pageCount,
       vehicles: workspace.vehicles.map((value: unknown) => { const row = object(value), driver = object(row.assigned_driver); return {
         id: String(row.id || ''), make: String(row.make || ''), model: String(row.model || ''), plate: String(row.plate || ''), configuration: String(row.cargo_configuration || row.category || ''),
         interchangeable: row.trailer_interchangeable === true, supported: Array.isArray(row.supported_trailer_configurations) ? row.supported_trailer_configurations.filter((item: unknown) => typeof item === 'string') : [],
-        image: vehicleConfigurationImage(String(row.cargo_configuration || row.category || '')), driver: typeof driver.name === 'string' ? driver.name : null,
+        useBasis:row.use_basis==='OWNED'||row.use_basis==='PERMISSION'?row.use_basis:null,image: vehicleConfigurationImage(String(row.cargo_configuration || row.category || '')), driver: typeof driver.name === 'string' ? driver.name : null,
       }; }),
       drivers: drivers.items.map((value: unknown) => { const row = object(value); return { id: String(row.id || ''), name: String(row.name || ''), email: String(row.email || ''), phone: String(row.phone || ''), vehicleId: String(row.assigned_vehicle_id || ''), canManageCapacity: Boolean(row.can_manage_capacity), canManageTracking: Boolean(row.can_manage_tracking) }; }),
       driverPage: drivers.page, driverPageCount: drivers.pageCount,
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     if (!parsed.success) throw new MobileError(400, 'INVALID_INPUT', 'Check the truck or driver details.');
     const input = parsed.data;
     try {
-      if (input.action === 'ADD_TRUCK') { const truck = await createProviderVehicle(user, input); return mobileJson({ ok: true, id: truck.id }); }
+      if (input.action === 'ADD_TRUCK'||input.action==='CHANGE_TRUCK') { const truck = await createProviderVehicle(user, input); return mobileJson({ ok: true, id: truck.id }); }
       if (['EDIT_TRUCK', 'TRAILER', 'LIFECYCLE'].includes(input.action) && !canManageProviderVehicles(user)) throw new MobileError(403, 'FORBIDDEN', 'Only the truck owner can manage this action.');
       if (input.action === 'EDIT_TRUCK') { await updateProviderVehicleDetails(user, input.vehicleId, input); return mobileJson({ ok: true }); }
       if (input.action === 'TRAILER') { await setProviderVehicleAttachedTrailer(user, input.vehicleId, input.cargoConfiguration); return mobileJson({ ok: true }); }
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
       if (error instanceof MobileError) throw error;
       const code = error instanceof Error ? error.message : '';
       if (['FORBIDDEN', 'SUBSCRIPTION_ACCESS_REQUIRED', 'NOT_FOUND'].includes(code)) throw new MobileError(403, 'FORBIDDEN', 'This truck or driver is not available to your account.');
+      if(['SINGLE_TRUCK_LIMIT','TRUCK_CHANGED','TRUCK_CHANGE_REQUIRED','TRUCK_CHANGE_CONFIRMATION_REQUIRED','TRUCK_HAS_ACTIVE_TRACKING'].includes(code))throw new MobileError(409,code,errorMessage(error));
       if (/^(INVALID_|DRIVER_|VEHICLE_|TRUCK_|INCOMPATIBLE_|NOT_INTERCHANGEABLE|LIFECYCLE_|INVITATION_)/.test(code)) throw new MobileError(400, 'INVALID_INPUT', errorMessage(error));
       throw error;
     }

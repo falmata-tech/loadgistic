@@ -1,3 +1,4 @@
+import {independentOperatingModel} from '../independent-driver.js';
 export function mobileBearer(header) {
   if (typeof header !== 'string' || header.length > 8192) return null;
   const match = header.match(/^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/);
@@ -15,5 +16,5 @@ export function mobileIdentity(user) {
   return { id: user.id, name: user.name, email: user.email, role: user.role,
     organizationName: user.organization_name || null,
     businessName: user.provider_business_name || null,
-    operatingModel: user.provider_operating_model || null };
+    operatingModel: independentOperatingModel(user.provider_operating_model) || null };
 }

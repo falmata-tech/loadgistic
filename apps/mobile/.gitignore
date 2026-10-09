@@ -46,3 +46,8 @@ yarn-error.*
 !.env.example
 credentials.json
 *.keystore
+
+# FCM sending credentials belong in EAS, never in the app archive.
+*firebase-adminsdk*.json
+*service-account*.json
+*service_account*.json

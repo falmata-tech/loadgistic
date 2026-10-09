@@ -4,12 +4,95 @@ title: Truck-scoped private capacity sharing
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FLT-001, FEAT-IAM-001, FEAT-MKT-001, FEAT-ADM-001]
 problem: Drivers need to share sensitive current geometry and approximate location with selected business contacts without forcing those contacts to create accounts or implicitly advertising a private truck in the public Market.
 behavior: Each truck has a Private capacity network. An authorized Driver may grant an email access to that truck's current capacity geometry and Driver-selected approximate location; the fleet owner can inspect and revoke every grant. One short-lived six-digit email OTP opens a restricted visitor session that shows every active truck grant for the verified email in one Shared capacity map without creating a Loadgistic member account, profile, password, or dashboard. An email with no active truck grant receives no OTP challenge or email delivery, remains on the email step, and receives a clear no-share result that identifies no transporter, truck, or prior grant. The session ends after 30 minutes without deliberate visitor activity and may be ended immediately with Log out. A Private network signal is completely absent from anonymous discovery. A Driver who wants both surfaces chooses Public Market and may additionally grant selected recipients access to that same truck. A distinct Share with Loadgistic control gives the assisted-matching team the same private projection without using a pretend email identity.
-contracts: [PrivateCapacityGrant, PrivateCapacityAudience, SharedCapacityEmailOtp, SharedCapacityVisitorSession, PrivateCapacityProjection, LoadgisticCapacityAudience]
+contracts: [PrivateCapacityContactName, PrivateCapacityGrant, PrivateCapacityAudience, SharedCapacityEmailOtp, SharedCapacityVisitorSession, PrivateCapacityProjection, LoadgisticCapacityAudience]
 observability: [private_capacity_granted, private_capacity_revoked, shared_capacity_otp_requested, shared_capacity_otp_verified, private_capacity_access_denied, loadgistic_capacity_shared]
 rollout: Additive Supabase PostgreSQL migration 042 supplies server-only grant, OTP, delivery-queue, and private-map application ports; additive migration 058 serializes recipient-scoped OTP issuance; additive migration 059 adds lease-owned targeted delivery, challenge-aware retries, and bounded terminal guest-access retention. Existing current capacity remains public until its authorized publisher explicitly selects Private network. Roll back by hiding private-sharing routes and rejecting new grants while retaining audited grant history; never fall back to SQLite when the managed runtime is selected.
 ---
 
 # Private capacity network
+
+## Named private contacts — October 8 owner request
+
+Given a driver or authorized fleet owner adds a capacity-sharing email, including
+an Exclusive recipient, on web or mobile
+When they save the contact
+Then the current client requires a person or company name (1–100 characters,
+trimmed, no control characters) alongside the normalized email
+And the name is saved atomically with the authorized truck-specific grant
+And the management list shows the name and email together.
+
+Given a contact already exists
+When its name is edited by an actor who currently controls that truck
+Then retain its grant ID, email, creator, history and current audience authority
+And repeated saves do not duplicate or revive revoked grants through a rename
+And existing unnamed contacts remain available with their actual email and an
+explicit Edit name control; do not fabricate or require retroactive names before
+existing recipients can open their feed.
+
+Given public or email-verified visitors search or view capacity
+Then names, emails and the contact list stay absent from every visitor projection.
+Names are private organizer notes, not verified recipient identities or access
+credentials. Revoked/foreign/inactive actors cannot read or edit them.
+
+Contracts: additive nullable recipient_name on the existing private grant;
+service-only named grant and rename commands; Exclusive name in the authorized
+workspace and current publication command. Legacy commands preserve saved labels;
+old clients remain compatible during the matched-client rollout. Audit only the
+operation and grant ID, never names/emails. Migration 127 is rehearsed locally
+with rollback SQL, permission/privacy tests and actual web/native save/readback.
+Hosted rollout requires the existing exact-target backup/review gates. Rollback
+the client exposure first; retain names/grants/history rather than dropping data.
+
+Focused tests: `tests/private-capacity-contact.test.mjs`,
+`tests/sql/private-capacity-contact-names.sql`,
+`tests/sql/capacity-sharing-policy.sql`,
+`scripts/verify-capacity-contact-names-local.mjs`; local receipts/limits in
+`specs/TRACEABILITY.md` and `docs/MOBILE_IMPLEMENTATION.md`.
+
+## Four explicit sharing modes — October 7 owner correction
+
+Given an authorized provider configures a truck's current capacity on web or native
+Then offer Public, Private network, Public + private network and Exclusive to one
+email as distinct persisted modes. A mode change uses existing capacity-management
+authority; grant management retains existing truck-scoped authority. No staff
+administration, owner device-location rights or cross-fleet access is added.
+
+| Mode | Public discovery | Verified private feed |
+| --- | --- | --- |
+| Public | included if otherwise eligible | excluded |
+| Private network | excluded | active named recipients |
+| Public + private network | included if otherwise eligible | active named recipients |
+| Exclusive to one email | excluded | only the selected active email grant |
+
+Given the owner or authorized publisher selects Exclusive
+Then require one normalized email, atomically bind its active grant and restrict
+capacity to private visibility. Existing other grants/history are retained but
+cannot authorize this exclusive signal. Additional email or Loadgistic-audience
+grant commands cannot bypass the restriction. Changing the selected recipient
+immediately removes the old recipient's current read authority. Existing private
+sessions never override current grant/mode checks; no cached public result may
+retain the newly private signal. Exclusive sharing is not a booking/reservation.
+
+Given Public + private network is selected
+Then invited recipients see the truck directly in their private capacity feed
+without searching public discovery. Public and private matching, pagination,
+driver eligibility, signal ages and approximate-location privacy remain identical.
+Public mode may retain contact records for later reuse but does not grant private
+feed access or create an OTP based solely on those currently inactive permissions.
+
+Given a visitor sees an authorized capacity signal
+Then show its actual saved sharing mode; never expose recipient emails, digests,
+recipient lists or counts in either visitor projection. Owner/authorized Driver
+management may show the selected recipient under existing network authorization.
+Private and Exclusive signals remain wholly absent from anonymous discovery,
+suggestions, profile search, geometry and public regular-service fallback.
+
+Migration 116 must preserve existing effective access: legacy OPEN with active
+grants maps to Both; OPEN without grants to Public; PRIVATE to Private network.
+Old clients remain compatible with their prior OPEN/PRIVATE saves and may not
+silently clear an Exclusive recipient during unrelated edits. Test mode/grant
+races, caller/recipient denial, OTP eligibility, retained history, older clients,
+all projection paths and web/native save/readback before a scoped rollout.
 
 ### Scenario: Driver shares one assigned truck
 

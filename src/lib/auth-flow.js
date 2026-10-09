@@ -22,6 +22,7 @@ export function isNumericEmailOtp(value) {
 }
 
 export function managedWorkspaceDestination(role) {
+  if(role==='ADMIN')return '/admin';
   return role === 'SUPPORT' ? '/support' : '/app/home';
 }
 

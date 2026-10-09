@@ -213,9 +213,11 @@ conditional HTTP, visibility/backoff and browser draft tests remain required.
 
 ## Private transport request inbox
 
-FEAT-TRQ-001 adds an ADMIN-only Transport requests list linked from Customer
-Support. It retains phone follow-up and referral notes separately from member
-and guest conversations, assignment limits and email delivery.
+FEAT-TRQ-001 provides the separate Brokerage queue for administrators and
+explicitly permitted, assigned Transport agents. It retains private phone
+follow-up and referral notes separately from provider Support conversations,
+assignment limits and email delivery. Visitor live conversations follow that
+spec; retiring public general Support does not retire Brokerage messaging.
 
 Brokerage permissions and transport request ownership are independent of Support;
 see FEAT-TRQ-001. Staff shells must receive their persisted permissions, and a
@@ -239,9 +241,9 @@ administrative access. Negative SQL and real browser grant/revoke checks are in
 
 Given a public visitor (including a returning browser with an old chat session)
 When they browse or request assistance
-Then only Arrange transport → Send request is offered as an asynchronous Brokerage
-request, with no Help launcher, chat polling, presence, composer or internal switch.
-Public chat creation and guest replies are denied before uploads/email, including
+Then Arrange transport opens the separate Brokerage conversation under
+FEAT-TRQ-001, while no general Help launcher or internal Support switch is offered.
+Public general Support creation and guest Support replies are denied before uploads/email, including
 stale clients and direct API/database commands. Existing private transcripts and
 attachments remain accessible with their original authorization; no history is deleted.
 Staff may finish/close existing records without accepting new guest messages.
@@ -266,3 +268,14 @@ Then Support remains available in navigation and the More menu
 And they can start or continue the same authorized support conversation
 And this does not unlock paid capacity, fleet or shipment actions.
 Tests: `tests/e2e/provider-support.spec.ts` enters Support from limited dashboard navigation.
+
+
+## Chat alert/read-receipt extension — October 7 (planned locally)
+
+FEAT-NOT-001 controls existing-chat unread alerts, explicit visible-message Seen
+cursors and actual assigned-agent joining. Fetching, prefetch/history or a hidden
+screen is not a new read receipt; old Support timestamps remain historical only.
+Keep Support/Brokerage scopes, guest capabilities, private files and staff-web-only
+access unchanged. Sound/system delivery is opt-in; closed-app push is not implied
+by polling. Local implementation/permission/device evidence and owner visual
+approval are required before publication.

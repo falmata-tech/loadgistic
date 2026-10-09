@@ -1,5 +1,5 @@
 export const VISITOR_IDLE_MS = 30 * 60 * 1000;
-export const TRACKING_VISITOR_MAX_MS = 8 * 60 * 60 * 1000;
+export const TRACKING_VISITOR_MAX_MS = 5 * 60 * 1000;
 export function visitorSubject(scope, digest, startedAt) {
  if (!['tracking', 'capacity'].includes(scope) || !/^[a-f0-9]{64}$/.test(digest) || !Number.isSafeInteger(startedAt) || startedAt < 0) throw new Error('INVALID_VISITOR_SESSION');
  return `mobile-visitor:${scope}:${digest}:${startedAt}`;

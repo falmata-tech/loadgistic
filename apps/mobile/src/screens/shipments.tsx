@@ -1,3 +1,5 @@
+import {dateOnly} from '../../../../src/lib/date-calendar';
+import {DatePicker} from '../components/date-picker';
 import {useLanguage} from '../localization/provider';
 import { AppLink } from '../components/app-link';
 import { useRef, useState } from 'react';
@@ -37,6 +39,7 @@ function CreateTracking({ workspace, onClose }: { workspace: TrackingWorkspace; 
  async function create() {
   if (lock.current || uncertain) return;
   if (!vehicleId || !origin.placeRef || !destination.placeRef || cargo.trim().length < 3 || !email.trim()) { setError('Choose a truck and both cities, then add the cargo and customer email.'); return; }
+  if(!dateOnly(delivery)){setError('Choose an expected delivery date.');return;}
   lock.current = true; setBusy(true); setError('');
   try {
    const result = await account.request('/api/mobile/shipments', { vehicleId, originPlaceRef: origin.placeRef, destinationPlaceRef: destination.placeRef, cargoSummary: cargo.trim(), customerEmail: email.trim(), additionalRecipientEmails: others.split(/[\s,;]+/).filter(Boolean), expectedPickupDate: pickup.trim(), expectedDeliveryDate: delivery.trim(), trackingMode: location ? 'LOCATION_AND_STATUS' : 'STATUS_ONLY' }) as { id: string };
@@ -46,14 +49,14 @@ function CreateTracking({ workspace, onClose }: { workspace: TrackingWorkspace; 
    else setError(error instanceof Error ? error.message : 'Could not start tracking.');
   } finally { lock.current = false; setBusy(false); }
  }
- return <Card><Title message={"New shipment"}/>{workspace.vehicles.length ? <><Copy message={"Truck and assigned driver"}/><Choices value={vehicleId} options={workspace.vehicles} onChange={setVehicle} disabled={busy} />
+ return <Card><Title message={"New shipment"}/>{workspace.vehicles.length ? <><Copy message={"Truck and assigned driver"}/>{account.session?.user.role==='DRIVER'?<Copy>{workspace.vehicles[0]?.label}</Copy>:<Choices value={vehicleId} options={workspace.vehicles} onChange={setVehicle} disabled={busy} />}
   <PlacePicker label="Pickup city" value={origin} onChange={setOrigin} disabled={busy} /><PlacePicker label="Delivery city" value={destination} onChange={setDestination} disabled={busy} />
   <Field message="Cargo" value={cargo} onChangeText={setCargo} maxLength={500} editable={!busy} />
-  <Field message="Customer email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" editable={!busy} />
+  <Field message="Shipment owner email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" editable={!busy} />
   <Field message="Other recipients (optional)" value={others} onChangeText={setOthers} autoCapitalize="none" editable={!busy} /><Copy message={"Separate additional emails with commas. Each person receives their own access by email."}/>
-  <Field message="Pickup date (optional, YYYY-MM-DD)" value={pickup} onChangeText={setPickup} editable={!busy} /><Field message="Delivery date (optional, YYYY-MM-DD)" value={delivery} onChangeText={setDelivery} editable={!busy} />
+  <DatePicker message="Expected pickup" value={pickup} onChange={setPickup} disabled={busy} /><DatePicker message="Expected delivery" value={delivery} onChange={setDelivery} required disabled={busy} />
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Switch accessibilityLabel="Include approximate location" value={location} onValueChange={setLocation} disabled={busy} /><Copy message={"Include approximate location"}/></View>
-  <Copy>{location ? 'The assigned driver must share their phone location when starting travel. Customers see an approximate area.' : 'Customers see shipment status updates without a location.'}</Copy>
+  {location?<Copy message="The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment."/>:<Copy message="Customers see shipment status updates without a location."/>}
   <ErrorText message={error} /><Button message="Create shipment" busy={busy} disabled={uncertain} onPress={() => { void create(); }} /></> : <Copy message={"No assigned truck is available. Add a truck and assign its driver first."}/>}
   <Button secondary label={uncertain ? 'Check saved shipments' : 'Close'} busy={busy} onPress={onClose} />
  </Card>;

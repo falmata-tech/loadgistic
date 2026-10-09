@@ -88,3 +88,15 @@ retain proper names and useful loanwords. Maintain an explicit language/meaning
 review guide and prioritized message set, test user content unchanged, and keep
 unreviewed surfaces visible in the coverage inventory. FEAT-LUX-001 governs the
 launch journey changes. Automated catalog parity does not prove native fluency.
+
+
+### Native language selection — October 7 accessibility correction
+
+Given the web preview or native app opens its language menu
+When a user selects a language
+Then that option announces its checked state and all other options are unchecked
+And existing selection/storage/error behavior and user-generated text remain unchanged.
+The local browser audit reproduced a visible selected option without an ARIA
+checked state on React Native Web; supply the web state explicitly while retaining
+native accessibility state. Verify actual option semantics in the five-language
+transport-chat preview, not only source appearance.

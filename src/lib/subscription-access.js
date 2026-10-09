@@ -1,3 +1,5 @@
+// Historical record interpretation only. Live workspace authority is defined in
+// identity/workspace-access.js and must never use these retired plan rules.
 export const TRIAL_DAYS = 7;
 export const PAID_ACCESS_DAYS = 30;
 

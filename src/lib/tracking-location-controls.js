@@ -1,7 +1,7 @@
-import {LOCAL_CAPACITY_PRIVACY_RADII_KM} from './location-privacy.js';
+export const TRACKING_PRIVACY_RADII_KM=[1,3,5,10,20];
 export const TRACKING_LOCATION_INTERVAL_MS=10*60*1000;
 export function trackingPrivacyRadius(value){
-  const radius=Number(value);return LOCAL_CAPACITY_PRIVACY_RADII_KM.includes(radius)?radius:20;
+  const radius=Number(value);return TRACKING_PRIVACY_RADII_KM.includes(radius)?radius:20;
 }
 export function trackingLocationResult(result){
   if(result?.recorded===true)return 'saved';

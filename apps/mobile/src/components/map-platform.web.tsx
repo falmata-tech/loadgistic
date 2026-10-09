@@ -5,6 +5,7 @@ import * as maplibre from 'maplibre-gl';
 import {type Map as BrowserMap,type StyleSpecification,type LayerSpecification,type GeoJSONSource as BrowserSource,type CameraOptions,type FitBoundsOptions,type EaseToOptions} from 'maplibre-gl';
 import type {Feature,GeoJSON} from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import {loadBrowserRaster,rasterProtocol} from '../map/browser-raster-request';
 
 type Coordinate=[number,number];
 export type ViewState={center:Coordinate;zoom:number;bearing:number;pitch:number};
@@ -28,7 +29,7 @@ export const Map=forwardRef<MapRef,MapProps>(function BrowserMapView(props,ref){
  useEffect(()=>{
   if(!node.current)return;
   let map:BrowserMap;
-  try{maplibre.setWorkerUrl('/__loadgistic-map-worker.js');maplibre.setWorkerCount(2);map=new maplibre.Map({container:node.current,style:latest.current.mapStyle,center:[39.5,9],zoom:5,attributionControl:latest.current.attribution?{compact:true}:false});}
+  try{maplibre.addProtocol(rasterProtocol,(params,controller)=>loadBrowserRaster(params.url,controller.signal));maplibre.setWorkerUrl('/__loadgistic-map-worker.js');maplibre.setWorkerCount(2);map=new maplibre.Map({container:node.current,style:latest.current.mapStyle,center:[39.5,9],zoom:5,attributionControl:latest.current.attribution?{compact:true}:false});}
   catch{latest.current.onDidFailLoadingMap?.();return;}
   instance.current=map;
   const region=():RegionEvent=>({nativeEvent:{center:map.getCenter().toArray() as Coordinate,zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}});

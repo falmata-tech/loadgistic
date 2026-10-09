@@ -10,34 +10,32 @@ import {
   ClipboardCheck,
   CreditCard,
   Database,
-  ExternalLink,
   Headphones,
   Home,
   MoreHorizontal,
   Network,
   Sparkles,
-  Settings2,
   Truck,
   UserRound
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { LogoutButton } from './logout-button';
+import {WorkspaceAreaSwitch} from './workspace-area-switch';
 import { WorkspaceBackButton } from './workspace-back-button';
+import {ChatAlerts} from './chat-alerts';
 
 const navigation: Record<string, Array<{ href: string; label: string; icon: LucideIcon }>> = {
   TRANSPORTER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/fleet', label: 'Fleet', icon: Truck },
     { href: '/app/network', label: 'Network', icon: Network },
     { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/more', label: 'Account', icon: UserRound },
   ],
   DRIVER: [
     { href: '/app/home', label: 'Home', icon: Home },
-    { href: '/app/fleet', label: 'My trucks', icon: Truck },
+    { href: '/app/fleet', label: 'My truck', icon: Truck },
     { href: '/app/provider-shipments', label: 'Tracking', icon: ClipboardCheck },
     { href: '/app/network', label: 'Network', icon: Network },
-    { href: '/app/support', label: 'Support', icon: Headphones },
     { href: '/app/more', label: 'Account', icon: UserRound },
   ],
   ADMIN: [
@@ -48,7 +46,6 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
     { href: '/admin/reviews', label: 'Review Center', icon: ClipboardCheck },
     { href: '/admin/support', label: 'Support', icon: Headphones },
     { href: '/brokerage', label: 'Brokerage', icon: Truck },
-    { href: '/admin/settings', label: 'Settings', icon: Settings2 },
     { href: '/app/menu', label: 'More', icon: MoreHorizontal }
   ],
   SUPPORT: [
@@ -59,7 +56,7 @@ const navigation: Record<string, Array<{ href: string; label: string; icon: Luci
 const mobileNavigation: Record<string, string[]> = {
   SHIPPER: ['/app/home', '/app/more'],
   RECEIVER: ['/app/home', '/app/more'],
-  TRANSPORTER: ['/app/home', '/app/fleet', '/app/network', '/app/provider-shipments', '/app/more'],
+  TRANSPORTER: ['/app/home', '/app/network', '/app/provider-shipments', '/app/more'],
   DRIVER: ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/network', '/app/more'],
   ADMIN: ['/admin', '/admin/operations', '/admin/capacity-network', '/admin/reviews', '/app/menu'],
   SUPPORT: ['/support']
@@ -69,19 +66,18 @@ const roleLabels: Record<string, string> = {
   SHIPPER: 'Business',
   RECEIVER: 'Business',
   TRANSPORTER: 'Fleet transporter',
-  DRIVER: 'Self-managed driver',
+  DRIVER: 'Independent driver',
   ADMIN: 'Platform administrator',
   SUPPORT: 'Customer support'
 };
 
 function workspaceRoleLabel(user:any) {
   if(user.role==='SUPPORT'){
-    const responsibilities=[['can_manage_featured','Featured'],['can_manage_brokerage','Brokerage'],['can_manage_support','Support'],['can_manage_customers','Customers'],['can_manage_operations','Operations'],['can_manage_trust','Trust'],['can_manage_billing','Billing']].filter(([field])=>user[field]);
+    const responsibilities=[['can_manage_featured','Featured'],['can_manage_brokerage','Brokerage'],['can_manage_support','Support'],['can_manage_customers','Customers'],['can_manage_operations','Operations'],['can_manage_trust','Trust']].filter(([field])=>user[field]);
     return responsibilities.length===1?responsibilities[0][1]:'Platform team';
   }
   if(user.provider_operating_model==='COMPANY_DRIVER')return 'Company driver';
-  if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator';
-  if(user.provider_operating_model==='SELF_MANAGED_DRIVER')return 'Self-managed driver';
+  if(['OWNER_OPERATOR','SELF_MANAGED_DRIVER'].includes(user.provider_operating_model))return 'Independent driver';
   return roleLabels[user.role] || user.role.replaceAll('_',' ');
 }
 
@@ -96,7 +92,6 @@ const mobileLabels: Record<string, string> = {
   '/admin/operations': 'Records',
   '/admin/featured': 'Featured',
   '/admin/ratings': 'Rating Reviews',
-  '/admin/billing': 'Billing',
   '/admin/support': 'Support'
 };
 
@@ -110,16 +105,10 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     if(user.can_manage_brokerage)items.push({href:'/brokerage',label:'Brokerage',icon:Truck});
     if(user.can_manage_featured)items.push({href:'/admin/featured',label:'Featured',icon:Sparkles});
     if(user.can_manage_customers||user.can_manage_operations)items.push({href:'/admin/operations',label:'Records',icon:Database});
-    if(user.can_manage_trust||user.can_manage_billing)items.push({href:'/admin/reviews',label:'Review Center',icon:ClipboardCheck});
+    if(user.can_manage_trust)items.push({href:'/admin/reviews',label:'Review Center',icon:ClipboardCheck});
   }
   if (user.driver_kind === 'COMPANY') {
     items = items.filter(item => !['/app/company-page','/app/fleet'].includes(item.href));
-  }
-  if (user.billing_limited) {
-    items = items
-      .filter(item => ['/app/home','/app/more'].includes(item.href))
-      .map(item => item.href === '/app/more' ? {...item,label:'Plan & billing',icon:CreditCard} : item);
-    if(['TRANSPORTER','DRIVER'].includes(user.role))items.push({href:'/app/support',label:'Support',icon:Headphones});
   }
   const activeHref = items.filter(item=>{
     const [itemPath,itemQuery]=item.href.split('?');
@@ -130,9 +119,8 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
     }
     return true;
   }).sort((a,b)=>b.href.length-a.href.length)[0]?.href;
-  const mobileItems = user.role==='SUPPORT' ? items : user.billing_limited
-    ? items.map(item=>({...item,label:item.href==='/app/more'?'Plan & billing':item.label}))
-    : (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
+  const selectedHref=user.role==='TRANSPORTER'&&pathname.startsWith('/app/fleet')?'/app/home':activeHref;
+  const mobileItems = user.role==='SUPPORT' ? items : (mobileNavigation[user.role] || mobileNavigation.SHIPPER).map((href) => items.find((item) => item.href === href)).filter(Boolean).map((item) => ({...item!,label:mobileLabels[item!.href]||item!.label})) as Array<{ href: string; label: string; icon: LucideIcon }>;
   const workspaceName = user.organization_name || user.provider_business_name || user.name;
   const workspaceRole=workspaceRoleLabel(user);
   const isSupport=user.role==='SUPPORT';
@@ -145,7 +133,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
           {items.map(item => {
             const Icon=item.icon;
             return (
-            <Link key={item.href} className={`nav-link ${activeHref === item.href ? 'active' : ''}`} href={item.href} aria-current={activeHref===item.href?'page':undefined}>
+            <Link key={item.href} className={`nav-link ${selectedHref === item.href ? 'active' : ''}`} href={item.href} aria-current={selectedHref===item.href?'page':undefined}>
               <Icon aria-hidden="true"/><span>{<Text message={item.label}/>}</span>
             </Link>
           )})}
@@ -162,20 +150,20 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         <header className={`app-topbar ${['TRANSPORTER','DRIVER'].includes(user.role)?'provider-topbar':''}`}>
           <div className="topbar-leading"><WorkspaceBackButton/><span className="mobile-app-brand"><Logo href={homeHref}/></span><div className="workspace-title"><strong>{workspaceName}</strong><div className="meta">{<Text message={workspaceRole}/>}</div></div></div>
           <div className="topbar-actions">
+            <ChatAlerts identity={user.id}/>
             <LanguagePicker/>
-            {['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small desktop-account" href="/"><ExternalLink aria-hidden="true"/><Text message="Exit dashboard"/></Link>:null}
             {['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small workspace-support-shortcut" href="/app/support"><Headphones aria-hidden="true"/><span className="workspace-support-label"><Text message="Support"/></span></Link>:null}
             {!isSupport&&!['TRANSPORTER','DRIVER'].includes(user.role)?<Link className="button secondary small desktop-account" href="/app/menu"><MoreHorizontal aria-hidden="true"/><Text message="More"/></Link>:null}
           </div>
-          {['DRIVER','TRANSPORTER'].includes(user.role)?<Link className="mobile-dashboard-exit" href="/"><ExternalLink aria-hidden="true"/><span><Text message="Exit dashboard"/></span></Link>:null}
         </header>
+        {['TRANSPORTER','DRIVER'].includes(user.role)?<WorkspaceAreaSwitch area="workspace" actorId={user.id}/>:null}
         {children}
       </main>
       <Localized as="nav" copy={["aria-label"]} className="mobile-nav" aria-label="Mobile navigation">
         {mobileItems.map(item => {
           const Icon=item.icon;
           return (
-          <Link key={item.href} className={activeHref === item.href ? 'active' : ''} href={item.href} aria-current={activeHref===item.href?'page':undefined}>
+          <Link key={item.href} className={selectedHref === item.href ? 'active' : ''} href={item.href} aria-current={selectedHref===item.href?'page':undefined}>
             <Icon aria-hidden="true"/><span>{<Text message={item.label}/>}</span>
           </Link>
         )})}

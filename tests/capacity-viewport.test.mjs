@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseCapacityViewport,retainMapTrucks,capacityDatabaseFilters,MAX_MAP_TRUCKS} from '../src/lib/capacity-viewport.js';
+import {parseCapacityViewport,retainMapTrucks,capacityDatabaseFilters,worldCapacityViewport,MAX_MAP_TRUCKS} from '../src/lib/capacity-viewport.js';
+
+test('worldwide nearby filters preserve legitimate zero coordinates without inventing an omitted fix',()=>{
+ for(const [lat,lng] of [[41.8781,-87.6298],[-1.2921,36.8219],[25.2048,55.2708],[0,0]]){
+  const result=capacityDatabaseFilters({nearLat:String(lat),nearLng:String(lng),nearRadiusKm:50});
+  assert.equal(result.near_lat,lat);assert.equal(result.near_lng,lng);
+ }
+ for(const filters of [{},{nearLat:'',nearLng:''},{nearLat:null,nearLng:null},{nearLat:91,nearLng:0},{nearLat:0,nearLng:181}]){
+  const result=capacityDatabaseFilters(filters);assert.equal(result.near_lat,null);assert.equal(result.near_lng,null);
+ }
+});
 test('viewport rejects incomplete, reversed and non-finite bounds without broadening',()=>{
  assert.deepEqual(parseCapacityViewport('38,8,40,10'),[38,8,40,10]);
  assert.equal(parseCapacityViewport(''),null);
@@ -29,4 +39,11 @@ test('truck city filters reported location independently, taking precedence over
  assert.equal(query.near_lat,8.54);assert.equal(query.near_lng,39.27);assert.equal(query.near_radius_km,25);
  assert.equal(query.area_lat,10);assert.equal(query.geometry,null);
  assert.equal(capacityDatabaseFilters({truckLocationRadiusKm:999},places).near_radius_km,50);
+});
+
+test('wrapped world copies and dateline bounds remain valid database viewports',()=>{
+ assert.deepEqual(worldCapacityViewport([270,-10,290,10]),[-90,-10,-70,10]);
+ assert.deepEqual(worldCapacityViewport([170,-10,190,10]),[-180,-10,180,10]);
+ assert.deepEqual(worldCapacityViewport([-540,-90,540,90]),[-180,-85,180,85]);
+ for(const bounds of [[270,-10,290,10],[170,-10,190,10],[-540,-90,540,90],[0,-5,1,5]])assert.deepEqual(parseCapacityViewport(worldCapacityViewport(bounds)),worldCapacityViewport(bounds));
 });

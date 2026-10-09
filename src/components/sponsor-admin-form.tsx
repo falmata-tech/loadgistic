@@ -1,4 +1,6 @@
 "use client";
+import {DatePicker} from '@/components/date-picker';
+
 
 
 import {Text,Localized} from '@/components/localization';
@@ -20,8 +22,8 @@ export function SponsorAdminForm({featureDate,candidates}:{featureDate:string;ca
       <div className="form-group"><label htmlFor="sponsor-phone"><Text message="Public phone (optional)"/></label><Localized as="input" copy={["placeholder"]} id="sponsor-phone" name="phone" type="tel" inputMode="tel" placeholder="+251…"/><small><Text message="Add a website, a phone number, or both."/></small></div>
     </>:<div className="form-group sponsor-provider"><label htmlFor="sponsor-provider"><Text message="Transporter"/></label><select id="sponsor-provider" name="providerKey" required defaultValue=""><option value="" disabled><Text message="Choose reviewed transporter"/></option>{candidates.map(item=><option key={item.provider_key} value={item.provider_key}>{item.name} · {item.base_place}</option>)}</select></div>}
     <div className="form-group"><label htmlFor="sponsor-position"><Text message="Position"/></label><select id="sponsor-position" name="position" required defaultValue="1">{Array.from({length:5},(_,index)=><option key={index+1} value={index+1}>{index+1}</option>)}</select></div>
-    <div className="form-group"><label htmlFor="sponsor-start"><Text message="Starts"/></label><input id="sponsor-start" name="startsOn" type="date" defaultValue={featureDate} required/></div>
-    <div className="form-group"><label htmlFor="sponsor-end"><Text message="Ends"/></label><input id="sponsor-end" name="endsOn" type="date" defaultValue={featureDate} required/></div>
+    <div className="form-group"><label htmlFor="sponsor-start"><Text message="Starts"/></label><DatePicker id="sponsor-start" name="startsOn"  defaultValue={featureDate} required/></div>
+    <div className="form-group"><label htmlFor="sponsor-end"><Text message="Ends"/></label><DatePicker id="sponsor-end" name="endsOn"  defaultValue={featureDate} required/></div>
     <button className="button" name="command" value="SAVE_SPONSOR"><BadgeDollarSign aria-hidden="true"/><Text message="Schedule sponsor"/></button>
   </form>;
 }

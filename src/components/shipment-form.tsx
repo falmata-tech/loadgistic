@@ -1,4 +1,6 @@
 "use client";
+import {DatePicker} from '@/components/date-picker';
+
 
 
 import {Text,Localized} from '@/components/localization';
@@ -61,8 +63,8 @@ export function ShipmentForm({
           <div className="form-grid"><div className="form-group"><label htmlFor="pickup-area"><Navigation aria-hidden="true"/><Text message="Pickup area (optional)"/></label><Localized as="input" copy={["placeholder"]} id="pickup-area" name="pickupAreaLabel" placeholder="Bole, near Megenagna"/></div><div className="form-group"><label htmlFor="dropoff-area"><MapPin aria-hidden="true"/><Text message="Drop-off area (optional)"/></label><Localized as="input" copy={["placeholder"]} id="dropoff-area" name="dropoffAreaLabel" placeholder="Saris, near the main road"/></div></div>
           <LocalLoadMapPicker center={localCenter}/>
         </div>}
-        <div className="form-group"><label htmlFor="pickup-date"><CalendarClock aria-hidden="true"/><Text message="Pick up before"/></label><input id="pickup-date" name="pickupDate" type="date" min={minDate} required/></div>
-        <div className="form-group"><label htmlFor="delivery-date"><Clock3 aria-hidden="true"/><Text message="Drop off before (optional)"/></label><input id="delivery-date" name="deliveryDate" type="date" min={minDate}/></div>
+        <div className="form-group"><label htmlFor="pickup-date"><CalendarClock aria-hidden="true"/><Text message="Pick up before"/></label><DatePicker id="pickup-date" name="pickupDate"  min={minDate} required/></div>
+        <div className="form-group"><label htmlFor="delivery-date"><Clock3 aria-hidden="true"/><Text message="Drop off before (optional)"/></label><DatePicker id="delivery-date" name="deliveryDate"  min={minDate}/></div>
       </div>
     </section>
 

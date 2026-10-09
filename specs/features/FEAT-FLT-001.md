@@ -3,13 +3,70 @@ id: FEAT-FLT-001
 title: Fleet driver access and owner controls
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-TRK-001]
 problem: Fleet owners need Drivers to publish assigned-truck capacity and operate assigned shipments without surrendering company ownership or unrestricted commercial authority.
-behavior: A fleet Driver works inside one provider organization, has at most one current truck assignment, and may manage assigned-truck capacity or tracking only when the fleet owner permits each capability. Fleet owners create shipment records and retain full history; self-managed Drivers retain full provider authority. A rigid truck has one fixed cargo configuration, while one tractor may register a bounded compatible-trailer set and expose only its currently attached trailer as its active public and private configuration.
+behavior: A company Driver works inside one provider organization with at most one current assignment and capacity/tracking permissions chosen by the fleet owner. Fleet owners retain multi-truck/driver management and history. Independent driver unifies former owner-operator/self-managed accounts and controls only one current truck, with ownership/permission on that truck and atomic replacement retaining old history. Independent drivers cannot manage a fleet or drivers. A rigid truck has one fixed configuration; a tractor exposes only its currently attached trailer.
 contracts: [FleetDriverInvitation, FleetDriverMembership, DriverContactCommand, DriverOffboarding, DriverPermissionPolicy, DriverVehicleAssignment, ProviderVehicle, VehicleDetailsCommand, InterchangeableTrailerSet, AttachedTrailerCommand, DutyCommand, OwnerOversightProjection]
 observability: [driver_permission_audit, driver_duty_audit, vehicle_configuration_audit, denied_driver_command, update_actor]
 rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access commands with conservative defaults, retain transporter-owner access, and roll back by hiding owner controls while preserving stored settings; local development, Preview, and Production never fall back to SQLite.
 ---
 
 # Fleet driver access
+
+## Independent driver: one current truck — owner correction, October 7
+
+This supersedes independent multi-truck registration in older scenarios. Company
+fleets retain multi-truck/driver management. Former Owner-operator and Self-managed
+driver accounts display Independent driver, retaining DRIVER role/provider identity.
+
+### Scenario: one truck and no fleet authority
+
+Given an active independent provider with zero or one current truck
+When they use web/mobile or an old/direct command
+Then they can register their first truck and manage only that current truck
+And database uniqueness and serialized commands prevent a second active truck
+And no truck selector, add-driver, invitation, assignment or fleet management is offered
+And driver-management commands remain denied by persisted actor permissions.
+
+### Scenario: ownership is recorded on the truck
+
+Given an independent provider registers a truck
+When they submit its details
+Then they choose I own this truck or I rent it or have the owner's permission
+And the truck stores OWNED or PERMISSION as a self-declared use basis
+And no document verification or legal ownership guarantee is inferred
+And legacy unknown use basis is not invented from a former account type
+And evidence still belongs to that exact truck under FEAT-VER-001.
+
+### Scenario: change the current truck atomically
+
+Given an independent provider has a current truck
+When they confirm Change truck with its exact ID and valid new details/use basis
+Then the database locks the provider and archives the old truck before adding one new current truck
+And old capacity is Off Duty and assignments end through the existing lifecycle command
+And documents, shipments, reviews and capacity history stay with the old truck
+And old location, documents, capacity, private contacts and verification do not transfer
+And provider-level profile/usual routes remain with the provider
+And stale/cross-owner IDs, missing confirmation, invalid details or unfinished Tracking
+reject the entire change without partial retirement or registration
+And concurrent additions/replacements cannot create two current trucks.
+
+### Scenario: historical trucks cannot become a selector or bypass
+
+Given an independent provider has historical trucks
+When they inspect My truck or call an old restore/edit command
+Then history is read-only and is not a current-truck switch
+And physical truck identity changes use Change truck rather than overwriting its identity
+And independent-account restoration is denied
+And admin restoration still cannot violate one active truck per provider.
+
+Migration preflight must refuse existing multiple-active-truck data without
+choosing/deleting records. Retain IDs/history and require backup/rehearsal and
+compatible clients before rollout. Local success is not hosted verification.
+Tests: `tests/sql/independent-single-truck.sql`, `tests/independent-single-truck.test.mjs`,
+`verify-independent-truck-concurrency-local.mjs`, `verify-independent-truck-ui-local.mjs`
+and `fleet-vehicle-registration.spec.ts` pass locally, with retained lifecycle and
+truck-document regressions. Final receipts, early failures and boundaries are in
+MOBILE_IMPLEMENTATION / TRACEABILITY (October 7). Owner visual review and backed-up
+hosted/client rollout remain pending.
 
 ## Legacy invitations and shared driver lifecycle
 
@@ -163,7 +220,7 @@ And the change is audited with actor, driver, permission, and resulting value.
 Given local development, Preview, or Production uses the managed runtime\
 When a Fleet owner opens bounded truck or Driver access data or saves assignment and permission changes\
 Then the active application route uses the dedicated Fleet application port and Supabase PostgreSQL\
-And one transactional command repeats active actor, workspace subscription, ownership, Driver, and truck checks before ending or creating assignments and updating permissions\
+And one transactional command repeats active actor, workspace linkage, ownership, Driver, and truck checks before ending or creating assignments and updating permissions\
 And PostgreSQL preserves displaced assignment history and writes one contact-safe audit outcome\
 And unavailable or rejected managed persistence fails closed without importing or querying SQLite\
 And anonymous and ordinary browser roles cannot execute the server-only Fleet functions.
@@ -390,3 +447,25 @@ Then capacity and truck documents stay with the truck, and driver documents stay
 with driver assignment/contact controls. Expanding native controls retains drafts
 on collapse and does not cancel active saves. Web saves retain the allowed fleet
 page/driver context. This regrouping adds no operating permission or hosted change.
+
+
+## Owner and driver Home distinction — October 7, in progress
+
+Given an active transport-company owner opens Home on web or native
+Then the existing managed trucks/drivers workspace is the Home content, with
+actual fleet records, assignment/access controls and contextual documents. No
+extra page of dashboard shortcut tiles is required before reaching the fleet.
+Existing Fleet URLs remain compatible and identify Home as the primary section
+for company owners. Limited-account recovery remains unchanged.
+
+Given a driver, including a self-managed driver, owner-operator who drives or
+company driver, opens Home
+Then retain their map and authorized signal controls; do not display the company
+owner's management list or Account settings as driver Home. The account's verified
+role/application decides its workspace, not the email name or a client guess.
+Changing navigation must not reclassify accounts or let fleet owners publish
+phone GPS as if they were the assigned driver.
+
+Reuse existing fleet ports/authorizers rather than copying management logic.
+Verify owner Home list and driver Home map using real local authenticated flows,
+plus their existing role denials, then owner visual approval before release gates.

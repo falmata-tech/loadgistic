@@ -14,6 +14,8 @@ import {
 } from '../security.js';
 
 const TRACKING_ERRORS=[
+  'TRACKING_MODE_LOCKED','TRACKING_OWNER_APPROVAL_REQUIRED','TRACKING_HANDOVER_PROOF_REQUIRED','TRACKING_LOADING_PROOF_REQUIRED','TRACKING_SESSION_EXPIRED','TRACKING_APPROVAL_FORBIDDEN','TRACKING_NOT_READY_FOR_APPROVAL','TRACKING_APPEAL_NOT_READY','TRACKING_APPEAL_REASON_REQUIRED','TRACKING_INVESTIGATION_REQUIRED','TRACKING_APPEAL_CLOSED','TRACKING_STAFF_RELEASE_REQUIRED','TRACKING_DELIVERY_DATE_REQUIRED','TRACKING_DELIVERY_DATE_LOCKED',
+
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','INVALID_TRACKING_INPUT',
   'INVALID_EMAIL','INVALID_CARGO_SUMMARY','INVALID_TRACKING_MODE','LOCALITY_REQUIRED',
   'ROUTE_LOCATIONS_MUST_DIFFER','INVALID_DELIVERY_DATE','INVALID_VEHICLE',
@@ -114,8 +116,8 @@ export async function updateSupabaseProviderShipmentStatus(user,id,nextStatus,no
       next_status:String(nextStatus||''),note:String(note||''),
       proof:proof?{path:proof.path,original_name:proof.originalName,mime_type:proof.mimeType}:null,
       location:locationInput?{
-        area:String(locationInput.locationArea||''),lat:String(locationInput.approximateLat||''),
-        lng:String(locationInput.approximateLng||''),precision_km:String(locationInput.locationPrecisionKm||''),
+        area:String(locationInput.locationArea||''),lat:String(locationInput.approximateLat??''),
+        lng:String(locationInput.approximateLng??''),precision_km:String(locationInput.locationPrecisionKm||''),
         source:String(locationInput.locationSource||'')
       }:null
     }
@@ -129,8 +131,8 @@ export async function updateSupabaseProviderShipmentLocation(user,id,input){
   const {data,error}=await client.rpc('update_provider_tracking_location',{
     actor_user_id:user.id,target_shipment_id:String(id||''),
     command:{
-      area:String(input.locationArea||''),lat:String(input.approximateLat||''),
-      lng:String(input.approximateLng||''),precision_km:String(input.locationPrecisionKm||''),
+      area:String(input.locationArea||''),lat:String(input.approximateLat??''),
+      lng:String(input.approximateLng??''),precision_km:String(input.locationPrecisionKm||''),
       source:String(input.locationSource||'')
     }
   });
@@ -331,4 +333,30 @@ export async function submitTrackingEmailReview(shipmentId,recipientDigest,ratin
  });
  if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_SUBMIT_FAILED',error);
  return data;
+}
+
+export async function approveSupabaseProviderHandover(id,recipientDigest,verifiedAt){
+  if(!Number.isSafeInteger(verifiedAt))throw new Error('TRACKING_SESSION_EXPIRED');
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('approve_provider_handover',{target_shipment_id:id,requested_recipient_digest:recipientDigest,verified_at:new Date(verifiedAt).toISOString()});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPROVAL_FAILED',error);
+  return data;
+}
+export async function submitSupabaseProviderTrackingAppeal(user,id,reason){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('submit_provider_tracking_appeal',{actor_user_id:user.id,target_shipment_id:id,explanation:reason});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPEAL_FAILED',error);
+  return data;
+}
+export async function listSupabaseProviderTrackingAppeals(user,id=/** @type {string|null} */(null)){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('provider_tracking_appeals',{actor_user_id:user.id,target_shipment_id:id});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPEAL_FAILED',error);
+  return (data||[]).map(payload);
+}
+export async function resolveSupabaseProviderTrackingAppeal(user,id,decision,note){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('resolve_provider_tracking_appeal',{actor_user_id:user.id,target_appeal_id:id,decision,investigation_note:note});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPEAL_FAILED',error);
+  return data;
 }

@@ -1,9 +1,10 @@
 
+import {FleetWorkspace} from '@/components/provider-fleet-workspace';
 import {Text} from '@/components/localization';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getDashboard, getWorkspaceAccess } from '@/lib/workspace.js';
+import { getDashboard, getWorkspaceAccess } from '@/lib/workspace.js';
 import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
@@ -14,7 +15,6 @@ import {
   BadgeCheck,
   Boxes,
   CirclePlus,
-  CreditCard,
   Eye,
   Gauge,
   LayoutDashboard,
@@ -26,12 +26,6 @@ import {
   Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-
-function limitedAccessTitle(status:string){
-  if(status==='PAYMENT_UNDER_REVIEW')return 'Payment is under review';
-  if(status==='NO_SUBSCRIPTION')return 'A plan must be assigned';
-  return 'Your plan has expired';
-}
 
 function actionIcon(href:string):LucideIcon {
   if(href.includes('/shipments/new'))return CirclePlus;
@@ -49,29 +43,13 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const user=await requireUser(undefined,{allowLimited:true}); const query=await searchParams;
   if(user.role==='ADMIN')redirect('/admin');
   const access=await getWorkspaceAccess(user);
-  if(!access.granted){
-    const billing:any=await getBillingSummary(user);
-    const greeting=user.organization_name||user.provider_business_name||user.name;
-    return <div className="page billing-limited-home">
-      <PageHeader icon={LockKeyhole} title={greeting} subtitle={<Text message="Restore access to continue managing transport operations."/>}/>
-      <Flash error={query.error} success={query.success}/>
-      <section className="billing-access-panel">
-        <div className="billing-access-icon"><LockKeyhole aria-hidden="true"/></div>
-        <div><span className="status expired"><Text message="ACCESS LIMITED"/></span><h2>{limitedAccessTitle(access.status)}</h2><p>{access.status==='PAYMENT_UNDER_REVIEW'?<Text message="Loadgistic is reviewing your payment. Operating screens will reopen after approval."/>:<Text message="Submit your payment information to restore Loadgistic operating access."/>}</p></div>
-        <Link href="/app/more" className="button icon-button-label"><CreditCard aria-hidden="true"/><Text message="Open plan & billing"/></Link>
-      </section>
-      <div className="billing-limited-facts">
-        <section><span><Text message="Plan"/></span><strong>{billing.subscription?.plan_name||'Not assigned'}</strong></section>
-        <section><span><Text message="Access ended"/></span><strong>{access.ends_at?new Date(access.ends_at).toLocaleDateString():<Text message="Payment required"/>}</strong></section>
-        <section><span><Text message="Still available"/></span><strong><Text message="Home · Plan & billing · Log out"/></strong></section>
-      </div>
-    </div>;
-  }
+  if(!access.granted)return <div className="page"><PageHeader icon={LockKeyhole} title={user.name}/><p><Text message="This account is not linked to a transport workspace."/></p><Link className="button" href="/app/support"><Text message="Support"/></Link></div>;
   if(user.role==='DRIVER') {
     const plain=(value:any)=>JSON.parse(JSON.stringify(value));
     const workspace=await getProviderCapacityWorkspace(user);
     return <DriverCapacityHome vehicles={plain(workspace.vehicles)} capacities={plain(workspace.capacities)} corridors={plain(workspace.corridors)} access={plain(workspace.access)} query={query} renderedAt={Date.now()}/>;
   }
+  if(user.role==='TRANSPORTER')return <FleetWorkspace searchParams={Promise.resolve(query)}/>;
   const data:any=await getDashboard(user);
   const greeting=user.organization_name||user.provider_business_name||user.name;
   const firstTruck=user.role==='TRANSPORTER'&&(await getProviderCapacityWorkspace(user)).vehicles.length===0;

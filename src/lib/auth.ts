@@ -10,7 +10,7 @@ export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
 export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
 export const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
 export const GUEST_SUPPORT_COOKIE = 'lg_guest_support';
-export const TRACKING_IDLE_SECONDS = 30 * 60;
+export const TRACKING_IDLE_SECONDS = 5 * 60;
 export const SHARED_CAPACITY_IDLE_SECONDS = 30 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
@@ -29,7 +29,7 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
   if (allowedRoles && !allowedRoles.includes(user.role)) redirect('/app/home?error=You+do+not+have+access+to+that+page');
   if (!options.allowLimited) {
     const access=getManagedWorkspaceAccess(user);
-    if(!access.granted)redirect('/app/home?billing=required');
+    if(!access.granted)redirect('/app/home?error=Workspace+not+available');
   }
   return user;
 }
@@ -46,9 +46,7 @@ export async function getProviderTrackingGrant(shipmentId?:string) {
   const payload=verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
   const emailSession=parseTrackingSession(payload);
   if(emailSession)return {...emailSession,shipmentId:shipmentId||null};
-  const match=String(payload?.sub||'').match(/^provider-tracking:([^:]+):([a-f0-9]{64})$/);
-  if(!match||shipmentId&&match[1]!==shipmentId)return null;
-  return {shipmentId:match[1],recipientDigest:match[2],expiresAt:Number(payload.exp)*1000,startedAt:null};
+  return null;
 }
 
 export async function getTrackingEmailSession(){

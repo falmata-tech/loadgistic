@@ -3,7 +3,7 @@ id: FEAT-ADM-001
 title: Focused platform operations and review center
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-FTR-001, FEAT-SPN-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001, FEAT-SHR-001, FEAT-GST-001]
 problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
-behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document, rating, and payment queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust, Billing, and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
+behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document and rating queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
 contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, ManagedPlatformAdminPort, AdminReviewQueue, PlatformTeamPermissionPolicy, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
 observability: [admin_operations_read, admin_record_status_audit, denied_admin_command]
 rollout: Add the inventory without changing tenant-facing visibility; status commands are reversible, audited, and deny non-admin callers.
@@ -16,7 +16,7 @@ rollout: Add the inventory without changing tenant-facing visibility; status com
 Given an authenticated platform administrator enters Loadgistic administration\
 When the administrator opens the workspace home or selects Overview\
 Then `/admin` presents a compact platform overview rather than a generic client dashboard\
-And Users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans each show a direct count and link to their filtered record inventory\
+And Users, clients, trucks, Drivers, Tracking, Capacity, and routes each show a direct count and link to their filtered record inventory\
 And Featured and sponsors, private Capacity shared with Loadgistic, Review Center, customer Support, and platform-team management are directly reachable as named work areas\
 And Record management is labelled Records rather than competing with a second vague Home or Operations destination\
 And the selected destination remains understandable on desktop and phone.
@@ -25,13 +25,13 @@ And the selected destination remains understandable on desktop and phone.
 
 Given an authenticated platform administrator\
 When Records is opened or searched\
-Then one selected bounded result set shows users, workspaces, trucks, Drivers, provider-owned Tracking, regular service, plans, or latest capacity from authoritative records\
+Then one selected bounded result set shows users, workspaces, trucks, Drivers, provider-owned Tracking, regular service or latest capacity from authoritative records\
 And records are identified with transporter, truck platform number, Tracking code, and current status\
 And private proof paths, passwords, session values, tracking secrets, and exact coordinates are absent.
 
 ### Scenario: admin inventory stays connected to user-side entities
 
-Given users can create or change accounts, workspaces, Public Profiles, trucks, Drivers, regular service routes or areas, provider-owned Tracking, capacity, verification requests, reviews, payments, subscriptions, or support conversations\
+Given users can create or change accounts, workspaces, Public Profiles, trucks, Drivers, regular service routes or areas, provider-owned Tracking, capacity, verification requests, reviews or support conversations\
 When an administrator opens the relevant management area\
 Then every current entity can be found from a bounded authoritative list and traced to its owning user or workspace\
 And the administrator receives an appropriate inspect, correct, moderate, activate, suspend, expire, disconnect, or review command\
@@ -41,7 +41,7 @@ And every mutation is validated, attributed, timestamped, and audited.
 ### Scenario: operation rows open bounded record details
 
 Given an administrator or delegated platform team member can open one Records inventory\
-When they select a user, workspace, truck, Driver, Tracking session, Capacity signal, regular-service record, or subscription row\
+When they select a user, workspace, truck, Driver, Tracking session, Capacity signal, or regular-service record\
 Then a real record-detail route opens inside the administrator shell\
 And it identifies the selected record, its owning workspace or provider, current state, and only the related operational facts needed to investigate it\
 And Tracking detail includes its bounded status-event timeline\
@@ -55,7 +55,7 @@ And no credentials, OTPs, tracking or review secrets, recipient emails, proof re
 
 ### Scenario: dense administrative queues remain operable
 
-Given verification requests, rating reports, or payment proofs contain many records\
+Given verification requests or rating reports contain many records\
 When an administrator searches, filters by status, or changes result pages\
 Then the server returns one bounded page of matching records\
 And terminal records do not render active review commands\
@@ -75,7 +75,7 @@ And no local SQLite repository or fallback is consulted.
 
 ### Scenario: Review Center keeps related queues together
 
-Given an administrator needs to review trust, rating, or payment evidence\
+Given an administrator needs to review trust documents or rating evidence\
 When Review Center is opened\
 Then Documents, Ratings, and Payments are reachable as consistent tabs\
 And one selected queue is rendered at a time\
@@ -116,7 +116,7 @@ And the actor, target, resulting state, and time are audited.
 Given an administrator or delegated platform team member submits a Records command\
 When the service-role-only managed command function receives the verified actor identifier, record type, record identifier, and bounded command\
 Then PostgreSQL independently verifies the actor's current Customer, Operations, or Billing permission\
-And account, Driver permission, truck, Capacity, regular-service, or plan changes complete atomically with their audit record\
+And account, Driver permission, truck, Capacity, or regular-service changes complete atomically with their audit record\
 And an unsupported command, missing record, self-suspension attempt, or insufficient permission changes nothing\
 And a retired record command is rejected without referencing or recreating retired storage\
 And suspending a Support team member safely returns their open conversations to the waiting queue.
@@ -127,7 +127,7 @@ Given an authenticated administrator opens Support Team\
 When the administrator creates or updates a support agent\
 Then the agent receives only the SUPPORT role\
 And the administrator supplies a name and email but never creates or sees a password\
-And the managed Auth identity signs in through the same email-code or Google choices as other active accounts\
+And the managed Auth identity signs in through the same email-code flow as other active accounts\
 And availability, active state, maximum open conversations, and Customer, Operations, Trust, Billing, and Support permissions are validated and audited\
 And disabling an agent or removing Support permission returns their open conversations to the waiting queue for safe reassignment.
 
@@ -137,9 +137,31 @@ Given an administrator configures a platform team member\
 When one or more management responsibilities are enabled\
 Then navigation shows only the matching management areas\
 And every page, query, mutation, file read, and review command independently enforces the same permission server side\
-And Customer permission governs accounts and client profiles, Operations governs trucks, Drivers, regular service, Tracking, and capacity, Trust governs documents and ratings, Billing governs plans and payment state, and Support governs customer conversations\
+And Customer permission governs accounts and client profiles, Operations governs trucks, Drivers, regular service, Tracking, and capacity, Trust governs documents and ratings, historical Billing grants govern protected archived proof reads only (FEAT-BIL-001), and Support governs customer conversations\
 And only an administrator can create team members, change their permissions, or grant administrator authority\
 And permission changes take effect on the next authorized request and are audited.
+
+### Scenario: owner administrator creates web-only chat staff
+
+Given the configured owner administrator signs in with a verified email code\
+When they create a Support agent or Transport agent\
+Then the account receives the existing SUPPORT staff identity with only the
+selected Support and/or Brokerage responsibility\
+And it receives no administrator, billing, customer, operations, trust or Featured
+authority from that selection\
+And each staff member signs in to their authorized web queue using an email code\
+And verified administrator login goes directly to Administration rather than
+passing through a provider Home\
+And staff cannot create other staff or grant themselves permissions\
+And the owner administrator, Support agent and Transport agent cannot obtain a
+mobile account session through either email-code verification or refresh\
+And a web bearer session cannot read mobile workspace endpoints\
+And rejection closes only the attempted session, preserving an existing web login.
+
+Evidence: `tests/e2e/staff-admin-account.spec.ts`,
+`tests/mobile-identity.test.mjs` and `tests/team-authorization.test.mjs`.
+Production identity inventory and local provisioning are operational evidence;
+they do not authorize deleting an unrelated identity or its retained history.
 
 ## Contract ownership
 
@@ -205,7 +227,7 @@ coordinates or broader privileges. Verify area/route SQL and desktop/phone rende
 
 ### Review queue decision context — audit continuation, 2026-09-21
 
-Given a reviewer opens a searched, status-filtered, paginated document/payment/rating queue
+Given a reviewer opens a searched, status-filtered, paginated document/rating queue
 When a decision succeeds or the backend denies it
 Then the response retains that queue, search, status and page context
 And caller-provided return paths cannot redirect outside the matching Review Center tab.

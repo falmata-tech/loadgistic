@@ -314,8 +314,8 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
   }
 });
 
-for(const applicationType of ['OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
- test(`${applicationType} signs up, adds a truck and publishes after location permission`,async({page,context}:{page:any;context:any},info:any)=>{
+for(const useBasis of ['OWNED','PERMISSION']){
+ test(`independent driver ${useBasis} signs up, adds a truck and publishes after location permission`,async({page,context}:{page:any;context:any},info:any)=>{
   test.setTimeout(150000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL||'');
@@ -325,7 +325,7 @@ for(const applicationType of ['OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
   let userId='',providerId='',vehicleId='';
   try{
    await verifyNewEmail(page,email);
-   await page.locator(`input[name="applicationType"][value="${applicationType}"]`).check();
+   await page.locator('input[name="applicationType"][value="SELF_MANAGED_DRIVER"]').check();
    await page.getByLabel('Your name',{exact:true}).fill(`Independent ${suffix}`);
    await page.getByLabel('Transporter name',{exact:true}).fill(`Independent Transport ${suffix}`);
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
@@ -335,10 +335,12 @@ for(const applicationType of ['OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
    expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
    const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;
    await page.getByRole('link',{name:'Add truck',exact:true}).click();
+   await page.getByRole('radio',{name:useBasis==='OWNED'?'I own this truck':"I rent it or have the owner's permission",exact:true}).check();
    await page.getByLabel('Make',{exact:true}).fill('Isuzu');await page.getByLabel('Model',{exact:true}).fill('Independent mini');
    await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');await page.getByLabel('Plate number',{exact:true}).fill(`IND-${suffix}`);
-   await page.getByRole('button',{name:'Add truck',exact:true}).click();
-   await expect(page.getByRole('heading',{name:'Isuzu · Independent mini'})).toBeVisible();vehicleId=new URL(page.url()).pathname.split('/').at(-1)!;
+   await page.getByRole('button',{name:'Add your truck',exact:true}).click();
+   await expect(page.getByRole('heading',{name:'My truck',exact:true})).toBeVisible();vehicleId=new URL(page.url()).pathname.split('/').at(-1)!;
+   expect((await service.from('vehicles').select('use_basis').eq('id',vehicleId).single()).data?.use_basis).toBe(useBasis);
    await page.goto('/app/home');await page.getByRole('button',{name:'Set capacity',exact:true}).click();
    const dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});
    await dialog.getByRole('button',{name:'Capacity route',exact:true}).click();
@@ -357,7 +359,7 @@ for(const applicationType of ['OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
    expect(published.error).toBeNull();expect(published.data).toMatchObject({updated_by:userId,visibility:'PRIVATE',location_precision_km:20});expect(published.data!.location_lat).not.toBe(9.03);
    await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-   await page.screenshot({path:info.outputPath(`${applicationType.toLowerCase()}-first-capacity.png`),fullPage:true});
+   await page.screenshot({path:info.outputPath(`${useBasis.toLowerCase()}-first-capacity.png`),fullPage:true});
   }finally{
    // Exact synthetic identities only, including a partially completed signup.
    if(!userId)userId=(await service.from('profiles').select('id').eq('email',email).maybeSingle()).data?.id||'';

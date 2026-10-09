@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {independentOperatingModel} from '../independent-driver.js';
 
 export type WorkspaceSubscription = {
   id:string;
@@ -62,5 +63,5 @@ export async function getManagedCurrentUser(client:SupabaseClient,authUser:{id:s
   const {data,error}=await client.rpc('current_user_projection');
   if(error)throw new Error('MANAGED_IDENTITY_PROJECTION_FAILED',{cause:error});
   if(!isManagedCurrentUser(data)||data.id!==authUser.id)return null;
-  return data;
+  return {...data,provider_operating_model:independentOperatingModel(data.provider_operating_model) as ManagedCurrentUser['provider_operating_model']};
 }

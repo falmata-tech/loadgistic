@@ -1,4 +1,5 @@
 import {createSessionToken,privateContactDigest,verifySessionToken} from './security.js';
+import {independentOperatingModel} from './independent-driver.js';
 
 export const MANAGED_SIGNUP_COOKIE='lg_provider_signup';
 export const MANAGED_SIGNUP_MAX_AGE_SECONDS=15*60;
@@ -43,7 +44,7 @@ export function normalizeProviderSignupInput(input={}){
   if(businessName.length<2||businessName.length>140)return {ok:false,error:'Enter the transporter name.'};
   if(phone.length<7||phone.length>30||!/^[0-9+() .-]+$/.test(phone))return {ok:false,error:'Enter a valid callback phone number.'};
   if(!ACCOUNT_TYPES.has(applicationType))return {ok:false,error:'Choose how you operate.'};
-  return {ok:true,input:{name,businessName,phone,applicationType,notes}};
+  return {ok:true,input:{name,businessName,phone,applicationType:independentOperatingModel(applicationType),notes}};
 }
 
 export async function prepareManagedProviderSignup(input,token){

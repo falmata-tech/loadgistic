@@ -1,3 +1,4 @@
+import {capacitySharingLabel} from '../../../../src/lib/capacity-sharing';
 import {useRef,useState} from 'react';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -9,7 +10,7 @@ import {locationAreaLabel} from '../localization/location-copy';
 import {useAccount} from '../session/provider';
 import {AppIcon,type IconName} from '../components/app-icon';
 import {AppLink} from '../components/app-link';
-import {Button,Copy,ErrorText,Title,palette} from '../components/ui';
+import {Button,Copy,ErrorText,palette} from '../components/ui';
 import {TrackingMap} from '../components/tracking-map';
 import {Map,Camera} from '../components/map-platform';
 import {mapStyle} from '../components/map-style';
@@ -20,22 +21,18 @@ import type {MapCoverage} from '../components/tracking-map';
 export function DriverHome(){
  const {t}=useLanguage(),account=useAccount();
  const {data,error,reload}=useAccountQuery<CapacityWorkspace>('/api/mobile/capacity');
- const [selected,setSelected]=useState(''),[choosing,setChoosing]=useState(false);
- const truck=data?.vehicles.find(item=>item.id===selected)||data?.vehicles[0];
+ const truck=data?.vehicles[0];
  return <View style={styles.home}>
-  {truck?<HomeTruck key={truck.id} truck={truck} canPublish={!!data?.canPublish} canRegular={account.session?.user.operatingModel!=='COMPANY_DRIVER'} refresh={reload} multiple={(data?.vehicles.length||0)>1} onChoose={()=>setChoosing(true)} loadError={error}/>:<>
+  {truck?<HomeTruck key={truck.id} truck={truck} canPublish={!!data?.canPublish} canRegular={account.session?.user.operatingModel!=='COMPANY_DRIVER'} refresh={reload} loadError={error}/>:<>
    <View testID="driver-home-map" style={styles.map}><EmptyMap/></View>
    <View style={styles.empty}>
-    {!!error?<><ErrorText message={t(error)}/><Button message="Refresh" onPress={()=>{void reload();}}/></>:!data?<ActivityIndicator accessibilityLabel={t('Loading truck capacity')}/>:<><Copy message="Add your truck, or ask your fleet owner to assign one, before sharing capacity."/>{account.session?.user.operatingModel!=='COMPANY_DRIVER'&&<AppLink href="/fleet" message="Trucks and drivers" style={styles.link}/>}</>}
+    {!!error?<><ErrorText message={t(error)}/><Button message="Refresh" onPress={()=>{void reload();}}/></>:!data?<ActivityIndicator accessibilityLabel={t('Loading truck capacity')}/>:<>{account.session?.user.operatingModel==='COMPANY_DRIVER'?<Copy message="Ask your fleet owner to assign your truck."/>:<><Copy message="Add your truck to share capacity and start Tracking."/><AppLink href="/fleet" message="Add your truck" style={styles.link}/></>}</>}
    </View>
   </>}
-  <Modal visible={choosing} transparent animationType="fade" onRequestClose={()=>setChoosing(false)}>
-   <SafeAreaView style={styles.backdrop}><View style={styles.sheet}><View style={styles.sheetHeader}><Title message="Trucks and drivers"/><Button secondary message="Close" onPress={()=>setChoosing(false)}/></View><ScrollView contentContainerStyle={styles.editor}>{data?.vehicles.map(item=><Button key={item.id} secondary={item.id!==truck?.id} label={`${item.label} · ${item.plate}`} onPress={()=>{setSelected(item.id);setChoosing(false);}}/>)}</ScrollView></View></SafeAreaView>
-  </Modal>
  </View>;
 }
 
-type HomeTruckProps={truck:CapacityTruck;canPublish:boolean;canRegular:boolean;refresh:()=>Promise<void>;multiple:boolean;onChoose:()=>void;loadError:string};
+type HomeTruckProps={truck:CapacityTruck;canPublish:boolean;canRegular:boolean;refresh:()=>Promise<void>;loadError:string};
 function HomeTruck(props:HomeTruckProps){return props.canRegular?<ProviderTruck {...props}/>:<DriverTruck {...props}/>;}
 function ProviderTruck(props:HomeTruckProps){
  const regular=useAccountQuery<{services:Service[]}>('/api/mobile/regular-service');
@@ -43,7 +40,7 @@ function ProviderTruck(props:HomeTruckProps){
  return <DriverTruck {...props} loadError={props.loadError||regular.error} regular={shapes} refresh={async()=>{await Promise.all([props.refresh(),regular.reload()]);}}/>;
 }
 
-function DriverTruck({truck,canPublish,canRegular,refresh,multiple,onChoose,loadError,regular=[]}:HomeTruckProps&{regular?:MapCoverage[]}){
+function DriverTruck({truck,canPublish,canRegular,refresh,loadError,regular=[]}:HomeTruckProps&{regular?:MapCoverage[]}){
  const {t,locale}=useLanguage(),[section,setSection]=useState<'CAPACITY'|'REGULAR'|'LOCATION'|null>(null),[saving,setSaving]=useState(false),savingRef=useRef(false);
  const editing=section!==null;
  const location=useCapacityLocation(truck,editing,refresh),current=truck.current;
@@ -53,8 +50,7 @@ function DriverTruck({truck,canPublish,canRegular,refresh,multiple,onChoose,load
  return <>
   <View style={styles.truckBar} aria-hidden={editing} importantForAccessibility={editing?'no-hide-descendants':'auto'} accessibilityElementsHidden={editing}>
    <View style={styles.truckIcon}><AppIcon name="truck" color={palette.teal}/></View>
-   <View style={{flex:1,minWidth:0}}><Text numberOfLines={1} style={styles.truckName}>{truck.label}</Text><Text numberOfLines={1} style={styles.small}>{truck.plate} · {truck.driver||t('No driver assigned')}</Text><Text numberOfLines={2} style={[styles.status,{color}]}>{status}{current?` · ${t(current.visibility==='OPEN'?'Open to the public':'Private network')}`:''}</Text></View>
-   {multiple&&<Pressable accessibilityRole="button" accessibilityLabel={t('Trucks and drivers')} onPress={onChoose} style={styles.iconButton}><AppIcon name="next" color={palette.teal}/></Pressable>}
+   <View style={{flex:1,minWidth:0}}><Text numberOfLines={1} style={styles.truckName}>{truck.label}</Text><Text numberOfLines={1} style={styles.small}>{truck.plate} · {truck.driver||t('No driver assigned')}</Text><Text numberOfLines={2} style={[styles.status,{color}]}>{status}{current?` · ${t(capacitySharingLabel(current.sharingMode))}`:''}</Text></View>
   </View>
   <View testID="driver-home-map" style={styles.map} aria-hidden={editing} importantForAccessibility={editing?'no-hide-descendants':'auto'} accessibilityElementsHidden={editing}>
    {truck.location?.coordinate?<TrackingMap fill regular={regular} location={{latitude:truck.location.coordinate[1],longitude:truck.location.coordinate[0],radius:truck.location.radius,area:truck.location.area,updatedAt:truck.location.updatedAt}} coverage={current&&current.status!=='OFF_DUTY'?{kind:current.availabilityGeometry,places:current.availabilityGeometry==='ROUTE'?current.route:current.boundary,partial:current.status==='PARTIAL'}:undefined}/>:<EmptyMap/>}

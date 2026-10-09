@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
       if (['FORBIDDEN', 'SUBSCRIPTION_ACCESS_REQUIRED', 'INVALID_VEHICLE', 'NOT_FOUND', 'DEVICE_LOCATION_DRIVER_ONLY'].includes(code)) throw new MobileError(403, 'FORBIDDEN', 'This action is not available for this truck and account.');
-      if (/^(INVALID_|DRIVER_REQUIRED_|CAPACITY_|PARTIAL_CAPACITY_|ACCEPTED_LOADS_|LOCALITY_)/.test(code)) throw new MobileError(400, 'INVALID_INPUT', errorMessage(error));
+      if (/^(INVALID_|DRIVER_REQUIRED_|CAPACITY_|PARTIAL_CAPACITY_|ACCEPTED_LOADS_|LOCALITY_|CONTACT_NAME_)/.test(code)) throw new MobileError(400, 'INVALID_INPUT', errorMessage(error));
       throw error;
     }
   } catch (error) { return mobileFailure(error); }

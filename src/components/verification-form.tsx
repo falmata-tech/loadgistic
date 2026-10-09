@@ -1,4 +1,6 @@
 "use client";
+import {DatePicker} from '@/components/date-picker';
+
 
 
 import {Text,Localized} from '@/components/localization';
@@ -45,7 +47,7 @@ export function VerificationForm({subjects,initialTruckId,returnTo}:{subjects:Su
       <input type="hidden" name="subjectType" value={selected?.subject_type||''}/>
       <input type="hidden" name="subjectId" value={selected?.subject_id||''}/>
       <div className="form-group"><label htmlFor={`${prefix}-verification-type`}><ShieldCheck aria-hidden="true"/><Text message="Verification type"/></label><select id={`${prefix}-verification-type`} name="verificationType" disabled={!ready} value={verificationType} onChange={event=>setVerificationType(event.target.value)} required>{selected?.allowed_types.map(type=><option value={type} key={type}><Text message={labels[type]||type}/></option>)}</select></div>
-      {verificationType==='VEHICLE_AUTHORIZATION'?<>{selected?.subject_type==='VEHICLE'?<input type="hidden" name="relatedVehicleId" value={selected.subject_id}/>:<div className="form-group"><label htmlFor={`${prefix}-related-vehicle`}><Text message="Truck"/></label><select id={`${prefix}-related-vehicle`} name="relatedVehicleId" required>{selected?.vehicles?.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.label}</option>)}</select></div>}<div className="form-group"><label htmlFor={`${prefix}-authorization-expiry`}><Text message="Permission expires"/></label><input id={`${prefix}-authorization-expiry`} name="expiresOn" type="date" min={new Date(Date.now()+86_400_000).toISOString().slice(0,10)} required/></div></>:null}
+      {verificationType==='VEHICLE_AUTHORIZATION'?<>{selected?.subject_type==='VEHICLE'?<input type="hidden" name="relatedVehicleId" value={selected.subject_id}/>:<div className="form-group"><label htmlFor={`${prefix}-related-vehicle`}><Text message="Truck"/></label><select id={`${prefix}-related-vehicle`} name="relatedVehicleId" required>{selected?.vehicles?.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.label}</option>)}</select></div>}<div className="form-group"><label htmlFor={`${prefix}-authorization-expiry`}><Text message="Permission expires"/></label><DatePicker id={`${prefix}-authorization-expiry`} name="expiresOn"  min={new Date(Date.now()+86_400_000).toISOString().slice(0,10)} required/></div></>:null}
       <div className="form-group"><label htmlFor={`${prefix}-document-name`}><FileText aria-hidden="true"/><Text message="Document name"/></label><Localized as="input" copy={["placeholder"]} id={`${prefix}-document-name`} name="documentName" required placeholder="Example: Business license"/></div>
       <div className="form-group full"><label htmlFor={`${prefix}-verification-file`}><Upload aria-hidden="true"/><Text message=" Verification document"/></label><input id={`${prefix}-verification-file`} name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required/></div>
     </div>

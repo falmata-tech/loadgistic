@@ -1,5 +1,16 @@
 # Architecture
 
+Android notification extension (FEAT-NOT-001 / ADR-078, local ledger 128): private
+installation tokens bind to a verified member Auth session or an exact guest chat
+capability. Committed chat/assignment/join/handover events enqueue in the source
+transaction; a bounded leased worker rechecks current authority/Seen before using
+the fixed Expo send/receipt adapter. The Netlify published schedule defaults off.
+Native Expo57 opt-in lives in Updates; web keeps its independent browser worker.
+FCM V1 is configured only for falmatad/loadgistic/com.loadgistic.app. No private
+Firebase credential enters the app or web runtime. Hosted rollout/new APK and
+physical closed-phone acceptance remain pending; provider acceptance is not Seen
+or proof of a user-observed banner.
+
 ## Locally verified audit architecture
 
 ADRs 058–062 extend the existing ports without a new service: lifecycle.js owns
@@ -45,7 +56,7 @@ Dependency direction is HTTP/UI → application authorization/services → domai
 - Provider-owned Tracking and immutable execution events behind the service-role-only managed Tracking repository; PostgreSQL independently rechecks workspace ownership, Driver permission, assignment, transition, and location consent.
 - One active customer-owner code digest, a separate review-code digest, customer-safe guest projection, and private idempotent access/completion delivery attempts.
 - Provider review and low-rating dispute, with completion/expiry/uniqueness and owning-provider checks repeated inside managed commands.
-- Verification request, subscription/payment proof, Support conversation, notification, and audit log.
+- Verification request, Support conversation, notification and audit log. Historical subscription/payment rows are retained read-only; FEAT-BIL-001 retires their operation and access gates.
 - Truck-scoped Capacity access grant, short-lived Shared capacity email OTP,
   30-minute rolling-idle restricted visitor session with explicit logout, and account-free Assisted matching conversation
   with private attachments and explicit guest/team closure.
@@ -66,7 +77,7 @@ Public signup proves Google or numeric email-code identity through a signed
 15-minute HTTP-only handoff before asking for provider facts. The unified
 email request may create one Auth subject, but the database trigger keeps it
 inactive. A service-role-only provisioning intent then creates the selected
-provider workspace, draft page, signup record, and trial in one PostgreSQL
+provider workspace, draft page and signup record without a plan in one PostgreSQL
 transaction before the profile becomes active.
 
 The installable shell is public-first: `/` is the manifest identity and Open capacity launch URL, while `/shared-capacity`, `/track`, `/featured`, `/about`, and `/apply` are distinct public route workspaces. The shared public header and route-aware navigation persist visually across client-side `Link` transitions in the order Open capacity, Private capacity, Track, Featured, and About, and its persistent chat launcher restores one authorized guest conversation across public route changes. `/help` remains a recovery fallback rather than a primary navigation destination. Market and Featured remain separate Server Component trees so each route loads only its own projection and client modules. Desktop uses a floating public workspace rail; public and authenticated phone layouts provide their own role-appropriate fixed navigation. The service worker ignores navigation requests, private workspace pages, and framework chunks; only stable brand and vehicle artwork may use cache-first delivery.
@@ -85,7 +96,7 @@ rehearse database and Storage-object restore, and then deploy the Next.js
 application through Netlify's maintained OpenNext adapter. Managed Auth/signup,
 health, place search, public discovery, Shared capacity, provider Capacity,
 provider-owned Tracking, transporter-profile editing, authenticated
-workspace/Fleet management, Verification/Billing, member Support, Assisted
+workspace/Fleet management, Verification, member Support, Assisted
 matching, platform-team management, Operations, Daily Featured/Sponsor
 administration, shared request limits, server-only upload quarantine, and the
 bounded scheduled email/retention/limit-cleanup worker use isolated adapter

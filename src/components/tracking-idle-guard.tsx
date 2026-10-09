@@ -112,7 +112,7 @@ export function TrackingSessionBoundary({initialExpiresAt,children}:{initialExpi
 
   return <Localized as="div" ref={surface} copy={["aria-label"]} className="tracking-session-workspace" aria-label="Shipment tracking session">
     <div className="container shared-capacity-session-bar">
-      <Localized as="span" copy={["aria-label"]} aria-label="Tracking access ends after 30 minutes without activity."><Clock3 aria-hidden="true"/><span><strong><Text message="Private session"/></strong><small><Text message="30-minute idle limit"/></small></span></Localized>
+      <Localized as="span" copy={["aria-label"]} aria-label="Tracking access ends five minutes after email verification."><Clock3 aria-hidden="true"/><span><strong><Text message="Private session"/></strong><small><Text message="5-minute verified session"/></small></span></Localized>
       <button type="button" className="button secondary small" data-tracking-logout disabled={!ready} onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/><Text message="Log out"/></button>
     </div>
     {children}

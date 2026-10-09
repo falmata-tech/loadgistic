@@ -2,7 +2,7 @@
   "expo": {
     "name": "Loadgistic",
     "slug": "loadgistic",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/loadgistic-icon.png",
     "userInterfaceStyle": "light",
@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.loadgistic.app",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/loadgistic-icon.png",
         "backgroundColor": "#ffffff"
@@ -21,7 +22,6 @@
         "ACCESS_FINE_LOCATION"
       ],
       "blockedPermissions": [
-        "ACCESS_BACKGROUND_LOCATION",
         "READ_MEDIA_IMAGES",
         "READ_MEDIA_VIDEO",
         "RECORD_AUDIO"
@@ -37,8 +37,11 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow Loadgistic to use your location when you choose to update your truck location or find nearby trucks.",
-          "isAndroidBackgroundLocationEnabled": false,
-          "isAndroidForegroundServiceEnabled": false
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Allow Loadgistic to share an approximate shipment location until unloading is approved, including while the app is in the background.",
+          "androidForegroundServiceIcon": "./assets/tracking-notification.png"
         }
       ],
       [
@@ -52,7 +55,15 @@
       "expo-router",
       "expo-status-bar",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/push-notification.png",
+          "color": "#0c7275",
+          "defaultChannel": "loadgistic-updates"
+        }
+      ]
     ],
     "owner": "falmatad",
     "scheme": "loadgistic",

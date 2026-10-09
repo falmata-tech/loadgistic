@@ -1,3 +1,4 @@
+import {DatePicker} from '@/components/date-picker';
 
 import {Text,Localized} from '@/components/localization';
 import {EthiopiaPlaceInput} from './ethiopia-place-input';
@@ -20,8 +21,8 @@ export function TrackingRecoveryControls({context}:{context:any}){
   <label><Text message="Cargo summary"/><textarea name="cargo_summary" defaultValue={context.cargo_summary} minLength={3} maxLength={500} required/></label>
   {routeEditable?<><label htmlFor="recovery-origin"><Text message="Pickup place"/></label><EthiopiaPlaceInput id="recovery-origin" defaultValue={context.origin} defaultPlaceRef={context.origin_place_ref} placeRefName="origin_place_ref" required/>
    <label htmlFor="recovery-destination"><Text message="Destination"/></label><EthiopiaPlaceInput id="recovery-destination" defaultValue={context.destination} defaultPlaceRef={context.destination_place_ref} placeRefName="destination_place_ref" required/></>:<><input type="hidden" name="origin_place_ref" value={context.origin_place_ref}/><input type="hidden" name="destination_place_ref" value={context.destination_place_ref}/><p className="meta"><Text message="The route is retained after Loading begins."/></p></>}
-  <label><Text message="Expected pickup"/><input type="date" name="expected_pickup_date" defaultValue={context.expected_pickup_date||''}/></label>
-  <label><Text message="Expected delivery"/><input type="date" name="expected_delivery_date" defaultValue={context.expected_delivery_date||''}/></label>
+  <label><Text message="Expected pickup"/><DatePicker  name="expected_pickup_date" defaultValue={context.expected_pickup_date||''}/></label>
+  <label><Text message="Expected delivery"/><DatePicker  name="expected_delivery_date" defaultValue={context.expected_delivery_date||''}/></label>
   {shared}<button className="button secondary"><Text message="Save correction"/></button></form></details>
  <details className="card"><summary><Text message="Reassign Tracking"/></summary><form className="stack" action={action} method="post"><input type="hidden" name="action" value="REASSIGN"/>
   <p><Text message="The selected truck's currently assigned Driver takes over. Earlier events remain; a new location update is required."/></p>

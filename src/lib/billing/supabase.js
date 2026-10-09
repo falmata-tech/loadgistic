@@ -1,6 +1,4 @@
-import {commitPrivateUpload} from '../private-upload-commit.js';
 import {readWindowedPage} from '../pagination.js';
-import {removePrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 
 const ERRORS=['FORBIDDEN','SUBSCRIPTION_NOT_FOUND','PAYMENT_NOT_REQUIRED','INVALID_ETB_AMOUNT',
@@ -23,20 +21,8 @@ export async function getSupabaseBillingSummary(user,options={}){
   return {...data,proofPage:{items:data?.proofs||[],total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize))}};
 }
 
-export async function submitSupabasePaymentProof(user,amountEtb,reference,file){
-  const amount=Number(amountEtb);
-  if(!Number.isFinite(amount)||amount<=0)throw new Error('INVALID_ETB_AMOUNT');
-  const stored=file&&typeof file.arrayBuffer==='function'&&file.size?await storePrivateUpload(file,'payment'):null;
-  const client=createSupabaseAdminClient();
-  const data=await commitPrivateUpload(stored,async()=>{
-    const {data,error}=await client.rpc('submit_managed_payment_proof',{actor_user_id:user.id,command:{
-    amount_minor:Math.round(amount*100),reference:String(reference||''),storage_path:stored?.path||'',
-    original_name:stored?.originalName||'',mime_type:stored?.mimeType||''
-  }});
-    if(error)throw managedError('SUPABASE_PAYMENT_SUBMIT_FAILED',error);
-    return data;
-  },removePrivateUpload);
-  return data;
+export async function submitSupabasePaymentProof(_user,_amountEtb,_reference,_file){
+  throw new Error('BILLING_RETIRED');
 }
 
 export async function getSupabasePaymentProofFile(user,id){
@@ -57,9 +43,6 @@ export async function listSupabasePaymentProofs(user,options={}){
   },options);
 }
 
-export async function reviewSupabasePaymentProof(user,id,status){
-  const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('review_managed_payment_proof',{actor_user_id:user.id,proof_id:id,review_status:String(status||'')});
-  if(error)throw managedError('SUPABASE_PAYMENT_REVIEW_FAILED',error);
-  return data;
+export async function reviewSupabasePaymentProof(_user,_id,_status){
+  throw new Error('BILLING_RETIRED');
 }

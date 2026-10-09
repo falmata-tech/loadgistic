@@ -13,11 +13,9 @@ import DriverPhoto from '../screens/driver-photo';
 import Profile from '../screens/profile';
 import RegularService from '../screens/regular-service';
 import Documents from '../screens/documents';
-import Billing from '../screens/billing';
 const sections:Record<AccountSection,{message:string;icon:IconName}>={
- DETAILS:{message:'Account details',icon:'user'},PHOTO:{message:'Your driver photo',icon:'user'},
+ DETAILS:{message:'Account details',icon:'user'},
  SECURITY:{message:'Email and account security',icon:'shield'},PROFILE:{message:'Transporter profile',icon:'profile'},
- REGULAR:{message:'Regular service',icon:'route'},DOCUMENTS:{message:'Documents',icon:'documents'},BILLING:{message:'Plan and payments',icon:'billing'},
 };
 
 export default function AccountSettings(){
@@ -33,7 +31,7 @@ export default function AccountSettings(){
  }
  return <Page><Title message="Account"/><Copy>{account.session!.user.name}</Copy>
   {accountSections(account.session).map(section=><WorkspaceSection key={`${account.session!.user.id}:${section}`} {...sections[section]} initiallyOpen={section==='DETAILS'}>
-   {section==='DETAILS'?<AccountDetails embedded/>:section==='PHOTO'?<DriverPhoto embedded/>:section==='SECURITY'?<Security embedded/>:section==='PROFILE'?<Profile embedded/>:section==='REGULAR'?<RegularService embedded/>:section==='DOCUMENTS'?<Documents embedded scope={{kind:'ACCOUNT',includeDriver:account.session!.user.role==='DRIVER'}}/>:<Billing embedded/>}
+   {section==='DETAILS'?<><AccountDetails embedded/>{account.session!.access?.granted&&account.session!.user.role==='DRIVER'&&<><WorkspaceSection message="Your driver photo" icon="user"><DriverPhoto embedded/></WorkspaceSection><WorkspaceSection message="Driver documents" icon="documents"><Documents embedded scope={{kind:'ACCOUNT',includeDriver:true,includeOwner:account.session!.user.operatingModel!=='COMPANY_DRIVER'}}/></WorkspaceSection></>}</>:section==='SECURITY'?<Security embedded/>:section==='PROFILE'?<><Profile embedded/><WorkspaceSection message="Regular service" icon="route"><RegularService embedded/></WorkspaceSection><>{account.session!.user.role==='TRANSPORTER'&&<WorkspaceSection message="Company documents" icon="documents"><Documents embedded scope={{kind:'ACCOUNT',includeDriver:false}}/></WorkspaceSection>}</></>:null}
   </WorkspaceSection>)}
   <ErrorText message={error}/><Button secondary message="Sign out" busy={busy} onPress={()=>{void signOut();}}/>
  </Page>;

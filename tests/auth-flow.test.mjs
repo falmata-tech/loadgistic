@@ -74,6 +74,7 @@ test('email-code inputs are bounded and normalized without account disclosure',(
   assert.equal(isNumericEmailOtp('12345'),false);
   assert.equal(isNumericEmailOtp('123 456'),false);
   assert.equal(managedWorkspaceDestination('SUPPORT'),'/support');
+  assert.equal(managedWorkspaceDestination('ADMIN'),'/admin');
   assert.equal(managedWorkspaceDestination('DRIVER'),'/app/home');
 });
 

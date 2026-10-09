@@ -15,14 +15,14 @@ const callback=fs.readFileSync('src/app/api/auth/callback/route.ts','utf8');
 const page=fs.readFileSync('src/app/apply/page.tsx','utf8');
 const accessPage=fs.readFileSync('src/app/login/page.tsx','utf8');
 
-test('managed signup accepts only the three provider operating models without a password',async()=>{
+test('managed signup has two canonical models and accepts the former owner-operator alias without a password',async()=>{
   const {normalizeProviderSignupInput}=await import('../src/lib/provider-signup.js');
   for(const applicationType of ['TRANSPORT_COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
     const result=normalizeProviderSignupInput({
       name:'Aster Bekele',businessName:'Aster Transport',phone:'+251 911 000 000',applicationType
     });
     assert.equal(result.ok,true);
-    assert.equal(result.input.applicationType,applicationType);
+    assert.equal(result.input.applicationType,applicationType==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER':applicationType);
   }
   assert.equal(normalizeProviderSignupInput({name:'Aster',businessName:'Aster Transport',phone:'+251911000000',applicationType:'COMPANY_DRIVER'}).ok,false);
   assert.doesNotMatch(page,/name="password"|type="password"/i);
@@ -55,9 +55,7 @@ test('signup intent and provisioning commands are server-only and authority acti
   assert.match(migration,/expires_at>now\(\)[\s\S]*for update/i);
   assert.match(migration,/after insert on auth\.users/i);
   assert.match(migration,/values\(new\.id[\s\S]*'DRIVER',false/i);
-  assert.match(migration,/interval '7 days'/i);
   assert.match(migration,/insert into public\.company_pages/i);
-  assert.match(migration,/insert into public\.subscriptions/i);
   assert.match(migration,/insert into public\.applications/i);
   const activation=migration.indexOf('update public.profiles set');
   assert.ok(activation>migration.indexOf('insert into public.applications'));
@@ -89,7 +87,7 @@ test('signup intent and provisioning commands are server-only and authority acti
   assert.match(reconciliationMigration,/'DRIVER'::public\.user_role[\s\S]*false/i);
 });
 
-test('fresh managed databases receive the minimum idempotent signup plan catalogue',()=>{
+test('the historical plan catalogue migration remains idempotent for retained records',()=>{
   for(const [code,audience] of [
     ['BUSINESS_CAPACITY','BUSINESS'],
     ['FLEET_DEMAND','TRANSPORTER'],

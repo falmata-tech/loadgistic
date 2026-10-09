@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseTrackingSession,trackingSessionSubject,trackingSessionSeconds,trackingSessionExpired,trackingSessionNeedsRenewal,TRACKING_IDLE_MS,TRACKING_ABSOLUTE_MS} from '../src/lib/tracking-session.js';
 const now=1800000000000,digest='a'.repeat(64);
-test('email verification lasts thirty minutes, with a fixed eight-hour maximum',()=>{
+test('email verification lasts five minutes with an absolute verification deadline',()=>{
  const payload={sub:trackingSessionSubject(digest,now),exp:(now+TRACKING_IDLE_MS)/1000};
- assert.equal(trackingSessionSeconds(now,now),1800);
+ assert.equal(TRACKING_IDLE_MS,300000);assert.equal(TRACKING_ABSOLUTE_MS,300000);
+ assert.equal(trackingSessionSeconds(now,now),300);
  assert.equal(parseTrackingSession(payload,now).recipientDigest,digest);
  assert.equal(parseTrackingSession(payload,now+TRACKING_IDLE_MS),null);
  assert.equal(trackingSessionSeconds(now,now+TRACKING_ABSOLUTE_MS-60000),60);

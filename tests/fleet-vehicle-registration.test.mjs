@@ -81,7 +81,9 @@ test('the public catalogue has freight configurations and distinct trailers with
 });
 
 test('fleet pages expose add and detail destinations while company drivers are filtered out',()=>{
-  const fleet=fs.readFileSync(path.join(root,'src/app/app/fleet/page.tsx'),'utf8');
+  const route=fs.readFileSync(path.join(root,'src/app/app/fleet/page.tsx'),'utf8');
+  assert.match(route,/<FleetWorkspace searchParams=\{searchParams\}/);
+  const fleet=fs.readFileSync(path.join(root,'src/components/provider-fleet-workspace.tsx'),'utf8');
   const menu=fs.readFileSync(path.join(root,'src/app/app/menu/page.tsx'),'utf8');
   const shell=fs.readFileSync(path.join(root,'src/components/app-shell.tsx'),'utf8');
   assert.match(fleet,/href="\/app\/fleet\/new"/);

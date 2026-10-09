@@ -17,13 +17,17 @@ test('active Verification and Billing routes use managed application ports',()=>
   assert.match(read('src/lib/billing.js'),/billing\/supabase\.js/);
 });
 
-test('managed private-file commands use guarded cleanup and hide storage paths from queues',()=>{
+test('active verification uploads guard uncertain saves and retained billing files stay private',()=>{
   const verification=read('src/lib/verification/supabase.js');
   const billing=read('src/lib/billing/supabase.js');
   assert.match(verification,/commitPrivateUpload\(stored,/);
   assert.match(verification, /},removePrivateUpload\)/);
-  assert.match(billing,/commitPrivateUpload\(stored,/);
-  assert.match(billing, /},removePrivateUpload\)/);
+  // FEAT-BIL-001 retires new proof uploads; their denial-before-inspection is
+  // exercised in provider-access-without-plans.test.mjs. Historical file reads
+  // retain the original service-only authorization, not an upload/charge path.
+  assert.match(billing,/managed_payment_proof_file/);
+  assert.match(billing,/actor_user_id:user\.id/);
+  assert.doesNotMatch(billing,/uploadPrivateFile|commitPrivateUpload/);
   const migration=read('supabase/migrations/051_managed_verification_billing.sql');
   assert.match(migration,/revoke all on function public\.managed_verification_file/);
   assert.match(migration,/revoke all on function public\.managed_payment_proof_file/);
@@ -32,7 +36,7 @@ test('managed private-file commands use guarded cleanup and hide storage paths f
   assert.doesNotMatch(migration,/jsonb_build_object\([^;]*'file_path',/s);
 });
 
-test('Verification and Billing reviews are terminal, scoped, and audited in PostgreSQL',()=>{
+test('Verification review and retained historical Billing schema stay scoped and audited',()=>{
   const migration=read('supabase/migrations/051_managed_verification_billing.sql');
   assert.match(migration,/managed_actor_has_permission\(actor_user_id,'TRUST'\)/);
   assert.match(migration,/managed_actor_has_permission\(actor_user_id,'BILLING'\)/);

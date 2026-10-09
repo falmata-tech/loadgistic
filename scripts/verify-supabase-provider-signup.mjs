@@ -207,7 +207,7 @@ try{
     service.from('provider_profiles').select('id,handle').eq('user_id',otpAuthUserId).maybeSingle(),
     service.from('applications').select('id,status,application_type').eq('user_id',otpAuthUserId).maybeSingle()
   ]);
-  if(profileError||providerError||applicationError||!profile?.active||profile.role!=='DRIVER'||!provider||application?.status!=='APPROVED'||application.application_type!=='OWNER_OPERATOR'){
+  if(profileError||providerError||applicationError||!profile?.active||profile.role!=='DRIVER'||!provider||application?.status!=='APPROVED'||application.application_type!=='SELF_MANAGED_DRIVER'){
     throw new Error('SUPABASE_SIGNUP_VERIFY_WORKSPACE_FAILED');
   }
   const [{data:page,error:pageError},{data:subscription,error:subscriptionError},{data:audit,error:auditError}]=await Promise.all([
@@ -215,11 +215,9 @@ try{
     service.from('subscriptions').select('status,starts_at,ends_at').eq('provider_profile_id',provider.id).maybeSingle(),
     service.from('audit_logs').select('action').eq('entity_id',application.id).maybeSingle()
   ]);
-  if(pageError||subscriptionError||auditError||page?.published!==false||subscription?.status!=='TRIAL'||audit?.action!=='ACCOUNT_SELF_PROVISIONED'){
+  if(pageError||subscriptionError||auditError||page?.published!==false||subscription!==null||audit?.action!=='ACCOUNT_SELF_PROVISIONED'){
     throw new Error('SUPABASE_SIGNUP_VERIFY_AGGREGATE_FAILED');
   }
-  const trialDays=(new Date(subscription.ends_at).getTime()-new Date(subscription.starts_at).getTime())/86_400_000;
-  if(Math.abs(trialDays-7)>0.001)throw new Error('SUPABASE_SIGNUP_VERIFY_TRIAL_FAILED');
   if(await signupEligible(otpAuthUserId)!==false)throw new Error('SUPABASE_SIGNUP_VERIFY_PROVISIONED_REMAINS_ELIGIBLE');
   const {error:duplicateError}=await completeEligibleSignup(otpAuthUserId,tokenDigest);
   if(!duplicateError||!/SIGNUP_NOT_AVAILABLE/.test(String(duplicateError.message||''))){
@@ -363,4 +361,4 @@ try{
   }
 }
 
-process.stdout.write('Supabase managed provider email OTP, profile-authority denial, authoritative eligibility/completion RPC, pristine bootstrap, rejection matrix, legacy permission denial, atomic workspace, trial, duplicate denial, and browser denial checks passed.\n');
+process.stdout.write('Supabase managed provider email OTP, profile-authority denial, authoritative eligibility/completion RPC, pristine bootstrap, rejection matrix, legacy permission denial, atomic workspace, plan-free access, duplicate denial, and browser denial checks passed.\n');

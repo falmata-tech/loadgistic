@@ -9,6 +9,21 @@ observability: [geographic_match_kind, visitor_location_consent_outcome, bounded
 rollout: Reuse structured place references, prune pre-customer regular records deterministically to one per provider, add regular geometry fields, rebuild demo signals near reported truck locations, keep visitor proximity an explicit filter rather than a ranking input, and select one attributed HTTPS tile origin through public runtime configuration without proxying or bulk-copying tiles.
 ---
 
+## Worldwide map and driver coordinates — October 7
+
+Valid driver coordinates and map navigation are worldwide, rather than limited
+by the initial Ethiopia catalog. The client sends only an approximate cell center within the
+chosen privacy radius; longitude wraps into [-180,180] without exceeding its
+distance from the device fix. Stored coordinates are finite and valid, including
+latitude/longitude zero. Public/private proximity filters use the same world
+bounds and cannot invent a (0,0) point for omitted inputs. Wrapped map copies and
+dateline-crossing viewports are normalized to valid bounds rather than issuing
+reversed/out-of-world queries or snapping the camera to East Africa.
+Town labels come from a nearby catalog place or a neutral approximate-area label;
+overseas positions must never inherit the nearest Ethiopian town. Place/route
+selection retains the actual catalog; global navigation is not a claim that a
+worldwide place catalog or reverse-geocoding integration is installed.
+
 # Public capacity geography
 
 ### Scenario: current availability chooses one geography
@@ -155,3 +170,17 @@ And unresolved data stays preserved for rollback without inventing coordinates o
 - Tests: domain, repository, authorization, E2E, and visual audit
 
 September 21 owner-requested palette and interaction update: blue identifies location; muted orange identifies regular service, with green/yellow availability unchanged. FEAT-LST-001 defines compact map-key, non-blocking details and catalog-city proximity acceptance. Local verification precedes owner visual approval and rollout.
+
+## Location privacy across multiple views
+
+Given the same driver shares capacity and shipment Tracking at different precision levels
+When approximate locations are published
+Then the shared point represents a stable area cell whose whole extent fits within the selected radius
+And it is not a fixed-distance offset from raw GPS, which permits triangulation when several radii are compared
+And repeated nearby fixes inside a cell do not reveal movement within that cell
+And the same stored point is used for all authorized audiences at that precision
+And longitude wrapping and pole handling remain valid; historical points are retained without claiming they used the new method.
+
+This security correction preserves the radius as a conservative uncertainty bound,
+not a promise that the actual driver is exactly that distance from the displayed point.
+Tests cover many-to-one quantization, repeated fixes and world-wide distance bounds.

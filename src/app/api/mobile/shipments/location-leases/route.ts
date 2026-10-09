@@ -1,0 +1,6 @@
+import {z} from 'zod';
+import {deviceLeaseCommand,deviceRpc,issueDeviceLease} from '@/lib/mobile/tracking-device-server';
+import {mobileActor,mobileBody,mobileFailure,mobileJson,MobileError} from '@/lib/mobile/server';
+export const runtime='nodejs';
+export async function GET(request:Request){try{const user=await mobileActor(request,true);if(user.role!=='DRIVER')return mobileJson({shipments:[]});const rows=await deviceRpc('assigned_location_tracking',{actor_user_id:user.id});const parsed=z.array(z.object({payload:z.object({shipmentId:z.string().uuid(),radius:z.number().refine(value=>[1,3,5,10,20].includes(value))}).strip()}).strip()).safeParse(rows);if(!parsed.success)throw new MobileError(503,'LOCATION_UNAVAILABLE','Location reporting could not be confirmed.');return mobileJson({shipments:parsed.data.map(row=>row.payload)});}catch(error){return mobileFailure(error);}}
+export async function POST(request:Request){try{const user=await mobileActor(request,true),parsed=deviceLeaseCommand.safeParse(await mobileBody(request));if(!parsed.success)throw new MobileError(400,'INVALID_INPUT','Choose a shipment and a location radius up to 20 km.');return mobileJson(await issueDeviceLease(user.id,parsed.data));}catch(error){return mobileFailure(error);}}

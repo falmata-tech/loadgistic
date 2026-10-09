@@ -52,7 +52,6 @@ test('real upload adapters retain files on lost RPC responses and clean explicit
   try {
     for (const save of [
       ()=>submitSupabaseVerification({id:'actor'},{subjectType:'TRUCK',subjectId:'truck',verificationType:'TRUCK_OWNERSHIP'},file),
-      ()=>submitSupabasePaymentProof({id:'actor'},10,'test-reference',file),
       ()=>updateSupabaseProviderProfileImage({id:'actor'},file)
     ]) for (const outcome of ['lost','rejected','success']) {
       const objects=new Map();let referenced,commandCount=0;

@@ -5,7 +5,7 @@ import {Building2,UserRound,UserRoundCheck,MapPin,ArrowRight,RefreshCw} from 'lu
 import {Text,Localized} from './localization';
 import {LoadingIndicator} from './loading-state';
 import type {CapacitySearchKind,CapacitySearchResult,CapacitySearchItem} from '@/lib/capacity-search';
-export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport company',OWNER_OPERATOR:'Owner-operator',SELF_MANAGED_DRIVER:'Self-managed driver',COMPANY_DRIVER:'Company driver'};
+export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport company',OWNER_OPERATOR:'Independent driver',SELF_MANAGED_DRIVER:'Independent driver',COMPANY_DRIVER:'Company driver'};
 const icons={COMPANY:Building2,OWNER_OPERATOR:UserRoundCheck,SELF_MANAGED_DRIVER:UserRound,COMPANY_DRIVER:UserRound};
 export function CapacitySearchResults({query,view,searchPath}:{query:Record<string,string>;view:'open'|'private'|'loadgistic';searchPath:string}){
  const [page,setPage]=React.useState(1),[result,setResult]=React.useState(null as CapacitySearchResult|null),[loading,setLoading]=React.useState(true),[failed,setFailed]=React.useState(false),[retry,setRetry]=React.useState(0);

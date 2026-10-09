@@ -10,6 +10,7 @@ import {managedWorkspaceDestination} from '@/lib/auth-flow.js';
 import {getManagedCurrentUser} from '@/lib/identity/supabase';
 import {managedProviderSignupEligible,MANAGED_SIGNUP_COOKIE,readProviderSignupHandoff} from '@/lib/provider-signup.js';
 import {createSupabaseServerClient} from '@/lib/supabase/server';
+import {independentOperatingModel} from '@/lib/independent-driver.js';
 
 const accountTypes=[
   {
@@ -17,12 +18,8 @@ const accountTypes=[
     hint:'A transport company or fleet with its own trucks and company Drivers.',icon:Building2
   },
   {
-    value:'OWNER_OPERATOR',title:'Owner-operator',
-    hint:'You drive and manage a truck you own.',icon:Truck
-  },
-  {
-    value:'SELF_MANAGED_DRIVER',title:'Self-managed driver',
-    hint:'You operate another owner’s truck with authorization.',icon:UserRound
+    value:'SELF_MANAGED_DRIVER',title:'Independent driver',
+    hint:'Drive one truck you own, rent or use with permission.',icon:UserRound
   }
 ];
 
@@ -52,7 +49,8 @@ export default async function ApplyPage({
   if(!identityProved){
     redirect(handoff?.email?'/login?step=code':'/login');
   }
-  const selectedType=accountTypes.some(type=>type.value===query.type)?query.type:'TRANSPORT_COMPANY';
+  const requestedType=independentOperatingModel(query.type)||'';
+  const selectedType=accountTypes.some(type=>type.value===requestedType)?requestedType:'TRANSPORT_COMPANY';
 
   return <>
     <PublicHeader/>

@@ -6,6 +6,10 @@ import {readFileSync,mkdirSync} from 'node:fs';
 import path from 'node:path';
 import {removePrivateUpload} from '../../src/lib/private-storage.js';
 import {cleanupSupportAttachments} from '../../src/lib/support-attachments.js';
+import {auditIdentity} from './audit-helpers';
+import {localSupportLogin} from './provider-support-helper';
+const sessions:(()=>Promise<unknown>)[]=[];
+test.afterEach(async()=>{for(const close of sessions.splice(0))await close();});
 
 function localService(){
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
@@ -14,12 +18,8 @@ function localService(){
   return createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
 }
 async function login(page:any,email:string){
-  await page.context().clearCookies();await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in',exact:true}).click();
-  await expect(page).toHaveURL(email.startsWith('support@')?/\/support$/:/\/app\/home(?:\?.*)?$/,{timeout:30000});
-  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
+  const identity=await auditIdentity(localService(),email);
+  sessions.push(await localSupportLogin(page,identity.id));
 }
 async function attach(page:any,name:string,mimeType:string,buffer:Buffer,body:string){
   const form=page.locator('.support-composer');await expect(form).toBeVisible();
@@ -48,8 +48,8 @@ test('member and staff attach private files, retain old downloads and lose acces
     const created=await service.auth.admin.createUser({email,password:'Loadgistic123!',email_confirm:true});expect(created.error).toBeNull();member=created.data.user!.id;
     expect((await service.from('profiles').update({role:'DRIVER',active:true,full_name:'Attachment Test Driver'}).eq('id',member)).error).toBeNull();
     expect((await service.from('provider_profiles').insert({user_id:member,business_name:'Attachment Test Provider',handle:`attachment-${suffix}`})).error).toBeNull();
-    const agent=await service.from('profiles').select('id').eq('email','support@loadgistic.local').single();expect(agent.error).toBeNull();
-    expect((await service.from('support_conversations').insert({id:chat,customer_user_id:member,assigned_agent_user_id:agent.data!.id,category:'ACCOUNT',status:'OPEN'})).error).toBeNull();
+    const agent=await auditIdentity(service,'support@loadgistic.local');
+    expect((await service.from('support_conversations').insert({id:chat,customer_user_id:member,assigned_agent_user_id:agent.id,category:'ACCOUNT',status:'OPEN'})).error).toBeNull();
     await login(page,email);await page.goto(`/app/support?conversation=${chat}`);
     await attach(page,'member-proof.png','image/png',bytes,'Member attachment submitted');
     const attachmentUrl=await download(page,'member-proof.png',bytes);

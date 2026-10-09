@@ -19,8 +19,8 @@ export function supportThread(value: unknown, userId: string) {
  // The service authorizes too; this projection must never become a staff inbox.
  if (item.customer_user_id !== userId) throw new Error('NOT_FOUND');
  return { ...supportSummary(item), before: text(item.history_before), hasOlder: item.has_older === true, nextBefore: text(item.next_before),
-  messages: (Array.isArray(item.messages) ? item.messages : []).map(value => { const message = row(value); return {
-   id: text(message.id), mine: message.sender_user_id === userId, body: text(message.body), createdAt: text(message.created_at),
+  messages: (Array.isArray(item.messages) ? item.messages : []).map(value => { const message = row(value),sequence=Number(message.sequence);if(!Number.isSafeInteger(sequence)||sequence<1)throw Error('CHAT_READ_UNAVAILABLE');return {
+   id: text(message.id), sequence, mine: message.sender_user_id === userId, body: text(message.body), createdAt: text(message.created_at),
    attachment: message.attachment_id ? { id: text(message.attachment_id), name: text(message.attachment_name) } : null,
   }; }),
  };

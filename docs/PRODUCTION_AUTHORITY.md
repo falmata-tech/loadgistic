@@ -1,3 +1,55 @@
+## October 8 matched backend/web and Android tester release — requested
+
+After the confirmed FCM upload and the stated remaining backend rollout, new APK
+and phone test, the owner instructed “ok finish then.” Prepare and complete this
+Loadgistic release with the existing backup/restore, current visual review, exact
+candidate/SQL/field review, security/CI and monitored-rollout controls. Targets are
+Supabase tpwyyzoqijjmbvsmmvcm, Netlify dbb0fcec-9ec9-4511-9737-db0e32849af5 /
+loadgistic.com and @falmatad/loadgistic (a2d7e0a9-2fe4-4188-804e-40d8c3486ac7),
+Android com.loadgistic.app. Pending local migrations are 115–128; only the native
+push sender flag is a proposed new hosted setting. Its exact plan/evidence must
+exist before applying it. This instruction does not waive visual review or other
+required gates; older publication authority remains consumed. Existing signing
+credentials are reused without replacement. Google Play and unrelated provider,
+Auth/SMTP, credential, billing or project changes are not included.
+
+## October 8 owner-delegated FCM V1 upload — completed
+
+The owner supplied the Loadgistic Firebase Android configuration and explicitly
+delegated upload of the exact supplied service-account file. Account and project
+were independently verified as `falmatad`, `@falmatad/loadgistic`, EAS project
+`a2d7e0a9-2fe4-4188-804e-40d8c3486ac7`, package `com.loadgistic.app`.
+The file was validated in memory for Firebase `loadgistic-f082a`. EAS had no
+existing FCM V1 association. The supported FCM-only credentials workflow uploaded
+the key and post-write metadata confirmed that Firebase project on this app.
+Signing credentials were unchanged; legacy push and Play submission remain empty.
+
+The protected `.local/native-push-fcm-upload-review.md` retains source/digest,
+target, prior state and result without credential bytes. The original recoverable
+file stays outside the repository. Any specifically authorized rollback removes
+only this FCM association. This delegated write grants no other credential/config,
+signing, Play, hosted SQL/flag or distribution authority. Matched backend/new APK,
+owner visual review and actual phone delivery remain separate release gates.
+
+## October 7 owner administrator inventory — no production change required
+
+Owner explicitly requested `falmata.dawano@gmail.com` as main administrator on
+both live Loadgistic and the local preview, with independent Support-agent and
+Transport-agent responsibilities. All administration/staff access remains web-only.
+The owner asked to remove another association on this address if one existed.
+
+Project-scoped read-only inventory verifies one confirmed, active ADMIN identity
+on `tpwyyzoqijjmbvsmmvcm`, with zero provider profiles, organization memberships
+or staff profiles. No conflicting association exists and no production deletion,
+role change, credential/configuration write or deployment is needed. The exact
+inventory receipt is protected and ignored under `.local`; credentials were held
+only in memory and the read process was closed. Existing provider accounts remain.
+
+The same address is provisioned as ADMIN in local Loadgistic for the actual email
+code/staff creation/mobile-denial browser checks. This does not renew release or
+unrelated production-change authority. Any later staff setup uses the authorized
+admin UI and grants only the chosen responsibilities; staff never gain ADMIN.
+
 ## October 7 web and Expo testing release — completed
 
 The scoped owner-authorized rollout is complete. Web application `415cb7d` is

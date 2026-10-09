@@ -28,7 +28,7 @@ function routeDestination(pathname: string) {
   return pathname === '/' ? 'market' : '';
 }
 
-export function PublicMobileNav({signedIn=false}:{signedIn?:boolean}) {
+export function PublicMobileNav({signedIn=false,providerWorkspace=false}:{signedIn?:boolean;providerWorkspace?:boolean}) {
   const pathname = usePathname();
   const router=useRouter();
   const active=routeDestination(pathname);
@@ -54,15 +54,14 @@ export function PublicMobileNav({signedIn=false}:{signedIn?:boolean}) {
   };
 
   const sessionDestination=signedIn
-    ?{key:'dashboard',href:'/app/home',label:'Dashboard',desktopLabel:'Dashboard',icon:LayoutDashboard}
+    ?{key:'dashboard',href:'/app/home',label:providerWorkspace?'My workspace':'Dashboard',desktopLabel:providerWorkspace?'My workspace':'Dashboard',icon:LayoutDashboard}
     :{key:'login',href:'/login',label:'Transporter login',desktopLabel:'Transporter login',icon:Truck};
 
   return <>
     <Localized as="nav" copy={["aria-label"]} className="public-workspace-nav" aria-label="Public workspace navigation">
       <span className="public-nav-group"><Text message="Explore"/></span>
       {destinations.slice(0,3).map(destination=>destinationLink(destination,false))}
-      <span className="public-nav-group"><Text message="Account"/></span>
-      {destinationLink(sessionDestination,false,'public-nav-secondary')}
+      {!providerWorkspace&&<><span className="public-nav-group"><Text message="Account"/></span>{destinationLink(sessionDestination,false,'public-nav-secondary')}</>}
       <span className="public-nav-group"><Text message="Loadgistic"/></span>
       {destinationLink(destinations[3],false)}
       {destinationLink({key:'privacy',href:'/privacy',label:'Privacy',desktopLabel:'Privacy',icon:LockKeyhole},false,'public-nav-secondary')}

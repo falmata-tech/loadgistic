@@ -1,6 +1,6 @@
-import { nearestEthiopiaPlace } from './ethiopia-places.js';
+import {approximateLocationArea} from './approximate-location-area.js';
 import {browserRequest} from './browser-request';
-import { obscureCoordinate } from './location-privacy.js';
+import { obscureCoordinate,isValidCoordinate } from './location-privacy.js';
 
 export type DriverLocation={lat:number;lng:number;radius:number;area:string;updatedAt:string};
 
@@ -9,10 +9,9 @@ export function readDriverLocation(radius:number):Promise<DriverLocation>{
   return new Promise((resolve,reject)=>{
     if(!window.isSecureContext||!navigator.geolocation){reject(new Error('Use a secure browser with location access to update this truck.'));return;}
     navigator.geolocation.getCurrentPosition(position=>{
-      if(!Number.isFinite(position.coords.latitude)||!Number.isFinite(position.coords.longitude)||position.coords.latitude<3||position.coords.latitude>15||position.coords.longitude<32||position.coords.longitude>49){reject(new Error('Truck location must be within the supported Ethiopia area.'));return;}
+      if(!isValidCoordinate(position.coords.latitude,position.coords.longitude)){reject(new Error('Your device returned an invalid location. Try again.'));return;}
       const point=obscureCoordinate(position.coords.latitude,position.coords.longitude,radius);
-      const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
-      resolve({...point,radius,area:nearest?`Around ${nearest.name}, Ethiopia`:'Around current device area',updatedAt:new Date().toISOString()});
+      resolve({...point,radius,area:approximateLocationArea(point.lat,point.lng),updatedAt:new Date().toISOString()});
     },error=>reject(new Error(error.code===error.PERMISSION_DENIED?'Allow location for Loadgistic in your browser, then try again.':'The device could not provide a location. Please try again.')),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
   });
 }

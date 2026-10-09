@@ -67,7 +67,7 @@ test('public entry makes capacity immediately usable without an account',async({
   const drawer=await openCapacityFilters(page);
   await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toBeVisible();
   const filterDialog=await openCapacityFilterDialog(page);
-  await expect(filterDialog.getByLabel('Availability',{exact:true})).toBeVisible();
+  await expect(filterDialog.getByLabel("Truck's current load",{exact:true})).toBeVisible();
   await choosePlace(filterDialog,'Origin','Adama',/Adama, Ethiopia/i);
   await choosePlace(filterDialog,'Destination','Hawassa',/Hawassa, Ethiopia/i);
   await expect(filterDialog.getByRole('group',{name:'Truck configuration',exact:true})).toBeVisible();

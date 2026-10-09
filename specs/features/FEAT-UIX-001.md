@@ -212,7 +212,7 @@ Then one fixed bottom bar exposes no more than five direct destinations without 
 And a Driver sees Home, Tracking, Support, Account, and More\
 And a fleet transporter sees Home, Fleet, Tracking, Account, and More\
 And the active destination is clear by label, icon, shape, and contrast rather than color alone\
-And Account contains only private account and plan or payment information\
+And Account groups private details, security, provider information and documents\
 And More presents role-authorized profile, verification, support, public-market, featured-programme, and sign-out destinations without duplicating Account content\
 And Exit dashboard remains directly available without signing the member out\
 And page content reserves safe-area space so the bar never covers the final action.
@@ -279,7 +279,7 @@ And cards, controls, and map workspaces begin within the initial viewport withou
 Given an administrator enters the authenticated application on desktop or phone\
 When primary navigation and the administrator overview render\
 Then Overview is the single landing destination\
-And Records opens searchable Users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans\
+And Records opens searchable Users, clients, trucks, Drivers, Tracking, Capacity and routes\
 And Review Center, private Capacity, Featured and sponsors, Support, and role-authorized More destinations use distinct task names\
 And no generic Home and vague Operations pair compete for the same administrative purpose.
 
@@ -307,7 +307,7 @@ When an action is activated\
 Then it reaches the route and task named by its label without a missing page, inert control, or unrelated fallback\
 And the administrator More destination opens the actual role-authorized menu on desktop and mobile\
 And the Featured administration preview opens the public Featured page rather than the Truck Market\
-And Account and plan remains distinctly named inside More instead of competing with a second ambiguous More destination.
+And Account remains distinctly named inside More instead of competing with a second ambiguous More destination.
 
 ### Scenario: one transporter account-access flow stays focused across devices
 

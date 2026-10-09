@@ -74,12 +74,19 @@ Docs: https://docs.expo.dev/eas/index.md
 - Distinguish a Metro-dependent development client from a standalone phone APK.
   Record compiled, installed, device-tested, owner-approved and distributed
   separately. Preserve owner visual review before extensive release gates.
+- A browser adapter may omit a native import graph. Typecheck and Expo-web success
+  do not prove Android startup. Shared native contracts must be dependency-free;
+  keep server registration/validation adapters out of phone routing imports.
+  Verify the actual Android bundle and installed startup before native UI review.
 - Native UI automation must require a fresh successful hierarchy dump before
   choosing tap coordinates. Delete the previous test-owned dump first; an adb
   zero exit code alone does not prove UIAutomator produced a new file. Verify
   synthetic text before submission and persisted state afterward. Wait for a
   visible initial screen before sending a second development-client navigation
   intent; do not count a bundler response as a successful cold start.
+  Keep device actions sequential through tool-session completion; a returned
+  running session is not a finished action. Use distinct test-owned dump paths
+  and stop a dependent sequence on its first failure. Never tap from a stale dump.
 
 ## Web phone UI reuse and navigation organization (owner correction, October 6)
 

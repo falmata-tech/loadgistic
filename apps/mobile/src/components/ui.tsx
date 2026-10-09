@@ -1,10 +1,10 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps,type ScrollViewProps } from 'react-native';
 import type { PropsWithChildren } from 'react';
 import { useLanguage } from '../localization/provider';
 type AppCopy=PropsWithChildren<{message?:string}>;
 type Label=({label:string;message?:never}|{message:string;label?:never});
 export const palette = { ink: '#172c46', teal: '#0c7275', muted: '#526875', border: '#cbdadb' };
-export function Page({ children,embedded=false }: PropsWithChildren<{embedded?:boolean}>) { return embedded?<View style={{gap:16}}>{children}</View>:<ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>{children}</ScrollView>; }
+export function Page({ children,embedded=false,...scroll }: PropsWithChildren<{embedded?:boolean}&Pick<ScrollViewProps,'onLayout'|'onScroll'|'scrollEventThrottle'>>) { return embedded?<View style={{gap:16}}>{children}</View>:<ScrollView {...scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>{children}</ScrollView>; }
 export function Title({ children,message }: AppCopy) { const {t}=useLanguage();return <Text style={styles.title}>{message===undefined?children:t(message)}</Text>; }
 export function Copy({ children,message }: AppCopy) { const {t}=useLanguage();return <Text style={styles.copy}>{message===undefined?children:t(message)}</Text>; }
 export function Card({ children }: PropsWithChildren) { return <View style={styles.card}>{children}</View>; }

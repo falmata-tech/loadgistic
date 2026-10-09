@@ -1,7 +1,9 @@
 "use client";
 
 
+import {CAPACITY_SHARING_CHOICES,capacitySharingMode} from '@/lib/capacity-sharing';
 import {Text} from '@/components/localization';
+import {CAPACITY_LOAD_CHOICES,capacityLoadExplanation} from '@/lib/capacity-load-preferences';
 import React from 'react';
 import Link from 'next/link';
 import { Boxes, CircleDotDashed, MapPin, Plus, PowerOff, RefreshCw, Route, Save, Trash2, Truck } from 'lucide-react';
@@ -11,7 +13,7 @@ import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 export type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
 type EditablePlace={key:string;place_ref:string;label:string};
-export type CapacitySnapshot={status?:string;visibility?:string;accepts_full_load?:number;accepts_partial_load?:number;availability_geometry?:string;location_area?:string;location_lat?:number;location_lng?:number;location_precision_km?:number;location_updated_at?:string;current_route_points?:PlacePoint[];capacity_area_center_place_ref?:string;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];accepts_multi_pick?:number;accepts_multi_drop?:number};
+export type CapacitySnapshot={status?:string;visibility?:string;sharing_mode?:string;exclusive_email?:string;exclusive_name?:string;accepts_full_load?:number;accepts_partial_load?:number;availability_geometry?:string;location_area?:string;location_lat?:number;location_lng?:number;location_precision_km?:number;location_updated_at?:string;current_route_points?:PlacePoint[];capacity_area_center_place_ref?:string;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];accepts_multi_pick?:number;accepts_multi_drop?:number};
 export type RegularSignal={id:string;geometry:'ROUTE'|'RADIUS';route_points:PlacePoint[];area_boundary:PlacePoint[];area_center_lat?:number;area_center_lng?:number;area_center_label?:string;area_center_place_ref?:string};
 
 function editable(points:PlacePoint[]|undefined,prefix:string,min:number):EditablePlace[]{
@@ -26,7 +28,10 @@ function PlaceSequenceEditor({items,setItems,name,refName,min,label}:{items:Edit
 
 export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,onBusyChange,onSaved,onCancel}:{section:'AVAILABILITY'|'ROUTE'|'SHARING'|'LOADS';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
-  const [visibility,setVisibility]=React.useState(current?.visibility==='OPEN'?'OPEN':'PRIVATE');
+  const [sharingMode,setSharingMode]=React.useState(capacitySharingMode(current?.sharing_mode,current?.visibility));
+  const [exclusiveEmail,setExclusiveEmail]=React.useState(current?.exclusive_email||'');
+  const [exclusiveName,setExclusiveName]=React.useState(current?.exclusive_name||'');
+  const visibility=sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE';
   const [geometry,setGeometry]=React.useState(current?.status==='PARTIAL'?'ROUTE':current?.availability_geometry||'RADIUS');
   const [acceptedLoads,setAcceptedLoads]=React.useState(current?.accepts_partial_load?(current.accepts_full_load?'BOTH':'PTL'):'FTL');
   const [multiPick,setMultiPick]=React.useState(Boolean(current?.accepts_multi_pick));
@@ -70,7 +75,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
     finally{submitting.current=false;setBusy(false);onBusyChange(false);}
   }
   return <form action="/api/capacity" method="post" onSubmit={save} className="capacity-signal-form" data-testid="capacity-form">
-    <input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="status" value={status}/><input type="hidden" name="acceptedLoads" value={status==='PARTIAL'?'PTL':acceptedLoads}/><input type="hidden" name="availabilityGeometry" value={geometry}/><input type="hidden" name="visibility" value={visibility}/>
+    <input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="status" value={status}/><input type="hidden" name="acceptedLoads" value={status==='PARTIAL'?'PTL':acceptedLoads}/><input type="hidden" name="availabilityGeometry" value={geometry}/><input type="hidden" name="visibility" value={visibility}/><input type="hidden" name="sharingMode" value={sharingMode}/>{section!=='SHARING'&&<><input type="hidden" name="exclusiveEmail" value={exclusiveEmail}/>{exclusiveName&&<input type="hidden" name="exclusiveName" value={exclusiveName}/>}</>}
     <input type="hidden" name="locationSource" value={captured?'DEVICE_OBSCURED':'PRESERVE_DRIVER'}/><input type="hidden" name="approximateLat" value={captured?.lat??''}/><input type="hidden" name="approximateLng" value={captured?.lng??''}/><input type="hidden" name="locationPrecisionKm" value={captured?.radius??''}/>
     <input type="hidden" name="acceptsMultiPick" value={multiPick?'on':''}/><input type="hidden" name="acceptsMultiDrop" value={multiDrop?'on':''}/>
     <div className="capacity-signal-dialog-body">
@@ -78,18 +83,20 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
         {onDuty&&!hasAssignedDriver?<p className="alert warning"><Text message="Assign a driver before publishing this truck. "/><Link href={`/app/fleet?vehicle=${vehicleId}#driver-access`}><Text message="Assign driver"/></Link></p>:null}
         {section==='AVAILABILITY'?<section className="capacity-signal-group">
           <h3><Text message="Capacity now"/></h3>
-          <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong>{label}</strong></button>)}</div>
+          <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
           {!current&&onDuty?<p className="meta"><Text message="Private until you choose Open in Sharing."/></p>:null}
           {status==='PARTIAL'?<p className="meta"><Text message="Some space available. Confirm the actual fit directly."/></p>:null}
           {!onDuty?<p className="meta"><Text message="Off Duty hides this truck from capacity maps. Your regular service stays saved."/></p>:null}
         </section>:null}
         {section==='SHARING'?<section className="capacity-signal-group">
-          <h3><Text message="Who can see your capacity?"/></h3><div className="segmented-control capacity-visibility-choices"><button type="button" aria-pressed={visibility==='OPEN'} onClick={()=>setVisibility('OPEN')}><strong><Text message="Open capacity"/></strong><small><Text message="Anyone browsing the map"/></small></button><button type="button" aria-pressed={visibility==='PRIVATE'} onClick={()=>setVisibility('PRIVATE')}><strong><Text message="Private capacity"/></strong><small><Text message="Your approved contacts"/></small></button></div>
-          <p className="meta"><Text message="Manage approved contacts in Network. Your location keeps the same approximate radius."/></p>
+          <h3><Text message="Who can see your capacity?"/></h3>
+          <div className="segmented-control capacity-visibility-choices">{CAPACITY_SHARING_CHOICES.map(([value,label])=><button key={value} type="button" aria-pressed={sharingMode===value} onClick={()=>setSharingMode(value)}><strong><Text message={label}/></strong></button>)}</div>
+          {sharingMode==='EXCLUSIVE'?<><label className="form-group"><Text message="Person or company name"/><input name="exclusiveName" value={exclusiveName} onChange={event=>setExclusiveName(event.target.value)} maxLength={100} required/></label><label className="form-group"><Text message="Only this email can see the truck"/><input type="email" name="exclusiveEmail" value={exclusiveEmail} onChange={event=>setExclusiveEmail(event.target.value)} maxLength={254} required/></label></>:<p className="meta"><Text message={sharingMode==='BOTH'?'Invited contacts also see this truck in their private feed.':sharingMode==='PUBLIC'?'Anyone browsing the map can see this truck.':'Only approved contacts can see this truck.'}/></p>}
+          <p className="meta"><Text message="Manage contacts in Network. Changing sharing keeps their history and your location privacy."/></p>
         </section>:null}
-        {section==='LOADS'?<section className="capacity-signal-group">
-          {status==='EMPTY'?<fieldset className="capacity-load-choices"><legend><Text message="Loads you accept"/></legend>{[{value:'FTL',label:'Full truckload'},{value:'PTL',label:'Partial truckload'},{value:'BOTH',label:'Either'}].map(({value,label})=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/>{label}</label>)}</fieldset>:<p className="meta"><Text message="Partial capacity accepts partial truckloads. Confirm the available space directly."/></p>}
-          <div className="capacity-stop-choices"><label><input type="checkbox" checked={multiPick} onChange={event=>setMultiPick(event.target.checked)}/><Text message="Multiple pickups"/></label><label><input type="checkbox" checked={multiDrop} onChange={event=>setMultiDrop(event.target.checked)}/><Text message="Multiple drop-offs"/></label></div>
+        {onDuty&&(section==='AVAILABILITY'||section==='LOADS')?<section className="capacity-signal-group">
+          {status==='EMPTY'?<><fieldset className="capacity-load-choices"><legend><Text message="Which loads will you take?"/></legend>{CAPACITY_LOAD_CHOICES.map(([value,label])=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message={capacityLoadExplanation(acceptedLoads)}/></p></>:<p className="meta"><Text message="Remaining space is for shared loads."/></p>}
+          {section==='LOADS'?<div className="capacity-stop-choices"><label><input type="checkbox" checked={multiPick} onChange={event=>setMultiPick(event.target.checked)}/><Text message="Multiple pickups"/></label><label><input type="checkbox" checked={multiDrop} onChange={event=>setMultiDrop(event.target.checked)}/><Text message="Multiple drop-offs"/></label></div>:null}
         </section>:null}
         {showCoverage?<section className="capacity-signal-group">
           <h3>{geometry==='ROUTE'?<Text message="Availability route"/>:<Text message="Availability area"/>}</h3>

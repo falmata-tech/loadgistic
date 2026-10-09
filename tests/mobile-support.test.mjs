@@ -13,7 +13,11 @@ test('member support accepts only bounded topics/messages and explicit closure',
  assert.equal(supportQuery.safeParse({page:'-1'}).success,false); assert.equal(supportQuery.safeParse({view:'ASSIGNED'}).success,false); assert.equal(supportCursor.safeParse({before:'invalid'}).success,false);
 });
 test('member transcript projection excludes staff/private identifiers and requires ownership', () => {
- const raw={id:'chat',customer_user_id:'member',assigned_agent_user_id:'staff-secret',assigned_agent_name:'Help team',status:'OPEN',events:[{private:'secret'}],messages:[{id:'message',sender_user_id:'member',body:'My request',file_path:'secret',attachment_id:'file',attachment_name:'receipt.pdf',created_at:'now'},{id:'reply',sender_user_id:'staff-secret',body:'We can help'}],has_older:true,next_before:'cursor'};
+ const raw={id:'chat',customer_user_id:'member',assigned_agent_user_id:'staff-secret',assigned_agent_name:'Help team',status:'OPEN',events:[{private:'secret'}],messages:[{id:'message',sequence:1,sender_user_id:'member',body:'My request',file_path:'secret',attachment_id:'file',attachment_name:'receipt.pdf',created_at:'now'},{id:'reply',sequence:2,sender_user_id:'staff-secret',body:'We can help'}],has_older:true,next_before:'cursor'};
  const value=supportThread(raw,'member'); assert.equal(value.messages[0].mine,true); assert.equal(value.messages[1].mine,false); assert.equal(value.nextBefore,'cursor'); assert.deepEqual(value.messages[0].attachment,{id:'file',name:'receipt.pdf'});
  assert.equal(JSON.stringify(value).includes('secret'),false); assert.equal('customer_user_id' in supportSummary(raw),false); assert.throws(()=>supportThread(raw,'outsider'),/NOT_FOUND/);
+});
+
+test('missing or malformed transcript sequence fails closed instead of inventing Seen order',()=>{
+ for(const sequence of [undefined,null,0,-1,1.5,'invalid'])assert.throws(()=>supportThread({customer_user_id:'member',messages:[{sequence}]},'member'),/CHAT_READ_UNAVAILABLE/);
 });

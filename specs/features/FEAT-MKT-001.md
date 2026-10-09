@@ -30,7 +30,7 @@ And repeated educational or promotional sections do not interrupt either workspa
 And detailed market purpose, operating model, and safety education remain available on About\
 And About explains that transporters control whether current capacity is public or shared only with trusted email contacts and that confirmed work can use private Tracking\
 And a paginated mixed result drawer accompanies the map\
-And the primary map initially centers and zooms for the current Ethiopia market while allowing bounded exploration across East Africa rather than exposing Africa or the world\
+And the primary map initially centers and zooms for the current Ethiopia market while allowing unrestricted geographic exploration without a country pan lock\
 And browsing cards, filters, the truck map, capacity details, provider microsites, and tracking-code entry require no account\
 And the page does not ask the visitor to post demand or sign up as a Business\
 And the legacy `/capacity` URL preserves its query string while redirecting to `/` rather than rendering a duplicate market page\
@@ -333,3 +333,46 @@ And the description close button remains independently usable.
 Evidence: `tests/e2e/map-clarity.spec.ts` desktop and phone native gestures;
 the description remains inside the Leaflet container and bubbles body gestures
 to it. This changes event handling, not its visible layout.
+
+
+## Launch matching audit — October 7
+
+Given any combination of public profile text and explicit truck filters
+When search results and map candidates are computed
+Then every supplied filter remains conjunctive; text relevance cannot rescue a failed hard filter
+And profile cards contain only people/companies backed by currently matching available driver-and-truck pairs
+And office-city words belong to public profile text while truck proximity uses only privacy-aware reported location
+And recipient identity, internal notes, hidden contact data and unauthorized geometry are never indexed or projected.
+
+Given a directional route crosses or revisits a place
+When pickup and delivery can occur in order on that complete route within their independent tolerances
+Then all qualifying segment occurrences are considered, not just the first nearest occurrence
+And reverse order on a simple one-way route is denied unless Either direction is selected
+And endpoints matching two disconnected signals cannot be combined into an invented route.
+
+Given malformed, missing, out-of-range or degenerate route/area vertices
+When geographic eligibility is calculated on either client or the server
+Then the whole invalid shape is rejected rather than dropping vertices, coercing null to zero or inventing connecting legs
+And self-intersecting/zero-area polygons cannot produce a service-area match
+And valid zero world coordinates, complete concave polygons, narrow boundaries and intermediate route segments remain supported.
+
+Implementation and property/matrix checks are in progress; no new matching-quality or
+road-navigation guarantee is claimed. Reuse PostGIS geometry/geography and pg_trgm
+with deterministic results. Existing profile-only search scope remains authoritative;
+truck configuration, current location and shipment endpoints remain explicit filters.
+
+## Marketplace/workspace switch — October 7, in progress
+
+Given an authenticated provider browses public discovery
+Then the header exposes Marketplace and My workspace directly, with the active
+area indicated and no extra selection menu. Guests retain account-free discovery
+and transporter login; staff entry remains web-only with its existing destinations.
+
+Given the provider leaves a public map with an applied query and chosen camera
+When they use the area switch and return
+Then its safe return URL and public camera are restored. A new filter submission
+or Clear all still resets the map as specified; stored presentation state never
+contains feed records, exact driver fixes, tracking/email credentials or recipient
+information. Unrecognized routes/query keys fall back to the area's home. Private
+results are authorized afresh; a bookmark cannot grant access. Test narrow/desktop
+layout and actual switch-return before owner visual approval and full release.

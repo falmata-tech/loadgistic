@@ -87,9 +87,13 @@ try{
   const {data:permission,error:permissionError}=await service.from('driver_permissions').select('can_manage_capacity,can_manage_tracking').eq('user_id',driverId).single();
   if(permissionError||!permission.can_manage_capacity||permission.can_manage_tracking)throw new Error('PLATFORM_ADMIN_DRIVER_PERMISSION_NOT_PERSISTED');
   await service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:'PROFILE_ROUTE',record_id:routeId,command:{action:'REMOVE'}}).then(({error})=>{if(error)throw error;});
-  await service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:'SUBSCRIPTION',record_id:subscriptionId,command:{action:'PAID'}}).then(({error})=>{if(error)throw error;});
-  await service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:'SUBSCRIPTION',record_id:subscriptionId,command:{action:'EXPIRE'}}).then(({error})=>{if(error)throw error;});
-  await service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:'WORKSPACE_SPONSOR',record_id:organizationId,command:{action:'GRANT'}}).then(({error})=>{if(error)throw error;});
+  const {data:subscriptionBefore,error:beforeError}=await service.from('subscriptions').select('*').eq('id',subscriptionId).single();
+  if(beforeError)throw new Error('PLATFORM_ADMIN_HISTORY_READ_FAILED');
+  for(const [type,action] of [['SUBSCRIPTION','PAID'],['SUBSCRIPTION','EXPIRE'],['WORKSPACE_SPONSOR','GRANT']]){
+    await expectError(()=>service.rpc('managed_admin_record_command',{actor_user_id:admin.id,record_type:type,record_id:type==='WORKSPACE_SPONSOR'?organizationId:subscriptionId,command:{action}}),'BILLING_RETIRED');
+  }
+  const {data:subscriptionAfter,error:afterError}=await service.from('subscriptions').select('*').eq('id',subscriptionId).single();
+  if(afterError||JSON.stringify(subscriptionAfter)!==JSON.stringify(subscriptionBefore))throw new Error('PLATFORM_ADMIN_HISTORY_MUTATED');
 
   const adminUser={id:admin.id,role:'ADMIN'};
   for(let offset=0;offset<7&&!featuredDate;offset++){
@@ -134,7 +138,11 @@ try{
   if(placementId)await service.from('sponsor_placements').delete().eq('id',placementId);
   if(sponsorId)await service.from('sponsors').delete().eq('id',sponsorId);
   if(featuredDayId)await service.from('featured_provider_days').delete().eq('id',featuredDayId);
-  await service.from('audit_logs').delete().gte('created_at',startedAt);
+  // Do not delete unrelated concurrent local audit activity.
+  for(const id of [customerId,driverId,supportId,organizationId,vehicleId,routeId,subscriptionId,featuredDayId,placementId,sponsorId]){
+    if(id)await service.from('audit_logs').delete().eq('entity_id',id).gte('created_at',startedAt);
+  }
+  for(const id of [customerId,driverId,supportId])if(id)await service.from('audit_logs').delete().eq('actor_user_id',id);
   await service.from('subscriptions').delete().eq('id',subscriptionId);
   await service.from('profile_routes').delete().eq('id',routeId);
   await service.from('vehicles').delete().eq('id',vehicleId);

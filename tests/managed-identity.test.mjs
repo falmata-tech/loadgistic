@@ -5,13 +5,14 @@ import {getManagedDriverAccess,getManagedWorkspaceAccess} from '../src/lib/ident
 test('managed role projection drives workspace access without a SQLite lookup',()=>{
   const user={
     role:'DRIVER',
+    active:true,
     organization_id:'organization-id',
     provider_profile_id:null,
     workspace_subscription:{status:'ACTIVE',starts_at:'2026-08-01T00:00:00.000Z',ends_at:'2026-09-01T00:00:00.000Z'}
   };
   const access=getManagedWorkspaceAccess(user,new Date('2026-08-24T00:00:00.000Z'));
   assert.equal(access.granted,true);
-  assert.equal(access.status,'ACTIVE');
+  assert.equal(access.status,'FREE_ACCESS');
 });
 
 test('managed company Driver permissions come only from the verified projection',()=>{

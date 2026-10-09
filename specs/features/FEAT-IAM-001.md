@@ -12,6 +12,12 @@ rollout: Replace local signed-cookie identity with Supabase Auth in local develo
 
 # Identity and access
 
+October 7 current model: Owner-operator and Self-managed driver accounts display
+Independent driver and retain DRIVER role/provider identity. Historical signup
+records remain unchanged. Current projection and compatible legacy inputs
+normalize to SELF_MANAGED_DRIVER; ownership is a truck attribute. No merging or
+recreation of Auth users/fleet/staff associations. FEAT-APP-001 / FEAT-FLT-001 govern.
+
 ## Company-driver invitation acceptance (verified locally; remote rollout pending)
 
 FEAT-FLT-001 defines the invitation lifecycle. Existing email OTP and Google
@@ -275,9 +281,9 @@ And public contact fields are maintained separately with explicit profile intent
 
 ## Account details maintenance (verified locally; remote rollout pending)
 
-The existing Account & plan surface allows active providers (including Company
+The existing Account surface allows active providers (including Company
 drivers) and administrators to edit their own name and optional account phone,
-including during limited subscription access. The name is the existing shared
+regardless of historical billing state. The name is the existing shared
 display identity and may appear with Driver activity or Support messages; it is
 not advertised as private. Company-driver name copies stay consistent. Public
 callback phones and business contacts remain separate. Email proof/change,
@@ -286,7 +292,7 @@ this command.
 
 ### Scenario: save account details without changing public contacts
 
-Given an active eligible account opens Account & plan, even with expired access\
+Given an active eligible account opens Account, regardless of historical billing state\
 When it saves a trimmed name of 2–100 characters and an optional phone of 7–32
 characters containing at least seven digits and only phone punctuation\
 Then only that authenticated actor's display name and private phone change\
@@ -346,7 +352,7 @@ And the service worker does not cache Next.js executable chunks, preventing a fr
 
 ## Public portrait control (FEAT-FTR-001; verified locally, rollout pending)
 
-Given an active Driver opens Account & plan, including limited access\
+Given an active Driver opens Account, regardless of historical billing state\
 When they manage their own portrait\
 Then the distinct Public Driver photo card explains publication, requires consent
 for each upload and offers removal. Company drivers control their own photo;
@@ -430,9 +436,9 @@ visual review, full release gates and production rollout remain pending.
 ## Consolidated provider Account — October 6 owner request (in progress)
 
 Given a provider opens Account on web or native
-When they edit personal details, security, photo, business information or plan
+When they edit personal details, security, photo or business information
 Then related controls operate within that common workspace, with expandable long
-sections and role/plan restrictions preserved. Company drivers do not receive the
+sections and role/ownership restrictions preserved. Company drivers do not receive the
 owner business editor. More is not a duplicate catalog of provider settings.
 Existing standalone URLs remain compatible. Server-side authorization is unchanged.
 Verification: local phone/desktop same-page saves and navigation, role and limited
@@ -445,7 +451,7 @@ Support may use its familiar icon with an accessible name on narrow screens.
 ### October 7 synthetic signup parity
 
 Browser audit providers include the unpublished company page created by the real
-managed signup command (migration 045), alongside identity, provider and plan.
+managed signup command (migration 045), alongside identity and provider workspace.
 Opening Account must exercise its embedded profile and security controls rather
 than fail because an artificial fixture skipped a required signup record.
 `tests/e2e/account-security.spec.ts` still verifies both-inbox confirmation,

@@ -91,7 +91,7 @@ test('provider Capacity runtime repeats scope, assignment, subscription, and per
 test('active provider Capacity pages and routes use the application port, not SQLite',()=>{
   const pages=[
     'src/app/app/home/page.tsx',
-    'src/app/app/fleet/page.tsx',
+    'src/components/provider-fleet-workspace.tsx',
     'src/app/app/fleet/[id]/page.tsx'
   ];
   for(const relative of pages){

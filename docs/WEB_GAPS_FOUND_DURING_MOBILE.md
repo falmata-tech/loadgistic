@@ -25,6 +25,48 @@ Priorities below are proposed triage order, not measured incident severity.
   and visible results agree, and applicable owner review/release gates are met.
 - Do not store customer records, tokens, document content or mailbox bodies here.
 
+## WEB-MOB-015 — Driver-map basemap failure needs browser/device recovery evidence
+
+**Status:** Observed in the October 7 local Expo browser capture after a synthetic
+US GPS save; cause unconfirmed. **Owner:** Mobile map maintainer. **Priority:**
+Verify before broadly distributing the updated app.
+
+The actual GPS command saves an obscured 20-km position on the replacement truck,
+and its blue area renders. The capture shows an empty basemap with the honest
+“Map tiles could not load” warning. One standalone public OSM tile request returns
+200; that does not prove the browser's tiles loaded. Do not present geometry/GPS
+success as basemap completion or assume this is a provider-wide outage.
+
+Source: `apps/mobile/src/components/tracking-map.tsx` sets this warning after a
+map error and has no explicit success/recovery clear callback. It remains unclear
+whether the observed failure is network delivery, a cancelled old tile during
+camera change, or another map event. No missing backend is inferred.
+Evidence: `.local/single-truck-mobile-driver-home.png`, successful local GPS
+readback in `verify-independent-truck-ui-local.mjs`. Next: inspect actual browser
+tile statuses and map error types with sanitized metadata, verify valid cancellation
+handling, transient failure/recovery and phone behavior. Retain attribution,
+privacy, real-failure warnings and the existing selected-truck interaction.
+
+## WEB-MOB-014 — Active member Support has no direct admin handoff control
+
+**Status:** Source-confirmed missing management control, not a failed existing
+button. **Owner:** Support workflow maintainer. **Priority:** Before staffing shifts.
+
+Provider Support assigns automatically by available capacity and lets staff claim
+waiting work. `/admin/support` and `/support/[id]` expose transcripts/closure but
+no assignment control for an already active member chat. Disabling an agent requeues
+their open work. Guest-history and Brokerage assignment controls are separate.
+
+October 7 live local audit verifies replies, attachments, history, claim and closure.
+An exact synthetic reassignment proves immediate previous-agent read/write/file
+denial and continued new-agent access; it does not prove an admin handoff UI.
+Evidence: `src/app/admin/support/page.tsx`, `src/app/support/[id]/page.tsx`,
+`src/components/support-thread.tsx`, `scripts/verify-chat-roundtrips-local.mjs`.
+
+Next: specify an admin-only, version-bound member assignment command and a small
+contextual control. Preserve current capacity/role checks, audit, history and stale
+agent revocation. This audit does not authorize a new production assignment feature.
+
 ## WEB-MOB-001 — File cleanup does not distinguish an uncertain commit
 
 **Status:** Immediate deletion risk repaired and deployed October 7 in `415cb7d`
@@ -217,6 +259,13 @@ Release evidence: CI and live desktop/phone workspace checks pass; the signed
 native internal APK is distributed. This does not close the other six gaps or
 substitute for the remaining physical-device matrix.
 
+October 7 follow-up (local, new review pending): two explicit one-tap area controls
+replace the choice sheet/native duplicated sitemap and web “Exit dashboard.”
+Personal/company settings are further nested in their respective Account groups.
+Safe web URL/camera bookmarks preserve applied public filters; native nested
+stacks preserve unsaved drafts. Four Account E2Es and actual local-session return
+checks pass. These refinements are absent from the released APK/web baseline.
+
 ## WEB-MOB-008 — Partial viewport refresh removes loaded map trucks
 
 **Status:** Deployed October 7 in `415cb7d`; focused regressions and final CI pass.
@@ -332,3 +381,29 @@ eligible assigned pairs and recent worker outcomes. If a setting/data correction
 is needed, prepare its exact plan and get new owner authority; the October 7
 release grants no unrelated configuration mutation. Verify an actual populated
 web/native programme plus exclusion and non-repeat behavior before closure.
+
+
+October 7 inspection follow-up to WEB-MOB-012: web restricted company-driver Home
+still renders the duty/location panel rather than the map used by full-access web
+drivers and native Home. This is a verified existing presentation difference in
+`driver-capacity-home.tsx`, not the named owner's role-routing issue. Keep it on the
+web parity backlog; any map conversion must preserve capacity permission denial
+and assigned-driver-only location authority. No broader permission was granted.
+
+
+## WEB-MOB-016 — Direct provider inquiries and closed-app chat alerts have no delivery path
+
+October 7: current customer conversations reach Loadgistic Brokerage; providers
+contact platform Support. No inspected direct visitor-to-transporter inquiry
+workflow exists, and foreground polling does not notify a closed/background phone.
+The owner’s adapted notification request may include those capabilities; exact
+scope clarification remains pending. Existing-chat read/alert foundation is local
+FEAT-NOT-001 / ADR-077. Do not invent an inquiry inbox, claim phone push from a bell,
+or configure another Expo project/FCM account as an implementation shortcut.
+
+Next: confirm whether direct inquiries are wanted and select background delivery.
+For phone push, design exact recipient/device binding, permission, token cleanup,
+revocation, durable delivery/deduplication, private lock-screen copy and tap
+reauthorization before credentials/build/testing. Google Play registration alone
+is not push setup, store signing or device delivery evidence. Keep this separate
+from Support/Brokerage chat authorization and staff’s web-only restriction.

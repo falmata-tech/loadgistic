@@ -2,7 +2,7 @@
 
 ## Product invariant
 
-Loadgistic helps fleets, owner-operators and self-managed Drivers share capacity signals with known brokers and enterprises (shippers and receivers), or with the open market. Transporters provide private shipment tracking to brokers, their customers or enterprises directly after agreeing the work. Optional document review helps people seeking transport assess providers; it is not a service guarantee. Keep this positioning concise in product copy. Public discovery remains account-free; Loadgistic does not publish demand or handle transactions.
+Loadgistic helps fleets and independent drivers share capacity signals with known brokers and enterprises (shippers and receivers), or with the open market. Transporters provide private shipment tracking to brokers, their customers or enterprises directly after agreeing the work. Optional document review helps people seeking transport assess providers; it is not a service guarantee. Keep this positioning concise in product copy. Public discovery remains account-free; Loadgistic does not publish demand or handle transactions.
 
 Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
 
@@ -53,7 +53,11 @@ Before major authentication, authorization, workflow, public-data, file, schema,
    location age labels that tell visitors to confirm availability directly.
 5. Use ETB or Quote Requested; do not introduce USD marketplace prices.
 6. Show only data derived from actual records or verified inputs.
-7. Preserve mobile-first simplicity.
+7. Preserve mobile-first simplicity. Independent drivers unify former owner-operator
+   and self-managed accounts: one current truck, no fleet/driver management or
+   truck selector. Ownership or permission is declared on the truck, separately
+   from reviewed proof. Follow FEAT-FLT-001 / ADR-076 / NR-18 for atomic changes,
+   preserved history and unfinished-Tracking denial.
 8. Add tests for every permission or workflow change.
 9. Update `docs/DECISIONS.md` and `docs/PROGRESS.md` when architecture changes.
 10. For OAuth, email, Storage, payments, or another external boundary, a unit

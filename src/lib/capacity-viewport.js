@@ -1,4 +1,12 @@
+import {isValidCoordinate} from './location-privacy.js';
 export const MAX_MAP_TRUCKS=140;
+// Wrapped world copies cannot be sent as invalid west/east filter coordinates.
+export function worldCapacityViewport([west,south,east,north]) {
+ const shift=Math.floor(((west+east)/2+180)/360)*360;
+ let left=west-shift,right=east-shift;
+ if(east-west>=360||left< -180||right>180){left=-180;right=180;}
+ return [left,Math.max(-85,Math.min(84.999999,south)),right,Math.min(85,Math.max(-84.999999,north))];
+}
 // Public map bounds contain no device location. Exact visitor GPS stays client-only.
 export function parseCapacityViewport(value){
  if(value===undefined||value===null||value==='')return null;
@@ -21,7 +29,8 @@ export function capacityDatabaseFilters(filters={},places=[]){
  const [origin,destination,area,truckCity]=places;
  const radius=value=>{const n=Number(value);return Number.isFinite(n)&&n>=5&&n<=300?n:50;};
  const lat=truckCity?.center_lat??Number(filters.nearLat),lng=truckCity?.center_lng??Number(filters.nearLng);
- const hasNear=(Boolean(truckCity)||(filters.nearLat!==''&&filters.nearLng!==''))&&Number.isFinite(lat)&&lat>=3&&lat<=15&&Number.isFinite(lng)&&lng>=32&&lng<=49;
+ const provided=value=>value!==undefined&&value!==null&&String(value).trim()!=='';
+ const hasNear=(Boolean(truckCity)||(provided(filters.nearLat)&&provided(filters.nearLng)))&&isValidCoordinate(lat,lng);
  const viewport=parseCapacityViewport(filters.viewport);
  return {
   owner_docs:filters.ownerDocs||null,driver_docs:filters.driverDocs||null,truck_docs:filters.truckDocs||null,

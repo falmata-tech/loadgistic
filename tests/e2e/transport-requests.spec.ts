@@ -15,13 +15,13 @@ test('transport request goes from the four-field public form to private admin fo
  const helpWrites:string[]=[];page.on('request',request=>{if(new URL(request.url()).pathname.startsWith('/api/guest-support')&&request.method()==='POST')helpWrites.push(request.url());});
  const emailCount=await service.from('access_email_deliveries').select('id',{count:'exact',head:true});expect(emailCount.error).toBeNull();
  try{
-  await page.goto('/about');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Let us arrange your transport',exact:true}),form=dialog.getByRole('form',{name:'Arrange transport',exact:true});
+  await page.goto('/about');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Need help with transport?',exact:true}),form=dialog.getByRole('form',{name:'Arrange transport',exact:true});
   await expect(form).toBeVisible();await expect(form.locator('input')).toHaveCount(4);await expect(form.locator('input[type=email]')).toHaveCount(0);
   await expect(form.getByRole('heading')).toHaveCount(0);
-  await expect(dialog.getByRole('heading',{name:'Let us arrange your transport',exact:true})).toHaveCount(1);
+  await expect(dialog.getByRole('heading',{name:'Need help with transport?',exact:true})).toHaveCount(1);
   await expect(form).toContainText('No account needed. We’ll agree the service and fee with you first.');
-  await expect(form).toContainText('Share your route to start a conversation.');
+  await expect(form).toContainText('Tell us what you need to move and where.');
   await expect(dialog.getByRole('button',{name:'Close',exact:true})).toBeVisible();
   await form.getByLabel('From',{exact:true}).fill('Adama');await form.getByLabel('To',{exact:true}).fill('Dire Dawa');await form.getByLabel('Name',{exact:true}).fill(name);await form.getByLabel('Phone',{exact:true}).fill(phone);
   await dialog.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'Ask for help',exact:true})).toHaveCount(0);
@@ -29,7 +29,7 @@ test('transport request goes from the four-field public form to private admin fo
   await page.screenshot({path:info.outputPath('request-form.png'),fullPage:true});
   const submitted=page.waitForResponse(r=>r.url().endsWith('/api/transport-requests')&&r.request().method()==='POST');
   await form.getByRole('button',{name:'Start chat'}).click();const response=await submitted;expect(response.status()).toBe(200);
-  await expect(dialog.getByText('Waiting for brokerage',{exact:true})).toBeVisible();await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();expect(helpWrites).toHaveLength(0);await expect(dialog.locator(':scope > header')).not.toContainText(/Team available|Leave a message/);await page.screenshot({path:info.outputPath('request-receipt.png'),fullPage:true});
+  await expect(dialog.getByText('Waiting for our transport team',{exact:true})).toBeVisible();await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();expect(helpWrites).toHaveLength(0);await expect(dialog.locator(':scope > header')).not.toContainText(/Team available|Leave a message/);await page.screenshot({path:info.outputPath('request-receipt.png'),fullPage:true});
   const row=checked(await service.from('transport_service_requests').select('*').eq('requester_name',name).single());id=row.id;expect(row).toMatchObject({phone,origin:'Adama',destination:'Dire Dawa',status:'NEW'});
   const repeat=await page.request.post('/api/transport-requests',{data:JSON.parse(response.request().postData()!)});expect(repeat.status()).toBe(200);
   expect((await service.from('transport_service_requests').select('id',{count:'exact',head:true}).eq('requester_name',name)).count).toBe(1);
@@ -71,7 +71,7 @@ test('request errors preserve input and duplicate clicks cannot create duplicate
  let count=0;let release=()=>{};const pending=new Promise<void>(r=>{release=r;});
  await page.route('**/api/transport-requests',async route=>{count++;await pending;await route.fulfill({status:503,json:{ok:false,error:'We could not confirm your request. Please try again.'}});});
  try{
-  await page.goto('/about');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();const form=page.getByRole('form',{name:'Arrange transport',exact:true});
+  await page.goto('/about');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();const form=page.getByRole('form',{name:'Arrange transport',exact:true});
   await form.getByLabel('From',{exact:true}).fill('Adama');await form.getByLabel('To',{exact:true}).fill('Bishoftu');await form.getByLabel('Name',{exact:true}).fill('Test request');await form.getByLabel('Phone',{exact:true}).fill('+251900000001');
   await form.getByRole('button',{name:'Start chat'}).click();await expect(form.getByRole('button',{name:'Opening chat…'})).toBeDisabled();
   await form.evaluate(f=>f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));release();

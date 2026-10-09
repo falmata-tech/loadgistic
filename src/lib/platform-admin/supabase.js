@@ -71,8 +71,7 @@ function seededPortrait(filename){
 
 function providerKindLabel(value){
   if(value==='FLEET_TRANSPORTER')return 'Fleet transporter';
-  if(value==='OWNER_OPERATOR')return 'Owner-operator';
-  return 'Self-managed driver';
+  return 'Independent driver';
 }
 
 function candidateKey(candidate){
@@ -154,6 +153,7 @@ export async function getAdminOperationRecord(user,view,id,kind=''){
 }
 
 async function adminCommand(user,type,id,command){
+  if(['SUBSCRIPTION','SUBSCRIPTIONS','PLAN','PLANS','WORKSPACE_SPONSOR'].includes(type))throw new Error('BILLING_RETIRED');
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('managed_admin_record_command',{actor_user_id:user.id,record_type:type,record_id:id,command});
   if(error)throw managedError('SUPABASE_ADMIN_COMMAND_FAILED',error);return data;

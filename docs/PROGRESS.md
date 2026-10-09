@@ -1,3 +1,211 @@
+## October 8 Android push — local implementation and scoped FCM upload
+
+Private installation/session/guest registration, committed notification outbox,
+bounded Expo ticket/receipt dispatch and Android opt-in/tap handling are implemented
+locally. Migration 128 is backed up/rehearsed/applied locally only. The sender
+defaults off. Staff remains web-only; generic notifications contain no private
+message/contact/route/proof data. Four native-language catalogs cover the fixed
+phone labels and privacy notice. Type/lint, 14 focused policy/readiness cases,
+push retry/scope SQL and real proof-backed handover enqueue/ack suppression pass.
+
+Owner explicitly delegated the supplied Firebase service-account file upload.
+FCM V1 now matches `loadgistic-f082a` on `@falmatad/loadgistic`, Android package
+`com.loadgistic.app`. It had no prior FCM association; signing/Play credentials
+were unchanged. Private bytes remain outside the repository/app/logs. Local
+implementation/credential setup are separate from hosted enablement and delivery:
+no new APK, hosted migration/flag or web release occurred. See MOBILE_IMPLEMENTATION
+for focused round-trip evidence, previews and outstanding native/phone gates.
+
+## October 8 named sharing contacts and simpler map markers — local, not published
+
+Load-preference text beneath web/native discovery truck icons is removed; the
+Empty/Partial cluster colors, selected truck facts and full/shared filters stay.
+Private Network now requires a person/company name when adding an email and has
+inline name editing for existing contacts. Exclusive recipient names are saved
+atomically with the sharing policy/capacity. Existing unnamed contacts and grants
+remain intact; names never enter visitor projections or audit details.
+
+Additive migration 127 is backed up, rehearsed and applied locally. Contact
+permission/privacy/legacy/Exclusive SQL, unchanged sharing/load-matching SQL,
+six unit/readiness cases, actual web/Expo add/edit/readback, types/lint/source/spec
+checks pass. Actual driver-Home stepped zoom/area-return cancellation and real
+tile-failure feedback pass. See MOBILE_IMPLEMENTATION for receipts and limitations.
+
+The owner-selected Android push extension now has local implementation and exact
+FCM setup as recorded above. A new native artifact, hosted rollout and actual
+closed-phone evidence remain pending. No hosted database, web deployment, EAS
+build artifact or another app changed; only the separately delegated FCM key
+association changed remotely.
+Both previews remain on 3100/8084; owner review precedes extensive release gates.
+
+## October 8 approval and browser alerts — local, not published
+
+Driver unloading-approval updates now use the actual committed OWNER/STAFF
+handover, the existing web/mobile bell and an authorized Tracking detail link.
+Opening the update acknowledges its exact version; fetching/dismissing never
+changes approval or chat Seen. Browser alerts are opt-in and support running
+background tabs, with generic private copy, deduplication and safe click routes.
+The notification worker has a separate scope and preserves the existing PWA.
+
+Local schema 126 is backed up/rehearsed/applied. Owner email verification and
+approval → web/system and Expo driver update → saved acknowledgement passes.
+Support and Brokerage round trips, delayed Claim, hidden-delivery/read neutrality,
+SQL proof/approval/device-release denials and focused policy/types/lint checks
+pass. Precise evidence and investigation corrections are in MOBILE_IMPLEMENTATION.
+No hosted write, release/full CI or new APK/AAB. Review screens are available
+there; owner visual approval and configured/physical-device closed-phone push
+remain pending. Both local previews stay running (web 3100, Expo 8084).
+
+## October 7 chat alerts and read receipts — local, not published
+
+Existing provider Support and visitor transport chats have scoped unread badges,
+assignment/join/message/ended/resolved alerts and saved visible-message Seen on
+web and native screens. Staff remain web-only. Fetching or sending is not Seen;
+a handoff retains team history but resets the new assignee’s unread position.
+Delayed old assignment frames fail. Sound is deliberate web opt-in; native alerts
+are in-app foreground delivery, with no closed-phone push claim.
+
+Local schema is 125; no hosted write, new build or deployment occurred. Private
+cursor tables/RPCs pass RLS/ACL/definer checks. Protected dumps and transactional
+rehearsals exist; full restored-backup/release evidence remains pending. The new
+45-chat regression caught waiting work hiding assigned alerts; corrected priority
+and message event time pass. A menu-close stall was found and fixed. Current
+contracts are FEAT-NOT-001 / ADR-077 / NR-19.
+
+18 focused cases, concurrent commands, seven SQL workflow suites, actual web-staff/
+Expo-web two-way Support/Brokerage flows and detailed receipt/failure/history checks
+pass. Five-language 320px presentation and real web audio opt-in pass. Types/lint/
+source/spec checks pass. Precise evidence and screenshots are in
+MOBILE_IMPLEMENTATION. Owner visual review is still pending (“I’ll check” was not
+approval); both local servers remain running at 3100 and 8084. Full release gates,
+exact hosted plan and matched APK/AAB/web rollout are next after that review.
+Direct provider inquiry and background delivery scope remain WEB-MOB-016.
+
+## October 7 account and transport-chat correction — local, not published
+
+Independent driver replaces the two visible solo account categories, retaining
+legacy identities and history. One current truck is enforced in SQL and service
+commands, with explicit ownership/permission and confirmed atomic Change truck.
+No extra truck/driver management, restoration or selector is available. Fleet
+management stays separate. Web/native real email-code signup, registration,
+replacement/history, command denials and browser-simulated obscured US GPS pass.
+19 final unit cases, 14 language/navigation cases, three relevant rollback SQL
+suites, real two-session races, two existing web navigation cases and catalog/
+source/spec/types/lint checks pass. Exact disposable test cleanup returns zero.
+
+Transport entry and chat now share “Need help with transport?” with smaller
+“Let us handle it · Live chat” and one plain service explanation. All five languages
+are adapted; guest waiting states name the transport team. Three narrow web cases,
+two actual request/recovery cases and the five-language Expo entry/intake/action-fit
+check pass. A missing ARIA checked state in the Expo web language menu was fixed.
+Current screenshots/receipts and earlier failures are in MOBILE_IMPLEMENTATION.
+
+Owner visual review is requested; full release gates, restored exact-backup
+rehearsal, hosted preflight/migrations, CI, new APK/AAB and deployment remain
+pending. That checkpoint used local ledger 121; hosted ledger was last verified at 114. The driver-map capture shows a tile failure
+while saved approximate geometry works; WEB-MOB-015 preserves that unresolved
+recovery check. Browser sensor testing is not physical-device acceptance.
+Both local previews remain running. Owner reports Google Play Console developer
+registration ready; account/app/internal-testing configuration is not yet verified.
+The published web/Android versions below remain unchanged.
+
+## October 7 launch continuation — local, not published
+
+Owner's commercial correction is implemented locally: there are no provider
+plans, subscriptions, trials or platform-payment requirements. Revenue comes
+from arranging transport. Web/native Account, Home, menus and admin client/review
+surfaces remove billing controls/status. Old billing links return to Account or
+the admin overview. HTTP, service and SQL writes reject payment proofs, paid-mode
+activation and plan/subscription commands before upload or mutation. Migration
+120 removes subscription-dependent operating access and signup trial creation;
+active identity, workspace ownership, company-driver permissions and private
+history remain. Health rejects a missing database compatibility marker.
+
+Focused evidence: 32 unit checks, six native navigation tests, real local OTP
+signup/rejection cases, three fresh provider-model web/Expo Home and fully loaded
+Account workflows, admin client list/detail/menu and stale-write denials, two
+rollback SQL suites, resulting catalog security and retained-history/admin setup
+verifiers pass. Types, mobile lint and source/spec checks pass. The revised local
+database is at 120; hosted remains 114. Current-source owner visual review,
+compatible restored-backup rehearsal and full exact-artifact release gates remain
+pending. No commit, push, hosted migration, deployment or new APK was made here.
+Preview: http://127.0.0.1:3100/app/more and http://localhost:8084/account-settings;
+focused Account captures are `.local/no-plans-*.png`. See FEAT-BIL-001 / ADR-075,
+NR-17 and MOBILE_IMPLEMENTATION.md for precise evidence and failed-run limits.
+
+Support/Brokerage live audit passes on real local web/Expo screens: isolated staff
+queues, actual claim/assignment, both-direction automatic replies, retained drafts,
+reload/history/pagination, attachments/private byte reads, end/continue/new chat,
+callback/follow-up/resolution and revoked/stale/unrelated actor denials. Actual
+owner OTP creates independently scoped Support and Transport staff; all three
+staff/admin identity types are denied mobile OTP/refresh/workspace access without
+closing the valid web session. Live read-only inspection found the requested
+falmata.dawano@gmail.com already confirmed, active and ADMIN with no conflicting
+provider/fleet/staff association. No live identity deletion/change was needed;
+the separate falmatad97@gmail.com transporter account remains intact. Direct ADMIN
+post-login now goes to /admin locally. WEB-MOB-014 records the missing active-member
+Support handoff control; fixture-based permission checks are not a UI for that
+feature. This is not production chat or native-device certification.
+
+Recurring browser map error now has a controlled before/after regression. The
+owner's tab wraps fetch; a recorder's unhandled side-promise reproduces the same
+abortTile stack even after the original source catch fix. A scoped browser-only
+MapLibre raster/XHR port avoids that hook, preserves caching/expiry and handles
+cancellation once. Desktop HiDPI driver Home click zoom and area return pass with
+63 actual body cancellations and no overlay; HTTP and PNG errors remain visible.
+All temporary browser probes are removed; no extension or browser setting changed.
+Eleven focused unit tests, four recorder/error browser cases, four real owner/driver
+Home cases, typecheck/lint and spec checks pass. The image Accept header matches
+the original request so the browser's cached tile variants remain reusable.
+The final local URL is ready for owner retest. This does not publish an APK/web
+release or certify the remaining launch contracts below.
+
+Local preview cancellation repair: restarted the stopped Loadgistic backend and
+Expo preview, then reproduced/fixed MapLibre6.13.0 treating an aborted raster
+request as a failed tile. The project-local postinstall adapter checks exact
+package/version/source hashes and refuses external linked dependencies. Six
+focused tests and three real-renderer browser scenarios pass; HTTP/image failures
+still show error feedback. Types/lint pass. Raster fixtures are explicit; this is
+not native device or production release evidence. Previews remain at the URLs below.
+Owner subsequently reported recurrence in Chrome during paused click zooms.
+Fresh Chrome passes that sequence with 49 real OSM request cancellations; a new
+bounded streaming-PNG browser regression passes 31 actual body cancellations.
+The earlier synthetic counter now requires the intended new cancellation, and
+unhandled rejections are checked separately. Sent a full reload only to the
+verified Loadgistic8084 client. The retained old-instance explanation is not
+proven; owner confirmation remains pending. No additional library or UI patch,
+new release, global error filtering or shared cache change was made.
+
+Provider navigation now shows Marketplace / My workspace directly on web/native,
+without a choice modal or “Exit dashboard.” Native keeps separate area stacks and
+unsaved drafts. Its supplementary menu no longer repeats primary destinations or
+five language options. Account has four main groups: personal details/evidence,
+security and transporter profile/usual service/company evidence. Company drivers
+receive only their permitted personal/security controls. Truck and
+fleet-driver records keep their contextual controls and documents; staff remains
+web-only. Safe web return URLs retain applied queries and the public camera.
+Arbitrary web forms still follow ordinary page-navigation lifecycle; do not claim
+all web drafts survive leaving a page.
+
+Evidence: focused local-session navigation/camera/Clear all check and four Account
+E2Es and phone Account security workflow pass; root/native types, mobile lint,
+16 navigation/document/language tests, 15 web fleet tests and 3 safe-return checks pass. Captures under `.local/navigation-*.png`; previews stay running at
+http://127.0.0.1:3100 and http://localhost:8084. Owner requested adjustment and clarified that driver workspace Home must be a map.
+The reviewed Account images were settings. The named localhost account is a
+transport-company owner; its existing driver alias shows the map. Actual owner/
+driver Home checks now pass on web/native browser, including area-switch map return.
+Owner Home reuses the fleet workspace; redundant Fleet primary navigation is removed
+while its deep links remain valid. Native headers identify the operating role. No new visual approval, commit, CI,
+APK or production publication yet. Existing released web/APK
+below remain the production baseline.
+
+Earlier launch contracts are still in progress: local ledger is now 120 (hosted
+114); six rollback-only DB regressions pass, including 292 combined matching
+checks and document AND/expiry cases. Current native Home saves and approximate
+movement readback pass after the privacy correction. Native background OS testing,
+complete browser handover/appeal and owner calendar review, final gates and the pending
+ETA+2-day restriction decision remain outstanding. See MOBILE_IMPLEMENTATION.md.
+
 ## October 7 web production and Android internal release — verified
 
 Web application `415cb7ddbde4d643108bec2175fe9b256065861d` is live at

@@ -40,11 +40,11 @@ test('generic UI translations are explicitly marked literals, never user-record 
  }
 });
 test('public and role-aware navigation have copy in every supported language',async()=>{
- const {publicDestinations,workspaceMenu,workspaceDestinations}=await import('../src/navigation/destinations.ts');
+ const {publicDestinations,workspaceDestinations}=await import('../src/navigation/destinations.ts');
  const keys=new Set(['Marketplace','My workspace','Switch view','Account details','Your driver photo','Email and account security','Transporter profile','Regular service','Documents','Plan and payments','On-duty Trucks','Active Tracking','Published Reviews','Completed Tracking','Recent tracking','Back','Dashboard','Language','Open menu','Close menu','Menu','Your workspace','Explore','Finish account setup','Sign out','Sign-out could not finish. Please try again.','Your driving workspace','Your transport workspace','Close truck details','Close transporter results','Transporters','Partial capacity']);
  for(const role of ['TRANSPORTER','DRIVER'])for(const operatingModel of ['COMPANY_DRIVER','OWNER_OPERATOR','SELF_MANAGED_DRIVER'])for(const granted of [true,false]){
   const session={state:'ACTIVE',user:{role,operatingModel},access:{granted}};
-  for(const item of [...publicDestinations,...workspaceMenu(session),...workspaceDestinations(session)])keys.add(item.label);
+  for(const item of [...publicDestinations,...workspaceDestinations(session)])keys.add(item.label);
  }
  for(const locale of ['am','om','so','ti']){const messages={...JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale]};for(const key of keys)assert.ok(messages[key]?.trim(),`${locale}: ${key}`);}
 });
@@ -89,5 +89,14 @@ test('workflow copy preserves record values and confirmation/date placeholders i
   assert.ok(translateMessage(messages,'Enter the code sent to {email}.',{email}).includes(email));
   assert.ok(messages['Type DEACTIVATE to confirm'].includes('DEACTIVATE'));
   assert.ok(messages['Permission valid until (YYYY-MM-DD)'].includes('YYYY-MM-DD'));
+ }
+});
+
+// Cross-platform service copy must stay in the shared offline catalogs.
+test('transport-assistance and single-truck app copy has every local-language message',()=>{
+ const keys=['Need help with transport?','Let us handle it','Live chat','Tell us what you need to move and where. Our team will help find a truck and arrange the trip.','Independent driver','How do you use this truck?','I own this truck',"I rent it or have the owner's permission",'Change truck','Keep my previous truck in history and use this truck instead.','Past records are kept. Only your current truck can share capacity.','Document review is shown separately.'];
+ for(const locale of ['am','om','so','ti']){
+  const messages=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
+  for(const key of keys)assert.ok(messages[key]?.trim()&&messages[key]!==key,`${locale}: ${key}`);
  }
 });

@@ -1,9 +1,11 @@
 import { discoveryParams, type TruckFilters } from './discovery.ts';
+import { capacityLoadPreference, type CapacityLoadPreference } from '../../../../src/lib/capacity-load-preferences.js';
 export type SignalPoint = {latitude:number;longitude:number;label:string};
 export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};
 export type CapacitySignal = {
   id: string; provider: string; handle: string; driver: string;
   truck: string; status: 'EMPTY' | 'PARTIAL';
+  acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
   latitude: number | null; longitude: number | null;
   capacityAge: string; locationAge: string; configuration:string;
   geometry:'ROUTE'|'RADIUS'|null; currentVisible:boolean; currentPoints:SignalPoint[];
@@ -43,7 +45,8 @@ export function parseCapacityPage(value: unknown): CapacityPage {
     if (!id || !driver) continue;
     items.push({ id, driver, provider: text(row.provider_name), handle: text(row.provider_handle),
       truck: [text(row.vehicle_make), text(row.vehicle_model)].filter(Boolean).join(' '),
-      status: row.status, latitude: coordinate(row.location_lat, 90), longitude: coordinate(row.location_lng, 180),
+      status: row.status, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
+      latitude: coordinate(row.location_lat, 90), longitude: coordinate(row.location_lng, 180),
       capacityAge: text(row.capacity_updated_label), locationAge: text(row.location_updated_label),
       configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':row.availability_geometry==='RADIUS'?'RADIUS':null,
       currentVisible:row.current_signal_geometry_visible!==false,

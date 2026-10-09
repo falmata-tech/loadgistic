@@ -28,8 +28,8 @@ export default function ShipmentDetail() {
 function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promise<void> }) {
  const {t}=useLanguage();
  const proof = useFileSelection();
- const account = useAccount(), [selected, setSelected] = useState(''), [note, setNote] = useState(''), [email, setEmail] = useState('');
- const [radius, setRadius] = useState(String(data.location?.radius || 20)), [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [feedbackAt, setFeedbackAt] = useState('STATUS');
+ const account = useAccount(), [selected, setSelected] = useState(''), [note, setNote] = useState(''), [email, setEmail] = useState(''),[appealReason,setAppealReason]=useState('');
+ const [radius, setRadius] = useState(String(Math.min(20,data.location?.radius || 20))), [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [feedbackAt, setFeedbackAt] = useState('STATUS');
  const lock = useRef(false), active = useRef(false), generation = useRef(0), lastAttempt = useRef(0), autoUpdate = useRef<() => void>(() => undefined);
  useFocusEffect(useCallback(() => { active.current = true; return () => { active.current = false; generation.current++; }; }, []));
  useEffect(() => { const listener = AppState.addEventListener('change', state => { if (state !== 'active') generation.current++; }); return () => listener.remove(); }, []);
@@ -41,6 +41,7 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
   if (lock.current) return;
   setFeedbackAt(action);
   if (action === 'STATUS' && (!validChoice || selected === 'ISSUE' && !note.trim())) { setError('Choose an available step. Add a note when reporting an issue.'); return; }
+  if(action==='STATUS'&&['LOADING','UNLOADING'].includes(selected)&&!proof.file){setError(t('Attach photo proof when recording loading or unloading.'));return;}
   if (action === 'ADD_RECIPIENT' && !email.trim()) { setError('Enter the recipient’s email.'); return; }
   lock.current = true; setFeedbackAt(action); setBusy(true); setError(''); setMessage(''); const version = generation.current;
   try {
@@ -66,10 +67,12 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
   const listener = AppState.addEventListener('change', state => { if (state === 'active') autoUpdate.current(); });
   return () => { clearInterval(interval); listener.remove(); };
  }, []));
+ async function appeal(){if(lock.current)return;lock.current=true;setBusy(true);setFeedbackAt('APPEAL');setError('');setMessage('');try{await account.request(`/api/mobile/shipments/${data.id}/appeal`,{reason:appealReason});await reload();setAppealReason('');setMessage('Your appeal is saved. The team can review this shipment and its proof.');}catch(error){setError(error instanceof Error?error.message:'Could not confirm the appeal. Refresh before trying again.');}finally{lock.current=false;setBusy(false);}}
  const recorded = data.events.map(item => item.status);
  const feedback = <><ErrorText message={error} />{!!message && <Copy>{t(message)}</Copy>}</>;
  return <><Title>{data.origin} → {data.destination}</Title><Copy>{data.code} · {t(statusLabel(data.status))}</Copy><Copy>{data.truck} · {data.driver}</Copy><Copy>{data.cargo}</Copy>
   {!!data.pickupDate && <Copy>{t('Pickup: {date}',{date:data.pickupDate})}</Copy>}{!!data.deliveryDate && <Copy>{t('Delivery: {date}',{date:data.deliveryDate})}</Copy>}
+  {data.status==='UNLOADING'&&<Card><Title message="Waiting for shipment owner approval"/><Copy message="The shipment owner can approve unloading from their tracking page. If approval is delayed or disputed, ask our team to review."/>{data.canLocate&&!data.appeals?.some(item=>item.status==='OPEN')&&<><Field message="Explain the approval problem" value={appealReason} onChangeText={setAppealReason} multiline maxLength={1000} editable={!busy}/><Button message="Ask the team to review" busy={busy} disabled={appealReason.trim().length<5} onPress={()=>void appeal()}/></>}{data.appeals?.map(item=><View key={item.id}><Copy>{item.reason} · {t(item.status)}</Copy>{!!item.resolutionNote&&<Copy>{item.resolutionNote}</Copy>}</View>)}{feedbackAt==='APPEAL'&&feedback}</Card>}
   <Card><Title message={"Shipment progress"}/><Copy message={"Choose the next step, then save it."}/>
    {TRACKING_JOURNEY.map(status => { const enabled = data.nextStatuses.includes(status), progress = trackingProgress(status, data.status, recorded, data.nextStatuses);
     return <Pressable key={status} accessibilityRole="radio" accessibilityLabel={`${t(statusLabel(status))} · ${t(progress)}`} accessibilityState={{ checked: selected === status, disabled: busy || !enabled }} disabled={busy || !enabled} onPress={() => { setSelected(status); proof.setFile(null); setError(''); }} style={{ padding: 14, minHeight: 60, borderWidth: 1, borderRadius: 12, borderColor: selected === status ? palette.teal : palette.border, backgroundColor: selected === status ? '#eaf5f4' : '#fff' }}><Text style={{ color: palette.ink, fontSize: 16, fontWeight: '600' }}>{progress === 'Completed' ? '✓ ' : selected === status ? '● ' : ''}{t(statusLabel(status))}</Text><Text style={{ color: progress === 'Next' ? palette.teal : palette.muted }}>{t(progress)}</Text></Pressable>;
@@ -77,12 +80,12 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
    {data.nextStatuses.includes('ISSUE') && <Button secondary message="Report an issue" busy={busy} onPress={() => { setSelected('ISSUE'); proof.setFile(null); }} />}
    {validChoice && <><Copy>{t('Selected: {status}',{status:t(statusLabel(selected))})}</Copy><Field label={t(selected === 'ISSUE' ? 'What happened? (required)' : 'Update note (optional)')} value={note} onChangeText={setNote} maxLength={1000} multiline editable={!busy} />
     {needsLocation && <Copy>{t(data.canLocate ? 'Saving this travel step also shares your approximate phone location.' : 'The assigned driver must save this travel step from their phone.')}</Copy>}
-    {['LOADING', 'UNLOADING', 'ISSUE'].includes(selected) && <><Copy message={"Photo proof (optional)"}/><FilePicker imagesOnly file={proof.file} onChange={proof.setFile} disabled={busy} /></>}
+    {['LOADING', 'UNLOADING', 'ISSUE'].includes(selected) && <>{selected==='ISSUE'?<Copy message="Photo proof (optional)"/>:<Copy message="Photo proof required"/>}<FilePicker imagesOnly file={proof.file} onChange={proof.setFile} disabled={busy} /></>}
     <Button label={t('Save: {status}',{status:t(statusLabel(selected))})} busy={busy} disabled={needsLocation && !data.canLocate} onPress={() => { void save('STATUS'); }} /></>}
    {!data.nextStatuses.length && <Copy message={"This shipment is closed."}/>}{feedbackAt === 'STATUS' && feedback}
   </Card>
   {locationMode && <Card><Title message={"Approximate location"}/><Copy>{data.location ? `${locationAreaLabel(data.location.area,t)} · ${t('{radius} km radius',{radius:data.location.radius})}\n${t('Location updated {date}',{date:new Date(data.location.updatedAt).toLocaleString()})}` : t('No location shared yet.')}</Copy>
-   {data.canLocate && data.nextStatuses.length > 0 && <><Copy message={"Location privacy"}/><Choices value={radius} options={privacyRadii.map(value => ({ id: String(value), label: `${value} km radius` }))} onChange={setRadius} disabled={busy} /><Copy message={"While going to pickup or on the way, this screen updates your approximate location every 10 minutes. Updates pause when you leave this screen or lock your phone. You can also share it now."}/><Button message="Share current location" busy={busy} onPress={() => { void save('LOCATION'); }} /></>}
+   {data.canLocate && data.nextStatuses.length > 0 && <><Copy message={"Location privacy"}/><Choices value={radius} options={privacyRadii.filter(value=>value<=20).map(value => ({ id: String(value), label: `${value} km radius` }))} onChange={setRadius} disabled={busy} /><Copy message={"While going to pickup or on the way, this screen updates your approximate location every 10 minutes. Updates pause when you leave this screen or lock your phone. You can also share it now."}/><Button message="Share current location" busy={busy} onPress={() => { void save('LOCATION'); }} /></>}
    {feedbackAt === 'LOCATION' && feedback}
   </Card>}
   <Card><Title message={"Tracking recipients"}/><Copy message={"Customers sign in with a code sent to their email."}/>

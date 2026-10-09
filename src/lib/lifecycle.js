@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {createSupabaseAdminClient} from './supabase-adapter.js';
 import {trackingRecoveryActions} from './domain.js';
+import {isIndependentDriver} from './independent-driver.js';
 const uuid=z.string().uuid();
 const reason=z.string().trim().min(5).max(500);
 const revision=z.string().datetime({offset:true});
@@ -12,9 +13,9 @@ const correction=z.object({...base,action:z.literal('CORRECT'),cargo_summary:z.s
 const reassign=z.object({...base,action:z.literal('REASSIGN'),vehicle_id:z.string().trim().min(1).max(50)}).strict();
 const cancel=z.object({...base,action:z.literal('CANCEL'),confirm:z.literal('CANCEL')}).strict();
 const input=z.discriminatedUnion('action',[correction,reassign,cancel]);
-const allowed=['VEHICLE_OWNER_INACTIVE','NOT_FOUND','FORBIDDEN','INVALID_LIFECYCLE_COMMAND','TRUCK_HAS_ACTIVE_TRACKING','TRACKING_TERMINAL',
+const allowed=['SINGLE_TRUCK_LIMIT','TRUCK_CHANGE_REQUIRED','VEHICLE_OWNER_INACTIVE','NOT_FOUND','FORBIDDEN','INVALID_LIFECYCLE_COMMAND','TRUCK_HAS_ACTIVE_TRACKING','TRACKING_TERMINAL',
   'TRACKING_CHANGED','LIFECYCLE_CONFIRMATION_REQUIRED','INVALID_VEHICLE','DRIVER_REQUIRED_FOR_SHIPMENT',
-  'TRACKING_ASSIGNMENT_UNCHANGED','INVALID_CARGO_SUMMARY','INVALID_DELIVERY_DATE','LOCALITY_REQUIRED',
+  'TRACKING_STAFF_RELEASE_REQUIRED','TRACKING_DELIVERY_DATE_REQUIRED','TRACKING_DELIVERY_DATE_LOCKED','TRACKING_ASSIGNMENT_UNCHANGED','INVALID_CARGO_SUMMARY','INVALID_DELIVERY_DATE','LOCALITY_REQUIRED',
   'ROUTE_LOCATIONS_MUST_DIFFER','TRACKING_ROUTE_LOCKED','INVALID_WORKSPACE_CORRECTION','WORKSPACE_CHANGED'];
 async function rpc(name,args){const {data,error}=await createSupabaseAdminClient().rpc(name,args);
   if(error)throw new Error(allowed.includes(error.message)?error.message:'LIFECYCLE_OPERATION_FAILED');return data;}
@@ -28,10 +29,13 @@ export function lifecycleCommand(value){
 }
 export async function getTrackingRecovery(user,id){
  const data=await rpc('tracking_recovery_context',{actor_user_id:user.id,target_shipment_id:uuid.parse(id)});
- return data?{...data,actions:trackingRecoveryActions(data.status)}:null;
+ return data?{...data,actions:trackingRecoveryActions(data.status).filter(action=>(action!=='CANCEL'||data.cancel_allowed!==false)&&(action!=='REASSIGN'||!isIndependentDriver(user)))}:null;
 }
-export async function recoverTracking(user,id,value){return rpc('recover_provider_tracking',{
- actor_user_id:user.id,target_shipment_id:uuid.parse(id),command:lifecycleCommand(value)});}
+export async function recoverTracking(user,id,value){
+ const command=lifecycleCommand(value);
+ if(command.action==='REASSIGN'&&isIndependentDriver(user))throw new Error('FORBIDDEN');
+ return rpc('recover_provider_tracking',{actor_user_id:user.id,target_shipment_id:uuid.parse(id),command});
+}
 export async function setVehicleLifecycle(user,id,value){
  const parsed=z.object({active:z.boolean(),reason}).strict().safeParse(value);
  if(!parsed.success)throw new Error('INVALID_LIFECYCLE_COMMAND');

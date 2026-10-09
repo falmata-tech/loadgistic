@@ -8,63 +8,38 @@ import {createSupabaseServerClient} from '@/lib/supabase/server';
 import {AccountSecurityControls} from '@/components/account-security-controls';
 import {accountDeactivationBlockers} from '@/lib/identity/account-security';
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getWorkspaceAccess } from '@/lib/workspace.js';
+import { getWorkspaceAccess } from '@/lib/workspace.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
-import { StatusPill } from '@/components/status-pill';
-import { formatEtb } from '@/lib/domain.js';
-import { BadgeCheck, CalendarClock, CreditCard, ShieldCheck, UserRound } from 'lucide-react';
-import { Pagination } from '@/components/pagination';
+import { UserRound } from 'lucide-react';
 import { AccountDetailsForm } from '@/components/account-details-form';
 import { DriverPortraitEditor } from '@/components/driver-portrait-editor';
 import { getDriverPortraitWorkspace } from '@/lib/driver-portrait-storage.js';
 
-function planDescription(user:any){
-  if(user.role==='TRANSPORTER')return 'Fleet workspace access for publishing capacity and managing Tracking.';
-  if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator workspace access for publishing capacity and managing Tracking.';
-  if(user.provider_operating_model==='COMPANY_DRIVER')return `Company Driver access managed by ${user.organization_name}.`;
-  if(user.role==='DRIVER')return 'Self-managed Driver access for publishing capacity and managing Tracking.';
-  return 'Platform administration access.';
-}
-
-const roleLabels:Record<string,string>={TRANSPORTER:'Fleet transporter',DRIVER:'Self-managed driver',ADMIN:'Platform administrator'};
+const roleLabels:Record<string,string>={TRANSPORTER:'Fleet transporter',DRIVER:'Independent driver',ADMIN:'Platform administrator'};
 
 function accountRoleLabel(user:any){
   if(user.provider_operating_model==='COMPANY_DRIVER')return `Company driver · ${user.organization_name}`;
-  if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator';
-  if(user.provider_operating_model==='SELF_MANAGED_DRIVER')return 'Self-managed driver';
+  if(['OWNER_OPERATOR','SELF_MANAGED_DRIVER'].includes(user.provider_operating_model))return 'Independent driver';
   return roleLabels[user.role]||user.role;
-}
-
-function accessLabel(status:string){
-  if(status==='FREE_ACCESS')return 'Free access · no payment required';
-  if(status==='TRIAL')return '7-day trial';
-  if(status==='ACTIVE')return 'Paid access';
-  if(status==='SPONSORED')return 'Sponsored access';
-  if(status==='PAYMENT_UNDER_REVIEW')return 'Payment under review';
-  if(status==='EXPIRED_UNPAID')return 'Expired · unpaid';
-  return status.replaceAll('_',' ');
 }
 
 export default async function AccountPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(undefined,{allowLimited:true});
   const query=await searchParams;
-  const billing:any=await getBillingSummary(user,{page:query.paymentPage,pageSize:10});
   const access=await getWorkspaceAccess(user);
-  const platformAccount=['ADMIN','SUPPORT'].includes(user.role);
-  const proofResult:any=billing.proofPage;
   const portrait=user.role==='DRIVER'?await getDriverPortraitWorkspace(user):null;
   const documents=access.granted&&user.role==='DRIVER'?await getVerificationCenter(user):null;
   const ownsProfile=access.granted&&['TRANSPORTER','DRIVER'].includes(user.role)&&user.driver_kind!=='COMPANY';
   const pendingEmail=(await (await createSupabaseServerClient()).auth.getUser()).data.user?.new_email||undefined;
   const security=['TRANSPORTER','DRIVER'].includes(user.role)?await accountDeactivationBlockers(user.id).then(blockers=>({available:true,blockers})).catch(()=>({available:false,blockers:[]})):null;
 
-  return <div className="page account-page"><PageHeader icon={CreditCard} title={<Text message="Account"/>} subtitle={<Text message="Your account details and workspace access."/>}/><Flash error={query.error} success={query.success}/><div className="two-col account-layout"><div className="stack account-primary-stack">
-    <section className="card account-private-card"><h2 className="panel-heading"><UserRound aria-hidden="true"/><Text message="Account details"/></h2><p className="meta">{user.email}<br/>{accountRoleLabel(user)}</p><p className="meta"><Text message="Your login email stays private."/></p><AccountDetailsForm name={user.name} phone={user.phone}/></section>
-    {security?<AccountSecurityControls {...security} pendingEmail={pendingEmail}/>:null}
+  return <div className="page account-page"><PageHeader icon={UserRound} title={<Text message="Account"/>} subtitle={<Text message="Your details, profile and security."/>}/><Flash error={query.error} success={query.success}/><div className="account-layout"><div className="stack account-primary-stack">
+    <section className="card account-private-card"><h2 className="panel-heading"><UserRound aria-hidden="true"/><Text message="Account details"/></h2><p className="meta">{user.email}<br/>{accountRoleLabel(user)}</p><p className="meta"><Text message="Your login email stays private."/></p><AccountDetailsForm name={user.name} phone={user.phone}/>
     {portrait?<details className="workspace-related-section"><summary><Text message="Driver photo"/></summary><DriverPortraitEditor portrait={portrait}/></details>:null}
     {documents?.subjects.some((subject:{subject_type:string})=>subject.subject_type==='DRIVER')?<details className="workspace-related-section" id="documents" open={Boolean(query.success||query.error)}><summary><Text message="Driver documents"/></summary>{documents.subjects.filter((subject:{subject_type:string})=>subject.subject_type==='DRIVER').map((subject:{subject_type:string;subject_id:string})=><SubjectDocuments key={subject.subject_id} center={documents} kind={subject.subject_type} id={subject.subject_id} returnTo="/app/more#documents"/>)}</details>:null}
+    </section>
+    {security?<details className="workspace-related-section" id="security"><summary><Text message="Email and account security"/></summary><AccountSecurityControls {...security} pendingEmail={pendingEmail}/></details>:null}
     {ownsProfile?<details className="workspace-related-section" id="business" open={Boolean(query.success||query.error)}><summary><Text message="Transporter profile"/></summary><ProviderProfileWorkspace user={user} embedded/></details>:null}
-    {billing.subscription&&!['SPONSORED','FREE_ACCESS'].includes(access.status)?<section className="form-card account-payment-card"><h2 className="panel-heading"><CreditCard aria-hidden="true"/><Text message="Submit payment"/></h2><p className="meta"><Text message="Add payment details. Never upload passwords, PINs, or one-time codes."/></p><form action="/api/billing/payment-proof" method="post" encType="multipart/form-data" className="stack"><div className="form-group"><label htmlFor="payment-amount"><CreditCard aria-hidden="true"/><Text message="Amount paid (ETB)"/></label><input id="payment-amount" name="amountEtb" type="number" min="1" required/></div><div className="form-group"><label htmlFor="payment-reference"><ShieldCheck aria-hidden="true"/><Text message="Transfer reference"/></label><input id="payment-reference" name="reference"/></div><div className="form-group"><label htmlFor="payment-file"><BadgeCheck aria-hidden="true"/><Text message="Proof "/><span className="meta"><Text message="(optional)"/></span></label><input id="payment-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div><button className="button icon-button-label"><CreditCard aria-hidden="true"/><Text message="Submit for review"/></button></form></section>:null}
-  </div><aside className="stack account-plan-stack"><section className={`card plan-status-card ${access.granted?'':'limited'}`}><div className="section-heading-icon">{access.status==='SPONSORED'?<ShieldCheck aria-hidden="true"/>:<CalendarClock aria-hidden="true"/>}<div><h2><Text message="Plan"/></h2><p className="meta">{platformAccount?<Text message="Platform access"/>:billing.subscription?.plan_name||'No plan assigned'}</p></div></div>{platformAccount?<p className="muted"><Text message="Your platform role provides access. No customer plan or payment is required."/></p>:billing.subscription?<><p className="meta">{planDescription(user)}</p><StatusPill status={access.status}/><p className="plan-access-label">{accessLabel(access.status)}</p>{access.ends_at?<div className="plan-deadline"><span>{access.granted?<Text message="Access through"/>:<Text message="Access ended"/>}</span><strong>{new Date(access.ends_at).toLocaleDateString()}</strong></div>:null}</>:<p className="muted"><Text message="Contact support for a plan."/></p>}</section>{proofResult.total?<section className="card account-proof-history"><h2 className="panel-heading"><CalendarClock aria-hidden="true"/><Text message="Payment history"/></h2><div className="stack">{proofResult.items.map((proof:any)=><div key={proof.id}><strong>{formatEtb(proof.amount_minor)}</strong> <StatusPill status={proof.status}/><div className="meta">{new Date(proof.submitted_at).toLocaleString()}{proof.has_file?<><br/><a href={`/api/files/payment-proof/${proof.id}`} target="_blank"><Text message="Open proof"/></a></>:null}</div></div>)}</div><Pagination path="/app/more" query={{}} page={proofResult.page} pageCount={proofResult.pageCount} total={proofResult.total} pageParam="paymentPage"/></section>:null}</aside></div><div className="workspace-signout"><LogoutButton/></div></div>;
+  </div></div><div className="workspace-signout"><LogoutButton/></div></div>;
 }

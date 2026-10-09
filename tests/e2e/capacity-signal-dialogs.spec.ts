@@ -35,9 +35,10 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await expect(map).toHaveAttribute('data-original-map','yes');
   await expect(dialog.getByRole('combobox')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:/Open capacity Anyone/})).toHaveCount(0);
-  await expect(dialog.getByRole('radio')).toHaveCount(0);
-  await expect(dialog.getByRole('checkbox')).toHaveCount(0);
   const originalStatus=await dialog.locator('input[name="status"]').inputValue();
+  await expect(dialog.getByRole('radio')).toHaveCount(originalStatus==='EMPTY'?3:0);
+  if(originalStatus==='EMPTY')await expect(dialog.getByRole('radio',{name:'Full or shared',exact:true})).toBeVisible();
+  await expect(dialog.getByRole('checkbox')).toHaveCount(0);
   const invalidRoute=await page.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:await dialog.locator('input[name="vehicleId"]').inputValue(),status:'PARTIAL',availabilityGeometry:'RADIUS'}});
   expect(invalidRoute.status()).toBe(400);
   expect(await invalidRoute.json()).toEqual({error:'Partial capacity needs an availability route. Choose at least two cities.'});

@@ -6,11 +6,11 @@ export function capacityGeographicMatch(item,filters={},originPlace=null,destina
   const recurring=item.recurring_corridors||[];
   const routes=[],areas=[];
   if(!geometry||geometry==='ROUTE'){
-    if(item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
+    if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
     for(const signal of recurring.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Regular capacity route',directionMode:'EITHER'});
   }
   if(item.status==='EMPTY'&&(!geometry||geometry==='RADIUS')){
-    if(item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current service area'});
+    if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current service area'});
     for(const signal of recurring.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Regular service area'});
   }
   const labels=[];

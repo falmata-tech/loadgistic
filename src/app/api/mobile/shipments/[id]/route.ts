@@ -15,7 +15,7 @@ type Context = { params: Promise<{ id: string }> };
 async function shipmentId(context: Context) { const parsed = z.string().uuid().safeParse((await context.params).id); if (!parsed.success) throw new MobileError(404, 'NOT_FOUND', 'This shipment is not available.'); return parsed.data; }
 export async function GET(request: Request, context: Context) {
   try {
-    const user = await mobileActor(request), id = await shipmentId(context), data = await getProviderShipment(user, id);
+    const user = await mobileActor(request,true), id = await shipmentId(context), data = await getProviderShipment(user, id);
     if (!data) throw new MobileError(404, 'NOT_FOUND', 'This shipment is not available.');
     const recovery = await getTrackingRecovery(user, id);
     return mobileJson({ ...trackingDetail(data, user, trackingNextStatuses(data.operational_status)), canRecover: Boolean(recovery?.actions?.length) });
@@ -23,7 +23,7 @@ export async function GET(request: Request, context: Context) {
 }
 export async function POST(request: Request, context: Context) {
   try {
-    const user = await mobileActor(request), id = await shipmentId(context);
+    const user = await mobileActor(request,true), id = await shipmentId(context);
     const upload = request.headers.get('content-type')?.startsWith('multipart/form-data') ? await mobileUpload(request) : null;
     const parsed = trackingCommand.safeParse(upload ? upload.command : await mobileBody(request));
     if (!parsed.success) throw new MobileError(400, 'INVALID_INPUT', 'Check the update or recipient email.');
@@ -44,7 +44,7 @@ export async function POST(request: Request, context: Context) {
       else if (input.action === 'ADD_RECIPIENT') await addProviderTrackingRecipient(user, id, input.email);
       else await revokeProviderTrackingRecipient(user, id, input.recipientId);
     } catch (error) { trackingFailure(error); }
-    if (input.action === 'ADD_RECIPIENT' || input.action === 'STATUS' && input.nextStatus === 'COMPLETED') after(async () => { try { await deliverPendingShipmentEmails(5); } catch { /* Retained outbox is retryable. */ } });
+    if (input.action === 'ADD_RECIPIENT') after(async () => { try { await deliverPendingShipmentEmails(5); } catch { /* Retained outbox is retryable. */ } });
     return mobileJson({ ok: true });
   } catch (error) { return mobileFailure(error); }
 }

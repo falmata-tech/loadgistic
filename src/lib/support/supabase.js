@@ -61,7 +61,7 @@ export async function getSupportConversation(user,conversationId,options={}){
   const before=supportHistoryCursor(options.beforeMessageId);
   const client=createSupabaseAdminClient();const {data,error}=await client.rpc(before?'managed_support_history':'managed_support_conversation',{
     actor_user_id:user.id,conversation_id:conversationId,requested_limit:Math.max(1,Math.min(50,Number(options.messageLimit)||50)),
-    ...(before?{requested_before:before}:{mark_read:options.markRead!==false})
+    ...(before?{requested_before:before}:{mark_read:false})
   });
   if(error)throw managedError('SUPABASE_SUPPORT_CONVERSATION_FAILED',error);return supportMessageWindow(data);
 }
@@ -180,7 +180,7 @@ function agentCommand(input){return {
 export async function createSupportAgent(user,input){
   const client=createSupabaseAdminClient();
   await requireTeamCreator(client,user);
-  const command=agentCommand({...input,active:true,available:true});if(!command.name||!command.email)throw new Error('MISSING_REQUIRED_FIELDS');
+  const command=agentCommand({...input,active:true,available:true,canManageBilling:false});if(!command.name||!command.email)throw new Error('MISSING_REQUIRED_FIELDS');
   const {data:created,error:createError}=await client.auth.admin.createUser({
     email:command.email,email_confirm:true,user_metadata:{full_name:command.name},app_metadata:{role:'SUPPORT',provisioned_by:'loadgistic-admin'}
   });

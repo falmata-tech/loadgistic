@@ -11,6 +11,12 @@ rollout: Document names remain extensible; use private Supabase Storage plus act
 
 # Verification
 
+Independent driver unifies former owner-operator/self-managed accounts under
+FEAT-APP/FLT-001. Its truck declares OWNED or PERMISSION separately from document
+review. Unknown legacy declarations are not inferred. Replacing a truck creates
+a new subject with no transferred approval/file/Driver-truck authorization;
+historic evidence retains its original subject and private access boundary.
+
 ### Scenario: verification history remains bounded
 
 Given a workspace or administrator has many verification requests\

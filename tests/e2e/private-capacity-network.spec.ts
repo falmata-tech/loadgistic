@@ -28,9 +28,9 @@ async function localMailpitCode(email:string,requestedAt:number){
 }
 
 test('public route changes keep only the asynchronous transport request',async({page}:{page:any})=>{
- await page.goto('/');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
- await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
- await page.goto('/featured');await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
+ await page.goto('/');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'Need help with transport?'})).toBeVisible();
+ await page.goto('/featured');await expect(page.getByRole('dialog',{name:'Need help with transport?'})).toBeVisible();
  await expect(page.locator('.public-chat-start,.public-chat-composer')).toHaveCount(0);
  await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.locator('.public-assistance-dock button')).toHaveCount(1);
 });
@@ -130,8 +130,8 @@ test('capture focused transport request and Network review',async({page}:{page:a
   const project=test.info().project.name;
 
   await page.goto('/');
-  await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
-  await expect(page.getByRole('dialog',{name:'Let us arrange your transport'})).toBeVisible();
+  await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Need help with transport?'})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:path.join(output,`${project}-transport-request.png`),fullPage:true});
   await page.getByRole('button',{name:'Close',exact:true}).click();

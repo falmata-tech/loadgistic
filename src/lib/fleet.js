@@ -1,5 +1,6 @@
 import {getSupabaseFleetDriverPage,updateSupabaseFleetDriverAccess} from './fleet/supabase.js';
 import {createSupabaseProviderVehicle,setSupabaseProviderVehicleAttachedTrailer,updateSupabaseProviderVehicleDetails} from './fleet/vehicles-supabase.js';
+import {isIndependentDriver,TRUCK_USE_BASES} from './independent-driver.js';
 
 export function canManageProviderVehicles(user){
   return user?.role==='TRANSPORTER'||user?.role==='DRIVER'&&user?.driver_kind!=='COMPANY'&&Boolean(user?.provider_profile_id);
@@ -15,6 +16,8 @@ export async function updateFleetDriverAccess(user,driverUserId,input){
 
 export async function createProviderVehicle(user,input){
   if(!canManageProviderVehicles(user))throw new Error('FORBIDDEN');
+  if(isIndependentDriver(user)&&!TRUCK_USE_BASES.includes(input.useBasis))throw new Error('INVALID_VEHICLE_USE_BASIS');
+  if(input.replaceVehicleId&&(!isIndependentDriver(user)||input.replacementConfirmed!==true))throw new Error('TRUCK_CHANGE_CONFIRMATION_REQUIRED');
   return createSupabaseProviderVehicle(user,input);
 }
 

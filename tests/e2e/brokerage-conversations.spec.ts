@@ -22,12 +22,12 @@ test('visitor and brokerage exchange durable live messages, recover and respect 
  try{
   const broker=await staff(true),other=await staff(true),support=await staff(false),bc=await login(broker),sc=await login(support),oc=await login(other);const bp=await bc.newPage();
   await bp.goto('/brokerage?queue=UNASSIGNED&view=ALL');
-  await page.goto('/about');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Let us arrange your transport',exact:true}),form=dialog.getByRole('form',{name:'Arrange transport',exact:true});
+  await page.goto('/about');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Need help with transport?',exact:true}),form=dialog.getByRole('form',{name:'Arrange transport',exact:true});
   await expect(form).toBeVisible();await expect(form.locator('input')).toHaveCount(4);
   await form.getByLabel('From',{exact:true}).fill('Adama');await form.getByLabel('To',{exact:true}).fill('Dire Dawa');await form.getByLabel('Name',{exact:true}).fill(`Chat visitor ${suffix}`);await form.getByLabel('Phone',{exact:true}).fill('+2519'+String(Math.floor(Math.random()*100000000)).padStart(8,'0'));
   const sent=page.waitForResponse(r=>r.url().endsWith('/api/transport-requests')&&r.request().method()==='POST');await form.getByRole('button',{name:'Start chat',exact:true}).click();const receipt=await sent;expect(receipt.status()).toBe(200);requestId=JSON.parse(receipt.request().postData()!).requestId;
-  await expect(dialog.getByText('Waiting for brokerage',{exact:true})).toBeVisible();
+  await expect(dialog.getByText('Waiting for our transport team',{exact:true})).toBeVisible();
   await expect(dialog.getByText('What are you moving?',{exact:true})).toBeVisible();
   await expect(dialog.getByPlaceholder('Your goods, pickup time, or a question…')).toBeVisible();
   await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();
@@ -71,7 +71,7 @@ test('conversation reconnects without losing drafts and fits translated phone la
  test.setTimeout(90000);const db=localAuditService(),requestId=randomUUID();
  try{
   const response=await page.request.post('/api/transport-requests',{data:{requestId,chatSecret:Buffer.from(randomBytes(32)).toString('hex'),name:'Reconnect test',phone:'+2519'+String(Math.floor(Math.random()*100000000)).padStart(8,'0'),origin:'Adama',destination:'Bishoftu'}});expect(response.status()).toBe(200);
-  await page.goto('/about');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();const dialog=page.locator('.public-chat-dialog');await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();
+  await page.goto('/about');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();const dialog=page.locator('.public-chat-dialog');await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();
   await dialog.getByRole('textbox',{name:'Message',exact:true}).fill('Keep this draft');
   await page.route('**/api/transport-requests/conversation?*',route=>route.fulfill({status:503,json:{error:'Unavailable'}}));
   await expect(dialog.getByText('Connection interrupted. Reconnecting…',{exact:true})).toBeVisible();await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toHaveValue('Keep this draft');
@@ -79,7 +79,7 @@ test('conversation reconnects without losing drafts and fits translated phone la
   for(const locale of ['am','om','so','ti']){
    const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
    await dialog.locator('header button').first().click();await page.locator('.language-picker select:visible').selectOption(locale);await page.locator('.public-assistance-request').click();
-   await expect(dialog.getByRole('textbox')).toHaveValue('Keep this draft');await expect(dialog.locator('.transport-chat-state')).toHaveText(messages['Waiting for brokerage']);
+   await expect(dialog.getByRole('textbox')).toHaveValue('Keep this draft');await expect(dialog.locator('.transport-chat-state')).toHaveText(messages['Waiting for our transport team']);
    const send=dialog.locator('.transport-chat-composer button');await expect(send).toHaveText(messages['Send message']);await send.scrollIntoViewIfNeeded();await send.click({trial:true});
    const bounds=await send.boundingBox(),container=await dialog.boundingBox();expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(container!.y+container!.height);
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath(`conversation-${locale}.png`)});

@@ -21,7 +21,7 @@ for(const assigned of [false,true])test(`visitor ends ${assigned?'assigned':'wai
   const login=await session.auth.verifyOtp({token_hash:link.properties.hashed_token,type:'magiclink'});expect(login.error).toBeNull();
   await bc.addCookies(createChunks(`sb-${new URL(url).hostname.split('.')[0]}-auth-token`,'base64-'+Buffer.from(JSON.stringify(login.data.session)).toString('base64url')).map(cookie=>({...cookie,url:'http://127.0.0.1:3100',sameSite:'Lax' as const})));
   const bp=await bc.newPage();bp.setDefaultTimeout(15000);
-  await page.goto('/about');await page.getByRole('button',{name:'Arrange transport',exact:true}).click();
+  await page.goto('/about');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
   const dialog=page.locator('.public-chat-dialog'),form=dialog.getByRole('form',{name:'Arrange transport',exact:true});
   async function start(){await form.getByLabel('From',{exact:true}).fill('Adama');await form.getByLabel('To',{exact:true}).fill('Dire Dawa');await form.getByLabel('Name',{exact:true}).fill(name);await form.getByLabel('Phone',{exact:true}).fill(phone);
    const response=page.waitForResponse(r=>r.url().endsWith('/api/transport-requests')&&r.request().method()==='POST');await form.getByRole('button',{name:'Start chat',exact:true}).click();const result=await response;expect(result.status()).toBe(200);const id=JSON.parse(result.request().postData()!).requestId;requests.push(id);await expect(dialog.getByRole('textbox',{name:'Message',exact:true})).toBeVisible();return id;}

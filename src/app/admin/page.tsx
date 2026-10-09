@@ -2,7 +2,7 @@ import {TransportRequestQueueSummary} from '@/components/transport-request-queue
 
 import {Text} from '@/components/localization';
 import Link from 'next/link';
-import {Activity,ArrowRight,BadgeDollarSign,Building2,ClipboardCheck,Gauge,Headphones,Network,Route,Settings2,Sparkles,Truck,UserRoundCog,Users} from 'lucide-react';
+import {Activity,ArrowRight,Building2,ClipboardCheck,Gauge,Headphones,Network,Route,Sparkles,Truck,UserRoundCog,Users} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
 import {getAdminOperations} from '@/lib/platform-admin.js';
 import {PageHeader} from '@/components/page-header';
@@ -15,12 +15,10 @@ const records=[
   {view:'TRACKING',label:'Tracking',count:'tracking',detail:'Provider-owned shipment tracking',Icon:ClipboardCheck},
   {view:'CAPACITY',label:'Capacity',count:'board_capacity',detail:'Current Empty and Partial signals',Icon:Gauge},
   {view:'ROUTES',label:'Routes',count:'routes',detail:'Regular service routes and areas',Icon:Route},
-  {view:'SUBSCRIPTIONS',label:'Plans',count:'subscriptions',detail:'Workspace access and billing state',Icon:BadgeDollarSign}
 ] as const;
 
 const workAreas=[
-  {href:'/admin/settings',label:'Settings',detail:'Free access, trials, and payment activation',Icon:Settings2},
-  {href:'/admin/reviews',label:'Review Center',detail:'Documents, ratings, and payment evidence',Icon:ClipboardCheck},
+  {href:'/admin/reviews',label:'Review Center',detail:'Documents and shipment reviews',Icon:ClipboardCheck},
   {href:'/admin/capacity-network',label:'Private capacity',detail:'Availability shared with Loadgistic for matching',Icon:Network},
   {href:'/admin/featured',label:'Featured & sponsors',detail:'Programme, schedule, and sponsor management',Icon:Sparkles},
   {href:'/admin/support',label:'Support & team',detail:'Conversations, assignments, and staff permissions',Icon:Headphones}

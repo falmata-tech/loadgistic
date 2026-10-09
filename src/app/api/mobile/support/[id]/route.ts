@@ -11,7 +11,7 @@ async function conversationId(context: Context) { const id = z.string().uuid().s
 export async function GET(request: Request, context: Context) {
  try { const user = await mobileActor(request, true), id = await conversationId(context), query = supportCursor.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!query.success) throw new MobileError(400, 'INVALID_INPUT', 'Choose a valid message history page.');
-  try { return mobileJson(supportThread(await getSupportConversation(user, id, { beforeMessageId: query.data.before, markRead: !query.data.before, messageLimit: 50 }), user.id)); }
+  try { return mobileJson(supportThread(await getSupportConversation(user, id, { beforeMessageId: query.data.before, markRead:false, messageLimit: 50 }), user.id)); }
   catch (error) { supportFailure(error); }
  } catch (error) { return mobileFailure(error); }
 }

@@ -1,3 +1,4 @@
+import {DatePicker} from '@/components/date-picker';
 import {FeaturedOperationOverview} from '@/components/featured-operation-overview';
 import {getFeaturedOverview} from '@/lib/featured-automation.js';
 
@@ -48,7 +49,7 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
     <details id="featured-day-editor" className="featured-day-disclosure" open={Boolean(query.date)||controls.featured_mode==='MANUAL'}><summary><Text message="Review or edit a day"/></summary>
     <section className="panel featured-admin-picker">
       <form method="get" className="featured-day-filter regional-expo-admin-filter">
-        <div className="form-group"><label htmlFor="feature-date"><CalendarDays aria-hidden="true"/><Text message="Feature date"/></label><input id="feature-date" name="date" type="date" defaultValue={date} required/></div>
+        <div className="form-group"><label htmlFor="feature-date"><CalendarDays aria-hidden="true"/><Text message="Feature date"/></label><DatePicker id="feature-date" name="date"  defaultValue={date} required/></div>
         <div className="featured-expo-assignment"><Truck aria-hidden="true"/><span><small><Text message="Truck type"/></small><strong>{theme.label}</strong></span></div>
         <button className="button secondary"><Text message="Load day"/></button>
       </form>

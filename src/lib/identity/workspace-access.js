@@ -1,11 +1,11 @@
-import { subscriptionAccess } from '../subscription-access.js';
-
-export function getManagedWorkspaceAccess(user,at=new Date()){
+export function getManagedWorkspaceAccess(user,_at=new Date()){
+  const result={ends_at:null,days_remaining:null,subscription:null};
+  if(!user?.active)return {...result,granted:false,status:'ACCOUNT_UNAVAILABLE'};
   if(['ADMIN','SUPPORT'].includes(user.role)){
-    return {granted:true,status:user.role,ends_at:null,days_remaining:null,subscription:null};
+    return {...result,granted:true,status:user.role};
   }
-  const subscription=user.workspace_subscription||null;
-  return {...subscriptionAccess(subscription,at,user.access_policy),subscription};
+  const granted=['TRANSPORTER','DRIVER'].includes(user.role)&&Boolean(user.organization_id||user.provider_profile_id);
+  return {...result,granted,status:granted?'FREE_ACCESS':'WORKSPACE_REQUIRED'};
 }
 
 export function getManagedDriverAccess(user){

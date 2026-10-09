@@ -1,6 +1,8 @@
+import {capacitySharingLabel} from '@/lib/capacity-sharing';
 import Link from 'next/link';
 import {Building2, CalendarClock, MapPinned, Phone, UserRound} from 'lucide-react';
 import {Text} from './localization';
+import {capacityLoadPreference,capacityLoadLabel} from '@/lib/capacity-load-preferences';
 import {TruckDocumentSummary} from './truck-document-summary';
 import type {VerificationBadge} from './verification-badges';
 import {vehicleConfigurationImage} from '@/lib/vehicle-configurations';
@@ -8,7 +10,8 @@ import {vehicleConfigurationImage} from '@/lib/vehicle-configurations';
 type TruckDetails = {
   provider_name: string; provider_handle: string; provider_organization_id?: string | null;
   vehicle_make?: string; vehicle_model?: string; cargo_configuration?: string;
-  status: string; assigned_driver_first_name?: string; assigned_driver_phone?: string | null;
+  status: string; sharing_mode?: string; assigned_driver_first_name?: string; assigned_driver_phone?: string | null;
+  accepts_full_load?: boolean | number; accepts_partial_load?: boolean | number;
   contact_phone?: string | null; driver_kind_label?: string;
   capacity_updated_label?: string; location_updated_label?: string;
   capacity_confirmation_needed?: boolean; current_signal_geometry_visible?: boolean;
@@ -17,6 +20,7 @@ type TruckDetails = {
 };
 
 export function MapTruckDetails({truck}:{truck:TruckDetails}) {
+  const loadPreference=capacityLoadPreference(truck.status,truck.accepts_full_load,truck.accepts_partial_load);
   return <section className="map-capacity-sheet truck-inspection" aria-label={`${truck.provider_name} truck summary`}>
     <div className="truck-inspection-hero">
       <div className="truck-inspection-image"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></div>
@@ -24,6 +28,8 @@ export function MapTruckDetails({truck}:{truck:TruckDetails}) {
         <span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}><Text message={truck.status==='PARTIAL'?'Partial capacity':'Empty truck'}/></span>
         <h3>{truck.vehicle_make} {truck.vehicle_model}</h3>
         {truck.cargo_configuration?<p><Text message={truck.cargo_configuration}/></p>:null}
+        {truck.sharing_mode?<p><Text message={capacitySharingLabel(truck.sharing_mode)}/></p>:null}
+        {loadPreference?<p className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></p>:null}
       </div>
     </div>
     <div className="truck-inspection-people">

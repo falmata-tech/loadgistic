@@ -245,7 +245,7 @@ async function verifyConcurrentSharedCapacityOtpIssuance(owner,vehicleId){
   const challengeIds=[];
   let grant;
   try{
-    grant=await grantPrivateCapacityAccess(owner,{vehicleId,email:recipientEmail});
+    grant=await grantPrivateCapacityAccess(owner,{vehicleId,email:recipientEmail,name:'Synthetic recipient'});
     if(!grant?.id||!grant.created)throw new Error('SUPABASE_SHARED_CONCURRENCY_GRANT_FAILED');
 
     const results=await Promise.allSettled(
@@ -331,7 +331,7 @@ await verifyConcurrentSharedCapacityOtpIssuance(owner,vehicle.id);
 
 await service.from('capacity_access_grants').delete().eq('recipient_email_digest',sharedDigest);
 
-const grant=await grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:sharedEmail});
+const grant=await grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:sharedEmail,name:'Synthetic shared recipient'});
 if(!grant?.id||!grant.created)throw new Error('SUPABASE_SHARED_VERIFY_GRANT_FAILED');
 const network=await listPrivateCapacityNetwork(owner);
 if(!network.some(item=>item.id===vehicle.id&&item.grants.some(candidate=>candidate.id===grant.id)))throw new Error('SUPABASE_SHARED_VERIFY_NETWORK_FAILED');

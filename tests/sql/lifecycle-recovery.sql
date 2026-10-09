@@ -2,30 +2,42 @@ begin;
 create function pg_temp.expect_lifecycle_denied(command text,expected text) returns void language plpgsql as $$
 begin begin execute command;exception when others then if sqlerrm=expected then return;end if;raise;end;raise exception 'EXPECTED_DENIAL';end $$;
 do $test$
-declare owner_id uuid; outsider uuid; staff uuid; admin_id uuid; company_driver uuid; a uuid; b uuid; shipment uuid:=gen_random_uuid();
+declare owner_id uuid; outsider uuid; staff uuid; admin_id uuid; company_driver uuid; second_driver uuid; org_id uuid; a uuid; b uuid; shipment uuid:=gen_random_uuid();
  origin_ref text; destination_ref text; provider uuid; revision text; result jsonb; command jsonb; n integer; role_name text; signature text;
 begin
- select id into strict owner_id from profiles where email='driver@loadgistic.local';
- select id into strict outsider from profiles where email='transporter@loadgistic.local';
- select id into strict company_driver from profiles where email='company-driver@loadgistic.local';
- select id into strict staff from profiles where email='support@loadgistic.local';
- select id into strict admin_id from profiles where email='admin@loadgistic.local';
- select id into strict provider from provider_profiles where user_id=owner_id;
+ -- Multi-truck reassignment/restoration belongs to a fleet, never an independent driver.
+ select m.user_id,m.organization_id into strict owner_id,org_id from organization_members m
+ join profiles p on p.id=m.user_id and p.active and p.role='TRANSPORTER'
+ join lateral provider_capacity_actor_scope(m.user_id) scope on scope.workspace_access
+ where m.membership_role='OWNER' and (select count(*) from drivers d join profiles dp on dp.id=d.user_id and dp.active
+ where d.organization_id=m.organization_id and d.active)>=2 limit 1;
+ select p.id into strict outsider from profiles p join organization_members m on m.user_id=p.id
+ where p.active and p.role='TRANSPORTER' and m.membership_role='OWNER' and m.organization_id<>org_id limit 1;
+ select d.user_id into strict company_driver from drivers d join profiles p on p.id=d.user_id and p.active
+ where d.active and d.organization_id=org_id limit 1;
+ select d.user_id into strict second_driver from drivers d join profiles p on p.id=d.user_id and p.active
+ where d.active and d.organization_id=org_id and d.user_id<>company_driver limit 1;
+ select id into strict staff from profiles where active and role='SUPPORT' limit 1;
+ select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
+ select provider.id into strict provider from provider_profiles provider join profiles p on p.id=provider.user_id
+ where p.active and p.role='DRIVER' limit 1;
  select id into origin_ref from place_catalog where normalized_name='addis ababa' limit 1;
  select id into destination_ref from place_catalog where normalized_name='adama' limit 1;
  a:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Toyota','model','Lifecycle A','plate','TEST-A','cargo_configuration','Pickup truck','trailer_interchangeable',false))->>'id')::uuid;
  b:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Toyota','model','Lifecycle B','plate','TEST-B','cargo_configuration','Pickup truck','trailer_interchangeable',false))->>'id')::uuid;
  if a is null or b is null then raise exception 'VEHICLE_CREATE_FAILED';end if;
+ perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',company_driver,'vehicle_id',a,'can_manage_capacity',true,'can_manage_tracking',true));
+ perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',second_driver,'vehicle_id',b,'can_manage_capacity',true,'can_manage_tracking',true));
  perform create_provider_tracking_with_recipients(owner_id,jsonb_build_object('id',shipment,'code','LGX-'||upper(substr(replace(shipment::text,'-',''),1,8)),
  'vehicle_id',a,'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'cargo_summary','Synthetic lifecycle cargo',
  'customer_email','lifecycle-sql@example.test','customer_email_digest',repeat('1',64),'additional_recipients','[]'::jsonb,
- 'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
+ 'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
  perform pg_temp.expect_lifecycle_denied(format('select set_vehicle_lifecycle(%L,%L,false,%L)',owner_id,a,'Retire active truck'),'TRUCK_HAS_ACTIVE_TRACKING');
  perform pg_temp.expect_lifecycle_denied(format('select set_vehicle_lifecycle(%L,%L,false,%L)',outsider,b,'Wrong owner retirement'),'NOT_FOUND');
  perform pg_temp.expect_lifecycle_denied(format('select set_vehicle_lifecycle(%L,%L,false,%L)',company_driver,b,'Driver retirement'),'NOT_FOUND');
  revision:=(tracking_recovery_context(owner_id,shipment)->>'revision');
  command:=jsonb_build_object('action','CORRECT','revision',revision,'reason','Correct customer instructions','cargo_summary','Corrected cargo',
-  'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'expected_pickup_date','2026-09-14','expected_delivery_date','2026-09-15');
+  'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'expected_pickup_date',current_date::text,'expected_delivery_date',(current_date+2)::text);
  perform pg_temp.expect_lifecycle_denied(format('select recover_provider_tracking(%L,%L,%L)',outsider,shipment,command),'NOT_FOUND');
  perform pg_temp.expect_lifecycle_denied(format('select recover_provider_tracking(%L,%L,%L)',company_driver,shipment,command),'NOT_FOUND');
  perform recover_provider_tracking(owner_id,shipment,command);
@@ -48,7 +60,8 @@ begin
  perform set_vehicle_lifecycle(owner_id,a,true,'Return the truck to service');
  if (select coalesce(market_status,status::text) from capacities where vehicle_id=a order by updated_at desc,id desc limit 1)<>'OFF_DUTY' then raise exception 'HISTORICAL_CAPACITY_REPUBLISHED';end if;
  command:=jsonb_build_object('action','CANCEL','revision',(tracking_recovery_context(owner_id,shipment)->>'revision'),'reason','The agreed work was cancelled','confirm','CANCEL');
- perform recover_provider_tracking(owner_id,shipment,command);
+ perform pg_temp.expect_lifecycle_denied(format('select recover_provider_tracking(%L,%L,%L)',owner_id,shipment,command),'TRACKING_STAFF_RELEASE_REQUIRED');
+ perform recover_provider_tracking(admin_id,shipment,command);
  if provider_guest_tracking_for_recipient(shipment,repeat('1',64)) is not null then raise exception 'CANCELLED_GUEST_ACCESS';end if;
  if exists(select 1 from provider_tracking_recipients where shipment_id=shipment and revoked_at is null) then raise exception 'RECIPIENT_NOT_REVOKED';end if;
  if exists(select 1 from email_deliveries where shipment_id=shipment and delivery_kind='COMPLETION') then raise exception 'CANCELLATION_COMPLETION_EMAIL';end if;

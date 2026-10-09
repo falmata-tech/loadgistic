@@ -15,6 +15,7 @@ export async function getPlatformControls(user){
 
 export async function savePlatformControls(user,command){
   if(user?.role!=='ADMIN')throw new Error('FORBIDDEN');
+  if(command?.section==='ACCESS')throw new Error('BILLING_RETIRED');
   const {data,error}=await createSupabaseAdminClient().rpc('save_managed_platform_controls',{actor_user_id:user.id,command});
   if(error)throw settingsError(error);
   return data;

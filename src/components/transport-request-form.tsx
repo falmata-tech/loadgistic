@@ -40,7 +40,7 @@ export function TransportRequestForm({active=true}:{active?:boolean}){
   if(expired)return <section className="transport-chat-recovery"><p><Text message="This conversation is no longer available in this browser."/></p><p><Text message="Our team still has your request and phone number for follow-up."/></p><button className="button secondary" onClick={newRequest}><Text message="Request another route"/></button>{error?<p role="alert">{t(error)}</p>:null}</section>;
   if(restoreError)return <section role="status"><p><Text message="We could not reopen your conversation. Close this window and try again."/></p></section>;
   return <form className="transport-request-form" aria-label={t('Arrange transport')} onSubmit={submit}>
-    <div className="transport-request-intro"><p><Text message="Share your route to start a conversation. We’ll help find a truck and arrange the details."/></p></div>
+    <div className="transport-request-intro"><p><Text message="Tell us what you need to move and where. Our team will help find a truck and arrange the trip."/></p></div>
     <div className="transport-request-fields">
       <label><span><MapPin aria-hidden="true"/><Text message="From"/></span><Localized as="input" copy={['placeholder']} name="origin" placeholder="Pickup city or area" maxLength={160} required disabled={busy}/></label>
       <label><span><MapPin aria-hidden="true"/><Text message="To"/></span><Localized as="input" copy={['placeholder']} name="destination" placeholder="Destination city or area" maxLength={160} required disabled={busy}/></label>

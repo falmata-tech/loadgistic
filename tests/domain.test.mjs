@@ -112,11 +112,11 @@ test('local geography validates scope, radius, distance, and overlap',()=>{
  ),false);
 });
 
-test('device capacity location is displaced into the promised privacy area',()=>{
+test('device capacity location is quantized inside the promised privacy area',()=>{
  const exact={lat:9.03,lng:38.74};
  const obscured=obscureCoordinate(exact.lat,exact.lng,35);
  const distance=distanceBetweenKm(exact,obscured);
- assert.ok(distance>=34.9&&distance<=35.1);
+ assert.ok(distance>=0&&distance<=35);
  assert.notDeepEqual(obscured,exact);
  assert.deepEqual(obscureCoordinate(exact.lat,exact.lng,35),obscured);
 });

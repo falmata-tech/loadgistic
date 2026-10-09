@@ -1,5 +1,21 @@
 # Security failures we must not repeat
 
+## NR-17 — Retired commercial models must not gate user access
+
+The October 7 audit found dormant paid-mode controls, plan/payment Account cards
+and automatic trial provisioning despite the owner's transport-arrangement-only
+revenue model. Free mode still required a subscription row in operating scopes.
+Hiding billing links alone would leave new providers blocked or stale clients able
+to revive paid access.
+
+FEAT-BIL-001 and migration 120 retire plan-dependent access, paid activation,
+trial provisioning and billing mutation commands together. Identity, tenant and
+driver checks remain. Historical rows/files and browser ACLs stay protected.
+Negative evidence covers no-plan signup, inactive/unlinked denial, rejection before
+uploads, stale-client writes and unchanged historical record counts. Owner:
+identity/billing maintainer. MOBILE_IMPLEMENTATION.md records actual evidence and
+rollout state; local success is not hosted rollout.
+
 FEAT-SEC-001 / ADR-063–065. This register turns security lessons into required
 review and negative tests. It includes observed failure classes and related
 regression risks; it is not a claim that every listed risk caused an incident
@@ -20,6 +36,16 @@ instead of renumbering or deleting them.
 | NR-08 | Release readiness is claimed using an old commit, a backup never restored, a scheduled file not installed, or a generic permission error masking a broken guard. | Bind checks to the exact commit and artifact hash. Restore the exact encrypted archive in isolation. Verify real API and browser behavior. Monitor tests fail on open endpoints, unrelated denials, missing configuration and unavailability. Record workflow installation and successful execution independently. | Release owner; CI maintainer |
 | NR-09 | Account closure removes login UI access but stale tokens or retained membership still authorize writes; history is deleted during “cleanup.” | Recheck active actor and tenant authority at mutation boundaries; retain history and deny browser database shortcuts. Run `tests/sql/browser-boundaries.sql`, `tests/sql/account-security.sql`, `scripts/verify-audit-concurrency.mjs`, and account-security browser workflows. | Identity/domain author |
 | NR-10 | Customer files, credentials or backup content leak through public storage, browser code, logs or build context. | Keep server credentials server-only, reauthorize private reads, and exclude local credentials/backups from images. Run `tests/private-storage.test.mjs`, `tests/sql/tracking-proof-access.sql`, relevant attachment tests, and the CI container-context canaries. Never log tokens, OTPs, customer rows or recovered backup contents as evidence. | Storage/runtime author; release owner |
+
+NR-10 local test-runner correction (October 7): a Playwright request timeout
+included a temporary local test-session Cookie in its exception call log. The
+disposable sessions were closed in cleanup, the ignored local log was sanitized
+and protected, and the new browser verifier records only stage/error name rather
+than raw request exceptions/causes. No hosted credentials or customer record were
+involved. Future runners must preserve failure status without printing headers;
+fixture cleanup must stay exact even after timeout. Owner: test-runner author.
+This is a bounded runner correction, not a claim that all historical test tools
+or provider logging are now audited.
 
 
 | NR-11 | A successful build is published with a broken server bundle because a nested checkout changes workspace tracing or deployment tools repackage the adapter incorrectly. | Build an immutable code-only export with no parent workspace; verify the final uploaded function retains its adapter manifest, runtime configuration and module paths. Exercise a cold start on the provider before publication, then verify production health and desktop/phone workflows. Keep the previous working deploy available; preserve database containment during application rollback. September 20 attempt 6ab03906b83e9eec579c7bc0 failed runtime verification and was rolled back; corrected release evidence must be recorded before closure. | Release owner; CI maintainer |
@@ -392,3 +418,203 @@ Pinned sharp 0.35.5 and source-map-js 1.2.2 remove those findings; Next remains
 exact-candidate CI/build/runtime checks. No forced major upgrade or audit
 suppression was used. Local web audit reports zero findings; production status
 must be confirmed after publication.
+
+
+### Cross-view location and navigation continuation — October 7, local only
+
+NR-02/03/08/13: fixed-distance GPS offsets permit cross-radius triangulation;
+shared privacy now uses stable many-to-one cells with a displaced cell center and
+verified conservative radius bounds. Distinct nearby fixes can produce the same
+point; historical points remain retained. `location-area-privacy.test.mjs` proves
+world bounds, repeated-cell stability and distance limits; actual local native
+Home obscured movement/save/readback passes. Do not claim historical conversion
+or device background travel testing. Owner: location/migration author; next: native
+permission/locked-device checks, review and guarded rollout.
+
+Return-state storage is presentation-only. `workspace-area-navigation.test.mjs`
+rejects external/administrative/unknown routes, credentials and unsupported query
+keys; camera values strip extra fields. Private results are always freshly
+authorized, identity-keyed bookmarks never grant access, and no feed/recipient
+snapshot is retained. Native document regrouping preserves authorized subject IDs,
+including self-managed PROVIDER_PROFILE identity/licenses. Negative role and
+kind/ID tests plus actual company-driver browser checks pass. Owner: UI author;
+next: visual review and remaining release gates. No hosted setting/ACL changed.
+
+### Browser map console regression — October 7, local only
+
+NR-08/13: a browser check collecting pageerror alone missed raster AbortError
+events reported through console.error and Expo's overlay. The MapLibre6.13.0
+raster catch treated cancellation with tile.aborted=false as an image failure.
+Reproduce the installed loader and visible browser failure before repairing;
+inspect console errors as well as exceptions, zoom/resize and area return.
+Preserve deliberate HTTP and invalid-image error feedback. Six focused tests and
+three browser scenarios pass; guarded postinstall rejects version/hash/external
+symlink drift and changes only Loadgistic's browser dependency. No permission,
+credential, data or hosted configuration change. Owner: mobile maintainer; next:
+retain this check in focused map verification and remove the adapter only after
+an upstream fix is reviewed. Previous servers had stopped; cause was not captured.
+
+Recurrence correction: the owner still saw an exception during paused Chrome
+zoom clicks. Do not equate fresh-context success with repair of a running tab.
+The first synthetic regression counted earlier cancellations; now require a new
+forced count and assert unhandled rejection separately. A real streaming-body
+fixture passes 31 new body cancellations; unmodified Chrome fetch with OSM passes
+49 request cancellations. Scope the full client reload to the independently
+verified Loadgistic server. Owner confirmation remains open; an old retained map
+is a hypothesis. No overlay suppression or speculative library change was made.
+
+Verified refinement: owner screenshot disproved the stale-tab completion theory.
+Inspect the failing browser environment instead of broadening clean-context zoom
+tests repeatedly. Its fetch is wrapped; a controlled response-observer side-promise
+reproduces the same uncaught abortTile stack. The scoped browser raster/XHR port
+now passes desktop HiDPI click zoom with the recorder enabled, real body aborts
+and retained HTTP/decode error feedback. CORS-unsafe getResponseHeader calls also
+produced console errors; read accessible headers with getAllResponseHeaders.
+Temporary probes were removed and no global browser/extension setting changed.
+Presence of an extension script is not attribution: Loom's console script was
+present, but its code did not establish ownership of the fetch wrapper. Next:
+retain the before/after regression and owner local test; publication is separate.
+
+
+## NR-18 — A single-driver account quietly gains fleet capability
+
+**Cause:** Account categories for self-managed drivers and owner-operators used
+independent-provider ownership for unrestricted vehicle creation. Hiding fleet
+links alone would leave API, concurrent registration and retired-truck restoration
+paths capable of creating multiple active trucks. Reusing a truck row for a new
+physical vehicle could attach old review/history to the wrong truck.
+
+**Control:** FEAT-APP/FLT/IAM/VER/MOB, ADR-076: canonical independent identity with
+legacy compatibility; one-active-truck partial unique index; serialized exact
+provider command; expected current ID plus deliberate replacement confirmation;
+atomic archive/create; unfinished-Tracking block. Preserve old entity IDs,
+private file authority, shipments, signals and audits. OWNED/PERMISSION is a
+self-declaration, separate from reviewed proof. Never infer legacy ownership or
+rewrite Auth/application history. Company-driver and fleet scopes remain distinct.
+
+**Negative checks:** `tests/independent-single-truck.test.mjs`,
+`tests/sql/independent-single-truck.sql`, and the two-session
+`verify-independent-truck-concurrency-local.mjs` prove direct/second/stale/foreign,
+confirmation/invalid-replacement rollback, active Tracking, admin/owner restoration,
+driver-management denial and retained subject/file history. The resulting catalog
+security gate stays independent. Current local UI/rollout evidence is in
+MOBILE_IMPLEMENTATION; no hosted migration or release is implied by passing local
+checks. **Owner:** identity/fleet/migration author; release owner. **Next:** actual
+web/native visual approval, exact production aggregate preflight, protected restored
+backup rehearsal, compatible release/rollback and native phone acceptance.
+
+
+## NR-19 — Fetching or assigning a chat masquerades as Seen or joined
+
+**Failure:** legacy Support fetches update read timestamps, while merely assigned
+staff are described as helping. That cannot establish displayed messages or a
+joined agent. Sharing one team read counter also clears a new assignee’s unread
+work, and an A→B→A handoff can accept a delayed frame from the first assignment.
+
+**Control:** FEAT-NOT-001 / ADR-077. Saved explicit visible-message acknowledgement,
+monotonic per-side cursors, independent per-assignment unread and an assignment
+epoch checked under the parent lock. Fetch/send/queue/history download is not a
+receipt. Covering native menus/documents and unfocused apps/tabs cannot read.
+Guests use only their exact live capability; active staff need the current team
+permission and assignment. New tables are RLS-protected/service-only, commands
+have browser execution revoked, and matching schema markers gate app readiness.
+Alerts contain no contact, route, message or staff-only note in system copy.
+
+**Negative checks:** `tests/sql/chat-read-receipts.sql` proves foreign/future/expired/
+inactive/wrong-team denial, fetch/send neutrality, replay idempotency, retained
+history, agent handoff and rejected old frame. Shared policy tests cover late
+responses, silent baseline and deduplication; native tests cover independent modal
+blockers and translated copy. Actual local browser/Expo-web receipt, overlay/history/failure tests now pass;
+physical-device/background delivery acceptance remains separate. RLS/ACL/definer catalog and existing file,
+history, Support polling and Brokerage regressions pass locally.
+
+**Owner / next action:** chat/release author. Finish focused actual receipt tests,
+obtain owner visual review, then prepare exact backed-up hosted migration and
+matched clients. Background notification transport/device acceptance and direct
+provider inquiry scope remain unresolved. Hosted tables/settings were not changed.
+
+
+NR-19 follow-up: a conditional foreground receipt poll could stop permanently
+behind an overlay; removing the last overlay now wakes metadata polling. The real
+menu-open/new-reply/close case proves no hidden read and subsequent recovery.
+A waiting-first 40-item feed also hid assigned replies behind 45 waiting chats.
+Migration 125 prioritizes active unread/current-assignee work and derives actual
+message event time. Its negative case fails schema 124 and passes 125; counts still
+cover every authorized row. Never remove bounds, broaden recipients or truncate
+queue totals to make a notification check pass. Use boolean-only environment
+guards in local runners; asserting the raw environment text can expose secrets
+on a wrong-target failure. Owner: chat/release author. Production remains pending.
+
+Private web receipt surfaces hide on pagehide and reauthorize through a reload
+when the browser restores a persisted page; a cached chat is not new authority.
+
+NR-19 October 8 extension: notify a driver only from a committed OWNER/STAFF
+handover, with private current-assignment authorization and an exact versioned
+alert acknowledgement. Fetch/dismiss/system clicks cannot fabricate completion
+or chat Seen. Browser permission is deliberate; a notification-only worker
+validates safe links and caches no API/proof responses. Open-browser polling is
+not closed-phone/Web Push. Tests use actual worker records in current Chromium headless mode;
+the default headless shell reports conflicting permission APIs and rejects
+notification storage. Current Chromium mode is used instead; it does not prove
+a physical OS banner. Physical-device banners
+and push remain separate acceptance.
+
+The initial notification worker used root scope even without a fetch handler.
+This competed with `/sw.js`; its controller-change bootstrap reload interrupted
+POST navigation. Ordinary Support tests passed without the conflicting worker,
+while the notification-enabled browser did not reach the chat. Narrowing registration to `/_loadgistic-alerts/` keeps the notification worker from controlling app
+pages or replacing `/sw.js` and the actual Claim response/redirect passes. Require this
+minimal scope and test real POST navigation after enabling alerts. The speculative metadata
+submit guard was removed; it was not this failure's cause. Owner:
+notification/workflow author. Evidence and rollout status are in
+MOBILE_IMPLEMENTATION; no hosted write or release is implied.
+
+NR-19 delivery follow-up: waking only on visible state stopped hidden-tab alerts,
+and restoring opt-in after an initially skipped poll also needs a wakeup. Do not
+confuse that delivery poll with visible-only chat acknowledgement. A real native
+alert-opening test rejected a wrapped payload at a plain-body request port; the
+correct serialized command has only `id` and `approvedAt` and clears saved unread
+state. Keep the actual browser payload/status and post-navigation database check
+in the focused workflow. UI appearance or typecheck alone missed this defect.
+
+NR-02/03/09 contact-label follow-up (October 8): labels are private organizer notes,
+not recipient verification or authority. Named grant/rename commands reuse current
+vehicle control with row locks; renaming never changes grant identity/email or
+revives revoked access. Exclusive publication and its name commit atomically.
+Legacy names are retained; public/private visitor projections never include them.
+Migration 127 and rollback-only contact SQL verify these cases locally; hosted
+rollout and new artifacts remain pending. Owner: sharing/workflow author.
+
+NR-08/19 native startup follow-up (October 8): the real Android development bundle
+failed because notification routing imported the server registration schema and
+its Zod dependency. The Expo-web shim and TypeScript checks did not exercise that
+native graph. Separate the dependency-free, strict destination contract; keep
+registration validation server-side and reject extra fields/invalid event pairs.
+`apps/mobile/tests/native-push-destination.test.mjs` covers valid event/screen
+combinations and malformed/injected data; `tests/native-push.test.mjs` preserves
+server payload/authority checks. Verify actual Android bundle and installed
+startup before native review/release. Owner: mobile/release maintainer. Next:
+complete that runtime proof and the closed-phone notification acceptance.
+
+NR-19 presentation follow-up (October 8): a successful Expo ticket/receipt does
+not prove an Android banner. The initial native handler unconditionally suppressed
+system presentation; it now keeps foreground feed behavior while permitting
+background/inactive alerts, including lifecycle-transition delivery. Two explicit
+presentation tests and the real Android export pass. Actual OS/tap acceptance
+remains unverified on the unstable emulator and must not be inferred from provider
+success. Owner: mobile/release maintainer. Next: exact internal build and device
+acceptance, retaining permission/refusal/logout and no-fabricated-Seen checks.
+
+NR-19 Android extension: private RLS/service-only installation/session/guest
+bindings and atomic outbox are implemented at local migration 128. Focused tests
+deny staff/forged/foreign/expired authority, reject stale leases, bound retries,
+suppress already Seen/acknowledged events and ensure an old-token receipt cannot
+disable its replacement. Native opt-out survives sender/network unavailability;
+tap authorization cannot grant Seen or retain old identity after logout.
+The owner-delegated FCM V1 upload targets the exact Loadgistic EAS app, with no
+prior association to replace. Private Firebase JSON is excluded explicitly in
+`.easignore`; nested Git ignore rules alone do not protect an EAS archive.
+Local registration must report the disabled sender truthfully. New APK/hosted
+enablement and physical-device acceptance remain pending; simulated Expo results
+and foreground/browser alerts never prove closed-phone delivery. No other app or
+global Firebase/Expo account changes. Owner: notification/workflow author.

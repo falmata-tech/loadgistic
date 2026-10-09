@@ -53,7 +53,7 @@ export async function mobileActor(request: Request, allowLimited = false): Promi
   const user = await mobileVerifiedIdentity(request);
   const state = mobileAccountState(user, user.id);
   if (state !== 'ACTIVE' || !user) throw new MobileError(403, state === 'WEB_ONLY' ? 'WEB_ONLY' : 'ACCOUNT_UNAVAILABLE', state === 'WEB_ONLY' ? 'Use the website for staff access.' : 'This account cannot access the workspace.');
-  if (!allowLimited && !getManagedWorkspaceAccess(user).granted) throw new MobileError(403, 'PLAN_REQUIRED', 'Review your plan to restore workspace access.');
+  if (!allowLimited && !getManagedWorkspaceAccess(user).granted) throw new MobileError(403, 'WORKSPACE_REQUIRED', 'This account is not linked to a transport workspace.');
   return user;
 }
 export async function mobileSession(client: SupabaseClient, session: { access_token: string; refresh_token: string; expires_at?: number; user: { id: string } }) {

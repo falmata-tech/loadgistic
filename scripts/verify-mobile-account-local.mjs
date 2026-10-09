@@ -152,7 +152,7 @@ try {
  assert.equal((await call('fleet', assignment, company.accessToken)).status, 200);
  assert.equal((await call('capacity', fleetPublication, driver.accessToken)).status, 403, 'Existing session loses revoked permission');
  const capacityEmail = `mobile-private-${Date.now()}@loadgistic.local`;
- const shareCommand = { action: 'GRANT', vehicleId: companyTruck.value.id, email: capacityEmail };
+ const shareCommand = { action: 'GRANT', vehicleId: companyTruck.value.id, email: capacityEmail, name: 'Synthetic broker' };
  assert.equal((await call('network', shareCommand, driver.accessToken)).status, 404, 'Restricted driver cannot manage private grants');
  assert.equal((await call('network', shareCommand, session.accessToken)).status, 404, 'Another provider cannot grant fleet access');
  assert.equal((await call('network', shareCommand, company.accessToken)).status, 200);

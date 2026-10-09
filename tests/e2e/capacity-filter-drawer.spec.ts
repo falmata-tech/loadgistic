@@ -41,8 +41,8 @@ async function exercise(page:any,info:any,path:string,api:string){
   await page.locator('.leaflet-container').evaluate((el:any)=>{el.__drawerMapIdentity=true;});
   const drawer=await openDrawer(page);
   const dialog=await openCapacityFilterDialog(page);
-  await expect(dialog.getByLabel('Availability',{exact:true})).toBeVisible();
-  await dialog.getByLabel('Availability',{exact:true}).selectOption('EMPTY');
+  await expect(dialog.getByLabel("Truck's current load",{exact:true})).toBeVisible();
+  await dialog.getByLabel("Truck's current load",{exact:true}).selectOption('EMPTY');
   await chooseTruckConfiguration(dialog,'Mini Box Truck');
   await dialog.getByLabel('In or near a city',{exact:true}).fill('Addis Ababa');
   await dialog.locator('#capacity-truck-city-results .place-result').first().click();
@@ -50,7 +50,7 @@ async function exercise(page:any,info:any,path:string,api:string){
   await dialog.getByLabel('Distance from city',{exact:true}).selectOption('25');
   await dialog.getByLabel('Origin (optional)',{exact:true}).fill('Addis Ababa');
   await dialog.locator('#capacity-route-origin-results .place-result').first().click();
-  await expect(drawer.getByLabel('Availability',{exact:true})).toHaveCount(0);
+  await expect(drawer.getByLabel("Truck's current load",{exact:true})).toHaveCount(0);
   await dialog.getByRole('combobox',{name:'Space needed',exact:true}).selectOption('PTL');
   await dialog.getByRole('combobox',{name:'Direction',exact:true}).selectOption('EITHER');
   await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-more-filters.png`),scale:'css'});
@@ -67,7 +67,7 @@ async function exercise(page:any,info:any,path:string,api:string){
   await drag(page,mobile,map.x+map.width*.65,map.y+map.height*.4,-75);
   await expect.poll(()=>windows.at(-1)).not.toBe(before);
   await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-map.png`),scale:'css'});
-  await openDrawer(page);await expect(dialog.getByLabel('Availability',{exact:true})).toHaveValue('EMPTY');
+  await openDrawer(page);await expect(dialog.getByLabel("Truck's current load",{exact:true})).toHaveValue('EMPTY');
   await expect(dialog.getByLabel('In or near a city',{exact:true})).not.toHaveValue('');
   await drawer.evaluate(async(element:HTMLElement)=>{await Promise.all(element.getAnimations().map(animation=>animation.finished));});
   await drawer.locator('.capacity-drawer-heading').scrollIntoViewIfNeeded();
@@ -97,7 +97,7 @@ async function exercise(page:any,info:any,path:string,api:string){
   await expect(dialog.getByRole('combobox',{name:'Space needed',exact:true})).toHaveValue('PTL');
   await dialog.getByRole('link',{name:'Clear',exact:true}).click();await expect(page).toHaveURL(new RegExp(`${path==='/'?'/$':'/\\?view=private$'}`));
   await openDrawer(page);
-  await expect(dialog.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(dialog.getByLabel("Truck's current load",{exact:true})).toHaveValue('');
   await expect(dialog.locator('.capacity-configuration-picker input[value=""]')).toBeChecked();
   await expect(dialog.getByLabel('In or near a city',{exact:true})).toHaveValue('');
   await expect(dialog.locator('input[name="truckCityPlaceRef"]')).toHaveValue('');
@@ -168,7 +168,7 @@ async function exerciseUnfilteredReset(page:any,info:any,path:string,api:string)
   const baseline=requests.at(-1)!.searchParams.get('viewport')!;
   const drawer=page.locator('#capacity-filter-drawer');
   const dialog=await openCapacityFilterDialog(page);
-  await dialog.getByLabel('Availability',{exact:true}).selectOption('PARTIAL');
+  await dialog.getByLabel("Truck's current load",{exact:true}).selectOption('PARTIAL');
   await dialog.getByLabel('In or near a city',{exact:true}).fill('Adama');
   await dialog.locator('#capacity-truck-city-results .place-result').first().click();
   await page.keyboard.press('Escape');await closeCapacityFilters(page);
@@ -180,7 +180,7 @@ async function exerciseUnfilteredReset(page:any,info:any,path:string,api:string)
   await openDrawer(page);const beforeClear=requests.length;
   await drawer.getByRole('link',{name:'Clear all',exact:true}).click();
   await openDrawer(page);
-  await expect(dialog.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(dialog.getByLabel("Truck's current load",{exact:true})).toHaveValue('');
   await expect(dialog.getByLabel('In or near a city',{exact:true})).toHaveValue('');
   await expect(dialog.locator('input[name="truckCityPlaceRef"]')).toHaveValue('');
   await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
@@ -216,13 +216,13 @@ test('Clear all removes applied filters and the selected truck before loading th
   expect((await response.json()).items.length).toBeGreaterThan(0);
   await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
   await openDrawer(page);
-  await expect(dialog.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await expect(dialog.getByLabel("Truck's current load",{exact:true})).toHaveValue('');
   await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toHaveValue('');
   // The modal's Clear action must also discard edits on this same unfiltered URL.
   await openCapacityFilterDialog(page);
-  await dialog.getByLabel('Availability',{exact:true}).selectOption('PARTIAL');
+  await dialog.getByLabel("Truck's current load",{exact:true}).selectOption('PARTIAL');
   await page.getByRole('dialog',{name:'Filters'}).getByRole('link',{name:'Clear',exact:true}).click();
-  await openDrawer(page);await expect(dialog.getByLabel('Availability',{exact:true})).toHaveValue('');
+  await openDrawer(page);await expect(dialog.getByLabel("Truck's current load",{exact:true})).toHaveValue('');
   await expect(page.getByRole('dialog',{name:'Filters'})).not.toBeVisible();
   await page.screenshot({path:info.outputPath('clear-all-selected-truck.png'),scale:'css'});
 });

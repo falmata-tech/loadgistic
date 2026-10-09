@@ -1,6 +1,6 @@
 // Server-checked signed subject; a legacy shipment cookie never becomes email-wide.
-export const TRACKING_IDLE_MS=30*60*1000;
-export const TRACKING_ABSOLUTE_MS=8*60*60*1000;
+export const TRACKING_IDLE_MS=5*60*1000;
+export const TRACKING_ABSOLUTE_MS=5*60*1000;
 export const TRACKING_RENEW_AFTER_MS=60*1000;
 export function trackingSessionSubject(recipientDigest,startedAt){
  if(!/^[a-f0-9]{64}$/.test(recipientDigest)||!Number.isSafeInteger(startedAt))throw new Error('INVALID_TRACKING_SESSION');

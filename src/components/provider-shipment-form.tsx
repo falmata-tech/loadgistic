@@ -1,4 +1,6 @@
 "use client";
+import {DatePicker} from '@/components/date-picker';
+
 
 
 import {browserRequest} from '@/lib/browser-request';
@@ -11,7 +13,7 @@ import { EthiopiaPlaceInput } from './ethiopia-place-input';
 type Vehicle={id:string;platform_number:string;make:string;model:string;cargo_configuration?:string;category?:string};
 type Created={id:string;code:string;trackingCode:string;trackingPath:string};
 
-export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
+export function ProviderShipmentForm({vehicles,lockVehicleSelection=false}:{vehicles:Vehicle[];lockVehicleSelection?:boolean}){
   const {t}=useTranslation();const pending=React.useRef(false);
   const [uncertain,setUncertain]=React.useState(false);
   const [created,setCreated]=React.useState(null as Created|null);
@@ -50,20 +52,20 @@ export function ProviderShipmentForm({vehicles}:{vehicles:Vehicle[]}){
     {error?<div className="flash error" role="alert">{t(error)}</div>:null}
     {uncertain?<Link className="button secondary" href="/app/provider-shipments"><Text message="Check my Tracking list"/></Link>:null}
     <section><div className="section-heading-icon"><Truck aria-hidden="true"/><div><h2><Text message="Truck and tracking"/></h2><p className="meta"><Text message="Start Tracking once you and your customer have agreed the work."/></p></div></div><div className="form-grid">
-      <div className="form-group full"><label htmlFor="provider-shipment-vehicle"><Truck aria-hidden="true"/><Text message="Truck"/></label><select id="provider-shipment-vehicle" name="vehicleId" required defaultValue=""><option value="" disabled><Text message="Choose a truck"/></option>{vehicles.map(vehicle=><option key={vehicle.id} value={vehicle.id}>{vehicle.platform_number} · {vehicle.make} {vehicle.model} · {vehicle.cargo_configuration||vehicle.category}</option>)}</select></div>
+      {lockVehicleSelection?<div className="form-group full"><span className="field-label"><Text message="My truck"/></span><strong>{vehicles[0]?.make} {vehicles[0]?.model} · {vehicles[0]?.platform_number}</strong><input type="hidden" name="vehicleId" value={vehicles[0]?.id||''}/></div>:<div className="form-group full"><label htmlFor="provider-shipment-vehicle"><Truck aria-hidden="true"/><Text message="Truck"/></label><select id="provider-shipment-vehicle" name="vehicleId" required defaultValue=""><option value="" disabled><Text message="Choose a truck"/></option>{vehicles.map(vehicle=><option key={vehicle.id} value={vehicle.id}>{vehicle.platform_number} · {vehicle.make} {vehicle.model} · {vehicle.cargo_configuration||vehicle.category}</option>)}</select></div>}
       <div className="form-group full"><label htmlFor="cargo-summary"><PackageCheck aria-hidden="true"/><Text message="Cargo summary"/></label><Localized as="input" copy={["placeholder"]} id="cargo-summary" name="cargoSummary" minLength={3} maxLength={500} required placeholder="Coffee bags · partial space"/></div>
     </div></section>
     <section><div className="section-heading-icon"><Route aria-hidden="true"/><div><h2><Text message="Route"/></h2><p className="meta"><Text message="Choose recognizable Ethiopian places. Exact loading details are coordinated offline."/></p></div></div><div className="form-grid">
       <div className="form-group"><label htmlFor="shipment-origin"><MapPin aria-hidden="true"/><Text message="Origin"/></label><EthiopiaPlaceInput id="shipment-origin" name="origin" placeRefName="originPlaceRef" required placeholder="Search origin"/></div>
       <div className="form-group"><label htmlFor="shipment-destination"><MapPin aria-hidden="true"/><Text message="Destination"/></label><EthiopiaPlaceInput id="shipment-destination" name="destination" placeRefName="destinationPlaceRef" required placeholder="Search destination"/></div>
-      <div className="form-group"><label htmlFor="expected-pickup"><CalendarDays aria-hidden="true"/><Text message="Expected pickup "/><span className="meta"><Text message="(optional)"/></span></label><input id="expected-pickup" name="expectedPickupDate" type="date"/></div>
-      <div className="form-group"><label htmlFor="expected-delivery"><CalendarDays aria-hidden="true"/><Text message="Expected delivery "/><span className="meta"><Text message="(optional)"/></span></label><input id="expected-delivery" name="expectedDeliveryDate" type="date"/></div>
+      <div className="form-group"><label htmlFor="expected-pickup"><CalendarDays aria-hidden="true"/><Text message="Expected pickup "/><span className="meta"><Text message="(optional)"/></span></label><DatePicker id="expected-pickup" name="expectedPickupDate" /></div>
+      <div className="form-group"><label htmlFor="expected-delivery"><CalendarDays aria-hidden="true"/><Text message="Expected delivery "/></label><DatePicker id="expected-delivery" name="expectedDeliveryDate" required label="Expected delivery"/></div>
     </div></section>
-    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2><Text message="People who can track this shipment"/></h2><p className="meta"><Text message="The customer owner receives the completion record and review invitation. Add brokers, shippers or receivers who should also follow this shipment."/></p></div></div><div className="form-grid">
-      <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/><Text message="Main customer email"/></label><input id="customer-email" name="customerEmail" type="email" required autoComplete="off"/></div>
+    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2><Text message="People who can track this shipment"/></h2><p className="meta"><Text message="The shipment owner approves unloading. Add other people who should follow the updates."/></p></div></div><div className="form-grid">
+      <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/><Text message="Shipment owner email"/></label><input id="customer-email" name="customerEmail" type="email" required autoComplete="off"/></div>
       <div className="form-group full"><label htmlFor="additional-recipient-emails"><Mail aria-hidden="true"/><Text message="Additional tracking emails "/><span className="meta"><Text message="(optional)"/></span></label><textarea id="additional-recipient-emails" name="additionalRecipientEmails" rows={3} placeholder={'dispatch@example.com\nreceiver@example.com'} aria-describedby="additional-recipient-help"/><small id="additional-recipient-help" className="meta"><Text message="Enter one email per line, up to 20. Each person verifies their own email before viewing updates."/></small></div>
     </div></section>
-    <fieldset className="tracking-mode-choice"><legend><LocateFixed aria-hidden="true"/><Text message="Updates shared with the customer"/></legend><label><input type="radio" name="trackingMode" value="STATUS_ONLY" defaultChecked/><span><strong><Text message="Status only"/></strong><small><Text message="Shares the shipment timeline without Driver location."/></small></span></label><label><input type="radio" name="trackingMode" value="LOCATION_AND_STATUS"/><span><strong><Text message="Status and approximate location"/></strong><small><Text message="During travel to pickup and delivery, the assigned Driver shares an obscured area from their phone."/></small></span></label></fieldset>
+    <fieldset className="tracking-mode-choice"><legend><LocateFixed aria-hidden="true"/><Text message="Updates shared with the customer"/></legend><label><input type="radio" name="trackingMode" value="STATUS_ONLY" defaultChecked/><span><strong><Text message="Status only"/></strong><small><Text message="Shares the shipment timeline without Driver location."/></small></span></label><label><input type="radio" name="trackingMode" value="LOCATION_AND_STATUS"/><span><strong><Text message="Status and approximate location"/></strong><small><Text message="The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment."/></small></span></label></fieldset>
     <button className="button" disabled={submitting||uncertain||!vehicles.length}>{submitting?<LoaderCircle className="spin" aria-hidden="true"/>:<KeyRound aria-hidden="true"/>}{submitting?<Text message="Starting Tracking…"/>:<Text message="Start Tracking"/>}</button>
   </form>;
 }

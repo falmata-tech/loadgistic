@@ -1,3 +1,4 @@
+import {DatePicker} from '../components/date-picker';
 import {useLanguage} from '../localization/provider';
 import {documentSubjects,type DocumentScope} from '../navigation/document-scope';
 import { useRef, useState } from 'react';
@@ -19,7 +20,7 @@ export default function Documents({embedded=false,scope}:{embedded?:boolean;scop
  if (account.busy) return <Page embedded={embedded}><ActivityIndicator /></Page>;
  if (!account.session) return <Redirect href="/account" />;
  return <Page embedded={embedded}>{!embedded&&<Title message={"Your documents"}/>}<Copy message={"Submit documents for review. Each review belongs to the company, driver or truck shown below."}/><ErrorText message={query.error} /><Button secondary message="Refresh documents" busy={query.loading} onPress={() => { void query.reload(); }} />
-  {subjects.map(subject => <Card key={subject.kind + subject.id}><Title>{subject.name}</Title><Copy>{t(subject.kind === 'ORGANIZATION' ? 'Company' : subject.kind === 'VEHICLE' ? 'Truck' : subject.kind === 'DRIVER' ? 'Driver' : 'Transporter')}</Copy>
+  {subjects.map(subject => <Card key={subject.kind + subject.id}><Title>{scope?.kind==='ACCOUNT'&&scope.includeDriver&&subject.kind==='PROVIDER_PROFILE'&&account.session!.user.role==='DRIVER'?account.session!.user.name:subject.name}</Title><Copy>{t(scope?.kind==='ACCOUNT'&&scope.includeDriver&&subject.kind==='PROVIDER_PROFILE'&&account.session!.user.role==='DRIVER'?'Driver':subject.kind === 'ORGANIZATION' ? 'Company' : subject.kind === 'VEHICLE' ? 'Truck' : subject.kind === 'DRIVER' ? 'Driver' : 'Transporter')}</Copy>
    {subject.badges.map((badge, index) => <Copy key={badge.type + index}>{t(labels[badge.type] || badge.type)}{badge.vehicleLabel ? ` · ${badge.vehicleLabel}` : ''}: {t(badge.verified ? 'Loadgistic reviewed' : badge.expired ? 'Expired' : 'Not reviewed')}{badge.expiresOn ? ' · '+t('Expires {date}.',{date:badge.expiresOn}) : ''}</Copy>)}
    {query.data?.requests.filter(item => item.subjectId === subject.id && item.subjectKind === subject.kind).map(item => <View key={item.id} style={{ gap: 6, paddingVertical: 12 }}><Copy>{item.name || t(labels[item.type])} · {t(item.status === 'PENDING' ? 'Awaiting review' : item.status === 'APPROVED' ? 'Reviewed' : 'Not approved')}</Copy>{!!item.note && <Copy>{item.note}</Copy>}<PrivateFile label={`Open ${item.name || t(labels[item.type])}`} load={() => account.request(`/api/mobile/verification/${item.id}`)} /></View>)}
    {!!subject.allowedTypes.length && <Submit key={subject.allowedTypes.join(',')} subject={subject} reload={query.reload} />}
@@ -30,6 +31,7 @@ function Submit({ subject, reload }: { subject: Subject; reload: () => Promise<v
  const {t}=useLanguage();
  const account = useAccount(), selection = useFileSelection();
  const [open, setOpen] = useState(false), [type, setType] = useState(''), [name, setName] = useState(''), [vehicle, setVehicle] = useState(''), [expiry, setExpiry] = useState('');
+ const [minimumDate]=useState(()=>new Date(Date.now()+86_400_000).toISOString().slice(0,10));
  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''); const lock = useRef(false);
  async function submit() {
   if (!selection.file || lock.current) return; lock.current = true; setBusy(true); setError(''); setMessage('');
@@ -39,7 +41,7 @@ function Submit({ subject, reload }: { subject: Subject; reload: () => Promise<v
   finally { lock.current = false; setBusy(false); }
  }
  return <><ErrorText message={error} />{!!message && <Copy>{t(message)}</Copy>}{!open ? <Button message="Submit a document" onPress={() => setOpen(true)} /> : <><Copy message={"Document type"}/><Choices value={type} options={subject.allowedTypes.map(id => ({ id, label: t(labels[id] || id) }))} onChange={setType} disabled={busy} /><Field message="Document name (optional)" value={name} onChangeText={setName} maxLength={150} editable={!busy} />
-  {type === 'VEHICLE_AUTHORIZATION' && <>{subject.kind !== 'VEHICLE' && <><Copy message={"Truck covered by this permission"}/><Choices value={vehicle} options={subject.vehicles.map(item => ({ id: item.id, label: item.label }))} onChange={setVehicle} disabled={busy} /></>}<Field message="Permission valid until (YYYY-MM-DD)" value={expiry} onChangeText={setExpiry} placeholder="2027-12-31" maxLength={10} editable={!busy} /></>}
+  {type === 'VEHICLE_AUTHORIZATION' && <>{subject.kind !== 'VEHICLE' && <><Copy message={"Truck covered by this permission"}/><Choices value={vehicle} options={subject.vehicles.map(item => ({ id: item.id, label: item.label }))} onChange={setVehicle} disabled={busy} /></>}<DatePicker message="Permission expires" value={expiry} onChange={setExpiry} min={minimumDate} required disabled={busy} /></>}
   <FilePicker file={selection.file} onChange={selection.setFile} disabled={busy} /><Button message="Send for review" busy={busy} disabled={!type || !selection.file || type === 'VEHICLE_AUTHORIZATION' && (!expiry || subject.kind !== 'VEHICLE' && !vehicle)} onPress={() => { void submit(); }} /><Button secondary message="Cancel submission" disabled={busy} onPress={() => { setOpen(false); selection.setFile(null); }} />
  </>}</>;
 }

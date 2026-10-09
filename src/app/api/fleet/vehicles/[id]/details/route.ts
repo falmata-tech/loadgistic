@@ -10,7 +10,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;const form=await request.formData();
   try{
     await updateProviderVehicleDetails(user,id,{make:text(form,'make'),model:text(form,'model'),
-      plate:text(form,'plate'),cargoConfiguration:text(form,'cargoConfiguration')});
+      plate:text(form,'plate'),cargoConfiguration:text(form,'cargoConfiguration'),useBasis:text(form,'useBasis')});
     return redirectWith(request,`/app/fleet/${id}`,'success','Truck details updated.');
   }catch(error){return redirectWith(request,`/app/fleet/${id}`,'error',errorMessage(error));}
 }

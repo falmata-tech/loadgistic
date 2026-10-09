@@ -19,7 +19,7 @@ export function trackingNextStatuses(status) {
   const transitions = {
     CREATED: ['TO_PICKUP', 'LOADING', 'ISSUE'], TO_PICKUP: ['LOADING', 'ISSUE'],
     LOADING: ['IN_TRANSIT', 'ISSUE'], IN_TRANSIT: ['UNLOADING', 'ISSUE'],
-    UNLOADING: ['COMPLETED', 'ISSUE'], ISSUE: ['TO_PICKUP', 'LOADING', 'IN_TRANSIT', 'UNLOADING']
+    UNLOADING: ['ISSUE'], ISSUE: ['TO_PICKUP', 'LOADING', 'IN_TRANSIT', 'UNLOADING']
   };
   return Object.hasOwn(transitions, status) ? [...transitions[status]] : [];
 }

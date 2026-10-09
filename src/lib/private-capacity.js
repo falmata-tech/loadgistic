@@ -1,5 +1,6 @@
 import {
   grantSupabasePrivateCapacityAccess,
+  nameSupabasePrivateCapacityContact,
   listSupabaseLoadgisticSharedCapacity,
   listSupabasePrivateCapacityNetwork,
   listSupabaseSharedCapacity,
@@ -11,6 +12,7 @@ import {
 
 export const listPrivateCapacityNetwork=listSupabasePrivateCapacityNetwork;
 export const grantPrivateCapacityAccess=grantSupabasePrivateCapacityAccess;
+export const namePrivateCapacityContact=nameSupabasePrivateCapacityContact;
 export const setLoadgisticCapacityAccess=setSupabaseLoadgisticCapacityAccess;
 export const revokePrivateCapacityAccess=revokeSupabasePrivateCapacityAccess;
 export const requestSharedCapacityOtp=requestSupabaseSharedCapacityOtp;

@@ -11,6 +11,69 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+### Scenario: map overview keeps load preferences in details
+
+Given public or private capacity discovery renders web or mobile markers
+Then do not print Full only, Shared only or Full or shared beneath truck icons
+And preserve Empty/Partial status colors and separate clusters
+And selecting a truck still shows its saved accepted loads in truck details
+And shipment-space filters continue matching the saved preference, including
+full-only, shared-only and either; this visual change does not alter matching.
+
+### Scenario: current space and accepted loads are different facts
+
+Owner map-view correction, October 7: public/private discovery maps permit panning
+beyond Ethiopia/East Africa, including other African regions and the Middle East.
+Keep a useful initial camera, filters/selection restoration, valid world viewport
+coordinates and normal zoom limits; a regional camera clamp must not recenter the
+user's exploration. This changes map navigation, not catalog or location-command
+coverage. Empty viewports do not invent trucks or reset the camera. Check both
+desktop and phone navigation and the native/browser adapter.
+
+Owner location correction, October 7: authorized driver-submitted approximate
+locations accept finite worldwide latitude [-90,90] and longitude [-180,180],
+including zero, regardless of the user's country. First location, capacity saves,
+refresh and duty updates retain assignment/owner authority and privacy radii.
+Only the on-device obscured fix leaves the capture callback; dateline wrapping
+must keep the same distance/radius and produce valid longitude. Unknown or
+invalid coordinates remain denied. Where no catalog town is nearby, use a neutral
+approximate-area label and nullable catalog reference, not a false Ethiopian town
+or invented catalog ID. Route/area selection still uses actual catalog places.
+The additive migration updates only named constraints/functions and preserves RLS,
+ACLs, null checks, existing history, audit and lifecycle controls. Rehearse locally
+and verify exact function/constraint inventory before any separately approved
+hosted apply. Rollback should first roll back the application; a bounds rollback
+cannot invalidate retained worldwide records and is not an automatic data deletion.
+
+Given an authorized provider sets Empty in the main capacity editor
+Then show Full loads only, Shared loads only and Full or shared as its three
+accepted-load choices, with a short explanation of the selected choice.
+The Loads editor uses the same values and wording. Partial means remaining
+space for shared loads and cannot accept a full-truck load. Optional multiple
+pickup/drop-off choices remain separate and are preserved by focused saves.
+
+Given a visitor reads an Empty marker or truck details on web or native
+Then show its actual saved load preference as well as physical capacity status;
+do not infer full-load acceptance from Empty alone or missing/invalid flags.
+Clusters remain status-separated and colored/text-labeled Empty or Partial.
+
+| Saved status / accepted loads | Full-truck search | Shared-space search |
+| --- | --- | --- |
+| Empty / FTL | included | excluded |
+| Empty / PTL | excluded | included |
+| Empty / BOTH | included | included |
+| Partial / PTL | excluded | included |
+| Off Duty | excluded | excluded |
+
+Given filters offer Space needed and Truck's current load
+Then describe requested full/shared space independently from Empty/Partly loaded
+occupancy. Existing full-versus-partial contradiction handling remains explicit.
+Public, authorized private, profile results and truck markers apply the same
+saved acceptance flags. Driver/truck assignment, owner permission, approximate
+location, geometry and private grants remain authoritative at the server command.
+Validate this matrix through actual save/read/search and negative permissions,
+not solely a UI snapshot. New schema or hosted changes require separate review.
+
 ### Scenario: current availability uses a Service area or Capacity route
 
 Given an authorized fleet owner or Driver publishes current capacity for one truck\

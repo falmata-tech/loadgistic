@@ -2,26 +2,9 @@
 
 
 import {Text,Localized} from '@/components/localization';
-import React from 'react';
-import {CalendarClock,CheckCircle2,Settings2,Sparkles} from 'lucide-react';
+import {CalendarClock,Sparkles} from 'lucide-react';
 
-type Controls={access_mode:string;featured_mode:string;featured_target_count:number};
-
-export function AccessControlsForm({controls}:{controls:Controls}){
-  const [mode,setMode]=React.useState(controls.access_mode);
-  const activating=mode==='TRIAL_PAYMENT'&&controls.access_mode==='FREE';
-  return <form action="/api/admin/settings" method="post" className="card platform-control-card">
-    <input type="hidden" name="section" value="ACCESS"/>
-    <header><Settings2 aria-hidden="true"/><div><h2><Text message="Workspace access"/></h2><p><Text message="Choose when trials and payments begin."/></p></div></header>
-    <fieldset className="platform-mode-options"><legend className="sr-only"><Text message="Access mode"/></legend>
-      <label className={mode==='FREE'?'selected':''}><input type="radio" name="mode" value="FREE" checked={mode==='FREE'} onChange={()=>setMode('FREE')}/><span><strong><Text message="Free access"/></strong><small><Text message="No trial countdown or payment required."/></small></span></label>
-      <label className={mode==='TRIAL_PAYMENT'?'selected':''}><input type="radio" name="mode" value="TRIAL_PAYMENT" checked={mode==='TRIAL_PAYMENT'} onChange={()=>setMode('TRIAL_PAYMENT')}/><span><strong><Text message="Trial, then payment"/></strong><small><Text message="Seven days free, then an active paid plan."/></small></span></label>
-    </fieldset>
-    {activating?<label className="platform-activation-confirm"><input type="checkbox" name="confirm" value="ENABLE" required/><span><Text message="Start a fresh seven-day trial for existing unpaid providers. Payment will be required afterwards."/></span></label>:null}
-    <p className="meta"><Text message="Existing payments and account history are kept. Changing this never charges anyone automatically."/></p>
-    <button className="button"><CheckCircle2 aria-hidden="true"/><Text message="Save access mode"/></button>
-  </form>;
-}
+type Controls={featured_mode:string;featured_target_count:number};
 
 export function FeaturedControlsForm({controls}:{controls:Pick<Controls,'featured_mode'|'featured_target_count'>}){
   return <Localized as="section" copy={["aria-label"]} className="card platform-control-card" aria-label="Featured selection settings"><header><Sparkles aria-hidden="true"/><div><h2><Text message="Daily selection"/></h2><p><Text message="Choose automatically by the day’s truck type, or curate each day."/></p></div></header>

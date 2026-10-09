@@ -13,6 +13,6 @@ test('payment command has bounded ETB precision and rejects client-selected acco
 test('billing excludes private references and blocks free or sponsored payment entry while showing limited-account history', () => {
  const input = { subscription: { id: 'subscription', plan_name: 'Fleet', organization_id: 'secret' }, proofPage: { items: [{ id: 'proof', amount_minor: 500, reference: 'transfer', storage_path: 'secret', status: 'PENDING', has_file: true }], page: 2, pageCount: 3 } };
  for (const status of ['FREE_ACCESS', 'SPONSORED']) assert.equal(billingSummary(input, { status }).canSubmit, false);
- const limited = billingSummary(input, { status: 'EXPIRED_UNPAID', granted: false }); assert.equal(limited.canSubmit, true); assert.equal(limited.granted, false); assert.equal(limited.page, 2); assert.equal(limited.proofs[0].hasFile, true); assert.equal(JSON.stringify(limited).includes('secret'), false);
+ const limited = billingSummary(input, { status: 'EXPIRED_UNPAID', granted: false }); assert.equal(limited.canSubmit, false); assert.equal(limited.granted, false); assert.equal(limited.page, 2); assert.equal(limited.proofs[0].hasFile, true); assert.equal(JSON.stringify(limited).includes('secret'), false);
  assert.equal(billingSummary({}, { status: 'ACTIVE' }).canSubmit, false);
 });

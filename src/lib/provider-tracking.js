@@ -99,3 +99,8 @@ export async function resolveProviderReview(user,reviewId,status,note=''){
 }
 
 export {requestTrackingEmailSession,verifyTrackingEmailSession,listTrackingEmailShipments,submitTrackingEmailReview} from './provider-tracking/supabase.js';
+
+export {approveSupabaseProviderHandover as approveProviderHandover,
+ submitSupabaseProviderTrackingAppeal as submitProviderTrackingAppeal,
+ listSupabaseProviderTrackingAppeals as listProviderTrackingAppeals,
+ resolveSupabaseProviderTrackingAppeal as resolveProviderTrackingAppeal} from './provider-tracking/supabase.js';

@@ -1,6 +1,7 @@
 import {verificationBadgesFromApproved,truckDocumentBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
 import {loadPublicProviderFleet,publicFleetVehicleIds,publicProviderRegularService} from '../public-provider-paging.js';
+import {privateCapacityContactName} from '../private-capacity-contact.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
 import {randomUUID} from 'node:crypto';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
@@ -109,8 +110,7 @@ async function capacityOwnerBadges(client,rows){
 
 function providerKindLabel(value){
   if(value==='FLEET_TRANSPORTER')return 'Company driver';
-  if(value==='OWNER_OPERATOR')return 'Owner-operator';
-  return 'Self-managed driver';
+  return 'Independent driver';
 }
 
 
@@ -122,12 +122,12 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
   if(resolved.filterError)return {items:[],hasMore:false,nextCursor:null,pageSize:pageSize,filterError:resolved.filterError};
   const [originPlace,destinationPlace,areaPlace,truckCity]=resolved.places;
   const nearLat=truckCity?.center_lat??Number(filters.nearLat),nearLng=truckCity?.center_lng??Number(filters.nearLng);
-  const hasNear=Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
   let query;
   try{query={...capacityDatabaseFilters(filters,resolved.places),
     ...(filters.vehicleIds!==undefined?{vehicle_ids:publicFleetVehicleIds(filters.vehicleIds)}:{}),
     provider_organization_id:filters.providerOrganizationId||null,provider_profile_id:filters.providerProfileId||null};}
   catch{return {items:[],hasMore:false,nextCursor:null,pageSize,filterError:'Map bounds are invalid. Move the map and try again.'};}
+  const hasNear=query.near_lat!==null&&query.near_lng!==null;
   if(options.overview&&query.viewport){
     const {data,error}=await client.rpc('public_capacity_clusters',{query});
     if(error)throw new Error('SUPABASE_PUBLIC_CAPACITY_FAILED',{cause:error});
@@ -188,6 +188,8 @@ function managedCapacityError(code,error){
   const message=String(error?.message||'');
   if(/NOT_FOUND/.test(message))return new Error('NOT_FOUND');
   if(/FORBIDDEN/.test(message))return new Error('FORBIDDEN');
+  if(/EXCLUSIVE_RECIPIENT_ONLY/.test(message))return new Error('EXCLUSIVE_RECIPIENT_ONLY');
+  if(/CONTACT_NAME_REQUIRED/.test(message))return new Error('CONTACT_NAME_REQUIRED');
   if(/INVALID_EMAIL/.test(message))return new Error('INVALID_EMAIL');
   return new Error(code,{cause:error});
 }
@@ -201,12 +203,22 @@ export async function listSupabasePrivateCapacityNetwork(user){
 
 export async function grantSupabasePrivateCapacityAccess(user,input){
   const email=normalizePrivateContactEmail(input.email);
+  const name=privateCapacityContactName(input.name);
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('grant_private_capacity_access',{
+  const {data,error}=await client.rpc('grant_named_private_capacity_access',{
     actor_user_id:user.id,target_vehicle_id:String(input.vehicleId||''),
-    normalized_recipient_email:email,recipient_digest:privateContactDigest(email)
+    normalized_recipient_email:email,recipient_digest:privateContactDigest(email),contact_name:name
   });
   if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_GRANT_FAILED',error);
+  return data;
+}
+
+export async function nameSupabasePrivateCapacityContact(user,input){
+  const name=privateCapacityContactName(input.name),client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('name_private_capacity_contact',{
+    actor_user_id:user.id,target_grant_id:String(input.grantId||''),contact_name:name
+  });
+  if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_NAME_FAILED',error);
   return data;
 }
 
@@ -296,11 +308,11 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   if(resolved.filterError)return {items:[],hasMore:false,nextCursor:null,pageSize:100,filterError:resolved.filterError};
   const [originPlace,destinationPlace,areaPlace,truckCity]=resolved.places;
   const nearLat=truckCity?.center_lat??Number(filters.nearLat),nearLng=truckCity?.center_lng??Number(filters.nearLng);
-  const hasNear=Number.isFinite(nearLat)&&nearLat>=3&&nearLat<=15&&Number.isFinite(nearLng)&&nearLng>=32&&nearLng<=49;
   const pageSize=Math.max(12,Math.min(100,Number(options.pageSize)||100));
   let query;
   try{query=capacityDatabaseFilters(filters,resolved.places);}
   catch{return {items:[],hasMore:false,nextCursor:null,pageSize,filterError:'Map bounds are invalid. Move the map and try again.'};}
+  const hasNear=query.near_lat!==null&&query.near_lng!==null;
   const cursor=decodePublicCursor(options.cursor);
   const {data,error}=await client.rpc('private_capacity_filtered_page',{
     requested_audience:audience,requested_digest:emailDigest,actor_user_id:actorUserId,
@@ -458,7 +470,7 @@ export async function getSupabasePublicProvider(handle,options={}){
   const assignmentByVehicle=new Map(assignments.map(assignment=>[assignment.vehicle_id,assignment.driver_user_id]));
   const driverNameById=new Map((driverProfileResult.data||[]).map(driver=>[driver.id,driver.first_name]));
   const driverPhoneById=new Map((driverRecordResult.data||[]).map(driver=>[driver.user_id,driver.phone]));
-  const providerKind=owner.kind==='ORGANIZATION'?'FLEET_TRANSPORTER':vehicleResult.owner_operator?'OWNER_OPERATOR':'SELF_MANAGED_DRIVER';
+  const providerKind=owner.kind==='ORGANIZATION'?'FLEET_TRANSPORTER':'SELF_MANAGED_DRIVER';
   const capacityPage=vehicleIds.length?await listSupabasePublicCapacityCursor({...capacityFilter,vehicleIds},{pageSize:12}):{items:[]};
   const capacities=capacityPage.items;
   const capacityByVehicle=new Map(capacities.map(capacity=>[capacity.vehicle_id,capacity]));

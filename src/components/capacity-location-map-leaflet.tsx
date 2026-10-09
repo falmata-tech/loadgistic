@@ -8,7 +8,6 @@ import L from 'leaflet';
 import { BaseMapTiles } from '@/components/base-map-tiles';
 
 type Point={lat:number;lng:number};type PlacePoint=Point&{label:string};type RegularSignal={id:string;geometry:'ROUTE'|'RADIUS';route_points:PlacePoint[];area_boundary:PlacePoint[];area_center_lat?:number;area_center_lng?:number;area_center_label?:string};
-const EAST_AFRICA_MAP_BOUNDS:L.LatLngBoundsExpression=[[-12.5,28],[18,52.5]];
 
 function Bounds({center,radiusKm,areaCenter,areaBoundary,routePoints,regularSignals}:{center:Point;radiusKm:number;areaCenter:Point|null;areaBoundary:PlacePoint[];routePoints:PlacePoint[];regularSignals:RegularSignal[]}){const map=useMap();React.useEffect(()=>{const bounds=L.latLng(center.lat,center.lng).toBounds(Math.max(radiusKm,5)*2200);if(areaCenter)bounds.extend([areaCenter.lat,areaCenter.lng]);areaBoundary.forEach(point=>bounds.extend([point.lat,point.lng]));routePoints.forEach(point=>bounds.extend([point.lat,point.lng]));regularSignals.forEach(signal=>(signal.geometry==='RADIUS'?signal.area_boundary:signal.route_points).forEach(point=>bounds.extend([point.lat,point.lng])));const compact=map.getSize().x<=760;map.fitBounds(bounds,{paddingTopLeft:[compact?16:24,compact?88:76],paddingBottomRight:[compact?76:116,compact?112:94],maxZoom:11,animate:false});},[areaBoundary,areaCenter,center.lat,center.lng,map,radiusKm,regularSignals,routePoints]);return null;}
 
@@ -19,7 +18,7 @@ export function CapacityLocationMapLeaflet({center,radiusKm,areaCenter=null,area
   const capacityLabel=availabilityStatus==='PARTIAL'?'Partial availability':'Empty availability';
   const currentTooltipClass=`capacity-route-tooltip ${availabilityStatus==='PARTIAL'?'partial':'empty'}`;
   return <div className="capacity-location-map" aria-label={`${radiusKm} kilometre approximate truck location`}>
-    <MapContainer center={[center.lat,center.lng]} zoom={8} minZoom={5} maxZoom={13} maxBounds={EAST_AFRICA_MAP_BOUNDS} maxBoundsViscosity={0.85} scrollWheelZoom={false} dragging>
+    <MapContainer center={[center.lat,center.lng]} zoom={8} minZoom={2} maxZoom={13} scrollWheelZoom={false} dragging>
       <BaseMapTiles/>
       <ResizeMap/>
       <Bounds center={center} radiusKm={radiusKm} areaCenter={areaCenter} areaBoundary={areaBoundary} routePoints={routePoints} regularSignals={regularSignals}/>

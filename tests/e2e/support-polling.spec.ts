@@ -1,10 +1,10 @@
 import {test,expect} from '@playwright/test';
-import {localAuditService,checked,auditLogin,auditProvider} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditProvider,auditIdentity} from './audit-helpers';
 
 test('Support skips unchanged transcripts, preserves drafts and rechecks access before 304',async({page,browser}:{page:any;browser:any},info:any)=>{
  test.setTimeout(180000);const service=localAuditService();let actor:any;let chat='';let staff:any;
  try{
-  actor=await auditProvider(service,'polling');const agent=checked(await service.from('profiles').select('id').eq('email','support@loadgistic.local').single());
+  actor=await auditProvider(service,'polling');const agent=await auditIdentity(service,'support@loadgistic.local');
   chat=checked(await service.from('support_conversations').insert({customer_user_id:actor.id,assigned_agent_user_id:agent.id,category:'ACCOUNT',status:'OPEN'}).select('id').single()).id;
   checked(await service.from('support_messages').insert({conversation_id:chat,sender_user_id:actor.id,body:'Polling audit conversation'}));
   await auditLogin(page,actor.email);await page.goto(`/app/support?conversation=${chat}`);

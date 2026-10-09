@@ -5,7 +5,7 @@ const choices = {
 };
 const documents = { ownerDocs: ['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS'], driverDocs: ['IDENTITY','DRIVER_IDENTITY'], truckDocs: ['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION'] };
 const strings = ['q','provider','truck','vehicleCategory','truckCityPlaceRef','originPlaceRef','destinationPlaceRef'];
-const numbers = { page:[1,10000], truckLocationRadiusKm:[5,300], originRadiusKm:[5,300], destinationRadiusKm:[5,300], nearLat:[3,15], nearLng:[32,49], nearRadiusKm:[5,300] };
+const numbers = { page:[1,10000], truckLocationRadiusKm:[5,300], originRadiusKm:[5,300], destinationRadiusKm:[5,300], nearLat:[-90,90], nearLng:[-180,180], nearRadiusKm:[5,300] };
 export function discoveryFilters(params) {
  const result = {};
  const fail = () => { throw new Error('INVALID_DISCOVERY_FILTER'); };
@@ -29,7 +29,7 @@ const text=v=>typeof v==='string'?v:'';
 export function discoveryProfiles(result) {
  if (result.filterError) throw new Error('INVALID_DISCOVERY_FILTER');
  return { items:(result.items||[]).filter(row=>kinds.has(row.kind)&&row.matching_trucks>0).map(row=>({
-  key:text(row.key), kind:row.kind,title:text(row.title),description:text(row.description),
+  key:text(row.key), kind:row.kind==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER':row.kind,title:text(row.title),description:text(row.description),
   handle:text(row.handle),city:text(row.city),matchingTrucks:row.matching_trucks,
   capacityId:row.kind==='COMPANY_DRIVER'?text(row.capacity_id):'',
  })), total:result.total,page:result.page,pageSize:result.pageSize,hasMore:result.hasMore };

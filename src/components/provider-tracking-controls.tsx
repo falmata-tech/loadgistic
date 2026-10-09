@@ -5,9 +5,9 @@ import {Text,Localized,useTranslation} from '@/components/localization';
 import React from 'react';
 import { Check, CircleCheckBig, LocateFixed, Navigation, PackageCheck, PackageOpen, RefreshCw, Route, TriangleAlert, Upload } from 'lucide-react';
 import {trackingProgress} from '@/lib/tracking-progress.js';
-import { nearestEthiopiaPlace } from '@/lib/ethiopia-places.js';
-import { obscureCoordinate,LOCAL_CAPACITY_PRIVACY_RADII_KM } from '@/lib/location-privacy.js';
-import {createForegroundLocationRunner,trackingLocationResult,trackingPrivacyRadius,TRACKING_LOCATION_INTERVAL_MS} from '@/lib/tracking-location-controls.js';
+import {approximateLocationArea} from '@/lib/approximate-location-area.js';
+import { obscureCoordinate,isValidCoordinate } from '@/lib/location-privacy.js';
+import {createForegroundLocationRunner,trackingLocationResult,trackingPrivacyRadius,TRACKING_LOCATION_INTERVAL_MS,TRACKING_PRIVACY_RADII_KM} from '@/lib/tracking-location-controls.js';
 
 const trackingActions=[
   {status:'TO_PICKUP',label:'Going to pickup',hint:'The Driver is travelling to load',Icon:Route,acceptsProof:false},
@@ -35,11 +35,11 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
   React.useEffect(()=>{setReady(true);},[]);
   const action=trackingActions.find(item=>item.status===selected);
   const [precisionKm,setPrecisionKm]=React.useState(trackingPrivacyRadius(defaultPrecisionKm));
-  const [savedPrecision,setSavedPrecision]=React.useState(defaultPrecisionKm===undefined?null:trackingPrivacyRadius(defaultPrecisionKm));
+  const [savedPrecision,setSavedPrecision]=React.useState(defaultPrecisionKm!==undefined&&[1,3,5,10,20,40].includes(defaultPrecisionKm)?defaultPrecisionKm:null);
   const runner=React.useRef(createForegroundLocationRunner(()=>document.visibilityState==='visible'));
   const lastSaved=React.useRef(0);
   const busy=locationState==='requesting'||locationState==='saving';
-  const autoLocationActive=sharesLocation&&allowDeviceLocation&&travelStatuses.has(operationalStatus);
+  const autoLocationActive=sharesLocation&&allowDeviceLocation&&!['COMPLETED','CANCELLED'].includes(operationalStatus);
 
   React.useEffect(()=>{if(!available.has(selected))setSelected(first);},[available,first,selected]);
 
@@ -49,10 +49,9 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
     signal.addEventListener('abort',abort,{once:true});
     navigator.geolocation.getCurrentPosition(position=>{
       signal.removeEventListener('abort',abort);if(signal.aborted)return;
-      const nearest=nearestEthiopiaPlace(position.coords.latitude,position.coords.longitude);
-      if(!nearest){reject(new Error('The device location is outside the supported Ethiopia map.'));return;}
+      if(!isValidCoordinate(position.coords.latitude,position.coords.longitude)){reject(new Error('Your device returned an invalid location. Try again.'));return;}
       const point=obscureCoordinate(position.coords.latitude,position.coords.longitude,precisionKm);
-      resolve({area:`Around ${nearest.name}, Ethiopia`,lat:point.lat,lng:point.lng,precisionKm});
+      resolve({area:approximateLocationArea(point.lat,point.lng),lat:point.lat,lng:point.lng,precisionKm});
     },problem=>{signal.removeEventListener('abort',abort);if(signal.aborted)return;reject(new Error(problem.code===problem.PERMISSION_DENIED?'Allow location for this site, then try again.':'The device could not provide a location. Try again.'));},{enableHighAccuracy:false,timeout:15000,maximumAge:120000});
   }),[precisionKm]);
 
@@ -120,7 +119,7 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
     <div className="control-panel-title"><div className="panel-title-copy"><Route aria-hidden="true"/><div><h2><Text message="Tracking update"/></h2><p>{operationalStatus==='ISSUE'?<Text message="Problem reported. Choose where the shipment resumes."/>:operationalStatus==='CREATED'?<Text message="Ready to start. Choose the first update."/>:<Text message="Current: {status}" values={{status:t(trackingActions.find(item=>item.status===operationalStatus)?.label||operationalStatus)}}/>}</p></div></div></div>
     {sharesLocation?<>
       <div className={`automatic-location ${locationState}`} role="status"><LocateFixed aria-hidden="true"/><span><strong>{!allowDeviceLocation?<Text message="Assigned Driver location"/>:locationState==='paused'?<Text message="Location updates paused"/>:locationState==='error'?<Text message="Location update failed"/>:locationState==='requesting'?<Text message="Finding Driver location…"/>:locationState==='saving'?<Text message="Saving approximate location…"/>:locationState==='saved'?<Text message="Approximate location shared · {radius} km" values={{radius:savedPrecision??precisionKm}}/>:locationState==='waiting'?<Text message="Waiting for the next location update"/>:autoLocationActive?<Text message="Location update ready"/>:<Text message="Location starts during travel"/>}</strong><small>{allowDeviceLocation?<Text message="Updates about every 10 minutes during travel. Keep this screen open and visible; updates pause when the phone locks or you leave this screen."/>:<Text message="Updates require the assigned Driver’s open, visible Tracking screen. They pause when the phone locks or that screen closes."/>}</small></span></div>
-      {allowDeviceLocation?<div className="form-group tracking-location-controls"><label htmlFor={`tracking-radius-${trackingId}`}><Text message="Location privacy radius"/></label><select id={`tracking-radius-${trackingId}`} value={precisionKm} disabled={!ready||busy||submitting} onChange={event=>setPrecisionKm(Number(event.target.value))}>{LOCAL_CAPACITY_PRIVACY_RADII_KM.map(radius=><option key={radius} value={radius}>{radius}<Text message=" km"/></option>)}</select>{savedPrecision!==null?<small><Text message="Last saved radius: {radius} km." values={{radius:savedPrecision}}/></small>:<small><Text message="No location has been saved yet."/></small>}<small><Text message="The selected radius applies to the next saved location. A larger radius shares a broader area. Changing it does not alter earlier updates."/></small>{autoLocationActive?<button type="button" className="button secondary small" disabled={busy||submitting} onClick={()=>void sendLocation()}><RefreshCw aria-hidden="true"/>{locationState==='error'?<Text message="Retry location"/>:<Text message="Update location"/>}</button>:null}{locationState==='waiting'?<small><Text message="No new location was saved. Updates are limited to once every 10 minutes."/></small>:null}</div>:null}
+      {allowDeviceLocation?<div className="form-group tracking-location-controls"><label htmlFor={`tracking-radius-${trackingId}`}><Text message="Location privacy radius"/></label><select id={`tracking-radius-${trackingId}`} value={precisionKm} disabled={!ready||busy||submitting} onChange={event=>setPrecisionKm(Number(event.target.value))}>{TRACKING_PRIVACY_RADII_KM.map(radius=><option key={radius} value={radius}>{radius}<Text message=" km"/></option>)}</select>{savedPrecision!==null?<small><Text message="Last saved radius: {radius} km." values={{radius:savedPrecision}}/></small>:<small><Text message="No location has been saved yet."/></small>}<small><Text message="The selected radius applies to the next saved location. A larger radius shares a broader area. Changing it does not alter earlier updates."/></small>{autoLocationActive?<button type="button" className="button secondary small" disabled={busy||submitting} onClick={()=>void sendLocation()}><RefreshCw aria-hidden="true"/>{locationState==='error'?<Text message="Retry location"/>:<Text message="Update location"/>}</button>:null}{locationState==='waiting'?<small><Text message="No new location was saved. Updates are limited to once every 10 minutes."/></small>:null}</div>:null}
     </>:null}
     {error?<div className="flash error" role="alert"><Text message={error}/></div>:null}
     <form action={`/api/provider-shipments/${trackingId}/status`} method="post" encType="multipart/form-data" className="tracking-action-form" onSubmit={submit}>
@@ -130,7 +129,7 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
       </fieldset>
       <div className="tracking-selection" aria-live="polite"><strong>{selected==='ISSUE'?<Text message="Report a problem"/>:<Text message="Ready to save: {status}" values={{status:t(action?.label||'No available update')}}/>}</strong><span>{selected==='ISSUE'?<Text message="Add a short explanation below."/>:<Text message="Nothing changes until you save."/>}</span></div>
       {selected==='ISSUE'?<div className="form-group tracking-proof-input"><label htmlFor={`tracking-issue-${trackingId}`}><TriangleAlert aria-hidden="true"/><Text message="What happened?"/></label><textarea id={`tracking-issue-${trackingId}`} name="note" required maxLength={1000}/></div>:<input type="hidden" name="note" value={action?.label||''}/>}
-      {action?.acceptsProof?<div className="form-group tracking-proof-input"><label htmlFor={`tracking-photo-${trackingId}`}><Upload aria-hidden="true"/><Text message="Photo "/><span className="meta"><Text message="(optional)"/></span></label><input id={`tracking-photo-${trackingId}`} name="proof" type="file" accept="image/jpeg,image/png,image/webp"/></div>:null}
+      {action?.acceptsProof?<div className="form-group tracking-proof-input"><label htmlFor={`tracking-photo-${trackingId}`}><Upload aria-hidden="true"/><Text message={selected==='ISSUE'?'Photo proof (optional)':'Photo proof required'}/></label><input id={`tracking-photo-${trackingId}`} name="proof" type="file" required={selected==='LOADING'||selected==='UNLOADING'} accept="image/jpeg,image/png,image/webp"/></div>:null}
       {first?<button className="button" disabled={!ready||submitting||busy||!selected}>{submitting?<Text message="Saving…"/>:<><Check aria-hidden="true"/>{action?<Text message="Save {status}" values={{status:t(action.label)}}/>:<Text message="Save update"/>}</>}</button>:<div className="tracking-finished"><CircleCheckBig aria-hidden="true"/><span><strong><Text message="No status update available"/></strong><small><Text message="Check the current assignment and Tracking state."/></small></span></div>}
     </form>
   </section>;

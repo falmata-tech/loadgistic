@@ -1,3 +1,4 @@
+import {useChatUpdates} from '../session/chat-alert-provider';
 import { useLanguage } from '../localization/provider';
 import { useVisitor } from '../session/visitor-provider';
 import { VisitorAccess } from '../components/visitor-access';
@@ -23,7 +24,7 @@ export default function App() {
   return <Capacity key={initialQuery} initialQuery={initialQuery} />;
 }
 function Capacity({initialQuery}:{initialQuery:string}) {
-  const {t}=useLanguage();
+  const {t}=useLanguage(),updates=useChatUpdates();
   const visitor = useVisitor(), visitorController = visitor.controller;
   const [filters,setFilters]=useState<TruckFilters>({}),[filtersOpen,setFiltersOpen]=useState(false),[drawer,setDrawer]=useState(false),[page,setPage]=useState(1);
   const filterKey=JSON.stringify(filters);
@@ -80,7 +81,7 @@ function Capacity({initialQuery}:{initialQuery:string}) {
       {!drawer && !loading && !error && items.length === 0 && (mode === 'open' || sharedReady) && <View style={[styles.notice,{top:controlsHeight+20}]}><Text>{t('No matching available trucks.')}</Text></View>}
       {mode === 'private' && !sharedReady && <ScrollView keyboardShouldPersistTaps="handled" style={{ position: 'absolute', top: 12, left: 12, right: 12, bottom: 12 }} contentContainerStyle={{ backgroundColor: '#fff', borderRadius: 16 }}><VisitorAccess scope="capacity" /></ScrollView>}
     </View>
-    <View style={styles.chatRow}><Link href="/arrange-transport" asChild><Pressable accessibilityRole="button" style={styles.chat}><AppIcon name="chat" color="#fff" size={21}/><View><Text style={styles.buttonText}>{t('Arrange transport')}</Text><Text style={{fontSize:11,color:'#fff'}}>{t('Live chat')}</Text></View></Pressable></Link></View>
+    <View style={styles.chatRow}><Link href="/arrange-transport" asChild><Pressable accessibilityRole="button" accessibilityLabel={t('Need help with transport?')} style={styles.chat}><AppIcon name="chat" color="#fff" size={21}/><View style={{flexShrink:1}}><Text style={styles.buttonText}>{t('Need help with transport?')}</Text><Text style={{fontSize:11,color:'#fff'}}>{t('Let us handle it')} · {t('Live chat')}</Text></View>{updates.transportUnreadCount>0&&<View style={{borderRadius:12,paddingHorizontal:6,paddingVertical:3,backgroundColor:'#ffcb05'}}><Text style={{fontWeight:'800',fontSize:12,color:'#172c46'}}>{updates.transportUnreadCount}</Text></View>}</Pressable></Link></View>
 
     {filtersOpen&&canLoad&&<DiscoveryFilters initial={filters} configurations={profileResult?.configurations||[...VEHICLE_CONFIGURATIONS]} onClose={()=>setFiltersOpen(false)} onApply={next=>{resetResults();setFilters(next);setFiltersOpen(false);setPage(1);setRevision(v=>v+1);}}/>}
   </View>;
@@ -90,6 +91,6 @@ const styles = StyleSheet.create({
   intro: { paddingHorizontal: 16, paddingTop:12, paddingBottom: 12 }, title: { fontSize: 20, fontWeight: '700', color: '#172c46', flexShrink: 1 }, copy: { fontSize: 14, lineHeight: 21, color: '#526875', marginTop: 5 },
   search: { flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 12, gap: 8 }, input: { flex: 1, color:'#172c46',fontSize:16,borderWidth: 1, borderColor: '#cbdadb', borderRadius: 12, paddingHorizontal: 12, minHeight: 48 }, button: { backgroundColor: '#0c7275', borderRadius: 12, padding: 13, justifyContent: 'center' }, buttonText: { color: '#fff', fontWeight: '700' }, clear: { minHeight: 48, minWidth: 48, padding: 10, justifyContent: 'center' }, link: { flexShrink:1, color: '#0c7275', fontWeight: '700' },
   map: { flex: 1 }, mapButton:{flex:1,flexDirection:"row",alignItems:"center",gap:6,minHeight:46,paddingHorizontal:12,paddingVertical:12,backgroundColor:"#fff",borderRadius:12,borderWidth:1,borderColor:"#cbdadb"}, results:{position:"absolute",top:68,left:12,bottom:12,width:"88%",maxWidth:360,backgroundColor:"#fff",borderRadius:16,borderWidth:1,borderColor:"#cbdadb",overflow:"hidden"}, loading: { position: 'absolute', top: 0, left: 0, right:0, backgroundColor: '#fff' }, notice: { position: 'absolute', top: 68, left: 16, right: 16, borderRadius: 12, backgroundColor: '#fff', padding: 16 },
-  chatRow:{padding:8,alignItems:"flex-end",backgroundColor:"#f4f8f8"},chat:{minHeight:48,flexDirection:"row",gap:9,alignItems:"center",backgroundColor:"#0c7275",paddingVertical:8,paddingHorizontal:14,borderRadius:13},
+  chatRow:{padding:8,alignItems:"flex-end",backgroundColor:"#f4f8f8"},chat:{minHeight:48,maxWidth:'100%',flexShrink:1,flexDirection:"row",gap:9,alignItems:"center",backgroundColor:"#0c7275",paddingVertical:8,paddingHorizontal:14,borderRadius:13},
   detail: { padding: 18, maxHeight: 230, borderTopWidth: 1, borderColor: '#d6e4e4' }, detailHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, age: { color: '#526875', fontSize: 12, marginTop: 6 },
 });

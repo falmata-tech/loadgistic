@@ -632,7 +632,7 @@ legend { font-weight:800; padding:0 7px; }
 .auth-heading { display:flex; align-items:center; gap:13px; margin-bottom:20px; }
 .auth-heading .task-heading-icon { width:52px; height:52px; }
 .managed-login-stack{display:grid;gap:16px}.auth-google-button{width:100%;min-height:48px;background:#fff;color:#0b1d3a;border-color:#b9cbc8}.auth-google-button:hover,.auth-google-button:focus-visible{border-color:#0d6b6e;background:#f7fbfa}.auth-google-mark{display:grid;width:25px;height:25px;place-items:center;border-radius:50%;background:conic-gradient(from -35deg,#4285f4 0 25%,#34a853 0 50%,#fbbc05 0 75%,#ea4335 0);color:#fff;font-size:.82rem;font-weight:900;line-height:1}.auth-divider{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;color:#687981;font-size:.73rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.auth-divider::before,.auth-divider::after{content:"";height:1px;background:#d7e2e0}.auth-privacy-note{display:flex;align-items:flex-start;gap:8px;margin:0;padding:10px 12px;border-radius:10px;background:#f1f7f6;color:#52656d;font-size:.73rem;line-height:1.4}.auth-privacy-note svg{width:17px;min-width:17px;color:#0d6b6e}.auth-inline-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;color:#0d6b6e;font-size:.78rem;font-weight:800;text-decoration:none}.auth-inline-link svg{width:17px}.auth-fixture-login{margin-top:18px;padding:12px 14px;border:1px dashed #b9cbc8;border-radius:10px;background:#fafcfb}.auth-fixture-login summary{cursor:pointer;color:#52656d;font-size:.76rem;font-weight:800}.auth-fixture-login[open] summary{margin-bottom:14px}.auth-unavailable{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid #d7e2e0;border-radius:10px;background:#f7faf9;color:#52656d}.auth-unavailable p{margin:0;font-weight:750}.auth-unavailable svg{width:20px;color:#0d6b6e}
-.signup-role-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.signup-role-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
 .signup-role { position:relative; min-height:132px; display:grid; place-items:center; align-content:center; gap:7px; padding:14px 10px; border:2px solid var(--line); border-radius:8px; background:#fff; text-align:center; cursor:pointer; }
 .signup-role input { position:absolute; width:1px; height:1px; min-height:0; opacity:0; }
 .signup-role > svg { width:30px; height:30px; color:var(--blue); }
@@ -3456,21 +3456,25 @@ html:not(:lang(en)) :is(.button,.nav-link,.mobile-nav a,.public-mobile-nav a){wh
 .public-chat-dialog[open]{display:flex;flex-direction:column}
 .public-chat-dialog>header{flex-shrink:0}
 .public-help-panel{overflow-y:auto;overscroll-behavior:contain}
-.public-help-panel:has(>.transport-conversation),.public-help-panel:has(>.transport-chat-recovery){padding:16px}
+.public-help-panel:has(.transport-conversation),.public-help-panel:has(>.transport-chat-recovery){padding:16px}
 .brokerage-conversation-page>h1{font-size:clamp(23px,3vw,32px);line-height:1.2;margin:18px 0}
 
 /* Explicit live-chat entry without implying staff presence. */
-.public-assistance-request>span{display:grid;text-align:left;gap:1px}
+.public-assistance-request>span{display:grid;text-align:left;gap:2px;min-width:0}
 .public-assistance-request small{font-size:.69rem;font-weight:500;line-height:1.2;color:#e2f2f0}
 .public-chat-dialog>header{gap:12px}
 .transport-chat-heading{min-width:0}
-.transport-chat-heading>p{display:flex;align-items:center;gap:6px;margin:0 0 7px;color:#0d7375;font-size:.75rem;line-height:1.4;font-weight:600}
+.transport-chat-heading>p{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0 0;color:#0d7375;font-size:.75rem;line-height:1.4;font-weight:600}
 .transport-chat-heading>p svg{width:16px;height:16px;flex:none}
 .public-chat-dialog>header .transport-chat-heading h2{font-size:1.3rem;line-height:1.2}
 .public-chat-dialog>header>button{flex-shrink:0}
 .transport-request-intro p{font-size:.94rem;color:#304e55;line-height:1.55}
 .transport-request-reassurance{margin:0;text-align:center;font-size:.75rem;line-height:1.5;color:#526a70}
 .transport-chat-guidance{margin:0}
+.chat-receipt-surface{display:contents}
+.chat-message-receipt{display:flex;align-items:center;gap:4px;font-size:11px;color:#627780;margin-top:3px}
+.chat-message-receipt.seen,.chat-team-joined{color:#0d7375}
+.chat-team-joined{display:block;font-size:12px;margin-top:3px}
 .transport-chat-empty{display:grid;justify-items:center;align-content:center;gap:8px;text-align:center;margin:auto;padding:20px 12px}
 .transport-chat-empty>svg{width:28px;height:28px;color:#0d7375}
 .transport-chat-empty>strong{color:#173a47;font-size:1rem}
@@ -3577,6 +3581,7 @@ html:not(:lang(en)) :is(.button,.nav-link,.mobile-nav a,.public-mobile-nav a){wh
 .map-info-bubble>b{font-size:18px;color:var(--signal-color);line-height:1}
 .map-info-bubble[aria-pressed=true]{outline:2px solid var(--signal-color);outline-offset:-2px;background:#f6fafa}
 .map-info-bubble:focus-visible{outline:3px solid #172c46;outline-offset:-3px}
+.capacity-truck-map-marker.vehicle-image-marker .vehicle-marker-image .vehicle-marker-load{max-width:calc(100% - 8px);min-width:0;min-height:18px;white-space:normal;text-align:center;line-height:1.15;bottom:3px;padding:2px 4px;font-size:.58rem}
 .capacity-truck-map-marker.vehicle-image-marker.selected:is(.empty,.partial) .vehicle-marker-image{background:#0c7275;box-shadow:0 0 0 3px #fff,0 0 0 6px #0c7275}
 .capacity-truck-map-marker.vehicle-image-marker.selected:is(.empty,.partial)::after{border-top-color:#0c7275}
 .capacity-info-card{position:absolute;z-index:1200;left:12px;bottom:12px;width:min(350px,calc(100% - 142px));max-height:min(240px,36%);display:flex;flex-direction:column;border:2px solid var(--signal-color);border-radius:12px;background:#fff;box-shadow:0 4px 16px #172c4626;overflow:hidden;color:#172c46;pointer-events:auto}
@@ -3676,3 +3681,60 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 .truck-inspection-person>.truck-inspection-person-actions{grid-column:2;display:flex;align-self:end;flex-wrap:wrap;gap:5px}
 .truck-inspection-person-actions>a{flex:1;min-width:44px}
 @media(max-width:380px){.truck-inspection-person>.truck-inspection-person-actions{grid-column:1/-1}}
+
+/* Week-first, date-only calendar shared by all date fields. */
+.date-picker { position:relative; min-width:0; }
+.date-picker-validation { position:absolute; width:1px!important; height:1px!important; padding:0!important; opacity:0; pointer-events:none; }
+.date-picker-trigger { display:flex; align-items:center; gap:.6rem; text-align:left; width:100%; min-height:48px; padding:.7rem; background:#fff; border:1px solid var(--border,#cbdadb); border-radius:10px; color:var(--ink,#172c46); }
+.date-picker-trigger svg { width:20px; flex-shrink:0; color:#0c7275; }
+.date-picker-dialog { width:min(540px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); overflow:auto; padding:16px; border:1px solid #cbdadb; border-radius:20px; color:#172c46; background:#fff; box-shadow:0 15px 60px #172c4626; }
+.date-picker-dialog::backdrop { background:#172c4638; }
+.date-picker-header,.date-picker-period,.date-picker-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.date-picker-views { display:flex; gap:6px; margin:12px 0; }
+.date-picker-views button { flex:1; background:#eaf5f4; border:0; border-radius:10px; min-height:44px; color:#0c7275; }
+.date-picker-views button[aria-pressed=true],.date-picker-grid button.selected { background:#0c7275; color:#fff; }
+.date-picker-period button,.date-picker-footer button { background:none; border:0; color:#0c7275; min-height:44px; min-width:44px; }
+.date-picker-period strong { font-size:.9rem; text-align:center; }
+.date-picker-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); margin:8px 0; }
+.date-picker-grid button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:70px; background:#fff; color:#172c46; border:0; border-radius:10px; padding:4px 0; }
+.date-picker-grid button small { font-size:.65rem; }
+.date-picker-grid button strong { font-size:1.15rem; }
+.date-picker-grid button span { font-size:.75rem; color:#0c7275; }
+.date-picker-grid button.selected span { color:#fff; }
+.date-picker-grid button:disabled { opacity:.3; }
+.date-picker-dialog button:focus-visible,.date-picker-trigger:focus-visible { outline:3px solid #1888b5; outline-offset:2px; }
+.date-picker-legend { font-size:.75rem; color:#526875; text-align:center; margin:6px 0; }
+
+/* The same two directly selectable areas on public and provider pages. */
+.workspace-area-switch{display:flex;gap:6px;align-items:center;justify-content:center;padding:7px 12px;background:#fff;border-bottom:1px solid #d7e3e1;flex-shrink:0}
+.workspace-area-switch>a,.workspace-area-switch>span{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:0;padding:8px 18px;border:1px solid transparent;border-radius:10px;color:#5d6c77;font-size:.85rem;font-weight:700;text-decoration:none}
+.workspace-area-switch .active{background:#e7f5f2;border-color:#b9ded9;color:#0b5f62}
+.workspace-area-switch svg{width:19px;height:19px;flex-shrink:0}
+.workspace-area-switch a:focus-visible{outline:3px solid #167c80;outline-offset:2px}
+@media(max-width:760px){.workspace-area-switch>a,.workspace-area-switch>span{flex:1;padding:6px;font-size:.8rem}.workspace-area-switch{gap:5px;padding:6px 10px}.provider-topbar .workspace-title{display:block;overflow:hidden}.provider-topbar .workspace-title>strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.provider-topbar .mobile-app-brand{display:none}}
+
+.account-private-card>.workspace-related-section{margin-top:16px}
+.chat-alert-button{position:relative;min-width:42px;min-height:42px;padding:8px;flex-shrink:0}
+.chat-alert-badge{min-width:20px;min-height:20px;display:inline-flex;justify-content:center;align-items:center;border-radius:20px;background:#ffcb05;color:#172c46;font-size:11px;font-weight:800;padding:2px 5px}
+.chat-alert-button .chat-alert-badge{position:absolute;right:-5px;top:-5px}
+.chat-alert-dialog{width:min(420px,calc(100vw - 24px));max-height:80dvh;padding:20px;border:1px solid var(--line);border-radius:18px;color:var(--ink)}
+.chat-alert-dialog::backdrop{background:rgba(23,44,70,.2)}
+.chat-alert-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.chat-alert-dialog h2{font-size:22px;margin:0}
+.chat-alert-list{display:grid;gap:8px;margin-top:16px}
+.chat-alert-list>a{display:flex;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;color:var(--ink)}
+.chat-alert-list small{display:block;color:var(--muted);margin-top:3px}
+.chat-alert-count{color:#0c7275;font-size:12px;font-weight:700;align-self:center;white-space:nowrap}
+.chat-alert-toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:1000;width:min(440px,calc(100vw - 24px));display:flex;align-items:flex-start;gap:10px;padding:14px;border:1px solid #b9ded9;border-radius:14px;background:#fff;box-shadow:0 6px 24px #172c4624;color:var(--ink)}
+.chat-alert-toast>div{flex:1;min-width:0}
+.chat-alert-toast strong{font-size:14px;display:block}
+.chat-alert-toast a,.chat-alert-toast button{background:none;border:0;color:#0c7275;font-size:13px;cursor:pointer;padding:8px 0}
+.chat-alert-toast>button{padding:2px;min-width:32px;min-height:32px}
+.public-chat-sound{padding:8px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+
+.chat-alert-reference{font-size:11px;font-family:ui-monospace,monospace;color:var(--muted)}
+
+.chat-delivery-controls {display:flex;gap:8px;flex-wrap:wrap;}
+
+/* Named sharing contacts keep emails legible at phone widths. */
+.network-add-contact{flex-wrap:wrap}.network-add-contact label{min-width:min(100%,220px)}.network-access-list article>div{min-width:0;overflow-wrap:anywhere}.network-contact-edit summary{cursor:pointer;color:var(--teal,#0d6b6e);font-weight:700}.network-contact-edit form{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}.network-contact-edit label{display:grid;gap:.3rem;flex:1;min-width:0}.network-contact-edit input{width:100%;min-width:0}

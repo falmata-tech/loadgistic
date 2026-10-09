@@ -24,7 +24,7 @@ function FitShipment({origin,destination,location,status}:{origin:NamedPoint;des
 
 export default function TrackingLocationMapLeaflet({origin,destination,location,status}:{origin:NamedPoint;destination:NamedPoint;location:LocationPoint;status:string}){
   const target=status==='TO_PICKUP'?origin:destination;
-  return <div className="tracking-location-map"><MapContainer center={[location.lat,location.lng]} zoom={7} minZoom={5} maxZoom={13} maxBounds={[[2.5,32],[15.5,49.5]]} scrollWheelZoom={false} attributionControl>
+  return <div className="tracking-location-map"><MapContainer center={[location.lat,location.lng]} zoom={7} minZoom={2} maxZoom={13} scrollWheelZoom={false} attributionControl>
     <BaseMapTiles/>
     <FitShipment origin={origin} destination={destination} location={location} status={status}/>
     <Polyline positions={[[location.lat,location.lng],[target.lat,target.lng]]} pathOptions={{color:'#0d6b6e',weight:4,dashArray:'8 8'}} interactive={false}/>

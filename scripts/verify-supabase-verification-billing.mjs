@@ -17,20 +17,20 @@ async function expectRpcError(call,code){
 const suffix=crypto.randomUUID().slice(0,12);
 const email=`managed-verify-${suffix}@loadgistic.local`;
 let actorId;let organizationId;let subscriptionId;let verificationId;let proofId;
-let policyAdminId;let restoreFreeAccess=false;
 try{
   const {data:created,error:createError}=await service.auth.admin.createUser({email,password:crypto.randomBytes(24).toString('base64url'),email_confirm:true});
   if(createError||!created.user)throw new Error('VERIFICATION_BILLING_TEST_ACTOR_CREATE_FAILED');
   actorId=created.user.id;organizationId=crypto.randomUUID();subscriptionId=crypto.randomUUID();
-  const {data:plan,error:planError}=await service.from('plans').select('id').eq('audience','TRANSPORTER').eq('active',true).limit(1).maybeSingle();
+  // Exact disposable historical records exercise retained private reads only.
+  const {data:plan,error:planError}=await service.from('plans').select('id').eq('audience','TRANSPORTER').limit(1).maybeSingle();
   if(planError||!plan)throw new Error('VERIFICATION_BILLING_PLAN_MISSING');
-  const now=new Date();const endsAt=new Date(now.getTime()+7*86400000).toISOString();
+  const startedAt='2020-01-01T00:00:00.000Z',endsAt='2020-02-01T00:00:00.000Z';
   for(const [table,rows] of [
     ['profiles',[{id:actorId,email,full_name:'Managed Verification Test',role:'TRANSPORTER',active:true}]],
     ['organizations',[{id:organizationId,name:'Managed Verification Test Fleet',handle:`managed-verify-${suffix}`,type:'TRANSPORT_COMPANY'}]],
     ['organization_members',[{id:crypto.randomUUID(),user_id:actorId,organization_id:organizationId,membership_role:'OWNER'}]],
     ['applications',[{id:crypto.randomUUID(),user_id:actorId,business_name:'Managed Verification Test Fleet',application_type:'TRANSPORT_COMPANY',status:'APPROVED',sponsored_free:false}]],
-    ['subscriptions',[{id:subscriptionId,organization_id:organizationId,plan_id:plan.id,status:'TRIAL',billing_model:'FLAT_MONTHLY',starts_at:now.toISOString(),ends_at:endsAt}]]
+    ['subscriptions',[{id:subscriptionId,organization_id:organizationId,plan_id:plan.id,status:'PAYMENT_REQUIRED',billing_model:'FLAT_MONTHLY',starts_at:startedAt,ends_at:endsAt}]]
   ]){
     const operation=table==='profiles'?service.from(table).upsert(rows,{onConflict:'id'}):service.from(table).insert(rows);
     const {error}=await operation;if(error)throw new Error(`VERIFICATION_BILLING_FIXTURE_${table.toUpperCase()}_FAILED`);
@@ -39,12 +39,9 @@ try{
   if(adminError||!admin)throw new Error('VERIFICATION_BILLING_ADMIN_MISSING');
   const {data:controls,error:controlsError}=await service.rpc('managed_platform_controls',{actor_user_id:admin.id});
   if(controlsError)throw new Error('VERIFICATION_BILLING_CONTROLS_FAILED');
-  if(controls.access_mode==='FREE'){
-    policyAdminId=admin.id;restoreFreeAccess=true;
-    await expectRpcError(()=>service.rpc('submit_managed_payment_proof',{actor_user_id:actorId,command:{amount_minor:10000}}),'PAYMENT_NOT_REQUIRED');
-    const {error}=await service.rpc('save_managed_platform_controls',{actor_user_id:admin.id,command:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}});
-    if(error)throw new Error('VERIFICATION_BILLING_TEST_MODE_FAILED');
-  }
+  if(controls.access_mode!=='FREE')throw new Error('PROVIDER_BILLING_NOT_RETIRED');
+  await expectRpcError(()=>service.rpc('submit_managed_payment_proof',{actor_user_id:actorId,command:{amount_minor:10000}}),'BILLING_RETIRED');
+  await expectRpcError(()=>service.rpc('save_managed_platform_controls',{actor_user_id:admin.id,command:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}}),'BILLING_RETIRED');
 
   const {data:center,error:centerError}=await service.rpc('managed_verification_center',{actor_user_id:actorId});
   if(centerError||center?.subjects?.length!==1||JSON.stringify(center).includes('storage_path'))throw new Error('VERIFICATION_CENTER_PROJECTION_INVALID');
@@ -65,19 +62,18 @@ try{
 
   const {data:billing,error:billingError}=await service.rpc('managed_billing_summary',{actor_user_id:actorId,requested_offset:0,requested_limit:5});
   if(billingError||billing?.subscription?.id!==subscriptionId||JSON.stringify(billing).includes('file_path'))throw new Error('BILLING_SUMMARY_INVALID');
-  const {data:submittedProof,error:proofError}=await service.rpc('submit_managed_payment_proof',{actor_user_id:actorId,command:{
-    amount_minor:10000,reference:'VERIFIER',storage_path:`supabase://payment-proof/payment/${new Date().toISOString().slice(0,10)}/${suffix}.pdf`,
-    original_name:'payment.pdf',mime_type:'application/pdf'
-  }});
-  if(proofError||!submittedProof)throw new Error('PAYMENT_PROOF_SUBMISSION_FAILED');
-  proofId=submittedProof;
+  proofId=crypto.randomUUID();
+  const {error:proofError}=await service.from('payment_proofs').insert({id:proofId,subscription_id:subscriptionId,
+    amount_minor:10000,reference:'HISTORY-'+suffix,file_path:`supabase://payment-proof/payment/2020-01-01/${suffix}.pdf`,
+    original_name:'payment.pdf',mime_type:'application/pdf',status:'PENDING',submitted_at:startedAt});
+  if(proofError)throw new Error('HISTORICAL_PAYMENT_FIXTURE_FAILED');
   const {data:proofFile,error:proofFileError}=await service.rpc('managed_payment_proof_file',{actor_user_id:actorId,proof_id:proofId});
   if(proofFileError||!proofFile?.storage_path)throw new Error('PAYMENT_PROOF_OWNER_FILE_DENIED');
-  const {data:paymentRows,error:paymentPageError}=await service.rpc('managed_payment_review_page',{actor_user_id:admin.id,requested_status:'PENDING',search_text:'VERIFIER',requested_offset:0,requested_limit:5});
+  const {data:paymentRows,error:paymentPageError}=await service.rpc('managed_payment_review_page',{actor_user_id:admin.id,requested_status:'PENDING',search_text:'HISTORY-'+suffix,requested_offset:0,requested_limit:5});
   if(paymentPageError||paymentRows?.length!==1||JSON.stringify(paymentRows).includes('file_path'))throw new Error('PAYMENT_REVIEW_PAGE_INVALID');
-  const {error:paymentReviewError}=await service.rpc('review_managed_payment_proof',{actor_user_id:admin.id,proof_id:proofId,review_status:'APPROVED'});
-  if(paymentReviewError)throw new Error('PAYMENT_REVIEW_FAILED');
-  await expectRpcError(()=>service.rpc('review_managed_payment_proof',{actor_user_id:admin.id,proof_id:proofId,review_status:'REJECTED'}),'PAYMENT_PROOF_ALREADY_REVIEWED');
+  await expectRpcError(()=>service.rpc('review_managed_payment_proof',{actor_user_id:admin.id,proof_id:proofId,review_status:'APPROVED'}),'BILLING_RETIRED');
+  const {data:retainedProof,error:retainedError}=await service.from('payment_proofs').select('status,reviewed_at').eq('id',proofId).single();
+  if(retainedError||retainedProof.status!=='PENDING'||retainedProof.reviewed_at!==null)throw new Error('HISTORICAL_PAYMENT_CHANGED');
 
   for(const [name,args] of [
     ['managed_verification_center',{actor_user_id:actorId}],
@@ -87,12 +83,8 @@ try{
   ]){
     const {error}=await anon.rpc(name,args);if(!error)throw new Error(`ANONYMOUS_RPC_ALLOWED:${name}`);
   }
-  process.stdout.write('Supabase Verification/Billing ownership, private-file authorization, bounded review, terminal review, safe projection, and browser denial checks passed.\n');
+  process.stdout.write('Supabase verification without paid access, retained private billing history, rejected charge/activation writes, safe projection and browser denial checks passed.\n');
 }finally{
-  if(restoreFreeAccess){
-    const {error}=await service.rpc('save_managed_platform_controls',{actor_user_id:policyAdminId,command:{section:'ACCESS',mode:'FREE'}});
-    if(error)throw new Error('VERIFICATION_BILLING_FREE_MODE_RESTORE_FAILED');
-  }
   if(verificationId)await service.from('verification_requests').delete().eq('id',verificationId);
   if(proofId)await service.from('payment_proofs').delete().eq('id',proofId);
   if(actorId)await service.from('audit_logs').delete().eq('actor_user_id',actorId);

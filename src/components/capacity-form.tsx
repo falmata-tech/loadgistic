@@ -1,4 +1,6 @@
 "use client";
+import {capacitySharingMode,capacitySharingLabel} from '@/lib/capacity-sharing';
+
 
 
 import {Text,Localized} from '@/components/localization';
@@ -10,6 +12,7 @@ import { Boxes, Gauge, MapPinned, RefreshCw, Repeat2, Route, Save, Shield, Truck
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { capacityPrivacyRadii } from '@/lib/location-privacy.js';
 import { relativeTime } from '@/lib/ui';
+import {capacityLoadPreference,capacityLoadLabel} from '@/lib/capacity-load-preferences';
 import { readDriverLocation, saveDriverLocation, type DriverLocation } from '@/lib/capacity-editor-client';
 import { CapacityLocationMap } from './capacity-location-map';
 import { CapacityMarketPlanning } from './capacity-market-planning';
@@ -107,8 +110,8 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   const availabilityValue=!current?'Not set':current.status==='OFF_DUTY'?'Off Duty':current.status==='EMPTY'?'Empty':'Partial';
   const coverageValue=current?.availability_geometry==='ROUTE'?'Route':current?.availability_geometry==='RADIUS'?'Area':'Not set';
   const regularValue=regularSignals[0]?(regularSignals[0].geometry==='RADIUS'?'Area':'Route'):'None';
-  const sharingValue=current?.visibility==='PRIVATE'?'Private':'Open';
-  const loadsValue=current?.status==='PARTIAL'||!current?.accepts_full_load?'Partial':current?.accepts_partial_load?'Either':'Full';
+  const sharingValue=capacitySharingLabel(capacitySharingMode(current?.sharing_mode,current?.visibility));
+  const loadsValue=current?.status==='PARTIAL'?'Shared only':capacityLoadLabel(capacityLoadPreference(current?.status,current?.accepts_full_load,current?.accepts_partial_load),true);
   const truckLabel=`${selectedVehicle.make} ${selectedVehicle.model} · ${selectedVehicle.platformNumber||selectedVehicle.label}`;
   return <div className="capacity-console capacity-summary-console" data-testid="capacity-summary">
     <section className={`capacity-saved-summary driver-map-summary${savedMap?'':' has-no-map'}`}>
@@ -120,12 +123,12 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
           {!current||!onDuty?<Gauge aria-hidden="true"/>:<MapPinned aria-hidden="true"/>}{current&&onDuty?<Text message="Set location"/>:<Text message="Set capacity"/>}
         </button>:null}
       </div>}</div>
-      {showTruckIdentity?<header className="capacity-summary-map-header"><section className="capacity-truck-bar"><Image src={vehicleConfigurationImage(selectedVehicle.cargoConfiguration)} alt={selectedVehicle.cargoConfiguration||'Truck'} width={112} height={88}/><div className="capacity-truck-copy"><small><Text message="Current truck"/></small><strong>{selectedVehicle.make} {selectedVehicle.model}</strong><span>{selectedVehicle.platformNumber} · {selectedVehicle.cargoConfiguration} · {!current?<Text message="Not published"/>:current.visibility==='PRIVATE'?<Text message="Private capacity"/>:<Text message="Open capacity"/>}</span><span className="capacity-assigned-driver">{selectedVehicle.driver?`Driver: ${selectedVehicle.driver.name}`:<Link href={`/app/fleet?vehicle=${selectedId}#driver-access`}><Text message="No driver assigned · Assign driver"/></Link>}</span></div>{lockVehicleSelection?null:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/><Text message="Truck"/></label><select id="capacity-vehicle" value={selectedId} disabled={!controlsReady||refreshing||syncing} onChange={event=>{setVehicleId(event.target.value);setNotice(null);}}>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} {vehicle.model}</option>)}</select></div>}</section></header>:null}
+      {showTruckIdentity?<header className="capacity-summary-map-header"><section className="capacity-truck-bar"><Image src={vehicleConfigurationImage(selectedVehicle.cargoConfiguration)} alt={selectedVehicle.cargoConfiguration||'Truck'} width={112} height={88}/><div className="capacity-truck-copy"><small><Text message="Current truck"/></small><strong>{selectedVehicle.make} {selectedVehicle.model}</strong><span>{selectedVehicle.platformNumber} · {selectedVehicle.cargoConfiguration} · {!current?<Text message="Not published"/>:<Text message={capacitySharingLabel(capacitySharingMode(current.sharing_mode,current.visibility))}/>}</span><span className="capacity-assigned-driver">{selectedVehicle.driver?`Driver: ${selectedVehicle.driver.name}`:<Link href={`/app/fleet?vehicle=${selectedId}#driver-access`}><Text message="No driver assigned · Assign driver"/></Link>}</span></div>{lockVehicleSelection?null:<div className="form-group compact-truck-select"><label htmlFor="capacity-vehicle"><Truck aria-hidden="true"/><Text message="Truck"/></label><select id="capacity-vehicle" value={selectedId} disabled={!controlsReady||refreshing||syncing} onChange={event=>{setVehicleId(event.target.value);setNotice(null);}}>{vehicles.map(vehicle=><option value={vehicle.id} key={vehicle.id}>{vehicle.platformNumber} · {vehicle.make} {vehicle.model}</option>)}</select></div>}</section></header>:null}
       <Localized as="nav" copy={["aria-label"]} className="capacity-summary-toolrail" aria-label="Edit capacity signals">
         <button type="button" onClick={()=>setEditSection('AVAILABILITY')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit current capacity: ${availabilityValue}`} title={`Current capacity · ${availabilityValue}`}><Gauge aria-hidden="true"/><span><small><Text message="Capacity"/></small><strong>{availabilityValue}</strong></span></button>
         {onDuty?<button type="button" onClick={()=>setEditSection('ROUTE')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit current coverage: ${coverageValue}`} title={`Current coverage · ${coverageValue}`}><Route aria-hidden="true"/><span><small><Text message="Coverage"/></small><strong>{coverageValue}</strong></span></button>:null}
         {onDuty?<button type="button" onClick={()=>setEditSection('SHARING')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit capacity sharing: ${sharingValue}`} title={`Capacity sharing · ${sharingValue}`}><Shield aria-hidden="true"/><span><small><Text message="Sharing"/></small><strong>{sharingValue}</strong></span></button>:null}
-        {onDuty?<button type="button" onClick={()=>setEditSection('LOADS')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit load preferences: ${loadsValue}`} title={`Load preferences · ${loadsValue}`}><Boxes aria-hidden="true"/><span><small><Text message="Loads"/></small><strong>{loadsValue}</strong></span></button>:null}
+        {onDuty?<button type="button" onClick={()=>setEditSection('LOADS')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit load preferences: ${loadsValue}`} title={`Load preferences · ${loadsValue}`}><Boxes aria-hidden="true"/><span><small><Text message="Loads"/></small><strong><Text message={loadsValue}/></strong></span></button>:null}
         {allowCorridors?<button type="button" onClick={()=>setEditSection('RECURRING')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label={`Edit regular service: ${regularValue}`} title={`Regular service · ${regularValue}`}><Repeat2 aria-hidden="true"/><span><small><Text message="Regular"/></small><strong>{regularValue}</strong></span></button>:null}
         {current?<Localized as="button" copy={["aria-label","title"]} type="button" onClick={()=>setEditSection('LOCATION')} disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" aria-label="Edit approximate location" title="Approximate location"><MapPinned aria-hidden="true"/><span><small><Text message="Location"/></small><strong>{location?`${location.radius} km`:<Text message="Not set"/>}</strong></span></Localized>:null}
       </Localized>
