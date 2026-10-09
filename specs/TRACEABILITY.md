@@ -1,5 +1,14 @@
 # Specification traceability
 
+October 8 full SQL regression follow-up, FEAT-DAT-001 / FEAT-FLT-001 / NR-08/18:
+43 CI SQL suites pass in the disposable Loadgistic stack. Viewport stress still
+proves matching after 1,000 newer candidates, now with separate single-truck
+providers and explicit sharing. Public paging still proves all 105 fleet trucks
+once, last-page capacity completeness and private-field denial, now on a company
+fleet with distinct assigned drivers. Ownership/use-permission precedence is
+tested separately on a valid independent truck. No index, privacy or assertion
+was removed to permit an impossible multi-truck independent fixture.
+
 October 8 release follow-up, FEAT-TRK-001 / FEAT-FLT-001 / NR-08/10: the fresh
 Tracking verifier now supplies a delivery date, uploads and reads real private
 proof bytes, rejects driver completion/expired owner approval and completes via

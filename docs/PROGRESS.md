@@ -1,5 +1,14 @@
 ## October 8 complete fresh-workflow verification and retention repair — local
 
+The owner approved migration 129 (“Approve the additional retention repair”).
+Fresh encrypted backup a2590e61… restores in network isolation and the exact
+115–129 transaction passes catalog, API guard and PostGIS checks. The complete
+43-suite CI SQL regression sweep passes on the disposable stack after replacing
+obsolete multi-truck independent stress fixtures with a 105-truck company fleet
+and distinct single-truck providers for the 1,002-record viewport case. Paging,
+matching beyond 1,000 records, private audiences and document precedence checks
+remain intact. No hosted writes have occurred; exact-candidate CI remains required.
+
 All twelve managed verification scripts now pass on a separate disposable
 Loadgistic stack (ports 56120–56124), with the developer preview preserved.
 The Tracking verifier supplies the required delivery date, uploads and reads real
@@ -11,8 +20,8 @@ The real approval → expiry → cleanup check found a recipient FK blocking del
 Additive migration 129 preserves a private approval marker and clears only the
 temporary recipient reference. Its rollback-only regression proves contact
 cleanup, guest denial and retained completion/proofs/history; it passes locally.
-Fresh exact CI, full 115–129 backup rehearsal and owner review of the additional
-SQL remain required. No production schema, setting, web deploy or final APK changed.
+Fresh exact CI and artifact verification remain required. No production schema,
+setting, web deploy or final APK changed.
 
 ## October 8 release gate repair — fixture sharing
 

@@ -4,6 +4,7 @@ do $test$
 declare item jsonb; route jsonb:='[{"lat":9,"lng":38,"label":"A"},{"lat":10,"lng":39,"label":"B"}]';
  area jsonb:='[{"lat":8,"lng":37,"label":"A"},{"lat":8,"lng":40,"label":"B"},{"lat":11,"lng":40,"label":"C"},{"lat":11,"lng":37,"label":"D"}]';
  actor uuid; provider uuid; source public.capacities%rowtype; truck public.vehicles%rowtype;
+ synthetic_actor uuid;synthetic_provider uuid;page public.company_pages%rowtype;page_columns text;
  recipient text:=repeat('c',64); chosen uuid; count_rows integer; result jsonb; n integer; before_count bigint; after_count bigint; vehicle_columns text; capacity_columns text;
 begin
  item:=jsonb_build_object('id',gen_random_uuid(),'status','EMPTY','provider_handle','audit','cargo_configuration','Pickup truck',
@@ -23,19 +24,34 @@ begin
  -- current status is irrelevant: every synthetic copy below is explicitly Empty.
  select * into strict source from capacities where provider_profile_id=provider order by updated_at desc limit 1;
  select * into strict truck from vehicles where id=source.vehicle_id;
+ select * into strict page from company_pages where provider_profile_id=provider and published limit 1;
+ select string_agg(quote_ident(attname),',' order by attnum) into page_columns from pg_attribute where attrelid='public.company_pages'::regclass and attnum>0 and not attisdropped and attgenerated='';
  select string_agg(quote_ident(attname),',' order by attnum) into vehicle_columns from pg_attribute where attrelid='public.vehicles'::regclass and attnum>0 and not attisdropped and attgenerated='';
  select string_agg(quote_ident(attname),',' order by attnum) into capacity_columns from pg_attribute where attrelid='public.capacities'::regclass and attnum>0 and not attisdropped and attgenerated='';
  for n in 1..1002 loop
+  -- Independent providers have one current truck. Preserve that invariant even
+  -- in the thousand-row paging fixture instead of bypassing the unique index.
+  synthetic_actor:=gen_random_uuid();synthetic_provider:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+   values(synthetic_actor,synthetic_actor||'@example.invalid',now(),'{}','{}');
+  update profiles set role='DRIVER',active=true where id=synthetic_actor;
+  insert into provider_profiles(id,user_id,business_name,handle)
+   values(synthetic_provider,synthetic_actor,'Spatial SQL fixture','spatial-'||synthetic_provider);
+  page.id:=gen_random_uuid();page.provider_profile_id:=synthetic_provider;
+  execute format('insert into company_pages(%s) select %s from jsonb_populate_record(null::public.company_pages,$1)',page_columns,page_columns) using to_jsonb(page);
+  truck.provider_profile_id:=synthetic_provider;
   truck.id:=gen_random_uuid();truck.platform_number:='SQL-SPATIAL-'||n;truck.plate:='SQL-SPATIAL-'||n;truck.active:=true;
   execute format('insert into vehicles(%s) select %s from jsonb_populate_record(null::public.vehicles,$1)',vehicle_columns,vehicle_columns) using to_jsonb(truck);
   source.id:=gen_random_uuid();source.vehicle_id:=truck.id;source.updated_at:=now()-make_interval(secs=>n);
+  source.provider_profile_id:=synthetic_provider;source.updated_by:=synthetic_actor;
   source.expires_at:=now()+interval '1 day';source.visibility:='PRIVATE';source.market_status:='EMPTY';source.status:='EMPTY';source.available_percent:=100;
   source.availability_geometry:='RADIUS';source.work_radius_km:=10;
   source.current_route_points_json:='[]'::jsonb;source.capacity_area_boundary_json:='[]'::jsonb;
   source.location_lat:=case when n=1002 then 14 else 9 end;source.location_lng:=case when n=1002 then 47 else 38 end;
   execute format('insert into capacities(%s) select %s from jsonb_populate_record(null::public.capacities,$1)',capacity_columns,capacity_columns) using to_jsonb(source);
+  insert into vehicle_capacity_sharing(vehicle_id,mode) values(truck.id,'PRIVATE');
   insert into capacity_access_grants(vehicle_id,audience_type,recipient_email_digest,recipient_email,created_by)
-   values(truck.id,'EMAIL',recipient,'spatial@example.test',actor);
+   values(truck.id,'EMAIL',recipient,'spatial@example.test',synthetic_actor);
   if n=1002 then chosen:=source.id;end if;
  end loop;
  select count(*),min(payload->>'id')::uuid into count_rows,chosen from private_capacity_filtered_page('EMAIL',recipient,null,null,null,14,'{"near_lat":14,"near_lng":47,"near_radius_km":5}'::jsonb);
@@ -46,6 +62,7 @@ begin
  if count_rows<>0 then raise exception 'NON_OPERATIONS_VISIBLE';end if;
  select coalesce(sum((payload->>'count')::bigint),0) into before_count from public_capacity_clusters('{"viewport":[45,13,49,15]}'::jsonb);
  update capacities set visibility='OPEN' where id=source.id;
+ update vehicle_capacity_sharing set mode='PUBLIC' where vehicle_id=source.vehicle_id;
  select coalesce(sum((payload->>'count')::bigint),0),count(*) into after_count,count_rows from public_capacity_clusters('{"viewport":[45,13,49,15]}'::jsonb);
  if after_count<>before_count+1 or count_rows>200 then raise exception 'PUBLIC_AGGREGATE_COUNT_OR_BOUND';end if;
  select payload into result from public_capacity_clusters(jsonb_build_object('viewport',jsonb_build_array(45,13,49,15),'capacity_id',source.id));
