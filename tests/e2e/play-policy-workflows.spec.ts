@@ -106,7 +106,9 @@ test('Play native reviewer uses normal login and accepted terms; private guest s
 
 test('Play normal mobile signup requires account-bound consent and preserves the one-truck location/capacity workflow',async({page}:{page:any})=>{
  test.setTimeout(150000);const service=localAuditService(),email=`play-mobile-signup-${randomUUID()}@loadgistic.local`;let actor:any,session:any;
- const call=async(path:string,body?:unknown,token?:string)=>page.request.fetch('/api/mobile/'+path,{method:body===undefined?'GET':'POST',headers:{...(token?{authorization:'Bearer '+token}:{})},...(body===undefined?{}:{data:body})});
+ // This synthetic workflow owns its local IP bucket; it must not inherit the
+ // preceding shard's unrelated sign-in attempts or weaken production limits.
+ const call=async(path:string,body?:unknown,token?:string)=>page.request.fetch('/api/mobile/'+path,{method:body===undefined?'GET':'POST',headers:{'x-forwarded-for':'127.0.0.230',...(token?{authorization:'Bearer '+token}:{})},...(body===undefined?{}:{data:body})});
  try{
   const requestedAt=Date.now(),request=await call('auth/request',{email});expect(request.status()).toBe(200);const handoff=(await request.json()).handoff;
   const code=await localMailpitNumericCode(email,requestedAt,['Your Loadgistic sign-in code','Your Loadgistic signup code']);const verified=await call('auth/verify',{handoff,code});expect(verified.status()).toBe(200);session=await verified.json();expect(session.state).toBe('ONBOARDING');actor={id:session.user.id,provider_profile_id:null};

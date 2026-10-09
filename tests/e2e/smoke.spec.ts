@@ -200,7 +200,8 @@ test('public mobile shell keeps every visitor destination directly reachable',as
       page.waitForURL(/\/privacy$/),
       workspaceNav.getByRole('link',{name:'Privacy',exact:true}).click()
     ]);
-    await expect(page.getByRole('heading',{name:'Your information, handled with clear boundaries.'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Privacy',exact:true,level:1})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Delete account and data',exact:true})).toBeVisible();
     await expect(page.getByRole('navigation',{name:'Public workspace navigation'}).getByRole('link',{name:'Privacy',exact:true})).toHaveAttribute('aria-current','page');
     await expect(page.locator('.home-footer')).toHaveCount(0);
     return;

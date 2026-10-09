@@ -88,17 +88,19 @@ build/push. Check the actual provider result before retrying an ambiguous reques
 Read-only EAS metadata confirms the Play submission binding is absent while
 FCM remains assigned to Firebase loadgistic-f082a. The current specific bundle
 build is b111a2a2-a3b5-4cea-92a2-735d8962d944 (source ae8baba); its final artifact
-inspection now passes; the exact file/hash is recorded above. Owner-facing setup uses these exact destinations:
-Google Cloud project loadgistic-f082a, dedicated loadgistic-play-submit service
-account without project IAM roles, Android Developer API, Play app-only draft/
-testing permissions and Expo's Submit credential field for com.loadgistic.app.
+inspection now passes; the exact file/hash is recorded above. Owner-facing setup now uses a dedicated **Loadgistic Play** Cloud project and
+`loadgistic-play-publisher` service account without Cloud project IAM roles.
+Enable Google Play Android Developer API. The owner explicitly selected temporary
+**app-level Admin for Loadgistic only**, connecting the key to Expo's Submit field
+for com.loadgistic.app. Firebase FCM remains a separate unchanged credential.
 
 The owner has created the Console entry. Remaining owner connection: enroll its signing path, create a dedicated publishing service account, enable
 the Android Developer API, grant that account access only to this Play app, and
 assign its key in EAS's Android `com.loadgistic.app` **Google service account key
 for EAS Submit** setting. The existing Firebase FCM binding remains unchanged.
-No Play publishing key is currently verified. Use the Expo dashboard to upload
-private material directly; never copy it into source, app environment or chat.
+No Play publishing key is currently verified. The owner may save the dedicated key at ignored, protected
+`.local/google-play-publisher.json` for bounded agent assignment to EAS Submit.
+Keep it out of source, app environments, build uploads and logs.
 
 The existing Expo login can operate this app once the publishing credential is
 connected. There is no verified Play Console connection or CLI Google login in
@@ -107,14 +109,12 @@ For the new policy release, record its newly verified immutable build ID here
 before producing the submission command. Never submit the historical code-3 ID
 as if it contains the new workflows, and never select `--latest`.
 
-For this first draft, select App permissions for Loadgistic only: View app
-information (read-only), Edit and delete draft apps, Release apps to testing
-tracks. Testing release covers draft uploads; tester-list management is separate.
-Google publishes no per-endpoint proof that draft-edit permission is additionally
-mandatory, so retain the exact permission/error evidence rather than assuming all
-Expo FYI permissions are needed. A testing publisher can roll out testing tracks;
-it is not provider-enforced draft-only authority. Our selected profile binds
-internal/draft, and no public release permission is granted.
+The initial limited-publisher proposal has been superseded by the owner's
+October 9 app-level Admin decision. Select **App permissions → Loadgistic → Admin
+(all permissions)**, leaving Account permissions empty. This credential can
+perform production actions technically; the current authorized workflow is test
+launch/setup, not public publication. After setup, reduce it to the actual
+release/testing, tester-list, store-presence and policy permissions needed.
 [Google permission definitions](https://support.google.com/googleplay/android-developer/answer/9844686?hl=en).
 
 There is an initial-upload documentation conflict: Google's Edits guide still
@@ -126,28 +126,26 @@ same already-consumed version again.
 [Google Edits limitation](https://developers.google.com/android-publisher/edits),
 [Expo first submission](https://docs.expo.dev/submit/android/#first-time-submission).
 
-Review minimum app-scoped draft/testing rights before granting them. Account-wide
-Admin, financial/orders, unrelated apps and production release access are outside
-this internal-upload scope. If the provider demands broader permissions, inspect
-its exact error and resolve the requirement with the owner; do not broaden access
-as a retry. Signing enrollment stays owner-controlled and must be completed before
-a limited publisher is used. Tester enrollment and internal rollout remain
-separate from draft submission; a successful upload is not user availability.
+Account-wide Admin and unrelated apps remain outside scope. Initial app-level
+Admin is owner-authorized; inspect exact API errors without broadening account
+access or changing signing/keys as a retry. Signing enrollment and actual update
+compatibility still require verification. Tester enrollment and test-track
+rollout are separate from draft submission; upload alone is not availability.
 [Expo prerequisites/submission](https://docs.expo.dev/submit/android/),
 [Service-account setup](https://github.com/expo/fyi/blob/main/creating-google-service-account.md).
 
 ## Owner console steps for the first internal test
 
-1. Sign in to the intended developer account and verify its identity. Create only
-   **Loadgistic**, choose **App**, and review the language, pricing and developer
-   declarations. The draft copy below is English. Package identity will be bound
-   by the reviewed `com.loadgistic.app` bundle; do not select another application.
+1. Sign in as **marketvision.tech@gmail.com** and open the already-created
+   **Loadgistic** entry (developer 5256539403314542898 / app 4974969611761012361).
+   Keep **App / Free / English (United States)**. Do not create another app.
+   Package identity must match the reviewed `com.loadgistic.app` bundle.
 2. Review **Play App Signing / App integrity** and make the signing decision
    above before releasing. Console labels may vary. Retain the selected public
    signing and upload certificates; keep private material in the owner-controlled
    credential workflow.
 3. Open **Testing → Internal testing → Create release**. Upload only the final
-   verified `.aab`, confirm `com.loadgistic.app`, `1.0.2`, code `3`, and inspect
+   verified new `.aab`, confirm `com.loadgistic.app`, `1.0.3`, code `4`, and inspect
    every console error or required declaration. Save a draft with the release
    notes below. An APK download from Expo is not this AAB.
 4. In **Testers**, create an owner-controlled list of up to **100 Google-account
@@ -155,6 +153,12 @@ separate from draft submission; a successful upload is not user availability.
    and approving the internal release, roll it out to that track and copy its
    opt-in link. Testers must join with an allowed account. The first test link can
    take several hours to become available; it is not a public searchable launch.
+   For the owner's 14-day goal, then open **Testing → Closed testing**, verify
+   the actual track name, and promote/reuse this same uploaded version there.
+   Do not upload code 4 twice. Enroll at least 12 distinct Google-account testers,
+   roll out the closed release after its required declarations/review, and share
+   that track's opt-in link. The clock starts with actual continuous closed-test
+   enrollment, not the Expo APK, an internal draft or key setup.
 5. Verify an actual Play installation and the selected signing/update path,
    account-free capacity, authenticated workspaces, denied permissions, Tracking
    and optional alerts. Record the release/build ID and actual phone results;
@@ -208,7 +212,7 @@ For agreed shipments, drivers can share an approximate location with permission,
 Optional document review helps people assess providers and is not a service guarantee. Loadgistic does not publish shipment demand or handle transactions.
 ```
 
-**Release name:** `1.0.2 (3) — internal test`
+**Release name:** `1.0.3 (4) — test release`
 
 **English release notes**
 

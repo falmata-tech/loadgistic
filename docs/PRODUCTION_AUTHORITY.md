@@ -1,4 +1,30 @@
-## October 9 Google Play preparation — owner requested
+## October 9 Play-policy rollout approval
+
+The owner explicitly approved the bounded review at
+`.local/play-policy-rollout-review.md`: exact migrations 131–136 on
+tpwyyzoqijjmbvsmmvcm (ledger 130 → 136), matching Loadgistic web release and
+verified Android 1.0.3/code-4 builds, and three new private synthetic reviewer
+identities. SQL digest is
+`e28fa7445a254e80b98dac39593174ca0117605569672cd749e7caacf048f7fd`;
+reviewer-plan digest is
+`177f224376ea50e58ba29c8ae38cf0dfa8673b9f11a8b04f7f3f4e653cb9314c`.
+Fresh encrypted backup and network-disabled restore/migration rehearsal pass.
+Preserve every exact-source CI, RLS/ACL/advisor, immutable-build and monitored
+rollout gate. No production account erasure is authorized by this release;
+fulfillment remains a separately reviewed administrator request.
+
+The owner also authorized a dedicated Google Play service account with temporary
+**app-level Admin for Loadgistic only**, connecting it to Expo and managing the
+test launch on their behalf. App-scoped access overrides the earlier limited-
+publisher proposal for this initial setup; it does not authorize account-wide
+access or another app/project. The current goal is closed testing for production
+access, with internal draft initialization if the provider requires it. Do not
+publish publicly merely because the credential has that capability. Existing
+Firebase credentials, other apps and unrelated provider settings stay outside
+scope. Keep private publishing material out of source/builds/logs, verify the
+exact credential/project/package, and stop on ambiguous remote results.
+
+## October 9 Google Play preparation — historical before app creation
 
 After the published web/Expo release, the owner requested help getting Loadgistic
 onto Google Play and confirmed only the developer account exists; there is no
