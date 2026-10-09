@@ -1,3 +1,4 @@
+import {chooseDate} from './date-picker-helper';
 import {test,expect} from '@playwright/test';
 import type {Page} from 'playwright-core';
 import {createClient} from '@supabase/supabase-js';
@@ -29,11 +30,11 @@ test('uncertain Tracking creation preserves the draft and prevents another save'
   await page.goto('/app/provider-shipments/new');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
   await page.getByLabel('Truck',{exact:true}).selectOption({index:1});await page.getByLabel('Cargo summary').fill('Retain this cargo draft');
   for(const [label,query] of [['Origin','Adama'],['Destination','Addis Ababa']]){await page.getByRole('combobox',{name:label,exact:true}).fill(query);await page.getByRole('option',{name:new RegExp(query)}).first().click();}
-  await page.getByLabel('Main customer email').fill('held@example.test');
+  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));await page.getByLabel('Shipment owner email').fill('held@example.test');
   await page.route('**/api/provider-shipments',async route=>{calls++;await held;await route.abort().catch(()=>{});});await page.clock.install();
   await page.getByRole('button',{name:'Start Tracking',exact:true}).click();await expect.poll(()=>calls).toBe(1);await page.clock.runFor(16000);
   await expect(page.locator('.flash.error[role=alert]')).toContainText('could not confirm whether Tracking was created');await expect(page.getByRole('button',{name:'Start Tracking',exact:true})).toBeDisabled();
   await expect(page.getByLabel('Cargo summary')).toHaveValue('Retain this cargo draft');await expect(page.getByRole('link',{name:'Check my Tracking list'})).toHaveAttribute('href','/app/provider-shipments');expect(calls).toBe(1);
   await page.screenshot({path:info.outputPath('uncertain-tracking.png'),fullPage:true});
- }finally{release();await page.unrouteAll({behavior:'wait'});await session.auth.signOut({scope:'local'});}
+ }finally{release();if(!page.isClosed())await page.unrouteAll({behavior:'wait'});await session.auth.signOut({scope:'local'});}
 });

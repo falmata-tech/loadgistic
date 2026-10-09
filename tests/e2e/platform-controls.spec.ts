@@ -3,30 +3,15 @@ import {expect,test} from '@playwright/test';
 import {auditLogin} from './audit-helpers';
 async function login(page:any,email:string){await auditLogin(page,email);}
 
-test('admin access controls are responsive and native saves retain submitted values',async({page}:{page:any},info:any)=>{
+test('retired account billing controls cannot be enabled by an administrator',async({page}:{page:any},info:any)=>{
   await login(page,'admin@loadgistic.local');await page.goto('/admin/settings');
-  const form=page.locator('form.platform-control-card');
-  await form.getByLabel('Trial, then payment').check();
-  await expect(form.getByRole('checkbox')).toHaveAttribute('required','');
-  await expect(form).toContainText('fresh seven-day trial');
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.locator('form.platform-control-card')).toHaveCount(0);
+  await expect(page.getByText('Trial, then payment',{exact:true})).toHaveCount(0);
+  const response=await page.request.post('/api/admin/settings',{form:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}});
+  expect(response.status()).toBe(410);expect((await response.json()).error).toBe('Platform payment plans are not offered.');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.screenshot({path:info.outputPath('activation-controls.png')});
-  await form.getByLabel('Free access').check();
-  let submitted='';let pending:any=null;
-  await page.exposeFunction('recordPendingSubmit',(state:any)=>{pending=state;});
-  await page.evaluate(()=>document.addEventListener('submit',event=>{
-    // Observe after the app listener, before native navigation replaces the
-    // document. Never freeze a mobile navigation to inspect its old context.
-    queueMicrotask(()=>{const form=event.target as HTMLFormElement;const button=(event as SubmitEvent).submitter;
-      (window as any).recordPendingSubmit({busy:form.getAttribute('aria-busy'),pending:button?.hasAttribute('data-pending-submit'),disabled:button?.hasAttribute('disabled')});});
-  },{once:true}));
-  await page.route('**/api/admin/settings',async(route:any)=>{submitted=route.request().postData()||'';await route.continue();});
-  await form.getByRole('button',{name:'Save access mode'}).click();
-  await expect(page.getByText('Workspace access updated.',{exact:true})).toBeVisible();
-  expect(pending).toEqual({busy:'true',pending:true,disabled:false});
-  expect(new URLSearchParams(submitted).get('section')).toBe('ACCESS');
-  expect(new URLSearchParams(submitted).get('mode')).toBe('FREE');
-  await expect(page.getByLabel('Free access')).toBeChecked();
+  await page.screenshot({path:info.outputPath('billing-controls-retired.png')});
 });
 
 test('Featured automatic selection can be switched off and prepared without losing manual controls',async({page}:{page:any},info:any)=>{
@@ -60,7 +45,7 @@ test('Featured automatic selection can be switched off and prepared without losi
   const trucks=page.locator('.featured-truck-tile');
   await expect(trucks.first()).toBeVisible();
   expect(await trucks.count()).toBeLessThanOrEqual(8);
-  await expect(trucks.first()).toContainText(/Company driver|Owner-operator|Self-managed driver/);
+  await expect(trucks.first()).toContainText(/Company driver|Independent driver/);
   await trucks.first().click();
   await expect(page.locator('.featured-truck-dialog')).toBeVisible();
   await expect(page.locator('.featured-truck-dialog').getByRole('link',{name:'Transporter profile'})).toBeVisible();
@@ -68,7 +53,8 @@ test('Featured automatic selection can be switched off and prepared without losi
 
 test('provider free access has no payment form or countdown and cannot change platform settings',async({page,request}:{page:any;request:any})=>{
   await login(page,'driver@loadgistic.local');await page.goto('/app/more');
-  await expect(page.getByText('Free access · no payment required')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();
+  await expect(page.getByText('Free access · no payment required',{exact:true})).toHaveCount(0);
   await expect(page.locator('.account-payment-card,.plan-deadline')).toHaveCount(0);
   const denied=await page.request.post('/api/admin/settings',{form:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}});
   expect(denied.status()).toBe(403);

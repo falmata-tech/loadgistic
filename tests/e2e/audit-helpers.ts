@@ -41,3 +41,47 @@ export async function auditProvider(service:any,prefix:string){
   return {id,email,role:'DRIVER',driver_kind:'SELF_MANAGED',provider_profile_id:provider.id,suffix};
  }catch(error){checked(await service.auth.admin.deleteUser(id));throw error;}
 }
+
+export async function auditFleetProvider(service:any,prefix:string){
+ const suffix=randomUUID().slice(0,8),email=`${prefix}-${suffix}@loadgistic.local`;
+ const id=checked(await service.auth.admin.createUser({email,email_confirm:true})).user.id;
+ checked(await service.from('profiles').update({role:'TRANSPORTER',active:true,full_name:`Audit fleet ${suffix}`}).eq('id',id));
+ const organization=checked(await service.from('organizations').insert({name:`Audit fleet ${suffix}`,handle:`${prefix}-${suffix}`,type:'TRANSPORT_COMPANY'}).select('id').single());
+ checked(await service.from('organization_members').insert({organization_id:organization.id,user_id:id,membership_role:'OWNER'}));
+ checked(await service.from('company_pages').insert({organization_id:organization.id,published:false}));
+ return {id,email,role:'TRANSPORTER',organization_id:organization.id,provider_profile_id:null,suffix};
+}
+
+// Disposable fixtures only: production history uses restricted foreign keys.
+export async function auditDeleteVehicles(service:any,column:string,value:string|string[]){
+ const url=new URL(service.supabaseUrl);if(!['localhost','127.0.0.1'].includes(url.hostname)||url.port!=='55321'||!['id','provider_profile_id','organization_id'].includes(column))throw Error('LOCAL_FIXTURE_DELETION_REQUIRED');
+ let query=service.from('vehicles').select('id');query=Array.isArray(value)?query.in(column,value):query.eq(column,value);
+ const rows=checked(await query),ids=rows.map((row:{id:string})=>row.id);
+ if(ids.length)checked(await service.from('vehicle_capacity_sharing').delete().in('vehicle_id',ids));
+ let deletion=service.from('vehicles').delete();return await (Array.isArray(value)?deletion.in(column,value):deletion.eq(column,value));
+}
+
+export async function auditProof(service:any,shipmentId:string){
+ const bytes=readFileSync('public/icon-192.png'),path=`tracking-proof/${shipmentId}/${randomUUID()}.png`;
+ checked(await service.storage.from('shipment-proof').upload(path,bytes,{contentType:'image/png'}));
+ return {path:`supabase://shipment-proof/${path}`,originalName:'synthetic-proof.png',mimeType:'image/png'};
+}
+
+export async function auditTrackingOwnerLogin(page:any,email:string){
+ const {localMailpitNumericCode}=await import('./mailpit-helper');
+ await page.goto('/track');await page.getByLabel('Email',{exact:true}).fill(email);
+ const since=Date.now();await page.getByRole('button',{name:'Email me a code',exact:true}).click();
+ await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code'));
+ await page.getByRole('button',{name:'Open tracking',exact:true}).click();
+ await expect(page.getByText('Private shipment tracking',{exact:true})).toBeVisible({timeout:30000});
+}
+
+export async function auditFleetDriver(service:any,owner:any,vehicleId:string){
+ const id=checked(await service.auth.admin.createUser({email:`fleet-audit-${randomUUID()}@example.test`,email_confirm:true})).user.id;
+ checked(await service.from('profiles').update({role:'DRIVER',active:true,full_name:'Audit company driver'}).eq('id',id));
+ checked(await service.from('organization_members').insert({organization_id:owner.organization_id,user_id:id,membership_role:'DRIVER'}));
+ checked(await service.from('drivers').insert({organization_id:owner.organization_id,user_id:id,name:'Audit company driver'}));
+ const {updateFleetDriverAccess}=await import('../../src/lib/fleet.js');
+ await updateFleetDriverAccess(owner,id,{vehicleId,canManageCapacity:true,canManageTracking:true});
+ return {id,role:'DRIVER',driver_kind:'COMPANY',organization_id:owner.organization_id};
+}

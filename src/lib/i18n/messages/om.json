@@ -1478,5 +1478,10 @@
   "New": "Haaraa",
   "Retry sending message": "Ergaa irra deebiʼii ergi",
   "Retry starting chat": "Marii irra deebiʼii jalqabi",
-  "Sharing updated.": "Qindaaʼinni qooduu haaromfameera."
+  "Sharing updated.": "Qindaaʼinni qooduu haaromfameera.",
+  "Retire truck": "Konkolaataa hojii irraa dhaabi",
+  "Restore truck": "Konkolaataa gara hojiitti deebisi",
+  "This change retains past records.": "Jijjiiramni kun galmee durii hin haqu.",
+  "Remove the truck from active work while retaining its history. Active Tracking must be resolved first.": "Konkolaataan hojii amma jiru keessaa ba’a; galmeen durii ni tura. Fe’iinsi hordofamaa jiru dura xumuramuu qaba.",
+  "I confirm this truck change.": "Jijjiirama konkolaataa kana nan mirkaneessa."
 }

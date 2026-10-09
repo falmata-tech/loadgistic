@@ -1,3 +1,29 @@
+## October 8 final browser gate follow-up — in progress
+
+Candidate `8028574` passed validation, container and native boundaries, but full
+browser CI exposed older fixtures and assertions that had not followed the
+accepted single-truck, named-contact, required delivery/proof/owner approval,
+five-minute Tracking and billing-retirement contracts. Production stays unchanged.
+
+Ordered completion work (FEAT-FLT-001, FEAT-TRK-001, FEAT-DAT-001,
+FEAT-SUP-001 and FEAT-MKT-001):
+
+- [x] Repair valid local-only fixtures and exercise current contracts rather than
+  restoring retired controls or weakening account, evidence or privacy rules.
+- [x] Owner approved the restored web/native retirement control and compact truck
+  details; scoped Expo preview retirement saves and retains the truck's history.
+- [ ] Finish affected desktop/phone workflows and diagnose actual defects separately.
+  Current evidence: 473/473 root tests, 118/118 native tests, types/lint, six focused
+  account/Tracking/modal workflows, both independent signup paths, three fleet
+  paging cases and admin/staff web-only sign-in pass. Remaining corrected-fixture
+  checks now pass: all 18 affected desktop workflows, including fleet recovery,
+  authorized team cancellation, Featured permissions, interrupted saves and
+  provider Support. Phone coverage and exact-candidate CI remain next; no
+  production rollout is claimed. Final native export and runtime audit pass.
+  Next tester build is 1.0.2/code 3 to distinguish it from the earlier candidate.
+- [ ] Bind final source, full CI, packaging and existing owner-approved SQL to the
+  verified result, then complete the monitored web and Android tester rollout.
+
 ## October 8 search boundary and scale follow-up — local
 
 The public endpoint's obsolete `overview=1` switch still selected an older

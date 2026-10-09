@@ -13,11 +13,12 @@ test('transport companies, owner-operators and company drivers retain dashboard 
  try{
   signouts.push(await localSupportLogin(staffPage,admin.id));
   organization=checked(await service.from('organizations').insert({name:'Support fixture fleet',handle:`support-${id}`,type:'TRANSPORT_COMPANY',public_visibility:'PRIVATE'}).select('id').single()).id;
+  checked(await service.from('company_pages').insert({organization_id:organization,published:false}));
   for(const kind of ['SELF_MANAGED','COMPANY','TRANSPORTER']){
    const role=kind==='TRANSPORTER'?'TRANSPORTER':'DRIVER';
    checked(await service.from('organization_members').delete().eq('user_id',id));
    checked(await service.from('provider_profiles').delete().eq('user_id',id));
-   if(kind==='SELF_MANAGED')checked(await service.from('provider_profiles').insert({user_id:id,business_name:'Owner-driver support fixture',handle:`support-${id}`,public_visibility:'PRIVATE'}));
+   if(kind==='SELF_MANAGED'){const provider=checked(await service.from('provider_profiles').insert({user_id:id,business_name:'Owner-driver support fixture',handle:`support-${id}`,public_visibility:'PRIVATE'}).select('id').single());checked(await service.from('company_pages').insert({provider_profile_id:provider.id,published:false}));}
    else checked(await service.from('organization_members').insert({user_id:id,organization_id:organization,membership_role:kind==='COMPANY'?'DRIVER':'OWNER'}));
    checked(await service.from('profiles').update({role,active:true,full_name:'Provider support review'}).eq('id',id));
    signouts.push(await localSupportLogin(page,id));await page.goto('/app/home');

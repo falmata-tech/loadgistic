@@ -87,7 +87,7 @@ test('email-unlocked private map reserves navigation and logout space',async({pa
   const vehicles=await listPrivateCapacityNetwork(actor);
   expect(vehicles.length).toBeGreaterThan(0);
   const email=`shell-${randomUUID()}@example.test`;
-  await grantPrivateCapacityAccess(actor,{vehicleId:vehicles[0].id,email});
+  await grantPrivateCapacityAccess(actor,{name:'Synthetic recipient',vehicleId:vehicles[0].id,email});
   try{
     await page.goto('/shared-capacity');
     await page.getByLabel('Email',{exact:true}).fill(email);

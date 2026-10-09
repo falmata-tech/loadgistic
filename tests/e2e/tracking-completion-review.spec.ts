@@ -1,6 +1,7 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
-import {localAuditService,checked,auditLogin,auditProvider} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditProvider,auditTrackingOwnerLogin} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
@@ -27,17 +28,18 @@ test('completed delivery emails its customer and accepts exactly one visible cus
   const service=localAuditService();let actor:any;let vehicleId='';let shipmentId='';let guest:any;
   try{
     actor=await auditProvider(service,'demo-review');
-    const vehicle=await createProviderVehicle(actor,{make:'Toyota',model:'Review audit',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});
+    const vehicle=await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Review audit',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});
     vehicleId=vehicle.id;
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
     const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
     const email=`completion-${randomUUID()}@example.test`;
-    const shipment=await createProviderShipment(actor,{vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Synthetic demo completion',customerEmail:email,trackingMode:'STATUS_ONLY'});
+    const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Synthetic demo completion',customerEmail:email,trackingMode:'STATUS_ONLY'});
     shipmentId=shipment.id;
     await auditLogin(page,actor.email);await page.goto(`/app/provider-shipments/${shipmentId}`);
     const completedAfter=Date.now();
-    for(const [status,label] of [['TO_PICKUP','Going to pickup'],['LOADING','Loading'],['IN_TRANSIT','En route'],['UNLOADING','Unloading'],['COMPLETED','Complete']]){
+    for(const [status,label] of [['TO_PICKUP','Going to pickup'],['LOADING','Loading'],['IN_TRANSIT','En route'],['UNLOADING','Unloading']]){
       await page.locator(`input[name=nextStatus][value=${status}]`).check();
+      if(['LOADING','UNLOADING'].includes(status))await page.locator('input[name=proof]').setInputFiles('public/icon-192.png');
       // Native POST redirects stream the workspace shell before the result.
       // Await this submission's full destination response, not a prior flash.
       const destination=page.waitForResponse((response:any)=>{
@@ -49,13 +51,16 @@ test('completed delivery emails its customer and accepts exactly one visible cus
       await expect(page.locator('.alert.success')).toContainText(status==='COMPLETED'?'Tracking complete.':'Tracking status updated.');
       expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe(status);
     }
-    await completionCode(email,completedAfter);
+    await expect(page.locator('input[name=nextStatus][value=COMPLETED]')).toHaveCount(0);
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize()!,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.248'}});
     const customer=await guest.newPage();await customer.goto('/track');
     await customer.getByLabel('Email',{exact:true}).fill(email);
     const requested=Date.now();await customer.getByRole('button',{name:'Email me a code'}).click();
     await customer.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requested,'Your Loadgistic tracking sign-in code'));
     await customer.getByRole('button',{name:'Open tracking'}).click();
+    await customer.getByRole('button',{name:'Approve unloading',exact:true}).click();
+    expect(checked(await service.from('provider_shipments').select('operational_status,handover_approved_at').eq('id',shipmentId).single())).toMatchObject({operational_status:'COMPLETED'});
+    await completionCode(email,completedAfter);
     await expect(customer.getByLabel('Review code',{exact:true})).toHaveCount(0);
     await expect(customer.getByRole('heading',{name:'Review the provider'})).toBeVisible({timeout:15000});
     await customer.getByLabel('Rating',{exact:true}).selectOption('4');
@@ -76,7 +81,7 @@ test('completed delivery emails its customer and accepts exactly one visible cus
       checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));
       checked(await service.from('provider_shipments').delete().eq('id',shipmentId));
     }
-    if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await service.from('vehicles').delete().eq('id',vehicleId));}
+    if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
     if(actor){checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));}
   }
 });

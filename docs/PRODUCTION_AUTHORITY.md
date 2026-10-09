@@ -6,12 +6,19 @@ Loadgistic release with the existing backup/restore, current visual review, exac
 candidate/SQL/field review, security/CI and monitored-rollout controls. Targets are
 Supabase tpwyyzoqijjmbvsmmvcm, Netlify dbb0fcec-9ec9-4511-9737-db0e32849af5 /
 loadgistic.com and @falmatad/loadgistic (a2d7e0a9-2fe4-4188-804e-40d8c3486ac7),
-Android com.loadgistic.app. Pending local migrations are 115–128; only the native
+Android com.loadgistic.app. Pending local migrations are 115–130; only the native
 push sender flag is a proposed new hosted setting. Its exact plan/evidence must
 exist before applying it. This instruction does not waive visual review or other
 required gates; older publication authority remains consumed. Existing signing
 credentials are reused without replacement. Google Play and unrelated provider,
 Auth/SMTP, credential, billing or project changes are not included.
+
+The owner separately approved exact additive repairs 129 (Tracking approval
+retention) and 130 (search metadata cost), then explicitly approved the restored
+current-truck retirement controls and compact truck details and continued
+deployment. Their protected digest/visual evidence remains in the release plan.
+The final instruction to release while the owner is offline continues this same
+bounded rollout; it does not remove security, backup or exact-source CI checks.
 
 ## October 8 owner-delegated FCM V1 upload — completed
 

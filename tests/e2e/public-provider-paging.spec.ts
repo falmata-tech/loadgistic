@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
@@ -12,14 +13,14 @@ function localService(){
   return createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
 }
 function checked(result:any){expect(result.error).toBeNull();return result.data;}
-for(const kind of ['independent','company','single'])test(`public ${kind} fleet pages reach every truck with scoped capacity`,async({page}:{page:any},info:any)=>{
+for(const kind of ['large','company','single'])test(`public ${kind} fleet pages reach every truck with scoped capacity`,async({page}:{page:any},info:any)=>{
   test.setTimeout(150000);const service=localService();const suffix=randomUUID().slice(0,8);const handle=`paging-${suffix}`;
-  const count=kind==='independent'?105:kind==='single'?1:13;let actor='';let provider='';let org='';let vehicles:any[]=[];
+  const count=kind==='large'?105:kind==='single'?1:13;let actor='';let provider='';let org='';let vehicles:any[]=[];const driverIds:string[]=[];
   const captures=path.resolve('artifacts/public-fleet-paging-2026-09-14');mkdirSync(captures,{recursive:true});
   try{
     actor=checked(await service.auth.admin.createUser({email:`paging-${suffix}@loadgistic.local`,email_confirm:true})).user.id;
-    checked(await service.from('profiles').update({active:true,role:kind==='independent'?'DRIVER':'TRANSPORTER',full_name:`Paging${suffix} PRIVATE-LAST-NAME`,phone:'PRIVATE-ACCOUNT-PHONE'}).eq('id',actor));
-    if(kind!=='company')provider=checked(await service.from('provider_profiles').insert({user_id:actor,business_name:`Paging ${suffix}`,handle,city:'Addis Ababa'}).select('id').single()).id;
+    checked(await service.from('profiles').update({active:true,role:kind==='single'?'DRIVER':'TRANSPORTER',full_name:`Paging${suffix} PRIVATE-LAST-NAME`,phone:'PRIVATE-ACCOUNT-PHONE'}).eq('id',actor));
+    if(kind==='single')provider=checked(await service.from('provider_profiles').insert({user_id:actor,business_name:`Paging ${suffix}`,handle,city:'Addis Ababa'}).select('id').single()).id;
     else{
       org=checked(await service.from('organizations').insert({name:`Paging ${suffix}`,handle,type:'TRANSPORT_COMPANY',city:'Addis Ababa'}).select('id').single()).id;
       checked(await service.from('organization_members').insert({organization_id:org,user_id:actor,membership_role:'OWNER'}));
@@ -29,10 +30,21 @@ for(const kind of ['independent','company','single'])test(`public ${kind} fleet 
     checked(await service.from('company_pages').insert({...scope,published:true,base_region_code:region,contact_phone:'+251911111111',show_contact_phone:true,contact_email:'hidden-business@example.invalid',show_contact_email:false,contact_whatsapp:'PRIVATE-WHATSAPP',show_contact_whatsapp:false,contact_website:'https://private-website.invalid',show_contact_website:false}));
     vehicles=checked(await service.from('vehicles').insert(Array.from({length:count+1},(_,index)=>({...scope,platform_number:`PG-${suffix}-${String(index+1).padStart(3,'0')}`,label:'Synthetic paging truck',category:'TRUCK',make:'Test',model:'Paging',cargo_configuration:'Heavy rigid',plate:`PRIVATE-PLATE-${suffix}`,active:index<count}))).select('id,platform_number').order('platform_number'));
     checked(await service.from('profile_routes').insert({...scope,origin:'Regular origin',destination:'Regular destination',geometry:'ROUTE',route_points_json:[{label:'Regular origin',lat:9.03,lng:38.74},{label:'Regular destination',lat:8.75,lng:38.99}]}));
-    if(provider){
+    if(org){
+      for(const vehicle of vehicles){
+        const driver=checked(await service.auth.admin.createUser({email:`paging-driver-${randomUUID()}@example.invalid`,email_confirm:true})).user.id;driverIds.push(driver);
+        checked(await service.from('profiles').update({role:'DRIVER',active:true,full_name:'Paging driver'}).eq('id',driver));
+        checked(await service.from('organization_members').insert({organization_id:org,user_id:driver,membership_role:'DRIVER'}));
+        checked(await service.from('drivers').insert({organization_id:org,user_id:driver,name:'Paging driver'}));
+        checked(await service.from('driver_vehicle_assignments').insert({driver_user_id:driver,vehicle_id:vehicle.id,assigned_by:actor}));
+      }
+    }
+    checked(await service.from('vehicle_capacity_sharing').insert(vehicles.map((vehicle,index)=>({vehicle_id:vehicle.id,mode:[101,102].includes(index)?'PRIVATE':'PUBLIC'}))));
+    if(kind==='large'||provider){
       const now=Date.now();
+      const capacityScope=org?{provider_organization_id:org}:{provider_profile_id:provider};
       checked(await service.from('capacities').insert(vehicles.filter((_,index)=>index!==104).map((vehicle,index)=>({
-        provider_profile_id:provider,vehicle_id:vehicle.id,status:index===103?'OFF_DUTY':'EMPTY',available_percent:index===103?0:100,
+        ...capacityScope,vehicle_id:vehicle.id,status:index===103?'OFF_DUTY':'EMPTY',available_percent:index===103?0:100,
         visibility:index===101?'PRIVATE':index===102?'SAVED_PARTNERS':'OPEN',market_status:index===103?'OFF_DUTY':'EMPTY',
         location_area:index===101?'Private hidden area':'Around Addis Ababa',location_updated_at:new Date(now).toISOString(),location_lat:9.03,location_lng:38.74,
         location_precision_km:20,location_source:'DEVICE_OBSCURED',accepts_full_load:true,accepts_partial_load:false,updated_by:actor,
@@ -69,7 +81,7 @@ for(const kind of ['independent','company','single'])test(`public ${kind} fleet 
       if(pages>1)await expect(nav).toContainText(`Page ${current} of ${pages} · ${count} results`);
       await expect(regular).toContainText('Regular origin ↔ Regular destination');
       await expect(cards).toHaveCount(Math.min(12,count-(current-1)*12));
-      if(provider)await expect(page.locator('.provider-handle')).toContainText('Owner-operator');
+      if(provider)await expect(page.locator('.provider-handle')).toContainText('Independent driver');
       for(const card of await cards.all()){
         const text=await card.innerText();const match=text.match(new RegExp(`PG-${suffix}-\\d{3}`));expect(match).not.toBeNull();
         expect(seen.has(match![0])).toBe(false);seen.add(match![0]);
@@ -78,7 +90,7 @@ for(const kind of ['independent','company','single'])test(`public ${kind} fleet 
     }
     expect(seen.size).toBe(count);
     const html=await page.content();for(const hidden of [`PRIVATE-PLATE-${suffix}`,'PRIVATE-ACCOUNT-PHONE','PRIVATE-LAST-NAME','PRIVATE-WHATSAPP','private-website.invalid','hidden-business@example.invalid','Private hidden area','synthetic-private-paging-proof'])expect(html.includes(hidden),`Private field appeared in public HTML: ${hidden.replace(suffix,'fixture')}`).toBe(false);
-    if(provider&&count>1){
+    if(kind==='large'){
       await expect(page.locator('.provider-fleet-counts')).toContainText('5 with published capacity');
       const finalAvailable=cards.filter({hasText:vehicles[100].platform_number});
       await expect(finalAvailable.getByRole('button',{name:'View capacity on map',exact:true})).toBeVisible();
@@ -107,10 +119,11 @@ for(const kind of ['independent','company','single'])test(`public ${kind} fleet 
     if(actor)checked(await service.from('verification_requests').delete().eq('submitted_by',actor));
     if(actor)checked(await service.from('capacities').delete().eq('updated_by',actor));
     if(org||provider){const column=org?'organization_id':'provider_profile_id';const id=org||provider;
-      checked(await service.from('vehicles').delete().eq(column,id));checked(await service.from('company_pages').delete().eq(column,id));
+      checked(await auditDeleteVehicles(service,column,id));checked(await service.from('company_pages').delete().eq(column,id));
       if(org){checked(await service.from('organization_members').delete().eq('organization_id',org));checked(await service.from('organizations').delete().eq('id',org));}
       if(provider)checked(await service.from('provider_profiles').delete().eq('id',provider));
     }
+    for(const driver of driverIds)checked(await service.auth.admin.deleteUser(driver));
     if(actor)checked(await service.auth.admin.deleteUser(actor));
   }
 });

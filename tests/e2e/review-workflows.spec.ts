@@ -1,8 +1,10 @@
+import {auditDeleteVehicles} from './audit-helpers';
+import {chooseDate} from './date-picker-helper';
 import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {localAuditService,auditProvider,auditLogin,checked} from './audit-helpers';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+import {localAuditService,auditProvider,auditFleetProvider,auditLogin,auditProof,auditTrackingOwnerLogin,checked} from './audit-helpers';
+import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 
 test.use({extraHTTPHeaders:{'x-forwarded-for':'127.0.0.245'}});
 async function adminBrowser(browser:any,page:any,info:any){
@@ -15,12 +17,14 @@ async function cleanProvider(service:any,actor:any,extraIds:string[]=[]){
     const match=/^supabase:\/\/verification\/(.+)$/.exec(row.storage_path);
     if(match)checked(await service.storage.from('verification').remove([match[1]]));
   }
-  const ids=[actor.id,actor.provider_profile_id,...requests.map((r:any)=>r.id),...extraIds];
+  const ids=[actor.id,actor.organization_id||actor.provider_profile_id,...requests.map((r:any)=>r.id),...extraIds].filter(Boolean);
   checked(await service.from('audit_logs').delete().in('entity_id',ids));
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));
   checked(await service.from('verification_requests').delete().eq('submitted_by',actor.id));
-  checked(await service.from('provider_shipments').delete().eq('provider_profile_id',actor.provider_profile_id));
-  checked(await service.from('vehicles').delete().eq('provider_profile_id',actor.provider_profile_id));
+  const scope=actor.organization_id?'provider_organization_id':'provider_profile_id',vehicleScope=actor.organization_id?'organization_id':'provider_profile_id',scopeId=actor.organization_id||actor.provider_profile_id;
+  checked(await service.from('provider_shipments').delete().eq(scope,scopeId));
+  checked(await auditDeleteVehicles(service,vehicleScope,scopeId));
+  if(actor.organization_id)checked(await service.from('organizations').delete().eq('id',actor.organization_id));
   checked(await service.auth.admin.deleteUser(actor.id));
 }
 async function openReview(page:any,tab:string,id:string,filter:string,status='PENDING'){
@@ -41,11 +45,11 @@ async function deniedReview(page:any,path:string,form:any){
 }
 
 test('document reviews persist notes and context; each truck excludes its pending or approved permission',async({page,browser}:{page:any;browser:any},info:any)=>{
-  test.setTimeout(180000);const service=localAuditService();const actor=await auditProvider(service,'review-doc');
+  test.setTimeout(180000);const service=localAuditService();const actor=await auditFleetProvider(service,'review-doc');
   const vehicles:string[]=[];let admin:any;let guest:any;
   const marker=`review-doc-${actor.suffix}`;const bytes=readFileSync('public/icon-192.png');
   try{
-    for(const model of ['Approved first','Needs approval'])vehicles.push(checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Audit',model,plate:`TEST-${randomUUID().slice(0,8)}`,cargo_configuration:'Mini Box Truck'}})).id);
+    for(const model of ['Approved first','Needs approval'])vehicles.push(checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model,plate:`TEST-${randomUUID().slice(0,8)}`,cargo_configuration:'Mini Box Truck'}})).id);
     await auditLogin(page,actor.email);admin=await adminBrowser(browser,page,info);guest=await browser.newContext({baseURL:info.project.use.baseURL});
     for(let index=0;index<2;index++){
       if(index===0){
@@ -63,7 +67,7 @@ test('document reviews persist notes and context; each truck excludes its pendin
       await expect(page.getByLabel('Verification type',{exact:true})).toHaveValue('VEHICLE_AUTHORIZATION');
       await expect(page.getByLabel('Profile, driver, or truck',{exact:true})).toHaveValue(`VEHICLE:${vehicles[index]}`);
       await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(vehicles[index]);
-      await page.getByLabel('Permission expires',{exact:true}).fill('2099-01-01');
+      await chooseDate(page,'Permission expires',new Date(Date.now()+60*86400000).toISOString().slice(0,10));
       await page.getByLabel('Document name',{exact:true}).fill(`${marker}-${index}`);
       await page.getByLabel('Verification document',{exact:true}).setInputFiles({name:'synthetic-authorization.png',mimeType:'image/png',buffer:bytes});
       await page.getByRole('button',{name:'Submit for review',exact:true}).click();await expect(page.getByText('Verification submitted for review.',{exact:true})).toBeVisible();
@@ -99,38 +103,36 @@ test('document reviews persist notes and context; each truck excludes its pendin
   }finally{await admin?.context.close().catch(()=>{});await guest?.close().catch(()=>{});await cleanProvider(service,actor,vehicles);}
 });
 
-test('payment review updates only its synthetic plan and keeps the filtered queue',async({page,browser}:{page:any;browser:any},info:any)=>{
-  test.setTimeout(120000);const service=localAuditService();const actor=await auditProvider(service,'review-payment');const proofId=randomUUID();let admin:any;
-  const marker=`review-payment-${actor.suffix}`;
-  try{
-    const subscription=checked(await service.from('subscriptions').select('id').eq('provider_profile_id',actor.provider_profile_id).single());
-    checked(await service.from('payment_proofs').insert({id:proofId,subscription_id:subscription.id,amount_minor:125050,reference:marker,status:'PENDING'}));
-    await auditLogin(page,actor.email);await deniedReview(page,`/api/admin/payment-proofs/${proofId}`,{status:'APPROVED'});
-    expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe('PENDING');
-    admin=await adminBrowser(browser,page,info);
-    for(const [before,button,after] of [['PENDING','More info','MORE_INFO'],['MORE_INFO','Paid · 30 days','APPROVED']]){
-      const {form,row}=await openReview(admin.page,'payments',proofId,marker,before);await expect(row.getByText('No file attached.',{exact:true})).toBeVisible();await expect(row.locator('summary')).toContainText('ETB 1,250.50');
-      await form.getByRole('button',{name:button,exact:true}).click();expectContext(admin.page,'payments',marker,before);await expect(admin.page.locator('.alert.success')).toBeVisible();
-      expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe(after);
-    }
-    const plan=checked(await service.from('subscriptions').select('status,ends_at').eq('id',subscription.id).single());expect(plan.status).toBe('ACTIVE');expect(new Date(plan.ends_at).getTime()-Date.now()).toBeGreaterThan(29*86400000);
-    const denied=await deniedReview(admin.page,`/api/admin/payment-proofs/${proofId}`,{status:'REJECTED',returnTo:'https://example.invalid/steal'});
-    expect(new URL(denied.headers().location).pathname).toBe('/admin/reviews');expect(new URL(denied.headers().location).hostname).toBe('127.0.0.1');
-    expect(checked(await service.from('subscriptions').select('ends_at').eq('id',subscription.id).single()).ends_at).toBe(plan.ends_at);
-    await admin.page.goto(`/admin/reviews?tab=payments&status=APPROVED&q=${marker}&page=1.5`);await expect(admin.page.locator('.admin-review-row')).toHaveCount(1);await expect(admin.page.locator('.admin-review-row form')).toHaveCount(0);
-    await admin.page.screenshot({path:info.outputPath('reviewed-payment.png'),fullPage:true});
-  }finally{await admin?.context.close().catch(()=>{});await cleanProvider(service,actor,[proofId]);}
+test('retired payment review cannot mutate retained proof or subscription history',async({page,browser}:{page:any;browser:any},info:any)=>{
+ const service=localAuditService(),actor=await auditProvider(service,'review-payment'),proofId=randomUUID();let admin:any;
+ try{
+  const subscription=checked(await service.from('subscriptions').select('*').eq('provider_profile_id',actor.provider_profile_id).single());
+  checked(await service.from('payment_proofs').insert({id:proofId,subscription_id:subscription.id,amount_minor:125050,reference:`review-payment-${actor.suffix}`,status:'PENDING'}));
+  await auditLogin(page,actor.email);expect((await page.request.post(`/api/admin/payment-proofs/${proofId}`,{form:{status:'APPROVED'}})).status()).toBe(403);
+  admin=await adminBrowser(browser,page,info);const denied=await admin.page.request.post(`/api/admin/payment-proofs/${proofId}`,{form:{status:'APPROVED'}});
+  expect(denied.status()).toBe(410);expect((await denied.json()).error).toBe('Platform payment plans are not offered.');
+  expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe('PENDING');
+  expect(checked(await service.from('subscriptions').select('*').eq('id',subscription.id).single())).toEqual(subscription);
+  await admin.page.goto('/admin/reviews');await expect(admin.page.getByRole('link',{name:'Payments',exact:true})).toHaveCount(0);
+  await admin.page.screenshot({path:info.outputPath('payment-review-retired.png')});
+ }finally{await admin?.context.close().catch(()=>{});checked(await service.from('payment_proofs').delete().eq('id',proofId));await cleanProvider(service,actor,[proofId]);}
 });
 
 test('rating decisions preserve publication rules, require authority and retain their queue',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(120000);const service=localAuditService();const actor=await auditProvider(service,'review-rating');const ids:string[]=[];let admin:any;
   try{
-    const vehicle=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Audit',model:'Rating review',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
+    const vehicle=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Rating review',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
     await auditLogin(page,actor.email);admin=await adminBrowser(browser,page,info);
     for(const resolution of ['UPHELD','REMOVED']){
-      const shipment=await createProviderShipment(actor,{vehicleId:vehicle.id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:`Synthetic review ${actor.suffix}`,customerEmail:`rating-${randomUUID()}@example.test`,trackingMode:'STATUS_ONLY'});ids.push(shipment.id);
-      checked(await service.from('provider_shipments').update({operational_status:'COMPLETED'}).eq('id',shipment.id));
+      const ownerEmail=`rating-${randomUUID()}@example.test`;
+      const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicle.id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:`Synthetic review ${actor.suffix}`,customerEmail:ownerEmail,trackingMode:'STATUS_ONLY'});ids.push(shipment.id);
+      const proof=await auditProof(service,shipment.id);
+      await updateProviderShipmentStatus(actor,shipment.id,'LOADING','Synthetic loading',proof);
+      await updateProviderShipmentStatus(actor,shipment.id,'IN_TRANSIT','Synthetic transit');
+      await updateProviderShipmentStatus(actor,shipment.id,'UNLOADING','Synthetic unloading',proof);
+      const ownerContext=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});
+      try{const owner=await ownerContext.newPage();await auditTrackingOwnerLogin(owner,ownerEmail);await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();}finally{await ownerContext.close();}
       const reviewId=randomUUID();ids.push(reviewId);checked(await service.from('provider_reviews').insert({id:reviewId,shipment_id:shipment.id,provider_profile_id:actor.provider_profile_id,rating:2,note:'Synthetic review evidence',status:'PUBLISHED',dispute_status:'PENDING',dispute_reason:'Please inspect this synthetic review.'}));
       await deniedReview(page,`/api/admin/ratings/${reviewId}`,{status:resolution,reviewNote:'Provider cannot moderate.'});
       expect(checked(await service.from('provider_reviews').select('status,dispute_status').eq('id',reviewId).single())).toMatchObject({status:'PUBLISHED',dispute_status:'PENDING'});

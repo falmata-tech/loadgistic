@@ -24,8 +24,8 @@ test('administrator More navigation reaches one role-complete menu',async({page}
   await expect(menu.getByRole('link',{name:/^Platform records/})).toHaveAttribute('href','/admin/operations');
   await expect(menu.getByRole('link',{name:/^Featured & sponsors/})).toHaveAttribute('href','/admin/featured');
   await expect(menu.getByRole('link',{name:/^Support/})).toHaveAttribute('href','/admin/support');
-  await expect(menu.getByRole('link',{name:/^Account & plan/})).toHaveAttribute('href','/app/more');
-  await expect(menu.getByRole('link',{name:/^Account & plan/})).toHaveCount(1);
+  await expect(menu.getByRole('link',{name:/^Account/})).toHaveAttribute('href','/app/more');
+  await expect(menu.getByRole('link',{name:/^Account/})).toHaveCount(1);
   await expect(menu.getByRole('link',{name:/^Public featured programme/})).toHaveAttribute('href','/featured');
 });
 
@@ -40,6 +40,7 @@ test('featured management previews its canonical public programme',async({page}:
 });
 
 test('administrator primary destinations resolve to working pages',async({page}:{page:any})=>{
+  test.setTimeout(90_000); // Seven separately compiled dev-server destinations.
   await loginAsAdministrator(page);
   for(const path of ['/admin','/admin/operations','/admin/featured','/admin/capacity-network','/admin/reviews','/admin/support','/app/menu']){
     const response=await page.goto(path);
@@ -53,7 +54,7 @@ test('administrator Overview exposes every core record and management area',asyn
   await loginAsAdministrator(page);
   const overview=page.locator('.admin-overview-page');
   await expect(overview.getByRole('heading',{name:'Platform overview'})).toBeVisible();
-  for(const label of ['Clients','Users','Trucks','Drivers','Tracking','Capacity','Routes','Plans']){
+  for(const label of ['Clients','Users','Trucks','Drivers','Tracking','Capacity','Routes']){
     await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toBeVisible();
   }
   for(const label of ['Review Center','Private capacity','Featured & sponsors','Support & team']){
@@ -64,17 +65,17 @@ test('administrator Overview exposes every core record and management area',asyn
   await expect(navigation.getByRole('link',{name:'Records',exact:true})).toHaveAttribute('href','/admin/operations');
 });
 
-test('every Operations inventory opens a real bounded record detail',async({page}:{page:any})=>{
-  test.setTimeout(60_000);
+test('every current Operations inventory opens a real bounded record detail',async({page}:{page:any})=>{
+  test.setTimeout(120_000); // Seven inventories and their streamed record pages.
   await loginAsAdministrator(page);
-  const listLabels:Record<string,string>={WORKSPACES:'Client',USERS:'User',TRUCKS:'Truck',DRIVERS:'Driver access',TRACKING:'Tracking',CAPACITY:'Capacity',ROUTES:'Regular service',SUBSCRIPTIONS:'Plan'};
-  for(const view of ['WORKSPACES','USERS','TRUCKS','DRIVERS','TRACKING','CAPACITY','ROUTES','SUBSCRIPTIONS']){
+  const listLabels:Record<string,string>={WORKSPACES:'Client',USERS:'User',TRUCKS:'Truck',DRIVERS:'Driver access',TRACKING:'Tracking',CAPACITY:'Capacity',ROUTES:'Regular service'};
+  for(const view of ['WORKSPACES','USERS','TRUCKS','DRIVERS','TRACKING','CAPACITY','ROUTES']){
     await page.goto(`/admin/operations?view=${view}`);
     const detailLink=page.locator(`.admin-record-list a[href^="/admin/operations/${view.toLowerCase()}/"]`).first();
     await expect(detailLink,`${view} did not expose a detail destination`).toBeVisible();
     await detailLink.click();
-    await expect(page).toHaveURL(new RegExp(`/admin/operations/${view.toLowerCase()}/[0-9a-f-]+`));
-    await expect(page.locator('.admin-operation-record-card')).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/admin/operations/${view.toLowerCase()}/[0-9a-f-]+`),{timeout:20000});
+    await expect(page.locator('.admin-operation-record-card')).toBeVisible({timeout:20000});
     await expect(page.locator('.admin-operation-record-card').getByRole('heading',{name:'Record details'})).toBeVisible();
     await expect(page.getByRole('link',{name:new RegExp(`${listLabels[view]} list`,'i')})).toBeVisible();
     if(view==='TRACKING')await expect(page.getByRole('heading',{name:'Status timeline'})).toBeVisible();

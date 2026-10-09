@@ -1,3 +1,4 @@
+import {auditDeleteVehicles,auditProvider,checked} from './audit-helpers';
 import {auditLogin} from './audit-helpers';
 import {expect,test} from '@playwright/test';
 import nextEnv from '@next/env';
@@ -34,7 +35,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   expect(await dialog.evaluate((element:HTMLDialogElement)=>element.matches(':modal'))).toBe(true);
   await expect(map).toHaveAttribute('data-original-map','yes');
   await expect(dialog.getByRole('combobox')).toHaveCount(0);
-  await expect(dialog.getByRole('button',{name:/Open capacity Anyone/})).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Open to the public',exact:true})).toHaveCount(0);
   const originalStatus=await dialog.locator('input[name="status"]').inputValue();
   await expect(dialog.getByRole('radio')).toHaveCount(originalStatus==='EMPTY'?3:0);
   if(originalStatus==='EMPTY')await expect(dialog.getByRole('radio',{name:'Full or shared',exact:true})).toBeVisible();
@@ -51,15 +52,15 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   dialog=page.getByRole('dialog',{name:'Capacity sharing',exact:true});
   await expect(dialog.getByRole('button',{name:'Empty',exact:true})).toHaveCount(0);
   await expect(dialog.getByRole('radio')).toHaveCount(0);
-  const originalVisibility=await dialog.getByRole('button',{name:/Open capacity Anyone/}).getAttribute('aria-pressed')==='true'?'OPEN':'PRIVATE';
-  const otherVisibility=originalVisibility==='OPEN'?/Private capacity Your/:/Open capacity Anyone/;
-  await dialog.getByRole('button',{name:otherVisibility}).click();
+  const originalVisibility=await dialog.locator('button[aria-pressed=true]').innerText();
+  const otherVisibility=originalVisibility==='Open to the public'?'Private network':'Open to the public';
+  await dialog.getByRole('button',{name:otherVisibility,exact:true}).click();
   await page.screenshot({path:testInfo.outputPath('capacity-dialog.png')});
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(sharing).toBeFocused();
   await sharing.click();
-  await expect(dialog.getByRole('button',{name:originalVisibility==='OPEN'?/Open capacity Anyone/:/Private capacity Your/})).toHaveAttribute('aria-pressed','true');
+  await expect(dialog.getByRole('button',{name:originalVisibility,exact:true})).toHaveAttribute('aria-pressed','true');
   await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
 
   await coverage.click();
@@ -70,7 +71,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await loads.click();
   dialog=page.getByRole('dialog',{name:'Load preferences',exact:true});
   await expect(dialog.getByRole('combobox')).toHaveCount(0);
-  await expect(dialog.getByRole('button',{name:/Open capacity Anyone/})).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Open to the public',exact:true})).toHaveCount(0);
   const pickups=dialog.getByLabel('Multiple pickups');
   const dropoffs=dialog.getByLabel('Multiple drop-offs');
   const originalPick=await pickups.isChecked(),originalDrop=await dropoffs.isChecked();
@@ -78,11 +79,11 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await save(page,dialog);
   await sharing.click();
   dialog=page.getByRole('dialog',{name:'Capacity sharing',exact:true});
-  await dialog.getByRole('button',{name:otherVisibility}).click();
+  await dialog.getByRole('button',{name:otherVisibility,exact:true}).click();
   await page.route('**/api/capacity',(route:any)=>route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'Please retry this save.'})}),{times:1});
   await dialog.getByRole('button',{name:'Save',exact:true}).click();
   await expect(dialog.getByRole('alert')).toHaveText('Please retry this save.');
-  await expect(dialog.getByRole('button',{name:otherVisibility})).toHaveAttribute('aria-pressed','true');
+  await expect(dialog.getByRole('button',{name:otherVisibility,exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(map).toHaveAttribute('data-original-map','yes');
   await save(page,dialog);
   await expect(page).toHaveURL(/\/app\/home$/);
@@ -99,7 +100,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await save(page,dialog);
   await sharing.click();
   dialog=page.getByRole('dialog',{name:'Capacity sharing',exact:true});
-  await dialog.getByRole('button',{name:originalVisibility==='OPEN'?/Open capacity Anyone/:/Private capacity Your/}).click();
+  await dialog.getByRole('button',{name:originalVisibility,exact:true}).click();
   await save(page,dialog);
   await capacity.click();
   dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});
@@ -183,8 +184,9 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
   const service=createClient(url,process.env.SUPABASE_SERVICE_ROLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:9.03,longitude:38.76});
-  await login(page);
-  const created=await page.request.post('/api/fleet/vehicles',{form:{make:'Modal test',model:'Mini truck',cargoConfiguration:'Mini Box Truck',plate:`MODAL-${Date.now()}`},maxRedirects:0});
+  const actor=await auditProvider(service,'modal-capacity');
+  await auditLogin(page,actor.email);
+  const created=await page.request.post('/api/fleet/vehicles',{form:{useBasis:'OWNED',make:'Modal test',model:'Mini truck',cargoConfiguration:'Mini Box Truck',plate:`MODAL-${Date.now()}`},maxRedirects:0});
   expect(created.status()).toBe(303);
   const destination=new URL(created.headers().location);
   const vehicleId=destination.pathname.split('/').pop()!;
@@ -236,6 +238,7 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
     const ids=[vehicleId,...(data||[]).map((row:{id:string})=>row.id)];
     await service.from('audit_logs').delete().in('entity_id',ids).throwOnError();
     await service.from('capacities').delete().eq('vehicle_id',vehicleId).throwOnError();
-    await service.from('vehicles').delete().eq('id',vehicleId).throwOnError();
+    await auditDeleteVehicles(service,'id',vehicleId).then(checked);
+    await service.auth.admin.deleteUser(actor.id);
   }
 });

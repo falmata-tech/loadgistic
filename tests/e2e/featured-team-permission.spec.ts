@@ -46,8 +46,9 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   await post(staff,()=>staff.getByRole('button',{name:'Disable',exact:true}).click(),'/api/admin/featured');await expect(staff.getByText('Sponsored placement disabled.',{exact:true})).toBeVisible();
   expect(checked(await service.from('platform_controls').select('access_mode').eq('singleton',true).single()).access_mode).toBe(prior.access_mode);
   await page.goto('/admin/support');const edit=page.locator(`form[action="/api/admin/support-agents/${staffId}"]`);await page.locator('details').filter({has:edit}).locator('summary').click();
+  await expect(edit.locator('[name=canManageBilling]')).toHaveValue('');
   // Responsibilities combine: Featured never removes separately granted work.
-  for(const permission of ['canManageSupport','canManageBrokerage','canManageBilling','canManageCustomers'])await edit.locator(`[name=${permission}]`).check();
+  for(const permission of ['canManageSupport','canManageBrokerage','canManageCustomers','canManageTrust'])await edit.locator(`[name=${permission}]`).check();
   await edit.locator('[name=available]').uncheck();
   await post(page,()=>edit.getByRole('button',{name:'Save permissions',exact:true}).click(),'/api/admin/support-agents');await expect(page).toHaveURL(/success=/);
   await staff.goto('/admin/featured');await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});

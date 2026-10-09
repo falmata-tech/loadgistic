@@ -17,6 +17,17 @@ This supersedes independent multi-truck registration in older scenarios. Company
 fleets retain multi-truck/driver management. Former Owner-operator and Self-managed
 driver accounts display Independent driver, retaining DRIVER role/provider identity.
 
+### Scenario: stop using the current truck before account closure
+
+Given an independent driver has one current truck and no unfinished Tracking
+When they retire that truck from My truck on web or mobile
+Then the existing authorized lifecycle command removes it from active work
+And its documents, capacity and shipment history remain attached to that truck
+And the account has zero current trucks, can add a first truck again, or proceed
+through email-verified account deactivation
+And no driver/fleet management or restore selector is granted
+And unfinished Tracking still blocks retirement and account closure.
+
 ### Scenario: one truck and no fleet authority
 
 Given an active independent provider with zero or one current truck

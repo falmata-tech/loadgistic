@@ -28,8 +28,8 @@ export function MapTruckDetails({truck}:{truck:TruckDetails}) {
         <span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}><Text message={truck.status==='PARTIAL'?'Partial capacity':'Empty truck'}/></span>
         <h3>{truck.vehicle_make} {truck.vehicle_model}</h3>
         {truck.cargo_configuration?<p><Text message={truck.cargo_configuration}/></p>:null}
-        {truck.sharing_mode?<p><Text message={capacitySharingLabel(truck.sharing_mode)}/></p>:null}
-        {loadPreference?<p className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></p>:null}
+        <div className="truck-inspection-tags">{truck.sharing_mode?<span><Text message={capacitySharingLabel(truck.sharing_mode)}/></span>:null}
+        {loadPreference?<span className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></span>:null}</div>
       </div>
     </div>
     <div className="truck-inspection-people">

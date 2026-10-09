@@ -4,12 +4,12 @@ import {Text,Localized} from '@/components/localization';
 import {EthiopiaPlaceInput} from './ethiopia-place-input';
 export function VehicleLifecycleControl({id,retired=false}:{id:string;retired?:boolean}){
  const action=retired?'RESTORE':'RETIRE';const label=retired?'Restore truck':'Retire truck';
- return <details className="card"><summary>{label}</summary><form className="stack" action={`/api/fleet/vehicles/${id}/lifecycle`} method="post">
+ return <details className="card"><summary><Text message={label}/></summary><form className="stack" action={`/api/fleet/vehicles/${id}/lifecycle`} method="post">
   <input type="hidden" name="action" value={action}/>
   <p>{retired?<Text message="The truck returns Off Duty. Assign its Driver again before publishing new capacity."/>:<Text message="Retirement removes this truck from discovery and ends its current Driver assignment. Resolve active Tracking first; history stays available."/>}</p>
   <label><Text message="Reason"/><textarea name="reason" minLength={5} maxLength={500} required/></label>
-  <label><input type="checkbox" name="confirm" value={action} required/><Text message="I confirm this truck should be "/>{retired?<Text message="restored"/>:<Text message="retired"/>}.</label>
-  <button className={`button ${retired?'secondary':'danger'}`}>{label}</button>
+  <label className="checkbox-control"><input type="checkbox" name="confirm" value={action} required/><Text message="I confirm this truck should be "/>{retired?<Text message="restored"/>:<Text message="retired"/>}.</label>
+  <button className={`button ${retired?'secondary':'danger'}`}><Text message={label}/></button>
  </form></details>;
 }
 export function TrackingRecoveryControls({context}:{context:any}){
@@ -30,7 +30,7 @@ export function TrackingRecoveryControls({context}:{context:any}){
   {shared}<button className="button secondary"><Text message="Save reassignment"/></button></form></details>
  <details className="card"><summary><Text message="Cancel Tracking"/></summary><form className="stack" action={action} method="post"><input type="hidden" name="action" value="CANCEL"/>
   <p><Text message="Cancellation ends guest access and keeps provider history. This action cannot be undone here."/></p>{shared}
-  <label><input type="checkbox" name="confirm" value="CANCEL" required/><Text message="I confirm this Tracking should be cancelled."/></label>
+  <label className="checkbox-control"><input type="checkbox" name="confirm" value="CANCEL" required/><Text message="I confirm this Tracking should be cancelled."/></label>
   <button className="button danger"><Text message="Cancel Tracking"/></button></form></details>
  </Localized>;
 }

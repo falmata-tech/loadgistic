@@ -202,8 +202,26 @@ jobs:
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
 
+      - name: Install locked Expo preview dependencies
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Start the isolated Loadgistic Expo preview for staff mobile-denial workflows
+        working-directory: apps/mobile
+        run: |
+          mkdir -p ../../.local
+          npm run preview:web > ../../.local/ci-mobile-preview.log 2>&1 &
+          echo "$!" > ../../.local/ci-mobile-preview.pid
+
       - name: Run desktop and mobile browser workflows
         run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
+
+      - name: Stop the task-owned Expo preview
+        if: always()
+        run: |
+          if test -f .local/ci-mobile-preview.pid; then
+            kill "$(cat .local/ci-mobile-preview.pid)" 2>/dev/null || true
+          fi
 
       - name: Stop isolated Supabase
         if: always()

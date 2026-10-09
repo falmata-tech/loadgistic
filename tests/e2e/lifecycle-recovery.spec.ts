@@ -1,23 +1,27 @@
-import {test,expect} from '@playwright/test';
+import {auditDeleteVehicles} from './audit-helpers';
+import {test,expect as baseExpect} from '@playwright/test';
+// Native form redirects stream a loading shell before their final outcome.
+// These are workflow assertions; the unchanged scale suite owns latency limits.
+const expect=baseExpect.configure({timeout:20000});
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {localAuditService,checked,auditLogin,auditProvider} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditProvider,auditFleetProvider,auditFleetDriver} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
 
 test('owners and Operations recover Tracking, preserve history and retire trucks safely',async({page,browser}:{page:any;browser:any},info:any)=>{
- test.setTimeout(180000);page.setDefaultTimeout(20000);const service=localAuditService();let actor:any;const vehicles:string[]=[];let shipmentId='';let guest:any;
+ test.setTimeout(180000);page.setDefaultTimeout(20000);const service=localAuditService();let actor:any;const vehicles:string[]=[];const drivers:any[]=[];let shipmentId='';let guest:any;
  const snapshots=path.resolve('artifacts/lifecycle-recovery-2026-09-14');mkdirSync(snapshots,{recursive:true});
  try{
-  actor=await auditProvider(service,'lifecycle');
-  for(const name of ['First','Replacement']){const vehicle=await createProviderVehicle(actor,{make:'Toyota',model:name,plate:`${name}-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicles.push(vehicle.id);}
+  actor=await auditFleetProvider(service,'lifecycle');
+  for(const name of ['First','Replacement']){const vehicle=await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:name,plate:`${name}-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicles.push(vehicle.id);drivers.push(await auditFleetDriver(service,actor,vehicle.id));}
   const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   const email=`lifecycle-guest-${randomUUID()}@example.test`;
-  const shipment=await createProviderShipment(actor,{vehicleId:vehicles[0],originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Original audit cargo',customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});shipmentId=shipment.id;
-  await updateProviderShipmentStatus(actor,shipment.id,'TO_PICKUP','Travelling to pickup',null,{locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.7',locationPrecisionKm:'20',locationSource:'DEVICE_OBSCURED'});
+  const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicles[0],originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Original audit cargo',customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});shipmentId=shipment.id;
+  await updateProviderShipmentStatus(drivers[0],shipment.id,'TO_PICKUP','Travelling to pickup',null,{locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.7',locationPrecisionKm:'20',locationSource:'DEVICE_OBSCURED'});
   await auditLogin(page,actor.email);await page.goto(`/app/provider-shipments/${shipment.id}`);
   const correction=page.locator('details').filter({has:page.locator('summary',{hasText:'Correct Tracking details'})});await correction.locator('summary').click();
   await correction.getByRole('textbox',{name:'Cargo summary',exact:true}).fill('Corrected audit cargo');await correction.getByLabel('Reason',{exact:true}).fill('Correct the agreed cargo description');
@@ -25,7 +29,9 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   await expect(page.locator('.provider-shipment-summary')).toContainText('Corrected audit cargo');
   await page.goto(`/app/fleet/${vehicles[0]}`);const retirement=page.locator('details').filter({has:page.locator('summary',{hasText:'Retire truck'})});await retirement.locator('summary').click();
   await retirement.getByLabel('Reason',{exact:true}).fill('Truck should leave service');await retirement.getByRole('checkbox').check();await retirement.getByRole('button',{name:'Retire truck',exact:true}).click();
-  await expect(page.getByText('Resolve or reassign active Tracking before retiring this truck.',{exact:true})).toBeVisible();
+  // Wait for the streamed workspace after the denied POST redirects; the
+  // loading shell is not the completed retirement response.
+  await expect(page.getByText('Resolve active Tracking before changing or retiring this truck.',{exact:true})).toBeVisible({timeout:20000});
   expect(checked(await service.from('vehicles').select('active').eq('id',vehicles[0]).single()).active).toBe(true);
   guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const guestPage=await guest.newPage();
   await guestPage.goto('/track');await guestPage.getByLabel('Email',{exact:true}).fill(email);
@@ -43,7 +49,7 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   expect(checked(await service.from('provider_shipments').select('assigned_vehicle_id').eq('id',shipment.id).single()).assigned_vehicle_id).toBe(vehicles[1]);
   await guestPage.reload();await expect(guestPage.getByRole('heading',{name:'Shipment progress'})).toBeVisible();await expect(guestPage.locator('.tracking-location-panel')).toHaveCount(0);
   // Correct a synthetic workspace through the Customers permission boundary.
-  await page.goto(`/admin/operations/workspaces/${actor.provider_profile_id}?kind=PROVIDER_PROFILE`);
+  await page.goto(`/admin/operations/workspaces/${actor.organization_id}?kind=ORGANIZATION`);
   await page.getByLabel('Business name',{exact:true}).fill(`Corrected audit business ${actor.suffix}`);await page.getByLabel('Reason',{exact:true}).fill('Correct the business display name');
   await page.getByRole('button',{name:'Save business name'}).click();await expect(page.getByText('Business name corrected.',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:`Corrected audit business ${actor.suffix}`,exact:true})).toBeVisible();
@@ -56,7 +62,12 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   const last=checked(await service.from('capacities').select('market_status').eq('vehicle_id',vehicles[0]).order('updated_at',{ascending:false}).limit(1).single());expect(last.market_status).toBe('OFF_DUTY');
   await page.goto(`/app/provider-shipments/${shipment.id}`);const cancel=page.locator('details').filter({has:page.locator('summary',{hasText:'Cancel Tracking'})});await cancel.locator('summary').click();
   await cancel.getByLabel('Reason',{exact:true}).fill('The customer cancelled this work');await cancel.getByRole('checkbox').check();await cancel.getByRole('button',{name:'Cancel Tracking',exact:true}).click();
-  await expect(page.getByText('Tracking cancelled. Guest access has ended.',{exact:true})).toBeVisible();await expect(page.locator('.provider-shipment-summary')).toContainText('Cancelled');
+  await expect(page.getByText('Ask the team to review and release this agreed tracking session.',{exact:true})).toBeVisible({timeout:20000});
+  expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipment.id).single()).operational_status).not.toBe('CANCELLED');
+  await auditLogin(page,'admin@loadgistic.local');await page.goto(`/admin/operations/tracking/${shipment.id}`);await cancel.locator('summary').click();
+  await cancel.getByLabel('Reason',{exact:true}).fill('Investigated and confirmed the customer cancellation');await cancel.getByRole('checkbox').check();await cancel.getByRole('button',{name:'Cancel Tracking',exact:true}).click();
+  await expect(page.getByText('Tracking cancelled. Guest access has ended.',{exact:true})).toBeVisible({timeout:20000});
+  await auditLogin(page,actor.email);await page.goto(`/app/provider-shipments/${shipment.id}`);await expect(page.locator('.provider-shipment-summary')).toContainText('Cancelled');
   await expect(page.getByRole('region',{name:'Tracking recovery'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Tracking cancelled',exact:true})).toBeVisible();
   await expect(page.getByText('Tracking complete',{exact:true})).toHaveCount(0);
@@ -68,7 +79,7 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
  }finally{
   if(guest)await guest.close();
   if(shipmentId){checked(await service.from('provider_tracking_recoveries').delete().eq('shipment_id',shipmentId));checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipmentId));checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));checked(await service.from('provider_shipments').delete().eq('id',shipmentId));}
-  if(vehicles.length){checked(await service.from('audit_logs').delete().in('entity_id',vehicles));checked(await service.from('vehicles').delete().in('id',vehicles));}
-  if(actor){checked(await service.from('audit_logs').delete().eq('entity_id',actor.provider_profile_id));checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));}
+  if(vehicles.length){checked(await service.from('audit_logs').delete().in('entity_id',vehicles));checked(await auditDeleteVehicles(service,'id',vehicles));}
+  if(actor){checked(await service.from('audit_logs').delete().eq('entity_id',actor.organization_id));checked(await service.from('audit_logs').delete().in('actor_user_id',[actor.id,...drivers.map(driver=>driver.id)]));for(const driver of drivers)checked(await service.auth.admin.deleteUser(driver.id));checked(await service.auth.admin.deleteUser(actor.id));checked(await service.from('organizations').delete().eq('id',actor.organization_id));}
  }
 });

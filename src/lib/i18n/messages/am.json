@@ -1478,5 +1478,10 @@
   "New": "አዲስ",
   "Retry sending message": "መልዕክቱን እንደገና ላክ",
   "Retry starting chat": "ውይይቱን እንደገና ጀምር",
-  "Sharing updated.": "የማጋራት ቅንብሩ ተቀይሯል።"
+  "Sharing updated.": "የማጋራት ቅንብሩ ተቀይሯል።",
+  "Retire truck": "ተሽከርካሪውን ከሥራ አቁም",
+  "Restore truck": "ተሽከርካሪውን ወደ ሥራ መልስ",
+  "This change retains past records.": "ይህ ለውጥ የቀድሞ መረጃዎችን አይሰርዝም።",
+  "Remove the truck from active work while retaining its history. Active Tracking must be resolved first.": "ተሽከርካሪው ከአሁኑ ሥራ ይወጣል፤ የቀድሞ መረጃው ይቀመጣል። በሂደት ላይ ያለ ክትትል መጀመሪያ ማጠናቀቅ አለብዎት።",
+  "I confirm this truck change.": "ይህ የተሽከርካሪ ለውጥ እንዲደረግ አረጋግጣለሁ።"
 }

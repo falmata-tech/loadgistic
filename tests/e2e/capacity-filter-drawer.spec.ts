@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {chooseTruckConfiguration} from './capacity-drawer-helper';
 import {test,expect} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
@@ -123,12 +124,12 @@ test('Private capacity uses the same drawer with real local OTP and scoped resul
   test.setTimeout(180000);const db=localAuditService();const actor=await auditProvider(db,'drawer');const email=`drawer-${randomUUID()}@example.test`;const ids:string[]=[];
   try{
     checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
-    const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Audit',model:'Drawer',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
+    const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Drawer',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
     const places=checked(await db.from('place_catalog').select('id,name').in('normalized_name',['addis ababa','adama']));
     const from=places.find((p:any)=>p.name==='Addis Ababa'),to=places.find((p:any)=>p.name==='Adama');expect(from&&to).toBeTruthy();
     const signal=await publishProviderCapacity(actor,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.74,locationPrecisionKm:20,currentRoutePlaces:[{placeRef:from.id,label:from.name},{placeRef:to.id,label:to.name}]});
     if(typeof signal==='string')ids.push(signal);
-    const grant=await grantPrivateCapacityAccess(actor,{vehicleId:vehicle.id,email});if(typeof grant==='string')ids.push(grant);
+    const grant=await grantPrivateCapacityAccess(actor,{name:'Synthetic recipient',vehicleId:vehicle.id,email});if(typeof grant==='string')ids.push(grant);
     await page.goto('/shared-capacity');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();
     await page.getByRole('button',{name:'Continue with email'}).click();await expect(page.getByLabel('6-digit email code')).toBeVisible({timeout:30000});
     await page.getByLabel('6-digit email code').fill(await mailboxCode(email,since));await submitPrivateAction(page,page.getByRole('button',{name:'View shared signals'}),'/api/shared-capacity/access','POST');
@@ -143,7 +144,7 @@ test('Private capacity uses the same drawer with real local OTP and scoped resul
     const grants=checked(await db.from('capacity_access_grants').select('id').eq('recipient_email',email));ids.push(...grants.map((r:any)=>r.id));
     checked(await db.from('access_email_deliveries').delete().eq('recipient_email',email));checked(await db.from('shared_capacity_email_otps').delete().eq('recipient_email',email));
     checked(await db.from('audit_logs').delete().in('entity_id',[actor.id,actor.provider_profile_id,...ids]));checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));
-    checked(await db.from('vehicles').delete().eq('provider_profile_id',actor.provider_profile_id));checked(await db.auth.admin.deleteUser(actor.id));
+    checked(await auditDeleteVehicles(db,'provider_profile_id',actor.provider_profile_id));checked(await db.auth.admin.deleteUser(actor.id));
   }
 });
 

@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import type {Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
@@ -9,7 +10,7 @@ test('truck document alternatives submit private evidence and show only its revi
  let truckId='';const paths:string[]=[];const ids:string[]=[];
  try{
   checked(await service.from('company_pages').update({published:false}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
-  truckId=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Home',model:'Account',plate:`DOC-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}})).id;
+  truckId=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Home',model:'Account',plate:`DOC-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}})).id;
   await page.goto('/login');const form=page.getByTestId('email-code-request-form');
   await form.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();await form.getByRole('button',{name:'Email me a code'}).click();
   await expect(page.getByTestId('email-code-form')).toBeVisible();await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
@@ -44,7 +45,7 @@ test('truck document alternatives submit private evidence and show only its revi
   if(paths.length)checked(await service.storage.from('verification').remove(paths));
   checked(await service.from('verification_requests').delete().eq('submitted_by',actor.id));
   if(ids.length)checked(await service.from('audit_logs').delete().in('entity_id',ids));
-  if(truckId){checked(await service.from('audit_logs').delete().eq('entity_id',truckId));checked(await service.from('vehicles').delete().eq('id',truckId));}
+  if(truckId){checked(await service.from('audit_logs').delete().eq('entity_id',truckId));checked(await auditDeleteVehicles(service,'id',truckId));}
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
  }
 });

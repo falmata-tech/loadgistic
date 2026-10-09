@@ -51,7 +51,7 @@ test('providers and Company drivers save private account phones even with limite
     for(const identity of identities){
       await login(page,identity.email);await page.goto('/app/more');
       const form=page.getByRole('form',{name:'Account details'});
-      await expect(form).toBeVisible();await expect(page.getByText('No plan assigned',{exact:true})).toBeVisible();
+      await expect(form).toBeVisible();await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
       await form.getByLabel('Your name',{exact:true}).fill(`Edited ${identity.kind}`);
       await form.getByLabel('Account phone').fill('+251900123456');
       await form.getByRole('button',{name:'Save account details'}).click();

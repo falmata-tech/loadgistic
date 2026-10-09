@@ -1478,5 +1478,10 @@
   "New": "ሓድሽ",
   "Retry sending message": "መልእኽቲ ደጊምካ ልኣኽ",
   "Retry starting chat": "ዕላል ደጊምካ ጀምር",
-  "Sharing updated.": "ቅንብር ምክፋል ተቐይሩ ኣሎ።"
+  "Sharing updated.": "ቅንብር ምክፋል ተቐይሩ ኣሎ።",
+  "Retire truck": "ነዚ መኪና ካብ ስራሕ ኣቋርጽ",
+  "Restore truck": "ነዚ መኪና ናብ ስራሕ ምለስ",
+  "This change retains past records.": "እዚ ለውጢ ናይ ቀደም መዝገባት ኣይድምስስን።",
+  "Remove the truck from active work while retaining its history. Active Tracking must be resolved first.": "እታ መኪና ካብ ስራሕ ትወጽእ፤ ናይ ቀደም መዝገባ ይዕቀብ። ኣብ ሂደት ዘሎ ጽዕነት ቅድም ክዛዘም ኣለዎ።",
+  "I confirm this truck change.": "እዚ ለውጢ መኪና ከም ዝፍቀድ የረጋግጽ።"
 }

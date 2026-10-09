@@ -3738,3 +3738,5 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 
 /* Named sharing contacts keep emails legible at phone widths. */
 .network-add-contact{flex-wrap:wrap}.network-add-contact label{min-width:min(100%,220px)}.network-access-list article>div{min-width:0;overflow-wrap:anywhere}.network-contact-edit summary{cursor:pointer;color:var(--teal,#0d6b6e);font-weight:700}.network-contact-edit form{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.5rem}.network-contact-edit label{display:grid;gap:.3rem;flex:1;min-width:0}.network-contact-edit input{width:100%;min-width:0}
+
+.truck-inspection-tags{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:.7rem;line-height:1.4;color:#526875}

@@ -23,7 +23,7 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
   const destination=await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single();
   const email=`proof-audit-${randomUUID()}@example.test`;
   const marker=`Synthetic proof audit ${randomUUID()}`;
-  const shipment=await createProviderShipment(actor,{vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.data!.id,destinationPlaceRef:destination.data!.id,cargoSummary:marker,customerEmail:email,trackingMode:'STATUS_ONLY'});
+  const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.data!.id,destinationPlaceRef:destination.data!.id,cargoSummary:marker,customerEmail:email,trackingMode:'STATUS_ONLY'});
   const guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.243'}});
   try{
     await login(page,'driver@loadgistic.local');

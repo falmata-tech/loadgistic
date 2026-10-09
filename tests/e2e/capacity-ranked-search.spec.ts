@@ -52,7 +52,7 @@ test('private search uses verified recipient grants and loses access after revoc
  test.setTimeout(180000);const db=localAuditService(),email=`search-${randomUUID()}@example.test`;
  const cap=checked(await db.from('capacities').select('id,vehicle_id,provider_organization_id').eq('visibility','PRIVATE').not('provider_organization_id','is',null).limit(1).single());
  const member=checked(await db.from('organization_members').select('user_id').eq('organization_id',cap.provider_organization_id).eq('membership_role','OWNER').single());const actor=checked(await db.from('profiles').select('id,role').eq('id',member.user_id).single());
- const grant=await grantPrivateCapacityAccess(actor,{vehicleId:cap.vehicle_id,email});let revoked=false;
+ const grant=await grantPrivateCapacityAccess(actor,{name:'Synthetic recipient',vehicleId:cap.vehicle_id,email});let revoked=false;
  try{
   expect((await page.request.get('/api/capacity-search?view=private')).status()).toBe(401);
   await page.goto('/?view=private');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Continue with email',exact:true}).click();await expect(page.getByLabel('6-digit email code')).toBeVisible();

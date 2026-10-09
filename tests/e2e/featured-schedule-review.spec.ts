@@ -39,7 +39,7 @@ test('capture focused featured schedule review',async({page}:{page:any})=>{
   await featured.scrollIntoViewIfNeeded();
   await expect(featured.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect.poll(()=>featured.locator('.featured-truck-tile').count()).toBeGreaterThan(0);
-  await expect(featured.locator('.featured-truck-tile').first()).toContainText(/Company driver|Owner-operator|Self-managed driver/);
+  await expect(featured.locator('.featured-truck-tile').first()).toContainText(/Company driver|Independent driver/);
   await featured.screenshot({path:path.join(output,`${project}-public.png`)});
   await featured.locator('.expo-schedule-panel>summary').click();
   await expect(featured.locator('.expo-programme-strip')).toBeVisible();

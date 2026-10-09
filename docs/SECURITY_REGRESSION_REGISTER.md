@@ -644,3 +644,50 @@ Local registration must report the disabled sender truthfully. New APK/hosted
 enablement and physical-device acceptance remain pending; simulated Expo results
 and foreground/browser alerts never prove closed-phone delivery. No other app or
 global Firebase/Expo account changes. Owner: notification/workflow author.
+
+
+## NR-20 — A reduced menu hides the prerequisite needed to close an account
+
+**Cause:** Single-truck UI consolidation hid fleet lifecycle controls while account
+closure correctly continued to require retiring the active truck. The backend
+command remained authorized, but an independent driver could not reach it.
+Redirecting the fleet list to first-truck registration also dropped save feedback.
+A native-only Alert callback is a no-op in the Expo web adapter, so browser
+appearance would not prove that its confirmation submitted anything.
+
+**Control:** Keep current-truck retirement on My truck in web/native, with the
+existing confirmation, unfinished-Tracking denial and retained entity history.
+Use an explicit in-app confirmation on both native and Expo web; do not grant an
+independent driver historical restore, driver-management or extra-truck authority.
+Preserve success/error feedback through role-specific redirects. Check the actual
+prerequisite/action/save/return path whenever related resources are consolidated.
+
+**Evidence:** `tests/e2e/account-security.spec.ts` proves email change, the active
+truck closure blocker, visible retirement, retained history and verified closure.
+The scoped local Expo check exercises the rendered control and its actual API
+save. Full release, owner review and installed-phone evidence remain separate.
+The owner explicitly approved the repaired controls and compact truck details.
+**Owner:** identity/fleet UI maintainer; release owner. **Next:** complete exact
+browser CI and the matched web/Android rollout; physical-phone acceptance stays
+distinct from browser and emulator evidence.
+
+## NR-21 — Workflow contracts change but their browser fixtures remain obsolete
+
+**Cause:** Mandatory truck ownership, named sharing contacts, delivery dates,
+photo proofs and recipient approval changed while older browser fixtures still
+created incomplete records or asserted retired plan controls. An arbitrary
+published local profile also selected leftover preview data instead of the seed.
+
+**Control:** Update every affected fixture creator and visible workflow assertion
+with its controlling contract. Keep single-truck providers separate from fleet
+fixtures. Exercise real calendar controls, proofs, email verification and owner
+approval. Pin known seeds or create scoped fixtures; do not rely on an unordered
+first user or profile. Classify timeouts from the actual page/response before
+changing a bounded wait. Keep required CI failing until the complete workflow
+passes; never restore obsolete product behavior or waive a permission check.
+
+**Evidence:** The current browser follow-up supplies valid inputs and preserves
+denial, privacy, history and completion assertions. The SQL, domain, scale and
+native boundaries remain required alongside full desktop/phone CI.
+**Owner:** workflow author and release owner. **Next:** retain exact-candidate
+browser results and update fixtures together with future contract changes.

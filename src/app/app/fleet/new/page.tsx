@@ -22,7 +22,7 @@ export default async function AddFleetTruckPage({searchParams}:{searchParams:Pro
   const heading=replacing?'Change truck':independent?'Add your truck':'Add truck';
   return <div className="page vehicle-registration-page">
     <PageHeader icon={Truck} title={<Text message={heading}/>} subtitle={<Text message={independent?'One truck at a time. Its ownership or permission is recorded here.':'Register a truck you control.'}/>} action={<Link className="button secondary small" href={independent?'/app/home':'/app/fleet'}><ArrowLeft aria-hidden="true"/><Text message={independent?'Home':'My Fleet'}/></Link>}/>
-    <Flash error={query.error}/>
+    <Flash error={query.error} success={query.success}/>
     <form action="/api/fleet/vehicles" method="post" className="vehicle-registration-card">
       {replacing?<input type="hidden" name="replaceVehicleId" value={current.id}/>:null}
       <header><span><Truck aria-hidden="true"/></span><div><h2><Text message="Truck details"/></h2><p><Text message="Its Loadgistic truck number is created automatically."/></p></div></header>

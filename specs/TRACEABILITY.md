@@ -1257,3 +1257,25 @@ are simulated explicitly; the reload and backend authorization are real.
 - Final evidence and screenshots: MOBILE_IMPLEMENTATION. Owner visual review,
   full release gates, hosted rollout/new native artifacts and configured
   closed-phone push remain pending. No successful mocked backend response.
+
+
+October 8 browser-gate follow-up (FEAT-FLT/TRK/MOB/DAT/SUP/MKT): local
+`account-security`, `tracking-completion-review`, `tracking-location-controls`,
+`tracking-progress` and `truck-profile-layout` pass (six desktop cases), with
+real local SMTP, mandatory photo uploads, fresh owner approval, private history
+and account closure. Both independent ownership/permission signup cases pass;
+all three provider-fleet paging cases and staff administrator/two-role mobile
+sign-in denials pass. Root 473 tests, mobile 118 tests, types/lint and the actual
+Expo current-truck retirement save pass. Owner explicitly approved the repaired
+web/native control and compact details. Complete exact-source CI, hosted rollout
+and installed-phone evidence remain separate and outstanding.
+
+The remaining 18 desktop workflows now pass across their corrected focused
+runs: all current admin destinations/record details, capacity dialogs and real
+saves, Featured manual draft/publication and combined/revoked staff permissions,
+interrupted-save recovery, company/single-truck Support, and fleet lifecycle
+recovery. Tracking cancellation is denied to the provider and then succeeds
+through Operations; guest access ends and history remains. Root quality and
+the final 118-test native types/lint/translation/export/runtime audit pass.
+Full exact-source desktop/phone CI and hosted/installed-artifact postchecks
+remain required; these local results do not claim a production rollout.

@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import {auditLogin,auditProvider,localAuditService,checked} from './audit-helpers';
 
@@ -6,7 +7,7 @@ test('truck location remains in view after owner map container resizes',async({p
  await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.76});
  const service=localAuditService(),actor=await auditProvider(service,'map-resize');let vehicleId='';
  try{
- const created=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Resize test',model:'Mini',plate:`RESIZE-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));vehicleId=created.id;
+ const created=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Resize test',model:'Mini',plate:`RESIZE-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));vehicleId=created.id;
  checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:vehicleId,approximate_lat:9.03,approximate_lng:38.76,location_precision_km:40}}));
  await auditLogin(page,actor.email);await page.goto(`/app/fleet/${vehicleId}`);
  await page.getByRole('button',{name:'Edit current capacity: Not set',exact:true}).click();
@@ -44,7 +45,7 @@ test('truck location remains in view after owner map container resizes',async({p
  await inView();const after=await relative();expect(Math.abs(after!.x-before!.x)).toBeLessThan(2);expect(Math.abs(after!.y-before!.y)).toBeLessThan(2);
  }finally{
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));
-  if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await service.from('vehicles').delete().eq('id',vehicleId));}
+  if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
   checked(await service.auth.admin.deleteUser(actor.id));
  }
 

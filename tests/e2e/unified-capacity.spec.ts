@@ -46,8 +46,8 @@ test('private email code unlocks only its grants and retains private scope throu
  const actor=checked(await db.from('profiles').select('id,role').eq('id',membership.user_id).single());
  const network=await listPrivateCapacityNetwork(actor),other=network.find((v:{id:string})=>v.id!==capacity.vehicle_id);
  expect(other).toBeTruthy();const email=`unified-${suffix}@example.test`,otherEmail=`other-${suffix}@example.test`;
- const grant=await grantPrivateCapacityAccess(actor,{vehicleId:capacity.vehicle_id,email});
- const otherGrant=await grantPrivateCapacityAccess(actor,{vehicleId:other.id,email:otherEmail});
+ const grant=await grantPrivateCapacityAccess(actor,{name:'Synthetic recipient',vehicleId:capacity.vehicle_id,email});
+ const otherGrant=await grantPrivateCapacityAccess(actor,{name:'Synthetic recipient',vehicleId:other.id,email:otherEmail});
  try{
   await page.goto('/?view=private');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
   await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();

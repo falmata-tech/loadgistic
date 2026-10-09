@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 import {test,expect} from '@playwright/test';
 import nextEnv from '@next/env';
@@ -87,7 +88,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
 
     await login(page,driver.email);await page.goto('/app/more');await openPortrait(page);
     const card=page.getByRole('region',{name:'Public Driver photo'});await expect(card).toBeVisible();
-    await expect(page.getByText('No plan assigned',{exact:true})).toBeVisible();
+    await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
     const imageBytes=await sharp({create:{width:720,height:480,channels:3,background:'#06787c'}}).jpeg().withExif({IFD0:{Artist:'Synthetic private author'}}).toBuffer();
     const input=card.getByLabel('Choose photo');const consent=card.getByLabel('I agree to make this photo public.');
     await input.setInputFiles({name:'private-camera.jpg',mimeType:'image/jpeg',buffer:imageBytes});
@@ -144,7 +145,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
       checked(await service.from('driver_portrait_uploads').delete().eq('user_id',actorId));
       checked(await service.from('verification_requests').delete().eq('submitted_by',actorId));
     }
-    if(vehicleId)checked(await service.from('vehicles').delete().eq('id',vehicleId));
+    if(vehicleId)checked(await auditDeleteVehicles(service,'id',vehicleId));
     if(orgId)checked(await service.from('organizations').delete().eq('id',orgId));
     if(ids.length)checked(await service.from('audit_logs').delete().in('actor_user_id',ids));
     for(const id of ids)checked(await service.auth.admin.deleteUser(id));

@@ -8,7 +8,8 @@ import type {Page,Browser,BrowserContext} from 'playwright-core';
 test('owner administrator provisions two independent staff responsibilities; all staff are web-only',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(240000);const db=localAuditService(),ids:string[]=[],contexts:BrowserContext[]=[];
  const ownerEmail='falmata.dawano@gmail.com';
- const owner=checked(await db.from('profiles').select('id,role,active').eq('email',ownerEmail).single());
+ let owner=checked(await db.from('profiles').select('id,role,active').eq('email',ownerEmail).maybeSingle());let temporaryOwner='';
+ if(!owner){temporaryOwner=checked(await db.auth.admin.createUser({email:ownerEmail,email_confirm:true})).user.id;checked(await db.from('profiles').update({role:'ADMIN',active:true}).eq('id',temporaryOwner));owner=checked(await db.from('profiles').select('id,role,active').eq('id',temporaryOwner).single());}
  expect(owner.role).toBe('ADMIN');expect(owner.active).toBe(true);
  async function webLogin(p:Page,email:string,destination:RegExp){
   await p.goto('/login');const requestedAt=Date.now();await p.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);
@@ -32,7 +33,7 @@ test('owner administrator provisions two independent staff responsibilities; all
   for(const route of ['session','dashboard','support','capacity']){const read=await p.request.get(`/api/mobile/${route}`,{headers:{Authorization:`Bearer ${login.access_token}`}});expect(read.status()).toBe(403);expect((await read.json()).error.code).toBe('WEB_ONLY');}
   const refresh=await p.request.post('/api/mobile/auth/refresh',{data:{refreshToken:login.refresh_token}});expect(refresh.status()).toBe(403);expect((await refresh.json()).error.code).toBe('WEB_ONLY');
   await client.auth.signOut({scope:'local'});
-  if(id===owner.id)expect((await p.request.get('/admin/support')).status()).toBe(200);
+  if(id===owner!.id)expect((await p.request.get('/admin/support')).status()).toBe(200);
  }
  try{
   await webLogin(page,ownerEmail,/\/admin$/);await page.goto('/admin/support');await expect(page.getByRole('heading',{name:'Customer Support',exact:true})).toBeVisible();
@@ -47,7 +48,7 @@ test('owner administrator provisions two independent staff responsibilities; all
    expect((await staff.request.post('/api/admin/support-agents',{form:{name:'Forbidden',email:`denied-${randomUUID()}@example.test`}})).status()).toBe(403);
    await assertMobileBlocked(staff,email,user.id);await page.goto('/admin/support');
   }
-  await assertMobileBlocked(page,ownerEmail,owner.id);
+  await assertMobileBlocked(page,ownerEmail,owner!.id);
   for(const width of [412,1440]){await page.setViewportSize({width,height:915});await page.goto('/admin/support');await page.screenshot({path:info.outputPath(`owner-admin-${width}.png`),fullPage:true});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
- }finally{for(const context of contexts)await context.close();for(const id of ids){checked(await db.from('audit_logs').delete().eq('actor_user_id',id));checked(await db.from('audit_logs').delete().eq('entity_id',id));checked(await db.auth.admin.deleteUser(id));}}
+ }finally{if(temporaryOwner){checked(await db.from('audit_logs').delete().eq('actor_user_id',temporaryOwner));checked(await db.auth.admin.deleteUser(temporaryOwner));}for(const context of contexts)await context.close();for(const id of ids){checked(await db.from('audit_logs').delete().eq('actor_user_id',id));checked(await db.from('audit_logs').delete().eq('entity_id',id));checked(await db.auth.admin.deleteUser(id));}}
 });

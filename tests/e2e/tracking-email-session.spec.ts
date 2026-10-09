@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect as baseExpect} from '@playwright/test';
 const expect=baseExpect.configure({timeout:15000});
 import {localAuditService,checked,auditProvider} from './audit-helpers';
@@ -10,14 +11,15 @@ import {trackingSessionSubject} from '../../src/lib/tracking-session.js';
 test('one email code opens shared shipments; activity, expiry and revocation stay scoped',async({page,context}:{page:any;context:any},info:any)=>{
  test.setTimeout(150000);
  const service=localAuditService(),actor=await auditProvider(service,'tracking-email');
- const email=`tracking-${actor.suffix}@example.test`,vehicles:string[]=[],shipments:string[]=[];
+ const email=`tracking-${actor.suffix}@example.test`,vehicles:string[]=[],shipments:string[]=[],actors=[actor];
  try{
   await context.setExtraHTTPHeaders({'x-forwarded-for':info.project.name.startsWith('mobile')?'127.0.0.234':'127.0.0.233'});
   const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   for(let index=0;index<3;index++){
-   const truck=await createProviderVehicle(actor,{make:'Toyota',model:'Session test',plate:`SESS-${actor.suffix}-${index}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicles.push(truck.id);
-   const shipment=await createProviderShipment(actor,{vehicleId:truck.id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:`Session cargo ${index}`,customerEmail:index<2?email:`other-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'});shipments.push(shipment.id);
+   const provider=index===0?actor:await auditProvider(service,'tracking-email');if(index>0)actors.push(provider);
+   const truck=await createProviderVehicle(provider,{useBasis:'OWNED',make:'Toyota',model:'Session test',plate:`SESS-${actor.suffix}-${index}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicles.push(truck.id);
+   const shipment=await createProviderShipment(provider,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:truck.id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:`Session cargo ${index}`,customerEmail:index<2?email:`other-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'});shipments.push(shipment.id);
   }
   await page.clock.install();
   await page.goto('/track');await expect(page.getByLabel('Shipment access code')).toHaveCount(0);
@@ -31,7 +33,7 @@ test('one email code opens shared shipments; activity, expiry and revocation sta
   await expect(page.getByRole('heading',{name:'Your shipments'})).toBeVisible({timeout:15000});
   await expect(page.locator('a.card[href^="/track/"]')).toHaveCount(2);
   const session=(await context.cookies()).find((c:any)=>c.name==='lg_tracking_grant')!;
-  expect(session.httpOnly).toBe(true);expect(session.sameSite).toBe('Lax');expect(session.expires-Date.now()/1000).toBeGreaterThan(29*60);
+  expect(session.httpOnly).toBe(true);expect(session.sameSite).toBe('Lax');expect(session.expires-Date.now()/1000).toBeGreaterThan(4*60);expect(session.expires-Date.now()/1000).toBeLessThanOrEqual(5*60);
   const replay=await page.request.post('/api/tracking/unlock',{form:{email,challengeId:challenge.challengeId,code:otp}});expect(replay.status()).toBe(401);
   await page.reload();await expect(page.getByRole('heading',{name:'Your shipments'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Log out',exact:true})).toBeEnabled();
@@ -59,7 +61,7 @@ test('one email code opens shared shipments; activity, expiry and revocation sta
   await page.screenshot({path:info.outputPath('tracking-session.png'),fullPage:true});
   await expect(page.getByRole('button',{name:'Log out',exact:true})).toBeEnabled();
   let renewals=0;page.on('request',(r:any)=>{if(r.url().endsWith('/api/tracking/session')&&r.method()==='POST')renewals++;});
-  await page.clock.fastForward(31*60*1000);
+  await page.clock.fastForward(6*60*1000);
   await expect(page.getByRole('heading',{name:'Follow your shipment'})).toBeVisible();expect(renewals).toBe(0);
   expect((await context.cookies()).find((c:any)=>c.name==='lg_tracking_grant')).toBeUndefined();
   expect(checked(await service.from('profiles').select('id').eq('email',email))).toHaveLength(0);
@@ -67,7 +69,7 @@ test('one email code opens shared shipments; activity, expiry and revocation sta
   const recipients=[email,`other-${actor.suffix}@example.test`];
   checked(await service.from('access_email_deliveries').delete().in('recipient_email',recipients));
   for(const id of shipments){checked(await service.from('audit_logs').delete().eq('entity_id',id));checked(await service.from('provider_shipments').delete().eq('id',id));}
-  for(const id of vehicles){checked(await service.from('audit_logs').delete().eq('entity_id',id));checked(await service.from('vehicles').delete().eq('id',id));}
-  checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
+  for(const id of vehicles){checked(await service.from('audit_logs').delete().eq('entity_id',id));checked(await auditDeleteVehicles(service,'id',id));}
+  for(const provider of actors){checked(await service.from('audit_logs').delete().eq('actor_user_id',provider.id));checked(await service.auth.admin.deleteUser(provider.id));}
  }
 });

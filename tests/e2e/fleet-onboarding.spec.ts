@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {expect as baseExpect,test} from '@playwright/test';
 // Dev-server navigation includes server rendering; await the complete state.
 const expect=baseExpect.configure({timeout:15000});
@@ -53,10 +54,10 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByLabel('Account phone',{exact:true}).fill('+251900000011');
     await page.getByRole('button',{name:'Create transporter workspace'}).click();
     await expect(page).toHaveURL(/\/app\/home$/);
-    await expect(page.locator('.launch-first-truck')).toBeVisible({timeout:15000});
-    await expect(page.locator('.launch-first-truck')).toContainText('Add your first truck');
+    await expect(page.locator('.fleet-empty-state')).toBeVisible({timeout:15000});
+    await expect(page.locator('.fleet-empty-state')).toContainText('No trucks added yet.');
     await page.screenshot({path:info.outputPath('first-truck-guidance.png'),fullPage:true});
-    await page.locator('.launch-first-truck').getByRole('link',{name:'Add truck',exact:true}).click();
+    await page.getByRole('link',{name:'Add truck',exact:true}).first().click();
     await expect(page.getByRole('heading',{name:'Add truck',exact:true})).toBeVisible();
     await page.goto('/app/fleet');
     await expect(page.getByText('No trucks added yet.',{exact:true})).toBeVisible();
@@ -303,7 +304,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
         const deleted=await service.from(table).delete().eq('organization_id',orgId);expect(deleted.error).toBeNull();
       }
       const capacities=await service.from('capacities').delete().eq('provider_organization_id',orgId);expect(capacities.error).toBeNull();
-      const vehicles=await service.from('vehicles').delete().eq('organization_id',orgId);expect(vehicles.error).toBeNull();
+      const vehicles=await auditDeleteVehicles(service,'organization_id',orgId);expect(vehicles.error).toBeNull();
       const deleted=await service.from('organizations').delete().eq('id',orgId);expect(deleted.error).toBeNull();
     }
     if(ids.length){
@@ -366,7 +367,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    if(userId){
     expect((await service.from('audit_logs').delete().eq('actor_user_id',userId)).error).toBeNull();
     if(!providerId)providerId=(await service.from('provider_profiles').select('id').eq('user_id',userId).maybeSingle()).data?.id||'';
-    if(providerId){expect((await service.from('capacities').delete().eq('provider_profile_id',providerId)).error).toBeNull();expect((await service.from('vehicles').delete().eq('provider_profile_id',providerId)).error).toBeNull();}
+    if(providerId){expect((await service.from('capacities').delete().eq('provider_profile_id',providerId)).error).toBeNull();expect((await auditDeleteVehicles(service,'provider_profile_id',providerId)).error).toBeNull();}
     expect((await service.auth.admin.deleteUser(userId)).error).toBeNull();
    }
   }

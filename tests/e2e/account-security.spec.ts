@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from '@playwright/test';
 import {localAuditService,checked,auditLogin,auditProvider} from './audit-helpers';
 import {localMailpitNumericCode,localMailpitEmailChangeLink} from './mailpit-helper';
@@ -12,7 +13,7 @@ test('fresh email verification changes login identity and deactivation retains h
  const screenshots=path.resolve('artifacts/account-security-2026-09-14');mkdirSync(screenshots,{recursive:true});
  try{
   actor=await auditProvider(service,'account-security');const newEmail=`changed-${actor.suffix}@loadgistic.local`;
-  const vehicle=await createProviderVehicle(actor,{make:'Toyota',model:'Security audit',plate:`SEC-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicleId=vehicle.id;
+  const vehicle=await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Security audit',plate:`SEC-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicleId=vehicle.id;
   await auditLogin(page,actor.email);await page.goto('/app/more');await page.locator('#security>summary').click();const security=page.getByRole('region',{name:'Account security'});
   await security.getByText('Deactivate account',{exact:true}).click();await expect(security.getByRole('button',{name:'Verify email to deactivate'})).toHaveCount(0);
   // A direct closure request is denied before sending mail while work remains.
@@ -41,7 +42,7 @@ test('fresh email verification changes login identity and deactivation retains h
   await page.screenshot({path:path.join(screenshots,`${info.project.name}-email-confirmed.png`),fullPage:true});
   const profile=checked(await service.from('profiles').select('email,active,role').eq('id',actor.id).single());expect(profile).toEqual({email:newEmail,active:true,role:'DRIVER'});
   expect(checked(await service.auth.admin.getUserById(actor.id)).user.email).toBe(newEmail);
-  await page.goto(`/app/fleet/${vehicleId}`);const retirement=page.locator('details').filter({has:page.locator('summary',{hasText:'Retire truck'})});await retirement.locator('summary').click();await retirement.getByLabel('Reason',{exact:true}).fill('Resolve truck before closing account');await retirement.getByRole('checkbox').check();await retirement.getByRole('button',{name:'Retire truck',exact:true}).click();
+  await page.goto(`/app/fleet/${vehicleId}`);const retirement=page.locator('details').filter({has:page.locator('summary',{hasText:'Retire truck'})});await retirement.locator('summary').click();await page.screenshot({path:info.outputPath('current-truck-retirement.png'),fullPage:true});await retirement.getByLabel('Reason',{exact:true}).fill('Resolve truck before closing account');await retirement.getByRole('checkbox').check();await retirement.getByRole('button',{name:'Retire truck',exact:true}).click();
   await expect(page.getByText('Truck retired. Its history is retained.',{exact:true})).toBeVisible();await page.goto('/app/more');await page.locator('#security>summary').click();await security.getByText('Deactivate account',{exact:true}).click();await security.getByRole('checkbox').check();
   requestedAt=Date.now();await security.getByRole('button',{name:'Verify email to deactivate'}).click();await security.getByLabel('Current email code').fill(await localMailpitNumericCode(newEmail,requestedAt,'Your Loadgistic sign-in code'));await Promise.all([page.waitForURL(/\/login\?/),security.getByRole('button',{name:'Verify current email'}).click()]);
   await expect(page).toHaveURL(/\/login\?/);await expect(page.getByText('Account deactivated. Your history is retained.',{exact:true})).toBeVisible();
@@ -52,7 +53,7 @@ test('fresh email verification changes login identity and deactivation retains h
   await page.goto('/app/more');await expect(page.getByRole('region',{name:'Account security'})).toHaveCount(0);
   await page.screenshot({path:path.join(screenshots,`${info.project.name}-deactivated.png`),fullPage:true});
  }finally{
-  if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await service.from('vehicles').delete().eq('id',vehicleId));}
+  if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
   if(actor){checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));}
  }
 });

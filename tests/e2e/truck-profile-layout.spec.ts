@@ -14,6 +14,7 @@ test('truck modal groups identity, contacts, updates and entity documents withou
  await expect(sheet.getByRole('link',{name:'Profile',exact:true})).toHaveAttribute('href',`/@${truck.provider_handle}`);
  const phone=truck.assigned_driver_phone||truck.contact_phone;
  if(phone)await expect(sheet.locator('a[href^="tel:"]')).toHaveAttribute('href',`tel:${phone}`);
+ await page.evaluate(()=>document.fonts.ready);
  const composition=await sheet.evaluate((el:HTMLElement)=>{
   const people=[...el.querySelectorAll('.truck-inspection-person')].map(el=>el.getBoundingClientRect());
   const docs=[...el.querySelectorAll('.truck-document-summary')].map(el=>el.getBoundingClientRect());

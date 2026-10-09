@@ -1478,5 +1478,10 @@
   "New": "Cusub",
   "Retry sending message": "Mar kale dir fariinta",
   "Retry starting chat": "Mar kale bilow wada sheekaysiga",
-  "Sharing updated.": "Dejinta wadaagista waa la beddelay."
+  "Sharing updated.": "Dejinta wadaagista waa la beddelay.",
+  "Retire truck": "Gaarigan shaqada ka saar",
+  "Restore truck": "Gaarigan shaqada ku soo celi",
+  "This change retains past records.": "Isbeddelkani ma tirtirayo diiwaannadii hore.",
+  "Remove the truck from active work while retaining its history. Active Tracking must be resolved first.": "Gaariga shaqada ka saar; taariikhdiisu way sii kaydsan tahay. Marka hore dhammaystir rar kasta oo weli la socdo.",
+  "I confirm this truck change.": "Waxaan xaqiijinayaa isbeddelkan gaariga."
 }

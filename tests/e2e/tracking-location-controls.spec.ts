@@ -19,7 +19,7 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
   const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   const email=`location-controls-${randomUUID()}@example.test`;const marker=`Synthetic Tracking location ${randomUUID()}`;
-  const shipment=await createProviderShipment(actor,{vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:marker,customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});
+  const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:marker,customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});
   const guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.242'}});
   const captures=path.resolve('artifacts/tracking-location-controls-2026-09-14');mkdirSync(captures,{recursive:true});
   let posts=0;page.on('request',(request:any)=>{if(request.method()==='POST'&&request.url().endsWith(`/api/provider-shipments/${shipment.id}/location`))posts++;});
@@ -34,38 +34,27 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     });
     await auditLogin(page,'driver@loadgistic.local');
     await page.goto(`/app/provider-shipments/${shipment.id}`);
-    const controls=page.locator('.tracking-control-panel');const radius=controls.getByLabel('Location privacy radius');
-    await expect(controls).toContainText('No location has been saved yet.');
-    await expect(radius).toHaveValue('20');await expect(radius.locator('option')).toHaveText(['1 km','3 km','5 km','10 km','20 km','40 km']);
+    const controls=page.locator('.tracking-control-panel'),radius=controls.getByLabel('Location privacy radius');
+    await expect(radius.locator('option')).toHaveText(['1 km','3 km','5 km','10 km','20 km']);
     await expect(controls).toContainText('updates pause when the phone locks');
-    await radius.selectOption('40');await controls.locator('input[name=nextStatus][value=TO_PICKUP]').check();
-    await page.evaluate(()=>localStorage.setItem('test-tracking-gps','defer'));
-    await controls.getByRole('button',{name:'Save Going to pickup',exact:true}).click();
-    await expect(controls.locator('input[name=nextStatus][value=LOADING]')).toBeDisabled();
-    await expect(radius).toBeDisabled();await expect(radius).toHaveValue('40');await expect.poll(()=>page.evaluate(()=>(window as any).testGps.length)).toBe(1);
-    const firstLocationReply=page.waitForResponse((response:any)=>response.url().endsWith(`/api/provider-shipments/${shipment.id}/location`)&&response.request().method()==='POST');
-    await page.evaluate(()=>{localStorage.removeItem('test-tracking-gps');(window as any).testGps.shift().success({coords:{latitude:9.031234,longitude:38.741234}});});
-    await expect(page.getByText('Tracking status updated.',{exact:true})).toBeVisible({timeout:20000});
-    let events=checked(await service.from('provider_shipment_events').select('id,location_lat,location_lng,location_precision_km,location_source').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'));
-    expect(events).toHaveLength(1);expect(events[0].location_precision_km).toBe(40);
-    expect(await (await firstLocationReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});
-    await expect(radius).toHaveValue('40');await expect(controls.getByRole('status')).toContainText('Waiting for the next location update');expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);
+    await expect.poll(async()=>checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED')).length).toBe(1);
+    let events=checked(await service.from('provider_shipment_events').select('id,location_lat,location_lng,location_precision_km').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'));
+    expect(events[0].location_precision_km).toBe(20);expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);
+    // Reload starts the automatic reporter, and a recent fix produces a truthful cooldown.
+    await page.reload();await expect(controls.getByRole('status')).toContainText('Waiting for the next location update');
     const radiusReply=page.waitForResponse((response:any)=>response.url().endsWith(`/api/provider-shipments/${shipment.id}/location`));
-    await radius.selectOption('5');expect(await (await radiusReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});await expect(controls.getByRole('status')).toContainText('Waiting for the next location update');
-    await expect(controls).toContainText('Last saved radius: 40 km.');
+    await radius.selectOption('5');expect(await (await radiusReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});
+    await expect(controls).toContainText('Last saved radius: 20 km.');
     expect(checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'))).toHaveLength(1);
-    // Age only this test's event to exercise an accepted refresh without a ten-minute sleep.
-    checked(await service.from('provider_shipment_events').update({created_at:new Date(Date.now()-11*60000).toISOString()}).eq('id',events[0].id).eq('shipment_id',shipment.id));
+    // Age only this synthetic shipment's event rather than sleeping ten minutes.
+    checked(await service.from('provider_shipment_events').update({created_at:new Date(Date.now()-11*60000).toISOString()}).eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'));
     const savedLocation=page.waitForResponse((response:any)=>response.url().endsWith(`/api/provider-shipments/${shipment.id}/location`));
     await controls.getByRole('button',{name:'Update location',exact:true}).click();expect(await (await savedLocation).json()).toMatchObject({recorded:true});
     await expect(controls.getByRole('status')).toContainText('Approximate location shared · 5 km');
-    await expect(controls).toContainText('Last saved radius: 5 km.');
     events=checked(await service.from('provider_shipment_events').select('id,location_lat,location_lng,location_precision_km').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED').order('created_at',{ascending:false}));
     expect(events).toHaveLength(2);expect(events[0].location_precision_km).toBe(5);expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);
-    const before=posts;await controls.getByRole('button',{name:'Update location',exact:true}).click();
-    await expect(controls.getByRole('status')).toContainText('Waiting');expect(posts).toBe(before);
-    await radius.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(captures,`${info.project.name}-driver-radius.png`),scale:'css'});
-
+    const before=posts;await controls.getByRole('button',{name:'Update location',exact:true}).click();await expect(controls.getByRole('status')).toContainText('Waiting');expect(posts).toBe(before);
+    await page.screenshot({path:path.join(captures,`${info.project.name}-driver-radius.png`),scale:'css'});
     await page.evaluate(()=>localStorage.setItem('test-tracking-gps','defer'));await page.reload();
     await expect(controls.getByRole('status')).toContainText('Finding Driver location');await expect.poll(()=>page.evaluate(()=>(window as any).testGps.length)).toBe(1);
     const hiddenPosts=posts;
@@ -77,19 +66,15 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     await expect(controls.getByRole('alert')).toContainText('Allow location for this site');await expect(controls.getByRole('status')).toContainText('Location update failed');
     const retryReply=page.waitForResponse((response:any)=>response.url().endsWith(`/api/provider-shipments/${shipment.id}/location`));
     await page.evaluate(()=>localStorage.removeItem('test-tracking-gps'));await controls.getByRole('button',{name:'Retry location',exact:true}).click();
-    expect(await (await retryReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});
-    await expect(controls.getByRole('status')).toContainText('Waiting');
+    expect(await (await retryReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});await expect(controls.getByRole('status')).toContainText('Waiting');
     expect(checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'))).toHaveLength(2);
-
     const guestPage=await guest.newPage();await guestPage.goto('/track');await guestPage.getByLabel('Email',{exact:true}).fill(email);
     const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();
     await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));await guestPage.getByRole('button',{name:'Open tracking'}).click();
     await expect(guestPage.getByRole('heading',{name:'Shipment progress'})).toBeVisible({timeout:20000});
     await expect(guestPage.locator('.tracking-mode-banner')).toContainText('pause when it closes or the phone locks');await expect(guestPage.getByLabel('Location privacy radius')).toHaveCount(0);
     await guestPage.locator('.tracking-mode-banner').scrollIntoViewIfNeeded();await guestPage.screenshot({path:path.join(captures,`${info.project.name}-recipient-guidance.png`),scale:'css'});
-    // The exact test shipment switches to status-only solely as a rendering fixture.
-    checked(await service.from('provider_shipments').update({tracking_mode:'STATUS_ONLY'}).eq('id',shipment.id).eq('cargo_summary',marker));
-    await page.reload();await expect(radius).toHaveCount(0);await expect(controls.locator('.automatic-location')).toHaveCount(0);
+    await expect(page.getByLabel('Status only',{exact:true})).toHaveCount(0);
   }finally{
     checked(await service.from('access_email_deliveries').delete().eq('recipient_email',email).eq('delivery_kind','TRACKING_OTP'));
     checked(await service.from('audit_logs').delete().eq('entity_id',shipment.id).eq('entity_type','provider_shipment'));

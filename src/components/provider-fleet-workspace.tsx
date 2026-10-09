@@ -29,7 +29,9 @@ export async function FleetWorkspace({searchParams}:{searchParams:Promise<Record
  const user=await requireUser(); if(!canManageProviderVehicles(user)) redirect('/app/home'); const query=await searchParams;
  if(isIndependentDriver(user)){
   const current=await getProviderCapacityWorkspace(user);
-  redirect(current.vehicles.length?`/app/fleet/${current.vehicles[0].id}`:'/app/fleet/new');
+  const destination=current.vehicles.length?`/app/fleet/${current.vehicles[0].id}`:'/app/fleet/new';
+  const feedback=new URLSearchParams();for(const key of ['success','error'])if(query[key])feedback.set(key,query[key]);
+  redirect(destination+(feedback.size?'?'+feedback.toString():''));
  }
  const isFleet=user.role==='TRANSPORTER';
  const verification=isFleet?await getVerificationCenter(user):null;

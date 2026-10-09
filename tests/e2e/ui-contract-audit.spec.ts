@@ -1,3 +1,4 @@
+import {auditDeleteVehicles} from './audit-helpers';
 import {expect,test} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
 import nextEnv from '@next/env';
@@ -33,7 +34,7 @@ test('admin capacity wording and platform access match their actual state',async
     if(status==='partial')expect(copy).toContain('Partial space');
   }
   await page.goto('/app/more');
-  await expect(page.getByText('Platform access',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();await expect(page.getByText('Platform access',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Contact support for a plan.',{exact:true})).toHaveCount(0);
   await expect(page.locator('form[action="/api/billing/payment-proof"]')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -45,7 +46,7 @@ test('admin truck save persists and returns to the same searched inventory',asyn
   const client=localClient();const suffix=randomUUID().slice(0,8);let id='';
   try{
     const owner=await client.from('profiles').select('id').eq('email','transporter@loadgistic.local').single();expect(owner.error).toBeNull();
-    const created=await client.rpc('create_provider_vehicle',{actor_user_id:owner.data!.id,command:{make:'Audit',model:suffix,plate:`TEST-${suffix}`,cargo_configuration:'Mini Box Truck'}});expect(created.error).toBeNull();id=created.data.id;
+    const created=await client.rpc('create_provider_vehicle',{actor_user_id:owner.data!.id,command:{use_basis:'OWNED',make:'Audit',model:suffix,plate:`TEST-${suffix}`,cargo_configuration:'Mini Box Truck'}});expect(created.error).toBeNull();id=created.data.id;
     await login(page);
     await page.goto(`/admin/operations?view=TRUCKS&q=${suffix}&page=1`);
     const row=page.locator('.admin-record-list article').filter({hasText:suffix});
@@ -71,7 +72,7 @@ test('admin truck save persists and returns to the same searched inventory',asyn
   }finally{
     if(id){
       for(const [table,key] of [['audit_logs','entity_id'],['capacities','vehicle_id'],['vehicles','id']]){
-        const removed=await client.from(table).delete().eq(key,id);expect(removed.error).toBeNull();
+        const removed=table==='vehicles'?await auditDeleteVehicles(client,'id',id):await client.from(table).delete().eq(key,id);expect(removed.error).toBeNull();
       }
     }
   }
@@ -85,7 +86,8 @@ test('provider home displays authoritative counts and latest activity',async({pa
   for(const [label,value] of Object.entries(projection.data.counts)){
     await expect(page.locator('.stat').filter({has:page.getByText(label,{exact:true})}).locator('strong')).toHaveText(String(value));
   }
-  if(projection.data.recent.length)await expect(page.locator('a.list-row').first()).toHaveAttribute('href',`/app/provider-shipments/${projection.data.recent[0].id}`);
+  await page.getByRole('link',{name:'Tracking',exact:true}).filter({visible:true}).first().click();
+  if(projection.data.recent.length)await expect(page.locator('a.tracking-row').filter({hasText:projection.data.recent[0].code})).toHaveAttribute('href',`/app/provider-shipments/${projection.data.recent[0].id}`);
   await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
 });
 

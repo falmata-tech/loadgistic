@@ -1,3 +1,4 @@
+import {chooseDate} from './date-picker-helper';
 import {openCapacityFilters,openCapacityFilterDialog} from './capacity-drawer-helper';
 import { test, expect } from '@playwright/test';
 import {mkdirSync} from 'node:fs';
@@ -104,7 +105,7 @@ test('public entry makes capacity immediately usable without an account',async({
   await weekPanel.locator('summary').click();
   const featuredTrucks=featured.locator('.featured-truck-tile');
   await expect.poll(()=>featuredTrucks.count()).toBeGreaterThan(1);
-  await expect(featuredTrucks.first()).toContainText(/Company driver|Owner-operator|Self-managed driver/);
+  await expect(featuredTrucks.first()).toContainText(/Company driver|Independent driver/);
   const sponsorPanel=featured.locator('.expo-sponsored-rail');
   await expect(sponsorPanel).toBeVisible();
   await expect(featured.locator('.expo-sponsored-card').first()).toBeVisible();
@@ -317,7 +318,7 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Schedule sponsor'})).toBeVisible();
   const date=new Date();date.setUTCDate(date.getUTCDate()+7);
-  await page.getByLabel('Feature date').fill(date.toISOString().slice(0,10));
+  await chooseDate(page,'Feature date',date.toISOString().slice(0,10));
   await page.getByRole('button',{name:'Load day'}).click();
   await expect(page).toHaveURL(new RegExp(`date=${date.toISOString().slice(0,10)}`));
   await expect(page.getByLabel('Add truck and Driver')).toBeEnabled();
@@ -735,7 +736,8 @@ test('provider starts Tracking for multiple parties with one stable shipment cod
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
   const ownerEmail=`owner-${Date.now()}@example.test`;
   const trackingPartyEmail=`dispatch-${Date.now()}@example.test`;
-  await page.getByLabel('Main customer email').fill(ownerEmail);
+  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
+  await page.getByLabel('Shipment owner email').fill(ownerEmail);
   await page.getByLabel('Additional tracking emails').fill(trackingPartyEmail);
   const createResponse=page.waitForResponse((response:any)=>response.url().endsWith('/api/provider-shipments')&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Start Tracking'}).click();
@@ -756,11 +758,11 @@ test('provider starts Tracking for multiple parties with one stable shipment cod
   await expect(page.getByLabel('Report a problem')).toBeEnabled();
   await expect(page.locator('.tracking-journey strong')).toHaveText(['Going to pickup','Loading','En route','Unloading','Complete']);
   await page.locator('input[name="nextStatus"][value="LOADING"]').check();
-  await expect(page.getByLabel('Photo (optional)')).toBeVisible();
+  await expect(page.getByLabel('Photo proof required')).toBeVisible();await page.locator('input[name=proof]').setInputFiles('public/icon-192.png');
   await page.getByRole('button',{name:'Save Loading'}).click();
   await expect(page.getByText('Tracking status updated.')).toBeVisible({timeout:30_000});
   await page.getByLabel('En route').check();
-  await expect(page.getByLabel('Photo (optional)')).toHaveCount(0);
+  await expect(page.getByLabel('Photo proof required')).toHaveCount(0);
   await expect(page.getByText('Each person opens the link and verifies their email with one code.')).toBeVisible();
   await page.goto('/track');
   await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
@@ -794,12 +796,13 @@ test('assigned Driver shares only an approximate location during travel',async({
   await context.setGeolocation({latitude:9.03,longitude:38.76});
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/provider-shipments/new');
-  await page.getByLabel('Truck').selectOption({index:1});
+  await expect(page.getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
   await page.getByLabel('Cargo summary').fill('Workshop steel inputs');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
   const ownerEmail=`location.owner.${Date.now()}@example.test`;
-  await page.getByLabel('Main customer email').fill(ownerEmail);
+  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
+  await page.getByLabel('Shipment owner email').fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   await page.getByRole('button',{name:'Start Tracking'}).click();
   await expect(page.getByText('Tracking started')).toBeVisible();
@@ -828,11 +831,12 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
   await context.setGeolocation({latitude:9.07,longitude:38.76});
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/provider-shipments/new');
-  await page.getByLabel('Truck').selectOption({index:1});
+  await expect(page.getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
   await page.getByLabel('Cargo summary').fill('Fabricated window frames');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Destination','Bishoftu',/Bishoftu, Ethiopia/i);
-  await page.getByLabel('Main customer email').fill('driver.owner.e2e@example.test');
+  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
+  await page.getByLabel('Shipment owner email').fill('driver.owner.e2e@example.test');
   await page.getByRole('button',{name:'Start Tracking'}).click();
   await expect(page.getByText('Tracking started')).toBeVisible();
   const trackingCode=(await page.locator('.tracking-code-reveal-heading h1').textContent())!;
@@ -847,7 +851,7 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
   if((page.viewportSize()?.width||0)<=760){
     const mobileNav=page.getByRole('navigation',{name:'Mobile navigation'});
     await expect(mobileNav.getByRole('link')).toHaveCount(5);
-    for(const label of ['Home','My trucks','Tracking','Network','Account'])await expect(mobileNav.getByRole('link',{name:label,exact:true})).toBeVisible();
+    for(const label of ['Home','My truck','Tracking','Network','Account'])await expect(mobileNav.getByRole('link',{name:label,exact:true})).toBeVisible();
     await expect(mobileNav.getByRole('link',{name:'Capacity',exact:true})).toHaveCount(0);
     await Promise.all([
       page.waitForURL(/\/app\/more$/),

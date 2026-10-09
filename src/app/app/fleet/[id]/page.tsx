@@ -38,7 +38,7 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
     <details className="workspace-related-section" open={Boolean(query.success||query.error)}><summary><Text message="Truck documents"/></summary>{truckEvidence?<SubjectDocuments center={verification} kind="VEHICLE" id={vehicle.id} returnTo={`/app/fleet/${vehicle.id}`}/>:null}</details>
     <TruckDetailsEditor vehicle={vehicle} independent={independent}/>
 
-    {!independent?<VehicleLifecycleControl id={vehicle.id}/>:null}
+    <VehicleLifecycleControl id={vehicle.id}/>
     {history?.items.length?<details className="workspace-related-section"><summary><Text message="Previous trucks"/></summary>{history.items.map((truck:{id:string;make:string;model:string;platform_number:string})=><p key={truck.id}><strong>{truck.make} {truck.model}</strong> · {truck.platform_number}</p>)}<p className="meta"><Text message="Past records are kept. Only your current truck can share capacity."/></p>{history.page>1?<Link href={`/app/fleet/${id}?retiredPage=${history.page-1}`}><Text message="Previous page"/></Link>:null}{history.page<history.pageCount?<Link href={`/app/fleet/${id}?retiredPage=${history.page+1}`}><Text message="Next page"/></Link>:null}</details>:null}
     <section className="capacity-home-page fleet-truck-capacity-workspace"><CapacityForm vehicles={[option]} initialVehicleId={vehicle.id} allowDeviceLocation={independent} lockVehicleSelection showTruckIdentity={false} corridors={corridors} returnTo={`/app/fleet/${vehicle.id}`} allowCorridors renderedAt={Date.now()}/></section>
   </div>;
