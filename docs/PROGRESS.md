@@ -1,3 +1,44 @@
+## October 9 Google Play policy work — local verification complete; visual approval recorded
+
+FEAT-PLY-001 implements verified deletion with real administrator fulfillment,
+explicit background-location disclosure consent, report/block/moderation,
+versioned account-bound terms and restricted normal-auth reviewer login.
+The owner approved a synthetic review account strategy and
+marketvision.tech@gmail.com as the public privacy/deletion contact.
+
+Focused tests pass against local Loadgistic services: actual SMTP/Storage/Auth
+erasure and receipts, public moderation/block/unblock, populated reviewer
+Tracking/private capacity and revocation. Six rollback SQL suites cover
+permissions, isolation, shared records and erasure scope; 24 new focused tests
+cover consent, retry ordering, blocks, copy and FCM opt-in. Both types and native
+lint pass; 496 explicit native messages have all four translations. Full root
+quality 488/488, native 127/127 and Doctor 21/21 pass. All 52 database regressions
+and seventeen affected phone workflows pass across corrected focused runs.
+Actual web/Android builds pass; the 5,000-truck gate preserves its existing
+five-second limit (search 4.75 s, route 2.74 s) and rolls back every fixture.
+
+Migrations 131–136 are installed locally only. Hidden/demo profiles now remain
+out of public map/search even if their separate truck sharing setting is public.
+No new production account, database write, release or signed binary exists yet.
+Current web/Android production remains the verified 1.0.2/code-3 release below.
+
+The owner approved the actual new phone/desktop controls at
+http://127.0.0.1:3100 and http://localhost:8084. Current: run full gates, prepare the
+exact SQL/backup/rollback rollout for owner review, provision synthetic review
+accounts and build/verify the new APK/AAB. Actual Android permission/video,
+closed-phone acceptance, Play signing/publishing credentials and Console
+declarations remain distinct requirements. See MOBILE_IMPLEMENTATION.md,
+GOOGLE_PLAY_SETUP.md and specs/TRACEABILITY.md.
+
+Read-only production refresh confirms ledger 130, PostGIS extensions 3.3.7,
+zero unprotected public tables and no advisor errors (two existing warnings).
+The fresh encrypted 2,556,985-byte backup restores in a network-disabled
+container; exact migrations 131–136 and catalog/Data API/spatial checks pass.
+The reviewed SQL digest is
+`e28fa7445a254e80b98dac39593174ca0117605569672cd749e7caacf048f7fd`.
+No hosted migration or reviewer provisioning has been applied. The new candidate
+uses 1.0.3/code 4; all existing EAS Android builds stop at code 3.
+
 ## October 9 web and Android tester release — published
 
 Web application `d443093657cc4ff40f03a50b20033e0416abcb59` is published at

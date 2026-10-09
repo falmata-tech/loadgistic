@@ -10,6 +10,18 @@ export function localAuditService(){
  return createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
 }
 export function checked(result:any){expect(result.error).toBeNull();return result.data;}
+// GIVEN existing-content workflows use consented, disposable local identities.
+// The Play consent workflow explicitly opts out and exercises the visible prompt.
+export async function acceptAuditContentPolicy(service:any,id:string){
+ const endpoint=new URL(service.supabaseUrl);
+ if(!['127.0.0.1','localhost'].includes(endpoint.hostname)||endpoint.port!=='55321')throw Error('LOCAL_FIXTURE_CONSENT_REQUIRED');
+ const identity=checked(await service.auth.admin.getUserById(id)).user;
+ if(identity.app_metadata?.loadgistic_review)return;
+ const synthetic=identity.app_metadata?.fixture_source==='loadgistic'||/@(?:loadgistic\.local|example\.test)$/.test(identity.email||'');
+ if(!synthetic)throw Error('SYNTHETIC_FIXTURE_CONSENT_REQUIRED');
+ const profile=checked(await service.from('profiles').select('role').eq('id',id).single());
+ if(['TRANSPORTER','DRIVER'].includes(profile.role))checked(await service.rpc('accept_content_policy',{actor_user_id:id,policy_version:'2026-10-09'}));
+}
 export async function auditIdentity(service:any,email:string){
  let identity=checked(await service.from('profiles').select('id,role').eq('email',email).maybeSingle());
  if(!identity){
@@ -26,7 +38,7 @@ export async function auditLogin(page:any,email:string){
  await expect(page).toHaveURL(identity.role==='ADMIN'?/\/admin$/:identity.role==='SUPPORT'?/\/support$/:/\/app\/home(?:\?.*)?$/,{timeout:30000});
  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
 }
-export async function auditProvider(service:any,prefix:string){
+export async function auditProvider(service:any,prefix:string,{contentPolicyAccepted=true}={}){
  const suffix=randomUUID().slice(0,8);const email=`${prefix}-${suffix}@loadgistic.local`;
  const auth=checked(await service.auth.admin.createUser({email,password:'Loadgistic123!',email_confirm:true}));const id=auth.user.id;
  try{
@@ -38,6 +50,7 @@ export async function auditProvider(service:any,prefix:string){
   checked(await service.from('company_pages').insert({provider_profile_id:provider.id,headline:'Self-managed transport services',about:'Complete this transporter profile before publishing.',published:false}));
   const plan=checked(await service.from('plans').select('id').eq('audience','DRIVER').eq('active',true).limit(1).single());
   checked(await service.from('subscriptions').insert({provider_profile_id:provider.id,plan_id:plan.id,status:'SPONSORED',billing_model:'SPONSORED_FREE',starts_at:new Date().toISOString()}));
+  if(contentPolicyAccepted)await acceptAuditContentPolicy(service,id);
   return {id,email,role:'DRIVER',driver_kind:'SELF_MANAGED',provider_profile_id:provider.id,suffix};
  }catch(error){checked(await service.auth.admin.deleteUser(id));throw error;}
 }
@@ -49,6 +62,7 @@ export async function auditFleetProvider(service:any,prefix:string){
  const organization=checked(await service.from('organizations').insert({name:`Audit fleet ${suffix}`,handle:`${prefix}-${suffix}`,type:'TRANSPORT_COMPANY'}).select('id').single());
  checked(await service.from('organization_members').insert({organization_id:organization.id,user_id:id,membership_role:'OWNER'}));
  checked(await service.from('company_pages').insert({organization_id:organization.id,published:false}));
+ await acceptAuditContentPolicy(service,id);
  return {id,email,role:'TRANSPORTER',organization_id:organization.id,provider_profile_id:null,suffix};
 }
 
@@ -81,6 +95,7 @@ export async function auditFleetDriver(service:any,owner:any,vehicleId:string){
  checked(await service.from('profiles').update({role:'DRIVER',active:true,full_name:'Audit company driver'}).eq('id',id));
  checked(await service.from('organization_members').insert({organization_id:owner.organization_id,user_id:id,membership_role:'DRIVER'}));
  checked(await service.from('drivers').insert({organization_id:owner.organization_id,user_id:id,name:'Audit company driver'}));
+ await acceptAuditContentPolicy(service,id);
  const {updateFleetDriverAccess}=await import('../../src/lib/fleet.js');
  await updateFleetDriverAccess(owner,id,{vehicleId,canManageCapacity:true,canManageTracking:true});
  return {id,role:'DRIVER',driver_kind:'COMPANY',organization_id:owner.organization_id};

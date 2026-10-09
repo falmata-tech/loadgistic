@@ -1,6 +1,7 @@
 import {useLanguage} from '../localization/provider';
+import {useBlockedProviders} from '../hooks/content-blocks';
 import { AppLink } from '../components/app-link';
-import { useCallback,useState } from 'react';
+import { useCallback,useMemo,useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator,View } from 'react-native';
 import { usePublicQuery } from '../hooks/public-query';
@@ -10,7 +11,8 @@ import { Page,Title,Copy,Card,Button,ErrorText } from '../components/ui';
 import { PublicImage,ExternalButton } from '../components/public-details';
 export default function FeaturedScreen(){
  const {t}=useLanguage();
- const query=usePublicQuery<Featured>('/api/mobile/public/featured'),feature=query.data;
+ const query=usePublicQuery<Featured>('/api/mobile/public/featured'),{blocked}=useBlockedProviders();
+ const feature=useMemo(()=>{if(!query.data)return null;const trucks=query.data.trucks.filter(truck=>!blocked.includes(truck.handle));const slots=new Set(trucks.map(truck=>truck.slot));return {...query.data,trucks,programme:query.data.programme.filter(entry=>entry.slot===null||slots.has(entry.slot)),sponsors:query.data.sponsors.filter(sponsor=>!blocked.includes(sponsor.handle))};},[query.data,blocked]);
  const [now,setNow]=useState(Date.now),[schedule,setSchedule]=useState(false),[week,setWeek]=useState(false);
  useForegroundRefresh(query.refresh,Boolean(feature),60000);
  useFocusEffect(useCallback(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),15000);return()=>clearInterval(timer);},[]));

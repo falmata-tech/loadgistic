@@ -35,6 +35,7 @@ export default async function AdminReviewsPage({searchParams}:{searchParams:Prom
   return <div className="page admin-review-center">
     <PageHeader title={<Text message="Review Center"/>} subtitle={<Text message="Documents and shipment reviews."/>}/>
     <Flash error={query.error} success={query.success}/>
+    <Link href="/admin/reviews/content" className="button secondary"><Text message="Content reports"/></Link>
     <Localized as="nav" copy={["aria-label"]} className="admin-view-tabs" aria-label="Review queue">
       {allowedTabs.map(item=>{const Icon=item.icon;return <Link key={item.id} className={tab===item.id?'active':''} href={`/admin/reviews?tab=${item.id}`}><Icon aria-hidden="true"/>{item.label}</Link>;})}
     </Localized>

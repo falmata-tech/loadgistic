@@ -57,6 +57,7 @@ export async function updateSupabaseCompanyPage(user,input){
 }
 
 export async function updateSupabaseProviderProfileImage(user,file){
+  const {requireContentPolicy}=await import('../privacy/content-policy.js');await requireContentPolicy(user.id);
   if(!file||typeof file.arrayBuffer!=='function'||!file.size)throw new Error('PROFILE_IMAGE_REQUIRED');
   if(!['image/jpeg','image/png','image/webp'].includes(String(file.type||'').toLowerCase())){
     throw new Error('PROFILE_IMAGE_TYPE_INVALID');

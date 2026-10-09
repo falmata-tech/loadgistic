@@ -49,6 +49,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
   return <div className="page admin-operations">
     <PageHeader title={<Text message="Platform Records"/>} subtitle={<Text message="Find and manage one record type at a time."/>}/>
     <Flash error={query.error} success={query.success}/>
+    {user.role==='ADMIN'&&view==='USERS'?<Link href="/admin/privacy" className="button secondary"><Text message="Account deletion requests"/></Link>:null}
     <section className="stats compact-admin-stats">
       <div className="stat"><span className="meta"><Text message="Clients"/></span><strong>{data.counts.workspaces}</strong></div>
       <div className="stat"><span className="meta"><Text message="Users"/></span><strong>{data.counts.users}</strong></div>

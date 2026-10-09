@@ -705,3 +705,34 @@ its actual bounds and save, not just its presence in the DOM.
 the phone regression checks clearance, 44px height, saved duty and revoked access.
 **Owner:** provider workflow author. **Next:** retain complete candidate CI and
 live/installed verification; keep native/web layout parity audits separate.
+
+
+## NR-23 — A public profile hide leaves another public projection exposed
+
+Cause: public truck signal sharing and public profile visibility are separate
+contracts. Hiding the profile or making it private does not by itself hide a
+previous signal, an eligible Featured entry or a directly addressed portrait.
+Owner: Loadgistic engineering/administrator.
+
+Control: FEAT-PLY-001 migrations 132–136 exclude moderated/demo owners from
+actual public map/search before paging, Featured eligibility and public portrait
+reads. Do not repurpose an ordinary profile visibility choice as signal authority.
+Negative evidence: `tests/sql/public-capacity-policy-scope.sql` publishes an
+actual synthetic truck, hides it, checks both read functions, then restores it.
+`public-content-safety.sql` denies republishing bypass; reviewer SQL denies
+foreign workspaces. Hosted installation remains pending; do not claim provider
+enforcement installed based on these local tests.
+
+## NR-24 — Deactivation or partial cleanup masquerades as account deletion
+
+Cause: retaining a profile/history or deleting only its login leaves personal
+files/data, while irreversible cleanup can race ownership changes or fail between
+Storage, Auth and relational stages. Owner: Loadgistic engineering/administrator.
+
+Control: a verified, scoped, durable request; explicit administrator review;
+held work/shared-file checks; frozen ownership/reactivation; file-before-Auth
+ordering; authoritative completion and safe retry. Retain only documented
+pseudonymous history. Never use a browser-supplied subject or merely hide an
+account to report deletion complete.
+Negative evidence: seven erasure workflow tests, deletion/scope SQL and real local
+SMTP/Storage/Auth browser flow. No production erasure is approved by this entry.

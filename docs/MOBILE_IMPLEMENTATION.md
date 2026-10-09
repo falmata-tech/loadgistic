@@ -1,3 +1,46 @@
+## October 9 Play policy implementation — active (FEAT-PLY-001)
+
+Owner requested all missing Play requirements be implemented in the app. Work
+only in Loadgistic; preserve existing runtime, accounts, keys and production data.
+New Console entry is owner-reported: developer 5256539403314542898 / app
+4974969611761012361 under marketvision.tech@gmail.com. Read-only EAS metadata at
+15:19 UTC confirms Submit binding absent, FCM intact; no upload or mutation.
+
+1. [x] Read controlling security/mobile specs, inspect existing policy gaps and
+   record FEAT-PLY-001 AC1–5 before implementation.
+2. [x] Implement account/device disclosure consent before OS permission/task.
+   Eight focused consent cases pass; Android OS/video acceptance is separate.
+3. [x] Local verified-email deletion request, persisted receipt and administrator
+   erasure pass with actual SMTP, Storage and Auth cleanup. Retry/shared-history/
+   frozen ownership checks pass. This has not erased a production account.
+4. [x] Local public report/block/unblock and audited moderation pass. Web/native
+   terms are bound to the authenticated account; guest reviews require acceptance.
+   Hidden/demo workspaces are excluded from actual public map/search, Featured
+   eligibility and portrait reads, including after republishing.
+5. [x] Implement the approved synthetic reviewer strategy through normal Auth.
+   Populated local private-capacity/Tracking access and revocation pass. Ordinary
+   passwords/staff cannot use this path; production demo provisioning is pending.
+6. [ ] Privacy/contact and translations are implemented and tested locally.
+   Owner approved marketvision.tech@gmail.com. All 496 explicit native messages
+   and shared policy/conditional controls have four translations. Declaration
+   inventory is a draft, not a completed Console attestation or Android video.
+7. [x] Owner approved the actual terms/location/deletion/report screens on October
+   9 and explicitly requested continuation of release checks.
+   Local focused workflows and current phone/desktop captures exist. Servers stay
+   at http://127.0.0.1:3100 and http://localhost:8084. Approval recorded; no hosted rollout approval is inferred from it.
+8. [ ] Current: local quality 488/488 + native 127/127, types/lint, Doctor 21/21,
+   496/496 translations, actual web/Android builds and 52 SQL suites pass.
+   Seventeen affected phone workflows pass across corrected focused runs,
+   including normal OTP onboarding and one-truck/worldwide-location persistence.
+   The unchanged 5,000-truck gate passes (search 4.75 s, route 2.74 s).
+   Fresh hosted backup restores without networking; exact SQL 131–136 and
+   catalog/guard/spatial checks pass. Prepare immutable source, remote CI,
+   version 1.0.3/code 4 package and exact owner rollout review.
+9. [ ] Publish approved web/backend, build a new signed APK/AAB using an unused
+   Play version code; verify Android demonstration and actual provider results.
+10. [ ] Verify owner Console/signing/app-scoped Submit connection; internal draft
+   upload and tester rollout remain distinct from public launch and policy approval.
+
 ## October 9 Google Play preparation — active
 
 Owner has a ready developer account and requested help getting the app into Play

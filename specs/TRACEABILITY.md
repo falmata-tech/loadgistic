@@ -1332,3 +1332,41 @@ fleet workflow proves duty-button navigation clearance and saves/reassignment/
 revocation (FEAT-CAP-001, NR-22). All transporter/driver workspace serious-accessibility
 checks pass with a real managed session and completed Account redirects. Final
 candidate CI and hosted/installed postchecks remain pending.
+
+
+October 9 Play policy implementation (FEAT-PLY-001), local only:
+- AC1: eight native background-consent tests pass, including already granted
+  OS permission, decline, stale account and revoked permission. The generated
+  Android manifest disables FCM auto-init/analytics and blocks unused media,
+  camera and microphone permissions. Actual Android disclosure/OS/video and
+  closed-phone acceptance still require the new binary.
+- AC2: `account-erasure.test.mjs` (seven) and rollback-only deletion/scope SQL
+  pass. The phone browser deletion workflow verifies real local SMTP, persists
+  a receipt across reload, removes a real Storage object, deidentifies Auth,
+  preserves an unrelated account and denies non-administrator erasure.
+- AC3: public report/moderate/hide/restore/block/unblock browser workflow and
+  content-policy SQL pass. `public-capacity-policy-scope.sql` proves actual map
+  and search rows exclude hidden/demo providers and preserve restored ordinary
+  supply; Featured eligibility and portrait reads have matching exclusions.
+- AC4: normal reviewer password login, explicit saved terms, populated synthetic
+  Tracking/private-capacity access, session/guest revocation and ordinary-account
+  denial pass in the native browser preview. SQL also denies foreign workspace
+  grants, unregistered members and staff elevation. No production review identity
+  or reusable credential has been created or placed in source/builds.
+- AC5: all 496 explicit native messages have four translations; shared privacy
+  and conditional-control parity passes. Current phone/desktop captures exist.
+  The owner explicitly approved these screens on October 9. Policy declaration
+  inventory remains a draft; hosted rollout, signed binary, actual Android
+  permission/video and Console review remain separate pending evidence.
+
+Evidence: `tests/e2e/play-policy-workflows.spec.ts` (four focused phone workflows,
+including real SMTP OTP onboarding, explicit actor-bound consent, one-truck
+limits and Chicago location/capacity persistence), all 52 SQL suites and 24 new
+domain/native cases. Root quality 488/488, native 127/127, types/lint, Doctor
+21/21, Android export/runtime audit and web build pass. Seventeen changed or
+affected phone workflows pass across corrected runs. The unchanged 5,000-truck
+gate passes: 15 rows, 30,855 bytes, search 4.75 s, route 2.74 s, zero fixtures
+retained. Fresh production backup restores without networking; migrations
+131–136 and full catalog/guard/spatial rehearsal pass. Remote CI and publication
+are not inferred from this local evidence. Local operations receipts and screenshot files
+are protected under `.local/play-policy-*`; they are not production receipts.

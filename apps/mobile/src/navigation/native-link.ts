@@ -4,7 +4,7 @@ const unavailable = '/link-unavailable';
 const simpleRoutes = new Set(['/', '/account', '/account-details', '/account-settings', '/account-security',
   '/driver-photo', '/fleet', '/manage-capacity', '/shipments', '/network',
   '/regular-service', '/support', '/billing', '/documents', '/profile',
-  '/featured', '/visitor-tracking', '/arrange-transport', '/about', '/link-unavailable']);
+  '/featured', '/visitor-tracking', '/arrange-transport', '/about', '/privacy', '/delete-account', '/review-access', '/link-unavailable']);
 const recordRoutes = new Set(['/shipment-detail', '/shipment-manage', '/visitor-shipment', '/support-chat']);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

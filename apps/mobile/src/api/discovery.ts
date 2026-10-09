@@ -1,4 +1,5 @@
 export type TruckFilters = {
+ blocked?:string;
  status?: ''|'EMPTY'|'PARTIAL'; loadType?: ''|'FTL'|'PTL'; vehicleCategory?:string;
  stopOption?: ''|'MULTI_PICK'|'MULTI_DROP'; freshness?: ''|'FRESH'|'UPDATE_NEEDED';
  directionMode?: ''|'DIRECT'|'EITHER'; ownerDocs?:string; driverDocs?:string; truckDocs?:string;
@@ -7,7 +8,7 @@ export type TruckFilters = {
  destinationPlaceRef?:string; destinationLabel?:string; destinationRadiusKm?:string;
  nearLat?:string; nearLng?:string; nearRadiusKm?:string; provider?:string; truck?:string;
 };
-const keys=['status','loadType','vehicleCategory','stopOption','freshness','directionMode','ownerDocs','driverDocs','truckDocs','truckCityPlaceRef','truckLocationRadiusKm','originPlaceRef','originRadiusKm','destinationPlaceRef','destinationRadiusKm','nearLat','nearLng','nearRadiusKm','provider','truck'] as const;
+const keys=['blocked','status','loadType','vehicleCategory','stopOption','freshness','directionMode','ownerDocs','driverDocs','truckDocs','truckCityPlaceRef','truckLocationRadiusKm','originPlaceRef','originRadiusKm','destinationPlaceRef','destinationRadiusKm','nearLat','nearLng','nearRadiusKm','provider','truck'] as const;
 export function discoveryParams(query:string,filters:TruckFilters={},page?:number) {
  const params=new URLSearchParams(); if(query.trim())params.set('q',query.trim());
  for(const key of keys) if(filters[key])params.set(key,filters[key]!);

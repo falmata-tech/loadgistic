@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import {obscureCoordinate} from '../../../../src/lib/location-privacy';
 import {apiOrigin} from '../api/http';
 import {backgroundLocationDue,freshBackgroundFix,trackingLeases,type TrackingLease} from './background-state';
+import {backgroundConsentKey,backgroundDisclosureVersion} from './background-consent';
 export const taskName='loadgistic.shipment-location.v1';
 const leaseKey='loadgistic.shipment.location.leases.v1',deviceKey='loadgistic.shipment.location.device.v1';
 let storageFlight:Promise<unknown>=Promise.resolve();
@@ -35,7 +36,9 @@ TaskManager.defineTask<{locations:Location.LocationObject[]}>(taskName,async({da
  const version=epoch,leases=await readTrackingLeases();
  if(!leases.length){if(await Location.hasStartedLocationUpdatesAsync(taskName))await Location.stopLocationUpdatesAsync(taskName);return;}
  const next:TrackingLease[]=[];
- for(const lease of leases){if(version!==epoch)return;if(!backgroundLocationDue(lease)){next.push(lease);continue;}
+ for(const lease of leases){if(version!==epoch)return;
+  if(await SecureStore.getItemAsync(backgroundConsentKey(lease.actorId))!==backgroundDisclosureVersion){await revokeTrackingLease(lease);continue;}
+  if(!backgroundLocationDue(lease)){next.push(lease);continue;}
   const now=Date.now(),point=obscureCoordinate(fix.coords.latitude,fix.coords.longitude,lease.radius);
   try{const response=await send(lease.token,{latitude:point.lat,longitude:point.lng,radius:lease.radius,observedAt:fix.timestamp});
    if([401,403,404].includes(response.status))continue;

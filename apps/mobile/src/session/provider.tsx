@@ -8,7 +8,7 @@ import { createAccountController } from './account-controller';
 import type { AccountSession } from './contract';
 export type { AccountSession } from './contract';
 const storageKey = 'loadgistic.account.refresh.v1';
-type SessionContext = { session: AccountSession | null; busy: boolean; error: string; cleanupRequired: boolean; requestCode: (email: string) => Promise<string>; verifyCode: (handoff: string, code: string) => Promise<void>; signOut: () => Promise<void>; reload: () => Promise<AccountSession | null>; request: (path: string, body?: unknown) => Promise<unknown> };
+type SessionContext = { session: AccountSession | null; busy: boolean; error: string; cleanupRequired: boolean; requestCode: (email: string) => Promise<string>; verifyCode: (handoff: string, code: string) => Promise<void>; signInReview:(email:string,password:string)=>Promise<void>; signOut: () => Promise<void>; reload: () => Promise<AccountSession | null>; request: (path: string, body?: unknown) => Promise<unknown> };
 const Context = createContext<SessionContext | null>(null);
 export function AccountProvider({ children }: PropsWithChildren) {
  const [, render] = useReducer(n => n + 1, 0);
@@ -21,6 +21,6 @@ export function AccountProvider({ children }: PropsWithChildren) {
   const listener = AppState.addEventListener('change', state => { controller.background(); if (state === 'active') void controller.refresh(); });
   return () => listener.remove();
  }, [controller]);
- return <Context.Provider value={{ ...controller.snapshot(), requestCode: controller.requestCode, verifyCode: controller.verifyCode, signOut: async()=>{try{await removeNativePushScope('MEMBER');}finally{try{await stopBackgroundTracking();}finally{await controller.signOut();}}}, reload: controller.refresh, request: controller.request }}>{children}</Context.Provider>;
+ return <Context.Provider value={{ ...controller.snapshot(), requestCode: controller.requestCode, verifyCode: controller.verifyCode, signInReview:controller.signInReview, signOut: async()=>{try{await removeNativePushScope('MEMBER');}finally{try{await stopBackgroundTracking();}finally{await controller.signOut();}}}, reload: controller.refresh, request: controller.request }}>{children}</Context.Provider>;
 }
 export function useAccount() { const value = useContext(Context); if (!value) throw new Error('AccountProvider required'); return value; }

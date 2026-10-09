@@ -16,6 +16,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const rate=await checkRateLimit(requestKey(request,`tracking-review-submit:${id}`),5,60*60_000);
   if(!rate.allowed)return redirectWith(request,`/track/${id}`,'error',`Too many attempts. Try again in ${rate.retryAfterSeconds} seconds.`);
   const form=await request.formData();
+  if(form.get('termsAccepted')!=='yes')return redirectWith(request,`/track/${id}`,'error','Read and accept the current terms before sharing content.');
   try{
     await submitTrackingEmailReview(id,grant.recipientDigest,Number(text(form,'rating')),text(form,'note'));
     revalidatePath(`/track/${id}`);

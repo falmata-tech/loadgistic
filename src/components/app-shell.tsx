@@ -2,6 +2,7 @@
 
 
 import {Localized,Text} from '@/components/localization';
+import {ContentPolicyConsent} from './content-policy-consent';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {LanguagePicker} from './localization';
@@ -158,6 +159,7 @@ export function AppShell({ user, children }: { user: any; children: React.ReactN
         </header>
         {['TRANSPORTER','DRIVER'].includes(user.role)?<WorkspaceAreaSwitch area="workspace" actorId={user.id}/>:null}
         {children}
+        {['TRANSPORTER','DRIVER'].includes(user.role)?<ContentPolicyConsent key={user.id} actorId={user.id}/>:null}
       </main>
       <Localized as="nav" copy={["aria-label"]} className="mobile-nav" aria-label="Mobile navigation">
         {mobileItems.map(item => {

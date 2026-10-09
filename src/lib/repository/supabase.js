@@ -391,8 +391,8 @@ async function findPublicProviderOwner(client,handle){
   const normalized=String(handle||'').trim().toLowerCase();
   if(!normalized)return null;
   const [organizationResult,profileResult]=await Promise.all([
-    client.from('organizations').select('id,name,handle,city,type').eq('handle',normalized).eq('type','TRANSPORT_COMPANY').maybeSingle(),
-    client.from('provider_profiles').select('id,user_id,business_name,handle,city').eq('handle',normalized).maybeSingle()
+    client.from('organizations').select('id,name,handle,city,type').eq('handle',normalized).eq('type','TRANSPORT_COMPANY').eq('content_hidden',false).eq('review_workspace',false).maybeSingle(),
+    client.from('provider_profiles').select('id,user_id,business_name,handle,city').eq('handle',normalized).eq('content_hidden',false).eq('review_workspace',false).maybeSingle()
   ]);
   if(organizationResult.error||profileResult.error)throw new Error('SUPABASE_PUBLIC_PROVIDER_LOOKUP_FAILED',{cause:organizationResult.error||profileResult.error});
   if(organizationResult.data)return {kind:'ORGANIZATION',id:organizationResult.data.id,organization:organizationResult.data,profile:null};

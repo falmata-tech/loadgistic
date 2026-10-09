@@ -441,3 +441,17 @@ matched hosted rollout and physical closed-phone acceptance remain pending.
 Direct visitor-to-transporter inquiries are still absent and were not invented.
 The restricted web driver's duty-action obstruction is fixed under NR-22; the
 separate map-presentation parity item above remains on its documented backlog.
+
+
+## WEB-MOB-017 — Public near-me filter still rejects locations outside Ethiopia
+
+Observed October 9 during Play workflow integration, not fixed in that task.
+`src/components/public-capacity-feed.tsx:154` still selects `outside` and rejects
+a visitor GPS fix beyond Ethiopia, although the native/driver/backend location
+contracts already accept worldwide coordinates. This conflicts with the owner's
+worldwide-location requirement.
+
+Next: remove this residual frontend restriction while preserving privacy and
+valid-coordinate/radius guards. Test a US GPS fix and combined location/search/
+truck filters on web phone and desktop. Review the focused map behavior before
+release gates; do not copy the restriction into native or change map UI.

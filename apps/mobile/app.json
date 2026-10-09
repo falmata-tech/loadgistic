@@ -2,7 +2,7 @@
   "expo": {
     "name": "Loadgistic",
     "slug": "loadgistic",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/loadgistic-icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.loadgistic.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/loadgistic-icon.png",
         "backgroundColor": "#ffffff"
@@ -24,7 +24,10 @@
       "blockedPermissions": [
         "READ_MEDIA_IMAGES",
         "READ_MEDIA_VIDEO",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -44,18 +47,11 @@
           "androidForegroundServiceIcon": "./assets/tracking-notification.png"
         }
       ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Choose a truck, profile or document image to upload.",
-          "cameraPermission": "Take a truck, profile or document photo.",
-          "microphonePermission": false
-        }
-      ],
       "expo-router",
       "expo-status-bar",
       "expo-font",
       "expo-sharing",
+      "./plugins/with-notification-consent.cjs",
       [
         "expo-notifications",
         {

@@ -3748,3 +3748,9 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
  .truck-inspection-people{padding-top:2px;padding-bottom:2px}
  .truck-inspection-identity h3{margin-top:3px;margin-bottom:1px}
 }
+
+/* Report and terms dialogs use the browser top layer and preserve map controls. */
+.content-report-dialog{font:inherit;color:var(--ink)}
+.content-report-dialog::backdrop { background: rgba(23, 44, 70, .3); }
+.content-safety-actions{padding:16px 0 28px}
+@media(max-width:768px){.content-safety-actions{padding-bottom:calc(150px + env(safe-area-inset-bottom))}}

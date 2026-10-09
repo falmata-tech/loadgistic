@@ -2,15 +2,23 @@
 
 id: FEAT-IAM-001
 title: Identity, sessions, and role access
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001, FEAT-FLT-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001, FEAT-FLT-001, FEAT-PLY-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
-behavior: Provider and platform-team identities begin at one account-access surface and prove identity through a numeric Supabase email one-time code; Google account entry is temporarily disabled by owner decision. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Password login exists only behind an explicit non-Production fixture boundary. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
+behavior: Provider and platform-team identities begin at one account-access surface and prove identity through a numeric Supabase email one-time code; Google account entry is temporarily disabled by owner decision. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Ordinary identities have no password entry; fixture login remains behind an explicit non-Production boundary. FEAT-PLY-001 separately defines registered synthetic reviewer login through normal authentication, without granting ordinary passwords or staff access. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
 contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact, AccountDetailsInput]
 observability: [login_outcome, rate_limit_outcome, audit_log]
 rollout: Replace local signed-cookie identity with Supabase Auth in local development, browser tests, Preview, and Production; enable remote traffic only after role projection, negative authorization tests, callback URLs, and rollback evidence pass.
 ---
 
 # Identity and access
+
+October 9 local implementation: FEAT-PLY-001 adds a separately registered,
+private synthetic review identity using normal password authentication. This is
+not fixture login or an alternate password path for ordinary accounts. Trusted
+Auth metadata, current registry/role/workspace scope and revocation are checked
+on every use. Its demo-only guest grants use unrelated random digests and deny
+foreign workspaces. No production reviewer has been provisioned yet; ordinary
+production accounts still use email codes. The reviewed rollout remains pending.
 
 October 7 current model: Owner-operator and Self-managed driver accounts display
 Independent driver and retain DRIVER role/provider identity. Historical signup

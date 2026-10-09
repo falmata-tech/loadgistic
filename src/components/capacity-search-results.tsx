@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import {useBlockedProviders} from './content-safety';
 import Link from 'next/link';
 import {Building2,UserRound,UserRoundCheck,MapPin,ArrowRight,RefreshCw} from 'lucide-react';
 import {Text,Localized} from './localization';
@@ -8,8 +9,9 @@ import type {CapacitySearchKind,CapacitySearchResult,CapacitySearchItem} from '@
 export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport company',OWNER_OPERATOR:'Independent driver',SELF_MANAGED_DRIVER:'Independent driver',COMPANY_DRIVER:'Company driver'};
 const icons={COMPANY:Building2,OWNER_OPERATOR:UserRoundCheck,SELF_MANAGED_DRIVER:UserRound,COMPANY_DRIVER:UserRound};
 export function CapacitySearchResults({query,view,searchPath}:{query:Record<string,string>;view:'open'|'private'|'loadgistic';searchPath:string}){
+ const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
  const [page,setPage]=React.useState(1),[result,setResult]=React.useState(null as CapacitySearchResult|null),[loading,setLoading]=React.useState(true),[failed,setFailed]=React.useState(false),[retry,setRetry]=React.useState(0);
- const key=JSON.stringify(query);
+ const key=JSON.stringify({...query,...(blocked.length?{blocked:blockKey}:{})});
  React.useEffect(()=>{
   let alive=true;const controller=new AbortController();setLoading(true);setFailed(false);
   const params=new URLSearchParams(JSON.parse(key));params.set('page',String(page));if(view!=='open')params.set('view',view);

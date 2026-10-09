@@ -181,7 +181,8 @@ const localResetTables=[
   'provider_sponsorships','sponsors','sponsor_placements','capacity_access_grants','shared_capacity_email_otps',
   'provider_tracking_recipients','provider_tracking_email_otps',
   'access_email_deliveries','guest_support_conversations','guest_support_messages','guest_support_attachments',
-  'guest_support_events','notifications','audit_logs','vehicle_capacity_sharing'
+  'guest_support_events','notifications','audit_logs','vehicle_capacity_sharing',
+  'content_reports','user_policy_acceptances','app_review_accounts','account_deletion_requests','account_erasure_files'
 ].filter(table=>definitions[table]);
 
 const aliases={
@@ -201,7 +202,7 @@ function uuidFor(value){
 }
 
 async function deleteLocalFixtures(){
-  const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id',vehicle_capacity_sharing:'vehicle_id'};
+  const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id',vehicle_capacity_sharing:'vehicle_id',user_policy_acceptances:'user_id',app_review_accounts:'user_id'};
   for(const table of [...localResetTables].reverse()){
     const deleteKey=deleteKeys[table]||'id';
     const {error}=await supabase.from(table).delete().not(deleteKey,'is',null);
@@ -355,6 +356,18 @@ for(const [sourceTable,targetTable] of plan){
     if(error)throw new Error(`FIXTURE_IMPORT_FAILED:${sourceTable}->${targetTable}:${error.message}`);
   }
   process.stdout.write(`${targetTable}: ${rows.length}\n`);
+}
+
+// Imported synthetic users model existing, consented content scenarios. This
+// local-only importer must never backfill acceptance for real or hosted users.
+// Fresh-signup/Play-consent tests create separate unaccepted identities.
+if(definitions.user_policy_acceptances){
+  for(const user of sourceUsers.filter(user=>['TRANSPORTER','DRIVER'].includes(user.role))){
+    const {error}=await supabase.rpc('accept_content_policy',{
+      actor_user_id:userIds.get(user.id),policy_version:'2026-10-09'
+    });
+    if(error)throw new Error(`FIXTURE_POLICY_PRECONDITION_FAILED:${error.message}`);
+  }
 }
 
 if(definitions.provider_shipments&&definitions.provider_shipment_events){

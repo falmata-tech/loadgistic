@@ -1,10 +1,11 @@
 import {createClient} from '@supabase/supabase-js';
 import {createChunks} from '@supabase/ssr/dist/main/utils/chunker.js';
-import {checked,localAuditService} from './audit-helpers';
+import {checked,localAuditService,acceptAuditContentPolicy} from './audit-helpers';
 import type {Page} from 'playwright-core';
 // Isolated local verified sessions only; no email, password fallback or hosted access.
 export async function localSupportLogin(page:Page,id:string){
  const service=localAuditService(),identity=checked(await service.auth.admin.getUserById(id)).user;
+ await acceptAuditContentPolicy(service,id);
  const link=checked(await service.auth.admin.generateLink({type:'magiclink',email:identity.email}));
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
  const client=createClient(url,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});

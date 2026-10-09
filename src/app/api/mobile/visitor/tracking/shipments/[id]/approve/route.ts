@@ -8,7 +8,7 @@ import {deliverPendingShipmentEmails} from '@/lib/email-delivery';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 export const runtime='nodejs';
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
- try{const session=requireVisitor(request,'tracking'),id=z.string().uuid().safeParse((await params).id);
+ try{const session=await requireVisitor(request,'tracking'),id=z.string().uuid().safeParse((await params).id);
   if(!id.success)throw new MobileError(404,'NOT_FOUND','This shipment is not available.');
   const rate=await checkRateLimit(requestKey(request,`tracking-handover:${id.data}`),10,60000);
   if(!rate.allowed)throw new MobileError(429,'PLEASE_WAIT','Please wait and try again.');

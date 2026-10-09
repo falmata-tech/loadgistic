@@ -120,7 +120,8 @@ jobs:
           for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-owner-retention tracking-device-location capacity-launch-matching \
             independent-single-truck provider-billing-retired capacity-search-metadata-cost security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds \
             fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
-            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives transport-requests brokerage-assignment brokerage-conversations transport-chat-follow-up capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue; do
+            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives transport-requests brokerage-assignment brokerage-conversations transport-chat-follow-up capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue \
+            account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards public-capacity-policy-scope; do
             echo "::group::SQL regression: $suite"
             docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
             echo "::endgroup::"

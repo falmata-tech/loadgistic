@@ -6,6 +6,7 @@ import {getVerificationCenter} from '@/lib/verification.js';
 import {Text} from '@/components/localization';
 import {createSupabaseServerClient} from '@/lib/supabase/server';
 import {AccountSecurityControls} from '@/components/account-security-controls';
+import {AccountDeletionForm} from '@/components/account-deletion-form';
 import {accountDeactivationBlockers} from '@/lib/identity/account-security';
 import { requireUser } from '@/lib/auth';
 import { getWorkspaceAccess } from '@/lib/workspace.js';
@@ -39,7 +40,7 @@ export default async function AccountPage({searchParams}:{searchParams:Promise<R
     {portrait?<details className="workspace-related-section"><summary><Text message="Driver photo"/></summary><DriverPortraitEditor portrait={portrait}/></details>:null}
     {documents?.subjects.some((subject:{subject_type:string})=>subject.subject_type==='DRIVER')?<details className="workspace-related-section" id="documents" open={Boolean(query.success||query.error)}><summary><Text message="Driver documents"/></summary>{documents.subjects.filter((subject:{subject_type:string})=>subject.subject_type==='DRIVER').map((subject:{subject_type:string;subject_id:string})=><SubjectDocuments key={subject.subject_id} center={documents} kind={subject.subject_type} id={subject.subject_id} returnTo="/app/more#documents"/>)}</details>:null}
     </section>
-    {security?<details className="workspace-related-section" id="security"><summary><Text message="Email and account security"/></summary><AccountSecurityControls {...security} pendingEmail={pendingEmail}/></details>:null}
+    {security?<details className="workspace-related-section" id="security"><summary><Text message="Email and account security"/></summary><AccountSecurityControls {...security} pendingEmail={pendingEmail}/><AccountDeletionForm initialEmail={user.email}/></details>:null}
     {ownsProfile?<details className="workspace-related-section" id="business" open={Boolean(query.success||query.error)}><summary><Text message="Transporter profile"/></summary><ProviderProfileWorkspace user={user} embedded/></details>:null}
   </div></div><div className="workspace-signout"><LogoutButton/></div></div>;
 }

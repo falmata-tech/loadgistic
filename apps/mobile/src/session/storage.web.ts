@@ -1,5 +1,6 @@
 // Browser preview sessions are tab-scoped. Never present this as native keychain storage.
 export const WHEN_UNLOCKED_THIS_DEVICE_ONLY = 0;
+export const AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY = 0;
 function storage() {
  if (typeof window === 'undefined') return null;
  if (!__DEV__ || !['localhost','127.0.0.1','[::1]'].includes(window.location.hostname)) {

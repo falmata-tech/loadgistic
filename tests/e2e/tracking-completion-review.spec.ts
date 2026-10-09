@@ -65,6 +65,7 @@ test('completed delivery emails its customer and accepts exactly one visible cus
     await expect(customer.getByRole('heading',{name:'Review the provider'})).toBeVisible({timeout:15000});
     await customer.getByLabel('Rating',{exact:true}).selectOption('4');
     await customer.getByLabel('Comment').fill('Synthetic customer review after delivery.');
+    await customer.getByRole('checkbox',{name:'I agree to the Terms and content rules.'}).check();
     await customer.getByRole('button',{name:'Publish review'}).click();
     await expect(customer.getByText('Your review is published.',{exact:true})).toBeVisible();
     await expect(customer.getByRole('heading',{name:'Your review'})).toBeVisible();

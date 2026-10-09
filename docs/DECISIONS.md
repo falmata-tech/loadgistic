@@ -1939,3 +1939,26 @@ CORS rather than asking XHR for an inaccessible ETag. The before/after browser
 regression deliberately models the broken observer and proves the same abortTile
 failure before repair. Native map style remains unchanged. Rollback restores the
 original HTTPS browser style and removes this port; it changes no stored data.
+
+
+## October 9 — Play privacy and review boundaries (FEAT-PLY-001)
+
+Account/data deletion is distinct from retained-history deactivation. Verify the
+existing account email, record an idempotent request, hold unresolved work/shared
+records with a reason, freeze the erasure scope, remove files before Auth and
+complete only after authoritative cleanup succeeds. Failed stages stay retryable.
+Administrators review the exact account; no autonomous production erasure worker.
+
+Public profile visibility and capacity signal sharing are independent. Moderation
+and synthetic review exclusion must guard all public projections before pagination;
+a profile-only hide is insufficient. Blocking is reversible on the viewer's device.
+
+Reviewer password login uses normal Auth plus trusted metadata and a live private
+workspace registry. Demo guest grants use unrelated digests, expire normally and
+recheck workspace/revocation; they cannot authorize customer records. Production
+provisioning/rollout require the existing reviewed-operation safeguards.
+
+Location disclosure consent is per account/device, separate from OS permission.
+Decline/stale identity/permission revocation prevent task start. Firebase startup
+registration is disabled until explicit notification opt-in. No keys or broad
+media permissions are added. All of these changes are locally verified only.

@@ -6,10 +6,15 @@ import {useLanguage} from '../localization/provider';
 import {deviceTrackingId,readTrackingLeases,replaceTrackingLeases,revokeTrackingLease,startBackgroundTracking,stopBackgroundTracking} from '../location/background-task';
 import {trackingLeases,type TrackingLease} from '../location/background-state';
 import {AppIcon} from './app-icon';
+import * as ConsentStorage from '../session/storage';
+import {authorizeBackgroundLocation,backgroundConsentKey} from '../location/background-consent';
+import {LocationDisclosure} from './location-disclosure';
 // Global lifecycle: returning to Home is not necessary for an agreed shipment to report.
 export function BackgroundTracking(){
  const account=useAccount(),{t}=useLanguage(),[needed,setNeeded]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),busy=useRef(false),last=useRef(0),actorId=account.session?.user.id||'';
+ const [disclosure,setDisclosure]=useState(false),decision=useRef<((accepted:boolean)=>void)|null>(null);
+ const decide=useCallback((accepted:boolean)=>{const resolve=decision.current;decision.current=null;setDisclosure(false);resolve?.(accepted);},[]);
  const request=account.request;
  const synchronize=useCallback(async(prompt=false)=>{
   if(Platform.OS==='web'||!actorId||busy.current||AppState.currentState!=='active')return;
@@ -19,10 +24,16 @@ export function BackgroundTracking(){
    const result=await request('/api/mobile/shipments/location-leases') as {shipments:{shipmentId:string;radius:number}[]};
    if(version!==generation.current)return;
    if(!result.shipments.length){await stopBackgroundTracking();setNeeded(false);setError('');return;}
-   let foreground=await Location.getForegroundPermissionsAsync(),background=await Location.getBackgroundPermissionsAsync();
-   if(prompt){if(!foreground.granted)foreground=await Location.requestForegroundPermissionsAsync();if(foreground.granted&&!background.granted)background=await Location.requestBackgroundPermissionsAsync();}
+   const allowed=await authorizeBackgroundLocation({
+    current:()=>version===generation.current&&AppState.currentState==='active',
+    read:()=>ConsentStorage.getItemAsync(backgroundConsentKey(actorId)),
+    write:value=>ConsentStorage.setItemAsync(backgroundConsentKey(actorId),value,{keychainAccessible:ConsentStorage.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY}),
+    disclose:()=>new Promise<boolean>(resolve=>{decision.current=resolve;setDisclosure(true);}),
+    foreground:Location.getForegroundPermissionsAsync,background:Location.getBackgroundPermissionsAsync,
+    requestForeground:Location.requestForegroundPermissionsAsync,requestBackground:Location.requestBackgroundPermissionsAsync,
+   },prompt);
    if(version!==generation.current||AppState.currentState!=='active')return;
-   if(!foreground.granted||!background.granted){setNeeded(true);setError('');return;}
+   if(!allowed){await stopBackgroundTracking();setNeeded(true);setError('');return;}
    const stored=await readTrackingLeases(),next:TrackingLease[]=[],deviceId=await deviceTrackingId();
    for(const target of result.shipments){if(version!==generation.current)return;
     const previous=stored.find(item=>item.actorId===actorId&&item.shipmentId===target.shipmentId&&item.radius===target.radius);
@@ -40,10 +51,10 @@ export function BackgroundTracking(){
  },[actorId,request,t]);
  useEffect(()=>{generation.current++;last.current=0;if(Platform.OS==='web')return;
   if(!actorId)return;
-  const initial=setTimeout(()=>void synchronize(),0);const listener=AppState.addEventListener('change',state=>{if(state==='active')void synchronize();});const interval=setInterval(()=>void synchronize(),60000);
+  const initial=setTimeout(()=>{setDisclosure(false);void synchronize();},0);const listener=AppState.addEventListener('change',state=>{if(state==='active')void synchronize();});const interval=setInterval(()=>void synchronize(),60000);
   const operationEpoch=generation;
-  return()=>{operationEpoch.current++;clearTimeout(initial);listener.remove();clearInterval(interval);};
+  return()=>{operationEpoch.current++;decision.current?.(false);decision.current=null;clearTimeout(initial);listener.remove();clearInterval(interval);};
  },[actorId,synchronize]);
  if(Platform.OS==='web'||(!needed&&!error))return null;
- return <View style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true).then(()=>{last.current=0;void synchronize();})} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></View>;
+ return <><View style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true)} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></View><LocationDisclosure visible={disclosure} decide={decide}/></>;
 }

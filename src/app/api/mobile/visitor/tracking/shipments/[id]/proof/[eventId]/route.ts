@@ -6,7 +6,7 @@ import { privateFilePayload } from '@/lib/mobile/file-contract.js';
 import { fileFailure } from '@/lib/mobile/file-server';
 export const runtime = 'nodejs';
 export async function GET(request: Request, context: { params: Promise<{ id: string; eventId: string }> }) {
- try { const session = requireVisitor(request, 'tracking');
+ try { const session = await requireVisitor(request, 'tracking');
   const ids = z.object({ id: z.string().uuid(), eventId: z.string().uuid() }).safeParse(await context.params);
   if (!ids.success) throw new MobileError(404, 'NOT_FOUND', 'This proof is not available.');
   try { const file = await readProviderTrackingProof(null, ids.data.id, ids.data.eventId, session.digest); if (!file) throw new Error('NOT_FOUND');

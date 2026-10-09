@@ -1,4 +1,5 @@
 import {isValidCoordinate} from './location-privacy.js';
+import {contentBlocks} from './content-blocks.js';
 export const MAX_MAP_TRUCKS=140;
 // Wrapped world copies cannot be sent as invalid west/east filter coordinates.
 export function worldCapacityViewport([west,south,east,north]) {
@@ -33,6 +34,7 @@ export function capacityDatabaseFilters(filters={},places=[]){
  const hasNear=(Boolean(truckCity)||(provided(filters.nearLat)&&provided(filters.nearLng)))&&isValidCoordinate(lat,lng);
  const viewport=parseCapacityViewport(filters.viewport);
  return {
+  ...(filters.blocked?{blocked_handles:contentBlocks(filters.blocked)}:{}),
   owner_docs:filters.ownerDocs||null,driver_docs:filters.driverDocs||null,truck_docs:filters.truckDocs||null,
   capacity_id:filters.capacityId||filters.truck||null,provider:filters.provider||null,status:filters.status||null,geometry:filters.geometry||null,
   vehicle_category:filters.vehicleCategory||null,load_type:filters.loadType||null,stop_option:filters.stopOption||null,freshness:filters.freshness||null,q:filters.q||null,

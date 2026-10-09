@@ -11,6 +11,12 @@ rollout: Add profile presentation fields and actor-scoped managed profile comman
 
 # Transporter public presence
 
+October 9 local implementation: FEAT-PLY-001 governs report/block/unblock,
+content-policy acceptance, staff moderation and hidden/demo exclusions across
+profiles, map/search rows, Featured and public portraits. Profile visibility and
+truck signal sharing remain separate; moderation must close both public read
+paths before pagination. Production rollout/owner visual review remain pending.
+
 ### Scenario: only truck-linked providers receive public microsites
 
 Given public and legacy profile records coexist\

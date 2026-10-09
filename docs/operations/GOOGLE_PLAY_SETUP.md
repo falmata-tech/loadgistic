@@ -1,13 +1,23 @@
 # Loadgistic Google Play setup
 
-Prepared October 9, 2026. The owner reports their developer account is ready and
-confirms there is **no existing Loadgistic Play entry**. This handoff prepares an
-internal test. The signed AAB is prepared and verified; developer-account identity,
+Prepared October 9, 2026. The owner reports the new Loadgistic Play entry under
+marketvision.tech@gmail.com: developer `5256539403314542898`, app
+`4974969611761012361`, [Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
+This is owner-reported; the authenticated dashboard is not accessible through the
+read-only web tool. It does not change the application's administrator account.
+This handoff prepares an internal test. The signed AAB is prepared and verified; developer-account identity,
 Play signing enrollment, bundle upload, tester access and publication remain
-unverified because the required publishing connection is not assigned.
+unverified because the required publishing connection is not assigned. A fresh
+15:19 UTC metadata check still finds no EAS Submit credential, with the existing
+FCM binding intact. The owner has now requested implementation of remaining
+policy workflows; follow FEAT-PLY-001 and MOBILE_IMPLEMENTATION's ordered checklist.
 Current Android acceptance and limits are in [MOBILE_IMPLEMENTATION.md](../MOBILE_IMPLEMENTATION.md).
 
-Verified bundle: `.local/loadgistic-1.0.2-play-internal.aab` (92,015,378 bytes).
+**Baseline artifact only:** this code-3 bundle does not contain the new Play policy
+workflows. Do not use it for the requested policy release. A new exact signed
+binary and matching hosted backend are required after review and gates.
+
+Verified baseline bundle: `.local/loadgistic-1.0.2-play-internal.aab` (92,015,378 bytes).
 Expo build `b111a2a2-a3b5-4cea-92a2-735d8962d944`, immutable source `ae8baba`,
 version 1.0.2/code 3, com.loadgistic.app, https://loadgistic.com. SHA-256:
 `21d57be058bb6f2a874df20bdfaae5b668058c4f21f47166a25a2a6d99327082`.
@@ -83,8 +93,7 @@ Google Cloud project loadgistic-f082a, dedicated loadgistic-play-submit service
 account without project IAM roles, Android Developer API, Play app-only draft/
 testing permissions and Expo's Submit credential field for com.loadgistic.app.
 
-One-time owner connection remains necessary: create the Loadgistic Console entry,
-enroll its signing path, create a dedicated publishing service account, enable
+The owner has created the Console entry. Remaining owner connection: enroll its signing path, create a dedicated publishing service account, enable
 the Android Developer API, grant that account access only to this Play app, and
 assign its key in EAS's Android `com.loadgistic.app` **Google service account key
 for EAS Submit** setting. The existing Firebase FCM binding remains unchanged.
@@ -94,12 +103,9 @@ private material directly; never copy it into source, app environment or chat.
 The existing Expo login can operate this app once the publishing credential is
 connected. There is no verified Play Console connection or CLI Google login in
 this workspace, and plugin discovery found no suitable publishing connector.
-Concrete draft-upload command, once the exact build is verified:
-
-```sh
-cd /Users/falmata/Desktop/Dev/loadgistic/apps/mobile
-npx eas-cli@24.10.0 submit --platform android --profile play-internal --id b111a2a2-a3b5-4cea-92a2-735d8962d944 --non-interactive --wait
-```
+For the new policy release, record its newly verified immutable build ID here
+before producing the submission command. Never submit the historical code-3 ID
+as if it contains the new workflows, and never select `--latest`.
 
 For this first draft, select App permissions for Loadgistic only: View app
 information (read-only), Edit and delete draft apps, Release apps to testing
@@ -301,3 +307,60 @@ manifest and its SDK data flows before answering declarations.
 The existing APK targets API 36, satisfying the current new-app target SDK
 minimum. That single gate does not establish Play acceptance.
 [Target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en).
+
+
+## New policy implementation — verified locally, not published
+
+FEAT-PLY-001 adds explicit location disclosure consent, real verified-email
+account/data deletion, reporting/blocking and persisted moderation, account-bound
+content-policy acceptance and registered synthetic reviewer access. The owner
+approved the demo-only strategy and marketvision.tech@gmail.com contact. Six
+policy SQL suites, four focused phone workflows and 24 new focused tests pass;
+all 496 explicit native messages and shared policy controls have translations.
+Migration 136 additionally protects the separate public truck map/search reads;
+a profile-only hide does not close those signal projections.
+
+The mobile reviewer test uses a real synthetic shipment and private capacity,
+normal authentication and live revocation checks. No hosted reviewer credential
+is provisioned yet. The browser location view is informational; it is not evidence
+of Android's pre-permission dialog, closed-phone tracking or the required video.
+
+The owner approved these screens on October 9. Full local quality 488/488,
+native 127/127, Doctor 21/21, all 52 SQL suites, affected phone workflows, actual
+web/Android builds and the 5,000-truck gate pass. Protected fresh backup restores
+without networking; exact SQL 131–136 and security/spatial checks rehearse.
+Current: immutable-source remote CI, owner review of exact hosted rollout and
+reviewer provisioning, matching web deployment and signed 1.0.3/code-4 APK/AAB.
+Prior signing/upload exclusions remain. The code-3 APK/AAB is unchanged.
+
+Data Safety inventory is `.local/play-policy-data-safety-review.json`, a draft
+requiring Console attestation. Declare inspected data, not only permission names:
+smaller obscured grid cells can still meet Google's precise-location definition.
+There is no analytics/advertising SDK or digital subscription purchase flow.
+Assess any displayed sponsorship content for the Contains ads declaration.
+
+Remaining manual Console work, once the new artifact is ready:
+1. Open this document's owner-reported app dashboard. Do not create another app
+   or change package com.loadgistic.app. Keep App / Free / English (United States).
+2. Complete the deliberate signing choice above. Use the new verified AAB for
+   any required first Console initialization, not the old policy-incomplete file.
+3. Connect a separate app-scoped EAS Submit service account for internal/draft
+   uploads. Firebase notification credentials are a different purpose and stay
+   unchanged. Never grant account-wide Admin or production-release permission.
+4. In App content, enter the published privacy and deletion URLs, the supplied
+   reusable demo review credentials, inspected Data Safety/content-rating answers
+   and the actual Android background-location/foreground-service video.
+5. Finish the store listing with approved assets and exact-release screenshots.
+   Configure internal testers and explicitly roll out that test release; a draft
+   upload alone is not downloadable from Play.
+6. Confirm account type. New personal accounts may require the separate 12-tester,
+   14-day closed test before production access; internal testing does not replace
+   it. No public rollout is implied by any of these steps.
+
+Primary references: [account deletion](https://support.google.com/googleplay/android-developer/answer/13327111?hl=en),
+[background location](https://support.google.com/googleplay/android-developer/answer/9799150?hl=en),
+[reviewer access](https://support.google.com/googleplay/android-developer/answer/15748846?hl=en),
+[user-generated content](https://support.google.com/googleplay/android-developer/answer/9876937?hl=en),
+[Data Safety](https://support.google.com/googleplay/android-developer/answer/10787469?hl=en),
+[closed testing](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en),
+[Firebase opt-in](https://firebase.google.com/docs/cloud-messaging/android/get-started).

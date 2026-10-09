@@ -1,3 +1,4 @@
+import {contentBlocks} from '../content-blocks.js';
 const choices = {
  status: ['', 'EMPTY', 'PARTIAL'], loadType: ['', 'FTL', 'PTL'],
  stopOption: ['', 'MULTI_PICK', 'MULTI_DROP'], freshness: ['', 'FRESH', 'UPDATE_NEEDED'],
@@ -12,6 +13,7 @@ export function discoveryFilters(params) {
  for (const [key, value] of params) {
   if (Object.hasOwn(result,key)) fail();
   if (strings.includes(key)) { if (value.length > (key.endsWith('PlaceRef') ? 200 : 120)) fail(); result[key]=value.trim(); }
+  else if (key==='blocked') { if(value.length>8192)fail();let parsed;try{parsed=JSON.parse(value);}catch{fail();}if(!Array.isArray(parsed)||parsed.length>100||contentBlocks(parsed).length!==parsed.length)fail();result[key]=JSON.stringify(parsed); }
   else if (key==='cursor') { if (value.length>2048) fail(); result[key]=value; }
   else if (Object.hasOwn(choices,key)) { if (!choices[key].includes(value)) fail(); result[key]=value; }
   else if (Object.hasOwn(documents,key)) { const values=value?value.split(','):[]; if (values.some(v=>!documents[key].includes(v))||new Set(values).size!==values.length) fail(); result[key]=values.join(','); }

@@ -5,6 +5,8 @@ import { getManagedWorkspaceAccess } from '@/lib/identity/workspace-access.js';
 import { mobileBearer, mobileAccountState, mobileIdentity } from './identity-policy.js';
 import { hasJoinableFleetInvitation } from '@/lib/fleet-driver-management';
 import { managedProviderSignupEligible } from '@/lib/provider-signup.js';
+import {contentPolicyAccepted} from '@/lib/privacy/content-policy.js';
+import {reviewAccountAllowed} from '@/lib/privacy/review-access.js';
 
 export class MobileError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
@@ -44,6 +46,7 @@ export async function mobileVerifiedIdentity(request: Request): Promise<ManagedC
   const client = mobileClient(token);
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user) throw new MobileError(401, 'SIGN_IN_REQUIRED', 'Please sign in again.');
+  if(data.user.app_metadata?.loadgistic_review===true&&!await reviewAccountAllowed(data.user.id))throw new MobileError(403,'ACCOUNT_UNAVAILABLE','This review account is unavailable.');
   const user = await getManagedCurrentUser(client, data.user);
   if (!user || user.id !== data.user.id) throw new MobileError(401, 'SIGN_IN_REQUIRED', 'Please sign in again.');
   if (['ADMIN', 'SUPPORT'].includes(user.role)) throw new MobileError(403, 'WEB_ONLY', 'Use the website for staff access.');
@@ -54,11 +57,13 @@ export async function mobileActor(request: Request, allowLimited = false): Promi
   const state = mobileAccountState(user, user.id);
   if (state !== 'ACTIVE' || !user) throw new MobileError(403, state === 'WEB_ONLY' ? 'WEB_ONLY' : 'ACCOUNT_UNAVAILABLE', state === 'WEB_ONLY' ? 'Use the website for staff access.' : 'This account cannot access the workspace.');
   if (!allowLimited && !getManagedWorkspaceAccess(user).granted) throw new MobileError(403, 'WORKSPACE_REQUIRED', 'This account is not linked to a transport workspace.');
+  if(request.method!=='GET'&&request.method!=='HEAD'&&!await contentPolicyAccepted(user.id))throw new MobileError(403,'POLICY_REQUIRED','Read and accept the current terms before sharing content.');
   return user;
 }
 export async function mobileSession(client: SupabaseClient, session: { access_token: string; refresh_token: string; expires_at?: number; user: { id: string } }) {
   const { data, error } = await client.auth.getUser(session.access_token);
   if (error || !data.user || data.user.id !== session.user.id) throw new MobileError(401, 'SIGN_IN_REQUIRED', 'Please sign in again.');
+  if(data.user.app_metadata?.loadgistic_review===true&&!await reviewAccountAllowed(data.user.id))throw new MobileError(403,'ACCOUNT_UNAVAILABLE','This review account is unavailable.');
   const user = await getManagedCurrentUser(client, data.user);
   if (!user) throw new MobileError(403, 'ACCOUNT_UNAVAILABLE', 'This account is unavailable.');
   const canJoin = !user.active && !['ADMIN', 'SUPPORT'].includes(user.role) && await hasJoinableFleetInvitation(user.id);
@@ -66,5 +71,5 @@ export async function mobileSession(client: SupabaseClient, session: { access_to
   const state = mobileAccountState(user, data.user.id, { canJoin, canSignUp });
   if (state === 'DENIED' || state === 'WEB_ONLY') throw new MobileError(403, state, state === 'WEB_ONLY' ? 'Use the website for staff access.' : 'This account cannot sign in.');
   return { accessToken: session.access_token, refreshToken: session.refresh_token, expiresAt: session.expires_at,
-    state, user: mobileIdentity(user), access: state === 'ACTIVE' ? getManagedWorkspaceAccess(user) : null };
+    state, user: {...mobileIdentity(user),review:data.user.app_metadata?.loadgistic_review===true}, access: state === 'ACTIVE' ? getManagedWorkspaceAccess(user) : null };
 }

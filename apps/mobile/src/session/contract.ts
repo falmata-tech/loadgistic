@@ -1,7 +1,7 @@
 export type AccountSession = {
   accessToken: string; refreshToken: string; expiresAt: number;
   state: 'ACTIVE' | 'JOIN_FLEET' | 'ONBOARDING';
-  user: { id: string; name: string; email: string; role: string; organizationName: string | null; businessName: string | null; operatingModel?: string | null };
+  user: { id: string; name: string; email: string; role: string; organizationName: string | null; businessName: string | null; operatingModel?: string | null; review?:true };
   access: { granted: boolean; status: string } | null;
 };
 const record = (value: unknown): Record<string, unknown> => {
@@ -23,7 +23,7 @@ export function parseSession(value: unknown): AccountSession {
   return {
     accessToken: text(data.accessToken), refreshToken: text(data.refreshToken), expiresAt: data.expiresAt,
     state: state as AccountSession['state'],
-    user: { id: text(user.id, 128), name: text(user.name, 200), email: text(user.email, 254), role, organizationName: optional(user.organizationName), businessName: optional(user.businessName), operatingModel: ['COMPANY_DRIVER','OWNER_OPERATOR','SELF_MANAGED_DRIVER','FLEET_TRANSPORTER'].includes(String(user.operatingModel)) ? String(user.operatingModel) : null },
+    user: { id: text(user.id, 128), name: text(user.name, 200), email: text(user.email, 254), role, organizationName: optional(user.organizationName), businessName: optional(user.businessName), operatingModel: ['COMPANY_DRIVER','OWNER_OPERATOR','SELF_MANAGED_DRIVER','FLEET_TRANSPORTER'].includes(String(user.operatingModel)) ? String(user.operatingModel) : null,...(user.review===true?{review:true as const}:{}) },
     access: access ? { granted: access.granted as boolean, status: access.status as string } : null,
   };
 }

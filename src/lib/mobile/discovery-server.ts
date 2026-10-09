@@ -14,7 +14,7 @@ export function readDiscoveryFilters(request: Request) {
 export async function nativeDiscovery(request: Request, privateView: boolean) {
  try {
   // Only this route's verified grant chooses private authority. Query input cannot.
-  const session = privateView ? requireVisitor(request,'capacity') : null;
+  const session = privateView ? await requireVisitor(request,'capacity') : null;
   const filters = readDiscoveryFilters(request);
   const rate = await checkRateLimit(`mobile-discovery:${request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown'}`,120,60000);
   if (!rate.allowed) throw new MobileError(429,'RATE_LIMIT','Please wait a moment.');

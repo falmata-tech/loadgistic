@@ -1,7 +1,7 @@
 import { after } from 'next/server.js';
 import { z } from 'zod';
 import { mobileBody, mobileFailure, mobileJson, MobileError } from '@/lib/mobile/server';
-import { issueVisitor, requireVisitor, visitorScope } from '@/lib/mobile/visitor-server';
+import { issueVisitor, issueReviewVisitor, requireVisitor, visitorScope } from '@/lib/mobile/visitor-server';
 import { createSessionToken, verifySessionToken } from '@/lib/security.js';
 import { requestTrackingEmailSession, verifyTrackingEmailSession, listTrackingEmailShipments } from '@/lib/provider-tracking.js';
 import { requestSharedCapacityOtp, verifySharedCapacityAccess } from '@/lib/private-capacity.js';
@@ -17,11 +17,11 @@ export async function POST(request: Request, context: { params: Promise<{ scope:
   const params = await context.params, scope = visitorScope(params.scope), action = params.action;
   if (!['request', 'verify', 'renew'].includes(action)) throw new MobileError(404, 'NOT_FOUND', 'Not found.');
   if (action === 'renew') {
-   const session = requireVisitor(request, scope);
+   const session = await requireVisitor(request, scope);
    const rate = await checkRateLimit(requestKey(request, `mobile-visitor-renew:${scope}`), 60, 60000);
    if (!rate.allowed) throw new MobileError(429, 'PLEASE_WAIT', 'Please wait and try again.');
    if (scope === 'tracking' && !(await listTrackingEmailShipments(session.digest)).total) throw new MobileError(401, 'EMAIL_REQUIRED', 'No shipments are currently shared with this email.');
-   return mobileJson(issueVisitor(scope, session.digest, session.startedAt));
+   return mobileJson('reviewActorId' in session ? issueReviewVisitor(scope, String(session.reviewActorId), session.startedAt) : issueVisitor(scope, session.digest, session.startedAt));
   }
   // Same budgets as the browser endpoints: another client is not another allowance.
   const prefix = scope === 'tracking' ? action === 'request' ? 'tracking-otp' : 'tracking-unlock' : action === 'request' ? 'shared-capacity-otp' : 'shared-capacity-access';

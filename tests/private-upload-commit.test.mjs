@@ -63,6 +63,7 @@ test('real upload adapters retain files on lost RPC responses and clean explicit
           if(init.method==='POST') {objects.set(object,'proof bytes');return json({Key:object});}
           if(init.method==='DELETE') {for(const prefix of JSON.parse(init.body).prefixes)objects.delete(`${object}/${prefix}`);return json([]);}
         }
+        if(url.pathname.endsWith('/rpc/content_policy_accepted'))return json(true); // GIVEN this synthetic actor accepted terms.
         if(url.pathname.startsWith('/rest/v1/rpc/')) {
           commandCount++;const body=JSON.parse(init.body);
           if(outcome==='rejected')return new Response(JSON.stringify({code:'P0001',message:'FORBIDDEN'}),{status:400,headers:{'Content-Type':'application/json'}});
@@ -82,4 +83,13 @@ test('real upload adapters retain files on lost RPC responses and clean explicit
     globalThis.fetch=originalFetch;
     keys.forEach((key,index)=>{if(saved[index]===undefined)delete process.env[key];else process.env[key]=saved[index];});
   }
+});
+
+test('missing content agreement denies a profile upload before Storage or a save',async()=>{
+ const keys=['NEXT_PUBLIC_SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY'],saved=keys.map(k=>process.env[k]),originalFetch=globalThis.fetch;let reads=0;
+ process.env.NEXT_PUBLIC_SUPABASE_URL='http://127.0.0.1:1';process.env.SUPABASE_SERVICE_ROLE_KEY='isolated-test-placeholder';
+ try{
+  globalThis.fetch=async input=>{const url=new URL(typeof input==='string'?input:input.url);assert.ok(url.pathname.endsWith('/rpc/content_policy_accepted'),'no Storage or mutation before agreement');reads++;return new Response('false',{headers:{'Content-Type':'application/json'}});};
+  await assert.rejects(updateSupabaseProviderProfileImage({id:'actor'},new File(['synthetic'],'test.png',{type:'image/png'})),/POLICY_REQUIRED/);assert.equal(reads,1);
+ }finally{globalThis.fetch=originalFetch;keys.forEach((key,index)=>{if(saved[index]===undefined)delete process.env[key];else process.env[key]=saved[index];});}
 });

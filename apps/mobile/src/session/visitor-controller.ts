@@ -1,5 +1,5 @@
 export type VisitorScope = 'tracking' | 'capacity';
-export type VisitorGrant = { token: string; scope: VisitorScope; startedAt: number; expiresAt: number; lastActivityAt: number; renewedAt: number; clockOffsetMs: number };
+export type VisitorGrant = { token: string; scope: VisitorScope; startedAt: number; expiresAt: number; lastActivityAt: number; renewedAt: number; clockOffsetMs: number; reviewActorId?:string };
 type Port = { now: () => number; read: (scope: VisitorScope) => Promise<string | null>; write: (scope: VisitorScope, value: string) => Promise<void>; remove: (scope: VisitorScope) => Promise<void>; request: (path: string, options: { token?: string; body?: unknown; signal?: AbortSignal }) => Promise<unknown>; changed: () => void; storageError?: (scope: VisitorScope, message: string) => void };
 const IDLE = 30 * 60000, MAX_TRACKING = 8 * 60 * 60000;
 export function parseVisitorGrant(value: unknown, scope: VisitorScope, now: number): VisitorGrant {
@@ -13,7 +13,8 @@ export function parseVisitorGrant(value: unknown, scope: VisitorScope, now: numb
  const renewedAt = item.renewedAt === undefined ? now : item.renewedAt;
  if (typeof renewedAt !== 'number' || !Number.isSafeInteger(renewedAt) || renewedAt < 0 || renewedAt > now) throw new Error('Verify your email to continue.');
  if (typeof lastActivityAt !== 'number' || !Number.isSafeInteger(lastActivityAt) || lastActivityAt < 0 || lastActivityAt > now || lastActivityAt + IDLE <= now) throw new Error('Your email session expired. Verify your email again.');
- return { token: item.token, scope, startedAt: item.startedAt, expiresAt: item.expiresAt, lastActivityAt, renewedAt, clockOffsetMs };
+ if(item.reviewActorId!==undefined&&(typeof item.reviewActorId!=='string'||! /^[a-f0-9-]{36}$/.test(item.reviewActorId)))throw new Error('Verify your email to continue.');
+ return { token: item.token, scope, startedAt: item.startedAt, expiresAt: item.expiresAt, lastActivityAt, renewedAt, clockOffsetMs,...(typeof item.reviewActorId==='string'?{reviewActorId:item.reviewActorId}:{}) };
 }
 export function createVisitorController(port: Port) {
  const grants: Record<VisitorScope, VisitorGrant | null> = { tracking: null, capacity: null };
@@ -56,6 +57,7 @@ export function createVisitorController(port: Port) {
   snapshot: () => ({ tracking: live('tracking'), capacity: live('capacity'), foreground }),
   async restore(scope: VisitorScope) { const epoch = epochs[scope]; try { const raw = await port.read(scope); if (raw && epochs[scope] === epoch) await accept(scope, JSON.parse(raw), epoch); } catch { if (epoch === epochs[scope]) await clear(scope); } },
   async verify(scope: VisitorScope, handoff: string, code: string) { await clear(scope); const epoch = epochs[scope], requestedAt = port.now(); const value = await port.request(`/api/mobile/visitor/${scope}/verify`, { body: { handoff, code } }); await accept(scope, value, epoch, requestedAt); },
+  async review(scope:VisitorScope,memberToken:string){await clear(scope);const epoch=epochs[scope],requestedAt=port.now();const value=await port.request('/api/mobile/review-access/visitor',{token:memberToken,body:{scope}});await accept(scope,value,epoch,requestedAt);},
   async request(scope: VisitorScope, path: string, body?: unknown, signal?: AbortSignal) {
    if (!path.startsWith(`/api/mobile/visitor/${scope}/`) || path.includes('..')) throw new Error('Invalid request.');
    const epoch = epochs[scope], grant = live(scope);

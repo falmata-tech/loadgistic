@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import React from 'react';
+import {useBlockedProviders} from './content-safety';
 import {loadCapacityMapWindow,reconcileCapacityMapWindow} from '@/lib/capacity-map-loading.js';
 import { BUSINESS_SEARCH_PRIVACY_KM, obscureCoordinate } from '@/lib/location-privacy.js';
 import {CapacityConfigurationPicker} from './capacity-configuration-picker';
@@ -47,7 +48,9 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   // A link to the current unfiltered URL does not navigate. Reset local drafts
   // and the map explicitly in that case; other clears use the new query key.
   function clearUnappliedFilters(){if(!Object.values(query).some(Boolean))onReset();}
-  const [items,setItems]=React.useState(initial.items);
+  const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
+  const [allItems,setItems]=React.useState(initial.items);
+  const items=React.useMemo(()=>allItems.filter((item:any)=>!blocked.includes(item.provider_handle)),[allItems,blockKey]);
   const [loading,setLoading]=React.useState(false);
   const [error,setError]=React.useState(initial.filterError||'');
   const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(initial.items.some((item:any)=>item.id===query.truck)?query.truck:null);
@@ -108,6 +111,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     const version=generation.current;
     const controller=new AbortController();pendingRequest.current=controller;
     const params=new URLSearchParams(query);
+    if(blocked.length)params.set('blocked',blockKey);
     params.delete('overview');params.delete('cursor');
     if(viewport.current&&!query.q&&!query.provider)params.set('viewport',viewport.current);
     setLoading(true);setError('');
@@ -131,7 +135,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     }finally{
       if(version===generation.current)setLoading(false);
     }
-  },[apiPath,query]);
+  },[apiPath,query,blockKey]);
   function explore(bounds:number[]){
     const key=bounds.map(value=>value.toFixed(4)).join(',');
     if(key===viewport.current||viewport.current&&Boolean(query.q||query.provider))return;

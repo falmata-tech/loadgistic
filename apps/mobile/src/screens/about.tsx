@@ -16,7 +16,9 @@ export default function About(){
  <Link href="/" style={{color:palette.teal,paddingVertical:12}}>{t('Find capacity')}</Link>
  <Link href="/account" style={{color:palette.teal,paddingVertical:12}}>{t('Transporter login')}</Link>
  <Card><Title>{t('Language')}</Title><ErrorText message={error}/>{languages.map(language=><Button key={language.code} secondary={locale!==language.code} busy={busy&&locale===language.code} disabled={busy} label={`${locale===language.code?'✓ ':''}${language.name}`} onPress={()=>{void select(language.code);}}/>)}</Card>
- <ExternalButton label={t('Privacy')} url="https://loadgistic.com/privacy"/>
+ <Link href="/privacy" style={{color:palette.teal,paddingVertical:12}}>{t('Privacy')}</Link>
  <ExternalButton label={t('Terms')} url="https://loadgistic.com/terms"/>
+ <ExternalButton label={t('Account and data deletion')} url="https://loadgistic.com/delete-account"/>
+ <Link href="/review-access" style={{color:palette.teal,paddingVertical:12}}>{t('App review access')}</Link>
  </Page>;
 }

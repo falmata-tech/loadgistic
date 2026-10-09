@@ -1,10 +1,11 @@
 import {useChatUpdates} from '../session/chat-alert-provider';
+import {useBlockedProviders} from '../hooks/content-blocks';
 import { useLanguage } from '../localization/provider';
 import { useVisitor } from '../session/visitor-provider';
 import { VisitorAccess } from '../components/visitor-access';
 import {AppIcon} from '../components/app-icon';
 import { Link, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import CapacityMap from '../components/CapacityMap';
 import { apiOrigin,apiRequest } from '../api/http';
@@ -27,7 +28,9 @@ function Capacity({initialQuery}:{initialQuery:string}) {
   const {t}=useLanguage(),updates=useChatUpdates();
   const visitor = useVisitor(), visitorController = visitor.controller;
   const [filters,setFilters]=useState<TruckFilters>({}),[filtersOpen,setFiltersOpen]=useState(false),[drawer,setDrawer]=useState(false),[page,setPage]=useState(1);
-  const filterKey=JSON.stringify(filters);
+  const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
+  const effectiveFilters=useMemo(()=>({...filters,...(blocked.length?{blocked:blockKey}:{})}),[filters,blockKey,blocked.length]);
+  const filterKey=JSON.stringify(effectiveFilters);
   const [controlsHeight,setControlsHeight]=useState(48);
   const [mode, setMode] = useState<'open' | 'private'>('open');
   const sharedIdentity = visitor.snapshot.capacity?.startedAt, sharedReady = Boolean(visitor.ready && visitor.snapshot.foreground && sharedIdentity);
@@ -51,19 +54,19 @@ function Capacity({initialQuery}:{initialQuery:string}) {
     const controller = new AbortController();
     let timeout = setTimeout(() => controller.abort('timeout'), 30000);
     const onPage = (items: CapacitySignal[]) => { if (!controller.signal.aborted) {clearTimeout(timeout);timeout=setTimeout(()=>controller.abort('timeout'),30000);setResult({ key: requestKey, items, loading: true, error: '' });} };
-    const loading = mode === 'private' ? loadSharedCapacity(query, controller.signal, onPage, (path, signal) => visitorController.request('capacity', path, undefined, signal), filters) : loadCapacity(apiOrigin, query, controller.signal, onPage, fetch, filters);
+    const loading = mode === 'private' ? loadSharedCapacity(query, controller.signal, onPage, (path, signal) => visitorController.request('capacity', path, undefined, signal), effectiveFilters) : loadCapacity(apiOrigin, query, controller.signal, onPage, fetch, effectiveFilters);
     loading.catch(() => {
       if (!controller.signal.aborted || controller.signal.reason === 'timeout') setResult(previous => ({ key: requestKey, items: previous?.key === requestKey ? previous.items : [], loading: false, error: 'Could not finish loading trucks. Please try again.' }));
     }).finally(() => { clearTimeout(timeout); if (!controller.signal.aborted || controller.signal.reason === 'timeout') setResult(previous => previous?.key === requestKey ? { ...previous, loading: false } : { key: requestKey, items: [], loading: false, error: '' }); });
     return () => { controller.abort(); clearTimeout(timeout); };
-  }, [query, requestKey, canLoad, mode, visitorController, filters]);
+  }, [query, requestKey, canLoad, mode, visitorController, effectiveFilters]);
   useEffect(()=>{
     if(!canLoad)return;const controller=new AbortController();
-    const params=discoveryParams(query,filters,page),path=`/api/mobile/${mode==='private'?'visitor/capacity/search':'public/discovery'}?${params}`;
+    const params=discoveryParams(query,effectiveFilters,page),path=`/api/mobile/${mode==='private'?'visitor/capacity/search':'public/discovery'}?${params}`;
     const promise=mode==='private'?visitorController.request('capacity',path,undefined,controller.signal):apiRequest(path,{signal:controller.signal});
     promise.then(raw=>{const data=parseDiscovery(raw);if(!controller.signal.aborted)setProfiles({key:profileKey,result:data,error:'',loading:false});}).catch(error=>{if(!controller.signal.aborted)setProfiles({key:profileKey,result:null,loading:false,error:error instanceof Error?error.message:'Could not load transporters.'});});
     return()=>controller.abort();
-  },[profileKey,canLoad,mode,query,filters,page,visitorController]);
+  },[profileKey,canLoad,mode,query,effectiveFilters,page,visitorController]);
   const resetResults = () => { setResult(null); setSelection(null); };
   const search = () => { resetResults(); Keyboard.dismiss(); setQuery(input.trim()); setPage(1);setDrawer(true); setRevision(value => value + 1); };
   const clearAll=()=>{resetResults();setFilters({});setInput('');setQuery('');setPage(1);setRevision(v=>v+1);};

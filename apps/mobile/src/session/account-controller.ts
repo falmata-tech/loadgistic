@@ -69,6 +69,11 @@ export function createAccountController(port: Port) {
    const generation = ++epoch; restoreBlocked = true; session = null; emit();
    await accept(await port.request('/api/mobile/auth/verify', { body: { handoff, code } }), generation);
   },
+  async signInReview(email:string,password:string){
+   if(cleanupRequired){await signOut();if(cleanupRequired)throw new Error('Retry sign-out before signing in again.');}
+   const generation=++epoch;restoreBlocked=true;session=null;emit();
+   await accept(await port.request('/api/mobile/review-access',{body:{email,password}}),generation);
+  },
   async request(path: string, body?: unknown) {
    const generation = epoch; let active = session;
    if (!active || active.expiresAt * 1000 - port.now() < 60000) active = await refresh();
