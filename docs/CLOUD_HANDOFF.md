@@ -1,4 +1,33 @@
-## October 8 contact-name and notification extensions — prepared locally only
+## Current published release — October 9
+
+Application `d443093` is live at https://loadgistic.com as Netlify deployment
+`6ac876e7cffbaa5a92772381`; exact CI `37883805604` passes all eight jobs.
+Owner-approved migrations 115–130 are committed and verified; protected fresh
+backup/isolated restore evidence remains recoverable. Post-release catalog,
+RLS/ACL, Data API guard and PostGIS checks pass with zero unprotected public tables.
+Do not automatically downgrade schema or assume the prior application is compatible.
+
+Production native push is enabled on this Loadgistic site only. The nonsecret
+`LOADGISTIC_NATIVE_PUSH_ENABLED` value is true only in the production context.
+On Netlify Free, omit the API scopes field and use its supported default scopes;
+explicit scope requests are rejected. Do not change other contexts, credentials,
+providers or billing to work around that response. State and unrelated fields were
+verified before and after this single-field write. Firebase private credentials
+stay with Expo and outside web runtime, source and builds.
+
+Standalone Android 1.0.2/code 3 is ready for internal testers; link, preserved-data
+installation and physical-device limits are in MOBILE_IMPLEMENTATION.md. Live
+public/browser/mobile checks and compiled private workflows pass. Full live
+private browser completion and advisor refresh are waiting on Supabase CLI
+Keychain access; the postpublication SQL catalog check is already complete.
+Browser alerts require a running site; closed-browser Web Push remains absent.
+Physical closed-phone Expo/FCM delivery/location acceptance remains pending.
+Current Featured is unpublished/empty (WEB-MOB-013), not silently populated.
+Production-write authority is consumed; Google Play and broad launch are not claimed.
+
+The following dated preparation/previous-release sections are historical.
+
+## October 8 contact-name and notification extensions — preparation history
 
 Local ledger 128 adds private push installations/bindings/outbox after 127's
 contact names and 126's handover alerts. New health requires `native_push_outbox`,
@@ -27,7 +56,7 @@ were copied to repository/app/logs. Signing and Play credentials are unchanged.
 
 This is a credential-free owner handoff. Never put real secrets, customer data, tracking codes, or private files in this document, commits, screenshots, or chat logs.
 
-## Unpublished local chat extension — October 7
+## October 7 chat extension — preparation history
 
 FEAT-NOT-001 / ADR-077 / NR-19 is local-only at ledger 125 (122–125 add honest Seen,
 assignment/unread/alert contracts). The compiled health route requires all chat
@@ -39,9 +68,9 @@ configuration/implementation/device evidence; direct provider inquiry scope is
 unresolved. No hosted Auth/SMTP, provider, signing or other setting was
 changed. See MOBILE_IMPLEMENTATION for safe local evidence and running previews.
 
-## Release boundary
+## Previous release boundary — superseded October 9
 
-Current verified release (2026-10-07): application `415cb7d` is live at
+Previous verified release (2026-10-07): application `415cb7d` is live at
 https://loadgistic.com as deployment `6ac64a35243e4f0c807487b0`; hosted database
 ledger remains 114. CI `37626365763`, fresh protected backup/isolated restore,
 security, immutable Linux packaging and live desktop/phone/private-file checks

@@ -1,4 +1,26 @@
-## October 8 matched backend/web and Android tester release — requested
+## October 9 matched release — production writes completed
+
+The reviewed rollout is published: application `d443093`, Netlify deployment
+`6ac876e7cffbaa5a92772381`, exact passing CI `37883805604`, Supabase ledger 130
+and Expo internal Android `d1f893c2-556f-4f8f-9920-800f674d2f7c` (1.0.2/code 3).
+Existing signing credentials were reused and installation preserves data.
+
+The owner-approved migration bytes 115–130 match the protected backup/restore
+rehearsal. The only new provider field is the nonsecret native push sender flag,
+with value true only in production. Netlify Free rejects explicit scopes; after
+readback proved no mutation, its supported API default scopes were used for this
+same field/value/site. Unrelated fields and credentials remain unchanged. Exact
+original/default-request digests and both denials are protected in `.local`.
+
+This bounded production-write authority is consumed. No additional migrations,
+settings writes, signing changes or Play submission are authorized by this record.
+Public live, Android startup and post-deployment catalog checks pass. Remaining
+read-only private browser verification/refreshed advisors wait on macOS CLI
+Keychain access; physical-device delivery/location acceptance and the existing
+unpublished Featured programme remain separate. Owner-only defaults apply to any
+new production operation. No success is inferred for an unfinished check.
+
+## October 8 matched backend/web and Android tester release — authorization history
 
 After the confirmed FCM upload and the stated remaining backend rollout, new APK
 and phone test, the owner instructed “ok finish then.” Prepare and complete this

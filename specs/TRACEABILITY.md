@@ -1,5 +1,32 @@
 # Specification traceability
 
+October 9 published release, BASE-DEP-001 / FEAT-SEC-001 / FEAT-MOB-001:
+exact application `d443093` passes CI `37883805604` (all eight jobs/four browser
+shards); root 473/473, native 118/118, 457/457 translations and actual Android
+runtime/container boundaries pass. Approved 115–130 migration bytes restore and
+rehearse against the fresh protected backup and commit atomically in production.
+Postpublication catalog/RLS/ACL/API-guard/PostGIS checks pass at ledger 130 with
+zero unprotected public tables. Prepublication advisors have zero errors; their
+post-release refresh is pending Keychain access and is not claimed complete.
+
+Netlify deploy `6ac876e7cffbaa5a92772381` serves loadgistic.com. Live desktop/phone
+public map/filter/reset/private/Tracking/login/Brokerage entry controls and mobile
+public reads/unauthorized denial pass. Compiled private provider/Tracking/file
+checks pass with production configuration. Full live private browser completion
+is pending the corrected harness and CLI Keychain access; an invalid supplemental
+GET on the POST-only push registration endpoint is retained as a harness failure.
+No endpoint or acceptance assertion was weakened to mask an application failure.
+
+Expo standalone build `d1f893c2-556f-4f8f-9920-800f674d2f7c` is signed 1.0.2/code 3,
+com.loadgistic.app; all 353 native inputs match final candidate despite EAS's
+recorded `36be7e6` ref. Installation preserves data. Actual COLD startup, production
+map and Truck filters dialog pass on the owned emulator without Metro or native
+fatal error. Physical delivery/tap/moving GPS, closed-browser Web Push and the
+existing empty Featured programme are not accepted by these results. Protected
+release receipts and exact remaining steps are in MOBILE_IMPLEMENTATION.md.
+
+Earlier dated entries below retain the preparation evidence at that time.
+
 October 8 search and scale follow-up, FEAT-MKT-001 / BASE-DEP-001 / NR-08/13:
 `public-capacity-contract.spec.ts` passes on desktop/phone for profile filtering
 with the retired overview parameter, identical IDs/cursors and no legacy cells.

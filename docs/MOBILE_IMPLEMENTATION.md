@@ -1,4 +1,48 @@
-## Active release: finish web/backend and Android tester delivery — October 8
+## Android 1.0.2 internal test release — available October 9
+
+Install the new standalone build on Android:
+https://expo.dev/accounts/falmatad/projects/loadgistic/builds/d1f893c2-556f-4f8f-9920-800f674d2f7c
+
+Open that link on the phone, download the APK and allow installation from that
+browser if Android asks. Version is **1.0.2 / code 3**, package
+`com.loadgistic.app`; install it over the existing Loadgistic app. The signing key
+matches. Do not uninstall or clear data to bypass an installation error. Expo Go,
+Metro and a computer are not required. Share this same link for internal testing;
+Google Play submission remains separate.
+
+The APK's recorded EAS Git ref is `36be7e6`; all 353 uploaded native input files
+are byte-identical to final tested web/backend candidate `d443093`. Later fixes
+were web/spec/browser-only. Do not reinterpret the EAS ref as a stale native build.
+The compiled artifact is downloaded and its manifest/signature/hash verified.
+It is installed on the owned Loadgistic emulator with data preserved; actual COLD
+launch, production map and Truck filters dialog pass without a development launcher
+or native fatal error. One Android System UI freeze cleared through its Wait action;
+no system services or unrelated app were terminated.
+
+Matching web deploy `6ac876e7cffbaa5a92772381` is published at loadgistic.com with
+Supabase ledger 130 and production-only native push flag enabled. Exact CI
+`37883805604` passes all eight jobs; root 473/473, native 118/118, actual Android
+export/dependency boundary and 457/457 translation coverage pass. Backups and
+approved migration/rehearsal digests are protected locally.
+
+Remaining acceptance is explicit: full private live browser/advisor refresh is
+blocked on macOS Supabase CLI Keychain access; post-release SQL/catalog and live
+public/mobile checks already pass. Physical phone background alerts, notification
+tap, denied permission, logout/expiry and moving GPS remain unproven. Browser
+Notifications do not provide closed-browser Web Push. Current Featured is still
+unpublished/empty (WEB-MOB-013). The cold-start capture also shows adjacent Empty
+and Partial clusters overlapping at one position; reproduce and resolve that
+presentation case in a follow-up, without changing counts or search completeness.
+This is an internal testing release, not Play publication or broad-launch acceptance.
+
+Protected evidence: `.local/release-20261008-tester-apk-evidence.json`,
+`.local/release-20261009-android-startup-evidence.json`,
+`.local/release-20261009-native-filters-evidence.json` and final Android captures.
+No customer records were created or changed by release verification.
+
+The dated work below records preparation before this published artifact.
+
+## October 8 release preparation checklist — historical
 
 Latest owner instruction: “ok finish then,” following the confirmed FCM upload
 and disclosure of remaining backend rollout/new APK/phone testing. Scope is

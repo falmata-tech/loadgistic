@@ -1,4 +1,42 @@
-## October 9 phone workflow follow-up — verified locally; rollout pending
+## October 9 web and Android tester release — published
+
+Web application `d443093657cc4ff40f03a50b20033e0416abcb59` is published at
+https://loadgistic.com as Netlify deploy `6ac876e7cffbaa5a92772381`.
+Exact-source CI `37883805604` passes all eight jobs, including four browser
+shards, database/scale/security, container and actual Android boundaries. Root
+473/473 and native 118/118 tests pass; all 457 fixed-copy translations pass.
+
+The owner-approved exact migrations 115–130 committed atomically after the fresh
+encrypted backup and isolated restore/rehearsal. Live ledger is 130. Post-release
+catalog, RLS/ACL, Data API guard and PostGIS checks pass with zero unprotected
+public tables. Prepublication advisors had no errors; two existing warnings remain.
+Only `LOADGISTIC_NATIVE_PUSH_ENABLED=true` was added for production on the exact
+Loadgistic site. Netlify Free rejected explicit scopes without changing state;
+the supported default-scope request succeeded and all unrelated fields match.
+
+Live desktop/phone public map, profile results, filters/Clear all, private entry,
+Tracking entry, email-only login and Brokerage intake pass. Public mobile reads
+and anonymous private denials pass. Compiled private/provider/file workflows pass
+against the exact artifact and production configuration. Fourteen authenticated
+live boundary checks passed before an invalid supplemental GET on the POST-only
+push registration endpoint stopped the harness. That harness error is corrected;
+the remaining complete live private browser run and refreshed advisor read are
+waiting for macOS Supabase CLI Keychain access. Do not call those checks complete.
+
+Standalone internal Android build `d1f893c2-556f-4f8f-9920-800f674d2f7c` is
+available as 1.0.2/code 3, package `com.loadgistic.app`. Its existing signer and
+all 353 native inputs match the verified candidate. Installed with data preserved
+on Loadgistic_Pixel_API_35/emulator-5580; cold-start, live map and filter dialog
+pass without Metro. Android System UI initially froze; one Wait retry cleared it,
+and fresh app evidence has no native fatal crash. Physical closed-phone alerts,
+tap and moving location remain unverified. Current Featured is still unpublished
+and empty (WEB-MOB-013). Neither Play publication nor unrestricted launch is claimed.
+
+Tester link and exact remaining steps are in MOBILE_IMPLEMENTATION.md. Protected
+receipts are under `.local/release-20261008-*` and `.local/release-20261009-*`;
+no credentials, codes or private records are included in committed handover.
+
+## October 9 phone workflow follow-up — preparation evidence
 
 CI 37878824597 confirmed the database/domain/scale, container and native boundaries
 but rejected obsolete browser selectors and a 32px phone truck-modal overflow.
@@ -18,9 +56,10 @@ com.loadgistic.app, signature verified against the existing installation. Subseq
 follow-up changes touch only web/spec/browser files; prove all 353 native upload
 inputs match the final candidate before distributing this APK. Final exact-source
 CI, new web packaging, matched approved SQL/flag, live postchecks and installed
-startup remain required. No production write has occurred.
+startup were the remaining gates at this preparation stage. See the published
+release record above for their actual results and remaining readback limits.
 
-## October 8 final browser gate follow-up — in progress
+## October 8 final browser gate follow-up — preparation history
 
 Candidate `8028574` passed validation, container and native boundaries, but full
 browser CI exposed older fixtures and assertions that had not followed the
@@ -34,7 +73,7 @@ FEAT-SUP-001 and FEAT-MKT-001):
   restoring retired controls or weakening account, evidence or privacy rules.
 - [x] Owner approved the restored web/native retirement control and compact truck
   details; scoped Expo preview retirement saves and retains the truck's history.
-- [ ] Finish affected desktop/phone workflows and diagnose actual defects separately.
+- [x] Finish affected desktop/phone workflows and diagnose actual defects separately.
   Current evidence: 473/473 root tests, 118/118 native tests, types/lint, six focused
   account/Tracking/modal workflows, both independent signup paths, three fleet
   paging cases and admin/staff web-only sign-in pass. Remaining corrected-fixture
@@ -43,8 +82,10 @@ FEAT-SUP-001 and FEAT-MKT-001):
   provider Support. Phone coverage and exact-candidate CI remain next; no
   production rollout is claimed. Final native export and runtime audit pass.
   Next tester build is 1.0.2/code 3 to distinguish it from the earlier candidate.
-- [ ] Bind final source, full CI, packaging and existing owner-approved SQL to the
-  verified result, then complete the monitored web and Android tester rollout.
+- [x] Bind final source, full CI, packaging and existing owner-approved SQL to the
+  verified result and publish web/Android tester artifacts.
+- [ ] Complete the final private browser/advisor readback after Keychain access,
+  then physical-phone notification/location acceptance; see current release record.
 
 ## October 8 search boundary and scale follow-up — local
 
