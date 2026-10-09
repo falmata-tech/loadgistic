@@ -2,14 +2,19 @@
 
 October 9 Google Play preparation, FEAT-MOB-001 / BASE-DEP-001:
 `play-internal` resolves to store/app-bundle, existing remote credentials,
-com.loadgistic.app1.0.2/code3 and https://loadgistic.com. Preview/development
-profiles remain unchanged. Native types/lint and root quality473/473 pass. The
+com.loadgistic.app, version 1.0.2/code 3 and https://loadgistic.com. Preview/development
+profiles remain unchanged. Native types/lint and root quality 473/473 pass. The
 353-file inspected upload contains no private paths/keys; its only native input
-change from the published runtime is eas.json. Signed AAB/package/signature and
-Console verification are still pending. Operational steps, source-backed
-privacy/review findings and owner decisions are in GOOGLE_PLAY_SETUP.md. The
-simple RELRO-end formula's23 failures are safe whole-LOAD cases according to
-AOSP; no dependency change is justified, and actual16KB-device evidence remains
+change from the published runtime is eas.json. Console verification remains
+pending. Signed store build b111a2a2-a3b5-4cea-92a2-735d8962d944
+(source ae8baba) now verifies package/version/signature/API 36/min 24, bundletool,
+PAGE_ALIGNMENT_16K, 25 ARM64 LOAD/RELRO cases, Hermes/prod-origin and no secret/dev
+payload. Actual 16 KB runtime is distinct. Submission SDK validates internal/draft,
+changesNotSentForReview true and no local key path; app's Play key binding is absent
+while FCM remains intact. Operational steps, source-backed privacy/review findings
+and owner decisions are in GOOGLE_PLAY_SETUP.md. The
+simple RELRO-end formula's 23 failures are safe whole-LOAD cases according to
+AOSP; no dependency change is justified, and actual 16 KB device evidence remains
 separate from structural checks.
 
 October 9 published release, BASE-DEP-001 / FEAT-SEC-001 / FEAT-MOB-001:

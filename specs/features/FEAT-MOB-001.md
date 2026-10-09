@@ -33,6 +33,14 @@ And the owner receives the exact file and a short internal-testing upload path
 And any consumed Play version code or signing conflict stops that upload rather
 than resetting credentials, uninstalling test apps or changing another project.
 
+Given the owner requests remote submission through Expo
+When the exact bundle and Play account/app/signing are verified and a dedicated
+app-scoped publishing credential is assigned in EAS
+Then submission selects that exact build ID for the internal track in draft status
+And no public rollout, unrelated app access, broad credential grant or automatic
+submission-on-build/push is enabled
+And missing credentials or uncertain provider outcomes stop dependent writes.
+
 Given closed/public review is considered
 Then account/data deletion requests, native background-location disclosure,
 accurate privacy/data-safety declarations, reviewer access and device acceptance

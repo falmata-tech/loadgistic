@@ -2,9 +2,22 @@
 
 Prepared October 9, 2026. The owner reports their developer account is ready and
 confirms there is **no existing Loadgistic Play entry**. This handoff prepares an
-internal test. The AAB build is pending; developer-account identity, Play signing
-enrollment, bundle upload, tester access and publication are not yet verified.
+internal test. The signed AAB is prepared and verified; developer-account identity,
+Play signing enrollment, bundle upload, tester access and publication remain
+unverified because the required publishing connection is not assigned.
 Current Android acceptance and limits are in [MOBILE_IMPLEMENTATION.md](../MOBILE_IMPLEMENTATION.md).
+
+Verified bundle: `.local/loadgistic-1.0.2-play-internal.aab` (92,015,378 bytes).
+Expo build `b111a2a2-a3b5-4cea-92a2-735d8962d944`, immutable source `ae8baba`,
+version 1.0.2/code 3, com.loadgistic.app, https://loadgistic.com. SHA-256:
+`21d57be058bb6f2a874df20bdfaae5b668058c4f21f47166a25a2a6d99327082`.
+Signature matches the existing APK; bundletool validation/manifest, API 36/min 24,
+release non-debuggable/HTTPS, PAGE_ALIGNMENT_16K, all 25 ARM64 LOAD/RELRO layouts,
+Hermes/prod-origin and forbidden secret/development payload checks pass. Actual
+16 KB-phone runtime acceptance remains separate. No Google Play upload occurred.
+Protected final receipts: `.local/play-20261009-artifact-evidence.json` and
+`.local/play-20261009-aab-verification.json`. Current owner-approved icon and
+actual-app screenshots are copied under `.local/play-20261009-store-assets/`.
 
 ## Build target and signing decision
 
@@ -51,6 +64,71 @@ force an update. The agent must not download private keys or change signing
 credentials as part of this preparation. Record the chosen signer and test its
 update path before distributing to current APK testers.
 [Play App Signing](https://support.google.com/googleplay/android-developer/answer/9842756?hl=en).
+
+## Owner-requested remote submission through Expo
+
+The owner subsequently requested agent-operated remote submission through Expo.
+`submit.play-internal` is constrained to Android's internal track and draft
+release status, with changesNotSentForReview true; it contains no key bytes/path
+and does not roll out a public app.
+After the exact AAB and owner Console app/signing are verified, submission selects
+its **specific build ID**, never `--latest` or an automatic submission on every
+build/push. Check the actual provider result before retrying an ambiguous request.
+
+Read-only EAS metadata confirms the Play submission binding is absent while
+FCM remains assigned to Firebase loadgistic-f082a. The current specific bundle
+build is b111a2a2-a3b5-4cea-92a2-735d8962d944 (source ae8baba); its final artifact
+inspection now passes; the exact file/hash is recorded above. Owner-facing setup uses these exact destinations:
+Google Cloud project loadgistic-f082a, dedicated loadgistic-play-submit service
+account without project IAM roles, Android Developer API, Play app-only draft/
+testing permissions and Expo's Submit credential field for com.loadgistic.app.
+
+One-time owner connection remains necessary: create the Loadgistic Console entry,
+enroll its signing path, create a dedicated publishing service account, enable
+the Android Developer API, grant that account access only to this Play app, and
+assign its key in EAS's Android `com.loadgistic.app` **Google service account key
+for EAS Submit** setting. The existing Firebase FCM binding remains unchanged.
+No Play publishing key is currently verified. Use the Expo dashboard to upload
+private material directly; never copy it into source, app environment or chat.
+
+The existing Expo login can operate this app once the publishing credential is
+connected. There is no verified Play Console connection or CLI Google login in
+this workspace, and plugin discovery found no suitable publishing connector.
+Concrete draft-upload command, once the exact build is verified:
+
+```sh
+cd /Users/falmata/Desktop/Dev/loadgistic/apps/mobile
+npx eas-cli@24.10.0 submit --platform android --profile play-internal --id b111a2a2-a3b5-4cea-92a2-735d8962d944 --non-interactive --wait
+```
+
+For this first draft, select App permissions for Loadgistic only: View app
+information (read-only), Edit and delete draft apps, Release apps to testing
+tracks. Testing release covers draft uploads; tester-list management is separate.
+Google publishes no per-endpoint proof that draft-edit permission is additionally
+mandatory, so retain the exact permission/error evidence rather than assuming all
+Expo FYI permissions are needed. A testing publisher can roll out testing tracks;
+it is not provider-enforced draft-only authority. Our selected profile binds
+internal/draft, and no public release permission is granted.
+[Google permission definitions](https://support.google.com/googleplay/android-developer/answer/9844686?hl=en).
+
+There is an initial-upload documentation conflict: Google's Edits guide still
+requires a first Console artifact; current Expo documentation supports automated
+first internal release after the app exists. A package-not-found/uninitialized-app
+response requires owner Console initialization with the prepared bundle, not
+broader permissions. Do not promise zero initial manual upload or upload the
+same already-consumed version again.
+[Google Edits limitation](https://developers.google.com/android-publisher/edits),
+[Expo first submission](https://docs.expo.dev/submit/android/#first-time-submission).
+
+Review minimum app-scoped draft/testing rights before granting them. Account-wide
+Admin, financial/orders, unrelated apps and production release access are outside
+this internal-upload scope. If the provider demands broader permissions, inspect
+its exact error and resolve the requirement with the owner; do not broaden access
+as a retry. Signing enrollment stays owner-controlled and must be completed before
+a limited publisher is used. Tester enrollment and internal rollout remain
+separate from draft submission; a successful upload is not user availability.
+[Expo prerequisites/submission](https://docs.expo.dev/submit/android/),
+[Service-account setup](https://github.com/expo/fyi/blob/main/creating-google-service-account.md).
 
 ## Owner console steps for the first internal test
 
@@ -214,8 +292,8 @@ manifest and its SDK data flows before answering declarations.
   Verify the final AAB requests `PAGE_ALIGNMENT_16K`, inspect its generated APKs
   for ELF/RELRO/ZIP alignment, and test the actual runtime on a 16 KB device.
   Google's current guidance requires support for 64-bit apps targeting API 35+
-  and lists February 1, 2027 as update enforcement. The APK baseline is not final
-  AAB evidence.
+  and lists February 1, 2027 as update enforcement. The final AAB now independently passes its 25 ARM64 structural checks,
+  signature, manifest and PAGE_ALIGNMENT_16K; actual 16 KB runtime remains pending.
   [16 KB requirements and checks](https://developer.android.com/guide/practices/page-sizes),
   [Read-only ZIP check](https://developer.android.com/tools/zipalign),
   [AOSP RELRO handling](https://android.googlesource.com/platform/bionic/+/android16-qpr2-release/linker/linker_phdr_16kib_compat.cpp).

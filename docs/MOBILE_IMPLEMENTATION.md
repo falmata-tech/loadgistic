@@ -10,11 +10,20 @@ No console upload, public publication, signing change or policy waiver is claime
 2. [x] Add a minimal store AAB profile preserving both APK profiles and API/key.
    Resolved EAS configuration confirms store/app-bundle, production API and
    remote existing credentials. Native types/lint and root quality473/473 pass.
-3. [ ] Validate native types/lint, exact upload exclusions/account/project, then
-   build and inspect the signed AAB and its native-library alignment.
-4. [ ] Prepare the real file, store-copy/declaration drafts and owner Console steps.
-5. [ ] Verify owner account/app and signing enrollment, then upload only the
-   reviewed internal release. Service-account automatic submission is not required.
+3. [x] Signed AAB/native-library inspection passes. EAS build
+   b111a2a2-a3b5-4cea-92a2-735d8962d944 finished from source ae8baba, existing
+   frozen signing, 1.0.2/code 3. Package/API 36/min 24/signature/release flags,
+   PAGE_ALIGNMENT_16K, all 25 ARM64 LOAD/RELRO cases and Hermes/prod-origin/no-secret
+   payload pass. All actual native inputs match published d443093. The file is
+   `.local/loadgistic-1.0.2-play-internal.aab`; hash/evidence in GOOGLE_PLAY_SETUP.md.
+   Physical 16 KB-device acceptance remains separate.
+4. [x] Prepare actual AAB, approved icon/screenshots, store-copy/declaration drafts
+   and clear one-time owner Console/Expo steps. SDK validates internal/draft with
+   changesNotSentForReview true; no local private-key path or auto-submit.
+   Metadata confirms publishing binding absent and FCM intact. No Console upload.
+5. [ ] Owner completes Console app/signing and connects dedicated app-scoped
+   Play submission key in Expo; verify them, then remotely upload the exact
+   reviewed bundle as an internal draft. The owner requested this remote route.
 6. [ ] Complete separate closed/public review gaps: account/data deletion request,
    background-location disclosure/privacy, reviewer access, device acceptance and
    any account-specific closed-test requirement. Preserve existing data/authority.
