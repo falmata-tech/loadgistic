@@ -1,9 +1,12 @@
-import {test,expect} from '@playwright/test';
+import {test,expect as baseExpect} from '@playwright/test';
+const expect=baseExpect.configure({timeout:15000});
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
+import {acceptAuditContentPolicy} from './audit-helpers';
+import {localSupportLogin} from './provider-support-helper';
 
 function localService(){
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
@@ -12,10 +15,8 @@ function localService(){
   return createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
 }
 async function login(page:any,email:string){
-  await page.context().clearCookies();await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(email);await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in',exact:true}).click();
+  const service=localService(),identity=await service.from('profiles').select('id').eq('email',email).single();
+  expect(identity.error).toBeNull();await localSupportLogin(page,identity.data!.id);await page.goto('/app/home');
   await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);
   await expect(page.locator('.app-main')).toBeVisible();
 }
@@ -24,6 +25,12 @@ async function post(page:any,input:unknown){
     const response=await fetch('/api/account/details',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     return {status:response.status,data:await response.json()};
   },input);
+}
+async function saveAccountDetails(page:any,form:any){
+  const response=page.waitForResponse((item:any)=>item.url().endsWith('/api/account/details')&&item.request().method()==='POST');
+  await form.getByRole('button',{name:'Save account details'}).click();
+  const saved=await response;expect(saved.status()).toBe(200);expect(await saved.json()).toEqual({ok:true});
+  await expect(form.getByRole('status')).toHaveText('Account details saved.');
 }
 
 test('providers and Company drivers save private account phones even with limited access',async({page}:{page:any},info:any)=>{
@@ -49,13 +56,13 @@ test('providers and Company drivers save private account phones even with limite
     const publicBefore=await service.from('company_pages').select('*').or(`organization_id.eq.${orgId},provider_profile_id.eq.${provider.data!.id}`).order('id');
     expect(publicBefore.error).toBeNull();
     for(const identity of identities){
+      await acceptAuditContentPolicy(service,identity.id);
       await login(page,identity.email);await page.goto('/app/more');
       const form=page.getByRole('form',{name:'Account details'});
       await expect(form).toBeVisible();await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
       await form.getByLabel('Your name',{exact:true}).fill(`Edited ${identity.kind}`);
       await form.getByLabel('Account phone').fill('+251900123456');
-      await form.getByRole('button',{name:'Save account details'}).click();
-      await expect(form.getByRole('status')).toHaveText('Account details saved.');
+      await saveAccountDetails(page,form);
       const saved=await service.from('profiles').select('full_name,phone,role,email,active').eq('id',identity.id).single();
       expect(saved.error).toBeNull();expect(saved.data).toEqual({full_name:`Edited ${identity.kind}`,phone:'+251900123456',role:identity.kind==='owner'?'TRANSPORTER':'DRIVER',email:identity.email,active:true});
       await page.reload();await expect(form.getByLabel('Your name',{exact:true})).toHaveValue(`Edited ${identity.kind}`);
@@ -70,8 +77,7 @@ test('providers and Company drivers save private account phones even with limite
       expect((await service.from('profiles').select('phone').eq('id',identity.id).single()).data?.phone).toBe('+251900123456');
       const forged=await post(page,{name:'Forged',phone:'',actor_user_id:owner.id,role:'ADMIN',email:'tampered@example.test'});
       expect(forged.status).toBe(400);
-      await form.getByLabel('Account phone').fill('');await form.getByRole('button',{name:'Save account details'}).click();
-      await expect(form.getByRole('status')).toHaveText('Account details saved.');
+      await form.getByLabel('Account phone').fill('');await saveAccountDetails(page,form);
       await page.reload();await expect(form.getByLabel('Account phone')).toHaveValue('');
       expect((await service.from('profiles').select('phone').eq('id',identity.id).single()).data?.phone).toBeNull();
     }

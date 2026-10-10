@@ -30,6 +30,14 @@ async function selectPlace(page:any,label:string,value:string){
   await page.getByRole('option',{name:new RegExp(value,'i')}).first().click();
 }
 
+async function acceptContentRules(page:any){
+  const heading=page.getByRole('heading',{name:'Before you share',exact:true});
+  await expect(heading).toBeVisible();
+  await page.getByLabel('I agree to the Terms and content rules.',{exact:true}).check();
+  await page.getByRole('button',{name:'Accept and continue',exact:true}).click();
+  await expect(heading).toHaveCount(0);
+}
+
 test('fleet assigns an unverified driver, then email-code login unlocks the same assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(420_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
@@ -44,6 +52,9 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     permissions:['geolocation'],geolocation:{latitude:9.03,longitude:38.76},
     extraHTTPHeaders:{'x-forwarded-for':'127.0.0.241'}});
   const driverPage=await driverContext.newPage();
+  // Keep the onboarding gate independent of public tile-provider availability.
+  // Actual tile delivery is checked separately; this fixture exercises map rendering.
+  await driverContext.route('https://tile.openstreetmap.org/**',async(route:any)=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/></svg>'}));
   let orgId='';
   try{
     // No seeded owner, driver, membership or assignment: both identities use the public flow.
@@ -54,6 +65,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByLabel('Account phone',{exact:true}).fill('+251900000011');
     await page.getByRole('button',{name:'Create transporter workspace'}).click();
     await expect(page).toHaveURL(/\/app\/home$/);
+    await acceptContentRules(page);
     await expect(page.locator('.fleet-empty-state')).toBeVisible({timeout:15000});
     await expect(page.locator('.fleet-empty-state')).toContainText('No trucks added yet.');
     await page.screenshot({path:info.outputPath('first-truck-guidance.png'),fullPage:true});
@@ -111,10 +123,13 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.screenshot({path:info.outputPath('assigned-before-verification.png')});
     await verifyNewEmail(driverPage,driverEmail,true);
     await expect(driverPage).toHaveURL(/\/app\/home$/);
+    await acceptContentRules(driverPage);
     expect((await service.auth.admin.getUserById(identity.data!.id)).data.user?.email_confirmed_at).toBeTruthy();
     await page.locator('.fleet-truck-details-editor>summary').click();
     await page.getByLabel('Model',{exact:true}).fill('Corrected mini');
+    const updatedPage=page.waitForResponse((response:any)=>new URL(response.url()).pathname===truckPath&&response.request().method()==='GET');
     await page.getByRole('button',{name:'Save truck details'}).click();
+    const rendered=await updatedPage;expect(rendered.status()).toBe(200);await rendered.finished();
     await expect(page.getByRole('heading',{name:'Isuzu · Corrected mini'})).toBeVisible();
 
     async function permissions(capacityAllowed:boolean,trackingAllowed:boolean){
@@ -341,6 +356,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
    await page.getByRole('button',{name:'Create transporter workspace'}).click();
    await expect(page.getByRole('heading',{name:'Add your first truck',exact:true})).toBeVisible();
+   await acceptContentRules(page);
    const identity=await service.from('profiles').select('id,role').eq('email',email).single();
    expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
    const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;

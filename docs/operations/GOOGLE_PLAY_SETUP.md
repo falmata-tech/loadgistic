@@ -1,33 +1,38 @@
 # Loadgistic Google Play setup
 
-Prepared October 9, 2026. The owner reports the new Loadgistic Play entry under
+Prepared October 9, 2026. The owner created the Loadgistic Play entry under
 marketvision.tech@gmail.com: developer `5256539403314542898`, app
 `4974969611761012361`, [Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
-This is owner-reported; the authenticated dashboard is not accessible through the
-read-only web tool. It does not change the application's administrator account.
-This handoff prepares an internal test. The signed AAB is prepared and verified; developer-account identity,
-Play signing enrollment, bundle upload, tester access and publication remain
-unverified because the required publishing connection is not assigned. A fresh
-15:19 UTC metadata check still finds no EAS Submit credential, with the existing
-FCM binding intact. The owner has now requested implementation of remaining
-policy workflows; follow FEAT-PLY-001 and MOBILE_IMPLEMENTATION's ordered checklist.
-Current Android acceptance and limits are in [MOBILE_IMPLEMENTATION.md](../MOBILE_IMPLEMENTATION.md).
+The authenticated Console connection remains pending. The approved policy rollout
+covers migrations 131–136, matching web and Android, and three private synthetic
+review identities. It does not authorize public Play publication or customer erasure.
 
-**Baseline artifact only:** this code-3 bundle does not contain the new Play policy
-workflows. Do not use it for the requested policy release. A new exact signed
-binary and matching hosted backend are required after review and gates.
+**Current policy candidate: 1.0.3 / code 4.** Signed APK and AAB are finished and
+verified. Hosted rollout still requires passing CI and matched live verification;
+completed builds alone are not deployment evidence. Do not submit the historical
+1.0.2/code-3 bundle as this release.
 
-Verified baseline bundle: `.local/loadgistic-1.0.2-play-internal.aab` (92,015,378 bytes).
-Expo build `b111a2a2-a3b5-4cea-92a2-735d8962d944`, immutable source `ae8baba`,
-version 1.0.2/code 3, com.loadgistic.app, https://loadgistic.com. SHA-256:
-`21d57be058bb6f2a874df20bdfaae5b668058c4f21f47166a25a2a6d99327082`.
-Signature matches the existing APK; bundletool validation/manifest, API 36/min 24,
-release non-debuggable/HTTPS, PAGE_ALIGNMENT_16K, all 25 ARM64 LOAD/RELRO layouts,
-Hermes/prod-origin and forbidden secret/development payload checks pass. Actual
-16 KB-phone runtime acceptance remains separate. No Google Play upload occurred.
-Protected final receipts: `.local/play-20261009-artifact-evidence.json` and
-`.local/play-20261009-aab-verification.json`. Current owner-approved icon and
-actual-app screenshots are copied under `.local/play-20261009-store-assets/`.
+- APK build: `9169da7e-dd2f-40b1-87b0-53fee20e3b56`; protected file
+  `.local/loadgistic-1.0.3-android.apk`, 153,576,371 bytes, SHA-256
+  `2a6d6c9354ed0ccd7ce4e29a43bc4d7ae65fed37917f4cfd0aa0ea9fbbb60b73`.
+- Play AAB build: `edd8cf91-446d-477e-8bb4-e00946fa7a57`; protected file
+  `.local/loadgistic-1.0.3-play-internal.aab`, 92,044,826 bytes, SHA-256
+  `c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef`.
+
+Both use the approved runtime `986d07d`, package `com.loadgistic.app`, production
+API, existing signing, API 36/minimum 24, non-debuggable release and HTTPS.
+Signature, bundle validation, manifest/secret checks, APK zip alignment and all
+25 ARM64 LOAD/RELRO layouts pass. Android installation and the new Privacy screen
+are verified on the owned Loadgistic emulator. Its System UI freezes prevent
+claiming every native workflow passed; physical background-location, closed-phone
+alerts and 16 KB-device acceptance remain separate.
+
+The dedicated Play publisher has not been supplied at
+`.local/google-play-publisher.json`; the EAS Submit binding is absent and the
+existing Firebase FCM binding remains intact. No Play upload or testing rollout
+has occurred. Follow FEAT-PLY-001 and MOBILE_IMPLEMENTATION's ordered checklist.
+Protected artifact receipts remain in `.local`; private credentials never belong
+in this document, source, logs or builds.
 
 ## Build target and signing decision
 
@@ -37,7 +42,7 @@ actual-app screenshots are copied under `.local/play-20261009-store-assets/`.
 | EAS target | `falmatad/loadgistic` |
 | EAS project ID | `a2d7e0a9-2fe4-4188-804e-40d8c3486ac7` |
 | Android package | `com.loadgistic.app` |
-| Version / Android version code | `1.0.2` / `3` |
+| Version / Android version code | `1.0.3` / `4` |
 | Build profile | `play-internal` |
 | Profile resolution | Extends `preview`; overrides distribution to `store` and Android build type to `app-bundle`; inherits `EXPO_PUBLIC_API_URL=https://loadgistic.com` |
 | Existing signed APK SDK | Target 36; minimum 24 |
@@ -53,8 +58,8 @@ npx eas-cli@24.10.0 build --platform android --profile play-internal
 ```
 
 Do not add `--auto-submit`. After completion, verify the immutable build/source,
-package, version, code, public certificate and artifact hash before upload. Code 3
-must remain unused in Play; subsequent uploads require a new version code.
+package, version, code, public certificate and artifact hash before upload. Code 4
+must remain unused in Play before first upload; subsequent uploads require a new version code.
 [Expo build configuration](https://docs.expo.dev/eas/json/),
 [Android submission](https://docs.expo.dev/submit/android/).
 
@@ -87,8 +92,8 @@ build/push. Check the actual provider result before retrying an ambiguous reques
 
 Read-only EAS metadata confirms the Play submission binding is absent while
 FCM remains assigned to Firebase loadgistic-f082a. The current specific bundle
-build is b111a2a2-a3b5-4cea-92a2-735d8962d944 (source ae8baba); its final artifact
-inspection now passes; the exact file/hash is recorded above. Owner-facing setup now uses a dedicated **Loadgistic Play** Cloud project and
+build is edd8cf91-446d-477e-8bb4-e00946fa7a57 (runtime source 986d07d); its final
+artifact inspection passes; the exact file/hash is recorded above. Owner-facing setup now uses a dedicated **Loadgistic Play** Cloud project and
 `loadgistic-play-publisher` service account without Cloud project IAM roles.
 Enable Google Play Android Developer API. The owner explicitly selected temporary
 **app-level Admin for Loadgistic only**, connecting the key to Expo's Submit field
@@ -105,9 +110,9 @@ Keep it out of source, app environments, build uploads and logs.
 The existing Expo login can operate this app once the publishing credential is
 connected. There is no verified Play Console connection or CLI Google login in
 this workspace, and plugin discovery found no suitable publishing connector.
-For the new policy release, record its newly verified immutable build ID here
-before producing the submission command. Never submit the historical code-3 ID
-as if it contains the new workflows, and never select `--latest`.
+For the new policy release, select only immutable build
+`edd8cf91-446d-477e-8bb4-e00946fa7a57` after the matching rollout gates pass.
+Never submit the historical code-3 ID as this release or select `--latest`.
 
 The initial limited-publisher proposal has been superseded by the owner's
 October 9 app-level Admin decision. Select **App permissions → Loadgistic → Admin

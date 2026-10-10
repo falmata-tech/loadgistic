@@ -19,13 +19,14 @@ five-second limit (search 4.75 s, route 2.74 s) and rolls back every fixture.
 
 Migrations 131–136 are installed locally only. Hidden/demo profiles now remain
 out of public map/search even if their separate truck sharing setting is public.
-No new production account, database write, release or signed binary exists yet.
+No new production account, hosted database write or web release exists yet.
+Signed Android 1.0.3/code-4 APK and AAB now exist and pass artifact inspection.
 Current web/Android production remains the verified 1.0.2/code-3 release below.
 
 The owner approved the actual new phone/desktop controls at
 http://127.0.0.1:3100 and http://localhost:8084. Current: run full gates, prepare the
-exact SQL/backup/rollback rollout for owner review, provision synthetic review
-accounts and build/verify the new APK/AAB. Actual Android permission/video,
+owner-approved exact SQL/backup/rollback rollout, provision synthetic review
+accounts and verify the matching hosted runtime. APK/AAB builds are finished. Actual Android permission/video,
 closed-phone acceptance, Play signing/publishing credentials and Console
 declarations remain distinct requirements. See MOBILE_IMPLEMENTATION.md,
 GOOGLE_PLAY_SETUP.md and specs/TRACEABILITY.md.
@@ -37,7 +38,14 @@ container; exact migrations 131–136 and catalog/Data API/spatial checks pass.
 The reviewed SQL digest is
 `e28fa7445a254e80b98dac39593174ca0117605569672cd749e7caacf048f7fd`.
 No hosted migration or reviewer provisioning has been applied. The new candidate
-uses 1.0.3/code 4; all existing EAS Android builds stop at code 3.
+uses 1.0.3/code 4. APK build `9169da7e-dd2f-40b1-87b0-53fee20e3b56` and
+AAB build `edd8cf91-446d-477e-8bb4-e00946fa7a57` are verified. CI run
+`37997974313` passed validation, container, native boundaries and two browser
+shards; Account/onboarding/recovery test failures still block rollout. Corrections
+explicitly accept terms for fresh local users, select the known synthetic recovery
+identity, and await persisted saves. Onboarding uses synthetic tiles to separate
+map rendering from external tile availability; this is not live tile evidence.
+The dedicated Play publishing key is still absent; no Play test clock has begun.
 
 ## October 9 web and Android tester release — published
 

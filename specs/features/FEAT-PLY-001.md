@@ -96,6 +96,13 @@ Additional projection/copy/manifest checks: `tests/sql/public-capacity-policy-sc
 `apps/mobile/tests/play-notification-consent.test.mjs`.
 CI runs all six policy SQL suites alongside existing authorization regressions;
 local fixture import establishes only newly imported synthetic-user preconditions.
+Existing Account/onboarding/recovery regression gates also run in desktop and
+phone viewports: `tests/e2e/account-details.spec.ts`,
+`tests/e2e/fleet-onboarding.spec.ts`, `tests/e2e/launch-recovery.spec.ts`.
+Fresh onboarding accepts the actual visible terms checkbox. Existing Account
+fixtures declare prior consent locally and still verify persisted saves, native
+POST fallback, invalid input, inactive sessions and actor-forgery denial.
+The onboarding tile fixture proves renderer readiness, not public tile delivery.
 
 Focused domain, native, database and browser tests must cover each implemented AC.
 Record test paths/results in TRACEABILITY before marking verified. No new SDK,

@@ -34,10 +34,14 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    including normal OTP onboarding and one-truck/worldwide-location persistence.
    The unchanged 5,000-truck gate passes (search 4.75 s, route 2.74 s).
    Fresh hosted backup restores without networking; exact SQL 131–136 and
-   catalog/guard/spatial checks pass. Prepare immutable source, remote CI,
-   version 1.0.3/code 4 package and exact owner rollout review.
-9. [ ] Publish approved web/backend, build a new signed APK/AAB using an unused
-   Play version code; verify Android demonstration and actual provider results.
+   catalog/guard/spatial checks pass. Version 1.0.3/code-4 APK/AAB inspection and exact owner rollout review are
+   complete. Current: correct the remaining browser test setup and pass every
+   required remote CI job before the approved hosted writes.
+9. [ ] Publish approved web/backend and verify actual provider results. Signed
+   APK 9169da7e-dd2f-40b1-87b0-53fee20e3b56 and AAB
+   edd8cf91-446d-477e-8bb4-e00946fa7a57 (1.0.3/code 4) are built and inspected.
+   The owned emulator displays the new Privacy screen; System UI instability
+   leaves full native and physical-device acceptance pending.
 10. [ ] Verify owner Console/signing/app-scoped Submit connection; internal draft
    upload and tester rollout remain distinct from public launch and policy approval.
 
