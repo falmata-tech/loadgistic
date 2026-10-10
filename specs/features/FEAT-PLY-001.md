@@ -28,8 +28,12 @@ was invented. Signed 1.0.3/code-4 APK/AAB are verified and available for testing
 October 10: existing Google signing and unchanged Expo upload signer are verified.
 Exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED; internal
 4700942405023499701/release 1 is Active/available/Not reviewed. Alpha
-4699446366767369053/release 1 is Draft with the same bundle, owner list and
-Ethiopia/US eligibility. Privacy/private reviewers/IARC/Data safety and other
+4699446366767369053/release 1 is Draft with the same bundle, the separate
+ten-address Loadgistic closed testers list and Ethiopia/US eligibility. The owner
+supplied the addresses; exact-set verification and an independent reload confirm
+the count and Alpha-only association. Internal owner eligibility is unchanged.
+Two more real testers are needed; no invitation email or enrollment is inferred.
+Privacy/private reviewers/IARC/Data safety and other
 source-backed metadata are saved; listing assets/copy stay Draft pending the
 specific AI-label reply after automatic review rejected incomplete provenance.
 Location/foreground-service video, physical GPS/alerts/16 KB acceptance, real

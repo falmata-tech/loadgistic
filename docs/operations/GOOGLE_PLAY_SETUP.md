@@ -38,7 +38,7 @@ in-place test update. That direct APK test does not count as Play closed enrollm
 | Data safety | 16 inspected types, HTTPS and live deletion link; optional guest/manual data; service-provider/user-directed transfers use documented Google exceptions |
 | Listing | English copy, existing icon/feature graphic and two unmodified code-4 native screenshots saved as Draft; AI-label decision pending |
 | Category/contact | App / Business saved; approved marketvision.tech@gmail.com and https://loadgistic.com contact metadata published; phone blank |
-| Closed Alpha | 4699446366767369053/release 1, 1.0.3 (4) — closed test, Draft; existing bundle reused, owner list and Ethiopia/US eligibility prepared |
+| Closed Alpha | 4699446366767369053/release 1, 1.0.3 (4) — closed test, Draft; existing bundle reused, separate 10-address Loadgistic closed testers list and Ethiopia/US eligibility saved |
 
 Exact AAB: `.local/loadgistic-1.0.3-play-internal.aab`, 92,044,826 bytes,
 SHA-256 `c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef`.
@@ -65,11 +65,14 @@ publication and customer erasure are outside this delegation.
    `.local/play-20261010-location-permission-plan.json`. The selected service case
    is user-initiated location sharing. No invented/public placeholder video URL is
    entered. Neither form is claimed complete.
-3. **Real testers:** supply actual Google-account emails for the people who will
-   install and use the closed app. This app’s actual Dashboard confirms at least
-   12 testers must remain opted in for at least 14 days; currently 0 are opted in.
-   Google’s policy requires continuous enrollment. Plus-addressed
-   demo emails and two owner accounts are not a substitute for that roster.
+3. **Real testers:** the owner's ten unique Google-account addresses are saved in
+   **Loadgistic closed testers**, selected only for Alpha. A reload confirms the
+   exact count and selection; the separate two-account internal owner list remains
+   unchanged. Two more actual testers are needed. This app's Dashboard requires
+   at least 12 testers continuously opted in for 14 days; currently 0 are opted in.
+   Eligibility is not enrollment. No invitation email was sent; contact details
+   stay in protected ignored files, not Git. Gmail aliases do not establish
+   distinct participants.
 4. **Google review and enrollment:** complete the missing declarations/listing,
    preview the prepared Alpha release and send the exact test release for Google
    review. After approval/availability, share its actual opt-in link with the

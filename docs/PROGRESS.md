@@ -24,10 +24,13 @@ feature-graphic AI label was rejected automatically for incomplete recorded
 provenance; the specific owner question remains pending, with no alternate bypass.
 
 Alpha `4699446366767369053` / release 1, **1.0.3 (4) — closed test**, is a saved
-Draft reusing code 4, the owner list and Ethiopia/US eligibility. Dashboard confirms
-10/11 basic setup tasks complete, required 12 testers/14 days and 0 opted in. Missing actual
-Android disclosure/permission/active-Tracking video, the real closed-test roster
-and Google review/enrollment remain. Code 4/public Capacity render on the owned
+Draft reusing code 4, a separate ten-address **Loadgistic closed testers** list
+and Ethiopia/US eligibility. The owner's supplied set was checked exactly before
+saving; a reload confirms its count and Alpha-only selection. The internal owner
+list remains two accounts and unchanged. Dashboard confirms 10/11 basic setup
+tasks complete, required 12 testers/14 days and 0 opted in. Two more actual testers,
+Android disclosure/permission/active-Tracking video and Google review/enrollment
+remain. No invitation email was sent. Code 4/public Capacity render on the owned
 emulator, but a screenshot-confirmed System UI ANR and one bounded recovery failure
 prevent further device/video claims. Only that emulator was stopped, data preserved.
 Physical background GPS, closed-phone delivery and 16 KB-device acceptance remain

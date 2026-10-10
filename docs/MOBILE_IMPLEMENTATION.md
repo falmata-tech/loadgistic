@@ -21,8 +21,11 @@ export or unrelated app/project changes.
 5. [x] Internal distribution is live for only the two owner-controlled Google
    accounts. No outside invitation, fake enrollment or policy approval is claimed.
 6. [x] Alpha 4699446366767369053/release 1 is Draft, using existing code 4,
-   the owner list and Ethiopia/US eligibility. No reupload, closed rollout or review.
-7. [ ] Supply real distinct testers, complete missing listing/video declarations,
+   the separate ten-address Loadgistic closed testers list and Ethiopia/US
+   eligibility. Exact supplied-set and reloaded selection/count are verified;
+   the two-account internal owner list is unchanged. No invitation email,
+   reupload, closed rollout or review.
+7. [ ] Add two more real distinct testers, complete missing listing/video declarations,
    obtain Google review, launch closed testing and verify continuous actual opt-ins.
    Internal testing, drafts and Gmail aliases do not satisfy the closed-test clock.
 8. [x] Record exact receipts, limits and owner instructions in GOOGLE_PLAY_SETUP.

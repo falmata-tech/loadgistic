@@ -1405,8 +1405,13 @@ October 10 subsequent FEAT-PLY-001 operational evidence supersedes the connectio
 checkpoint: exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED for code 4;
 internal 4700942405023499701/release 1 is Active/available/Not reviewed. Existing
 Google signing/upload certificate are verified without changing keys. Alpha
-4699446366767369053/release 1 is a saved Draft with code 4, owner list and
-Ethiopia/US eligibility. The actual internal opt-in URL is verified, not guessed.
+4699446366767369053/release 1 is a saved Draft with code 4, the separate ten-address
+Loadgistic closed testers list and Ethiopia/US eligibility. The owner-supplied set
+matches Google's parsed list exactly; independent reload confirms ten and Alpha-only
+selection. Internal owner list/association are unchanged. Two more real testers
+remain necessary; no invitation email, enrollment or clock is inferred. Protected
+receipt: .local/play-20261010-closed-roster-receipt.json; raw addresses stay out of Git.
+The actual internal opt-in URL is verified, not guessed.
 AC3 supplementary actual Expo-web block/reload/unblock and report form pass;
 content-blocks unit tests pass 2/2. No hosted report/customer mutation is submitted.
 AC4 three normal-auth entries are saved only in Google's private reviewer form.

@@ -13,8 +13,11 @@ Existing Google signing/upload certificate is verified; the Play signer differs
 from the sideload APK. No key change/export or automatic uninstall/data clearing.
 Publisher remains app-only Admin, zero account-wide grants; FCM is unchanged.
 
-Alpha `4699446366767369053`/release 1 is Draft with existing code 4, owner list
-and Ethiopia/US eligibility. Policy/reviewer/IARC/Data safety and category/contact
+Alpha `4699446366767369053`/release 1 is Draft with existing code 4, the separate
+ten-address **Loadgistic closed testers** list and Ethiopia/US eligibility. Exact
+supplied-set verification and independent reload pass; the internal owner list is
+unchanged. Two more real testers are needed, and no invitation email was sent.
+Policy/reviewer/IARC/Data safety and category/contact
 are saved; listing copy/brand/actual screenshots stay Draft pending its specific
 AI-label decision. Native permission/active-Tracking video, real closed testers and
 Google review/enrollment remain. Actual Dashboard requires 12 testers/14 days and

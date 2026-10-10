@@ -14,8 +14,13 @@ c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef is submitted
 once through EAS 066f028f-0cb0-4286-9830-40815264e11e. Internal
 4700942405023499701/release 1 is verified Active/available/Not reviewed; only the
 owner-controlled accounts are eligible. Alpha 4699446366767369053/release 1 reuses
-the bundle as Draft with Ethiopia/US eligibility and the owner list. No fake
-participants, policy approval or closed-test clock are inferred.
+the bundle as Draft with Ethiopia/US eligibility. The owner's subsequently
+supplied ten unique tester addresses authorize a separate Loadgistic closed
+testers list, associated only with Alpha. Creation and the saved exact count/
+selection are independently reloaded; the original two-account owner list and
+internal association remain unchanged. Private contact details are not committed.
+No invitation email, fake enrollment, policy approval or closed-test clock is
+inferred. Two additional real participants remain necessary.
 
 Actual save acknowledgements/reloads establish the bounded app-only metadata,
 including private reviewer access, source-backed declarations, Business category
