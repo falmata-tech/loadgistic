@@ -8,8 +8,12 @@ real Terms checkbox; neither center nor lower-edge taps reach disclosure.
 No location consent, OS grant or qualifying Android video is claimed.
 
 The local notice now uses native safe-area protection. A negative layout check
-fails on the previous source and passes on the repair; 11 focused consent/layout/
-native-text tests, mobile typecheck and lint pass. Actual repaired-phone preview,
+fails on the previous source and passes on the repair. The additional actor guard
+hides stale notices after logout or account changes, bringing focused consent/
+layout/scope/native-text checks to 13/13. Mobile typecheck and lint pass.
+Development build 73df3680-6ac5-4e66-ab42-caa6f66c0508 is requested with frozen
+credentials for a Metro preview at 8087; both web previews return 200.
+Actual repaired-phone preview,
 owner review, full release gates and a replacement artifact are still required.
 Existing Play code 4 and the deployed web/backend remain unchanged.
 

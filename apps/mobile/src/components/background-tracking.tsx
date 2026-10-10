@@ -10,9 +10,11 @@ import {AppIcon} from './app-icon';
 import * as ConsentStorage from '../session/storage';
 import {authorizeBackgroundLocation,backgroundConsentKey} from '../location/background-consent';
 import {LocationDisclosure} from './location-disclosure';
+import {backgroundNoticeVisible} from '../location/background-notice';
 // Global lifecycle: returning to Home is not necessary for an agreed shipment to report.
 export function BackgroundTracking(){
  const account=useAccount(),{t}=useLanguage(),[needed,setNeeded]=useState(false),[error,setError]=useState('');
+ const [noticeActor,setNoticeActor]=useState('');
  const generation=useRef(0),busy=useRef(false),last=useRef(0),actorId=account.session?.user.id||'';
  const [disclosure,setDisclosure]=useState(false),decision=useRef<((accepted:boolean)=>void)|null>(null);
  const decide=useCallback((accepted:boolean)=>{const resolve=decision.current;decision.current=null;setDisclosure(false);resolve?.(accepted);},[]);
@@ -34,7 +36,7 @@ export function BackgroundTracking(){
     requestForeground:Location.requestForegroundPermissionsAsync,requestBackground:Location.requestBackgroundPermissionsAsync,
    },prompt);
    if(version!==generation.current||AppState.currentState!=='active')return;
-   if(!allowed){await stopBackgroundTracking();setNeeded(true);setError('');return;}
+   if(!allowed){await stopBackgroundTracking();setNoticeActor(actorId);setNeeded(true);setError('');return;}
    const stored=await readTrackingLeases(),next:TrackingLease[]=[],deviceId=await deviceTrackingId();
    for(const target of result.shipments){if(version!==generation.current)return;
     const previous=stored.find(item=>item.actorId===actorId&&item.shipmentId===target.shipmentId&&item.radius===target.radius);
@@ -47,7 +49,7 @@ export function BackgroundTracking(){
    if(next.length!==stored.length||next.some(item=>!stored.some(previous=>previous.token===item.token&&previous.actorId===item.actorId)))await replaceTrackingLeases(next);
    for(const lease of stored.filter(item=>!next.some(current=>current.token===item.token)))await revokeTrackingLease(lease);
    await startBackgroundTracking({title:t('Loadgistic shipment tracking'),body:t('Sharing approximate location until unloading is approved')});setNeeded(false);setError('');
-  }catch{if(version===generation.current)setError('Location reporting needs attention. Open Tracking to check your last update.');}
+  }catch{if(version===generation.current){setNoticeActor(actorId);setError('Location reporting needs attention. Open Tracking to check your last update.');}}
   finally{busy.current=false;}
  },[actorId,request,t]);
  useEffect(()=>{generation.current++;last.current=0;if(Platform.OS==='web')return;
@@ -56,7 +58,7 @@ export function BackgroundTracking(){
   const operationEpoch=generation;
   return()=>{operationEpoch.current++;decision.current?.(false);decision.current=null;clearTimeout(initial);listener.remove();clearInterval(interval);};
  },[actorId,synchronize]);
- if(Platform.OS==='web'||(!needed&&!error))return null;
+ if(!backgroundNoticeVisible(Platform.OS,actorId,noticeActor,needed,error))return null;
  // This notice is above the route navigator, so page-header insets do not protect it.
  return <><SafeAreaView edges={['top','left','right']} style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true)} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></SafeAreaView><LocationDisclosure visible={disclosure} decide={decide}/></>;
 }

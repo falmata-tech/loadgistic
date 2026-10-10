@@ -1406,8 +1406,10 @@ company-driver signs in normally and accepts the actual Terms checkbox. Code-4
 banner bounds y=21–116 fall wholly inside Android's status-bar inset of 136;
 center/lower-edge taps do not reach disclosure. The local SafeAreaView repair is
 covered by `apps/mobile/tests/background-notice-layout.test.mjs`, which fails on
-the prior source, then passes alongside consent/native-text tests (11/11), mobile
-typecheck and lint. It retains one controller and existing consent/permission
+the prior source, then passes alongside consent/scope/native-text tests (13/13),
+mobile typecheck and lint. `background-notice-scope.test.mjs` additionally excludes
+the actual stale notice observed after native sign-out and prevents it crossing
+to another actor. It retains one controller and existing consent/permission
 logic. Repaired installed-device bounds/prompt, owner visual review and replacement
 artifact acceptance remain pending; no permission grant/video is inferred. Exact
 private test screenshots stay under ignored .local. No customer record or human

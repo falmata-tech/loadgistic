@@ -773,6 +773,9 @@ hierarchies place the banner action at y=21–116; Android reports a 136-pixel
 status-bar inset. Center and lower-edge taps cannot open disclosure. Protected
 capture: .local/play-20261010-native-location-disclosure.png. No location consent,
 OS grant, tracking lease or qualifying permission video is claimed.
+Normal native sign-out additionally leaves the previous action visible to the
+guest despite the account session ending. That notice must be bound to its actor;
+it is not authority to collect location or issue a lease.
 
 Prevention/next: native global permission actions require safe-area protection,
 not just page-level header padding. Add a negative layout check and verify the
@@ -780,6 +783,8 @@ actual installed action's bounds against system insets, then the visible decline
 accept paths and disclosure-before-permission order. Keep one tracking controller;
 never grant permissions through adb or submit a browser/mock walkthrough as an
 Android permission demonstration. Owner: native/Play release maintainer. The local
-SafeAreaView repair passes the prior-source negative layout check, consent/native
-text regressions (11/11), typecheck and lint. New-binary/device acceptance and
+SafeAreaView repair and actor-bound notice visibility pass the prior-source
+negative layout check, consent/scope/native-text regressions (13/13), typecheck and
+lint. The guard immediately excludes guests and a different actor, even if old
+notice state or a request result survives. New-binary/device acceptance and
 owner visual review remain pending; the existing code-4 test release is unchanged.

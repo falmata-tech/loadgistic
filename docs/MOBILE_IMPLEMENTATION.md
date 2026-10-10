@@ -10,9 +10,15 @@ existing wording, roles, consent and permission order.
 1. [x] Record the actual installed-screen/inset evidence and governing contracts.
 2. [x] Protect the existing global action with native safe-area insets,
    without mounting another tracking controller or granting OS permissions.
-3. [ ] Current: focused consent/layout/native-text checks pass 11/11, plus mobile
+3. [ ] Current: focused consent/layout/actor-scope/native-text checks pass 13/13, plus mobile
    typecheck and lint. Prepare a development preview for actual native hit testing
    and keep both web previews available; this is not a replacement Play release.
+   Native normal sign-out also exposed a stale location notice on the guest view;
+   the local visibility guard now binds it to the actor that produced it. Exact
+   development build 73df3680-6ac5-4e66-ab42-caa6f66c0508 uses the existing frozen
+   credentials and native dependencies; its Metro preview at 8087 will load the
+   current tested JS. Both web previews remain 200 at 3100/8084. Code-4 test
+   sign-out is observed; the unpatched stale notice is recorded, not suppressed.
 4. [ ] Obtain review of the affected phone layout before full release gates;
    build a new immutable Android candidate and verify the real action is below
    the status bar and opens disclosure before the OS prompt. Code 4 stays distinct.
