@@ -9,13 +9,23 @@ observability: [account_deletion_requested, account_deletion_completed, content_
 rollout: Implement and verify locally first. Owner visual approval precedes extensive release gates. New production SQL, review identity and configuration need exact reviewed target/backup/rollback evidence; no public Play rollout is authorized by implementation alone.
 ---
 
-# Play requirements — implementation in progress
+# Play requirements — deployed workflows; device and Console acceptance pending
 
 The owner requested all missing Play workflows on October 9. Console developer
 5256539403314542898 / app 4974969611761012361 is owner-reported under
 marketvision.tech@gmail.com, not independently authenticated yet. This identity
 does not replace the application's administrator or Expo identity. Package stays
 com.loadgistic.app. Never treat an app entry or draft upload as publication.
+
+October 9 rollout: approved SQL 131–136 committed; web runtime 9feab2d is live
+as deploy 6ac99d110f1f577818c9f7c9. Verification commit 068ac35 preserves all
+runtime/native/SQL inputs, and CI 38012117505 passes all eight latest jobs.
+Eighty live checks pass, including three new private normal-auth reviewers and
+company-driver denial of the transporter-profile editor. Protected credential
+files remain outside source/builds; no initial human consent or customer erasure
+was invented. Signed 1.0.3/code-4 APK/AAB are verified and available for testing.
+Physical background-location/alerts/16 KB acceptance, Android demonstration,
+Play signing/publisher connection and Console/test-track evidence remain pending.
 
 ## AC1 — Location consent before permission or collection
 

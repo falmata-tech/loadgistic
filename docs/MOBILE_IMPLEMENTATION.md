@@ -1,4 +1,4 @@
-## October 9 Play policy implementation — active (FEAT-PLY-001)
+## October 9 Play policy release — web and Android testing ready (FEAT-PLY-001)
 
 Owner requested all missing Play requirements be implemented in the app. Work
 only in Loadgistic; preserve existing runtime, accounts, keys and production data.
@@ -19,8 +19,9 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    eligibility and portrait reads, including after republishing.
 5. [x] Implement the approved synthetic reviewer strategy through normal Auth.
    Populated local private-capacity/Tracking access and revocation pass. Ordinary
-   passwords/staff cannot use this path; production demo provisioning is pending.
-6. [ ] Privacy/contact and translations are implemented and tested locally.
+   passwords/staff cannot use this path. Three approved hosted identities and
+   two private workspaces are provisioned and pass normal-auth scope checks.
+6. [x] Privacy/contact and translations are implemented, tested and deployed.
    Owner approved marketvision.tech@gmail.com. All 496 explicit native messages
    and shared policy/conditional controls have four translations. Declaration
    inventory is a draft, not a completed Console attestation or Android video.
@@ -28,7 +29,7 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    9 and explicitly requested continuation of release checks.
    Local focused workflows and current phone/desktop captures exist. Servers stay
    at http://127.0.0.1:3100 and http://localhost:8084. Approval recorded; no hosted rollout approval is inferred from it.
-8. [ ] Current: local quality 488/488 + native 127/127, types/lint, Doctor 21/21,
+8. [x] Local quality 488/488 + native 127/127, types/lint, Doctor 21/21,
    496/496 translations, actual web/Android builds and 52 SQL suites pass.
    Seventeen affected phone workflows pass across corrected focused runs,
    including normal OTP onboarding and one-truck/worldwide-location persistence.
@@ -38,16 +39,28 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    complete. Corrected local document/Tracking tests pass all four desktop/phone
    workflows using actual SMTP and Storage. They isolate client rate buckets,
    await real OTP responses and select the known prior-consented transporter.
-   Run 38007389263 still failed shard 2 after its controlled retry; no failed
-   gate is waived. Current: pass every exact-source remote CI job before the
-   approved hosted writes. Runtime/native/SQL and inspected binaries are unchanged.
-9. [ ] Publish approved web/backend and verify actual provider results. Signed
+   Exact-source CI 38012117505 at 068ac35 passes all eight latest jobs. Its
+   controlled shard-4 retry resolves a registry-rate/port startup failure.
+   Runtime/native/SQL and inspected binaries are unchanged.
+9. [x] Publish approved web/backend and verify actual provider results. Ledger
+   136 and deploy 6ac99d110f1f577818c9f7c9 pass 80 live checks and final security.
+   Company-driver transporter-profile management is correctly denied (403).
+   Initial review-account human consent stays false; test sessions were closed.
+   Signed
    APK 9169da7e-dd2f-40b1-87b0-53fee20e3b56 and AAB
    edd8cf91-446d-477e-8bb4-e00946fa7a57 (1.0.3/code 4) are built and inspected.
-   The owned emulator displays the new Privacy screen; System UI instability
-   leaves full native and physical-device acceptance pending.
+   The owned emulator displays installed Privacy and live public Capacity after
+   one fresh-hierarchy System UI recovery. Two actual 1080 × 2160 captures exist;
+   the display override is restored. Full native and physical-device acceptance
+   remain pending.
 10. [ ] Verify owner Console/signing/app-scoped Submit connection; internal draft
    upload and tester rollout remain distinct from public launch and policy approval.
+
+Current Android test download:
+https://expo.dev/accounts/falmatad/projects/loadgistic/builds/9169da7e-dd2f-40b1-87b0-53fee20e3b56
+Version 1.0.3/code 4 preserves the existing signer and uses the verified live
+backend. Private reusable reviewer credentials remain in protected
+`.local/play-policy-reviewer-credentials.json`, never source, builds or logs.
 
 ## October 9 Google Play preparation — active
 
@@ -75,9 +88,10 @@ No console upload, public publication, signing change or policy waiver is claime
 5. [ ] Owner completes Console app/signing and connects dedicated app-scoped
    Play submission key in Expo; verify them, then remotely upload the exact
    reviewed bundle as an internal draft. The owner requested this remote route.
-6. [ ] Complete separate closed/public review gaps: account/data deletion request,
-   background-location disclosure/privacy, reviewer access, device acceptance and
-   any account-specific closed-test requirement. Preserve existing data/authority.
+6. [ ] Complete actual device/video, Console declarations, owner review of store assets
+   and any account-specific closed-test requirement. Deletion, location disclosure,
+   moderation and reviewer workflows are now implemented and deployed above.
+   Preserve existing data/authority; no Play test clock has begun.
 
 ## Android 1.0.2 internal test release — available October 9
 

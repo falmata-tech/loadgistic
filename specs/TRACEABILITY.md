@@ -1334,12 +1334,13 @@ checks pass with a real managed session and completed Account redirects. Final
 candidate CI and hosted/installed postchecks remain pending.
 
 
-October 9 Play policy implementation (FEAT-PLY-001), local only:
+October 9 Play policy implementation (FEAT-PLY-001), web/Android tester rollout:
 - AC1: eight native background-consent tests pass, including already granted
   OS permission, decline, stale account and revoked permission. The generated
   Android manifest disables FCM auto-init/analytics and blocks unused media,
   camera and microphone permissions. Actual Android disclosure/OS/video and
-  closed-phone acceptance still require the new binary.
+  closed-phone acceptance still require actual device evidence; the inspected
+  1.0.3/code-4 binary is installed and available.
 - AC2: `account-erasure.test.mjs` (seven) and rollback-only deletion/scope SQL
   pass. The phone browser deletion workflow verifies real local SMTP, persists
   a receipt across reload, removes a real Storage object, deidentifies Auth,
@@ -1351,13 +1352,16 @@ October 9 Play policy implementation (FEAT-PLY-001), local only:
 - AC4: normal reviewer password login, explicit saved terms, populated synthetic
   Tracking/private-capacity access, session/guest revocation and ordinary-account
   denial pass in the native browser preview. SQL also denies foreign workspace
-  grants, unregistered members and staff elevation. No production review identity
-  or reusable credential has been created or placed in source/builds.
+  grants, unregistered members and staff elevation. Three approved hosted review
+  identities now pass normal Auth and own private-scope reads with foreign-scope
+  denial. Company drivers are denied transporter-profile management (403) while
+  personal Account remains available. Initial terms acceptance remains false;
+  credentials stay in a protected local file, outside source/builds.
 - AC5: all 496 explicit native messages have four translations; shared privacy
   and conditional-control parity passes. Current phone/desktop captures exist.
   The owner explicitly approved these screens on October 9. Policy declaration
-  inventory remains a draft; hosted rollout, signed binary, actual Android
-  permission/video and Console review remain separate pending evidence.
+  inventory remains a draft. Hosted rollout and signed binary inspection pass;
+  actual Android permission/video and Console review remain pending.
 
 Evidence: `tests/e2e/play-policy-workflows.spec.ts` (four focused phone workflows,
 including real SMTP OTP onboarding, explicit actor-bound consent, one-truck
@@ -1367,6 +1371,17 @@ domain/native cases. Root quality 488/488, native 127/127, types/lint, Doctor
 affected phone workflows pass across corrected runs. The unchanged 5,000-truck
 gate passes: 15 rows, 30,855 bytes, search 4.75 s, route 2.74 s, zero fixtures
 retained. Fresh production backup restores without networking; migrations
-131–136 and full catalog/guard/spatial rehearsal pass. Remote CI and publication
-are not inferred from this local evidence. Local operations receipts and screenshot files
-are protected under `.local/play-policy-*`; they are not production receipts.
+131–136 and full catalog/guard/spatial rehearsal pass. Exact-source CI 38012117505
+passes all eight latest jobs at 068ac35, including the controlled retry of an
+isolated startup failure. Approved hosted ledger is 136; runtime 9feab2d deploy
+6ac99d110f1f577818c9f7c9 is verified with 80 live checks and clean final security.
+APK 9169da7e-dd2f-40b1-87b0-53fee20e3b56 and AAB
+edd8cf91-446d-477e-8bb4-e00946fa7a57 preserve the exact native inputs/signing.
+Protected publication, database, reviewer and live-evidence receipts under
+`.local/play-policy-*` distinguish hosted results from local tests. Play upload,
+tester enrollment and physical-device acceptance are not claimed.
+Installed code-4 Privacy and live public Capacity render in the owned emulator
+after one fresh-hierarchy System UI recovery. Actual 1080 × 2160 opaque captures
+and sanitized evidence are in `.local/play-policy-native-current-evidence.json`
+and `.local/play-policy-store-asset-plan.json`; the temporary display size was
+restored. Store asset review and full native workflow acceptance remain separate.

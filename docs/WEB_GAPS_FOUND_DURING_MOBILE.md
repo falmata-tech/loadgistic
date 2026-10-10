@@ -442,6 +442,11 @@ Direct visitor-to-transporter inquiries are still absent and were not invented.
 The restricted web driver's duty-action obstruction is fixed under NR-22; the
 separate map-presentation parity item above remains on its documented backlog.
 
+October 9 release follow-up: the matched backend and Android 1.0.3/code 4 are now
+released for direct testing. Final live security and 80 release checks pass.
+Physical closed-phone delivery remains unverified; direct provider inquiries
+remain absent. See MOBILE_IMPLEMENTATION for current release evidence.
+
 
 ## WEB-MOB-017 — Public near-me filter still rejects locations outside Ethiopia
 
@@ -455,3 +460,23 @@ Next: remove this residual frontend restriction while preserving privacy and
 valid-coordinate/radius guards. Test a US GPS fix and combined location/search/
 truck filters on web phone and desktop. Review the focused map behavior before
 release gates; do not copy the restriction into native or change map UI.
+
+## WEB-MOB-018 — Product master prompt contains obsolete workflow contracts
+
+**Status:** Source-confirmed documentation drift, not a newly reproduced runtime
+defect. **Owner:** Product/spec maintainer. **Priority:** Before implementing the
+next related feature or using this document for store declarations.
+
+The October 9 handoff found `docs/PRODUCT_MASTER_PROMPT.md` still describing
+shipment-code-plus-OTP Tracking entry, optional loading/unloading proof, a 40 km
+radius, foreground-only location, separate independent-driver signup categories,
+account plans and unimplemented closure. Those claims conflict with the accepted
+Tracking, single-truck, no-plan and Play-policy contracts now implemented.
+The broad documentation correction was not hidden in the approved rollout.
+
+Next: reconcile each affected paragraph against FEAT-TRK-001, FEAT-FLT-001,
+FEAT-BIL-001, FEAT-MOB-001 and FEAT-PLY-001 plus their mapped tests and actual
+release evidence. Preserve unresolved device acceptance and retained-history
+limits. Do not restore obsolete behavior or infer customer-erasure authority
+from old prose. Current release status is in PROGRESS/MOBILE_IMPLEMENTATION and
+feature specs; store declarations still need owner/provider attestation.

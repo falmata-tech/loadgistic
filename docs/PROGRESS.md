@@ -1,60 +1,51 @@
-## October 9 Google Play policy work — local verification complete; visual approval recorded
+## October 9 Play policy release — web and Android testing available
 
-FEAT-PLY-001 implements verified deletion with real administrator fulfillment,
-explicit background-location disclosure consent, report/block/moderation,
-versioned account-bound terms and restricted normal-auth reviewer login.
-The owner approved a synthetic review account strategy and
-marketvision.tech@gmail.com as the public privacy/deletion contact.
+The approved policy web release is live at https://loadgistic.com, Netlify deploy
+`6ac99d110f1f577818c9f7c9`, runtime source `9feab2d`. Verification commit
+`068ac35` changes only tests/specs/docs; CI `38012117505` passes all eight jobs.
+Its single failed runner startup hit registry rate limits and a port collision;
+the controlled shard-4 retry passed. Application, native and SQL inputs remain
+identical to the inspected artifacts.
 
-Focused tests pass against local Loadgistic services: actual SMTP/Storage/Auth
-erasure and receipts, public moderation/block/unblock, populated reviewer
-Tracking/private capacity and revocation. Six rollback SQL suites cover
-permissions, isolation, shared records and erasure scope; 24 new focused tests
-cover consent, retry ordering, blocks, copy and FCM opt-in. Both types and native
-lint pass; 496 explicit native messages have all four translations. Full root
-quality 488/488, native 127/127 and Doctor 21/21 pass. All 52 database regressions
-and seventeen affected phone workflows pass across corrected focused runs.
-Actual web/Android builds pass; the 5,000-truck gate preserves its existing
-five-second limit (search 4.75 s, route 2.74 s) and rolls back every fixture.
+Owner-approved migrations 131–136 committed atomically after encrypted backup,
+network-disabled restore/rehearsal, immutable-artifact and exact-source CI gates.
+Live ledger is 136. Final catalog, Data API guard and PostGIS checks pass with no
+critical advisors or unprotected public tables. No provider settings, signing or
+customer erasure were changed. Existing warnings remain recorded.
 
-Migrations 131–136 are installed locally only. Hidden/demo profiles now remain
-out of public map/search even if their separate truck sharing setting is public.
-No new production account, hosted database write or web release exists yet.
-Signed Android 1.0.3/code-4 APK and AAB now exist and pass artifact inspection.
-Current web/Android production remains the verified 1.0.2/code-3 release below.
+All 80 live release checks pass: public desktop/phone controls and mobile APIs,
+anonymous private-access denial, three normal-auth private reviewers, own
+Tracking/capacity access, foreign-workspace exclusion, wrong-actor consent denial
+and browser denial of the review registry. Company drivers correctly receive 403
+for the transporter-profile editor while retaining personal Account access.
+Test sessions were closed; initial human consent was not fabricated. Three new
+synthetic accounts and two private workspaces are verified; passwords remain only
+in protected `.local/play-policy-reviewer-credentials.json`.
 
-The owner approved the actual new phone/desktop controls at
-http://127.0.0.1:3100 and http://localhost:8084. Current: run full gates, prepare the
-owner-approved exact SQL/backup/rollback rollout, provision synthetic review
-accounts and verify the matching hosted runtime. APK/AAB builds are finished. Actual Android permission/video,
-closed-phone acceptance, Play signing/publishing credentials and Console
-declarations remain distinct requirements. See MOBILE_IMPLEMENTATION.md,
-GOOGLE_PLAY_SETUP.md and specs/TRACEABILITY.md.
+Android **1.0.3 / code 4**, `com.loadgistic.app`, is ready for direct testing.
+APK build `9169da7e-dd2f-40b1-87b0-53fee20e3b56` and Play bundle
+`edd8cf91-446d-477e-8bb4-e00946fa7a57` pass signature, manifest, 16 KB structural,
+secret and production-origin checks. Existing signing is preserved. The owned
+emulator displays the installed new Privacy and live public Capacity screens after
+one fresh-hierarchy System UI recovery. Actual 1080 × 2160 screenshots are
+captured and the normal display is restored; this does not establish full native acceptance.
+Physical moving/background location, closed-phone alerts, 16 KB-device testing
+and the actual Android permission video remain separate.
 
-Read-only production refresh confirms ledger 130, PostGIS extensions 3.3.7,
-zero unprotected public tables and no advisor errors (two existing warnings).
-The fresh encrypted 2,556,985-byte backup restores in a network-disabled
-container; exact migrations 131–136 and catalog/Data API/spatial checks pass.
-The reviewed SQL digest is
-`e28fa7445a254e80b98dac39593174ca0117605569672cd749e7caacf048f7fd`.
-No hosted migration or reviewer provisioning has been applied. The new candidate
-uses 1.0.3/code 4. APK build `9169da7e-dd2f-40b1-87b0-53fee20e3b56` and
-AAB build `edd8cf91-446d-477e-8bb4-e00946fa7a57` are verified. CI run
-`38007389263` passed validation, container, native boundaries and three browser
-shards; shard 2 and its controlled retry failed. The approved in-memory failure
-read identified the truck-document sign-in step and a flaky Tracking email wait.
-Document and multi-party Tracking tests now own separate local client rate
-buckets and assert actual successful OTP responses before reading the inbox.
-The Tracking test also selects the known, prior-consented synthetic transporter:
-the recovered local preview proved that an arbitrary unconsented account's terms
-dialog intercepted route selection. Four corrected desktop/phone document and
-multi-party Tracking workflows pass with real local email and Storage; quality
-488/488, types, source and specs pass. Fresh onboarding still accepts visible
-terms. The recovered previews remain at the same URLs. Runtime, native and
-SQL inputs are unchanged; every exact-source CI job must pass before rollout.
-Onboarding uses synthetic tiles to separate map rendering from external tile
-availability; this is not live tile evidence.
-The dedicated Play publishing key is still absent; no Play test clock has begun.
+Local quality 488/488, native 127/127, Doctor 21/21, all 52 SQL suites, types,
+source and specs pass. All 496 native messages have four translations. Corrected
+document and multi-party Tracking workflows pass in desktop/phone using real
+local email and Storage. They isolate client rate buckets, assert OTP responses
+and select the known prior-consented fixture; fresh signup tests accept the actual
+terms screen. The unchanged 5,000-truck gate passes (search 4.75 s, route 2.74 s).
+Onboarding synthetic tiles verify rendering rather than external tile delivery.
+
+Previews remain at http://127.0.0.1:3100 and http://localhost:8084. Google Play has
+not received this bundle and closed testing has not started. The dedicated Play
+publisher key is absent; signing choice, Console declarations, owner review of store
+assets, actual device acceptance and tester enrollment remain. Current manual
+steps are in docs/operations/GOOGLE_PLAY_SETUP.md. Production customer erasure
+requires a separate exact request/subject review.
 
 ## October 9 web and Android tester release — published
 

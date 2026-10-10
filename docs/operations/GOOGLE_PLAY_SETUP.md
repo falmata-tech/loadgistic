@@ -7,10 +7,14 @@ The authenticated Console connection remains pending. The approved policy rollou
 covers migrations 131–136, matching web and Android, and three private synthetic
 review identities. It does not authorize public Play publication or customer erasure.
 
-**Current policy candidate: 1.0.3 / code 4.** Signed APK and AAB are finished and
-verified. Hosted rollout still requires passing CI and matched live verification;
-completed builds alone are not deployment evidence. Do not submit the historical
-1.0.2/code-3 bundle as this release.
+**Current test release: 1.0.3 / code 4.** Signed APK and AAB are verified and use
+the matched live web/backend. Approved ledger is 136; Netlify deploy
+`6ac99d110f1f577818c9f7c9` is verified with 80 live checks and clean final security.
+Exact-source CI `38012117505` passes all eight latest jobs at `068ac35`, with
+runtime/native/SQL unchanged from the inspected artifacts. Three private normal-
+auth review accounts are provisioned; protected reusable credentials are in
+`.local/play-policy-reviewer-credentials.json`. Test sessions are closed and
+initial terms acceptance was not fabricated. Do not submit historical code 3.
 
 - APK build: `9169da7e-dd2f-40b1-87b0-53fee20e3b56`; protected file
   `.local/loadgistic-1.0.3-android.apk`, 153,576,371 bytes, SHA-256
@@ -33,6 +37,42 @@ existing Firebase FCM binding remains intact. No Play upload or testing rollout
 has occurred. Follow FEAT-PLY-001 and MOBILE_IMPLEMENTATION's ordered checklist.
 Protected artifact receipts remain in `.local`; private credentials never belong
 in this document, source, logs or builds.
+
+## Next owner step — connect the publishing account
+
+The APK can be tested now using the build link below. Play upload still needs
+the dedicated publishing key; Firebase's notification key is a separate purpose.
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/). Use the project
+   selector at the top → **New project** → name it **Loadgistic Play** → **Create**.
+2. Select that project. Open **APIs & Services → Library**, search **Google Play
+   Android Developer API**, open it and click **Enable**.
+3. Open **IAM & Admin → Service Accounts → Create service account**. Name it
+   **loadgistic-play-publisher**. Create it without Cloud project roles.
+4. Open the new service account → **Keys → Add key → Create new key → JSON**.
+   Save the downloaded file as
+   `/Users/falmata/Desktop/Dev/loadgistic/.local/google-play-publisher.json`.
+   Keep the private key out of chat, Git and app builds.
+5. Copy only its service-account email. In the owner's [Play Console](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard),
+   open **Users & permissions → Invite new users**, enter that email, choose
+   **App permissions → Loadgistic → Admin (all permissions)**, leave **Account
+   permissions** empty, and send the invitation. This temporary app-only Admin
+   choice is owner-approved; reduce it after setup.
+6. Once the key and app permission are connected, the agent can verify the exact
+   package/account and assign it to EAS Submit while preserving FCM and signing.
+   The initial upload stays internal/draft. Signing enrollment and any Console
+   attestation still need their actual owner/provider evidence.
+7. For new personal accounts requiring closed testing, prepare at least 12
+   distinct Google testers. A downloadable closed release and continuous opt-in
+   enrollment start the required period; a built APK or draft upload does not.
+
+Installable APK:
+https://expo.dev/accounts/falmatad/projects/loadgistic/builds/9169da7e-dd2f-40b1-87b0-53fee20e3b56
+Published privacy: https://loadgistic.com/privacy. Published deletion request:
+https://loadgistic.com/delete-account. The approved reusable review credentials
+belong in Console App access, not a public store listing.
+[Expo submission prerequisites](https://docs.expo.dev/submit/android/),
+[Google closed-testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
 
 ## Build target and signing decision
 
@@ -186,8 +226,10 @@ internal test, then join the closed test.
 
 ## Draft English listing and release notes
 
-Copy is prepared for owner review, not submitted. Current product behavior is
-controlled by [PRODUCT_MASTER_PROMPT.md](../PRODUCT_MASTER_PROMPT.md).
+Copy is prepared for owner review, not submitted. Current release behavior and
+evidence are recorded in [FEAT-PLY-001](../../specs/features/FEAT-PLY-001.md) and
+[MOBILE_IMPLEMENTATION.md](../MOBILE_IMPLEMENTATION.md). Older master-prompt
+claims need reconciliation; see WEB-MOB-018.
 
 **Name — 10 / 30 characters**
 
@@ -239,9 +281,13 @@ rating and advertising answers; no values are presumed here.
 [Listing fields](https://support.google.com/googleplay/android-developer/answer/9859152?hl=en),
 [Asset requirements](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en).
 
-## Data Safety evidence and decisions
+## Historical code-3 Data Safety inventory — superseded policy gaps
 
-The following is a source-based inventory, not a submitted declaration. Apps
+The following records the pre-policy code-3 inspection. Its deletion, disclosure,
+reviewer and CAMERA gaps are superseded by the code-4 implementation below; do
+not copy those obsolete claims into Console. The current declaration draft is
+`.local/play-policy-data-safety-review.json` and still needs owner attestation.
+Apps
 exclusively on the internal track are exempt from the Data Safety form. Closed,
 open and production tracks require it. Collection includes SDK transmission off
 the device; ephemeral processing still belongs in form responses. Service-provider
@@ -268,7 +314,7 @@ and microphone recording are blocked. No active camera API call was identified;
 CAMERA is nevertheless in the signed manifest. Reinspect the final AAB's merged
 manifest and its SDK data flows before answering declarations.
 
-## Gaps before broader review
+## Historical code-3 gaps before broader review
 
 - **Deletion and retention:** the app creates accounts but only supports
   retained-history deactivation. Google requires a discoverable in-app and web
@@ -318,7 +364,7 @@ minimum. That single gate does not establish Play acceptance.
 [Target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en).
 
 
-## New policy implementation — verified locally, not published
+## Current policy implementation — deployed and verified
 
 FEAT-PLY-001 adds explicit location disclosure consent, real verified-email
 account/data deletion, reporting/blocking and persisted moderation, account-bound
@@ -330,17 +376,22 @@ Migration 136 additionally protects the separate public truck map/search reads;
 a profile-only hide does not close those signal projections.
 
 The mobile reviewer test uses a real synthetic shipment and private capacity,
-normal authentication and live revocation checks. No hosted reviewer credential
-is provisioned yet. The browser location view is informational; it is not evidence
+normal authentication and live revocation checks. The three approved private
+hosted reviewers pass normal login and scope verification; their reusable
+credentials remain only in the protected local credentials file. The browser
+location view is informational; it is not evidence
 of Android's pre-permission dialog, closed-phone tracking or the required video.
 
 The owner approved these screens on October 9. Full local quality 488/488,
 native 127/127, Doctor 21/21, all 52 SQL suites, affected phone workflows, actual
 web/Android builds and the 5,000-truck gate pass. Protected fresh backup restores
 without networking; exact SQL 131–136 and security/spatial checks rehearse.
-Current: immutable-source remote CI, owner review of exact hosted rollout and
-reviewer provisioning, matching web deployment and signed 1.0.3/code-4 APK/AAB.
-Prior signing/upload exclusions remain. The code-3 APK/AAB is unchanged.
+All eight exact-source CI jobs pass at 068ac35. Approved SQL 131–136 and the
+matching web release are deployed, and all 80 live checks pass. Signed
+1.0.3/code-4 APK/AAB are verified. The installed native Privacy and public Capacity
+screens render against the live backend, with actual 1080 × 2160 captures.
+Physical-device acceptance and Console setup remain pending. Prior signing/upload
+exclusions remain; the historical code-3 APK/AAB is unchanged.
 
 Data Safety inventory is `.local/play-policy-data-safety-review.json`, a draft
 requiring Console attestation. Declare inspected data, not only permission names:
@@ -348,14 +399,15 @@ smaller obscured grid cells can still meet Google's precise-location definition.
 There is no analytics/advertising SDK or digital subscription purchase flow.
 Assess any displayed sponsorship content for the Contains ads declaration.
 
-Remaining manual Console work, once the new artifact is ready:
+Remaining manual Console work:
 1. Open this document's owner-reported app dashboard. Do not create another app
    or change package com.loadgistic.app. Keep App / Free / English (United States).
 2. Complete the deliberate signing choice above. Use the new verified AAB for
    any required first Console initialization, not the old policy-incomplete file.
 3. Connect a separate app-scoped EAS Submit service account for internal/draft
    uploads. Firebase notification credentials are a different purpose and stay
-   unchanged. Never grant account-wide Admin or production-release permission.
+   unchanged. Use the approved temporary Loadgistic app-only Admin permission;
+   account-wide access and public production rollout remain outside scope.
 4. In App content, enter the published privacy and deletion URLs, the supplied
    reusable demo review credentials, inspected Data Safety/content-rating answers
    and the actual Android background-location/foreground-service video.
