@@ -1401,6 +1401,18 @@ Protected invitation review/receipt records these results. No Play upload,
 signing enrollment, store acceptance or tester clock is inferred.
 
 
+October 10 FEAT-PLY-001 AC1 / NR-26 native follow-up: the private synthetic
+company-driver signs in normally and accepts the actual Terms checkbox. Code-4
+banner bounds y=21–116 fall wholly inside Android's status-bar inset of 136;
+center/lower-edge taps do not reach disclosure. The local SafeAreaView repair is
+covered by `apps/mobile/tests/background-notice-layout.test.mjs`, which fails on
+the prior source, then passes alongside consent/native-text tests (11/11), mobile
+typecheck and lint. It retains one controller and existing consent/permission
+logic. Repaired installed-device bounds/prompt, owner visual review and replacement
+artifact acceptance remain pending; no permission grant/video is inferred. Exact
+private test screenshots stay under ignored .local. No customer record or human
+consent backfill, provider setting, signing or hosted schema changed.
+
 October 10 subsequent FEAT-PLY-001 operational evidence supersedes the connection
 checkpoint: exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED for code 4;
 internal 4700942405023499701/release 1 is Active/available/Not reviewed. Existing

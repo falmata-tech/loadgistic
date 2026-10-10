@@ -1,3 +1,24 @@
+## October 10 native permission notice repair — local work (FEAT-PLY-001 AC1 / NR-26)
+
+The installed code-4 synthetic driver reaches Home through normal review sign-in
+and the real Terms checkbox. Its shipment-location action is at y=21–116 while
+Android's status-bar inset is 136 pixels; even the control's lower edge is covered.
+No permission demonstration or video submission is inferred from that attempt.
+The owner delegates independent continuation while unavailable; the repair keeps
+existing wording, roles, consent and permission order.
+
+1. [x] Record the actual installed-screen/inset evidence and governing contracts.
+2. [x] Protect the existing global action with native safe-area insets,
+   without mounting another tracking controller or granting OS permissions.
+3. [ ] Current: focused consent/layout/native-text checks pass 11/11, plus mobile
+   typecheck and lint. Prepare a development preview for actual native hit testing
+   and keep both web previews available; this is not a replacement Play release.
+4. [ ] Obtain review of the affected phone layout before full release gates;
+   build a new immutable Android candidate and verify the real action is below
+   the status bar and opens disclosure before the OS prompt. Code 4 stays distinct.
+5. [ ] Record an actual Android permission/active-shipment demonstration, verify
+   its content and host it accessibly before completing the Google declarations.
+
 ## October 10 autonomous Play setup — internal live; Alpha draft (FEAT-PLY-001)
 
 Owner delegates continuation independently while busy. Only Loadgistic developer

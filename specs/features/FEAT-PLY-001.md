@@ -48,6 +48,8 @@ When background location has not been explicitly accepted on this device
 Then a readable disclosure explains location collection while closed, approximate
 sharing with authorized shipment parties, use only for active shipments and OS
 permission controls before any location permission request or background task
+And the deliberate location-sharing action is visible and touchable below native
+status-bar/notch insets, including when it appears above the app's navigation
 And declining leaves other app functions available without starting collection
 And previously granted OS permission alone does not count as disclosure consent
 And account changes, sign-out, revoked authority and completed tracking stop or
@@ -118,6 +120,10 @@ Tests: `tests/account-erasure.test.mjs`, `tests/content-blocks.test.mjs`,
 Additional projection/copy/manifest checks: `tests/sql/public-capacity-policy-scope.sql`,
 `tests/play-policy-copy.test.mjs`, `tests/content-policy-intent.test.mjs`,
 `apps/mobile/tests/play-notification-consent.test.mjs`.
+Native notice inset regression: `apps/mobile/tests/background-notice-layout.test.mjs`.
+An installed-device hierarchy must additionally place the actual action below the
+reported status-bar inset and show disclosure before the Android runtime prompt;
+static layout and browser checks do not replace that native acceptance.
 CI runs all six policy SQL suites alongside existing authorization regressions;
 local fixture import establishes only newly imported synthetic-user preconditions.
 Existing Account/onboarding/recovery regression gates also run in desktop and

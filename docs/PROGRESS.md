@@ -1,3 +1,18 @@
+## October 10 native permission notice — local repair, replacement not released
+
+The owner's ten-address closed-test roster is saved and independently verified.
+Further actual-device testing found NR-26: the installed code-4 global shipment
+location banner is wholly under Android's status bar (action y=21–116; inset 136).
+The synthetic company-driver reaches Home through normal review login and the
+real Terms checkbox; neither center nor lower-edge taps reach disclosure.
+No location consent, OS grant or qualifying Android video is claimed.
+
+The local notice now uses native safe-area protection. A negative layout check
+fails on the previous source and passes on the repair; 11 focused consent/layout/
+native-text tests, mobile typecheck and lint pass. Actual repaired-phone preview,
+owner review, full release gates and a replacement artifact are still required.
+Existing Play code 4 and the deployed web/backend remain unchanged.
+
 ## October 10 Google Play — internal live; Alpha draft
 
 Android **1.0.3 / code 4** is Active and available to internal testers, with Google

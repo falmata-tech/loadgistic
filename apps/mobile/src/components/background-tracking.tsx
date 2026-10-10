@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Platform,Pressable,Text,View} from 'react-native';
+import {AppState,Platform,Pressable,Text} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import {useAccount} from '../session/provider';
 import {useLanguage} from '../localization/provider';
@@ -56,5 +57,6 @@ export function BackgroundTracking(){
   return()=>{operationEpoch.current++;decision.current?.(false);decision.current=null;clearTimeout(initial);listener.remove();clearInterval(interval);};
  },[actorId,synchronize]);
  if(Platform.OS==='web'||(!needed&&!error))return null;
- return <><View style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true)} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></View><LocationDisclosure visible={disclosure} decide={decide}/></>;
+ // This notice is above the route navigator, so page-header insets do not protect it.
+ return <><SafeAreaView edges={['top','left','right']} style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true)} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></SafeAreaView><LocationDisclosure visible={disclosure} decide={decide}/></>;
 }

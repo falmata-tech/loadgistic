@@ -760,3 +760,26 @@ Evidence: apps/mobile/android/app/src/main/AndroidManifest.xml:12; current code-
 manifest inspection. Minification is disabled by the current Gradle defaults with
 no release override, so Google's absent-deobfuscation-file warning is retained as
 informational; mapping becomes necessary if R8/minification is enabled later.
+
+## NR-26 — Global permission actions overlap Android system controls
+
+Cause: the shipment location banner was rendered above the route navigator as a
+regular View, outside the native safe-area protection used by page headers.
+Browser and consent-port checks did not detect Android's status-bar hit testing.
+
+Evidence: installed 1.0.3/code 4 on Loadgistic_Pixel_API_35/emulator-5580, private
+synthetic company-driver normal sign-in and visible Terms acceptance. Fresh
+hierarchies place the banner action at y=21–116; Android reports a 136-pixel
+status-bar inset. Center and lower-edge taps cannot open disclosure. Protected
+capture: .local/play-20261010-native-location-disclosure.png. No location consent,
+OS grant, tracking lease or qualifying permission video is claimed.
+
+Prevention/next: native global permission actions require safe-area protection,
+not just page-level header padding. Add a negative layout check and verify the
+actual installed action's bounds against system insets, then the visible decline/
+accept paths and disclosure-before-permission order. Keep one tracking controller;
+never grant permissions through adb or submit a browser/mock walkthrough as an
+Android permission demonstration. Owner: native/Play release maintainer. The local
+SafeAreaView repair passes the prior-source negative layout check, consent/native
+text regressions (11/11), typecheck and lint. New-binary/device acceptance and
+owner visual review remain pending; the existing code-4 test release is unchanged.
