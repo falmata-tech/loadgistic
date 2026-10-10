@@ -1,21 +1,132 @@
-## October 10 native permission notice — local repair, replacement not released
+## October 10 store presentation — active preparation
+
+Expanded owner request: finish a professional Play listing and all source-backed
+production/policy prerequisites, plus a TikTok/Instagram coming-soon kit. Prepare
+portrait/square artwork, short native-language captions and a practical posting
+schedule. Keep Android's actual testing/review status visible; no invented launch
+date, Google endorsement, tester enrollment or public store availability.
+Social drafts are not publication or an authorization to send tester emails.
+
+Owner request: finish the graphics, screenshots and other store materials for a
+professional Google Play listing. FEAT-PLY-001 AC5 controls this work.
+
+Latest owner direction: make the graphics striking and enticing with minimal
+text. Replace the text-heavy local feature-graphic draft with freight artwork
+using the existing Loadgistic identity; keep screenshots genuine and preserve
+creation provenance. Following the combined review, the owner's next instruction
+was "improve what needs to be imrpobed and lets call thsi done". This authorizes
+finalizing the reviewed package and proceeding with release checks; it does not
+claim that device acceptance, Google review or enrollment has already passed.
+
+- [x] Check Google's current preview-asset rules and distinguish closed-test
+  startup from the twelve-participant production-access requirement.
+- [x] Prepare reviewable source-backed copy, accessible asset descriptions and a
+  feature graphic using the existing identity; retain exact creation provenance.
+- [ ] Capture at least four real phone screens at 1080 × 1920, emphasizing public
+  Capacity, truck signals, driver workspace and agreed Tracking. Use only public
+  or synthetic records, exclude private contacts and developer overlays, and
+  distinguish development-preview drafts from final standalone captures.
+- [x] Obtain owner finalization of the reviewed native layout and actual store
+  assets (October 10 instruction above; no further redesign is planned).
+- [ ] Run release gates, build/verify an unused-code standalone replacement, then
+  capture the real permission video and final screenshots from that version.
+- [ ] Save the reviewed listing/declarations, submit the closed test to Google,
+  verify availability and share its actual opt-in link. Twelve continuous 14-day
+  participants are required for production access, not to begin closed testing.
+
+The current step is the listing package. Existing internal code 4 is live; its
+replacement, Google policy approval and closed enrollment are separate gates.
+The local review is at http://127.0.0.1:3135. Sources are
+resources/marketing/google-play/feature-graphic.svg and listing-en-US.json.
+The revised feature graphic uses generated freight artwork and the existing
+unchanged icon, with only the Loadgistic name as text. The built-in imagegen
+prompt and creation provenance are retained in artwork-provenance.json; an
+AI-assisted label is proposed. It does not depend on resolving the original
+graphic's unknown provenance. Its 1024 × 500 opaque PNG and the existing identity's
+512 × 512 RGBA icon pass dimensional/channel/size checks. Name/short/full copy
+lengths are 10/76/1640; all accessible descriptions fit 140 characters. The review
+page passes desktop/phone layout checks without horizontal overflow.
+
+Actual public Capacity, selected truck signals and private-entry drafts are
+captured at 1080 × 1920 with developer tools hidden through the normal menu. PNG
+exports preserve every native RGB pixel; opaque RGBA captures are losslessly
+encoded to Google's 24-bit format, with raw/export hashes retained. These are
+development-preview drafts, not final standalone images. The next source-bound
+standalone capture remains required. A fresh scoped EAS inventory verifies
+falmatad, the exact project and the latest eight Android builds, all codes ≤4;
+an unused code must also be verified against Play before its next upload.
+
+The revised minimal-text export passes 1024 × 500 opaque RGB checks and is
+984,512 bytes. Its exact hash is retained in the review package; only the
+existing logo and Loadgistic name overlay the generated freight illustration.
+Three real Android drafts are included in the review page. The fourth capture
+stopped when the owned emulator shell became unresponsive. One controlled
+reconnection confirms the scoped device and host process, but display restoration
+times out. Cleanup remains explicitly pending: normal synthetic-account sign-out,
+no-active-location-service verification, and removal of the temporary display
+override when that emulator responds. No shared adb restart, device wipe or other
+project intervention was attempted. This does not invalidate the earlier completed
+permission/service checks or establish a new app defect.
+
+## October 10 replacement release — local gates pass; packaging active
+
+The complete web quality gate and mobile unit tests, typecheck and lint pass.
+The code-5 configuration also passes all five final-manifest regression cases.
+Fresh exact Expo and Play inventories show only previously used codes through 4.
+The replacement is 1.0.4/code 5 with the existing package, project, signer and FCM
+configuration. Its 381-file local EAS archive matches source, excludes private
+paths/key bytes, and validates the one public Loadgistic Firebase configuration.
+Commit/push, exact-source CI, standalone build/manifest/signature inspection,
+actual final screenshots and qualifying permission footage remain required.
+The two additional tester addresses are not a packaging or closed-start blocker.
+
+## October 10 native permission notice — phone-tested local repair, replacement not released
 
 The owner's ten-address closed-test roster is saved and independently verified.
 Further actual-device testing found NR-26: the installed code-4 global shipment
 location banner is wholly under Android's status bar (action y=21–116; inset 136).
-The synthetic company-driver reaches Home through normal review login and the
-real Terms checkbox; neither center nor lower-edge taps reach disclosure.
-No location consent, OS grant or qualifying Android video is claimed.
+The original synthetic company-driver test reached Home through normal review
+login and the real Terms checkbox; neither center nor lower-edge taps reached
+disclosure. The subsequent development preview verifies the repair below.
 
 The local notice now uses native safe-area protection. A negative layout check
 fails on the previous source and passes on the repair. The additional actor guard
 hides stale notices after logout or account changes, bringing focused consent/
-layout/scope/native-text checks to 13/13. Mobile typecheck and lint pass.
-Development build 73df3680-6ac5-4e66-ab42-caa6f66c0508 is requested with frozen
-credentials for a Metro preview at 8087; both web previews return 200.
-Actual repaired-phone preview,
-owner review, full release gates and a replacement artifact are still required.
+layout/scope/native-text/privacy-copy checks plus final-manifest checks to 20/20. Mobile
+typecheck and lint pass. Development build
+73df3680-6ac5-4e66-ab42-caa6f66c0508 finished, is signature/package verified and
+installed in place on only Loadgistic_Pixel_API_35/emulator-5580 with data retained.
+Its native archive is e57050e; Metro at 8087 serves the current local repair.
+An initial emulator tile-DNS failure resolves without changing shared networking.
+The actual driver signs in normally; the notice action is now y=157–252 below
+the 136-pixel status inset and opens the native disclosure. Not now returns to
+the usable driver workspace with no OS prompt visible. A second actual-preview
+finding—duplicate header inset—was repaired through an in-flow header context;
+full-window modal safe areas remain unchanged. Header actions move up 136 pixels
+while the notice remains protected. A second normal synthetic login accepts the
+actual disclosure, Android's While using the app prompt and Allow all the time
+settings. Its location service is foreground-active both in the app and after
+normal Android Home; the shipment UI reads back a current-day location timestamp.
+That timestamp does not identify a background-origin update. Normal sign-out
+then returns to guest login with the old notice absent and no active foreground
+location service. Expo retains an inactive bound-service record; requiring every
+framework record to disappear was an incorrect harness assertion, corrected
+after one controlled diagnostic and inspection of Expo's unregister behavior.
+NR-27 also replaces obsolete screen/lock-pause instructions with the existing
+five-language shipment-sharing explanation. Actual phone captures are available;
+owner visual approval, qualifying video and physical moving-location acceptance
+remain pending. Native device consent was entered through the real UI only for
+the synthetic reviewer, with no adb permission grants or customer consent changes.
+Both web previews return 200. Full release gates and a replacement standalone
+artifact are still required.
 Existing Play code 4 and the deployed web/backend remain unchanged.
+
+NR-25 is also implemented locally: the next-build configuration blocks the unused
+overlay permission. The artifact checker reads final APK/AAB manifests and rejects
+debug/unrelated artifacts, inherited unused permissions and missing shipment/alert
+permissions. Five regression tests pass; the existing code-4 APK and AAB both
+correctly fail for their inherited overlay grant. No replacement is claimed fixed
+until the exact built file passes the same check.
 
 ## October 10 Google Play — internal live; Alpha draft
 
@@ -47,11 +158,13 @@ Draft reusing code 4, a separate ten-address **Loadgistic closed testers** list
 and Ethiopia/US eligibility. The owner's supplied set was checked exactly before
 saving; a reload confirms its count and Alpha-only selection. The internal owner
 list remains two accounts and unchanged. Dashboard confirms 10/11 basic setup
-tasks complete, required 12 testers/14 days and 0 opted in. Two more actual testers,
-Android disclosure/permission/active-Tracking video and Google review/enrollment
-remain. No invitation email was sent. Code 4/public Capacity render on the owned
-emulator, but a screenshot-confirmed System UI ANR and one bounded recovery failure
-prevent further device/video claims. Only that emulator was stopped, data preserved.
+tasks complete, required 12 testers/14 days and 0 opted in. Android permission
+video, completed listing and Google review/enrollment remain. The owner is finding
+two additional testers; Google permits starting closed testing after app setup,
+before reaching 12. Twelve continuous 14-day participants are required when
+applying for production access. No invitation email was sent. The earlier code-4
+System UI ANR is historical; the current repaired development preview's actual
+native checks are recorded above. All emulator data is preserved.
 Physical background GPS, closed-phone delivery and 16 KB-device acceptance remain
 unverified. NR-25 records inherited unused overlay permission for the next binary.
 

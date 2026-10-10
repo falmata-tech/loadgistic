@@ -1,0 +1,93 @@
+{
+  "package": "com.loadgistic.app",
+  "locale": "en-US",
+  "status": "local_draft_requires_owner_review",
+  "appName": "Loadgistic",
+  "shortDescription": "Find truck capacity, share availability and follow private shipment updates.",
+  "fullDescription": "Find transport and stay connected with your shipment.\n\nLoadgistic connects fleets and independent drivers with brokers, shippers and receivers through truck capacity sharing and private shipment tracking.\n\nFIND AVAILABLE TRUCKS\nExplore public capacity without an account. Search transporter profiles, filter trucks by the space and route you need, and see their approximate location and service areas. Confirm availability and the transport details directly with the provider.\n\nSHARE YOUR CAPACITY\nPublish available space to the open market, share it with named contacts, or do both. Approved contacts can verify their email to see the signals shared with them. Independent drivers manage one current truck; transport companies manage their trucks and drivers.\n\nFOLLOW AGREED SHIPMENTS\nKeep authorized shipment partners informed with status updates, loading and unloading photos, and approximate location. The shipment owner can approve unloading from their private tracking page.\n\nGET HELP ARRANGING TRANSPORT\nTell Loadgistic's transport team what you need and continue the conversation in live chat.\n\nUSE THE LANGUAGE THAT SUITS YOU\nThe app supports English, Amharic, Afaan Oromo, Somali and Tigrinya.\n\nLocation sharing requires your consent and Android permissions. During agreed active tracking, background updates can continue while the app is closed until unloading is approved. Shared locations are approximate. Notifications are optional.\n\nDocument badges identify the specific documents Loadgistic has reviewed. They help you assess providers; they are not a service guarantee. Loadgistic does not handle in-app transport payments.",
+  "featureGraphic": {
+    "source": "resources/marketing/google-play/feature-graphic.svg",
+    "export": "feature-graphic-1024x500.png",
+    "width": 1024,
+    "height": 500,
+    "alpha": false,
+    "altText": "Loadgistic beside a white freight truck on a curving gold-lit road, against a deep navy and teal backdrop.",
+    "provenance": "Freight artwork generated with the built-in imagegen tool on 2026-10-10. Codex composed the existing unchanged Loadgistic icon and brand name over it. Decorative illustration, not an app screenshot or factual vehicle photograph.",
+    "aiAssistedCreation": true,
+    "proposedAiLabel": true,
+    "reviewed": true,
+    "artworkSource": "resources/marketing/google-play/feature-artwork.png",
+    "exportScript": "resources/marketing/google-play/export-assets.mjs",
+    "sourceRole": "Transparent vector brand overlay; artworkSource is the decorative freight background.",
+    "artDirection": "Striking freight artwork; only the Loadgistic brand name as text. No slogans, paragraphs, fabricated interface or performance claims.",
+    "approval": "Owner finalization instruction on 2026-10-10 following the actual artwork/native package review: improve what needs to be improved and call this done."
+  },
+  "icon": {
+    "source": "public/icon.svg",
+    "export": "icon-512.png",
+    "width": 512,
+    "height": 512,
+    "format": "32-bit PNG",
+    "maxBytes": 1048576,
+    "altText": "Loadgistic's white L, teal lines and gold accent on a navy background.",
+    "provenance": "Existing approved Loadgistic identity, unchanged. The new feature graphic's authorship does not establish the original icon's authorship."
+  },
+  "phoneScreenshots": [
+    {
+      "id": "01-capacity",
+      "title": "Find available trucks",
+      "altText": "Public truck capacity on the map, with search and truck filters.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "02-truck-signals",
+      "title": "Understand the route",
+      "altText": "A selected truck's approximate location, capacity route and signal details.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "03-driver-workspace",
+      "title": "Keep your availability current",
+      "altText": "Driver Home with a map and controls for available space, usual routes and truck location.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "04-tracking",
+      "title": "Keep shipment partners informed",
+      "altText": "An agreed synthetic shipment with its current status and next tracking action.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "05-private-capacity",
+      "title": "Share with your contacts",
+      "altText": "The privately shared capacity view with its email-verification entry.",
+      "status": "awaiting_final_standalone_capture",
+      "draftObservation": "Actual short-screen draft clips the lower entry action at the map edge. Review final standalone scrolling/keyboard clearance before selecting this optional store screenshot; see WEB-MOB-019."
+    },
+    {
+      "id": "06-fleet",
+      "title": "Manage your trucks and drivers",
+      "altText": "A synthetic transport company's workspace with its managed trucks and assigned drivers.",
+      "status": "awaiting_final_standalone_capture"
+    }
+  ],
+  "screenshotContract": {
+    "width": 1080,
+    "height": 1920,
+    "format": "24-bit PNG without alpha",
+    "minCount": 4,
+    "maxCount": 8,
+    "maxBytesPerExport": 8388608,
+    "source": "Actual Android display at this resolution, without cropping, stretching or invented UI.",
+    "privacy": "Use public or private synthetic records only. Exclude credentials, private contact addresses, developer menus and overlays.",
+    "requiredEvidence": "Source build/commit, exact image hash, actual device/capture dimensions, visible workflow, privacy inspection and owner review. Refresh from the final standalone binary before submission."
+  },
+  "releaseNotes": {
+    "status": "draft_for_next_verified_binary",
+    "text": "Improved shipment location permissions and privacy explanations. Updated Android permission checks for the test release."
+  },
+  "references": [
+    "https://support.google.com/googleplay/android-developer/answer/9866151?hl=en",
+    "https://support.google.com/googleplay/android-developer/answer/17262077?hl=en"
+  ]
+}

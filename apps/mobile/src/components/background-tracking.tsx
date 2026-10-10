@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState,type PropsWithChildren} from 'react';
 import {AppState,Platform,Pressable,Text} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
@@ -11,8 +11,9 @@ import * as ConsentStorage from '../session/storage';
 import {authorizeBackgroundLocation,backgroundConsentKey} from '../location/background-consent';
 import {LocationDisclosure} from './location-disclosure';
 import {backgroundNoticeVisible} from '../location/background-notice';
+import {BackgroundNoticeLayout} from './background-notice-layout';
 // Global lifecycle: returning to Home is not necessary for an agreed shipment to report.
-export function BackgroundTracking(){
+export function BackgroundTracking({children}:PropsWithChildren){
  const account=useAccount(),{t}=useLanguage(),[needed,setNeeded]=useState(false),[error,setError]=useState('');
  const [noticeActor,setNoticeActor]=useState('');
  const generation=useRef(0),busy=useRef(false),last=useRef(0),actorId=account.session?.user.id||'';
@@ -58,7 +59,7 @@ export function BackgroundTracking(){
   const operationEpoch=generation;
   return()=>{operationEpoch.current++;decision.current?.(false);decision.current=null;clearTimeout(initial);listener.remove();clearInterval(interval);};
  },[actorId,synchronize]);
- if(!backgroundNoticeVisible(Platform.OS,actorId,noticeActor,needed,error))return null;
+ const visible=backgroundNoticeVisible(Platform.OS,actorId,noticeActor,needed,error);
  // This notice is above the route navigator, so page-header insets do not protect it.
- return <><SafeAreaView edges={['top','left','right']} style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true)} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></SafeAreaView><LocationDisclosure visible={disclosure} decide={decide}/></>;
+ return <BackgroundNoticeLayout.Provider value={visible}>{visible&&<><SafeAreaView edges={['top','left','right']} style={{backgroundColor:'#fff7df',paddingHorizontal:12,paddingVertical:8}}><Pressable accessibilityRole="button" onPress={()=>void synchronize(true)} style={{flexDirection:'row',alignItems:'center',gap:8,minHeight:36}}><AppIcon name="location" color="#805c00" size={20}/><Text style={{color:'#493600',flex:1,fontSize:13}}>{t(error||'Allow location updates for your active shipment')}</Text></Pressable></SafeAreaView><LocationDisclosure visible={disclosure} decide={decide}/></>}{children}</BackgroundNoticeLayout.Provider>;
 }

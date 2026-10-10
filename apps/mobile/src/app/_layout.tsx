@@ -5,8 +5,8 @@ import {LanguageProvider} from '../localization/provider';
 import {VisitorProvider} from '../session/visitor-provider';
 import {AccountProvider} from '../session/provider';
 import {ChatAlertProvider} from '../session/chat-alert-provider';
-export default function Layout(){return <LanguageProvider><AccountProvider><BackgroundTracking/><ContentPolicyConsent/><VisitorProvider><ChatAlertProvider>
+export default function Layout(){return <LanguageProvider><AccountProvider><BackgroundTracking><ContentPolicyConsent/><VisitorProvider><ChatAlertProvider>
  <Tabs initialRouteName="(marketplace)" backBehavior="history" tabBar={()=>null} screenOptions={{headerShown:false,popToTopOnBlur:false}}>
   <Tabs.Screen name="(marketplace)"/><Tabs.Screen name="(workspace)"/>
  </Tabs>
-</ChatAlertProvider></VisitorProvider></AccountProvider></LanguageProvider>;}
+</ChatAlertProvider></VisitorProvider></BackgroundTracking></AccountProvider></LanguageProvider>;}

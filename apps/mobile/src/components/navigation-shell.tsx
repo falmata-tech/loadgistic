@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type PropsWithChildren} from 'react';
+import {useContext,useEffect,useRef,useState,type PropsWithChildren} from 'react';
 import {Image,Keyboard,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {router,useNavigation,usePathname,type Href} from 'expo-router';
@@ -12,10 +12,13 @@ import {ErrorText,palette} from './ui';
 import {ExternalButton} from './public-details';
 import {ChatUpdatesButton,useChatUpdates} from '../session/chat-alert-provider';
 import {blockChatReading} from '../session/chat-visibility';
+import {BackgroundNoticeLayout} from './background-notice-layout';
+import {navigationHeaderEdges} from '../location/background-notice';
 
 export function NavigationShell({children}:PropsWithChildren){
  const account=useAccount(),language=useLanguage(),{t}=language,path=usePathname();
  const updates=useChatUpdates();
+ const noticeAbove=useContext(BackgroundNoticeLayout);
  const [menu,setMenu]=useState<'all'|'language'|null>(null),[keyboard,setKeyboard]=useState(false),[signingOut,setSigningOut]=useState(false),[error,setError]=useState('');
  const overlay=useRef({});useEffect(()=>{const source=overlay.current;blockChatReading(source,menu!==null);return()=>blockChatReading(source,false);},[menu]);
  const areas=useNavigation<{navigate:(name:'(marketplace)'|'(workspace)')=>void}>('/');
@@ -28,7 +31,7 @@ export function NavigationShell({children}:PropsWithChildren){
  function navigate(href:string){if(href==='#menu'){open('all');return;}setMenu(null);Keyboard.dismiss();if(path!==href)router.navigate(href as Href);}
  async function signOut(){if(signingOut)return;setSigningOut(true);setError('');try{await account.signOut();setMenu(null);router.replace('/account');}catch{setError(t('Sign-out could not finish. Please try again.'));}finally{setSigningOut(false);}}
  return <View style={styles.root}><StatusBar style="dark"/>
-  <SafeAreaView edges={['top','left','right']} style={styles.headerSafe}><View style={styles.header}>
+  <SafeAreaView edges={navigationHeaderEdges(noticeAbove)} style={styles.headerSafe}><View style={styles.header}>
    {!primary&&<IconButton icon="back" label={t('Back')} onPress={()=>router.canGoBack()?router.back():navigate(workspace?'/account':'/')}/>}
    <Pressable accessibilityRole="button" accessibilityLabel={t(workspace?'Dashboard':'Capacity')} onPress={()=>navigate(workspace?'/account':'/')} style={[styles.brand,member&&{flexGrow:0,flexShrink:0,flexBasis:36,width:36,minWidth:36}]}><Image source={require('../../assets/loadgistic-icon.png')} style={styles.logo}/></Pressable>
    {member&&<View style={styles.workspaceIdentity}><Text numberOfLines={1} style={styles.workspaceTitle}>{workspace?(account.session!.user.organizationName||account.session!.user.businessName||account.session!.user.name):t('Loadgistic')}</Text>{workspace&&<Text numberOfLines={1} style={styles.roleLabel}>{t(workspaceRoleLabel(account.session))}</Text>}</View>}

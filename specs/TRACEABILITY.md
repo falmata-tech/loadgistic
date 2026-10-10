@@ -1415,6 +1415,63 @@ artifact acceptance remain pending; no permission grant/video is inferred. Exact
 private test screenshots stay under ignored .local. No customer record or human
 consent backfill, provider setting, signing or hosted schema changed.
 
+Subsequent October 10 installed development-preview verification:
+73df3680-6ac5-4e66-ab42-caa6f66c0508 is finished, signature/package checked and
+installed in place only on the owned emulator, preserving data and the existing
+signer. Native archive e57050e and current local Metro JS are distinguished from
+the standalone code-4 release. Real normal review login reaches driver Home;
+the notice action y=157–252 is below the reported 136-pixel status inset, opens
+the real native disclosure and declines to a usable workspace without an OS
+prompt visible. Normal Sign out returns to guest login with the old notice absent.
+The actual preview exposed duplicate header padding; the in-flow header consumes
+the top inset only when the notice has not already consumed it, with modal safe
+areas unchanged. Header actions move up 136 pixels. Actual captures:
+.local/play-native-notice-driver-final.png,
+.local/play-native-notice-disclosure-final.png,
+.local/play-native-notice-guest-final.png. A second normal synthetic sign-in
+accepts disclosure before Android's actual foreground prompt and Allow all the
+time settings. The actual location service remains foreground-active after
+normal Android Home. Shipment UI reads back a current-day location timestamp;
+background origin is not inferred. Normal Sign out returns to guest login with
+no prior banner or active foreground/start-requested location service. Expo's
+inactive bound-service record is distinguished from active collection after a
+controlled harness diagnostic against its unregister implementation.
+No adb permission grant, human consent backfill or other app interaction occurs.
+Owner review, qualifying video, physical GPS and replacement standalone
+verification remain pending.
+
+FEAT-PLY-001 AC5 / NR-25: `android-release-permissions.test.mjs` adds five passing
+checks for required shipment/alert preservation, inherited unused grants, debug/
+foreign artifacts, both compiled manifest formats and malformed input.
+`verify-android-permissions.mjs` inspects an exact APK through aapt2 or exact AAB
+through bundletool, binding a passing receipt to its artifact SHA-256. Both prior
+code-4 artifacts fail UNUSED_RELEASE_PERMISSIONS as expected; next-build config
+blocks the overlay permission. Twenty combined focused tests, mobile typecheck/
+lint and spec/source checks pass. No rebuilt standalone pass or remote release
+gate is inferred, and the existing web/backend/Play release remain unchanged.
+
+FEAT-PLY-001 AC1 / FEAT-MOB-001 / NR-27: the native shipment screen's obsolete
+leave/lock-pause promise is replaced by the existing five-language explanation.
+`tracking-location-copy.test.mjs` detects the original contradiction and requires
+the translated replacement. Actual native capture
+.local/play-native-notice-tracking-explanation.png excludes recipient addresses;
+.local/play-native-notice-guest-after-service.png records normal cleanup.
+Owner review and a standalone replacement remain pending.
+
+FEAT-PLY-001 AC5, October 10 owner-requested store presentation: source artwork,
+brand-overlay SVG, listing-en-US.json and the bounded export script are under
+resources/marketing/google-play/. The latest owner direction replaces the
+text-heavy draft with striking freight artwork and only the brand name. Built-in
+imagegen creation and its exact prompt retain explicit AI-assisted provenance and
+a proposed AI label in artwork-provenance.json. Local
+exports pass exact 512 × 512 RGBA icon/1024 × 500 RGB feature-graphic checks;
+name/short/full lengths 10/76/1640 and image descriptions ≤140 pass. The local
+3135 review page passes desktop/phone no-overflow checks. Actual 1080 × 1920
+development-preview Capacity, selected-signal and private-entry drafts retain
+native/export hashes and exact RGB equality during opaque PNG conversion.
+Final standalone screenshots, owner approval and Console replacement remain
+pending; the existing saved listing is unchanged.
+
 October 10 subsequent FEAT-PLY-001 operational evidence supersedes the connection
 checkpoint: exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED for code 4;
 internal 4700942405023499701/release 1 is Active/available/Not reviewed. Existing

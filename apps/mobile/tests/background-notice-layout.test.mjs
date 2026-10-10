@@ -20,7 +20,12 @@ function unprotectedActions(source) {
   if(opening?.tagName.getText(file)==='Pressable'&&opening.attributes.properties.some(p=>ts.isJsxAttribute(p)&&p.name.getText(file)==='onPress')){
    let parent=node.parent,protectedAction=false;
    while(parent){
-    if(ts.isJsxElement(parent)&&safeViews.has(parent.openingElement.tagName.getText(file))){protectedAction=true;break;}
+    if(ts.isJsxElement(parent)&&safeViews.has(parent.openingElement.tagName.getText(file))){
+     const edges=parent.openingElement.attributes.properties.find(p=>ts.isJsxAttribute(p)&&p.name.getText(file)==='edges');
+     const expression=edges?.initializer&&ts.isJsxExpression(edges.initializer)?edges.initializer.expression:null;
+     // SafeAreaView defaults to all edges; a bottom-only inset does not fix NR-26.
+     if(!edges||(expression&&ts.isArrayLiteralExpression(expression)&&expression.elements.some(e=>ts.isStringLiteral(e)&&e.text==='top'))){protectedAction=true;break;}
+    }
     parent=parent.parent;
    }
    if(!protectedAction)issues.push(file.getLineAndCharacterOfPosition(node.getStart(file)).line+1);
@@ -35,6 +40,8 @@ test('a global permission action requires its own native safe-area protection',(
  assert.equal(unprotectedActions('<View><Pressable onPress={request}/></View>').length,1);
  assert.equal(unprotectedActions(importSafe+'<><SafeAreaView><Text>Header</Text></SafeAreaView><Pressable onPress={request}/></>').length,1);
  assert.equal(unprotectedActions("import {SafeAreaView} from 'react-native';<SafeAreaView><Pressable onPress={request}/></SafeAreaView>").length,1);
+ assert.equal(unprotectedActions(importSafe+'<SafeAreaView edges={["bottom"]}><Pressable onPress={request}/></SafeAreaView>').length,1);
+ assert.deepEqual(unprotectedActions(importSafe+'<SafeAreaView><Pressable onPress={request}/></SafeAreaView>'),[]);
  assert.deepEqual(unprotectedActions(importSafe+'<SafeAreaView edges={["top","left","right"]}><Pressable onPress={request}/></SafeAreaView>'),[]);
 });
 

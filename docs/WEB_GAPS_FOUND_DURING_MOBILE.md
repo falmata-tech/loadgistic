@@ -480,3 +480,18 @@ release evidence. Preserve unresolved device acceptance and retained-history
 limits. Do not restore obsolete behavior or infer customer-erasure authority
 from old prose. Current release status is in PROGRESS/MOBILE_IMPLEMENTATION and
 feature specs; store declarations still need owner/provider attestation.
+
+## WEB-MOB-019 — Private-capacity entry needs a short-screen native review
+
+October 10 store-capture observation: the actual 1080 × 1920 Android development
+preview shows the bottom of the Send email code button clipped at the map edge,
+above the transport-chat control. The source capture is retained privately as
+.local/play-store-20261010/draft-05-private-capacity-1080x1920.png. No email was
+submitted, and no authentication/backend failure is inferred from this image.
+This is a native presentation observation, not a reproduced web defect.
+
+Next: reproduce on the final standalone candidate, check scrolling and keyboard
+clearance, and ensure the complete entry action remains visible and reachable on
+short screens. Use actual UI and review any adjustment before release. Keep this
+optional screenshot out of the final store set until that review passes; the
+four core-workflow screenshots remain the required minimum for this package.

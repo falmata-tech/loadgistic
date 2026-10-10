@@ -33,6 +33,8 @@ ten-address Loadgistic closed testers list and Ethiopia/US eligibility. The owne
 supplied the addresses; exact-set verification and an independent reload confirm
 the count and Alpha-only association. Internal owner eligibility is unchanged.
 Two more real testers are needed; no invitation email or enrollment is inferred.
+Those additional testers are required for production eligibility; Google permits
+starting closed testing after app setup before the roster reaches twelve.
 Privacy/private reviewers/IARC/Data safety and other
 source-backed metadata are saved; listing assets/copy stay Draft pending the
 specific AI-label reply after automatic review rejected incomplete provenance.
@@ -50,10 +52,14 @@ sharing with authorized shipment parties, use only for active shipments and OS
 permission controls before any location permission request or background task
 And the deliberate location-sharing action is visible and touchable below native
 status-bar/notch insets, including when it appears above the app's navigation
+And the notice and navigation consume the top inset once; independent modal
+windows retain their own safe-area protection
 And signing out or changing accounts immediately hides the prior actor's notice;
 polling or an old pending request cannot expose it to a guest or another actor
 And declining leaves other app functions available without starting collection
 And previously granted OS permission alone does not count as disclosure consent
+And shipment-screen instructions do not promise that locking the phone or leaving
+the screen stops an accepted active shipment's background location reporting
 And account changes, sign-out, revoked authority and completed tracking stop or
 revalidate collection without transferring consent or leases to another account.
 
@@ -106,9 +112,26 @@ contact, deletion/retention, providers and authorized location sharing consisten
 And fixed UI text is covered in all five supported languages
 And app-content/Data Safety answers derive from inspected runtime/provider behavior
 And store artwork uses the existing approved identity and real app screenshots
+And feature artwork prioritizes a striking freight visual with only the brand
+name as text, following the owner's October 10 direction; it adds no invented
+app interface, ratings, availability or transport guarantees
+And the reviewed phone listing shows at least four actual core-workflow screens
+at 1080 × 1920 with no developer overlays, credentials or private contact details
+And a 512 × 512 PNG icon and 1024 × 500 opaque feature graphic meet the current
+Google format limits, with short accessible descriptions and source-backed copy
+And each asset retains its source, exact hash, creation/AI provenance and review
+state; a development capture is not presented as a final standalone screenshot
+And prelaunch TikTok/Instagram materials use the same approved identity, short
+copy and genuine feature claims, distinguishing web availability, Android testing
+and future public Play availability without an invented launch date or endorsement
 And an Android demonstration shows disclosure, permission and active tracking
 And a new exact signed APK/AAB includes the verified changes with an unused Play
 version code and preserved signing before Console upload
+And the standalone artifact's final merged manifest excludes unused overlay,
+broad photo/video storage, microphone and camera permissions, including those
+inherited from dependencies; shipment-location and notification permissions remain
+And an artifact with an unexpected package, debug runtime or missing shipment
+permissions fails the release check; developer tooling is checked separately
 And owner account/type, signing, reviewer credentials and Console declarations
 remain explicitly pending until their actual evidence exists.
 
@@ -124,6 +147,13 @@ Additional projection/copy/manifest checks: `tests/sql/public-capacity-policy-sc
 `apps/mobile/tests/play-notification-consent.test.mjs`.
 Native notice regressions: `apps/mobile/tests/background-notice-layout.test.mjs`
 and `apps/mobile/tests/background-notice-scope.test.mjs`.
+Privacy instruction regression: `apps/mobile/tests/tracking-location-copy.test.mjs`
+rejects the earlier screen/lock-pause promise and verifies the existing translated
+shipment-sharing explanation (NR-27).
+Final permission regression: `apps/mobile/tests/android-release-permissions.test.mjs`;
+run `apps/mobile/scripts/verify-android-permissions.mjs` on the exact APK and AAB
+with the installed Android SDK aapt2 or reviewed bundletool. The check consumes
+the compiled manifest, never substitutes app.json for artifact evidence (NR-25).
 An installed-device hierarchy must additionally place the actual action below the
 reported status-bar inset and show disclosure before the Android runtime prompt;
 static layout and browser checks do not replace that native acceptance.

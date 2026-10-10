@@ -546,7 +546,11 @@ When its status is Going to pickup or On the way
 Then approximate location refreshes at the existing ten-minute cadence while the
 screen is foregrounded. Blur/background invalidates late GPS results, requests do
 not overlap, and terminal/reassigned/revoked shipments cannot continue publishing.
-The screen states this behavior; no background service or precise location is sent.
+This describes the screen's additional foreground refresh, not the agreed
+shipment's whole location lifecycle. FEAT-PLY-001 governs the consented native
+background service independently of this screen. Its instructions must not
+promise that leaving or locking stops active shipment sharing. Precise coordinates
+remain on-device; authorized parties receive only the selected uncertainty area.
 Guests see the reported uncertainty area and its age, never an exact truck pin.
 
 Given an owner chooses or removes their native transporter portrait

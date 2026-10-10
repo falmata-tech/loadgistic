@@ -29,6 +29,7 @@ in-place test update. That direct APK test does not count as Play closed enrollm
 | --- | --- |
 | Web/backend | Runtime 9feab2d, Netlify 6ac99d110f1f577818c9f7c9, ledger 136, 80 live checks; CI 38012117505 at 068ac35 passes all eight jobs |
 | Android artifacts | APK 9169da7e-dd2f-40b1-87b0-53fee20e3b56; AAB edd8cf91-446d-477e-8bb4-e00946fa7a57; 1.0.3/code 4, existing native source 986d07d |
+| Native repair preview | Development build 73df3680-6ac5-4e66-ab42-caa6f66c0508 installed in place on the owned emulator; actual disclosure decline/accept and Android permissions work, foreground location service continues after Android Home and stops after normal sign-out; owner review and qualifying video pending |
 | Expo/Google access | Dedicated publisher Active, Admin on Loadgistic only, zero account-wide grants; exact EAS Submit key connected; FCM/signing unchanged |
 | Internal release | Submission 066f028f-0cb0-4286-9830-40815264e11e FINISHED; track 4700942405023499701/release 1 Active, available to internal testers, Not reviewed |
 | Signing | Existing Google-managed signer In use; uploaded certificate matches the EAS signer; no signing change/private export |
@@ -36,7 +37,7 @@ in-place test update. That direct APK test does not count as Play closed enrollm
 | Policy metadata | Privacy, ads/ad-ID, government, financial, health, adult audience, IARC and Data safety saved, not submitted for Google review |
 | Rating | Everyone / PEGI 3; Users Interact and Shares Location; professional target audience stays 18+ |
 | Data safety | 16 inspected types, HTTPS and live deletion link; optional guest/manual data; service-provider/user-directed transfers use documented Google exceptions |
-| Listing | English copy, existing icon/feature graphic and two unmodified code-4 native screenshots saved as Draft; AI-label decision pending |
+| Listing | Existing English listing and two code-4 screenshots remain Draft; replacement local artwork/copy and real native screenshot drafts are prepared for owner review |
 | Category/contact | App / Business saved; approved marketvision.tech@gmail.com and https://loadgistic.com contact metadata published; phone blank |
 | Closed Alpha | 4699446366767369053/release 1, 1.0.3 (4) — closed test, Draft; existing bundle reused, separate 10-address Loadgistic closed testers list and Ethiopia/US eligibility saved |
 
@@ -44,35 +45,50 @@ Exact AAB: `.local/loadgistic-1.0.3-play-internal.aab`, 92,044,826 bytes,
 SHA-256 `c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef`.
 APK: `.local/loadgistic-1.0.3-android.apk`, 153,576,371 bytes,
 SHA-256 `2a6d6c9354ed0ccd7ce4e29a43bc4d7ae65fed37917f4cfd0aa0ea9fbbb60b73`.
-Manifest/signature/secret/production-origin and 16 KB structural checks pass;
-physical 16 KB, closed-phone alerts and moving/background GPS acceptance remain
+Package/signature/secret/production-origin and 16 KB structural checks pass;
+the newly added final permission gate rejects both code-4 artifacts for their
+unused inherited overlay permission (NR-25). Local configuration now blocks it;
+the next standalone candidate must pass this check on its exact compiled files.
+Physical 16 KB, closed-phone alerts and moving/background GPS acceptance remain
 separate. Do not submit historical code 3 or reupload code 4.
 
 ## Remaining closed-test prerequisites
 
 The owner delegates completion independently while busy. Keep the prepared Alpha
-release as Draft until the following evidence exists; public-production Play
-publication and customer erasure are outside this delegation.
+release as Draft until its listing, permission demonstration and replacement
+artifact pass the applicable review gates. Additional tester recruitment proceeds
+alongside release preparation; public-production Play publication and customer
+erasure are outside this delegation.
 
-1. **Artwork decision:** the exact question about labeling the prepared feature
-   graphic as AI-assisted is pending. Automatic approval review rejected that
-   declaration because recorded provenance did not explicitly establish AI
-   involvement. The two real screenshots are unmodified. Do not select another
-   label merely to bypass the rejection. See the actual asset draft/owner question.
+1. **Artwork review:** automatic approval review rejected the original graphic's
+   proposed AI declaration because its recorded provenance did not establish AI
+   involvement. That original draft remains unchanged. A new, separately authored
+   composition now records its actual Codex authorship, source and hash, with a
+   proposed AI label on. Review that concrete replacement at
+   http://127.0.0.1:3135 before replacing the listing. Do not change the original
+   declaration merely to bypass its rejection.
 2. **Android permission video:** Google requires a real walkthrough for background
    location and the location foreground service. The exact 293-character purpose
    and 471-character shipment feature are prepared in protected
    `.local/play-20261010-location-permission-plan.json`. The selected service case
    is user-initiated location sharing. No invented/public placeholder video URL is
    entered. Neither form is claimed complete.
+   The repaired banner and decline flow now work in the Android development
+   preview. Review its actual layout before full release gates; a replacement
+   standalone binary with an unused Play code, manifest verification and actual
+   qualifying disclosure/permission/foreground-service footage remains required. A Metro preview is
+   not the already distributed standalone code-4 app.
 3. **Real testers:** the owner's ten unique Google-account addresses are saved in
    **Loadgistic closed testers**, selected only for Alpha. A reload confirms the
    exact count and selection; the separate two-account internal owner list remains
-   unchanged. Two more actual testers are needed. This app's Dashboard requires
+   unchanged. The owner is finding two more actual testers. This app's Dashboard requires
    at least 12 testers continuously opted in for 14 days; currently 0 are opted in.
    Eligibility is not enrollment. No invitation email was sent; contact details
    stay in protected ignored files, not Git. Gmail aliases do not establish
-   distinct participants.
+   distinct participants. Google permits starting closed testing after app setup;
+   12 continuous 14-day participants are required when applying for production
+   access, not before starting the closed release. Do not delay an otherwise
+   approved test release solely while awaiting the extra addresses.
 4. **Google review and enrollment:** complete the missing declarations/listing,
    preview the prepared Alpha release and send the exact test release for Google
    review. After approval/availability, share its actual opt-in link with the
@@ -96,12 +112,34 @@ public/unlisted YouTube URL only after checking the actual footage. If no agreed
 shipment is available, stop and inspect the demo scope rather than create a real
 shipment, bypass permissions or fake a screenshot.
 
-The owned Loadgistic_Pixel_API_35/emulator-5580 runs code 4/public Capacity, but
-October 10 screenshot evidence confirms **System UI isn't responding**. One
-bounded recovery failed; only that emulator was stopped with app/data preserved.
-No actual disclosure/permission/active-Tracking video was obtained. A phone test
+Earlier October 10 code-4 capture hit a System UI ANR; its data was preserved.
+The owned Loadgistic_Pixel_API_35/emulator-5580 now runs the installed development
+preview against native Metro 8087. Its actual company-driver review login reaches
+Home, the repaired banner is below the status bar, and its disclosure/decline flow
+works. A second normal synthetic login accepts the actual disclosure, foreground
+prompt and Android Allow all the time settings. The location foreground service
+remains active after normal Android Home. The shipment UI reads back a current-day
+location timestamp; its source is not proven to be a background GPS post. Normal
+Sign out then removes the prior banner and stops foreground/start-requested
+location-service activity; an inactive Expo bound-service record may remain.
+The header no longer duplicates the notice's status-bar inset. Obsolete screen/
+lock-pause text is replaced by the existing translated sharing explanation.
+All 20 focused tests, mobile typecheck and lint pass. Actual captures are sent
+for owner review; no qualifying video or physical moving-GPS test is claimed.
+A phone test
 through Play needs no USB debugging; USB is optional for agent-assisted capture.
 Local previews remain http://127.0.0.1:3100 and http://localhost:8084.
+
+Final standalone permission inspection (run from the Loadgistic root):
+
+```bash
+node apps/mobile/scripts/verify-android-permissions.mjs /exact/candidate.apk --aapt2 /exact/Android/sdk/build-tools/36.0.0/aapt2
+node apps/mobile/scripts/verify-android-permissions.mjs /exact/candidate.aab --bundletool /exact/bundletool.jar --java /exact/java
+```
+
+The check is read-only, binds its receipt to the artifact SHA-256, checks only
+com.loadgistic.app and prints permission counts/failure classes. It does not
+replace signature, version-code, runtime, archive or device acceptance gates.
 
 Sanitized protected receipts: `.local/play-20261010-submit-receipt.json`,
 `internal-rollout-receipt.json`, `alpha-setup-receipt.json`, `content-rating-receipt.json`,
@@ -113,6 +151,52 @@ Firebase's notification key is a separate unchanged credential.
 
 The following reference/build sections preserve earlier preparation. Their
 unverified checkpoint statements are historical; this current table controls.
+
+## Store presentation package
+
+Source artwork and English copy are under resources/marketing/google-play/.
+The existing approved identity remains the app icon. The new feature graphic uses
+a striking freight truck and gold-lit roadway in Loadgistic colors, with only the
+brand name as text, following the owner's October 10 direction. It is an illustration,
+not a screenshot or a promise of available inventory. AI-assisted authorship is
+recorded for this new composition. The source JSON also provides accessible image
+descriptions, the screenshot order and draft next-binary release notes.
+
+Prepared exports are in protected .local/play-store-20261010/: icon-512.png
+(512 × 512, 32-bit PNG, 21,489 bytes) and feature-graphic-1024x500.png
+(1024 × 500, opaque 24-bit PNG, 984,512 bytes). Copy lengths are 10/76/1640 for
+name/short/full; all asset descriptions fit 140 characters. Actual export hashes
+and source provenance are recorded in asset-evidence.json. The exact imagegen
+prompt is retained in artwork-provenance.json. Rebuild these two exports with
+`node resources/marketing/google-play/export-assets.mjs`; it checks identity,
+copy limits, accessible-description lengths, dimensions, channels and file sizes. The local review page
+at http://127.0.0.1:3135 passes desktop/phone checks without horizontal overflow.
+
+Use this phone screenshot sequence: public Capacity, a selected truck's signals,
+driver Home, agreed Tracking, private sharing and fleet management. At least four
+real 1080 × 1920 screens should demonstrate the actual app. Keep the first three
+focused on its interface. Do not add fabricated ratings, prices, download counts,
+testimonials, device frames or controls. Final captures must come from the verified
+replacement standalone version and retain source/build and image hashes.
+
+Current screenshot drafts are actual Android development-preview captures.
+Developer tools are hidden through their normal menu setting, private-email
+guards run before capture, and opaque RGBA captures are losslessly encoded to
+24-bit PNG with exact RGB equality checked. The emulator's temporary display
+size must be restored after the capture session; the receipt records any
+unresponsive-emulator cleanup still pending. No screenshot is cropped or stretched.
+These drafts do not satisfy the final standalone or Android permission-video gate.
+[Google preview-asset guidance](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en).
+
+Keep the permission demonstration separate from promotional screenshots. Record
+the real first consent/permission flow using an authorized synthetic actor, active
+Tracking, the location foreground notification and approximate location readback.
+Use actual OS controls if resetting test permissions is needed; never backfill
+consent, grant through adb or edit a fake permission sequence into the footage.
+Inspect the recording for credentials/contacts before choosing an accessible
+unlisted/public video URL. An optional marketing preview video is not required to
+start closed testing and must not delay a release whose required policy footage
+and other gates are complete.
 
 ## Build target and signing decision
 

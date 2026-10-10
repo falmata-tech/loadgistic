@@ -753,8 +753,15 @@ and add a negative final-manifest check with the controlling mobile/Play specs.
 A dependency upgrade can reintroduce permissions, so inspect the artifact rather
 than trusting app.json alone. Keep permitted developer tooling separate from the
 standalone release and preserve legitimate Tracking/notification functionality.
-This guard is recorded, not claimed installed. Do not rebuild or waive a release
-gate merely to hide the finding; verify the next immutable candidate normally.
+The local configuration now blocks android.permission.SYSTEM_ALERT_WINDOW.
+`apps/mobile/scripts/verify-android-permissions.mjs` reads the actual compiled APK
+or AAB manifest and fails for an unrelated package, a debug artifact, inherited
+unused permissions or missing shipment/notification permissions. Five focused
+tests cover both compiled formats, malformed input, SDK-scoped additions and
+configuration preservation; the existing code-4 APK and AAB both fail this guard
+as expected. No replacement standalone artifact has passed it yet. Do not rebuild
+or waive a release gate merely to hide the finding; verify the next immutable
+candidate normally. This local guard does not change already distributed files.
 
 Evidence: apps/mobile/android/app/src/main/AndroidManifest.xml:12; current code-4
 manifest inspection. Minification is disabled by the current Gradle defaults with
@@ -784,7 +791,42 @@ accept paths and disclosure-before-permission order. Keep one tracking controlle
 never grant permissions through adb or submit a browser/mock walkthrough as an
 Android permission demonstration. Owner: native/Play release maintainer. The local
 SafeAreaView repair and actor-bound notice visibility pass the prior-source
-negative layout check, consent/scope/native-text regressions (13/13), typecheck and
-lint. The guard immediately excludes guests and a different actor, even if old
-notice state or a request result survives. New-binary/device acceptance and
-owner visual review remain pending; the existing code-4 test release is unchanged.
+negative layout check, consent/scope/manifest/native-text/privacy regressions (20/20),
+typecheck and lint. The guard immediately excludes guests and a different actor,
+even if old notice state or a request result survives. The installed development
+preview places the action at y=157–252, below the 136-pixel status inset. Its real
+disclosure opens; declining returns to usable driver Home without an OS prompt
+visible. Normal native sign-out returns to guest login with the old banner absent.
+Actual preview also exposed duplicate header padding: a boolean context shared
+only with the in-flow navigation header removes that extra 136 pixels while modal
+windows retain their original safe areas. A second normal synthetic sign-in
+accepts disclosure before the actual Android foreground prompt and background
+permission settings. The service is foreground-active in app and after Android
+Home; normal sign-out returns to guest login with no active foreground/start-
+requested location service. An inactive Expo bound-service record remains:
+requiring its total absence was a harness mistake, diagnosed against the installed
+unregister/stop implementation, not a reason to modify product behavior.
+Focused phone screenshots are sent for owner review. Owner acceptance, qualifying
+video, physical GPS and a replacement standalone artifact remain pending; the
+existing code-4 test release is unchanged. No adb permission grants were used.
+
+## NR-27 — Privacy instructions describe an obsolete collection lifecycle
+
+Cause: the shipment screen retained an earlier foreground-only explanation after
+the agreed, consented background service was introduced. It said updates pause
+when leaving or locking, while the actual synthetic Android test confirms the
+location foreground service continues when the app is backgrounded. The global
+disclosure described that correctly; the task's own instructions contradicted it.
+
+Control: shipment privacy copy must follow the effective collection lifecycle,
+distinguishing screen refresh from independently consented background reporting.
+The local screen now reuses the existing five-language explanation that approximate
+sharing continues until unloading approval, with no new permission or collection
+behavior. FEAT-MOB-001 clarifies the foreground/background distinction;
+FEAT-PLY-001 AC1 and `tracking-location-copy.test.mjs` reject the original pause
+promise and require the existing translated explanation. Twenty combined focused
+tests pass. The actual corrected native screen is captured in protected
+.local/play-native-notice-tracking-explanation.png without recipient addresses.
+Owner: native Tracking maintainer. Owner review and replacement standalone
+release evidence remain required; no Google video or
+physical moving-location acceptance is inferred from a running service.

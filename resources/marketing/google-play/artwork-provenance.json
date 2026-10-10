@@ -1,0 +1,11 @@
+{
+  "createdOn": "2026-10-10",
+  "tool": "built-in imagegen",
+  "request": "Striking, enticing Google Play graphics with minimal text.",
+  "prompt": "Use case: ads-marketing.\nAsset type: premium Google Play feature-graphic artwork for Loadgistic, a road freight capacity and shipment tracking app.\nPrimary request: striking, enticing, sophisticated freight artwork with minimal text. Create the artwork only, with NO letters, logos, words, numbers, interface screenshots, phone frames or watermarks. The existing Loadgistic identity will be placed separately.\nWide landscape composition approximately 2.048:1, designed to export at 1024x500. A beautifully detailed modern white cab-over heavy freight truck with a deep teal flatbed and a short shipping container occupies the right two-thirds, viewed from an energetic elevated front three-quarter angle. The wheels, exposed flatbed and half-length container are clearly realistic. A bold curving roadway leads into the truck from the lower middle, subtly suggesting transport connections. Refined glossy 3D editorial illustration, believable vehicle engineering, no cartoon toy look. Dark navy backdrop with deep teal atmosphere, crisp warm gold accents on the roadway, restrained luminous route nodes, polished directional studio light, generous shadow depth and tactile materials. Left third remains uncluttered dark navy negative space for an existing small brand wordmark. Keep all important vehicle parts within the central safe region with breathable margins. Visually rich yet focused, strong silhouette and visual hierarchy. No fake map geography, no metrics, no people, no generic corporate clip art, no extra prose. Decorative artwork, not a factual vehicle photo or app screenshot.",
+  "generatedFile": "feature-artwork.png",
+  "role": "Decorative freight illustration, not a factual photo or app screenshot",
+  "branding": "Existing public/icon.svg, unchanged; name rendered in feature-graphic.svg",
+  "ownerApproved": true,
+  "approval": "Owner instructed finalization on 2026-10-10 after the concrete graphic/native review."
+}
