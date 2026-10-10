@@ -1393,3 +1393,9 @@ The read-only com.loadgistic.app check returns 403 / SERVICE_DISABLED; API
 enablement, actual Play app permission/signing and upload/rollout remain pending.
 Protected plan/receipt and sanitized preflight evidence are under
 `.local/play-20261010-*`; key bytes remain out of source/builds/logs.
+Subsequent owner-delegated Chrome setup verifies API enablement and sends one
+exact app-only publisher invitation. Saved publisher status is Active, with one
+Loadgistic app grant and zero account-wide permissions; Save changes is disabled.
+The API lookup returns 404 for the requested version, without permission denial.
+Protected invitation review/receipt records these results. No Play upload,
+signing enrollment, store acceptance or tester clock is inferred.

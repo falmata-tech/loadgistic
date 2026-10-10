@@ -1,3 +1,22 @@
+## October 10 delegated Chrome API/Play permission setup — completed
+
+The owner explicitly asked the agent to take over Chrome for the API/Play
+invitation steps. The exact loadgistic-f082a API page already shows Manage; no
+API configuration write is needed. The verified Chrome owner is
+marketvision.tech@gmail.com under developer 5256539403314542898.
+The draft and confirmation explicitly target only
+loadgistic-play-publisher@loadgistic-f082a.iam.gserviceaccount.com and Loadgistic.
+One invitation is sent after confirming the approved app-only Admin role and
+zero account-wide grants. The publisher is Active; its saved details contain
+one Loadgistic app grant and zero checked account permissions, with no unsaved
+changes. OAuth succeeds and the version-4 lookup returns 404 rather than the
+previous permission denial. No Play artifact upload or release is inferred.
+The exact review/result is protected in `.local/play-20261010-console-invitation-*`.
+
+No unrelated app, Firebase key, signing credential or browser profile is changed;
+no cookies/passwords or private signing material are extracted. Future public
+publication and signing changes still require their established separate scope.
+
 ## October 10 delegated Play publisher connection — completed
 
 The owner chose the existing Loadgistic Cloud/Firebase project `loadgistic-f082a`

@@ -36,17 +36,24 @@ October 10: the owner supplied the dedicated publisher
 Loadgistic Firebase/Cloud project. The validated key is protected at
 `.local/google-play-publisher.json` and assigned to this app's EAS Submit field.
 Postchecks confirm FCM and signing are unchanged. Google authentication succeeds,
-but the exact-package read returns 403 / SERVICE_DISABLED: Android Developer API
-enablement is pending. Play app permission and signing enrollment are not yet
-verified. No Play upload or testing rollout has occurred. Follow FEAT-PLY-001
+and Android Developer API enablement is verified in the exact Cloud project.
+At the owner's explicit request, the agent used Chrome to send the exact
+publisher invitation with Admin only on Loadgistic. The publisher is Active;
+saved scope has one app and zero account-wide permissions. The version-4 API
+lookup now returns 404 instead of permission denial; an available Play artifact
+is not inferred. Signing enrollment remains unverified. No Play upload or
+testing rollout has occurred. Follow FEAT-PLY-001
 and MOBILE_IMPLEMENTATION's ordered checklist.
 Protected artifact receipts remain in `.local`; private credentials never belong
 in this document, source, logs or builds.
 
-## Next owner step — enable the API and grant Play access
+## API and publisher access — completed; submission checks remain
 
 The APK can be tested now using the build link below. Expo's dedicated publishing
 key is connected; Firebase's notification key is a separate unchanged credential.
+API enablement and the exact publisher invitation below are complete. The owner
+does not need to repeat them. Remaining work is signing/initialization, exact
+artifact submission, declarations and actual tester rollout.
 
 1. Open the [Android Developer API page for Loadgistic](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=loadgistic-f082a)
    and click **Enable**. The existing `loadgistic-f082a` project is sufficient;
@@ -58,7 +65,8 @@ key is connected; Firebase's notification key is a separate unchanged credential
    permissions** empty, and send the invitation. This temporary app-only Admin
    choice is owner-approved; reduce it after setup.
 3. Once the API and app permission are connected, the agent can verify the exact
-   package/account with the key already assigned to EAS Submit.
+   package/account with the key already assigned to EAS Submit. This connection
+   is now verified, with no account-wide or other-app grant.
    The initial upload stays internal/draft. Signing enrollment and any Console
    attestation still need their actual owner/provider evidence.
 4. For new personal accounts requiring closed testing, prepare at least 12
@@ -135,21 +143,22 @@ build is edd8cf91-446d-477e-8bb4-e00946fa7a57 (runtime source 986d07d); its fina
 artifact inspection passes; the exact file/hash is recorded above. The owner uses
 the existing **loadgistic-f082a** Cloud project with a separate
 `loadgistic-play-publisher` service account. No Cloud IAM role was required or
-changed by the agent.
-Enable Google Play Android Developer API. The owner explicitly selected temporary
+changed by the agent. Google Play Android Developer API is enabled.
+The owner explicitly selected temporary
 **app-level Admin for Loadgistic only**, connecting the key to Expo's Submit field
 for com.loadgistic.app. Firebase FCM remains a separate unchanged credential.
 
 The owner has created the Console entry and supplied the dedicated publishing
 key, which is now assigned in EAS's Android `com.loadgistic.app` **Google service
-account key for EAS Submit** setting. Remaining owner connection: enable the
-Android Developer API, grant that account access only to this Play app, and
-enroll/verify its signing path. The existing Firebase FCM binding is unchanged.
+account key for EAS Submit** setting. Android Developer API enablement and
+app-only access are complete. Remaining: enroll/verify its signing path before
+actual submission.
+The existing Firebase FCM binding is unchanged.
 The protected key remains outside source, app environments, build uploads and logs.
 
 The existing Expo login can operate this app with the publishing credential
-connected. There is no verified Play Console app permission in
-this workspace, and plugin discovery found no suitable publishing connector.
+connected. Play Console app-only permission is verified through the owner's
+explicitly delegated Chrome session; no new connector was required.
 For the new policy release, select only immutable build
 `edd8cf91-446d-477e-8bb4-e00946fa7a57` after the matching rollout gates pass.
 Never submit the historical code-3 ID as this release or select `--latest`.
@@ -404,9 +413,9 @@ Remaining manual Console work:
    or change package com.loadgistic.app. Keep App / Free / English (United States).
 2. Complete the deliberate signing choice above. Use the new verified AAB for
    any required first Console initialization, not the old policy-incomplete file.
-3. Connect a separate app-scoped EAS Submit service account for internal/draft
-   uploads. Firebase notification credentials are a different purpose and stay
-   unchanged. Use the approved temporary Loadgistic app-only Admin permission;
+3. Completed October 10: the separate app-scoped EAS Submit service account is
+   connected for internal/draft uploads. Firebase notification credentials stay
+   unchanged. The approved temporary Loadgistic app-only Admin role is verified;
    account-wide access and public production rollout remain outside scope.
 4. In App content, enter the published privacy and deletion URLs, the supplied
    reusable demo review credentials, inspected Data Safety/content-rating answers

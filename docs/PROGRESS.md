@@ -1,14 +1,17 @@
-## October 10 Play publishing connection — Expo complete; Google API pending
+## October 10 Play publishing connection — API, Expo and app-only access verified
 
 The owner supplied the dedicated `loadgistic-play-publisher` key from the existing
 `loadgistic-f082a` project. It is validated and stored only in protected ignored
 `.local/google-play-publisher.json`. Exact Expo account/project/package checks
 precede the Submit-only assignment; postchecks preserve the original FCM
 association and signing fingerprints. The supplied key authenticates successfully.
-The exact-package read is denied with SERVICE_DISABLED because the Android
-Developer API is not enabled. Play app permission and signing enrollment remain
-unverified; no Play upload, test-track rollout or closed-test clock is claimed.
-The current API/invitation steps are in operations/GOOGLE_PLAY_SETUP.md.
+The owner then explicitly delegated the two Chrome setup steps. The exact Cloud
+API is already enabled; the agent sends one invitation and confirms the publisher
+is Active with Admin on Loadgistic only. Saved access contains one app and zero
+account-wide permissions, with no unsaved changes. The bounded API lookup now
+returns 404 for version 4 instead of its previous permission denial. Signing
+enrollment/initialization remain unverified; no Play upload, test-track rollout
+or closed-test clock is claimed. Receipt is protected under `.local`.
 
 ## October 9 Play policy release — web and Android testing available
 
