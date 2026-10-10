@@ -31,38 +31,37 @@ are verified on the owned Loadgistic emulator. Its System UI freezes prevent
 claiming every native workflow passed; physical background-location, closed-phone
 alerts and 16 KB-device acceptance remain separate.
 
-The dedicated Play publisher has not been supplied at
-`.local/google-play-publisher.json`; the EAS Submit binding is absent and the
-existing Firebase FCM binding remains intact. No Play upload or testing rollout
-has occurred. Follow FEAT-PLY-001 and MOBILE_IMPLEMENTATION's ordered checklist.
+October 10: the owner supplied the dedicated publisher
+`loadgistic-play-publisher@loadgistic-f082a.iam.gserviceaccount.com` in the existing
+Loadgistic Firebase/Cloud project. The validated key is protected at
+`.local/google-play-publisher.json` and assigned to this app's EAS Submit field.
+Postchecks confirm FCM and signing are unchanged. Google authentication succeeds,
+but the exact-package read returns 403 / SERVICE_DISABLED: Android Developer API
+enablement is pending. Play app permission and signing enrollment are not yet
+verified. No Play upload or testing rollout has occurred. Follow FEAT-PLY-001
+and MOBILE_IMPLEMENTATION's ordered checklist.
 Protected artifact receipts remain in `.local`; private credentials never belong
 in this document, source, logs or builds.
 
-## Next owner step — connect the publishing account
+## Next owner step — enable the API and grant Play access
 
-The APK can be tested now using the build link below. Play upload still needs
-the dedicated publishing key; Firebase's notification key is a separate purpose.
+The APK can be tested now using the build link below. Expo's dedicated publishing
+key is connected; Firebase's notification key is a separate unchanged credential.
 
-1. Open [Google Cloud Console](https://console.cloud.google.com/). Use the project
-   selector at the top → **New project** → name it **Loadgistic Play** → **Create**.
-2. Select that project. Open **APIs & Services → Library**, search **Google Play
-   Android Developer API**, open it and click **Enable**.
-3. Open **IAM & Admin → Service Accounts → Create service account**. Name it
-   **loadgistic-play-publisher**. Create it without Cloud project roles.
-4. Open the new service account → **Keys → Add key → Create new key → JSON**.
-   Save the downloaded file as
-   `/Users/falmata/Desktop/Dev/loadgistic/.local/google-play-publisher.json`.
-   Keep the private key out of chat, Git and app builds.
-5. Copy only its service-account email. In the owner's [Play Console](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard),
-   open **Users & permissions → Invite new users**, enter that email, choose
+1. Open the [Android Developer API page for Loadgistic](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=loadgistic-f082a)
+   and click **Enable**. The existing `loadgistic-f082a` project is sufficient;
+   a separate Cloud project is optional.
+2. In the owner's [Play Console](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard),
+   open **Users & permissions → Invite new users**, enter
+   `loadgistic-play-publisher@loadgistic-f082a.iam.gserviceaccount.com`, choose
    **App permissions → Loadgistic → Admin (all permissions)**, leave **Account
    permissions** empty, and send the invitation. This temporary app-only Admin
    choice is owner-approved; reduce it after setup.
-6. Once the key and app permission are connected, the agent can verify the exact
-   package/account and assign it to EAS Submit while preserving FCM and signing.
+3. Once the API and app permission are connected, the agent can verify the exact
+   package/account with the key already assigned to EAS Submit.
    The initial upload stays internal/draft. Signing enrollment and any Console
    attestation still need their actual owner/provider evidence.
-7. For new personal accounts requiring closed testing, prepare at least 12
+4. For new personal accounts requiring closed testing, prepare at least 12
    distinct Google testers. A downloadable closed release and continuous opt-in
    enrollment start the required period; a built APK or draft upload does not.
 
@@ -130,25 +129,26 @@ After the exact AAB and owner Console app/signing are verified, submission selec
 its **specific build ID**, never `--latest` or an automatic submission on every
 build/push. Check the actual provider result before retrying an ambiguous request.
 
-Read-only EAS metadata confirms the Play submission binding is absent while
-FCM remains assigned to Firebase loadgistic-f082a. The current specific bundle
+EAS metadata confirms the dedicated Play submission binding is assigned while
+FCM remains assigned to its original Firebase credential. The current specific bundle
 build is edd8cf91-446d-477e-8bb4-e00946fa7a57 (runtime source 986d07d); its final
-artifact inspection passes; the exact file/hash is recorded above. Owner-facing setup now uses a dedicated **Loadgistic Play** Cloud project and
-`loadgistic-play-publisher` service account without Cloud project IAM roles.
+artifact inspection passes; the exact file/hash is recorded above. The owner uses
+the existing **loadgistic-f082a** Cloud project with a separate
+`loadgistic-play-publisher` service account. No Cloud IAM role was required or
+changed by the agent.
 Enable Google Play Android Developer API. The owner explicitly selected temporary
 **app-level Admin for Loadgistic only**, connecting the key to Expo's Submit field
 for com.loadgistic.app. Firebase FCM remains a separate unchanged credential.
 
-The owner has created the Console entry. Remaining owner connection: enroll its signing path, create a dedicated publishing service account, enable
-the Android Developer API, grant that account access only to this Play app, and
-assign its key in EAS's Android `com.loadgistic.app` **Google service account key
-for EAS Submit** setting. The existing Firebase FCM binding remains unchanged.
-No Play publishing key is currently verified. The owner may save the dedicated key at ignored, protected
-`.local/google-play-publisher.json` for bounded agent assignment to EAS Submit.
-Keep it out of source, app environments, build uploads and logs.
+The owner has created the Console entry and supplied the dedicated publishing
+key, which is now assigned in EAS's Android `com.loadgistic.app` **Google service
+account key for EAS Submit** setting. Remaining owner connection: enable the
+Android Developer API, grant that account access only to this Play app, and
+enroll/verify its signing path. The existing Firebase FCM binding is unchanged.
+The protected key remains outside source, app environments, build uploads and logs.
 
-The existing Expo login can operate this app once the publishing credential is
-connected. There is no verified Play Console connection or CLI Google login in
+The existing Expo login can operate this app with the publishing credential
+connected. There is no verified Play Console app permission in
 this workspace, and plugin discovery found no suitable publishing connector.
 For the new policy release, select only immutable build
 `edd8cf91-446d-477e-8bb4-e00946fa7a57` after the matching rollout gates pass.

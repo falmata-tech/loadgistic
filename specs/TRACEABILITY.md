@@ -1385,3 +1385,11 @@ after one fresh-hierarchy System UI recovery. Actual 1080 × 2160 opaque capture
 and sanitized evidence are in `.local/play-policy-native-current-evidence.json`
 and `.local/play-policy-store-asset-plan.json`; the temporary display size was
 restored. Store asset review and full native workflow acceptance remain separate.
+
+October 10 operational follow-up: owner-supplied dedicated publisher key validates
+for loadgistic-f082a and authenticates (200). Exact Loadgistic Expo Submit
+assignment passes postchecks with original FCM/signing references unchanged.
+The read-only com.loadgistic.app check returns 403 / SERVICE_DISABLED; API
+enablement, actual Play app permission/signing and upload/rollout remain pending.
+Protected plan/receipt and sanitized preflight evidence are under
+`.local/play-20261010-*`; key bytes remain out of source/builds/logs.

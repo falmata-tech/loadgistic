@@ -1,3 +1,15 @@
+## October 10 Play publishing connection — Expo complete; Google API pending
+
+The owner supplied the dedicated `loadgistic-play-publisher` key from the existing
+`loadgistic-f082a` project. It is validated and stored only in protected ignored
+`.local/google-play-publisher.json`. Exact Expo account/project/package checks
+precede the Submit-only assignment; postchecks preserve the original FCM
+association and signing fingerprints. The supplied key authenticates successfully.
+The exact-package read is denied with SERVICE_DISABLED because the Android
+Developer API is not enabled. Play app permission and signing enrollment remain
+unverified; no Play upload, test-track rollout or closed-test clock is claimed.
+The current API/invitation steps are in operations/GOOGLE_PLAY_SETUP.md.
+
 ## October 9 Play policy release — web and Android testing available
 
 The approved policy web release is live at https://loadgistic.com, Netlify deploy
@@ -42,7 +54,7 @@ Onboarding synthetic tiles verify rendering rather than external tile delivery.
 
 Previews remain at http://127.0.0.1:3100 and http://localhost:8084. Google Play has
 not received this bundle and closed testing has not started. The dedicated Play
-publisher key is absent; signing choice, Console declarations, owner review of store
+publisher connection is updated above; signing choice, Console declarations, owner review of store
 assets, actual device acceptance and tester enrollment remain. Current manual
 steps are in docs/operations/GOOGLE_PLAY_SETUP.md. Production customer erasure
 requires a separate exact request/subject review.

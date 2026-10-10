@@ -1,3 +1,22 @@
+## October 10 delegated Play publisher connection — completed
+
+The owner chose the existing Loadgistic Cloud/Firebase project `loadgistic-f082a`
+and supplied the dedicated `loadgistic-play-publisher` service-account key.
+The prior app-only Play publishing delegation authorizes connecting this exact
+key to Expo Submit. Protected source/digest, previous empty Submit association,
+exact account/project/package and FCM/signing references are recorded in the
+ignored `play-20261010-expo-publisher-plan.json`. The additive assignment completed
+and postchecks confirm only Submit changed on falmatad/loadgistic,
+a2d7e0a9-2fe4-4188-804e-40d8c3486ac7 / com.loadgistic.app. No signing/private-key
+export, FCM replacement, Cloud IAM role change or unrelated application occurred.
+
+The new key authenticates; Google returns SERVICE_DISABLED on the read-only
+package check. API enablement, actual Play app grant and signing enrollment are
+not yet verified. No Play artifact upload or track rollout occurred. Ambiguous
+future writes require inspection rather than automatic retry. Any rollback of
+this credential assignment requires direction and changes only the new Submit
+association, preserving FCM/signing and the recoverable owner-supplied source.
+
 ## October 9 Play-policy rollout approval
 
 The owner explicitly approved the bounded review at

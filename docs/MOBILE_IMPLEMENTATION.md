@@ -53,8 +53,12 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    one fresh-hierarchy System UI recovery. Two actual 1080 × 2160 captures exist;
    the display override is restored. Full native and physical-device acceptance
    remain pending.
-10. [ ] Verify owner Console/signing/app-scoped Submit connection; internal draft
-   upload and tester rollout remain distinct from public launch and policy approval.
+10. [ ] Verify owner Console/signing/app-scoped Submit connection. October 10:
+   the supplied dedicated key is assigned to exact Loadgistic EAS Submit, with
+   FCM/signing unchanged. Google authentication succeeds; the package read
+   returns SERVICE_DISABLED. API enablement, actual Play app permission and
+   signing verification remain pending. Internal draft upload and tester rollout
+   remain distinct from public launch and policy approval.
 
 Current Android test download:
 https://expo.dev/accounts/falmatad/projects/loadgistic/builds/9169da7e-dd2f-40b1-87b0-53fee20e3b56
