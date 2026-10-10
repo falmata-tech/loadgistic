@@ -6,14 +6,21 @@ import {readFileSync} from 'node:fs';
 import {localAuditService,checked,auditProvider} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 
-test('truck document alternatives submit private evidence and show only its reviewed category',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('truck document alternatives submit private evidence and show only its reviewed category',async({page}:{page:Page},info:{outputPath:(name:string)=>string;project:{name:string}})=>{
  test.setTimeout(150000);const service=localAuditService(),actor=await auditProvider(service,'truck-doc');
  let truckId='';const paths:string[]=[];const ids:string[]=[];
  try{
+  // This workflow owns its local client bucket; unrelated OTP tests must not
+  // consume its allowance. The application's actual request limits stay intact.
+  await page.context().setExtraHTTPHeaders({'x-forwarded-for':info.project.name.startsWith('mobile')?'127.0.0.247':'127.0.0.246'});
   checked(await service.from('company_pages').update({published:false}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
   truckId=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Home',model:'Account',plate:`DOC-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}})).id;
   await page.goto('/login');const form=page.getByTestId('email-code-request-form');
-  await form.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();await form.getByRole('button',{name:'Email me a code'}).click();
+  await form.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();
+  const requested=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/applications/email-otp/request'&&response.request().method()==='POST');
+  await form.getByRole('button',{name:'Email me a code'}).click();
+  const response=await requested;expect(response.status()).toBe(303);
+  expect(new URL(response.headers().location,page.url()).searchParams.get('step')).toBe('code');
   await expect(page.getByTestId('email-code-form')).toBeVisible({timeout:15000});await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
   await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForURL(/\/app\/home/);
   await page.goto(`/app/fleet/${truckId}`);await page.locator('details.workspace-related-section>summary').filter({hasText:'Truck documents'}).click();

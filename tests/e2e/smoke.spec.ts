@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
-import {localAuditService,checked,auditLogin} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy} from './audit-helpers';
 import {addLocalSmokeSponsor,temporarilyHideLocalSponsors} from './sponsor-fixture-helper';
 
 let cleanupSmokeSponsor:(()=>Promise<void>)|undefined;
@@ -717,12 +717,16 @@ test('public Tracking submission shows progress and a visible invalid-code resul
   await expect(page.getByRole('button',{name:'Open tracking'})).toBeEnabled();
 });
 
-test('provider starts Tracking for multiple parties with one stable shipment code and ordered status actions',async({page}:{page:any})=>{
+test('provider starts Tracking for multiple parties with one stable shipment code and ordered status actions',async({page}:{page:any},info:any)=>{
   test.setTimeout(120000);
+  // Keep this multi-party email workflow independent of other tests' client
+  // rate buckets without disabling origin or recipient rate limits.
+  await page.context().setExtraHTTPHeaders({'x-forwarded-for':info.project.name.startsWith('mobile')?'127.0.0.249':'127.0.0.248'});
   // Exercise ordinary email login, including when the optional fixture-password
   // disclosure is disabled in the owner's local preview.
   const service=localAuditService();
-  const provider=checked(await service.from('profiles').select('id').eq('role','TRANSPORTER').eq('active',true).limit(1).single());
+  const provider=await auditIdentity(service,'transporter@loadgistic.local');
+  await acceptAuditContentPolicy(service,provider.id);
   const email=checked(await service.auth.admin.getUserById(provider.id)).user.email;
   await page.goto('/login',{waitUntil:'domcontentloaded'});
   const access=page.getByTestId('email-code-request-form');await access.getByLabel('Email',{exact:true}).fill(email);
@@ -769,7 +773,10 @@ test('provider starts Tracking for multiple parties with one stable shipment cod
   await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
 
   const requestedAt=Date.now();
+  const ownerCodeResponse=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/otp'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Email me a code'}).click();
+  expect((await ownerCodeResponse).status()).toBe(200);
+  await expect(page.getByLabel('6-digit email code')).toBeVisible();
   await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
   await Promise.all([
     page.waitForURL(/\/track\/[0-9a-f-]{36}$/,{timeout:15_000}),
@@ -782,7 +789,10 @@ test('provider starts Tracking for multiple parties with one stable shipment cod
   await page.getByLabel('Email',{exact:true}).fill(trackingPartyEmail);
 
   const partyRequestedAt=Date.now();
+  const partyCodeResponse=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/otp'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Email me a code'}).click();
+  expect((await partyCodeResponse).status()).toBe(200);
+  await expect(page.getByLabel('6-digit email code')).toBeVisible();
   await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(trackingPartyEmail,partyRequestedAt,'Your Loadgistic tracking sign-in code'));
   await Promise.all([
     page.waitForURL(/\/track\/[0-9a-f-]{36}$/,{timeout:15_000}),

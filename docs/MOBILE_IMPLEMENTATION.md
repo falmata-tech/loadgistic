@@ -35,8 +35,12 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    The unchanged 5,000-truck gate passes (search 4.75 s, route 2.74 s).
    Fresh hosted backup restores without networking; exact SQL 131–136 and
    catalog/guard/spatial checks pass. Version 1.0.3/code-4 APK/AAB inspection and exact owner rollout review are
-   complete. Current: correct the remaining browser test setup and pass every
-   required remote CI job before the approved hosted writes.
+   complete. Corrected local document/Tracking tests pass all four desktop/phone
+   workflows using actual SMTP and Storage. They isolate client rate buckets,
+   await real OTP responses and select the known prior-consented transporter.
+   Run 38007389263 still failed shard 2 after its controlled retry; no failed
+   gate is waived. Current: pass every exact-source remote CI job before the
+   approved hosted writes. Runtime/native/SQL and inspected binaries are unchanged.
 9. [ ] Publish approved web/backend and verify actual provider results. Signed
    APK 9169da7e-dd2f-40b1-87b0-53fee20e3b56 and AAB
    edd8cf91-446d-477e-8bb4-e00946fa7a57 (1.0.3/code 4) are built and inspected.

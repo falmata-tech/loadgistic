@@ -40,11 +40,20 @@ The reviewed SQL digest is
 No hosted migration or reviewer provisioning has been applied. The new candidate
 uses 1.0.3/code 4. APK build `9169da7e-dd2f-40b1-87b0-53fee20e3b56` and
 AAB build `edd8cf91-446d-477e-8bb4-e00946fa7a57` are verified. CI run
-`37997974313` passed validation, container, native boundaries and two browser
-shards; Account/onboarding/recovery test failures still block rollout. Corrections
-explicitly accept terms for fresh local users, select the known synthetic recovery
-identity, and await persisted saves. Onboarding uses synthetic tiles to separate
-map rendering from external tile availability; this is not live tile evidence.
+`38007389263` passed validation, container, native boundaries and three browser
+shards; shard 2 and its controlled retry failed. The approved in-memory failure
+read identified the truck-document sign-in step and a flaky Tracking email wait.
+Document and multi-party Tracking tests now own separate local client rate
+buckets and assert actual successful OTP responses before reading the inbox.
+The Tracking test also selects the known, prior-consented synthetic transporter:
+the recovered local preview proved that an arbitrary unconsented account's terms
+dialog intercepted route selection. Four corrected desktop/phone document and
+multi-party Tracking workflows pass with real local email and Storage; quality
+488/488, types, source and specs pass. Fresh onboarding still accepts visible
+terms. The recovered previews remain at the same URLs. Runtime, native and
+SQL inputs are unchanged; every exact-source CI job must pass before rollout.
+Onboarding uses synthetic tiles to separate map rendering from external tile
+availability; this is not live tile evidence.
 The dedicated Play publishing key is still absent; no Play test clock has begun.
 
 ## October 9 web and Android tester release — published

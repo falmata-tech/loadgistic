@@ -103,6 +103,13 @@ Fresh onboarding accepts the actual visible terms checkbox. Existing Account
 fixtures declare prior consent locally and still verify persisted saves, native
 POST fallback, invalid input, inactive sessions and actor-forgery denial.
 The onboarding tile fixture proves renderer readiness, not public tile delivery.
+Document and multi-party Tracking regressions use separate local client buckets
+so unrelated sign-in tests cannot exhaust their request allowance. They assert
+the real successful OTP response and visible code-entry state before reading the
+isolated inbox; production limits and email delivery remain unchanged.
+The existing-content Tracking regression selects the known synthetic transporter
+and declares its prior consent; it must not choose an arbitrary newly created
+account whose pending terms dialog intercepts workflow actions.
 
 Focused domain, native, database and browser tests must cover each implemented AC.
 Record test paths/results in TRACEABILITY before marking verified. No new SDK,
