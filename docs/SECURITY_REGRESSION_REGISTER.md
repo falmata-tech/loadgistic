@@ -720,8 +720,9 @@ reads. Do not repurpose an ordinary profile visibility choice as signal authorit
 Negative evidence: `tests/sql/public-capacity-policy-scope.sql` publishes an
 actual synthetic truck, hides it, checks both read functions, then restores it.
 `public-content-safety.sql` denies republishing bypass; reviewer SQL denies
-foreign workspaces. Hosted installation remains pending; do not claim provider
-enforcement installed based on these local tests.
+foreign workspaces. The owner-approved hosted ledger 136 and 80 live checks now
+verify installation. Native/physical acceptance remains separate; local tests
+alone were not installation evidence.
 
 ## NR-24 — Deactivation or partial cleanup masquerades as account deletion
 
@@ -736,3 +737,26 @@ pseudonymous history. Never use a browser-supplied subject or merely hide an
 account to report deletion complete.
 Negative evidence: seven erasure workflow tests, deletion/scope SQL and real local
 SMTP/Storage/Auth browser flow. No production erasure is approved by this entry.
+
+
+## NR-25 — Inherited unused native permissions reach a distribution artifact
+
+Status: source/merged-manifest finding, not a reproduced exploit or suppressed
+Google policy error. Owner: native build maintainer. Code-4 inspection contains
+SYSTEM_ALERT_WINDOW inherited through the native project; no release feature or
+permission request using overlays is identified. Location/notification permissions
+have separate actual uses; they are not removed to avoid required declarations.
+
+Control/next: before the next binary, explicitly inventory generated and merged
+release permissions against implemented use, remove unused overlay permission,
+and add a negative final-manifest check with the controlling mobile/Play specs.
+A dependency upgrade can reintroduce permissions, so inspect the artifact rather
+than trusting app.json alone. Keep permitted developer tooling separate from the
+standalone release and preserve legitimate Tracking/notification functionality.
+This guard is recorded, not claimed installed. Do not rebuild or waive a release
+gate merely to hide the finding; verify the next immutable candidate normally.
+
+Evidence: apps/mobile/android/app/src/main/AndroidManifest.xml:12; current code-4
+manifest inspection. Minification is disabled by the current Gradle defaults with
+no release override, so Google's absent-deobfuscation-file warning is retained as
+informational; mapping becomes necessary if R8/minification is enabled later.

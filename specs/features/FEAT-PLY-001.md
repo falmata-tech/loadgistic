@@ -12,8 +12,9 @@ rollout: Implement and verify locally first. Owner visual approval precedes exte
 # Play requirements — deployed workflows; device and Console acceptance pending
 
 The owner requested all missing Play workflows on October 9. Console developer
-5256539403314542898 / app 4974969611761012361 is owner-reported under
-marketvision.tech@gmail.com, not independently authenticated yet. This identity
+5256539403314542898 / app 4974969611761012361 is independently authenticated under
+marketvision.tech@gmail.com on October 10. The publisher is Active with Admin on
+Loadgistic only and zero account-wide grants. This identity
 does not replace the application's administrator or Expo identity. Package stays
 com.loadgistic.app. Never treat an app entry or draft upload as publication.
 
@@ -24,8 +25,17 @@ Eighty live checks pass, including three new private normal-auth reviewers and
 company-driver denial of the transporter-profile editor. Protected credential
 files remain outside source/builds; no initial human consent or customer erasure
 was invented. Signed 1.0.3/code-4 APK/AAB are verified and available for testing.
-Physical background-location/alerts/16 KB acceptance, Android demonstration,
-Play signing/publisher connection and Console/test-track evidence remain pending.
+October 10: existing Google signing and unchanged Expo upload signer are verified.
+Exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED; internal
+4700942405023499701/release 1 is Active/available/Not reviewed. Alpha
+4699446366767369053/release 1 is Draft with the same bundle, owner list and
+Ethiopia/US eligibility. Privacy/private reviewers/IARC/Data safety and other
+source-backed metadata are saved; listing assets/copy stay Draft pending the
+specific AI-label reply after automatic review rejected incomplete provenance.
+Location/foreground-service video, physical GPS/alerts/16 KB acceptance, real
+closed enrollment and Google review remain pending. The owned emulator's System
+UI ANR and one bounded recovery failure are recorded; no complete permission video
+or full native/policy acceptance is inferred from an internal test release.
 
 ## AC1 — Location consent before permission or collection
 

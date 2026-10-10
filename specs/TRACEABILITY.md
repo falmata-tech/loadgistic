@@ -1399,3 +1399,25 @@ Loadgistic app grant and zero account-wide permissions; Save changes is disabled
 The API lookup returns 404 for the requested version, without permission denial.
 Protected invitation review/receipt records these results. No Play upload,
 signing enrollment, store acceptance or tester clock is inferred.
+
+
+October 10 subsequent FEAT-PLY-001 operational evidence supersedes the connection
+checkpoint: exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED for code 4;
+internal 4700942405023499701/release 1 is Active/available/Not reviewed. Existing
+Google signing/upload certificate are verified without changing keys. Alpha
+4699446366767369053/release 1 is a saved Draft with code 4, owner list and
+Ethiopia/US eligibility. The actual internal opt-in URL is verified, not guessed.
+AC3 supplementary actual Expo-web block/reload/unblock and report form pass;
+content-blocks unit tests pass 2/2. No hosted report/customer mutation is submitted.
+AC4 three normal-auth entries are saved only in Google's private reviewer form.
+AC5 privacy/ads/ad-ID/government/financial/health/adult audience/IARC and 16-type
+Data safety are saved; Business/contact metadata is verified. Existing copy/brand/
+two unmodified native captures are a listing Draft. Everyone/PEGI 3 includes Users
+Interact/Shares Location. The proposed AI label was rejected for incomplete recorded
+provenance; the exact owner question remains pending, with no alternate bypass.
+Native AC1/AC5 remain incomplete: code 4/public Capacity render, but screenshot-
+confirmed System UI ANR and one bounded recovery failure prevent a demonstrated
+Android permission/active-Tracking video. Only the owned emulator is stopped,
+data preserved. No closed-test clock, Google review, public launch, physical GPS/
+closed-phone or 16 KB-device acceptance is claimed. Protected sanitized receipts
+are .local/play-20261010-*; runtime/native/SQL stay unchanged since CI 38012117505.

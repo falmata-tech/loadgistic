@@ -1,4 +1,32 @@
-## October 10 delegated Chrome API/Play permission setup — completed
+## October 10 delegated Play test setup — internal published; Alpha draft
+
+The owner instructed continuation independently while busy within the existing
+Loadgistic-only Play/test-launch delegation. Targets remain developer
+5256539403314542898, app 4974969611761012361, com.loadgistic.app and falmatad/loadgistic.
+This covers the reviewed code-4 internal submission/test rollout, app-only policy/
+reviewer/listing/contact preparation and closed-test draft. It does not authorize
+public-production Play rollout, customer erasure, private signing export or any
+other app/account/project. The app-only publisher remains temporary Admin with
+zero account-wide grants; reduce provider permissions after setup.
+
+Existing Google signing is inspected, not replaced. Immutable AAB
+c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef is submitted
+once through EAS 066f028f-0cb0-4286-9830-40815264e11e. Internal
+4700942405023499701/release 1 is verified Active/available/Not reviewed; only the
+owner-controlled accounts are eligible. Alpha 4699446366767369053/release 1 reuses
+the bundle as Draft with Ethiopia/US eligibility and the owner list. No fake
+participants, policy approval or closed-test clock are inferred.
+
+Actual save acknowledgements/reloads establish the bounded app-only metadata,
+including private reviewer access, source-backed declarations, Business category
+and approved contact publication. Listing stays Draft because automatic review
+rejected a proposed AI-asset label with incomplete recorded provenance. The exact
+owner question remains pending; no alternate declaration bypassed it. Required
+native video is not fabricated. Private credentials/receipts stay protected in
+ignored .local, never source/builds/logs. Ambiguity requires inspection before any
+further write; plans/results bind contact, tester and country operations narrowly.
+
+## October 10 Chrome API/Play permission setup — historical checkpoint
 
 The owner explicitly asked the agent to take over Chrome for the API/Play
 invitation steps. The exact loadgistic-f082a API page already shows Manage; no
@@ -17,7 +45,7 @@ No unrelated app, Firebase key, signing credential or browser profile is changed
 no cookies/passwords or private signing material are extracted. Future public
 publication and signing changes still require their established separate scope.
 
-## October 10 delegated Play publisher connection — completed
+## October 10 delegated publisher connection — historical checkpoint
 
 The owner chose the existing Loadgistic Cloud/Firebase project `loadgistic-f082a`
 and supplied the dedicated `loadgistic-play-publisher` service-account key.

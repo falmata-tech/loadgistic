@@ -1,85 +1,115 @@
 # Loadgistic Google Play setup
 
-Prepared October 9, 2026. The owner created the Loadgistic Play entry under
-marketvision.tech@gmail.com: developer `5256539403314542898`, app
-`4974969611761012361`, [Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
-The authenticated Console connection remains pending. The approved policy rollout
-covers migrations 131–136, matching web and Android, and three private synthetic
-review identities. It does not authorize public Play publication or customer erasure.
+Updated October 10, 2026. Verified owner marketvision.tech@gmail.com, developer
+`5256539403314542898`, app `4974969611761012361`, package `com.loadgistic.app`.
+[Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
 
-**Current test release: 1.0.3 / code 4.** Signed APK and AAB are verified and use
-the matched live web/backend. Approved ledger is 136; Netlify deploy
-`6ac99d110f1f577818c9f7c9` is verified with 80 live checks and clean final security.
-Exact-source CI `38012117505` passes all eight latest jobs at `068ac35`, with
-runtime/native/SQL unchanged from the inspected artifacts. Three private normal-
-auth review accounts are provisioned; protected reusable credentials are in
-`.local/play-policy-reviewer-credentials.json`. Test sessions are closed and
-initial terms acceptance was not fabricated. Do not submit historical code 3.
+## Test install available now
 
-- APK build: `9169da7e-dd2f-40b1-87b0-53fee20e3b56`; protected file
-  `.local/loadgistic-1.0.3-android.apk`, 153,576,371 bytes, SHA-256
-  `2a6d6c9354ed0ccd7ce4e29a43bc4d7ae65fed37917f4cfd0aa0ea9fbbb60b73`.
-- Play AAB build: `edd8cf91-446d-477e-8bb4-e00946fa7a57`; protected file
-  `.local/loadgistic-1.0.3-play-internal.aab`, 92,044,826 bytes, SHA-256
-  `c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef`.
+On your Android phone:
 
-Both use the approved runtime `986d07d`, package `com.loadgistic.app`, production
-API, existing signing, API 36/minimum 24, non-debuggable release and HTTPS.
-Signature, bundle validation, manifest/secret checks, APK zip alignment and all
-25 ARM64 LOAD/RELRO layouts pass. Android installation and the new Privacy screen
-are verified on the owned Loadgistic emulator. Its System UI freezes prevent
-claiming every native workflow passed; physical background-location, closed-phone
-alerts and 16 KB-device acceptance remain separate.
+1. Open https://play.google.com/apps/internaltest/4700942405023499701.
+2. Choose **falmatad97@gmail.com** or **marketvision.tech@gmail.com** as the Google
+   account. Those are the only two accounts currently on the owner tester list.
+3. Join the test and follow **Download it on Google Play** to install.
+4. Google may show **com.loadgistic.app (unreviewed)** until listing/setup/review
+   finish. Verify **1.0.3 / version code 4**; the app uses https://loadgistic.com.
 
-October 10: the owner supplied the dedicated publisher
-`loadgistic-play-publisher@loadgistic-f082a.iam.gserviceaccount.com` in the existing
-Loadgistic Firebase/Cloud project. The validated key is protected at
-`.local/google-play-publisher.json` and assigned to this app's EAS Submit field.
-Postchecks confirm FCM and signing are unchanged. Google authentication succeeds,
-and Android Developer API enablement is verified in the exact Cloud project.
-At the owner's explicit request, the agent used Chrome to send the exact
-publisher invitation with Admin only on Loadgistic. The publisher is Active;
-saved scope has one app and zero account-wide permissions. The version-4 API
-lookup now returns 404 instead of permission denial; an available Play artifact
-is not inferred. Signing enrollment remains unverified. No Play upload or
-testing rollout has occurred. Follow FEAT-PLY-001
-and MOBILE_IMPLEMENTATION's ordered checklist.
-Protected artifact receipts remain in `.local`; private credentials never belong
-in this document, source, logs or builds.
+Google uses a different app-signing certificate from the Expo sideload APK. Use a
+phone without the sideload version for this Play install. Do not force an update
+by uninstalling or clearing existing data; decide any installation switch separately.
+The [Expo APK](https://expo.dev/accounts/falmatad/projects/loadgistic/builds/9169da7e-dd2f-40b1-87b0-53fee20e3b56)
+remains a separate signed test download. If your phone already has the earlier
+Expo APK, this new code-4 APK retains its signer and can be used for a normal
+in-place test update. That direct APK test does not count as Play closed enrollment.
 
-## API and publisher access — completed; submission checks remain
+## What is actually completed
 
-The APK can be tested now using the build link below. Expo's dedicated publishing
-key is connected; Firebase's notification key is a separate unchanged credential.
-API enablement and the exact publisher invitation below are complete. The owner
-does not need to repeat them. Remaining work is signing/initialization, exact
-artifact submission, declarations and actual tester rollout.
+| Item | Verified state |
+| --- | --- |
+| Web/backend | Runtime 9feab2d, Netlify 6ac99d110f1f577818c9f7c9, ledger 136, 80 live checks; CI 38012117505 at 068ac35 passes all eight jobs |
+| Android artifacts | APK 9169da7e-dd2f-40b1-87b0-53fee20e3b56; AAB edd8cf91-446d-477e-8bb4-e00946fa7a57; 1.0.3/code 4, existing native source 986d07d |
+| Expo/Google access | Dedicated publisher Active, Admin on Loadgistic only, zero account-wide grants; exact EAS Submit key connected; FCM/signing unchanged |
+| Internal release | Submission 066f028f-0cb0-4286-9830-40815264e11e FINISHED; track 4700942405023499701/release 1 Active, available to internal testers, Not reviewed |
+| Signing | Existing Google-managed signer In use; uploaded certificate matches the EAS signer; no signing change/private export |
+| Private reviewer access | Three normal-auth synthetic entries saved only in Google's App access form; no staff powers/customer data or public credentials |
+| Policy metadata | Privacy, ads/ad-ID, government, financial, health, adult audience, IARC and Data safety saved, not submitted for Google review |
+| Rating | Everyone / PEGI 3; Users Interact and Shares Location; professional target audience stays 18+ |
+| Data safety | 16 inspected types, HTTPS and live deletion link; optional guest/manual data; service-provider/user-directed transfers use documented Google exceptions |
+| Listing | English copy, existing icon/feature graphic and two unmodified code-4 native screenshots saved as Draft; AI-label decision pending |
+| Category/contact | App / Business saved; approved marketvision.tech@gmail.com and https://loadgistic.com contact metadata published; phone blank |
+| Closed Alpha | 4699446366767369053/release 1, 1.0.3 (4) — closed test, Draft; existing bundle reused, owner list and Ethiopia/US eligibility prepared |
 
-1. Open the [Android Developer API page for Loadgistic](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=loadgistic-f082a)
-   and click **Enable**. The existing `loadgistic-f082a` project is sufficient;
-   a separate Cloud project is optional.
-2. In the owner's [Play Console](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard),
-   open **Users & permissions → Invite new users**, enter
-   `loadgistic-play-publisher@loadgistic-f082a.iam.gserviceaccount.com`, choose
-   **App permissions → Loadgistic → Admin (all permissions)**, leave **Account
-   permissions** empty, and send the invitation. This temporary app-only Admin
-   choice is owner-approved; reduce it after setup.
-3. Once the API and app permission are connected, the agent can verify the exact
-   package/account with the key already assigned to EAS Submit. This connection
-   is now verified, with no account-wide or other-app grant.
-   The initial upload stays internal/draft. Signing enrollment and any Console
-   attestation still need their actual owner/provider evidence.
-4. For new personal accounts requiring closed testing, prepare at least 12
-   distinct Google testers. A downloadable closed release and continuous opt-in
-   enrollment start the required period; a built APK or draft upload does not.
+Exact AAB: `.local/loadgistic-1.0.3-play-internal.aab`, 92,044,826 bytes,
+SHA-256 `c63607fbef7bc7aa08ce9eaca3d80c89b7eb51ce002ac9d1f2378729e4a1a6ef`.
+APK: `.local/loadgistic-1.0.3-android.apk`, 153,576,371 bytes,
+SHA-256 `2a6d6c9354ed0ccd7ce4e29a43bc4d7ae65fed37917f4cfd0aa0ea9fbbb60b73`.
+Manifest/signature/secret/production-origin and 16 KB structural checks pass;
+physical 16 KB, closed-phone alerts and moving/background GPS acceptance remain
+separate. Do not submit historical code 3 or reupload code 4.
 
-Installable APK:
-https://expo.dev/accounts/falmatad/projects/loadgistic/builds/9169da7e-dd2f-40b1-87b0-53fee20e3b56
-Published privacy: https://loadgistic.com/privacy. Published deletion request:
-https://loadgistic.com/delete-account. The approved reusable review credentials
-belong in Console App access, not a public store listing.
-[Expo submission prerequisites](https://docs.expo.dev/submit/android/),
-[Google closed-testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en).
+## Remaining closed-test prerequisites
+
+The owner delegates completion independently while busy. Keep the prepared Alpha
+release as Draft until the following evidence exists; public-production Play
+publication and customer erasure are outside this delegation.
+
+1. **Artwork decision:** the exact question about labeling the prepared feature
+   graphic as AI-assisted is pending. Automatic approval review rejected that
+   declaration because recorded provenance did not explicitly establish AI
+   involvement. The two real screenshots are unmodified. Do not select another
+   label merely to bypass the rejection. See the actual asset draft/owner question.
+2. **Android permission video:** Google requires a real walkthrough for background
+   location and the location foreground service. The exact 293-character purpose
+   and 471-character shipment feature are prepared in protected
+   `.local/play-20261010-location-permission-plan.json`. The selected service case
+   is user-initiated location sharing. No invented/public placeholder video URL is
+   entered. Neither form is claimed complete.
+3. **Real testers:** supply actual Google-account emails for the people who will
+   install and use the closed app. This app’s actual Dashboard confirms at least
+   12 testers must remain opted in for at least 14 days; currently 0 are opted in.
+   Google’s policy requires continuous enrollment. Plus-addressed
+   demo emails and two owner accounts are not a substitute for that roster.
+4. **Google review and enrollment:** complete the missing declarations/listing,
+   preview the prepared Alpha release and send the exact test release for Google
+   review. After approval/availability, share its actual opt-in link with the
+   selected testers and verify continuous enrollment. No closed-test clock has
+   started. Internal testing does not count toward that requirement.
+
+[Closed-testing requirement](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en),
+[background-location declaration](https://support.google.com/googleplay/android-developer/answer/9799150?hl=en),
+[foreground-service declaration](https://support.google.com/googleplay/android-developer/answer/13392821?hl=en),
+[AI asset guidance](https://support.google.com/googleplay/android-developer/answer/17262077?hl=en).
+
+For the video, sign into the synthetic **Assigned company driver demo** through
+**Menu → About → Review access** first; private credentials stay in
+`.local/play-policy-reviewer-credentials.json`, not this file, screenshots or
+release notes. Use only its existing synthetic agreed shipment. Start the screen
+recording before the shipment-location disclosure, show **Agree and continue**,
+the actual Android permission flow, active Tracking/foreground notification and
+an obscured location update. Do not record passwords/codes/customer records.
+Google recommends a short video around 30 seconds; host it on an accessible
+public/unlisted YouTube URL only after checking the actual footage. If no agreed
+shipment is available, stop and inspect the demo scope rather than create a real
+shipment, bypass permissions or fake a screenshot.
+
+The owned Loadgistic_Pixel_API_35/emulator-5580 runs code 4/public Capacity, but
+October 10 screenshot evidence confirms **System UI isn't responding**. One
+bounded recovery failed; only that emulator was stopped with app/data preserved.
+No actual disclosure/permission/active-Tracking video was obtained. A phone test
+through Play needs no USB debugging; USB is optional for agent-assisted capture.
+Local previews remain http://127.0.0.1:3100 and http://localhost:8084.
+
+Sanitized protected receipts: `.local/play-20261010-submit-receipt.json`,
+`internal-rollout-receipt.json`, `alpha-setup-receipt.json`, `content-rating-receipt.json`,
+`data-safety-plan.json`, `store-listing-receipt.json`, `store-settings-receipt.json`,
+`signing-state.json` and `android-policy-attempt.json` (all use the same
+`.local/play-20261010-` prefix). Never put private key/password/OTP bytes in source,
+builds or logs. The publisher key remains `.local/google-play-publisher.json`;
+Firebase's notification key is a separate unchanged credential.
+
+The following reference/build sections preserve earlier preparation. Their
+unverified checkpoint statements are historical; this current table controls.
 
 ## Build target and signing decision
 
@@ -106,7 +136,8 @@ npx eas-cli@24.10.0 build --platform android --profile play-internal
 
 Do not add `--auto-submit`. After completion, verify the immutable build/source,
 package, version, code, public certificate and artifact hash before upload. Code 4
-must remain unused in Play before first upload; subsequent uploads require a new version code.
+is already uploaded. Reuse it only from the existing library; a new upload needs
+a new version code and new exact-artifact verification.
 [Expo build configuration](https://docs.expo.dev/eas/json/),
 [Android submission](https://docs.expo.dev/submit/android/).
 
@@ -116,15 +147,17 @@ Existing EAS APK signing-certificate SHA-256:
 26b7c6afc5afe0cd1a721e4e2914e1ffbb57c41ffe2ac1328d1ee125c965c5fd
 ```
 
-The owner must deliberately choose the supported Play signing path. Importing
-the existing app-signing key through Google's supported owner-controlled process
-can preserve signing continuity with the current APK. A Google-generated Play
-app-signing key differs from that APK's signer; it does not provide the same
-in-place update path for existing sideloaded installations. The upload key and
-Play app-signing key have different roles. Do not uninstall or clear app data to
-force an update. The agent must not download private keys or change signing
-credentials as part of this preparation. Record the chosen signer and test its
-update path before distributing to current APK testers.
+Google's existing managed app signer is verified after the code-4 upload:
+
+```text
+01ea001212e81c126fa41acd864eabdf0a35663a65fc0b6f41ac7a2e47570124
+```
+
+The retained EAS/upload signer above matches Google's uploaded certificate.
+The different Play app signer does not preserve in-place updates over the current
+sideload APK. No key/import/export/reset occurred. Do not uninstall or clear app
+data to force an update. Existing sideload testers need a separately chosen
+installation switch or another device; private signing material stays untouched.
 [Play App Signing](https://support.google.com/googleplay/android-developer/answer/9842756?hl=en).
 
 ## Owner-requested remote submission through Expo

@@ -1,4 +1,45 @@
-## October 10 Play publishing connection — API, Expo and app-only access verified
+## October 10 Google Play — internal live; Alpha draft
+
+Android **1.0.3 / code 4** is Active and available to internal testers, with Google
+status **Not reviewed**. Exact EAS submission `066f028f-0cb0-4286-9830-40815264e11e`
+FINISHED for AAB `edd8cf91-446d-477e-8bb4-e00946fa7a57`. Internal track
+`4700942405023499701` / release 1 is verified. Actual opt-in link:
+https://play.google.com/apps/internaltest/4700942405023499701.
+Only the two owner-controlled Google accounts are eligible. This is not a public
+launch, policy approval or a closed-test clock.
+
+The publisher is Active with Admin on Loadgistic only and zero account-wide grants.
+Existing Google signing was already In use; no key was changed/exported. The upload
+certificate matches the existing Expo signer. Play's app signer differs from the
+sideload APK; do not force an update by uninstalling or clearing user data.
+
+Privacy/private reviewer access, ads/ad-ID, government, financial, health, adult
+audience, IARC and 16-type Data safety metadata are saved. Google assigned Everyone /
+PEGI 3 with Users Interact and Shares Location. User-directed and service-provider
+transfer exemptions are documented; no independent security certification is claimed.
+Actual local Expo-web block/reload/unblock and visible reporting pass again.
+Business category is saved; approved contact email/site metadata is published.
+English copy/brand/two unmodified Android captures are a listing Draft. Its proposed
+feature-graphic AI label was rejected automatically for incomplete recorded
+provenance; the specific owner question remains pending, with no alternate bypass.
+
+Alpha `4699446366767369053` / release 1, **1.0.3 (4) — closed test**, is a saved
+Draft reusing code 4, the owner list and Ethiopia/US eligibility. Dashboard confirms
+10/11 basic setup tasks complete, required 12 testers/14 days and 0 opted in. Missing actual
+Android disclosure/permission/active-Tracking video, the real closed-test roster
+and Google review/enrollment remain. Code 4/public Capacity render on the owned
+emulator, but a screenshot-confirmed System UI ANR and one bounded recovery failure
+prevent further device/video claims. Only that emulator was stopped, data preserved.
+Physical background GPS, closed-phone delivery and 16 KB-device acceptance remain
+unverified. NR-25 records inherited unused overlay permission for the next binary.
+
+Runtime/native/SQL inputs remain unchanged since passing CI `38012117505`.
+Web https://loadgistic.com remains on verified deploy `6ac99d110f1f577818c9f7c9`,
+ledger 136 and 80 live checks. Local previews were restored at 3100/8084.
+Sanitized protected receipts are `.local/play-20261010-*`; owner instructions are
+in [GOOGLE_PLAY_SETUP.md](operations/GOOGLE_PLAY_SETUP.md).
+
+## October 10 publishing connection — historical checkpoint before upload
 
 The owner supplied the dedicated `loadgistic-play-publisher` key from the existing
 `loadgistic-f082a` project. It is validated and stored only in protected ignored
@@ -55,10 +96,9 @@ and select the known prior-consented fixture; fresh signup tests accept the actu
 terms screen. The unchanged 5,000-truck gate passes (search 4.75 s, route 2.74 s).
 Onboarding synthetic tiles verify rendering rather than external tile delivery.
 
-Previews remain at http://127.0.0.1:3100 and http://localhost:8084. Google Play has
-not received this bundle and closed testing has not started. The dedicated Play
-publisher connection is updated above; signing choice, Console declarations, owner review of store
-assets, actual device acceptance and tester enrollment remain. Current manual
+Previews remain at http://127.0.0.1:3100 and http://localhost:8084. The October 10
+section above supersedes this checkpoint’s pending Play upload/connection status.
+Actual device acceptance, complete listing/video review and closed enrollment remain. Current manual
 steps are in docs/operations/GOOGLE_PLAY_SETUP.md. Production customer erasure
 requires a separate exact request/subject review.
 

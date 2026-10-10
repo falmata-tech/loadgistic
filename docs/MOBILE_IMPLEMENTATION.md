@@ -1,3 +1,47 @@
+## October 10 autonomous Play setup — internal live; Alpha draft (FEAT-PLY-001)
+
+Owner delegates continuation independently while busy. Only Loadgistic developer
+5256539403314542898 / app 4974969611761012361, com.loadgistic.app and the exact code-4
+artifact are in scope. No public-production launch, customer erasure, private signing
+export or unrelated app/project changes.
+
+1. [x] Verify API, Active app-only publisher, matching Expo Submit key, exact AAB
+   hash and unchanged runtime/native/SQL inputs since passing CI 38012117505.
+2. [x] Existing Google signing is In use; upload certificate matches EAS.
+   Play/APK signers differ. No key change/export, uninstall or data clearing.
+3. [x] Exact submission 066f028f-0cb0-4286-9830-40815264e11e FINISHED. Verified
+   code 4/internal 4700942405023499701/release 1 Active/available/Not reviewed.
+   Opt-in: https://play.google.com/apps/internaltest/4700942405023499701.
+4. [ ] Current: finish listing/video prerequisites. Privacy/private reviewers,
+   ads/ad-ID/government/financial/health/adult audience/IARC and 16-type Data safety
+   are saved. App/Business and approved contact metadata are verified. Copy/brand/
+   two actual Android captures are a listing Draft. Its AI-label question awaits
+   the owner after automatic review rejected incomplete provenance. Location and
+   foreground-service forms need an actual disclosure/permission/active-Tracking video.
+5. [x] Internal distribution is live for only the two owner-controlled Google
+   accounts. No outside invitation, fake enrollment or policy approval is claimed.
+6. [x] Alpha 4699446366767369053/release 1 is Draft, using existing code 4,
+   the owner list and Ethiopia/US eligibility. No reupload, closed rollout or review.
+7. [ ] Supply real distinct testers, complete missing listing/video declarations,
+   obtain Google review, launch closed testing and verify continuous actual opt-ins.
+   Internal testing, drafts and Gmail aliases do not satisfy the closed-test clock.
+8. [x] Record exact receipts, limits and owner instructions in GOOGLE_PLAY_SETUP.
+
+October 10 native attempt: existing Loadgistic_Pixel_API_35/emulator-5580 booted
+without wiping data; installed code 4 and denied location permissions are verified.
+A fresh app hierarchy/public map render exists, followed by a screenshot-confirmed
+System UI ANR. A focus guard prevented unsafe tapping; one bounded fresh-hierarchy
+recovery timed out. Only that emulator was stopped, data preserved. No new native
+consent, location lease or permission/video flow is claimed. Physical background
+GPS, closed-phone/tap and 16 KB-device acceptance remain distinct. NR-25 records
+unused inherited SYSTEM_ALERT_WINDOW for the next binary, not an exploit claim.
+
+Only Loadgistic previews were restored at 3100/8084. Actual Expo-web block hides
+one synthetic local profile, reload preserves it, unblock restores it and the
+report form opens; no hosted report/customer mutation is submitted. Protected
+receipts are .local/play-20261010-*; private reviewer credentials remain outside
+source/builds/logs and only in Google's private App access form.
+
 ## October 9 Play policy release — web and Android testing ready (FEAT-PLY-001)
 
 Owner requested all missing Play requirements be implemented in the app. Work
@@ -53,14 +97,15 @@ New Console entry is owner-reported: developer 5256539403314542898 / app
    one fresh-hierarchy System UI recovery. Two actual 1080 × 2160 captures exist;
    the display override is restored. Full native and physical-device acceptance
    remain pending.
-10. [ ] Verify owner Console/signing/app-scoped Submit connection. October 10:
+10. [x] Verify owner Console/signing/app-scoped Submit connection. October 10:
    the supplied dedicated key is assigned to exact Loadgistic EAS Submit, with
    FCM/signing unchanged. Google authentication and API enablement are verified.
    The owner explicitly delegates Chrome setup; one invitation results in Active
    app-only Admin, with only Loadgistic and zero account-wide grants. Version 4
-   lookup returns 404; signing/initialization remain pending. Internal draft
-   upload and tester rollout
-   remain distinct from public launch and policy approval.
+   initial lookup returns 404 before upload. Subsequent exact submission finishes,
+   version lookup returns 200 and internal release is Active. Existing signing and
+   matching upload certificate are verified. Alpha remains Draft; public launch,
+   policy approval and physical acceptance remain separate.
 
 Current Android test download:
 https://expo.dev/accounts/falmatad/projects/loadgistic/builds/9169da7e-dd2f-40b1-87b0-53fee20e3b56

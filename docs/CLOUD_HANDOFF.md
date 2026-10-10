@@ -1,4 +1,33 @@
-## Current published release — October 9
+## Current web and Play test release — October 10
+
+Web runtime `9feab2d` is live at https://loadgistic.com as Netlify
+`6ac99d110f1f577818c9f7c9`; verification `068ac35` / CI `38012117505` passes all
+eight jobs. Approved ledger 136, protected backup/restore and final RLS/ACL/guard/
+PostGIS checks pass; 80 live checks include private reviewer and foreign-scope denial.
+
+Android 1.0.3/code 4: exact EAS submission
+`066f028f-0cb0-4286-9830-40815264e11e` FINISHED. Internal
+`4700942405023499701`/release 1 is Active/available/Not reviewed for the two owner
+accounts. Link: https://play.google.com/apps/internaltest/4700942405023499701.
+Existing Google signing/upload certificate is verified; the Play signer differs
+from the sideload APK. No key change/export or automatic uninstall/data clearing.
+Publisher remains app-only Admin, zero account-wide grants; FCM is unchanged.
+
+Alpha `4699446366767369053`/release 1 is Draft with existing code 4, owner list
+and Ethiopia/US eligibility. Policy/reviewer/IARC/Data safety and category/contact
+are saved; listing copy/brand/actual screenshots stay Draft pending its specific
+AI-label decision. Native permission/active-Tracking video, real closed testers and
+Google review/enrollment remain. Actual Dashboard requires 12 testers/14 days and
+shows 0 opted in. No public Play launch or clock is claimed.
+
+Owned emulator System UI ANR and one failed bounded recovery prevent complete
+native evidence; only that emulator was stopped, data preserved. Physical GPS,
+closed-phone alerts/tap and 16 KB-device acceptance remain unverified. Local
+previews run at 3100/8084. See [GOOGLE_PLAY_SETUP](operations/GOOGLE_PLAY_SETUP.md)
+and [MOBILE_IMPLEMENTATION](MOBILE_IMPLEMENTATION.md) for instructions/receipts.
+No additional database/customer-erasure/provider-config authority is created.
+
+## October 9 pre-policy release — historical, superseded above
 
 Application `d443093` is live at https://loadgistic.com as Netlify deployment
 `6ac876e7cffbaa5a92772381`; exact CI `37883805604` passes all eight jobs.
