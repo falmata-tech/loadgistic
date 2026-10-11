@@ -1,4 +1,39 @@
-## Current web and Play test release — October 10
+## Current verified release — October 11
+
+Application `3c13f4b` serves https://loadgistic.com as Netlify
+`6acc19b721f9d03af4a8246c`. Exact CI `38180627163` passes all eight jobs.
+The failed predecessor was not promoted. The same immutable Linux prebuilt files
+pass source/hash/cold-start/compiled-configuration checks. Live desktop/phone
+search, reset, private access, Tracking entry, brokerage intake and policy pages
+pass, as do actual Featured schedule/details and eight truck-and-driver cards.
+All three normal-auth synthetic roles pass 75 private/API/isolation checks;
+those additional sessions are closed. Hosted ledger remains 136, with fresh
+RLS/ACL/guard/PostGIS/advisor checks and zero critical findings. No hosted schema,
+configuration, billing or existing signing change occurred.
+
+Standalone Android 1.0.5/code 6 is built locally from the same source after Expo's
+monthly free quota rejection. Compiled APK/AAB permission and 50-library structural
+16KB checks pass. The isolated Loadgistic emulator verifies installed version,
+COLD startup, Capacity, Featured, visitor Tracking entry, normal synthetic driver
+login, map Home and actual shipment details. Physical moving GPS, closed-phone
+push and a 16KB device are not proved. See MOBILE_IMPLEMENTATION for the exact
+APK, local phone-download setup and signature limit.
+
+Google rejected Internal App Sharing with `NOT_PUBLISHED`; there is no new Google
+or Expo download/build link. Official internal/Alpha code 4 remains historical.
+The approved regional copy and generated-art graphic are saved and independently
+reloaded in the Play listing Draft; no review/public-production release or social
+post is claimed. A local use of the existing Expo upload signer needs the owner's
+separate approval before a replacement official test AAB can be submitted.
+The policy-video URL, real testers/Google review and actual closed enrollment
+remain separate. Two more participants are being sought; no clock has started.
+
+Only Loadgistic was touched. Previews are 3100/8084/3135; the APK-only local server
+is 3136. Protected receipts use `.local/runtime-release-20261011b-*`. Leave
+`.next-upload-audit/` and `apps/mobile/.claude/` untouched. Do not replay the
+drifted local migration ledger or restore production settings automatically.
+
+## Previous web and Play test release — October 10 (historical)
 
 Web runtime `9feab2d` is live at https://loadgistic.com as Netlify
 `6ac99d110f1f577818c9f7c9`; verification `068ac35` / CI `38012117505` passes all

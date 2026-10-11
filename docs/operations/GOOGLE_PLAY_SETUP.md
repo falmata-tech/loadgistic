@@ -1,10 +1,50 @@
 # Loadgistic Google Play setup
 
-Updated October 10, 2026. Verified owner marketvision.tech@gmail.com, developer
+Updated October 11, 2026. Verified owner marketvision.tech@gmail.com, developer
 `5256539403314542898`, app `4974969611761012361`, package `com.loadgistic.app`.
 [Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
 
-## Test install available now
+## Latest Android test build — October 11
+
+**1.0.5 / code 6** contains the repaired Featured, Tracking and world-zoom map
+runtime plus approved regional copy. Expo's monthly free Android builds are
+exhausted; the owner selected a local fallback. No code-6 cloud job exists.
+
+The standalone APK is `.local/loadgistic-1.0.5-local-test.apk`, 94,316,424 bytes,
+SHA-256 `4a5d6790335c7f5f3db0932aedc8a9c091926d610596fbd3fa136a403f0cceb6`.
+On an Android phone connected to the Mac's Wi-Fi, open the dedicated installer
+at **http://10.210.120.53:3136**, download the APK and follow Android's prompt.
+This address works only while the Mac/server stay running and the phone can
+reach that local network; its address may change. Only this checked public APK
+and installer page are served; private paths return 404. The file is also linked
+from MOBILE_IMPLEMENTATION for local transfer.
+
+Its separate temporary test signature cannot update a differently signed
+Expo/Play installation. Prefer a spare device. No app uninstall or data clearing
+was performed. No Expo upload key was exported and no existing signing setting,
+billing or other app was changed. Installed version/COLD startup, public Capacity,
+Featured, Tracking entry, normal synthetic driver map Home and actual shipment
+details work on the disposable Loadgistic emulator. Physical GPS/push and a real
+16KB-device run remain separate. All eight current-source CI jobs pass.
+
+Google Internal App Sharing explicitly rejects this upload with `NOT_PUBLISHED`;
+there is no new Google link and no automatic retry/public rollout. The official
+internal/Alpha code-4 releases below remain historical. Updating the official
+Play testing track with code 6 needs the existing upload signer; bounded local
+retrieval/use requires separate owner approval under PRODUCTION_AUTHORITY.
+
+The owner-approved regional English copy and single freight-yard feature graphic
+are now **saved in the actual listing Draft and independently reloaded**. Name/
+short/full lengths are 10/79/2017. The new 1024×500 opaque PNG is 1,185,997 bytes,
+SHA-256 `ff3fb65ab57039ada5723bed175f498bae65336fd3a8afe2b67e066db786947d`.
+Exact generated-art prompts are in regional-artwork-provenance.json. Original
+icon/two genuine historical screenshots are preserved. No policy declaration or
+review submission is inferred from saving the draft. A qualifying video URL,
+correctly signed replacement bundle, Google review/actual closed enrollment and
+two more real participants remain separate. This local test does not start the
+14-day closed-test clock.
+
+## Historical official internal install — 1.0.3/code 4
 
 On your Android phone:
 
@@ -23,7 +63,7 @@ remains a separate signed test download. If your phone already has the earlier
 Expo APK, this new code-4 APK retains its signer and can be used for a normal
 in-place test update. That direct APK test does not count as Play closed enrollment.
 
-## What is actually completed
+## October 10 checkpoint — historical
 
 | Item | Verified state |
 | --- | --- |
@@ -60,12 +100,14 @@ artifact pass the applicable review gates. Additional tester recruitment proceed
 alongside release preparation; public-production Play publication and customer
 erasure are outside this delegation.
 
-1. **Artwork review:** automatic approval review rejected the original graphic's
+1. **Artwork review — completed October 11:** the approved replacement copy and
+   new regional generated-art graphic are saved and independently reloaded in
+   the listing Draft. The original automatic approval review rejected the original graphic's
    proposed AI declaration because its recorded provenance did not establish AI
-   involvement. That original draft remains unchanged. A new, separately authored
+   involvement. The original artwork is retained in the protected backup. A new, separately authored
    composition now records its actual Codex authorship, source and hash, with a
-   proposed AI label on. Review that concrete replacement at
-   http://127.0.0.1:3135 before replacing the listing. Do not change the original
+   proposed AI label on. Owner reviewed and approved the concrete replacement at
+   http://127.0.0.1:3135. Do not change the original
    declaration merely to bypass its rejection.
 2. **Android permission video:** Google requires a real walkthrough for background
    location and the location foreground service. The exact 293-character purpose
@@ -150,24 +192,24 @@ builds or logs. The publisher key remains `.local/google-play-publisher.json`;
 Firebase's notification key is a separate unchanged credential.
 
 The following reference/build sections preserve earlier preparation. Their
-unverified checkpoint statements are historical; this current table controls.
+unverified checkpoint statements are historical; the October 11 section above controls.
 
 ## Store presentation package
 
 Source artwork and English copy are under resources/marketing/google-play/.
 The existing approved identity remains the app icon. The new feature graphic uses
-a striking freight truck and gold-lit roadway in Loadgistic colors, with only the
-brand name as text, following the owner's October 10 direction. It is an illustration,
+dispatchers and working cargo trucks at an East African freight yard, with only
+the brand name as text, following the owner's approved regional direction. It is an illustration,
 not a screenshot or a promise of available inventory. AI-assisted authorship is
 recorded for this new composition. The source JSON also provides accessible image
 descriptions, the screenshot order and draft next-binary release notes.
 
 Prepared exports are in protected .local/play-store-20261010/: icon-512.png
 (512 × 512, 32-bit PNG, 21,489 bytes) and feature-graphic-1024x500.png
-(1024 × 500, opaque 24-bit PNG, 984,512 bytes). Copy lengths are 10/76/1640 for
+(1024 × 500, opaque 24-bit PNG, 1,185,997 bytes). Copy lengths are 10/79/2017 for
 name/short/full; all asset descriptions fit 140 characters. Actual export hashes
 and source provenance are recorded in asset-evidence.json. The exact imagegen
-prompt is retained in artwork-provenance.json. Rebuild these two exports with
+prompts are retained in regional-artwork-provenance.json. Rebuild these two exports with
 `node resources/marketing/google-play/export-assets.mjs`; it checks identity,
 copy limits, accessible-description lengths, dimensions, channels and file sizes. The local review page
 at http://127.0.0.1:3135 passes desktop/phone checks without horizontal overflow.

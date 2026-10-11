@@ -1,3 +1,31 @@
+## October 11 owner-approved runtime release and local Android fallback
+
+The owner approved the actual repaired Featured/Tracking/map and regional promo
+previews, instructed continued release, and selected local building after Expo's
+free Android quota was exhausted. Exact source 3c13f4b passes all eight CI jobs in
+38180627163; the failing predecessor 25e9ca3 was never promoted. Verified Netlify
+6acc19b721f9d03af4a8246c serves loadgistic.com. Existing ledger 136 and fresh
+pre/post RLS/ACL/guard/PostGIS/advisor checks pass with zero critical findings.
+No database, provider settings, billing or existing signing-key mutation occurred.
+The prior immutable web deployment 6ac99d110f1f577818c9f7c9 remains recoverable;
+no database rollback is needed or automatically authorized for this code-only release.
+
+Local Android 1.0.5/code 6 is built from the same exact source in an isolated CNG
+copy, with compiled permissions/alignment/archive checks and installed standalone
+startup. Its separate local test signer is not an existing provider key change.
+The existing delegation permits bounded private test distribution for Loadgistic;
+Google Internal App Sharing supports this separate signer, but its actual upload
+is rejected NOT_PUBLISHED; no link was created. The verified APK-only local
+download does not export Expo's key. Internal App Sharing is distinct from a Play testing-track release and the 14-day closed-test clock.
+No public-production Play launch or private signing-key export is authorized.
+A matching official closed-track build still requires the existing upload signer.
+
+The approved regional copy/artwork are saved and independently reloaded in the
+Play listing Draft. No review submission, social post or policy-video completion
+is inferred. Protected exact-source/target/artifact/operation receipts remain in
+ignored .local; provider authority stays app-scoped. After this bounded release,
+owner-only defaults apply to unrelated production operations.
+
 ## October 10 delegated Play test setup — internal published; Alpha draft
 
 The owner instructed continuation independently while busy within the existing

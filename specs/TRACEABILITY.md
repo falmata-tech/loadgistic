@@ -1,5 +1,28 @@
 # Specification traceability
 
+October 11 verified release follow-up, FEAT-FTR-001 / FEAT-MOB-001 / FEAT-MKT-001:
+owner approved the actual 3100/8084/3135 previews. Runtime `3c13f4b` passes
+CI `38180627163` (all eight jobs), root 496/mobile 149, build/types/lint and
+strict fixed-copy translations. The failed predecessor is not promoted. Actual
+shared-leg tests preserve independent taps, street-scale separation and normal
+map gestures on desktop/phone; pure checks bound actual vertices at world zoom.
+Netlify `6acc19b721f9d03af4a8246c` uses the verified same prebuilt files and passes
+compiled/live public workflows, Featured schedule/eight cards/details and 75
+normal-auth synthetic role/private-boundary checks. Extra API sessions are closed;
+existing policy consent is not overwritten. Ledger 136 and final catalog/guard/
+PostGIS/advisors pass with zero critical findings; no schema/settings mutation.
+Local standalone 1.0.5/code 6 passes compiled permissions, structural 16KB checks,
+installation/COLD launch, public navigation, normal synthetic driver map Home
+and actual shipment detail/status controls after actual OS location denial.
+Protected APK/capture/native-log-indicator receipts are separate from physical
+GPS/push, real 16KB-device and policy-video acceptance. Google Internal App Sharing
+rejects NOT_PUBLISHED; the APK-only local server is a test download, not closed
+enrollment or official track publication. The approved regional copy/graphic are
+saved and independently reloaded as a Play Draft. No full native/Play-complete
+status is inferred. Source/artifact/operation receipts: `.local/runtime-release-20261011b-*`.
+
+Earlier local preparation below is historical at its recorded checkpoint.
+
 October 11 local launch repairs, FEAT-FTR-001 / FEAT-MOB-001 / FEAT-MKT-001:
 `featured-candidate-reads.test.mjs` verifies 1,105 exact candidates, capped UUID
 requests, history pagination, newest private-capacity precedence, provider RPC

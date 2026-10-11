@@ -1,3 +1,58 @@
+## October 11 verified web release and local Android fallback
+
+Owner visually approved the repaired Featured/Tracking/map flow and regional promo,
+then selected a local Android fallback after Expo's monthly free build quota was
+exhausted. Current source is `3c13f4b`; all eight jobs in CI `38180627163` pass.
+The failed `25e9ca3` candidate was not promoted. Root quality passes 496 tests,
+mobile quality 149; native lint/types, Doctor 21/21 and strict translation coverage
+pass. The shared-leg correction preserves ordinary close-zoom separation while
+bounding actual displaced vertices under 1km without changing reported locations.
+
+Web is published at https://loadgistic.com as Netlify
+`6acc19b721f9d03af4a8246c`, using the exact verified Linux prebuilt files.
+Compiled production-config checks and live desktop/phone search, filters, Clear all,
+private boundaries, Tracking entry, chat intake and policy screens pass. Live
+Featured schedule/details render and close without browser exceptions; the mobile
+API returns eight featured trucks. Post-release advisor/catalog/RLS/ACL/guard/
+PostGIS checks pass at ledger 136 with zero critical findings. No database,
+provider configuration, billing or existing signing-key change occurred.
+
+The isolated local build produces standalone Android **1.0.5/code 6**. APK:
+[Download the local test APK](../.local/loadgistic-1.0.5-local-test.apk),
+94,316,424 bytes, SHA-256
+`4a5d6790335c7f5f3db0932aedc8a9c091926d610596fbd3fa136a403f0cceb6`.
+Both compiled APK/AAB permission checks pass, and all 50 included ELF libraries
+meet structural 16KB alignment. The APK installs and cold-starts on the disposable
+Loadgistic emulator; public Capacity, Featured and Tracking entry render. Normal
+synthetic driver sign-in reaches map Home, the shipment list and actual shipment
+detail/status controls. Denying the genuine Android location prompt preserves
+navigation; normal Sign out restores the guest view without a stale tracking
+notice. This uses a separate local test signer, not the existing Expo/Play upload signer.
+No code-6 cloud build was created and no Expo private signing key was exported.
+It cannot replace an existing differently signed install in place. On an Android
+phone using the Mac's Wi-Fi, open **http://10.210.120.53:3136** while its APK-only
+server remains running. Download integrity matches the exact hash; private paths
+are denied. Prefer a spare phone. No existing installation was removed or cleared.
+Google Internal App Sharing rejects NOT_PUBLISHED; no new Google/Expo link exists.
+This local test is not official closed enrollment or physical GPS/push/device acceptance.
+
+The owner-approved regional English copy and new minimal-text freight-yard feature
+graphic are saved in the actual Play listing Draft and independently reloaded.
+Original icon/two genuine historical Android captures are preserved. The rejected
+API commit was inspected before using Console Save as draft; no review or public
+production release was submitted. Exact generated-art provenance is retained.
+The promo ZIP and local review at 3135 use the same approved regional positioning.
+Social accounts/posting, a qualifying permission-video URL, a correctly signed
+replacement closed-track AAB and actual tester enrollment remain separate. The
+owner has been asked to approve bounded local use of the existing Expo upload
+signer; no private-key retrieval proceeds without that answer.
+
+Protected receipts use `.local/runtime-release-20261011b-*`; do not commit
+credentials, raw UI fields, customer records or transient logs. Previews stay at
+3100/8084/3135. Existing `.next-upload-audit/` and `apps/mobile/.claude/` remain
+untouched. Google internal/Alpha code 4 is historical; Internal App Sharing does
+not start the required closed-test clock.
+
 ## October 10 native permission notice repair — local work (FEAT-PLY-001 AC1 / NR-26)
 
 The installed code-4 synthetic driver reaches Home through normal review sign-in

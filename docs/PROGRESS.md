@@ -1,3 +1,27 @@
+## October 11 release outcome
+
+Verified runtime `3c13f4b` is live at https://loadgistic.com / Netlify
+`6acc19b721f9d03af4a8246c`; exact CI `38180627163` passes all eight jobs.
+The failed map-spacing predecessor was not promoted. Root quality 496/mobile 149,
+actual prebuilt/compiled checks, live desktop/phone workflows, eight Featured
+cards and 75 private role/isolation checks pass. Hosted ledger stays 136 and final
+security has zero critical findings. No SQL, settings, billing or existing-key change.
+
+Owner chose local Android building after Expo quota rejection. Standalone 1.0.5 /
+code 6 passes compiled permission/alignment/source checks, installation/COLD launch,
+public navigation, normal synthetic driver login, map Home and shipment details.
+APK-only local phone download is prepared at port 3136. Its temporary test signer
+cannot update an existing Expo/Play install. Google Internal App Sharing rejects
+`NOT_PUBLISHED`, so no Google link or new Expo cloud build exists.
+
+Approved regional listing copy/graphic are saved and independently reloaded as a
+Play Draft. Existing screenshots/icon are preserved. Full Play publication,
+policy-video URL, physical GPS/push, the existing upload signer for a closed-track
+replacement, actual tester enrollment and social accounts remain separate.
+No 14-day clock or social post is claimed. Exact artifacts and evidence are in
+MOBILE_IMPLEMENTATION, CLOUD_HANDOFF and GOOGLE_PLAY_SETUP; private receipts stay
+ignored under `.local/runtime-release-20261011b-*`.
+
 ## October 10 store presentation — active preparation
 
 Expanded owner request: finish a professional Play listing and all source-backed
