@@ -15,7 +15,7 @@ for (const asset of [listing.featureGraphic, listing.icon, ...listing.phoneScree
   assert.ok(asset.altText.length <= 140);
 }
 await mkdir(output, { recursive: true });
-const artwork = await readFile(path.join(sources, 'feature-artwork.png'));
+const artwork = await readFile(path.join(root, listing.featureGraphic.artworkSource));
 const overlay = await readFile(path.join(sources, 'feature-graphic.svg'));
 const icon = await readFile(path.join(root, listing.icon.source));
 const feature = await sharp(artwork).resize(1024, 500, { fit: 'cover', position: 'centre' })

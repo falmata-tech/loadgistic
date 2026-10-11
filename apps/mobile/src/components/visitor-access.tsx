@@ -33,7 +33,7 @@ function VisitorLogin({ scope }: { scope: VisitorScope }) {
   {handoff ? <Field message="Email verification code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" maxLength={6} editable={!busy} /> : <Field message="Your email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" editable={!busy} />}
   {!!message && <Copy>{message}</Copy>}<ErrorText message={error || visitor.errors[scope] || visitor.error} />{handoff?<Button message="Open private access" busy={busy} onPress={()=>void submit()}/>:<Button message="Send email code" busy={busy} onPress={()=>void submit()}/>}
   {!!handoff && <Button secondary message="Use another email or resend" busy={busy} onPress={() => { setHandoff(''); setCode(''); setMessage(''); setError(''); }} />}
-  {visitor.errors[scope] && <Button secondary message="Retry clearing saved access" busy={busy} onPress={() => { void visitor.controller.clear(scope).catch(() => undefined); }} />}
+  {!!visitor.errors[scope] && <Button secondary message="Retry clearing saved access" busy={busy} onPress={() => { void visitor.controller.clear(scope).catch(() => undefined); }} />}
   {scope==='tracking'?<Copy message="No transporter account needed. Verify your email for five minutes of tracking access."/>:<Copy message="No transporter account needed. Access stays open while you use it and closes after 30 minutes of inactivity."/>}
  </Card>;
 }

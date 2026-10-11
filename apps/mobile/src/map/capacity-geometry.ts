@@ -1,4 +1,4 @@
-import { offsetSignalPath } from '../../../../src/lib/map-signal-offset.js';
+import { offsetSignalPath,signalLaneZoom } from '../../../../src/lib/map-signal-offset.js';
 import type { CapacitySignal, SignalPoint } from '../api/public-capacity.ts';
 export type LngLat=[number,number];
 export function project([longitude,latitude]:LngLat,zoom:number) {
@@ -22,17 +22,21 @@ export function locationRing(item:CapacitySignal):LngLat[] {
  return Array.from({length:73},(_,i)=>{const bearing=i/72*2*Math.PI,y=Math.asin(Math.sin(lat)*Math.cos(angular)+Math.cos(lat)*Math.sin(angular)*Math.cos(bearing));const x=lng+Math.atan2(Math.sin(bearing)*Math.sin(angular)*Math.cos(lat),Math.cos(angular)-Math.sin(lat)*Math.sin(y));return[x*180/Math.PI,y*180/Math.PI];});
 }
 export function signalPaths(item:CapacitySignal,zoom:number):{kind:'location'|'current'|'regular';points:LngLat[]}[] {
+ // Pixel separation at world zoom can shift a signal hundreds of kilometres.
+ // Use city-scale projection below zoom 12: even the largest 48px corner is
+ // under 1km at the equator. Keep the existing separation at closer zooms.
+ const laneZoom=signalLaneZoom(zoom);
  const paths:{kind:'location'|'current'|'regular';points:LngLat[]}[]=[],ring=locationRing(item);
  if(ring.length)paths.push({kind:'location',points:ring});
  let reference:{x:number;y:number}[]=[];
  if(item.currentVisible&&item.currentPoints.length>=(item.geometry==='RADIUS'?3:2)){
   const closed=item.geometry==='RADIUS'; const points=coordinates(item.currentPoints);
-  reference=offsetSignalPath((closed?close(points):points).map(p=>project(p,zoom)),closed?-12:-6,closed);
-  paths.push({kind:'current',points:reference.map(p=>unproject(p,zoom))});
+  reference=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?-12:-6,closed);
+  paths.push({kind:'current',points:reference.map(p=>unproject(p,laneZoom))});
  }
  for(const regular of item.regular){const closed=regular.geometry==='RADIUS',points=coordinates(regular.points);if(points.length<(closed?3:2))continue;
-  const pixels=offsetSignalPath((closed?close(points):points).map(p=>project(p,zoom)),closed?12:6,closed,reference.length?[reference]:[]);
-  paths.push({kind:'regular',points:pixels.map(p=>unproject(p,zoom))});
+  const pixels=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?12:6,closed,reference.length?[reference]:[]);
+  paths.push({kind:'regular',points:pixels.map(p=>unproject(p,laneZoom))});
  }
  return paths;
 }

@@ -11,6 +11,23 @@ rollout: Release the public capacity surface with retired-route redirects, purge
 
 # Public marketplace
 
+### Scenario: capacity-network purpose leads the interface
+
+Given a broker, shipper or receiver opens the public or privately shared map\
+When the introduction or About page explains Loadgistic\
+Then it leads with viewing transporters' reported space, routes and approximate locations together to plan loads\
+And public discovery and email-authorized private sharing are explicit choices\
+And providers retain control of public, private, combined and exclusive sharing\
+And private shipment Tracking is a supporting workflow after transport is agreed\
+And the same contextual meaning is present on web and mobile in all five interface languages\
+And no copy implies a paid subscription, platform-owned fleet, guaranteed availability or automatic capacity alerts\
+And the compact introduction preserves map space and the existing navigation.
+
+Verification: `tests/platform-narrative.test.mjs`, focused map-introduction and
+unified-capacity browser workflows, actual phone/desktop preview review. The
+October 10 narrative correction is implemented only after these checks; owner
+visual approval remains required before release of the changed interface.
+
 ### Scenario: ordinary text search avoids unnecessary document scans
 
 Given profile text or office-city search has no document filter\
@@ -39,7 +56,7 @@ native interfaces already use cursor results; this correction adds no UI mode.
 Given a visitor opens Loadgistic\
 When the public application shell and default Market workspace render\
 Then the selected Capacity navigation identifies the workspace and a shared introduction explains the platform\
-And one visible Find truck capacity in Ethiopia heading names the page\
+And one visible Find space for your next load heading names the page\
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\

@@ -15,16 +15,18 @@ import { ResultsDrawer } from '../components/results-drawer';
 import { VEHICLE_CONFIGURATIONS } from '../../../../src/lib/vehicle-configurations';
 import { DiscoveryResults } from '../components/discovery-results';
 import { LoadingBar } from '../components/loading-bar';
+import { capacityIntroduction } from '../../../../src/lib/platform-copy.js';
 import { loadCapacity, loadSharedCapacity, type CapacitySignal } from '../api/public-capacity';
 
 const emptySignals:CapacitySignal[]=[];
 
 export default function App() {
-  const params = useLocalSearchParams<{q?:string}>();
+  const params = useLocalSearchParams<{q?:string;view?:string}>();
   const initialQuery = typeof params.q === 'string' ? params.q : '';
-  return <Capacity key={initialQuery} initialQuery={initialQuery} />;
+  const initialMode=params.view==='private'?'private':'open';
+  return <Capacity key={`${initialMode}:${initialQuery}`} initialQuery={initialQuery} initialMode={initialMode} />;
 }
-function Capacity({initialQuery}:{initialQuery:string}) {
+function Capacity({initialQuery,initialMode}:{initialQuery:string;initialMode:'open'|'private'}) {
   const {t}=useLanguage(),updates=useChatUpdates();
   const visitor = useVisitor(), visitorController = visitor.controller;
   const [filters,setFilters]=useState<TruckFilters>({}),[filtersOpen,setFiltersOpen]=useState(false),[drawer,setDrawer]=useState(false),[page,setPage]=useState(1);
@@ -32,7 +34,7 @@ function Capacity({initialQuery}:{initialQuery:string}) {
   const effectiveFilters=useMemo(()=>({...filters,...(blocked.length?{blocked:blockKey}:{})}),[filters,blockKey,blocked.length]);
   const filterKey=JSON.stringify(effectiveFilters);
   const [controlsHeight,setControlsHeight]=useState(48);
-  const [mode, setMode] = useState<'open' | 'private'>('open');
+  const [mode, setMode] = useState<'open' | 'private'>(initialMode);
   const sharedIdentity = visitor.snapshot.capacity?.startedAt, sharedReady = Boolean(visitor.ready && visitor.snapshot.foreground && sharedIdentity);
   const [input, setInput] = useState(initialQuery), [query, setQuery] = useState(initialQuery), [revision, setRevision] = useState(0);
   const requestKey = `${mode}:${query}:${filterKey}:${revision}:${sharedIdentity || ''}:${sharedReady}`;
@@ -72,8 +74,8 @@ function Capacity({initialQuery}:{initialQuery:string}) {
   const clearAll=()=>{resetResults();setFilters({});setInput('');setQuery('');setPage(1);setRevision(v=>v+1);};
   const showProfile=(profile:ProfileResult)=>{resetResults();setQuery('');setInput('');setFilters({...filters,provider:profile.kind==='COMPANY_DRIVER'?'':profile.handle,truck:profile.kind==='COMPANY_DRIVER'?profile.capacityId:''});setPage(1);setDrawer(false);};
   return <View style={styles.screen} onTouchStart={()=>{if(mode==='private'&&sharedReady)void visitorController.touch('capacity').catch(()=>undefined);}}>
-    <View style={styles.intro}><Text style={styles.title}>{t('Find truck capacity')}</Text><Text style={styles.copy}>{t('Transporters share availability and routes with brokers, shippers and receivers.')}</Text></View>
-    <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 12, gap: 8 }}>{([['open', 'Open to the public'], ['private', 'Privately shared with you']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: mode === value }} onPress={() => { resetResults(); setMode(value);setPage(1);setDrawer(false); }} style={{ flex: 1, minHeight: 48, borderWidth: 1, borderColor: '#0c7275', borderRadius: 12, padding: 10, justifyContent: 'center', backgroundColor: mode === value ? '#0c7275' : '#fff' }}><Text style={{ color: mode === value ? '#fff' : '#0c7275', fontWeight: '600', textAlign: 'center' }}>{t(label)}</Text></Pressable>)}</View>
+    <View style={styles.intro}><Text style={styles.title}>{t(capacityIntroduction.title)}</Text><Text style={styles.copy}>{t(capacityIntroduction.body)}</Text></View>
+    <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingBottom: 12, gap: 8 }}>{([['open', 'Open to the public'], ['private', 'Privately shared with you']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="tab" aria-selected={mode === value} accessibilityState={{ selected: mode === value }} onPress={() => { resetResults(); setMode(value);setPage(1);setDrawer(false); }} style={{ flex: 1, minHeight: 48, borderWidth: 1, borderColor: '#0c7275', borderRadius: 12, padding: 10, justifyContent: 'center', backgroundColor: mode === value ? '#0c7275' : '#fff' }}><Text style={{ color: mode === value ? '#fff' : '#0c7275', fontWeight: '600', textAlign: 'center' }}>{t(label)}</Text></Pressable>)}</View>
     {mode === 'private' && sharedReady && <Pressable accessibilityRole="button" onPress={() => { void visitorController.clear('capacity').catch(() => setResult({ key: requestKey, items: [], loading: false, error: 'Could not clear saved email access. Try closing it again.' })); }} style={{ paddingHorizontal: 18, paddingVertical: 12 }}><Text style={styles.link}>{t('Close private access')}</Text></Pressable>}
     <View style={styles.search}><TextInput accessibilityLabel={t('Search transporters')} placeholder={t('Name, handle or city')} placeholderTextColor="#526875" value={input} maxLength={120} onChangeText={setInput} onSubmitEditing={search} returnKeyType="search" style={styles.input} /><Pressable accessibilityRole="button" accessibilityLabel={t('Search')} onPress={search} style={styles.button}><AppIcon name="search" color="#fff"/></Pressable></View>
     <View style={styles.map} onTouchStart={() => { if (mode === 'private') void visitorController.touch('capacity').catch(() => undefined); }}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} selected={selected} loading={loading} onSelect={selectMapSignal} onDeselect={clearSelection} />

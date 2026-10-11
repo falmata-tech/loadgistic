@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {offsetSignalPath} from '../src/lib/map-signal-offset.js';
+import {offsetSignalPath,signalLaneZoom} from '../src/lib/map-signal-offset.js';
+
+test('MapLibre and Leaflet lanes stay geographically bounded at world zoom without limiting the camera',()=>{
+ for(const tileSize of [256,512])for(const zoom of [0,1,3,5,8,12,13,20]){
+  const laneZoom=signalLaneZoom(zoom,tileSize),meters=48*40075016.6856/(tileSize*2**laneZoom);
+  assert.ok(meters<=1000);assert.ok(laneZoom>=zoom);
+  if(zoom>=13)assert.equal(laneZoom,zoom);
+ }
+ assert.ok(Number.isFinite(signalLaneZoom(NaN)));
+});
 
 const square=[{x:0,y:0},{x:200,y:0},{x:200,y:200},{x:0,y:200}];
 test('coincident area lanes separate every edge and are independent of winding/start vertex',()=>{

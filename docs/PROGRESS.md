@@ -1173,6 +1173,100 @@ tables. The earlier backup/rehearsal is being refreshed before any mutation.
 
 # Progress
 
+## Active October 10 narrative correction
+
+October 11 steering: publication is held for the owner's Featured/Tracking crash
+and world-zoom map reports. Both local preview servers had stopped and are now
+restored on verified free Loadgistic ports, using local Supabase at 55321.
+Read-only live Featured currently returns eight trucks, seven weekly themes and
+twelve programme entries. That response is not runtime or rotation acceptance.
+Fixed-pixel mobile route offsets demonstrably grow to hundreds of kilometres at
+world zoom; camera/query race verification is also required. Continue from:
+- [x] Reproduce Featured and Tracking navigation, including restored private access in both browser adapters.
+- [x] Regress and bound native/web route offsets; discard stale camera query results.
+- [x] Verify round completion/restart and manual precedence against saved records in rollback-only local tests.
+- [ ] Verify actual browser and Android flows, then resume the reviewed release.
+
+Confirmed local Featured cause: the Sunday capacity lookup passes 236 UUIDs in
+one URL and receives HTTP 414 (`URI too long`). Local containers have been
+restarted without resetting their data. Their ledger ends at 129 with historical
+gaps, but current policy tables/functions already exist. A backed-up attempt to
+apply exact 130–136 stops on the 130 drift assertion and rolls back completely;
+do not replay migrations, reset fixtures or repair the ledger from assumptions.
+Seven focused current-policy/Featured/Tracking SQL suites pass against the actual
+catalog with all mutations rolled back. No hosted write occurred.
+Implement bounded candidate reads, regress small-zoom geometry and asynchronous
+camera revisions, then verify real navigation and saved Tracking access. Preserve
+the existing no-repeat selection rounds and manually scheduled days; the owner
+clarified that exhaustion means a new selection round, not a new carousel UI.
+
+Local repairs: candidate UUID batches are capped at 100 and row reads paginate
+500 at a time, including the public provider RPC. A 1,105-truck regression with
+1,100 historical signals verifies complete reads and newest private-signal
+precedence; batch errors do not return a partial roster. Web Featured offers
+localized refresh/navigation on a known data failure rather than crashing.
+Both map adapters use bounded lane projection (less than 1km maximum join
+displacement), keeping closer-zoom separation and real matching coordinates.
+Native rendered queries reject old camera/data revisions and unmounted results.
+
+Tracking's actual browser reproduction found a raw empty string inside a native
+Card, raising an error overlay that blocked the navigation. Boolean guards repair
+that condition and the same unsafe conditions in capacity, profile, transporter,
+chat history and alert controls. The typed JSX regression scans every mobile
+screen; it distinguishes raw string/zero from safe Boolean conditions. Featured
+and visitor Tracking additionally validate response shape before rendering.
+
+Focused evidence: 27 native logic/text regressions and 17 root candidate/lane/
+public-projection regressions pass; seven rollback SQL suites pass. The real
+phone-sized web email workflow verifies access, reload, revocation and expiry.
+Two Expo-web workflows verify actual navigation, real local OTP, persisted
+Tracking access, detail, malformed-response recovery and closure. The web outage
+probe verifies navigation and refresh recovery. Twenty-four wheel operations per
+map, native selected-truck exit and actual world-view captures have no runtime
+errors. Screens and protected receipts are under `.local/`; these browser checks
+do not certify a newly installed Android binary or closed-phone GPS/push.
+
+Root/native typechecks, native lint and source/spec checks pass. No new CI run,
+EAS build, deployment, Play submission, hosted SQL/configuration mutation or social
+post is claimed. The code-5 artifacts predate these repairs and revised narrative.
+The owner approved the actual previews on October 11. Full local quality passes
+495 root tests, 149 mobile tests and native lint; exact release build, current CI
+and replacement 1.0.5/code-6 binaries remain required before publication. Play permission video and physical acceptance
+remain distinct from JavaScript compilation and browser evidence.
+
+October 11 approved release gates: production Next build and mobile typecheck
+pass, Expo Doctor passes 21/21, and strict translations cover 491/491 messages.
+The actual Android Hermes export is 5,101,524 bytes and excludes private/service
+credentials; EAS archive verification compares all 384 inputs with current source.
+An initial Chromium launch was sandbox-denied. The permitted run passes eight
+browser cases; two email cases time out during concurrent emulator/compilation
+load. The unchanged focused recheck passes all four desktop/phone email cases after
+parking only the owned emulator. Failure evidence and request limits are retained. Current
+replacement version is 1.0.5/code 6; remote CI and installation remain required.
+
+
+Owner direction: make the app, Play presentation and prelaunch campaign about
+brokers and shipping teams keeping transporters' reported capacity, routes and
+availability together in one map. Private Tracking supports already agreed work.
+Use credible East African freight operations in promotional art; retain generated
+art provenance and avoid paid-subscription, platform-owned-fleet, automatic-alert
+or guaranteed-capacity claims.
+
+Ordered work (FEAT-MKT-001 / FEAT-PLY-001):
+- [x] Record the controlling meaning and acceptance criteria before editing copy.
+- [x] Reuse the existing public/private map layout with shared web/native copy and
+  contextual Amharic, Afaan Oromo, Somali and Tigrinya wording.
+- [x] Align About, metadata, Play copy, artwork and screenshot order in local sources.
+- [x] Run focused language/rendering checks and provide actual local previews.
+- [x] Owner approved the revised Featured/Tracking/map presentation and promo previews on October 11: “Approve and continue release.”
+- [ ] Publish only verified artifacts to the authorized testing tracks; keep
+  Google review, twelve opted-in testers and physical-device acceptance distinct.
+
+The prior native repair is separately built as 1.0.4/code 5 at commit
+`9aa8aae826f0f903b15cf063d3f23c475f835803`; all eight CI jobs pass. Both artifacts
+are downloaded, the APK is installed in the isolated Loadgistic emulator, and the
+final merged APK/AAB permission checks pass. This does not approve the new copy.
+
 ## Simpler Tracking access — local review ready, 2026-09-28
 
 FEAT-TRK-001 / FEAT-REV-001, ADR-073. Owner requested fewer codes and a

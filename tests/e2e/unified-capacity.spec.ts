@@ -97,7 +97,7 @@ test('combined view choices and locked email map remain readable in all language
   await expect(page.locator('.capacity-view-choice a').nth(0)).toHaveText(messages['Open to the public']);
   await expect(page.locator('.capacity-view-choice a').nth(1)).toHaveText(messages['Privately shared with you']);
   await expect(page.locator('.locked-capacity-access h2')).toHaveText(messages['Trucks shared with you']);
-  await expect(page.locator('.market-introduction p')).toHaveText(messages['Transporters share capacity, routes and availability with brokers, shippers and receivers on Loadgistic. Explore open signals or view those shared with your email.']);
+  await expect(page.locator('.market-introduction p')).toHaveText(messages['Keep your transporters close. See the space and routes they report, or find new options in the public market.']);
   await expect(page.locator('.locked-capacity-access h2 + p')).toHaveText(messages['Enter the email a transporter shared with. Verify it with a code to see their capacity, routes and availability. No account needed.']);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.locator('.locked-capacity-access').scrollIntoViewIfNeeded();
@@ -109,7 +109,7 @@ test('combined view choices and locked email map remain readable in all language
  for(const locale of ['am','om','so','ti']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.locator('.language-picker select:visible').selectOption(locale);
-  for(const message of ['Share capacity, routes and availability with brokers, shippers and receivers you know, or make them open to the public.','Explore signals open to the public, view those privately shared with you, or share your own truck availability.'])await expect(page.locator('main')).toContainText(messages[message]);
+  for(const message of ['Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.',"Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.",'Explore signals open to the public, view those privately shared with you, or share your own truck availability.'])await expect(page.locator('main')).toContainText(messages[message]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
 });

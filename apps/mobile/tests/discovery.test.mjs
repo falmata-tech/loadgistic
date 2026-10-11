@@ -40,6 +40,27 @@ test('coincident closed areas are separated and remain closed',()=>{
  const paths=signalPaths(truck,12),a=paths.find(p=>p.kind==='current').points,b=paths.find(p=>p.kind==='regular').points;
  assert.deepEqual(a[0],a.at(-1));assert.deepEqual(b[0],b.at(-1));assert.notDeepEqual(a,b);
 });
+test('world zoom cannot move route lanes into another country or alter reported geometry',()=>{
+ const distanceToPath=(point,path)=>Math.min(...path.slice(1).map((b,i)=>{
+  const a=path[i],dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
+  const t=len?Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.y-a.y)*dy)/len)):0;
+  return Math.hypot(point.x-a.x-t*dx,point.y-a.y-t*dy);
+ }));
+ for(const latitude of [-80,0,9,80])for(const geometry of ['ROUTE','RADIUS']){
+  const points=[{lat:latitude,lng:38},{lat:latitude+.1,lng:39},{lat:latitude+.4,lng:38.4}],truck=parse({...raw,
+   availability_geometry:geometry,current_route_points:points,capacity_area_boundary:points,
+   recurring_corridors:[{geometry,route_points:points.toReversed(),area_boundary:points.toReversed()}]});
+  const before=JSON.stringify(truck);
+  for(const zoom of [0,1,3,5,8,12])for(const path of signalPaths(truck,zoom).filter(p=>p.kind!=='location')){
+   const real=(path.kind==='current'?truck.currentPoints:truck.regular[0].points).map(p=>project([p.longitude,p.latitude],12));
+   if(geometry==='RADIUS')real.push(real[0]);
+   for(const point of path.points){const meters=distanceToPath(project(point,12),real)*40075016.6856/(512*2**12);
+    assert.ok(meters<=1000,`${path.kind} ${geometry} zoom ${zoom}: ${Math.round(meters)} metres from source`);}
+   if(geometry==='RADIUS')assert.deepEqual(path.points[0],path.points.at(-1));
+  }
+  assert.equal(JSON.stringify(truck),before);
+ }
+});
 test('all coincident truck markers receive stable individually reachable display positions',()=>{
  const points=Array.from({length:9},(_,i)=>({id:String(i),coordinate:[38,9]}));const offsets=separateMarkers(points,20);assert.deepEqual(offsets,separateMarkers(points.toReversed(),20));
  const values=Object.values(offsets);assert.equal(values.length,9);for(let i=0;i<values.length;i++)for(let j=i+1;j<values.length;j++)assert.ok(Math.hypot(values[i][0]-values[j][0],values[i][1]-values[j][1])>=54);

@@ -10,7 +10,7 @@ import {capacityGeographicMatch} from '../capacity-geographic-match.js';
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
 import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
 import {featuredTruckTypeForDate,featuredTruckWeekForDate} from '../featured-trucks.js';
-import {loadFeaturedTruckCandidates,featuredTruckMapHref} from '../featured-truck-candidates.js';
+import {loadFeaturedTruckCandidates,featuredTruckMapHref,readFeaturedRows} from '../featured-truck-candidates.js';
 import {capacityUpdatePresentation,distanceBetweenKm,normalizePrivateContactEmail} from '../domain.js';
 import {hashTrackingAccessCode,privateContactDigest,sharedCapacityOtpCode} from '../security.js';
 
@@ -573,12 +573,13 @@ export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
   const featureDate=String(date||'');
   const expo=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
-  const [dayResult,candidateResult]=await Promise.all([
+  const [dayResult,candidateRows]=await Promise.all([
     client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,schedule_mode,schedule_config_json,manual_schedule_json,status')
       .eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
-    client.rpc('public_featured_provider_candidates',{requested_region_codes:expo.regionCodes})
+    readFeaturedRows(()=>client.rpc('public_featured_provider_candidates',{requested_region_codes:expo.regionCodes}),
+      'SUPABASE_PUBLIC_FEATURED_FAILED')
   ]);
-  if(dayResult.error||candidateResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error||candidateResult.error});
+  if(dayResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error});
   const day=dayResult.data;
   const empty=()=>({feature_date:featureDate,base_place:expo.title,expo_group:expo,week:regionalExpoWeekForDate(featureDate),
     headline:'Daily Featured Transporters',introduction:`Today’s ${expo.title} transporter roster is being prepared.`,
@@ -586,7 +587,7 @@ export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
     broadcast_end_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd,schedule:buildFeaturedDaySchedule(featureDate,0),
     walkthroughs:[],sponsored_providers:[],providers:[],published:false});
   if(!day||day.expo_group_key!==expo.key)return empty();
-  const candidates=(candidateResult.data||[]).map(row=>decorateFeaturedCandidate(row.payload||row));
+  const candidates=candidateRows.map(row=>decorateFeaturedCandidate(row.payload||row));
   const candidateByKey=new Map(candidates.map(candidate=>[
     candidate.provider_organization_id?`organization:${candidate.provider_organization_id}`:`profile:${candidate.provider_profile_id}`,candidate
   ]));
@@ -639,12 +640,13 @@ export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
 export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   const featureDate=String(date||'');const theme=featuredTruckTypeForDate(featureDate);const sponsorGroup=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
-  const [dayResult,providerResult]=await Promise.all([
+  const [dayResult,providerRows]=await Promise.all([
     client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,schedule_mode,schedule_config_json,manual_schedule_json,target_count,status').eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
-    client.rpc('public_featured_provider_candidates',{requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)})
+    readFeaturedRows(()=>client.rpc('public_featured_provider_candidates',{requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)}),
+      'SUPABASE_PUBLIC_FEATURED_FAILED')
   ]);
-  if(dayResult.error||providerResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error||providerResult.error});
-  const providers=(providerResult.data||[]).map(row=>decorateFeaturedCandidate(row.payload||row));
+  if(dayResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error});
+  const providers=providerRows.map(row=>decorateFeaturedCandidate(row.payload||row));
   const providerByKey=new Map(providers.map(provider=>[provider.provider_organization_id?`organization:${provider.provider_organization_id}`:`profile:${provider.provider_profile_id}`,provider]));
   const candidates=await loadFeaturedTruckCandidates(client,featureDate,providers);
   const truckByKey=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));

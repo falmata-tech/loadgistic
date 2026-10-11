@@ -495,3 +495,40 @@ clearance, and ensure the complete entry action remains visible and reachable on
 short screens. Use actual UI and review any adjustment before release. Keep this
 optional screenshot out of the final store set until that review passes; the
 four core-workflow screenshots remain the required minimum for this package.
+
+## WEB-MOB-020 — Canonical website links did not map to native destinations
+
+**Status:** Locally repaired October 11; replacement binary and installed-link
+verification pending. **Owner:** Mobile navigation maintainer.
+
+Application emails use `/track` and `/shared-capacity`, while native routes were
+`/visitor-tracking` and the map's private choice. The native allowlist rejected
+those legitimate canonical paths; public `/@handle` links had the same mismatch.
+The allowlist now maps those exact paths to existing destinations. Private entry
+selects its email-verification view, without accepting link credentials or granting
+a session. Invalid handles, extra parameters and foreign hosts remain denied.
+Native link regressions and the browser private-entry workflow supplement the
+normal real-email Tracking flow. Do not claim installed-link or web-to-app
+acceptance merely from normalization tests or an Expo-web view.
+
+The website's `?q=handle&truck=id` focused-map link still has no equivalent native
+truck-focus parameter. Native UI instead links to the matching transporter map
+search. Record that compatibility gap rather than accepting arbitrary additional
+parameters or bypassing selection/privacy checks as a convenience.
+
+## WEB-MOB-021 — Local migration history is not a trustworthy catalog snapshot
+
+**Status:** Diagnosed, not rewritten. **Owner:** Local environment maintainer.
+
+October 11 local CLI history ends at 129 and contains older gaps, while policy
+tables and functions from later migrations already exist. The backed-up exact
+130–136 transaction is refused by migration 130's drift assertion and rolls back.
+No reset, broad replay, ledger repair or hosted change follows that refusal.
+Seven focused policy/Featured/Tracking regression suites pass against the actual
+catalog with all mutations rolled back. These results do not prove historical
+migration bytes or make the ledger authoritative.
+
+Next: compare the actual local catalog with a clean isolated replay and reconcile
+history only from exact evidence. Preserve the existing manual preview records;
+use the normal clean CI/rehearsal for release evidence, not a falsely repaired
+local max-version value.

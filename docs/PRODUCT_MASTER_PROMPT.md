@@ -1,43 +1,53 @@
 # Loadgistic Product Master Prompt
 
-## Locally verified audit contracts
+## Purpose and audience
 
-The implementation under review adds explicit truck retirement/restoration and
-reasoned nonterminal Tracking recovery; bounded administrator business-name
-correction and approximate Tracking maps; fresh-code login-email confirmation
-and retained-history account deactivation; public map overview cells with
-bounded detailed windows and database-filtered private viewports; and
-incremental Support polling that retrieves changed conversations only.
-Account closure follows the owner's decision: resolve active work, deactivate
-access and public visibility, retain shipment, audit and file history.
+Loadgistic helps brokers, shippers and receivers keep the capacity of the
+transporters they work with in one view. Transporters report available cargo
+space, service routes and approximate locations. Recipients can use that view to
+plan loads and contact the right provider, rather than starting their search
+again for every job. This is a network of shared information, not a fleet owned
+by Loadgistic, a paid subscription or a guarantee that a truck is available.
 
-These contracts (ADRs 058–062) are verified locally and remain unpublished.
-Migrations 090–095, seven SQL suites, six concurrency cases, the 5,000-truck
-scale audit and 34 affected desktop/phone cases passed across focused runs.
-Final quality passed 290 tests; BUILD_VERIFICATION records final build evidence.
-Cancelled Tracking shows its actual terminal label/history without status or
-location controls. Public metadata masks hidden contacts, private image paths
-and Driver surnames before rendering. Viewport commands occupy the command
-panel rather than map grid rows. Selected location/loading/failure feedback
-occupies its own summary row, retaining readable identity, contact, close and
-retry actions. Narrow summaries reserve the left zoom-control column. Both
-contracts have desktop/phone and 320px reflow evidence (F22/F24).
-Foreground browser GPS is the supported location contract;
-phone-background GPS has not been implemented or promised.
+Providers control whether a signal is public, private to named contacts, both,
+or exclusive to one recipient. A verified email opens only the capacity shared
+with that recipient; public discovery remains account-free. Brokers and
+enterprise contacts do not gain staff or transporter-account powers by opening
+that map. Independent drivers manage one current truck; transport companies
+manage their trucks and assigned drivers.
 
-Loadgistic is Ethiopia's transport-capacity sharing and shipment-tracking platform. Transporters share capacity signals with known brokers and enterprises shipping or receiving goods, or publish them to the open market. Once work is agreed, transporters provide professional private shipment tracking to brokers and their customers, or directly to enterprise contacts. Fleet transporters, owner-operators and self-managed Drivers control their capacity, business presentation and shipment updates.
+Private shipment tracking supports transport that has already been agreed. It
+keeps the authorized shipment parties informed through approximate location,
+status updates and loading/unloading proofs. It is secondary to the capacity
+network in the product introduction and promotional story. Optional document
+review identifies the particular evidence Loadgistic reviewed, not a guarantee
+of price, safety, current availability, document validity or delivery.
 
-## Audience and promise
+## Narrative and presentation
 
-The core relationship is between transport providers and the brokers, shippers and receivers they serve. Businesses of all sizes can discover capacity without creating an account; trusted email recipients access privately shared capacity and authorized shipment updates. These audience descriptions do not introduce broker or enterprise account roles. Optional document review gives people seeking transport evidence to assess the provider, Driver and truck. Loadgistic does not guarantee availability, price, performance, document validity or outcomes.
+The owner-approved October 10 web/native copy revision uses “Find space for your next load” above the existing public/private map choices. About
+explains how to open a shared map, how transporters control sharing, and how to
+confirm a load directly before explaining Tracking. The same contextual wording
+is supplied in English, Amharic, Afaan Oromo, Somali and Tigrinya; fluent-speaker
+review is distinct from automated language/rendering checks. User-generated
+names, descriptions, routes and messages are not translated.
 
-Public and workspace copy should reflect these relationships without repeating the full platform explanation. About carries the fuller narrative. Other pages use brief task-specific language: share capacity, choose who can see it, keep shipment partners informed, and build confidence through reviewed evidence. Preserve access/privacy requirements and factual badge limits at the point of decision. This editorial clarification is implemented locally; rollout remains pending.
+Promotional design shows practical East African road-freight operations:
+working trucks, freight yards, drivers and dispatchers. It avoids abstract tech
+hype or regional caricatures. Generated artwork retains provenance and applicable
+AI labels; it is not customer photography. Store screenshots must be genuine
+standalone app captures with synthetic records and no credentials. Private
+capacity leads, then public discovery, signals and transporter controls; Tracking
+comes afterward. Web availability, Android testing and public Play release must
+be stated separately. No invented launch date, test enrollment or response-time
+promise is allowed. Revised visual work received explicit owner approval on October 11; publication
+still requires its applicable release gates (FEAT-MKT-001 / FEAT-PLY-001).
 
 ## Public discovery
 
 Query-sensitive capacity and place-search responses remain outside shared CDN caches unless every accepted filter or cursor is included in the cache key, so one visitor's query can never replace another query's results.
 
-Public navigation follows the two core jobs before promotion: Open capacity, Private capacity, Track, Featured, then About on the five-destination phone bar. Desktop keeps those first four destinations in the same order and places About with the quieter Loadgistic links.
+Public navigation uses Capacity, Track, Featured and About. Capacity opens one map workspace with Open to the public selected by default and a Privately shared with you choice. Transporter login/My workspace stays separate from email-authorized visitor access.
 
 Open and unlocked Private capacity reserve the navigation rail's actual inset
 and width on wide screens. Both maps occupy the space remaining below the header
@@ -45,7 +55,22 @@ and tablet navigation, or above phone navigation. The private session bar remain
 above its map. Search and dismissible Filters stay usable across these layouts,
 including 320-by-640 reflow, without document overflow.
 
-Loadgistic's public surface is a route-level application shell rather than one scrolling marketing page. `/` opens the complete account-free **Open Transport Capacity** workspace with one map-only market, one search control, location context, and bounded cursor loading. `/shared-capacity` opens **Private Transport Capacity** after verifying a trusted email; navigation uses the shorter **Private capacity** label. Map-first capacity workspaces rely on selected persistent navigation and an accessible page name rather than repeating a visible title and explanatory header above the map. `/featured` opens the complete Daily Featured Trucks workspace without loading either capacity map. Track, About, Privacy, Terms, transporter signup, provider microsites, and login retain shareable routes. Desktop uses a floating workspace rail grouped into primary discovery, account, and Loadgistic information destinations; phones use fixed primary navigation while Log in or Dashboard remains in the header. A persistent Ask Loadgistic launcher opens a compact assisted-matching dialog or phone sheet on every public route and restores the authorized conversation after navigation or refresh. The public navigation shows Log in while signed out and Dashboard while signed in; transporter signup is offered from the login page rather than as a separate Market navigation item. Next.js route links keep transitions app-like while the primary routes remain independently server rendered and code split. Searching a transporter name returns only that transporter's current trucks. There is no ranked Truck List, Provider Market, provider map, Area Market, or provider list. The legacy `/capacity` and `/providers` addresses redirect to Open Transport Capacity while preserving useful search input. No member login is required for public filters, bounded Ethiopia place suggestions, capacity details, transporter microsites, Private capacity email verification, Assisted matching, Daily Featured Trucks, or email-and-code Tracking verification. Shipment Board, Post shipment, Business signup, capacity-seeker accounts, and Business public profiles are absent.
+Loadgistic's public surface is a route-level application shell. `/` is the
+account-free public capacity map; `/?view=private` uses the same introduction
+and map workspace with an empty map until recipient email verification.
+`/shared-capacity` redirects to that private view while preserving useful query
+input. Public and authorized private discovery show matching profile results in
+a drawer and truck/driver signals on the map; company profiles do not become map
+markers. Search uses published profile names, handles, office cities and
+service descriptions. Detailed truck filters remain in a modal. `/featured`
+shows the rotating programme separately, and `/track` opens email-authorized
+shipment tracking. About carries product education without adding repeated
+marketing panels over the map. Phones keep short primary navigation and an
+obvious Marketplace/My workspace switch for signed-in providers. Public
+transport assistance is brokerage live chat, while provider Support is in the
+workspace. Public discovery creates no demand post, buyer dashboard or member
+network. The legacy `/capacity` and `/providers` addresses redirect to Capacity.
+
 
 The public shell uses white and warm off-white working surfaces over a restrained Loadgistic-patterned canvas. Map-first capacity workspaces begin with their primary tool and use selected navigation as their visible page label; board and information-page headings use a compact task scale; detailed story and the approved workshop artwork live on About rather than delaying working routes. Loading, empty, error, and cursor states remain compact overlays inside bounded map canvases rather than layout rows that steal map height. At a 320-by-640 reflow viewport, each capacity map retains at least 300 CSS pixels of usable height and no form, chat launcher, map control, session action, or bottom navigation covers another required control.
 

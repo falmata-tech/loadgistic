@@ -12,6 +12,25 @@ test('known public and protected destinations preserve identifiers without grant
   for (const route of ['shipment-detail','shipment-manage','visitor-shipment','support-chat']) assert.equal(normalize(`loadgistic://${route}?id=${id}`),`/${route}?id=${id}`);
   assert.equal(normalize('loadgistic:///account'),'/account');
 });
+test('the website Tracking entry opens native email verification without trusting link credentials',()=>{
+ for(const path of ['/track','/track/','https://loadgistic.com/track','https://www.loadgistic.com/track','loadgistic://track']){
+  assert.equal(normalize(path),'/visitor-tracking');
+ }
+ for(const path of ['/track?email=person@example.test','/track?code=123456','/track#token=secret','https://evil.example/track']){
+  assert.equal(normalize(path),'/link-unavailable');
+ }
+});
+test('canonical private-capacity and public-profile aliases retain the normal privacy boundary',()=>{
+ for(const prefix of ['', 'https://loadgistic.com', 'https://www.loadgistic.com']){
+  assert.equal(normalize(prefix+'/shared-capacity'),'/?view=private');
+  assert.equal(normalize(prefix+'/@rift-valley'),'/transporter?handle=rift-valley');
+ }
+ assert.equal(normalize('loadgistic://shared-capacity'),'/?view=private');
+ assert.equal(normalize('/?view=private&q=Adama'),'/?view=private&q=Adama');
+ for(const path of ['/shared-capacity?email=person@example.test','/@rift-valley?token=secret','/@x',
+  '/?view=private&view=private','/?view=private&code=123456','/?view=unknown','https://evil.example/shared-capacity'])
+  assert.equal(normalize(path),'/link-unavailable');
+});
 test('malformed, ambiguous, foreign and credential-bearing links recover without echoing input', () => {
   for (const path of ['//evil.example/account','https://evil.example/account','http://loadgistic.com/account',
     'https://user:password@loadgistic.com/account','loadgistic://account?token=secret',

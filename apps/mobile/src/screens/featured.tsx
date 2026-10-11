@@ -7,11 +7,12 @@ import { ActivityIndicator,View } from 'react-native';
 import { usePublicQuery } from '../hooks/public-query';
 import { useForegroundRefresh } from '../hooks/foreground-refresh';
 import { type Featured,programmeState } from '../api/public-content';
+import {parseFeatured} from '../api/runtime-content';
 import { Page,Title,Copy,Card,Button,ErrorText } from '../components/ui';
 import { PublicImage,ExternalButton } from '../components/public-details';
 export default function FeaturedScreen(){
  const {t}=useLanguage();
- const query=usePublicQuery<Featured>('/api/mobile/public/featured'),{blocked}=useBlockedProviders();
+ const query=usePublicQuery<Featured>('/api/mobile/public/featured',parseFeatured),{blocked}=useBlockedProviders();
  const feature=useMemo(()=>{if(!query.data)return null;const trucks=query.data.trucks.filter(truck=>!blocked.includes(truck.handle));const slots=new Set(trucks.map(truck=>truck.slot));return {...query.data,trucks,programme:query.data.programme.filter(entry=>entry.slot===null||slots.has(entry.slot)),sponsors:query.data.sponsors.filter(sponsor=>!blocked.includes(sponsor.handle))};},[query.data,blocked]);
  const [now,setNow]=useState(Date.now),[schedule,setSchedule]=useState(false),[week,setWeek]=useState(false);
  useForegroundRefresh(query.refresh,Boolean(feature),60000);

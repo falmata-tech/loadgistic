@@ -73,6 +73,41 @@ Both. Exclusive changes are atomic and enforce one email plus no public exposure
 additional grant commands cannot bypass it. A mode badge describes actual saved
 authority, never a client draft or a claim that transport has been booked.
 
+### October 11 launch-blocking runtime and world-zoom verification
+
+Given a visitor opens Featured, Tracking or Capacity on web or mobile\
+When data is loading, unavailable, refreshed, or the camera changes repeatedly\
+Then a recoverable request failure stays inside the screen and cannot crash navigation\
+And cluster updates from an older camera or data revision cannot overwrite the current view\
+And zooming to continental/world scale does not amplify display-only route separation into another country\
+And route separation stays within one kilometre of the reported geometry without changing saved coordinates, matching or permissions\
+And Empty/Partial cluster identities, counts, colors and expansion source remain distinct\
+And global panning remains available; no country lock or manual loading mode is introduced.
+
+Given Featured or Tracking receives a malformed successful response, or an error
+condition contains an empty string\
+When the mobile screen renders\
+Then runtime validation converts unusable data into a recoverable screen error\
+And native containers never receive raw empty strings or zero from conditional controls\
+And an error overlay cannot block the app's normal navigation\
+And known fixed error messages use the selected interface language.
+
+Verification must reproduce actual public navigation, repeated zoom/pan and saved
+visitor Tracking access. Compilation or a response status alone is insufficient.
+The October 11 owner reports block release until the required workflows work.
+
+Given a visitor follows the canonical Loadgistic `/track` link from a shipment email\
+When the installed app receives that link\
+Then it opens the same email-verified Tracking entry as the app's Tracking navigation\
+And no session is granted by the link\
+And foreign, malformed, credential-bearing and unexpected-query links remain rejected.
+
+Given a private-capacity email or public profile uses the website's canonical link\
+When the installed app receives `/shared-capacity` or `/@handle`\
+Then it opens the existing private-capacity entry or public transporter screen\
+And private capacity still requires normal email verification; the link grants no access\
+And extra parameters, invalid handles and foreign origins remain denied.
+
 Given available Empty and Partial trucks overlap on the public or authorized
 private map
 Then every native cluster contains exactly one status, names Empty or Partial,

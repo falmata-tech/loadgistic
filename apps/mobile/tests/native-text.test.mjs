@@ -31,3 +31,29 @@ test('raw text/inline whitespace cannot be placed directly inside native contain
  const files=directory=>readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?files(path.join(directory,entry.name)):entry.name.endsWith('.tsx')?[path.join(directory,entry.name)]:[]);
  assert.deepEqual(files(root).flatMap(file=>violations(readFileSync(file,'utf8'),path.relative(root,file))),[]);
 });
+
+test('typed native conditions cannot render an empty string or zero instead of an element',()=>{
+ const mobile=fileURLToPath(new URL('../',import.meta.url)),config=ts.readConfigFile(path.join(mobile,'tsconfig.json'),ts.sys.readFile);
+ const parsed=ts.parseJsonConfigFileContent(config.config,ts.sys,mobile),name=path.join(mobile,'conditional-regression.fixture.tsx');
+ const source='function Test(p:{message:string;count:number;ready:boolean}){return <View>{p.message&&<Button/>}{p.count&&<Button/>}{p.ready&&<Button/>}{!!p.message&&<Button/>}{p.count>0&&<Button/>}</View>}';
+ const host=ts.createCompilerHost(parsed.options),original=host.getSourceFile.bind(host);
+ host.getSourceFile=(file,...args)=>file===name?ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX):original(file,...args);
+ const program=ts.createProgram([...parsed.fileNames,name],parsed.options,host),checker=program.getTypeChecker();
+ const unsafe=type=>type.isUnion()?type.types.some(unsafe):Boolean(type.flags&(ts.TypeFlags.String|ts.TypeFlags.Number))
+  ||Boolean(type.flags&ts.TypeFlags.StringLiteral)&&type.value===''||Boolean(type.flags&ts.TypeFlags.NumberLiteral)&&type.value===0;
+ const inspect=file=>{
+  const issues=[];const visit=node=>{
+   if(ts.isJsxExpression(node)&&node.expression){let host=node.parent;while(host&&!ts.isJsxElement(host))host=host.parent;
+    if(host&&containers.has(host.openingElement.tagName.getText(file))){const scan=expression=>{
+     if(ts.isBinaryExpression(expression)&&expression.operatorToken.kind===ts.SyntaxKind.AmpersandAmpersandToken){
+      if(unsafe(checker.getTypeAtLocation(expression.left)))issues.push(`${path.relative(mobile,file.fileName)}:${file.getLineAndCharacterOfPosition(expression.getStart(file)).line+1}`);
+      scan(expression.left);
+     }
+    };scan(node.expression);}
+   }ts.forEachChild(node,visit);
+  };visit(file);return issues;
+ };
+ assert.equal(inspect(program.getSourceFile(name)).length,2,'string and number conditions fail; booleans/comparisons remain valid');
+ const issues=program.getSourceFiles().filter(file=>file.fileName.startsWith(path.join(mobile,'src')+path.sep)&&file.fileName.endsWith('.tsx')).flatMap(inspect);
+ assert.deepEqual(issues,[]);
+});

@@ -31,18 +31,33 @@ export function normalizeNativeLink(path: unknown, development = false): string 
     else if (url.protocol === 'https:' && ['loadgistic.com', 'www.loadgistic.com'].includes(url.hostname) && !url.port) route = url.pathname;
     else return unavailable;
     route = route.replace(/\/$/, '') || '/';
+    // Shipment emails use the website's canonical entry. This alias opens
+    // normal email verification; all query/credential denials still apply.
+    if (route === '/track') route = '/visitor-tracking';
+    const sharedAlias=route==='/shared-capacity';
+    const profileAlias=route.match(/^\/@([a-zA-Z0-9][a-zA-Z0-9_-]{1,63})$/);
     const entries = [...url.searchParams.entries()];
     if (entries.some(([key, value]) => /[\u0000-\u001f\u007f]/.test(key + value))) return unavailable;
     const params = new URLSearchParams();
-    if (route === '/transporter') {
+    if(sharedAlias){
+      if(entries.length)return unavailable;
+      route='/';params.set('view','private');
+    }else if(profileAlias){
+      if(entries.length)return unavailable;
+      route='/transporter';params.set('handle',profileAlias[1]);
+    }else if (route === '/transporter') {
       if (entries.length !== 1 || entries[0][0] !== 'handle' || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{1,63}$/.test(entries[0][1])) return unavailable;
       params.set('handle', entries[0][1]);
     } else if (recordRoutes.has(route)) {
       if (entries.length !== 1 || entries[0][0] !== 'id' || !uuid.test(entries[0][1])) return unavailable;
       params.set('id', entries[0][1]);
-    } else if (route === '/' && entries.length === 1 && entries[0][0] === 'q') {
-      if (entries[0][1].length > 120) return unavailable;
-      params.set('q', entries[0][1]);
+    } else if (route === '/' && entries.length) {
+      if(new Set(entries.map(([key])=>key)).size!==entries.length)return unavailable;
+      for(const [key,value]of entries){
+        if(key==='q'&&value.length<=120)params.set('q',value);
+        else if(key==='view'&&value==='private')params.set('view','private');
+        else return unavailable;
+      }
     } else if (!simpleRoutes.has(route) || entries.length) return unavailable;
     // Returning a relative path avoids custom-scheme extraction's extra decoding.
     return route + (params.size ? `?${params.toString()}` : '');

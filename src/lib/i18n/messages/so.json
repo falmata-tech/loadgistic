@@ -1560,5 +1560,19 @@
   "An unfinished shipment must be completed or resolved before its tracking records can be removed.": "Waxaa jira xamuul aan weli dhammaan. Waa in la dhammeeyo ama arrintiisa la xalliyo ka hor inta aan la tirtirin xogta la socodkiisa.",
   "Transfer or close your company workspace first so other drivers and owners do not lose their records.": "Marka hore wareeji ama xir maamulka shirkadda si aan darawallada iyo milkiilayaasha kale u lumin diiwaannadooda.",
   "Some files are also used by another account. Our team must review those shared records before deleting them.": "Faylal qaarkood waxaa isticmaala akoon kale. Kooxdayadu waa inay hubisaa xogtaas la wadaago ka hor tirtiridda.",
-  "Could not confirm sign out. Please try again.": "Ka bixitaanka lama xaqiijin karin. Mar kale isku day."
+  "Could not confirm sign out. Please try again.": "Ka bixitaanka lama xaqiijin karin. Mar kale isku day.",
+  "Find space for your next load": "Boos u hel xamuulkaaga xiga",
+  "Keep your transporters close. See the space and routes they report, or find new options in the public market.": "Ku xirnow gaadiidleydaada. Eeg booska iyo waddooyinka ay sheegeen, ama suuqa furan ka hel gaadiid kale.",
+  "Put your transport network to work.": "Gaadiidleyda aad taqaan u adeegso shaqadaada xigta.",
+  "When a load comes in, know where to start. See the space and routes your transporters report together, then contact the right person.": "Marka xamuul kuu yimaado, ogow meesha aad ka bilaabi karto. Hal meel ka eeg booska iyo waddooyinka gaadiidleydaadu sheegeen, dabadeed la xiriir qofka ku habboon.",
+  "The trucks you know": "Gaadiidleyda aad taqaan",
+  "Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.": "Gaadiidleyda aad joogto ula shaqeyso hal khariidad oo kuu gaar ah ku wada eeg. Ka codso inay xogta la wadaagaan iimaylkaaga; markaad xaqiijiso, eeg booska ay sheegeen, waddooyinka iyo goobaha qiyaasta ah.",
+  "Let the right people see your space": "Booskaaga tus dadka u baahan",
+  "Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.": "U fududee dadka inay helaan booska gaarigaaga. La wadaag waddooyinkaaga iyo goobtaada qiyaasta ah dadka aad la shaqeyso, dadweynaha ama hal qof oo keliya.",
+  "More options for your next load": "Ikhtiyaarro dheeraad ah oo xamuulkaaga xiga ah",
+  "Find another truck when you need one. Filter public capacity by route, truck configuration and the space your load needs, then confirm the job directly.": "Markaad gaari kale u baahato, eeg suuqa furan. Ku kala xulo waddada, nooca gaariga iyo booska aad u baahan tahay, dabadeed gaadiidlaha si toos ah ugala heshiis shaqada.",
+  "Keep everyone in the picture": "Dadka ay khusayso la socodsii safarka",
+  "Once transport is agreed, give shipment partners private progress updates, approximate location and loading and unloading photos.": "Marka gaadiidka la isku raaco, dadka xamuulka ku lug leh si gaar ah ula wadaag wararka safarka, goobta qiyaasta ah iyo sawirrada rarista iyo dejinta.",
+  "Featured is unavailable right now. Please try again.": "Bandhigga baabuurta hadda lama soo bandhigi karo. Mar kale isku day.",
+  "Could not load shipment updates. Please try again.": "Wararka xamuulka lama soo bandhigi karo. Mar kale isku day."
 }

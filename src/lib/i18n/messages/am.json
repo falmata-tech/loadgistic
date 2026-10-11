@@ -1560,5 +1560,19 @@
   "An unfinished shipment must be completed or resolved before its tracking records can be removed.": "ያልተጠናቀቀ ጭነት አለ። የክትትል መዝገቡ ከመሰረዙ በፊት ጭነቱ መጠናቀቅ ወይም ጉዳዩ መፈታት አለበት።",
   "Transfer or close your company workspace first so other drivers and owners do not lose their records.": "ሌሎች ሾፌሮችና ባለቤቶች መዝገቦቻቸውን እንዳያጡ፣ መጀመሪያ የድርጅቱን መለያ ለሌላ ባለቤት ያስረክቡ ወይም ሥራውን ይዝጉ።",
   "Some files are also used by another account. Our team must review those shared records before deleting them.": "አንዳንድ ፋይሎች በሌላ መለያም ይጠቀማሉ። ቡድናችን ከመሰረዙ በፊት የተጋሩ መዝገቦቹን ማየት አለበት።",
-  "Could not confirm sign out. Please try again.": "መውጣቱን ማረጋገጥ አልተቻለም። እንደገና ይሞክሩ።"
+  "Could not confirm sign out. Please try again.": "መውጣቱን ማረጋገጥ አልተቻለም። እንደገና ይሞክሩ።",
+  "Find space for your next load": "ለቀጣዩ ጭነትዎ የመኪና ቦታ ያግኙ",
+  "Keep your transporters close. See the space and routes they report, or find new options in the public market.": "ከአጓጓዦችዎ ጋር ይተሳሰሩ። ያሳወቁትን የጭነት ቦታና መስመር ይዩ፤ በክፍት ገበያው ላይ ሌሎች መኪኖችንም ይፈልጉ።",
+  "Put your transport network to work.": "የሚያውቋቸውን አጓጓዦች ለቀጣዩ ሥራዎ ያግኙ።",
+  "When a load comes in, know where to start. See the space and routes your transporters report together, then contact the right person.": "ጭነት ሲመጣ ፍለጋዎን የት እንደሚጀምሩ ይወቁ። አጓጓዦችዎ ያሳወቁትን የጭነት ቦታና መስመር በአንድ ቦታ አይተው ከሚስማማዎት ሰው ጋር ይነጋገሩ።",
+  "The trucks you know": "የሚያውቋቸው አጓጓዦች፣ በአንድ ካርታ",
+  "Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.": "ዘወትር የሚሠሩባቸውን አጓጓዦች በግል ካርታዎ ላይ በአንድ ቦታ ይዩ። በኢሜይልዎ እንዲያጋሩዎት ይጠይቁ፤ ኢሜይልዎን ካረጋገጡ በኋላ ያሳወቁትን የጭነት ቦታ፣ መስመርና ግምታዊ አካባቢ ይመለከታሉ።",
+  "Let the right people see your space": "የጭነት ቦታዎን ለሚፈልጉት ያሳዩ",
+  "Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.": "በመኪናዎ ያለው ቦታ በቀላሉ እንዲገኝ ያድርጉ። መስመርዎንና ግምታዊ አካባቢዎን ለአጋሮችዎ፣ ለሁሉም ወይም ለአንድ ሰው ብቻ ያጋሩ።",
+  "More options for your next load": "ለቀጣዩ ጭነትዎ ተጨማሪ አማራጮች",
+  "Find another truck when you need one. Filter public capacity by route, truck configuration and the space your load needs, then confirm the job directly.": "ሌላ መኪና ሲያስፈልግዎ በክፍት ገበያው ይፈልጉ። በመስመር፣ በመኪና አይነትና በሚያስፈልግዎ የጭነት ቦታ አጣርተው ሥራውን ከአጓጓዡ ጋር በቀጥታ ያረጋግጡ።",
+  "Keep everyone in the picture": "ሁሉም የጭነቱን ጉዞ እንዲያውቁ ያድርጉ",
+  "Once transport is agreed, give shipment partners private progress updates, approximate location and loading and unloading photos.": "ስለማጓጓዣው ከተስማሙ በኋላ ለጭነቱ አጋሮች የግል ወቅታዊ መረጃ፣ ግምታዊ አካባቢና የመጫንና የማራገፍ ፎቶዎችን ያጋሩ።",
+  "Featured is unavailable right now. Please try again.": "ፊቸርድን አሁን ማሳየት አልተቻለም። እንደገና ይሞክሩ።",
+  "Could not load shipment updates. Please try again.": "የጭነቱን እንቅስቃሴ ማምጣት አልተቻለም። እንደገና ይሞክሩ።"
 }

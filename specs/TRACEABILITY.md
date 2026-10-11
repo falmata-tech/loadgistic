@@ -1,5 +1,35 @@
 # Specification traceability
 
+October 11 local launch repairs, FEAT-FTR-001 / FEAT-MOB-001 / FEAT-MKT-001:
+`featured-candidate-reads.test.mjs` verifies 1,105 exact candidates, capped UUID
+requests, history pagination, newest private-capacity precedence, provider RPC
+paging and fail-closed batch errors. The existing Featured random-round and
+operation-status SQL suites pass with rollback, including complete-pool restart,
+manual preservation and denial. No selection-policy migration was introduced.
+`map-signal-offset.test.mjs` and native discovery tests bound both adapters' lane
+joins at world zoom; `visible-query.test.mjs` proves stale-camera/data/unmount
+denial and settled retry. The native typed text scan catches raw string/zero
+conditions; runtime-content validation rejects malformed Featured/Tracking
+structures before rendering. Twenty-seven native and seventeen focused root
+regressions pass, with root/native typechecks, native lint and source/spec checks.
+
+`tracking-email-session.spec.ts` passes a real local OTP, authorized detail,
+reload, revocation and expiry on the phone viewport. Two
+`mobile-runtime-recovery.spec.ts` cases pass actual Expo-web navigation, local
+OTP, restored session/detail, malformed data recovery and closure. A controlled
+web service outage preserves public navigation and refreshes to the real roster.
+The live local map probe performs 24 wheel operations per adapter, selected-truck
+exit and world captures without runtime errors. Seven focused SQL suites pass
+using disposable aliases within rollback-only transactions. The initial missing
+fixture, invalid-native-text overlay, and overly broad dev-alert assertion remain
+documented as failures and corrected diagnoses, not successful checks.
+
+The October 10 narrative has nine focused copy/locale tests and eight web
+rendering cases passing; source, artwork provenance and local review remain
+separate from deployment. New visual approval, exact full gates/CI, replacement
+Android artifact/install, Play qualifying video and physical acceptance are
+pending. Existing code-5 artifacts do not contain these new local repairs/copy.
+
 October 9 Google Play preparation, FEAT-MOB-001 / BASE-DEP-001:
 `play-internal` resolves to store/app-bundle, existing remote credentials,
 com.loadgistic.app, version 1.0.2/code 3 and https://loadgistic.com. Preview/development
@@ -1497,3 +1527,9 @@ Android permission/active-Tracking video. Only the owned emulator is stopped,
 data preserved. No closed-test clock, Google review, public launch, physical GPS/
 closed-phone or 16 KB-device acceptance is claimed. Protected sanitized receipts
 are .local/play-20261010-*; runtime/native/SQL stay unchanged since CI 38012117505.
+
+October 11 owner visual approval: revised Featured/Tracking/map previews on
+8084/3100 and regional promo review on 3135 accepted explicitly. Full local
+quality passes 495 root and 149 mobile tests, root typecheck/source/spec checks
+and mobile lint. Replacement source is version 1.0.5/code 6; exact CI, compiled
+artifact, installed native and hosted publication evidence remain pending.

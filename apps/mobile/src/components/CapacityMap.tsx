@@ -12,6 +12,7 @@ import { Map,Camera,GeoJSONSource,Layer,Marker,type CameraRef,type GeoJSONSource
 import type { FeatureCollection,LineString } from 'geojson';
 import type { CapacitySignal } from '../api/public-capacity';
 import { markerLocation,signalBounds,signalPaths } from '../map/capacity-geometry';
+import {createVisibleQuery} from '../map/visible-query';
 import { vehicleConfigurationImage } from '../../../../src/lib/vehicle-configurations';
 import { apiOrigin } from '../api/http';
 type VisiblePoint=MapPoint;
@@ -26,18 +27,22 @@ function CapacityMap({items,onSelect,onDeselect,selected=null,loading=false}:{it
  const [info,setInfo]=useState<{id:string;kind:InfoKind;index:number}|null>(null);
  const camera=useRef<CameraRef>(null),emptySource=useRef<GeoJSONSourceRef>(null),partialSource=useRef<GeoJSONSourceRef>(null),map=useRef<MapRef>(null);
  const [error,setError]=useState(''),[ready,setReady]=useState(false),[zoom,setZoom]=useState(5),[visible,setVisible]=useState<VisiblePoint[]>([]);
- const fitted=useRef(false),alive=useRef(true),querying=useRef(false),lastQuery=useRef(0),signature=useRef(''),dataEpoch=useRef(0);
- useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
- const data=useMemo(()=>capacityMapData(items),[items]);
- useEffect(()=>{dataEpoch.current++;},[data]);
- const refreshVisible=useCallback(async()=>{
-  if(!ready||querying.current||Date.now()-lastQuery.current<200)return;
-  querying.current=true;lastQuery.current=Date.now();const epoch=dataEpoch.current;
-  try{const groups=await Promise.all(capacityStatuses.map(async status=>renderedCapacityPoints(await map.current?.queryRenderedFeatures({layers:capacityLayerIds(status)})||[],status)));if(!alive.current||epoch!==dataEpoch.current)return;
+ const fitted=useRef(false),signature=useRef('');
+ const visibleQuery=useRef<ReturnType<typeof createVisibleQuery<VisiblePoint[]>>|null>(null);
+ useEffect(()=>{
+  const query=createVisibleQuery(async()=>{
+   const groups=await Promise.all(capacityStatuses.map(async status=>renderedCapacityPoints(await map.current?.queryRenderedFeatures({layers:capacityLayerIds(status)})||[],status)));
    const unique=new globalThis.Map<string,VisiblePoint>();
    for(const point of groups.flat())unique.set(point.key,point);
-   const values=[...unique.values()].sort((a,b)=>a.key.localeCompare(b.key)),next=JSON.stringify(values);if(signature.current!==next){signature.current=next;setVisible(values);}
-  }catch{/* A style/source may be between frames; retry after it renders. */}finally{querying.current=false;}
+   return [...unique.values()].sort((a,b)=>a.key.localeCompare(b.key));
+  },values=>{const next=JSON.stringify(values);if(signature.current!==next){signature.current=next;setVisible(values);}});
+  visibleQuery.current=query;
+  return()=>{query.close();visibleQuery.current=null;};
+ },[]);
+ const data=useMemo(()=>capacityMapData(items),[items]);
+ useEffect(()=>{visibleQuery.current?.invalidate();},[data]);
+ const refreshVisible=useCallback(async()=>{
+  if(ready)await visibleQuery.current?.refresh();
  },[ready]);
  useEffect(()=>{if(ready&&!loading&&!selected&&!fitted.current){const bounds=signalBounds(items);if(bounds){camera.current?.fitBounds(bounds,{padding:{top:70,right:50,bottom:55,left:50},duration:300});}fitted.current=true;}},[items,loading,ready,selected]);
  if(info&&info.id!==selected?.id)setInfo(null);
@@ -78,7 +83,7 @@ function CapacityMap({items,onSelect,onDeselect,selected=null,loading=false}:{it
  const routeNames=regular?regularSignal?.points:selected?.currentPoints;
  const explanation=area?'The outline marks the service area. These places define its boundary, not a trip.':regular?'This route is served in both directions. Contact the transporter to confirm availability.':'Follow the route in the order shown. Contact the driver to confirm pickup, delivery and available space.';
  return <View ref={host} collapsable={false} onLayout={measureModal} style={styles.map}>
- <Map ref={map} style={styles.map} mapStyle={mapStyle} attribution onDidFailLoadingMap={()=>setError('The map could not load. Check your connection.')} onDidFinishLoadingMap={()=>{setReady(true);setError('');}} onDidFinishRenderingFrame={()=>void refreshVisible()} onRegionIsChanging={event=>{latestView.current=event.nativeEvent;}} onRegionDidChange={event=>{latestView.current=event.nativeEvent;setZoom(event.nativeEvent.zoom);void refreshVisible();}}>
+ <Map ref={map} style={styles.map} mapStyle={mapStyle} attribution onDidFailLoadingMap={()=>setError('The map could not load. Check your connection.')} onDidFinishLoadingMap={()=>{setReady(true);setError('');}} onDidFinishRenderingFrame={()=>void refreshVisible()} onRegionIsChanging={event=>{latestView.current=event.nativeEvent;visibleQuery.current?.moving();}} onRegionDidChange={event=>{latestView.current=event.nativeEvent;setZoom(event.nativeEvent.zoom);visibleQuery.current?.settled();}}>
  <Camera ref={camera} initialViewState={{center:[39.5,9],zoom:5}} maxZoom={20}/>
  <GeoJSONSource id="selected-signals" data={pathData} onPress={event=>{event.stopPropagation();const feature=event.nativeEvent.features[0];const kind=feature?.properties?.kind as InfoKind;if(selected&&kind in colors)setInfo({id:selected.id,kind,index:Number(feature?.properties?.index)||0});}}>
  <Layer id="location-outline" type="line" filter={['==',['get','kind'],'location']} paint={{'line-color':'#1a73e8','line-width':4,'line-dasharray':[2,2]}}/>

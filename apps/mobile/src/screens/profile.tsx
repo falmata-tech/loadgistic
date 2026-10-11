@@ -15,7 +15,7 @@ export default function ProfileScreen({embedded=false}:{embedded?:boolean}={}) {
  const account = useAccount(), query = useAccountQuery<Workspace>('/api/mobile/profile');
  if (account.busy) return <Page embedded={embedded}><ActivityIndicator /></Page>;
  if (!account.session) return <Redirect href="/account" />;
- return <Page embedded={embedded}>{!embedded&&<Title message={"Transporter profile"}/>}<ErrorText message={query.error} />{!query.data && !query.error && <ActivityIndicator />}{query.error && <Button secondary message="Try again" onPress={() => { void query.reload(); }} />}{query.data && <ProfileEditor key={account.session.user.id} workspace={query.data} />}</Page>;
+ return <Page embedded={embedded}>{!embedded&&<Title message={"Transporter profile"}/>}<ErrorText message={query.error} />{!query.data && !query.error && <ActivityIndicator />}{!!query.error && <Button secondary message="Try again" onPress={() => { void query.reload(); }} />}{query.data && <ProfileEditor key={account.session.user.id} workspace={query.data} />}</Page>;
 }
 function ProfileEditor({ workspace }: { workspace: Workspace }) {
  const account = useAccount(), lock = useRef(false), [value, setValue] = useState(workspace.profile), [regionsOpen, setRegionsOpen] = useState(false);

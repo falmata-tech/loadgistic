@@ -30,7 +30,7 @@ export default function CapacityManagement({embedded=false,vehicleId}:{embedded?
     {!data && !error && <ActivityIndicator accessibilityLabel="Loading truck capacity" />}
     {!!error && <Button message="Refresh" onPress={() => { void reload(); }} />}
     <ProfileSetup published={data?.profilePublished} />{!embedded&&typeof data?.profilePublished === 'boolean' && <AppLink href="/regular-service" style={{ paddingVertical: 12, color: '#0c7275' }} message={"Regular service route or area"}/>}{data?.vehicles.length === 0 && <Card><Copy message={"Add your truck, or ask your fleet owner to assign one, before sharing capacity."}/>{account.session.user.operatingModel!=='COMPANY_DRIVER'&&<AppLink href="/fleet" message={"Trucks and drivers"}/>}</Card>}
-    {vehicleId&&data&&!data.vehicles.some(truck=>truck.id===vehicleId)&&<Copy message="This truck is no longer available in your workspace."/>}
+    {!!vehicleId&&data&&!data.vehicles.some(truck=>truck.id===vehicleId)&&<Copy message="This truck is no longer available in your workspace."/>}
     {(vehicleId?data?.vehicles.filter(truck=>truck.id===vehicleId):data?.vehicles)?.map(truck => <TruckCapacity key={truck.id} truck={truck} canPublish={Boolean(data?.canPublish)} editing={selected===truck.id} onEdit={()=>setSelected(truck.id)} onCancel={()=>setSelected('')} onSaved={()=>{setSelected('');void reload();}} refresh={reload}/>)}
   </Page>;
 }

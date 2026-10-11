@@ -1560,5 +1560,19 @@
   "An unfinished shipment must be completed or resolved before its tracking records can be removed.": "Fe’iinsi hin xumuramne jira. Galmee hordoffii haquun dura fe’iinsichi xumuramuu ykn dhimmi isaa furamuu qaba.",
   "Transfer or close your company workspace first so other drivers and owners do not lose their records.": "Konkolaachiftoonniifi abbootiin qabeenyaa biroo galmee isaanii akka hin dhabneef, jalqaba bulchiinsa dhaabbata kee dabarsi ykn cufi.",
   "Some files are also used by another account. Our team must review those shared records before deleting them.": "Faayiloonni tokko tokko herrega biraatiin illee fayyadamu. Gareen keenya haquun dura galmeewwan qoodaman sana ilaala.",
-  "Could not confirm sign out. Please try again.": "Ba’uu kee mirkaneessuun hin danda’amne. Irra deebi’i."
+  "Could not confirm sign out. Please try again.": "Ba’uu kee mirkaneessuun hin danda’amne. Irra deebi’i.",
+  "Find space for your next load": "Feʼumsa keessan itti aanuuf iddoo argadhaa",
+  "Keep your transporters close. See the space and routes they report, or find new options in the public market.": "Geejjibdoota keessan waliin walitti dhihaadhaa. Iddoo feʼumsaa fi karaa isaan beeksisan ilaalaa; gabaa banaa keessaa filannoo biraas argadhaa.",
+  "Put your transport network to work.": "Geejjibdoota beektan hojii itti aanuuf argadhaa.",
+  "When a load comes in, know where to start. See the space and routes your transporters report together, then contact the right person.": "Feʼumsi yeroo dhufu, eessaa akka jalqabdan beekaa. Iddoo feʼumsaa fi karaa geejjibdoonni keessan beeksisan waliin ilaalaa; nama isiniif taʼu qunnamaa.",
+  "The trucks you know": "Geejjibdoota isin beektan",
+  "Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.": "Geejjibdoota yeroo hunda waliin hojjettan kaartaa dhuunfaa tokko irratti waliin ilaalaa. Imeelii keessaniif akka qoodan gaafadhaa; erga mirkaneessitanii booda iddoo feʼumsaa, karaa fi bakka tilmaamaan isaan beeksisan ilaalaa.",
+  "Let the right people see your space": "Iddoo feʼumsaa keessan warra barbaadaniif agarsiisaa",
+  "Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.": "Iddoon feʼumsaa konkolaataa keessanii salphaatti akka argamu taasisaa. Karaa fi bakka tilmaamaan jirtan michoota keessaniif, uummataaf ykn nama tokko qofaaf qoodaa.",
+  "More options for your next load": "Feʼumsa itti aanuuf filannoo dabalataa",
+  "Find another truck when you need one. Filter public capacity by route, truck configuration and the space your load needs, then confirm the job directly.": "Konkolaataa biraa yeroo barbaaddan gabaa banaa ilaalaa. Karaa, gosa konkolaataa fi iddoo feʼumsaa barbaaddaniin calalaa; hojii kallattiin geejjibaa waliin mirkaneessaa.",
+  "Keep everyone in the picture": "Namoonni feʼumsicha irratti hirmaatan odeeffannoo haa argatan",
+  "Once transport is agreed, give shipment partners private progress updates, approximate location and loading and unloading photos.": "Erga geejjiba irratti walii galtanii, haala feʼumsaa, bakka tilmaamaan jiru fi suuraa feʼuu fi buusuu namoota dhimmi ilaallatuuf dhuunfaan qoodaa.",
+  "Featured is unavailable right now. Please try again.": "Konkolaattota har’a beeksifaman amma agarsiisuu hin dandeenye. Irra deebi’ii yaali.",
+  "Could not load shipment updates. Please try again.": "Odeeffannoo fe’umsaa amma fiduu hin dandeenye. Irra deebi’ii yaali."
 }

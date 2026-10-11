@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import type {Browser,Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
 import {openCapacityFilters,closeCapacityFilters} from './capacity-drawer-helper';
-const heading='Find truck capacity in Ethiopia';
+const heading='Find space for your next load';
 
 test('introduction stays above a usable map across screen sizes and languages',async({page}:{page:Page},info:{project:{name:string};outputPath:(name:string)=>string})=>{
  test.setTimeout(150000);
@@ -49,8 +49,8 @@ test('server response contains the introduction and search metadata before JavaS
   // already exist as real HTML. Visibility is checked in the browser workflow.
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('.market-introduction h1')).toHaveText(heading);
-  await expect(page.locator('.market-introduction p')).toContainText('brokers, shippers and receivers');
-  await expect(page).toHaveTitle('Truck Capacity & Shipment Tracking in Ethiopia | Loadgistic');
-  await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/Find truck capacity in Ethiopia/);
+  await expect(page.locator('.market-introduction p')).toContainText('your transporters');
+  await expect(page).toHaveTitle('Truck Capacity & Transporter Networks | Loadgistic');
+  await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/See truck capacity and routes/);
  }finally{await context.close();}
 });

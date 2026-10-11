@@ -10,9 +10,10 @@ import {localAuthInboxUrl} from '@/lib/auth-flow.js';
 import {PublicHeader} from '@/components/public-header';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
 import {listPublicCapacityCursor} from '@/lib/capacity-market.js';
+import {capacityIntroduction} from '@/lib/platform-copy.js';
 
 export const dynamic='force-dynamic';
-const publicMetadata:Metadata={title:{absolute:'Truck Capacity & Shipment Tracking in Ethiopia | Loadgistic'},description:'Find truck capacity in Ethiopia. Connect with transport providers, share available truck space with your network or the open market, and track shipments privately.'};
+const publicMetadata:Metadata={title:{absolute:'Truck Capacity & Transporter Networks | Loadgistic'},description:'See truck capacity and routes from the transporters you work with in one map. Explore public availability or capacity shared privately with your email.'};
 
 export async function generateMetadata({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}):Promise<Metadata>{
   const query=await searchParams;
@@ -29,8 +30,8 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const sessionSuccess=raw.session==='logout'?'You have logged out of Private capacity.':undefined;
   return <><PublicHeader/><main className={`public-app-page public-market-workspace public-market-introduced unified-capacity-workspace${privateView?' is-private':''}`}>
     <header className="market-introduction">
-      <h1><Text message="Find truck capacity in Ethiopia"/></h1>
-      <p><Text message="Transporters share capacity, routes and availability with brokers, shippers and receivers on Loadgistic. Explore open signals or view those shared with your email."/></p>
+      <h1><Text message={capacityIntroduction.title}/></h1>
+      <p><Text message={capacityIntroduction.body}/></p>
       <Localized as="nav" copy={["aria-label"]} className="capacity-view-choice" aria-label="Capacity views">
         <a href="/" aria-current={!privateView?'page':undefined}><Text message="Open to the public"/></a>
         <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Privately shared with you"/></a>

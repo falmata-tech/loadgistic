@@ -124,6 +124,14 @@ state; a development capture is not presented as a final standalone screenshot
 And prelaunch TikTok/Instagram materials use the same approved identity, short
 copy and genuine feature claims, distinguishing web availability, Android testing
 and future public Play availability without an invented launch date or endorsement
+And the October 10 campaign correction leads with a broker or shipping team's
+view of transporters' reported capacity, routes and availability; Tracking follows
+agreed transport and is secondary
+And artwork depicts credible East African road-freight operations, retaining AI
+provenance rather than posing as customer photographs or fabricated app screens
+And screenshot order first demonstrates authorized privately shared capacity,
+then public discovery and signal details, then provider controls and Tracking
+And following capacity does not imply a paid subscription or unimplemented alerts
 And an Android demonstration shows disclosure, permission and active tracking
 And a new exact signed APK/AAB includes the verified changes with an unused Play
 version code and preserved signing before Console upload

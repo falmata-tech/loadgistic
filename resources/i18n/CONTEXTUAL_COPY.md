@@ -14,14 +14,17 @@ translation of the app.
 
 - Capacity means a truck's available cargo space or readiness for transport,
   never a person's ability. Empty/Partial describe usable truck space.
-- Open is truck discovery; Private means trucks shared with this recipient.
-  Short navigation wording can differ from the full page heading.
+- Capacity is the main task: brokers and shipping teams see transporters’ reported
+  space, routes and approximate positions together. Public signals help discover
+  more options; a verified email opens only trucks shared with that recipient.
+  Following these signals is not a paid subscription or an owned fleet.
 - Ask for help covers general questions, problems and disputes. Keep that purpose
   in chat, recovery and staff labels; do not promise a resolution or response time.
-- Request transport asks for help finding a provider by phone. Loadgistic does
-  not promise that it carries the cargo, has booked a truck or guarantees a match.
-- Tracking is following a shipment's progress. The transporter supplies the
-  shipment access code; email supplies a separate six-digit verification code.
+- Transport assistance is a brokerage live conversation after route/contact
+  intake. Loadgistic does not promise an immediate reply, a booked truck or a match.
+- Tracking follows transport that is already agreed and supports the main
+  capacity-sharing workflow. One email verification code opens that recipient’s
+  authorized shipments; do not imply a second shipment access code is required.
 - A fleet owner adds the driver using email and can assign a truck immediately.
   The driver's own email-code login verifies access. Never imply that the owner
   can verify the driver's inbox for them.
@@ -31,7 +34,7 @@ translation of the app.
 - Error messages explain the next action. An uncertain shipment save directs
   the user to existing Tracking before another attempt; it must not say it failed.
 
-Keep Loadgistic, email, shipment codes and other necessary familiar technical
+Keep Loadgistic, email, verification codes and other necessary familiar technical
 terms recognizable. Use natural whole sentences rather than concatenated
 translated fragments. Preserve named placeholders exactly. Never translate user
 names, business descriptions, cargo, places, contacts, notes or machine enums.
@@ -57,3 +60,11 @@ checks presence across Amharic, Afaan Oromo, Somali and Tigrinya. These are UI
 translations, not native-speaker sign-off; user routes, names and messages remain
 untouched. Brokerage staff confirm scope/fee; submission itself performs no checks,
 charges or tracking invitations.
+
+October 10 capacity-network revision: twelve whole-message groups are shared by
+web and native through `src/lib/platform-copy.js`, with contextual wording in all
+four non-English catalogs. About puts recipient access and transporter sharing
+control before discovery and Tracking. Automated tests check shared usage, key
+coverage and desktop/phone rendering; they do not certify native-speaker fluency.
+Promotional captions preserve this operational meaning rather than translating
+a generic app-launch slogan.

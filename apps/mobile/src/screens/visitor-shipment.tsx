@@ -10,12 +10,12 @@ import { Page, Title, Copy, Card, Field, Button, ErrorText,palette } from '../co
 import { Choices } from '../components/choices';
 import { useVisitorQuery } from '../hooks/visitor-query';
 import { useVisitor } from '../session/visitor-provider';
-import { statusLabel, type TrackingSummary } from '../api/tracking';
-type Shipment = TrackingSummary & { provider: string; mode: string; canReview: boolean; canApprove:boolean; events: { id: string; status: string; note: string; hasProof: boolean; createdAt: string }[]; location: { latitude: number; longitude: number; area: string; radius: number; updatedAt: string } | null; review: { rating: number; note: string } | null };
+import { statusLabel } from '../api/tracking';
+import {parseVisitorShipment,type VisitorShipment as Shipment} from '../api/runtime-content';
 export default function VisitorShipment() { const { id } = useLocalSearchParams<{ id: string }>(); return <Page><VisitorAccess scope="tracking"><ShipmentUpdates id={typeof id === 'string' ? id : ''} /></VisitorAccess></Page>; }
 function ShipmentUpdates({ id }: { id: string }) {
  const {t}=useLanguage();
- const path = `/api/mobile/visitor/tracking/shipments/${encodeURIComponent(id)}`, query = useVisitorQuery<Shipment>('tracking', path), visitor = useVisitor();
+ const path = `/api/mobile/visitor/tracking/shipments/${encodeURIComponent(id)}`, query = useVisitorQuery<Shipment>('tracking', path,parseVisitorShipment), visitor = useVisitor();
  const [rating, setRating] = useState(''), [note, setNote] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState(''),[termsAccepted,setTermsAccepted]=useState(false);
  async function approve(){if(busy)return;setBusy(true);setError('');try{await visitor.controller.request('tracking',`${path}/approve`,{});await query.reload();}catch(error){setError(error instanceof Error?error.message:'Could not confirm approval. Refresh before trying again.');}finally{setBusy(false);}}
  async function review() { if (busy||!termsAccepted) return; setBusy(true); setError(''); try { await visitor.controller.request('tracking', path, { rating: Number(rating), note,termsAccepted:true }); await query.reload(); } catch (error) { setError(error instanceof Error ? error.message : 'Could not confirm the review. Refresh before trying again.'); } finally { setBusy(false); } }

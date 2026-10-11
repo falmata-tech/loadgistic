@@ -1,0 +1,123 @@
+{
+  "brand": "Loadgistic",
+  "website": "https://loadgistic.com",
+  "state": "prepared_not_published",
+  "androidStatus": "Closed-test preparation; public Google Play launch not yet approved",
+  "creativeDirection": "Brokers and shipping teams keep a network of transporters’ reported space, routes and approximate locations in one view. Grounded East African freight-yard artwork; minimal text; tracking secondary.",
+  "formats": [
+    {
+      "id": "reel",
+      "width": 1080,
+      "height": 1920,
+      "headline": [
+        "The trucks you know.",
+        "The space you need."
+      ],
+      "status": "Web live · Android soon"
+    },
+    {
+      "id": "feed",
+      "width": 1080,
+      "height": 1350,
+      "headline": [
+        "The trucks you know.",
+        "The space you need."
+      ],
+      "status": "Web live · Android soon"
+    },
+    {
+      "id": "square",
+      "width": 1080,
+      "height": 1080,
+      "headline": [
+        "The trucks you know.",
+        "The space you need."
+      ],
+      "status": "Web live · Android soon"
+    }
+  ],
+  "captions": {
+    "en": {
+      "teaser": "A load comes in. Which of your transporters has room for it? Loadgistic brings the space and routes they report onto one map, so you know where to start before you call. Keep your regular transporters close, and find new options when you need them. Try it now at loadgistic.com. Android app coming soon.",
+      "private-network": "The trucks you know. The space you need. Ask the transporters you work with to share with your email, then see their reported space and routes together on your private map. Less starting from scratch. A clearer place to begin your next load. loadgistic.com",
+      "transporter": "Let your next customer see the space you have. Share your truck’s available room and routes with the brokers and shipping teams you work with. You choose who sees it: your contacts, the public, both, or one recipient. loadgistic.com",
+      "public-discovery": "Your usual truck can’t take this load? Find another place to start. Explore public capacity on Loadgistic and narrow it to the route, truck and space you need. Check the latest report, then call the transporter and agree on the job. loadgistic.com",
+      "tracking": "The job is agreed. Keep everyone in the picture. Give the people involved private shipment updates, approximate location and loading and unloading photos—without making the shipment public. loadgistic.com"
+    },
+    "am": {
+      "teaser": "ከሚሠሩባቸው አጓጓዦች የትኛው ለቀጣዩ ጭነትዎ ቦታ አለው? ያሳወቁትን የጭነት ቦታና መስመር በLoadgistic በአንድ ካርታ ይዩ። በኢሜይልዎ እንዲያጋሩዎት ይጠይቁ፤ ለሁሉም ክፍት የሆኑ መኪኖችንም ማየት ይችላሉ። loadgistic.com አሁን ይጎብኙ። የAndroid አፕ በቅርቡ ይመጣል።"
+    },
+    "om": {
+      "teaser": "Geejjibdoota waliin hojjettan keessaa eenyutu feʼumsa keessan itti aanuuf iddoo qaba? Iddoo feʼumsaa fi karaa isaan beeksisan Loadgistic irratti kaartaa tokko keessatti ilaalaa. Odeeffannoo isaanii imeelii keessaniif akka qoodan gaafadhaa; konkolaattota uummataaf banaa taʼanis ilaaluun ni dandaʼama. Amma loadgistic.com daawwadhaa. Appiin Android dhihootti ni dhufa."
+    },
+    "so": {
+      "teaser": "Gaadiidleyda aad la shaqeyso, kee baa boos u haya xamuulkaaga xiga? Loadgistic hal khariidad kaga eeg booska iyo waddooyinka ay sheegeen. Ka codso inay xogtooda la wadaagaan iimaylkaaga, ama eeg gaadiidka dadweynaha u furan. Hadda booqo loadgistic.com. App-ka Android dhawaan ayuu imanayaa."
+    },
+    "ti": {
+      "teaser": "ካብ እትሰርሑ ምስኦም ኣጓዓዝቲ፣ ንዝቕጽል ጽዕነትኩም ቦታ ዘለዎ መን እዩ? ዝሓበርዎ ናይ ጽዕነት ቦታን መስመርን ኣብ Loadgistic ብሓንቲ ካርታ ርኣዩ። ብኢመይልኩም ክካፈሉኹም ሕተቱ፤ ንኹሉ ክፉታት መካይን እውን ክትርእዩ ትኽእሉ። ሕጂ loadgistic.com ብጽሑ። ናይ Android ኣፕ ብቐረባ ይመጽእ።"
+    }
+  },
+  "hashtags": [
+    "#Loadgistic",
+    "#FreightTransport",
+    "#TruckCapacity"
+  ],
+  "profileBio": "The trucks you know. The space you need. loadgistic.com",
+  "schedule": [
+    {
+      "day": 1,
+      "post": "teaser",
+      "media": "coming-soon-reel.mp4",
+      "purpose": "Introduce the capacity-network problem and the existing web tool; pin this post."
+    },
+    {
+      "day": 3,
+      "post": "transporter",
+      "media": "coming-soon-feed.png",
+      "purpose": "Show transporters how to report space and choose who can see it."
+    },
+    {
+      "day": 5,
+      "post": "private-network",
+      "media": "verified-private-capacity-demo",
+      "purpose": "Use an actual synthetic, email-authorized shared-map recording; show the practical recipient view. No fabricated app UI."
+    },
+    {
+      "day": 8,
+      "post": "public-discovery",
+      "media": "verified-public-capacity-demo",
+      "purpose": "Show actual route/space filtering, signal age and direct contact. No guaranteed availability."
+    },
+    {
+      "day": 11,
+      "post": "teaser",
+      "media": "coming-soon-square.png",
+      "purpose": "Remind brokers and shipping teams how to keep their transporters in view; do not invent a launch date."
+    },
+    {
+      "day": 14,
+      "post": "testing-update",
+      "media": "coming-soon-feed.png",
+      "purpose": "Report the actual testing/review state. This schedule does not start Google’s enrolled-testing clock."
+    }
+  ],
+  "publishing": {
+    "accounts": "Owner will create Loadgistic TikTok/Instagram accounts; no handles assumed and no posts published.",
+    "organicFirst": true,
+    "paidSpendAuthorized": false,
+    "publicPostsPublished": false,
+    "aiDisclosure": "Generated realistic freight artwork is AI-assisted. Use the applicable platform AI-generated/AI-info label; do not present it as customer footage.",
+    "music": "Export is silent. Add business-cleared music in each platform’s native editor; do not assume one platform’s track license carries to the other.",
+    "review": "Review the final post preview and text visibility before publication.",
+    "downloadBadge": "Do not display a Google Play download badge or claim public store availability until the actual public release is available.",
+    "testerLink": "Use the actual closed-test opt-in link only after Google makes that release available; eligibility is not enrollment."
+  },
+  "references": [
+    "https://ads.tiktok.com/resources/help/article/tiktok-auction-in-feed-ads?lang=en",
+    "https://ads.tiktok.com/resources/help/article/how-to-use-the-commercial-music-library?lang=en-GB",
+    "https://support.google.com/googleplay/android-developer/answer/14151465?hl=en"
+  ],
+  "suggestedPostingTime": "10:00 AM Africa/Addis_Ababa (EAT); adjust after actual audience analytics",
+  "coreMessage": "The trucks you know. The space you need.",
+  "claimBoundary": "Recipients view trucks explicitly shared with their verified email. This is not paid subscription access, an owned fleet, automatic capacity notifications or guaranteed availability."
+}

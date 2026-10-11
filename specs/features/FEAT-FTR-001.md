@@ -11,6 +11,29 @@ rollout: Add exact truck-and-Driver slot references additively, migrate the disp
 
 # Daily Featured Trucks programme
 
+### Scenario: candidate reads remain complete as the fleet grows
+
+Given a themed day has hundreds or thousands of eligible trucks and capacity history\
+When the web or mobile Featured projection reads its saved roster\
+Then database requests use bounded identifier batches and paginated reads\
+And every eligible candidate remains available without exceeding gateway URL or row limits\
+And the latest capacity is chosen by update time and identifier, never an older public record\
+And a failed batch reports a recoverable failure rather than publishing a partial or invented roster\
+And the saved day, round history, manual selections and order do not change.
+
+Given the Featured data service is unavailable\
+When the visitor opens Featured\
+Then normal public navigation remains usable with a concise retry action\
+And the failure is distinct from an honestly empty programme\
+And diagnostics remain server-side without exposing identifiers or raw database errors.
+
+October 11 diagnosis: the local Sunday candidate lookup failed with HTTP 414
+because its capacity query included 236 vehicle identifiers in one URL. This is
+a read-path defect, independently of round exhaustion. Regression:
+`tests/featured-candidate-reads.test.mjs`. The existing rollback suite
+`tests/sql/featured-random-rounds.sql` verifies complete rounds, restart, retained
+history, retry stability, manual precedence and unauthorized denial.
+
 ### Scenario: automatic daily selection with a manual day override
 
 Given automatic Featured selection is enabled with a target from one to twelve\

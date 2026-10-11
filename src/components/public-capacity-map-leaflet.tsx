@@ -8,7 +8,7 @@ import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, T
 import { isTrailerVehicleConfiguration, vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { BaseMapTiles } from '@/components/base-map-tiles';
 import { buildCapacityMarkerGroups } from '@/lib/capacity-map-clustering';
-import { offsetSignalPath } from '@/lib/map-signal-offset';
+import { offsetSignalPath,signalLaneZoom } from '@/lib/map-signal-offset';
 import {areaCamera} from '@/lib/workspace-area-navigation.js';
 import {worldCapacityViewport} from '@/lib/capacity-viewport';
 
@@ -66,7 +66,7 @@ function OffsetPolyline({positions,offset,closed=false,avoid,eventHandlers,pathO
   React.useEffect(()=>{setRevision((value:number)=>value+1);},[map]);
   const shifted=React.useMemo(()=>{
     if(!offset||positions.length<2)return positions;
-    const zoom=map.getZoom();
+    const zoom=signalLaneZoom(map.getZoom(),256);
     const pixels=positions.map(position=>map.project(position,zoom));
     const loop=closed||(positions[0][0]===positions.at(-1)![0]&&positions[0][1]===positions.at(-1)![1]);
     const reference=avoid?offsetSignalPath(avoid.positions.map(position=>map.project(position,zoom)),avoid.offset,avoid.closed):[];

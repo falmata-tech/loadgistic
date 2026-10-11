@@ -1,26 +1,26 @@
 {
   "package": "com.loadgistic.app",
   "locale": "en-US",
-  "status": "local_draft_requires_owner_review",
+  "status": "owner_approved_release_verification_pending",
   "appName": "Loadgistic",
-  "shortDescription": "Find truck capacity, share availability and follow private shipment updates.",
-  "fullDescription": "Find transport and stay connected with your shipment.\n\nLoadgistic connects fleets and independent drivers with brokers, shippers and receivers through truck capacity sharing and private shipment tracking.\n\nFIND AVAILABLE TRUCKS\nExplore public capacity without an account. Search transporter profiles, filter trucks by the space and route you need, and see their approximate location and service areas. Confirm availability and the transport details directly with the provider.\n\nSHARE YOUR CAPACITY\nPublish available space to the open market, share it with named contacts, or do both. Approved contacts can verify their email to see the signals shared with them. Independent drivers manage one current truck; transport companies manage their trucks and drivers.\n\nFOLLOW AGREED SHIPMENTS\nKeep authorized shipment partners informed with status updates, loading and unloading photos, and approximate location. The shipment owner can approve unloading from their private tracking page.\n\nGET HELP ARRANGING TRANSPORT\nTell Loadgistic's transport team what you need and continue the conversation in live chat.\n\nUSE THE LANGUAGE THAT SUITS YOU\nThe app supports English, Amharic, Afaan Oromo, Somali and Tigrinya.\n\nLocation sharing requires your consent and Android permissions. During agreed active tracking, background updates can continue while the app is closed until unloading is approved. Shared locations are approximate. Notifications are optional.\n\nDocument badges identify the specific documents Loadgistic has reviewed. They help you assess providers; they are not a service guarantee. Loadgistic does not handle in-app transport payments.",
+  "shortDescription": "Find space across your transporter network. A clearer start for your next load.",
+  "fullDescription": "Know who has space before you call.\n\nWhen a load comes in, start with the transporters you know. Loadgistic brings their reported truck space, routes and approximate locations together on one map, so you can find a useful starting point and speak to the right person.\n\nTHE TRUCKS YOU KNOW\nKeep the transporters you work with close. Ask them to share with your email, verify that email, and open your private capacity map. See the trucks shared with you together; your private contacts and signals stay out of other visitors’ views.\n\nLET THE RIGHT PEOPLE SEE YOUR SPACE\nTransporters can share available room and service routes with regular contacts, open them to the public, do both, or choose one recipient. Update your space and approximate location as work changes. Independent drivers manage one current truck; transport companies manage their trucks and drivers.\n\nMORE OPTIONS FOR THE NEXT LOAD\nIf you need another truck, explore public capacity without an account. Search transporter profiles and filter by route, truck configuration and the space your load needs. Check how recently the signal was updated, then confirm availability and agree on the work directly.\n\nKEEP EVERYONE IN THE PICTURE\nAfter transport is agreed, give authorized shipment partners private progress updates, approximate location and loading and unloading photos. The shipment owner approves unloading from their private tracking page.\n\nA HAND WITH THE HARD PART\nNeed help arranging transport? Tell Loadgistic’s transport team about your load and continue the conversation in live chat.\n\nBuilt around East African road freight. Use English, Amharic, Afaan Oromo, Somali or Tigrinya.\n\nLocation sharing needs your consent and Android permissions. Agreed active tracking can continue in the background until unloading is approved. Shared locations are approximate. Notifications are optional.\n\nDocument badges identify the specific documents Loadgistic reviewed, not a service guarantee. Loadgistic does not handle in-app transport payments.",
   "featureGraphic": {
     "source": "resources/marketing/google-play/feature-graphic.svg",
     "export": "feature-graphic-1024x500.png",
     "width": 1024,
     "height": 500,
     "alpha": false,
-    "altText": "Loadgistic beside a white freight truck on a curving gold-lit road, against a deep navy and teal backdrop.",
-    "provenance": "Freight artwork generated with the built-in imagegen tool on 2026-10-10. Codex composed the existing unchanged Loadgistic icon and brand name over it. Decorative illustration, not an app screenshot or factual vehicle photograph.",
+    "altText": "Loadgistic beside dispatchers and working cargo trucks at an East African freight yard.",
+    "provenance": "Generated East African freight-yard illustration, composed with the unchanged Loadgistic icon and name. Not customer footage or an app screenshot. Exact prompts are in resources/marketing/prelaunch/regional-artwork-provenance.json.",
     "aiAssistedCreation": true,
     "proposedAiLabel": true,
     "reviewed": true,
-    "artworkSource": "resources/marketing/google-play/feature-artwork.png",
+    "artworkSource": "resources/marketing/prelaunch/east-africa-yard-wide.png",
     "exportScript": "resources/marketing/google-play/export-assets.mjs",
     "sourceRole": "Transparent vector brand overlay; artworkSource is the decorative freight background.",
-    "artDirection": "Striking freight artwork; only the Loadgistic brand name as text. No slogans, paragraphs, fabricated interface or performance claims.",
-    "approval": "Owner finalization instruction on 2026-10-10 following the actual artwork/native package review: improve what needs to be improved and call this done."
+    "artDirection": "Credible East African freight-yard operations, dispatchers and working trucks; brand name only. Capacity networks lead; Tracking is secondary.",
+    "approval": "Owner explicitly approved the revised regional presentation at the actual 3135 preview on 2026-10-11."
   },
   "icon": {
     "source": "public/icon.svg",
@@ -34,40 +34,41 @@
   },
   "phoneScreenshots": [
     {
+      "id": "05-private-capacity",
+      "title": "The trucks you know",
+      "altText": "An authorized private capacity map with signals from the transporters sharing with this synthetic recipient.",
+      "status": "awaiting_final_standalone_capture",
+      "draftObservation": "Actual short-screen draft clips the lower entry action at the map edge. Review final standalone scrolling/keyboard clearance before selecting this optional store screenshot; see WEB-MOB-019.",
+      "captureRequirement": "Capture the authorized synthetic shared map after normal reviewer access; never lead with an empty email-entry form or reveal an email/code."
+    },
+    {
       "id": "01-capacity",
-      "title": "Find available trucks",
+      "title": "Find your next option",
       "altText": "Public truck capacity on the map, with search and truck filters.",
       "status": "awaiting_final_standalone_capture"
     },
     {
       "id": "02-truck-signals",
-      "title": "Understand the route",
+      "title": "See where it can take your load",
       "altText": "A selected truck's approximate location, capacity route and signal details.",
       "status": "awaiting_final_standalone_capture"
     },
     {
       "id": "03-driver-workspace",
-      "title": "Keep your availability current",
+      "title": "Let them see your space",
       "altText": "Driver Home with a map and controls for available space, usual routes and truck location.",
       "status": "awaiting_final_standalone_capture"
     },
     {
-      "id": "04-tracking",
-      "title": "Keep shipment partners informed",
-      "altText": "An agreed synthetic shipment with its current status and next tracking action.",
+      "id": "06-fleet",
+      "title": "Keep your trucks working",
+      "altText": "A synthetic transport company's workspace with its managed trucks and assigned drivers.",
       "status": "awaiting_final_standalone_capture"
     },
     {
-      "id": "05-private-capacity",
-      "title": "Share with your contacts",
-      "altText": "The privately shared capacity view with its email-verification entry.",
-      "status": "awaiting_final_standalone_capture",
-      "draftObservation": "Actual short-screen draft clips the lower entry action at the map edge. Review final standalone scrolling/keyboard clearance before selecting this optional store screenshot; see WEB-MOB-019."
-    },
-    {
-      "id": "06-fleet",
-      "title": "Manage your trucks and drivers",
-      "altText": "A synthetic transport company's workspace with its managed trucks and assigned drivers.",
+      "id": "04-tracking",
+      "title": "Keep everyone in the picture",
+      "altText": "An agreed synthetic shipment with its current status and next tracking action.",
       "status": "awaiting_final_standalone_capture"
     }
   ],

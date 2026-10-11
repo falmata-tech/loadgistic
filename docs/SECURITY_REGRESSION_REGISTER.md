@@ -1,5 +1,50 @@
 # Security failures we must not repeat
 
+## NR-28 — Product priorities leak into promotional copy
+
+The draft used “Capacity, routes and availability first. Tracking after agreement.”
+as customer copy. That restated an internal priority instead of selling a useful
+outcome. The owner corrected it. Current copy leads with “The trucks you know.
+The space you need.” and recognizable East African freight operations. Keep
+review/checklist language in protected review materials, outside exported
+customer fields. `tests/platform-narrative.test.mjs` rejects the priority phrase
+and internal release/approval labels in customer copy. Actual wording and artwork
+still require owner review; a negative phrase test cannot certify good marketing.
+Owner: product/marketing maintainer. Next: review the local presentation before
+publishing final assets, listing or app copy.
+
+## NR-29 — Small fixtures hide failing reads and native render conditions
+
+Featured's capacity query grows beyond the gateway URL limit as trucks increase;
+the local 236-truck Sunday request failed with HTTP 414. Identifier reads now
+batch and paginate, including capacity history and public provider candidates.
+`featured-candidate-reads.test.mjs` verifies 1,105 candidates, latest-record
+precedence and no partial result on failure. Saved rounds/order remain unchanged.
+Tracking additionally rendered an empty error string directly in a native View,
+producing an error overlay and blocking the bottom navigation. Safe Boolean
+guards repair the same class across mobile controls. The typed JSX scan in
+`native-text.test.mjs` tests and rejects empty-string/zero conditions throughout
+the mobile source. Featured and visitor Tracking validate API structure before
+rendering; `runtime-content.test.mjs` and real local email/browser workflows prove
+visible retry, session restoration, detail access and normal closure. Do not hide
+the overlay or count an HTTP 200, screenshot or typecheck as workflow acceptance.
+Owner: Featured/native maintainer. Next: verify the matching installed Android
+artifact and exact release gates; existing code 5 predates these changes.
+
+## NR-30 — Pixel offsets become false geography at distant zoom
+
+Lane separation projected at the current world zoom moved a route over 318km
+from its source in the regression. The shared `signalLaneZoom` preserves street-
+level separation but caps geometric lane-join displacement under 1km for both
+MapLibre and Leaflet projections. Real records/matching are unchanged. Native
+rendered reads also lacked a camera revision check, allowing delayed old results
+to overwrite a new view. `visible-query.test.mjs` controls those races; geometry
+tests cover world zoom, high latitudes, reversed legs and closed areas. Actual
+local captures and repeated zoom/exit tests supplement the pure algorithms.
+Preserve global panning, separate Empty/Partial counts and normal interactions;
+do not fix performance by adding manual loading or a country lock. Owner: map
+maintainer. Next: owner review and matching installed native/runtime checks.
+
 ### October 8 legacy overview/search drift — NR-08/13
 
 An obsolete public `overview=1` parameter reached an older aggregate predicate

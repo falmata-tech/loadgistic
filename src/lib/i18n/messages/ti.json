@@ -1560,5 +1560,19 @@
   "An unfinished shipment must be completed or resolved before its tracking records can be removed.": "ዘይተዛዘመ ጽዕነት ኣሎ። መዝገብ ክትትሉ ቅድሚ ምስራዙ፣ ጽዕነቱ ክዛዘም ወይ ጉዳዩ ክፍታሕ ኣለዎ።",
   "Transfer or close your company workspace first so other drivers and owners do not lose their records.": "ካልኦት ሾፌራትን ዋናታትን መዝገቦም ከይስእኑ፣ መጀመርታ ናይ ትካልኩም ምምሕዳር ኣረክቡ ወይ ዕጸዉ።",
   "Some files are also used by another account. Our team must review those shared records before deleting them.": "ገለ ፋይላት ኣብ ካልእ መለያውን ይጥቀሙሎም። ጉጅለና ቅድሚ ምስራዞም እቲ ዝተኻፈለ መዝገብ ክርኢ ኣለዎ።",
-  "Could not confirm sign out. Please try again.": "ምውጻእኩም ከነረጋግጽ ኣይከኣልናን። እንደገና ፈትኑ።"
+  "Could not confirm sign out. Please try again.": "ምውጻእኩም ከነረጋግጽ ኣይከኣልናን። እንደገና ፈትኑ።",
+  "Find space for your next load": "ንዝቕጽል ጽዕነትኩም ቦታ ርኸቡ",
+  "Keep your transporters close. See the space and routes they report, or find new options in the public market.": "ምስ ኣጓዓዝትኹም ተራኸቡ። ዝሓበርዎ ናይ ጽዕነት ቦታን መስመርን ርኣዩ፤ ኣብ ክፉት ዕዳጋ ካልኦት መካይን እውን ድለዩ።",
+  "Put your transport network to work.": "እትፈልጥዎም ኣጓዓዝቲ ንዝቕጽል ስራሕኩም ርኸቡ።",
+  "When a load comes in, know where to start. See the space and routes your transporters report together, then contact the right person.": "ጽዕነት ክመጽእ ከሎ፣ ካበይ ከም እትጅምሩ ፍለጡ። ኣጓዓዝትኹም ዝሓበርዎ ናይ ጽዕነት ቦታን መስመርን ብሓባር ርኣዩ፤ ምስ ዝሰማማዕኩም ሰብ ተዘራረቡ።",
+  "The trucks you know": "እትፈልጥዎም ኣጓዓዝቲ",
+  "Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.": "ምሳኦም እትሰርሑ ኣጓዓዝቲ ኣብ ሓንቲ ናይ ብሕቲ ካርታ ብሓባር ርኣዩ። ብኢመይልኩም ክካፈሉኹም ሕተቱ፤ ምስ ኣረጋገጽኩም ዝሓበርዎ ቦታ ጽዕነት፣ መስመርን ግምታዊ ከባቢን ርኣዩ።",
+  "Let the right people see your space": "ናይ ጽዕነት ቦታኹም ንዘድልዮም ሰባት ኣርእዩ",
+  "Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.": "ኣብ መኪናኹም ዘሎ ቦታ ብቐሊሉ ክርከብ ግበሩ። መስመርኩምን ግምታዊ ከባቢኹምን ንመሻርኽትኹም፣ ንኹሉ ወይ ንሓደ ሰብ ጥራይ ኣካፍሉ።",
+  "More options for your next load": "ንዝቕጽል ጽዕነትኩም ተወሳኺ ምርጫታት",
+  "Find another truck when you need one. Filter public capacity by route, truck configuration and the space your load needs, then confirm the job directly.": "ካልእ መኪና ምስ ዘድልየኩም ኣብ ክፉት ዕዳጋ ድለዩ። ብመስመር፣ ብዓይነት መኪናን ብዘድልየኩም ናይ ጽዕነት ቦታን ኣጻርዩ፤ ስራሕ ምስ ኣጓዓዚ ብቐጥታ ኣረጋግጹ።",
+  "Keep everyone in the picture": "ንመሻርኽቲ ጽዕነት ኣፍልጡ",
+  "Once transport is agreed, give shipment partners private progress updates, approximate location and loading and unloading photos.": "ብዛዕባ መጓዓዝያ ምስ ተሰማማዕኩም፣ ንመሻርኽቲ ጽዕነት እዋናዊ ሓበሬታ፣ ግምታዊ ከባቢን ስእልታት ምጽዓንን ምርጋፍን ብውልቂ ኣካፍሉ።",
+  "Featured is unavailable right now. Please try again.": "ናይ ሎሚ መካይን ምርኢት ሕጂ ከነርኢ ኣይከኣልናን። ደጊምኩም ፈትኑ።",
+  "Could not load shipment updates. Please try again.": "ናይ ጽዕነት ሓበሬታ ሕጂ ከነምጽእ ኣይከኣልናን። ደጊምኩም ፈትኑ።"
 }

@@ -4,6 +4,15 @@ const cross=(a,b)=>a.x*b.y-a.y*b.x;
 const difference=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
 const dot=(a,b)=>a.x*b.x+a.y*b.y;
 
+/** Keep the largest lane join (48px) under 1km at the equator.
+ * @param {number} zoom
+ * @param {number} tileSize Native MapLibre uses 512; Leaflet uses 256.
+ */
+export function signalLaneZoom(zoom,tileSize=512){
+  const minimum=Math.ceil(Math.log2(40075016.6856*48/(1000*tileSize)));
+  return Number.isFinite(zoom)?Math.max(minimum,zoom):minimum;
+}
+
 /** Choose a bounded lane against parallel portions of already-rendered signals. */
 function clearLane(a,b,normal,preferred,references){
   const delta=difference(b,a),length=Math.hypot(delta.x,delta.y);

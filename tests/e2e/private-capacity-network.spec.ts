@@ -39,7 +39,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   test.setTimeout(60_000);
   const sharedEmail=`shared-${Date.now()}-${test.info().project.name}@example.test`;
   await page.goto('/shared-capacity');
-  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',level:1})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   await page.getByLabel('Email').fill(sharedEmail);

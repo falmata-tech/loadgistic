@@ -7,7 +7,7 @@ test('launch actions are visible, callback is direct, and GPS needs an explicit 
  test.setTimeout(60000);
  await page.addInitScript(()=>{(window as Window&{geoCalls?:number}).geoCalls=0;Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(_success:unknown,fail:(e:object)=>void)=>{const w=window as Window&{geoCalls?:number};w.geoCalls=(w.geoCalls||0)+1;fail({code:1,PERMISSION_DENIED:1});}}});});
  await page.goto('/',{waitUntil:'domcontentloaded'});await expect(page.locator('.leaflet-container')).toBeVisible();
- await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Transporter login'}).filter({visible:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Find space for your next load',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Transporter login'}).filter({visible:true})).toBeVisible();
  expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(0);
  await page.locator('.public-assistance-dock').getByRole('button',{name:'Need help with transport?'}).click();await expect(page.getByRole('form',{name:'Arrange transport',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Close',exact:true}).click();await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
@@ -21,7 +21,7 @@ test('priority language follows UI meaning while route and contact input stay un
  for(const locale of ['am','om','so','ti']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await page.goto('/',{waitUntil:'domcontentloaded'});const picker=page.locator('.public-header-language select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled({timeout:15000});await picker.selectOption(locale);
-  await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['Find truck capacity in Ethiopia']);
+  await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['Find space for your next load']);
   const entry=page.locator('.public-assistance-dock .public-assistance-request');await expect(entry).toHaveCount(1);await entry.click();const form=page.locator('.transport-request-form');await expect(form).toBeVisible({timeout:15000});
   await form.locator('[name=origin]').fill('Adama');await form.locator('[name=destination]').fill('Dire Dawa');await form.locator('[name=name]').fill('Home');await form.locator('[name=phone]').fill('+251900000001');
   await expect(form.getByRole('button')).toHaveText(messages['Start chat']);await expect(form.locator('[name=name]')).toHaveValue('Home');

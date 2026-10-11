@@ -60,7 +60,7 @@ async function findCapacitySignal(page:any,query:Record<string,string>,predicate
 
 test('public entry makes capacity immediately usable without an account',async({page}:{page:any})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',level:1})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('a[href="/featured"]:visible').first()).toHaveAttribute('href','/featured');
   await expect(page.locator('.featured-provider-section')).toHaveCount(0);
@@ -981,7 +981,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('heading',{name:'Approximate current location'})).toHaveCount(0);
   await page.goto('/app/capacity');
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading',{name:'Find truck capacity in Ethiopia',level:1})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
