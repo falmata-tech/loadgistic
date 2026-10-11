@@ -14,6 +14,15 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
   // at street scale, where both strokes have room beside the info bubbles.
   await page.locator('.leaflet-control-zoom-in').click();
   await page.locator('.leaflet-control-zoom-in').click();
+  // A shorter phone canvas fits the complete service at a smaller initial
+  // scale. Establish a real street-scale leg before choosing stroke hit points;
+  // the truck marker may otherwise cover most of this short route.
+  for(let step=0;step<4;step++){
+    await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+    const length=await page.locator('.map-current-route').evaluate((path:SVGPathElement)=>path.getTotalLength()*Math.hypot(path.getScreenCTM()!.a,path.getScreenCTM()!.b));
+    if(length>=200)break;
+    await page.locator('.leaflet-control-zoom-in').click();
+  }
   for(let zoom=0;zoom<2;zoom++){
     if(zoom){
       // Search keeps its complete result set; zoom must change geometry, not refetch it.

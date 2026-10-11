@@ -3519,3 +3519,24 @@ cases pass across `artifacts/chat-follow-up-final-20260927/` (11 passed) and
 The first run's claim/navigation test raced the save; it now waits for the successful
 claim response and refreshed queue before choosing Mine. No permission or product
 assertion was weakened. Logs: `.local/chat-follow-up/browser-{final,claim}.log`.
+
+## October 11 release follow-up — route spacing and local build
+
+Candidate `25e9ca3` / CI `38168316955` is not eligible for promotion: its
+shared-leg browser regression found closer-zoom lanes compressed by the global
+worst-case join floor. The corrected projection retains ordinary 6px lanes and
+bounds each actual generated vertex under 1km, with immutable source geometry.
+Both unchanged spacing/tap/gesture assertions pass on desktop and phone once the
+test establishes measured street scale rather than assuming two zoom clicks
+fit every canvas. New pure checks preserve 12px paired lanes when physically
+feasible and retain world-distance, ring and high-latitude coverage. Root quality
+passes 496 tests; mobile quality passes 149. A new exact-candidate CI is required.
+
+Expo rejects the new cloud APK because the falmatad account's free Android quota
+is exhausted; readback confirms no code-6 cloud job was created. The owner chose
+the local fallback. Expo Prebuild generates only an ignored isolated source copy;
+Gradle uses a task-specific cache and local test signer. The first compile fails
+on Maven/Google DNS, not source compilation. After connectivity returns, one
+controlled retry includes the lane correction. An installed or distributed APK,
+matching Play signer, Play submission and twelve-person testing clock remain
+unverified. No Expo private signing credential was downloaded.

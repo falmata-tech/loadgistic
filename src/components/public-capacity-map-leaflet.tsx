@@ -8,7 +8,7 @@ import { Circle, CircleMarker, MapContainer, Marker, Polygon, Polyline, Popup, T
 import { isTrailerVehicleConfiguration, vehicleConfigurationImage } from '@/lib/vehicle-configurations';
 import { BaseMapTiles } from '@/components/base-map-tiles';
 import { buildCapacityMarkerGroups } from '@/lib/capacity-map-clustering';
-import { offsetSignalPath,signalLaneZoom } from '@/lib/map-signal-offset';
+import { offsetSignalPath,signalLaneZoom,signalLaneLimit } from '@/lib/map-signal-offset';
 import {areaCamera} from '@/lib/workspace-area-navigation.js';
 import {worldCapacityViewport} from '@/lib/capacity-viewport';
 
@@ -66,12 +66,12 @@ function OffsetPolyline({positions,offset,closed=false,avoid,eventHandlers,pathO
   React.useEffect(()=>{setRevision((value:number)=>value+1);},[map]);
   const shifted=React.useMemo(()=>{
     if(!offset||positions.length<2)return positions;
-    const zoom=signalLaneZoom(map.getZoom(),256);
+    const zoom=signalLaneZoom(map.getZoom(),256),limit=signalLaneLimit(zoom,256);
     const pixels=positions.map(position=>map.project(position,zoom));
     const loop=closed||(positions[0][0]===positions.at(-1)![0]&&positions[0][1]===positions.at(-1)![1]);
-    const reference=avoid?offsetSignalPath(avoid.positions.map(position=>map.project(position,zoom)),avoid.offset,avoid.closed):[];
+    const reference=avoid?offsetSignalPath(avoid.positions.map(position=>map.project(position,zoom)),avoid.offset,avoid.closed,[],limit):[];
     if(avoid?.closed&&reference.length)reference.push({...reference[0]});
-    return offsetSignalPath(pixels,loop?Math.sign(offset)*12:offset,loop,reference.length?[reference]:[]).map(pixel=>{
+    return offsetSignalPath(pixels,loop?Math.sign(offset)*12:offset,loop,reference.length?[reference]:[],limit).map(pixel=>{
       const latLng=map.unproject(L.point(pixel.x,pixel.y),zoom);
       return [latLng.lat,latLng.lng] as [number,number];
     });

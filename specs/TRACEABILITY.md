@@ -1533,3 +1533,12 @@ October 11 owner visual approval: revised Featured/Tracking/map previews on
 quality passes 495 root and 149 mobile tests, root typecheck/source/spec checks
 and mobile lint. Replacement source is version 1.0.5/code 6; exact CI, compiled
 artifact, installed native and hosted publication evidence remain pending.
+
+October 11 NR-30 / FEAT-MOB-001 follow-up: CI 38168316955 fails the prior
+shared-leg spacing gate, so candidate 25e9ca3 is held. Actual-vertex displacement
+bounds replace the global worst-case join floor. Root lane/world tests and native
+discovery tests pass; real shared-leg desktop/phone taps pass at measured street
+scale with all separation, camera and background gestures retained. Full quality
+passes 496 root and 149 native tests. Matching CI/native/web publication remains
+required. Protected evidence: .local/runtime-release-20261011-*-followup* and
+shared-lane-street-scale/; no hosted schema or settings changes.

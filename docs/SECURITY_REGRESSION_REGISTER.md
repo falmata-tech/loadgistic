@@ -34,9 +34,16 @@ artifact and exact release gates; existing code 5 predates these changes.
 ## NR-30 — Pixel offsets become false geography at distant zoom
 
 Lane separation projected at the current world zoom moved a route over 318km
-from its source in the regression. The shared `signalLaneZoom` preserves street-
-level separation but caps geometric lane-join displacement under 1km for both
-MapLibre and Leaflet projections. Real records/matching are unchanged. Native
+from its source in the regression. Actual generated vertices remain under 1km
+from the source in both MapLibre and Leaflet projections. Real records/matching
+are unchanged.
+
+October 11 CI follow-up: a global floor based on worst-case joins compressed
+ordinary shared legs at closer zooms. Bound actual generated vertices separately
+and preserve feasible 12px paired-lane spacing. Keep the existing real tap-target
+regression alongside world-distance checks; neither check may replace the other.
+The shared-leg browser test must establish actual street scale, rather than
+assuming two zoom clicks suffice on every viewport. Native
 rendered reads also lacked a camera revision check, allowing delayed old results
 to overwrite a new view. `visible-query.test.mjs` controls those races; geometry
 tests cover world zoom, high latitudes, reversed legs and closed areas. Actual

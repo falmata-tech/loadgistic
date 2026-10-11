@@ -1,14 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {offsetSignalPath,signalLaneZoom} from '../src/lib/map-signal-offset.js';
+import {offsetSignalPath,signalLaneZoom,signalLaneLimit} from '../src/lib/map-signal-offset.js';
 
 test('MapLibre and Leaflet lanes stay geographically bounded at world zoom without limiting the camera',()=>{
  for(const tileSize of [256,512])for(const zoom of [0,1,3,5,8,12,13,20]){
-  const laneZoom=signalLaneZoom(zoom,tileSize),meters=48*40075016.6856/(tileSize*2**laneZoom);
-  assert.ok(meters<=1000);assert.ok(laneZoom>=zoom);
+  const laneZoom=signalLaneZoom(zoom,tileSize),limit=signalLaneLimit(laneZoom,tileSize);
+  const source=[{x:0,y:0},{x:2000,y:0},{x:20,y:10}];
+  const shifted=offsetSignalPath(source,24,false,[],limit);
+  for(const p of shifted)assert.ok(source.some(q=>Math.hypot(p.x-q.x,p.y-q.y)*40075016.6856/(tileSize*2**laneZoom)<=1000));
+  assert.ok(laneZoom>=zoom);
   if(zoom>=13)assert.equal(laneZoom,zoom);
  }
  assert.ok(Number.isFinite(signalLaneZoom(NaN)));
+});
+
+test('actual join bounds preserve ordinary paired-route spacing at street zoom',()=>{
+ for(const [tileSize,zoom] of [[256,10],[256,11],[512,9],[512,10]]){
+  const laneZoom=signalLaneZoom(zoom,tileSize),limit=signalLaneLimit(laneZoom,tileSize),source=[{x:0,y:0},{x:2000,y:0}];
+  assert.equal(laneZoom,zoom);
+  const current=offsetSignalPath(source,-6,false,[],limit),regular=offsetSignalPath(source,6,false,[current],limit);
+  assert.ok(Math.abs(current[0].y-regular[0].y)>=11.9,'an unrelated worst-case corner must not compress this shared leg');
+ }
 });
 
 const square=[{x:0,y:0},{x:200,y:0},{x:200,y:200},{x:0,y:200}];

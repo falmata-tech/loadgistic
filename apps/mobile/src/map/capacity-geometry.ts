@@ -1,4 +1,4 @@
-import { offsetSignalPath,signalLaneZoom } from '../../../../src/lib/map-signal-offset.js';
+import { offsetSignalPath,signalLaneZoom,signalLaneLimit } from '../../../../src/lib/map-signal-offset.js';
 import type { CapacitySignal, SignalPoint } from '../api/public-capacity.ts';
 export type LngLat=[number,number];
 export function project([longitude,latitude]:LngLat,zoom:number) {
@@ -23,19 +23,18 @@ export function locationRing(item:CapacitySignal):LngLat[] {
 }
 export function signalPaths(item:CapacitySignal,zoom:number):{kind:'location'|'current'|'regular';points:LngLat[]}[] {
  // Pixel separation at world zoom can shift a signal hundreds of kilometres.
- // Use city-scale projection below zoom 12: even the largest 48px corner is
- // under 1km at the equator. Keep the existing separation at closer zooms.
- const laneZoom=signalLaneZoom(zoom);
+ // Keep ordinary lane spacing where feasible; cap actual corners under 1km.
+ const laneZoom=signalLaneZoom(zoom),limit=signalLaneLimit(laneZoom);
  const paths:{kind:'location'|'current'|'regular';points:LngLat[]}[]=[],ring=locationRing(item);
  if(ring.length)paths.push({kind:'location',points:ring});
  let reference:{x:number;y:number}[]=[];
  if(item.currentVisible&&item.currentPoints.length>=(item.geometry==='RADIUS'?3:2)){
   const closed=item.geometry==='RADIUS'; const points=coordinates(item.currentPoints);
-  reference=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?-12:-6,closed);
+  reference=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?-12:-6,closed,[],limit);
   paths.push({kind:'current',points:reference.map(p=>unproject(p,laneZoom))});
  }
  for(const regular of item.regular){const closed=regular.geometry==='RADIUS',points=coordinates(regular.points);if(points.length<(closed?3:2))continue;
-  const pixels=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?12:6,closed,reference.length?[reference]:[]);
+  const pixels=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?12:6,closed,reference.length?[reference]:[],limit);
   paths.push({kind:'regular',points:pixels.map(p=>unproject(p,laneZoom))});
  }
  return paths;

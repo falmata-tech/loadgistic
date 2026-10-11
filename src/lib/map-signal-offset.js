@@ -4,14 +4,17 @@ const cross=(a,b)=>a.x*b.y-a.y*b.x;
 const difference=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
 const dot=(a,b)=>a.x*b.x+a.y*b.y;
 
-/** Keep the largest lane join (48px) under 1km at the equator.
+/** Keep ordinary 6px lanes near their source at world zoom. Bound joins separately.
  * @param {number} zoom
  * @param {number} tileSize Native MapLibre uses 512; Leaflet uses 256.
  */
 export function signalLaneZoom(zoom,tileSize=512){
-  const minimum=Math.ceil(Math.log2(40075016.6856*48/(1000*tileSize)));
+  const minimum=Math.ceil(Math.log2(40075016.6856*6/(1000*tileSize)));
   return Number.isFinite(zoom)?Math.max(minimum,zoom):minimum;
 }
+
+/** Projected pixel limit, with 1m rounding headroom under the 1km ground bound. */
+export function signalLaneLimit(zoom,tileSize=512){return 999*tileSize*2**zoom/40075016.6856;}
 
 /** Choose a bounded lane against parallel portions of already-rendered signals. */
 function clearLane(a,b,normal,preferred,references){
@@ -45,15 +48,20 @@ function clearLane(a,b,normal,preferred,references){
  * @param {number} offset
  * @param {boolean} closed
  * @param {PixelPoint[][]} references Already-rendered current signal paths.
+ * @param {number} maximum Maximum displacement from each original vertex.
  * @returns {PixelPoint[]}
  */
-export function offsetSignalPath(points,offset,closed=false,references=[]){
+export function offsetSignalPath(points,offset,closed=false,references=[],maximum=Infinity){
   if(points.length<2||!offset)return points.map(point=>({...point}));
   const repeatedEnd=same(points[0],points.at(-1));
   const ring=closed||repeatedEnd;
   const source=points.filter((point,index)=>!index||!same(point,points[index-1]));
   if(repeatedEnd&&source.length>1)source.pop();
   if(source.length<2)return points.map(point=>({...point}));
+  const bound=(point,origin)=>{
+    const dx=point.x-origin.x,dy=point.y-origin.y,length=Math.hypot(dx,dy);
+    return length>maximum?{x:origin.x+dx*maximum/length,y:origin.y+dy*maximum/length}:point;
+  };
   const area=ring?source.reduce((sum,p,i)=>sum+cross(p,source[(i+1)%source.length]),0):0;
   const perimeter=ring?source.reduce((sum,p,i)=>{const q=source[(i+1)%source.length];return sum+Math.hypot(p.x-q.x,p.y-q.y);},0):0;
   // Reduce the inward lane for tiny areas instead of inverting their boundary.
@@ -64,23 +72,24 @@ export function offsetSignalPath(points,offset,closed=false,references=[]){
     const b=source[(index+1)%source.length],delta=difference(b,a),length=Math.hypot(delta.x,delta.y);
     const unit={x:delta.x/length,y:delta.y/length};
     const normal={x:-unit.y*direction,y:unit.x*direction};
-    const lane=references.length?clearLane(a,b,normal,preferred,references):preferred;
+    const desired=references.length?clearLane(a,b,normal,preferred,references):preferred;
+    const lane=Math.max(-maximum,Math.min(maximum,desired));
     const shift=p=>({x:p.x+normal.x*lane,y:p.y+normal.y*lane});
     return{start:shift(a),end:shift(b),unit,lane};
   });
   const join=(index)=>{
     const before=segments[(index-1+segments.length)%segments.length],after=segments[index%segments.length];
-    if(same(before.end,after.start))return[before.end];
+    if(same(before.end,after.start))return[bound(before.end,source[index])];
     const denominator=cross(before.unit,after.unit);
     if(Math.abs(denominator)>1e-6){
       const t=cross(difference(after.start,before.end),after.unit)/denominator;
       const point={x:before.end.x+t*before.unit.x,y:before.end.y+t*before.unit.y};
       const maxCorner=Math.max(Math.abs(before.lane),Math.abs(after.lane))*2;
-      if(Math.hypot(point.x-source[index].x,point.y-source[index].y)<=maxCorner+1e-6)return[point];
+      if(Math.hypot(point.x-source[index].x,point.y-source[index].y)<=maxCorner+1e-6)return[bound(point,source[index])];
     }
     // Preserve both segment lanes at sharp/reversing turns rather than moving
     // a shared segment's endpoint back toward the other signal.
-    return[before.end,after.start];
+    return[bound(before.end,source[index]),bound(after.start,source[index])];
   };
   const shifted=ring?source.flatMap((_,index)=>join(index)):[segments[0].start,...source.slice(1,-1).flatMap((_,index)=>join(index+1)),segments.at(-1).end];
   return repeatedEnd?[...shifted,{...shifted[0]}]:shifted;

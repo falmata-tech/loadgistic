@@ -80,6 +80,7 @@ When data is loading, unavailable, refreshed, or the camera changes repeatedly\
 Then a recoverable request failure stays inside the screen and cannot crash navigation\
 And cluster updates from an older camera or data revision cannot overwrite the current view\
 And zooming to continental/world scale does not amplify display-only route separation into another country\
+And the displacement bound applies to actual lane points, without compressing ordinary shared-leg spacing at closer zooms when that spacing fits within the bound\
 And route separation stays within one kilometre of the reported geometry without changing saved coordinates, matching or permissions\
 And Empty/Partial cluster identities, counts, colors and expansion source remain distinct\
 And global panning remains available; no country lock or manual loading mode is introduced.
