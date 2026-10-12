@@ -5,7 +5,14 @@ import {obscureCoordinate} from '../../../../src/lib/location-privacy';
 import {apiOrigin} from '../api/http';
 import {backgroundLocationDue,freshBackgroundFix,trackingLeases,type TrackingLease} from './background-state';
 import {backgroundConsentKey,backgroundDisclosureVersion} from './background-consent';
+import {createLocationServiceLifecycle} from './service-lifecycle';
 export const taskName='loadgistic.shipment-location.v1';
+const serviceLifecycle=createLocationServiceLifecycle({
+ available:TaskManager.isAvailableAsync,
+ registered:()=>Location.hasStartedLocationUpdatesAsync(taskName),
+ start:copy=>Location.startLocationUpdatesAsync(taskName,{accuracy:Location.Accuracy.Balanced,timeInterval:600000,distanceInterval:0,deferredUpdatesInterval:600000,pausesUpdatesAutomatically:false,showsBackgroundLocationIndicator:true,foregroundService:{notificationTitle:copy.title,notificationBody:copy.body,notificationColor:'#0c7275',killServiceOnDestroy:false}}),
+ stop:()=>Location.stopLocationUpdatesAsync(taskName),
+});
 const leaseKey='loadgistic.shipment.location.leases.v1',deviceKey='loadgistic.shipment.location.device.v1';
 let storageFlight:Promise<unknown>=Promise.resolve();
 let epoch=0;
@@ -21,13 +28,12 @@ async function send(token:string,body:unknown){const controller=new AbortControl
  }finally{clearTimeout(timer);}}
 export async function revokeTrackingLease(lease:TrackingLease){await send(lease.token,{action:'STOP'}).catch(()=>undefined);}
 export async function stopBackgroundTracking(){epoch++;
- if(await Location.hasStartedLocationUpdatesAsync(taskName))await Location.stopLocationUpdatesAsync(taskName);
+ await serviceLifecycle.stop();
  const leases=await readTrackingLeases();
  try{await replaceTrackingLeases([]);}finally{await Promise.all(leases.map(revokeTrackingLease));}
 }
 export async function startBackgroundTracking(copy:{title:string;body:string}){
- if(!await TaskManager.isAvailableAsync())throw Error('Background location is unavailable in this app build.');
- if(!await Location.hasStartedLocationUpdatesAsync(taskName))await Location.startLocationUpdatesAsync(taskName,{accuracy:Location.Accuracy.Balanced,timeInterval:600000,distanceInterval:0,deferredUpdatesInterval:600000,pausesUpdatesAutomatically:false,showsBackgroundLocationIndicator:true,foregroundService:{notificationTitle:copy.title,notificationBody:copy.body,notificationColor:'#0c7275',killServiceOnDestroy:false}});
+ await serviceLifecycle.ensure(copy);
 }
 // Imported from the application entry, so Android/iOS can run without mounting a screen.
 TaskManager.defineTask<{locations:Location.LocationObject[]}>(taskName,async({data,error})=>{

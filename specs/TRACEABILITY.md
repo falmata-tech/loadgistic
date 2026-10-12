@@ -1,5 +1,17 @@
 # Specification traceability
 
+October 12 tracking-restoration follow-up — FEAT-MOB-001 / NR-33 / MOB-QA-003:
+the corrected navigation source `b211582` passes all eight CI jobs in
+`38285221552` and actual Android route unwinding plus both area switches.
+Its data-preserving update exposes missing foreground-service restoration,
+despite retained grants, eligible tracking and saved foreground callbacks.
+The real old native startup adapter fails the new cold-task regression (0 vs 1
+native starts); the repaired service-port lifecycle passes eight startup,
+failure, batching and stop-race cases. Native types/lint, source/spec and all 165
+mobile tests pass; existing timing assertions stay unchanged in the serial
+rerun after stopping only the overloaded task-owned emulator. The new native
+update/closure, exact-source CI and signing/policy evidence remain separate.
+
 October 12 native reviewer follow-up — FEAT-MOB-001 / NR-32 / MOB-QA-002:
 two fresh standalone taps reproduce the retained-review-route loop. The real
 isolated `mobile-review-navigation.spec.ts` fails on the former redirect with

@@ -1,5 +1,14 @@
 ## October 12 mobile completion — active
 
+MOB-QA-002 is verified in Android and CI `38285221552` (all eight jobs).
+MOB-QA-003 is the next release dependency: after updating the APK, a persisted
+task skips native foreground-service restoration. Its real adapter regression
+fails before repair and all eight lifecycle cases pass afterward. The 165-test
+mobile serial suite, types/lint and source/spec checks pass. No timing assertion,
+permission, cadence, privacy radius or backend authority changed. The overloaded
+owned emulator was stopped; native session closure was not falsely recorded.
+The rebuilt cold-restoration/closure and refined signing/policy gates remain.
+
 The closed-tester list now contains all 12 owner-confirmed addresses; a full
 Console reload verifies its saved count and selection. Google review, tester
 opt-ins and the closed-test clock remain separate. Approved Play copy and the

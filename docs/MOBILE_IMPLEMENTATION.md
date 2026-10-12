@@ -72,6 +72,27 @@ not start the required closed-test clock.
 
 ### MOB-QA-001 — Transient refresh can interrupt native permission setup
 
+**MOB-QA-003 (current dependency, October 12):** the navigation correction
+`b211582` passes CI `38285221552` (all eight jobs) and actual Android review-route
+unwinding plus both area switches. A data-preserving update additionally exposes
+an absent foreground location service: the known synthetic shipment remains
+eligible, real grants remain allowed, there is no UI warning, and foreground
+callbacks still save new updates. Persisted task registration therefore must not
+skip first-process service startup. The prior uninterrupted 22-minute test proves
+a real background update; it does not prove restoration after update.
+
+1. [x] Record exact source, valid grants, eligible synthetic shipment, missing
+   service and continued foreground callback evidence; specify FEAT-MOB-001.
+2. [x] The former native adapter fails the cold registered-task regression
+   (zero starts instead of one). The repaired adapter/lifecycle passes all eight
+   startup, batching, registration-loss, failure and stop-race cases. Mobile
+   types/lint and source/spec checks pass. All 165 mobile tests pass in the
+   serial rerun with their existing timing assertions unchanged. Two unrelated
+   timing tests failed under host pressure before the owned emulator was stopped;
+   no global cleanup, another app's process or relaxed timer was used.
+3. [ ] Current: verify the matching rebuilt update/cold restoration and normal closure,
+   then refresh exact CI/build/signing review before any private retrieval.
+
 **October 12 release follow-up — MOB-QA-002 (current):** installed code 7
 reproduces a reviewer-only return loop: the retained Marketplace review form
 redirects a signed-in actor back to driver Home when Marketplace is selected.

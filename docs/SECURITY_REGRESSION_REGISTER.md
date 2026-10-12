@@ -1,5 +1,22 @@
 # Security failures we must not repeat
 
+## NR-33 — Saved task registration is mistaken for a running tracking service
+
+After a data-preserving Android APK update, the restricted synthetic driver
+restored normally, Android grants and shipment eligibility remained valid, and
+foreground callbacks saved updates. The location foreground service was absent,
+without a UI warning. The old adapter skipped startup when Expo reported its
+persisted task registered; this cannot prove its native service restarted.
+
+Request startup once per JavaScript process even for an existing registration;
+retain batching during later synchronization. Serialize starts/stops, invalidate
+obsolete readiness and permit bounded retries after failure or registration loss.
+The real adapter fails the cold-task counterexample before repair; all eight
+`apps/mobile/tests/location-service-lifecycle.test.mjs` cases pass after repair.
+Permissions, cadence, consent, device authority and approximate coordinates are
+unchanged. Owner: native tracking maintainer. Next: prove the matching installed
+update/cold restoration, requested service and normal closure before release.
+
 ## NR-32 — A retained authentication screen traps an authenticated area switch
 
 The review form redirected across tabs into the workspace. Its Marketplace

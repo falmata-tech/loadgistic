@@ -11,6 +11,27 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — implementation in progress
 
+## Tracking service restoration — October 12 completion follow-up
+
+MOB-QA-003: after a data-preserving APK update, the known synthetic shipment
+continues receiving foreground callbacks with valid Android grants, but the
+requested location foreground service is absent. A saved task registration is
+not evidence that its native service restarted.
+
+Given agreed tracking, retained consent and valid Android permissions\
+When the app's JavaScript process first resumes its eligible tracking\
+Then request the native task/service again even if the task is already registered\
+And later synchronization in that process preserves the active task and batching.
+
+Given startup overlaps sign-out, authority ends or permission is revoked\
+Then service stop follows any in-flight start and discards obsolete readiness\
+And a failed start/stop or lost registration remains retryable without extending
+tokens, permissions, tracking authority or the privacy radius.
+
+Verification: dependency-free service-port lifecycle tests and actual matching
+Android update/cold-restoration/service/closure acceptance. Native copy, location
+cadence, consent, privacy and backend authority remain unchanged.
+
 ## Reviewer navigation recovery — October 12 completion follow-up
 
 MOB-QA-002: the retained Marketplace stack can keep the review sign-in route
