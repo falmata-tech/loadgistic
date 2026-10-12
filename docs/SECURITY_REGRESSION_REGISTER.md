@@ -1,5 +1,21 @@
 # Security failures we must not repeat
 
+## NR-32 — A retained authentication screen traps an authenticated area switch
+
+The review form redirected across tabs into the workspace. Its Marketplace
+stack retained that form, so returning to Marketplace immediately redirected
+back to the workspace. Two fresh installed-Android taps reproduced the loop;
+the real local review-login regression then failed with Capacity hidden after
+authentication. Normal email-code login is unaffected.
+
+Replace the completed review form inside its own Marketplace stack with
+Capacity. Preserve the two area destinations, ordinary authentication and
+normal logout. `tests/e2e/mobile-review-navigation.spec.ts` uses an isolated,
+restricted synthetic account, actual password authentication and real area
+controls; it checks both directions, a remembered About page and sign-out.
+Owner: native navigation maintainer. Next: pass that regression and verify the
+matching standalone artifact before claiming MOB-QA-002 or Play review ready.
+
 ## NR-31 — Transient refresh clears the current native workspace
 
 Returning from Android permission setup unnecessarily rotated a still-valid

@@ -1,3 +1,26 @@
+## October 12 mobile completion — active
+
+The closed-tester list now contains all 12 owner-confirmed addresses; a full
+Console reload verifies its saved count and selection. Google review, tester
+opt-ins and the closed-test clock remain separate. Approved Play copy and the
+regional graphic are present; final icon/screenshot associations are unfinished.
+
+Installed 1.0.6/code 7 loads Capacity/Featured, restores normal review access
+after expiry, accepts genuine location grants, saves native foreground shipment
+location and stops the active foreground service on sign-out. Four actual
+portrait drafts include an authorized private map. A continuously minimized
+saved update remains unverified; the owned emulator is running a fresh,
+uninterrupted sensor test with a temporary no-network GPS helper.
+
+MOB-QA-002 exposed a reviewer-only area-switch loop. A real local regression
+fails on the former redirect; focused in-tab unwinding passes login, both
+switches, remembered About and logout. The existing restricted review/consent/
+private-access denial test also passes. Native types/lint and root 496/source/
+spec gates pass; the new test's explicit Page type repairs its typecheck error.
+Matching Android rebuild, new exact-source CI and refined signing review remain
+next. No 1.0.6 private key retrieval has occurred. Web runtime remains the
+already verified October 11 release; no hosted SQL/settings/billing mutation.
+
 ## October 11 release outcome
 
 Verified runtime `3c13f4b` is live at https://loadgistic.com / Netlify

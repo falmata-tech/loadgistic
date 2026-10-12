@@ -1,5 +1,18 @@
 # Specification traceability
 
+October 12 native reviewer follow-up — FEAT-MOB-001 / NR-32 / MOB-QA-002:
+two fresh standalone taps reproduce the retained-review-route loop. The real
+isolated `mobile-review-navigation.spec.ts` fails on the former redirect with
+Capacity hidden after authentication. Focused in-tab `dismissTo('/')` passes
+normal password login, both area switches, a remembered About destination and
+normal sign-out (14.6 seconds). The existing Play reviewer consent, scoped
+private access, revocation and ordinary-account denial workflow also passes
+(37.3 seconds). No authentication or permission contract, visible layout,
+hosted configuration or database schema changes. Matching rebuilt/native/remote
+release evidence remains pending; older code-7 captures/build and signing review
+are not silently rebound to the changed source. The confirmed 12-person tester
+list is saved and independently reloaded, without claiming enrollment or review.
+
 October 11 native completion follow-up — FEAT-MOB-001 / NR-31 / MOB-QA-001:
 candidate 1.0.6/code 7 keeps a current actor on permission return without needless
 rotation and retains only that same unexpired actor after a transient refresh.

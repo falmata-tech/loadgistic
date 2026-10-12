@@ -72,6 +72,35 @@ not start the required closed-test clock.
 
 ### MOB-QA-001 — Transient refresh can interrupt native permission setup
 
+**October 12 release follow-up — MOB-QA-002 (current):** installed code 7
+reproduces a reviewer-only return loop: the retained Marketplace review form
+redirects a signed-in actor back to driver Home when Marketplace is selected.
+The regular email-code entry is unaffected. Native code 7 otherwise loads public
+Capacity and Featured, restores the saved actor after expiry, accepts real
+Android location grants, and stops the requested foreground service on normal
+sign-out. An idle bound Android service record is not a running foreground
+service. A saved update while continuously minimized remains unverified.
+
+1. [x] Reproduce with two fresh native Marketplace taps and inspect the retained
+   tab/review redirect; specify recovery in FEAT-MOB-001.
+2. [x] The real local regression fails on the former cross-tab redirect (Capacity
+   hidden after login). Focused `dismissTo('/')` unwinds the review form inside
+   Marketplace without a second map. The regression passes in 14.6 seconds:
+   both switches, retained About destination and normal closure. The existing
+   restricted-review/consent/private-scope/revocation regression also passes
+   (37.3 seconds). Native types/lint pass; root 496 tests and source/spec checks
+   pass. The new test's explicit browser type fixes its root typecheck finding.
+3. [ ] Current: verify both area switches and normal closure in the matching
+   native artifact; finish the remaining background update. Four actual portrait
+   drafts are captured from installed code 7, including an authorized synthetic
+   private map. They precede this additional navigation correction.
+4. [ ] Refresh exact source/build/signing review and required gates. No private
+   signing retrieval for 1.0.6 has occurred; its existing approval identifies
+   the previous exact artifact. Do not reuse a changed digest silently.
+5. [x] Save the owner-confirmed 12-address closed-test list. Independent Console
+   reload verifies count 12 and its selected association; no invitations,
+   enrollments, Google review or closed-test clock are inferred.
+
 Completion follow-up requested by the owner after the code-6 internal release:
 
 1. [x] Specify and regression-test valid-actor resume and transient

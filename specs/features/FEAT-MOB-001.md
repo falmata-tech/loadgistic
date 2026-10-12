@@ -11,6 +11,29 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — implementation in progress
 
+## Reviewer navigation recovery — October 12 completion follow-up
+
+MOB-QA-002: the retained Marketplace stack can keep the review sign-in route
+after it redirects across tabs to the workspace. Returning to Marketplace then
+redirects the authenticated reviewer back to the workspace. Normal email-code
+login and authorization remain unchanged.
+
+Given a restricted reviewer signs in through normal review credentials\
+When authentication completes\
+Then replace the review form with Capacity in the Marketplace stack\
+And My workspace opens the reviewer's authorized driver or fleet Home.
+
+Given that reviewer visits another Marketplace page\
+When they switch to My workspace and back\
+Then each area retains its working destination, without a sign-in redirect loop\
+And normal sign-out removes member access.
+
+Verification: real isolated email/password authentication and two-area switching
+in `tests/e2e/mobile-review-navigation.spec.ts`, followed by matching installed
+Android acceptance. No token, permissions, expiry, hosted configuration or UI
+layout changes. Replace the unused-code artifact only after source/build gates;
+the prior signing review identifies the older exact bytes and remains unconsumed.
+
 ## Native session recovery — October 11 completion follow-up
 
 MOB-QA-001 exposed a timeout when returning from Android permission setup.
