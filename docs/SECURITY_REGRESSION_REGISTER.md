@@ -1,5 +1,23 @@
 # Security failures we must not repeat
 
+## NR-31 — Transient refresh clears the current native workspace
+
+Returning from Android permission setup unnecessarily rotated a still-valid
+session. A timeout cleared the in-memory actor and interrupted the attempted
+shipment-location demo. Resume now reuses a current actor with at least one
+minute remaining; explicit reload still refreshes account state. A transient
+refresh failure can retain only the same unexpired actor. Requests remain
+authorized by the server, and denied/expired access, invalid responses, storage
+failure, sign-out and account replacement never acquire this fallback.
+
+`apps/mobile/tests/account-session.test.mjs` verifies permission return without
+rotation, concurrent near-expiry renewal, recovery, expiry during a failed
+refresh, 401/403 denial, invalid responses/storage failure and late results after
+logout/account replacement. This creates no private offline cache, longer token
+lifetime or authentication bypass. Owner: mobile session maintainer. Next:
+verify the matching standalone permission return, actual service/update/stop and
+new release gates before closing MOB-QA-001 or submitting policy footage.
+
 ## NR-28 — Product priorities leak into promotional copy
 
 The draft used “Capacity, routes and availability first. Tracking after agreement.”

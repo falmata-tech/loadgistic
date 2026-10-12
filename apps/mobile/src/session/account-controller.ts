@@ -31,12 +31,17 @@ export function createAccountController(port: Port) {
   const generation = epoch;
   if (flight?.epoch === generation) return flight.promise;
   const run = async () => {
+   const previous = session;
    try {
     const token = session?.refreshToken || await port.read();
     if (!token || generation !== epoch || restoreBlocked) return null;
     return await accept(await port.request('/api/mobile/auth/refresh', { body: { refreshToken: token } }), generation);
    } catch (caught) {
     if (generation === epoch) {
+     const transient = caught instanceof ApiError && [0, 408, 429, 500, 502, 503, 504].includes(caught.status);
+     if (transient && previous && session === previous && previous.expiresAt * 1000 > port.now()) {
+      error = caught.message; emit(); return previous;
+     }
      clear();
      if (caught instanceof ApiError && [401, 403].includes(caught.status)) {
       restoreBlocked = true;
@@ -49,6 +54,10 @@ export function createAccountController(port: Port) {
   };
   const promise = run(); flight = { epoch: generation, promise }; return promise;
  };
+ // Permission dialogs also background the app. A valid actor needs no rotation
+ // merely to return to the same workspace; explicit reload still uses refresh.
+ const resume = (): Promise<AccountSession | null> => session && session.expiresAt * 1000 - port.now() >= 60000
+  ? Promise.resolve(session) : refresh();
  const signOut = async () => {
   const previous = session || pendingLogout; restoreBlocked = true; clear(); error = ''; emit();
   let storageFailed = false, serverFailed = false;
@@ -59,7 +68,7 @@ export function createAccountController(port: Port) {
   emit();
  };
  return {
-  snapshot: () => ({ session, busy, error, cleanupRequired }), refresh, signOut,
+  snapshot: () => ({ session, busy, error, cleanupRequired }), refresh, resume, signOut,
   async requestCode(email: string) {
    const data = await port.request('/api/mobile/auth/request', { body: { email } }) as { handoff?: unknown };
    if (typeof data.handoff !== 'string') throw new Error('Could not send a code.'); return data.handoff;

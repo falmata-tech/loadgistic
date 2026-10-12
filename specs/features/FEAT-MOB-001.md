@@ -11,6 +11,37 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — implementation in progress
 
+## Native session recovery — October 11 completion follow-up
+
+MOB-QA-001 exposed a timeout when returning from Android permission setup.
+Repair the existing session lifecycle without changing screens, credentials,
+server authorization, visitor expiry, device consent or shipment sharing.
+
+Given a transporter has a current session with at least one minute remaining\
+When the app resumes from a permission dialog or Android Home\
+Then the workspace keeps that actor without an unnecessary token rotation\
+And an explicit account reload still refreshes current account state.
+
+Given the current actor's access token remains unexpired\
+When a requested refresh fails with a transient connection, timeout, rate-limit
+or service-unavailable error\
+Then retain only that actor's current session and saved refresh, record the
+recoverable error, and keep every protected request subject to server authorization\
+And a later successful refresh clears the error and saves its rotated token.
+
+Given access expires during the refresh, authorization is denied, secure storage
+fails, or the response is invalid\
+Then no expired, denied or unvalidated session is used as a fallback\
+And sign-out/account changes discard late success and failure from the older actor\
+And retry after sign-out cannot restore the removed actor.
+
+Verification: `apps/mobile/tests/account-session.test.mjs`,
+`tests/e2e/mobile-session-recovery.spec.ts`, native types/lint,
+normal restricted synthetic permission/resume/background-service/sign-out checks,
+and final standalone APK/AAB evidence. The current code-6 release stays unchanged
+until the new source and unused version code pass the existing release gates.
+No hosted Auth/configuration or database mutation is needed.
+
 ## Google Play internal-test preparation — October 9
 
 The owner has a developer account and requested help getting Loadgistic into

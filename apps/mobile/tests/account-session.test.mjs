@@ -41,3 +41,54 @@ test('revoked access removes storage; plan restrictions do not sign out the memb
  failure=new ApiError(403,'PLAN_REQUIRED','Review plan');await assert.rejects(h.controller.request('/api/mobile/fleet'));assert.ok(h.controller.snapshot().session);
  failure=new ApiError(403,'ACCOUNT_UNAVAILABLE','Unavailable');await assert.rejects(h.controller.request('/api/mobile/dashboard'));assert.equal(h.controller.snapshot().session,null);assert.equal(h.stored(),null);
 });
+test('permission return keeps a valid actor without rotating tokens; explicit reload still refreshes',async()=>{
+ let rotations=0;const h=setup({request:async()=>identity(++rotations)});
+ await h.controller.refresh();const active=h.controller.snapshot().session;
+ assert.equal(await h.controller.resume(),active);assert.equal(await h.controller.resume(),active);assert.equal(rotations,1);
+ await h.controller.refresh();assert.equal(rotations,2);assert.equal(h.controller.snapshot().session.user.id,'user-2');
+});
+test('resume near expiry shares one refresh and cannot return a signed-out actor',async()=>{
+ const pending=deferred();let now=100000,rotations=0;const h=setup({now:()=>now,request:async(path)=>path.endsWith('/logout')?{}:++rotations===1?identity(1):pending.promise});
+ await h.controller.refresh();now=20000000-30000;
+ const first=h.controller.resume(),second=h.controller.resume();assert.equal(first,second);assert.equal(rotations,2);
+ await h.controller.signOut();pending.resolve(identity(2));assert.equal(await first,null);assert.equal(h.controller.snapshot().session,null);assert.equal(h.stored(),null);
+});
+test('transient refresh failures retain only the unexpired actor and recover with a rotated token',async()=>{
+ let failure=null,rotations=0;const h=setup({request:async(path)=>{if(path.endsWith('/refresh')){if(failure)throw failure;return identity(++rotations);}return {authorized:true};}});
+ await h.controller.refresh();const active=h.controller.snapshot().session;
+ for(const status of [0,408,429,500,502,503,504]){
+  failure=new ApiError(status,status===0?'REQUEST_TIMEOUT':'SERVICE_UNAVAILABLE','Please try again.');
+  assert.equal(await h.controller.refresh(),active);assert.equal(h.controller.snapshot().session,active);assert.equal(h.stored(),'refresh-1');assert.equal(h.controller.snapshot().error,'Please try again.');
+  assert.deepEqual(await h.controller.request('/api/mobile/dashboard'),{authorized:true});
+ }
+ failure=null;await h.controller.refresh();assert.equal(h.controller.snapshot().session.user.id,'user-2');assert.equal(h.stored(),'refresh-2');assert.equal(h.controller.snapshot().error,'');
+});
+test('an actor expiring during a transient refresh cannot authorize a protected request',async()=>{
+ let now=100000,rotations=0;const h=setup({now:()=>now,request:async()=>{if(++rotations===1)return identity(1);now=20000001;throw new ApiError(0,'REQUEST_TIMEOUT','Please try again.');}});
+ await h.controller.refresh();now=20000000-30000;
+ await assert.rejects(h.controller.request('/api/mobile/dashboard'),error=>error instanceof ApiError&&error.status===401);
+ assert.equal(h.controller.snapshot().session,null);assert.equal(h.stored(),'refresh-1');assert.equal(rotations,2);
+});
+test('authority denial never uses an otherwise valid session as a refresh fallback',async()=>{
+ for(const status of [401,403]){
+  let denied=false,requests=0;const h=setup({request:async()=>{requests++;if(denied)throw new ApiError(status,'ACCOUNT_UNAVAILABLE','Please sign in again.');return identity(1);}});
+  await h.controller.refresh();denied=true;assert.equal(await h.controller.refresh(),null);assert.equal(h.controller.snapshot().session,null);assert.equal(h.stored(),null);
+  assert.equal(await h.controller.resume(),null);assert.equal(requests,2);
+ }
+});
+test('an invalid refresh response or failed secure save cannot preserve a prior actor',async()=>{
+ for(const failure of ['invalid','storage']){
+  let next=false;const h=setup({write:async value=>{if(next&&failure==='storage')throw Error('locked');h.port.saved=value;},request:async(path)=>path.endsWith('/logout')?{}:next&&failure==='invalid'?{...identity(2),user:{...identity(2).user,role:'ADMIN'}}:identity(next?2:1)});
+  await h.controller.refresh();assert.ok(h.controller.snapshot().session);next=true;assert.equal(await h.controller.refresh(),null);assert.equal(h.controller.snapshot().session,null);
+ }
+});
+test('a late transient failure after account replacement cannot restore the old actor or set its error',async()=>{
+ const old=deferred();let rotations=0;const h=setup({request:async(path)=>path.endsWith('/verify')?identity(3):++rotations===1?identity(1):old.promise});
+ await h.controller.refresh();const refresh=h.controller.refresh();await h.controller.verifyCode('new-handoff','123456');old.reject(new ApiError(0,'REQUEST_TIMEOUT','Old error'));
+ assert.equal(await refresh,null);assert.equal(h.controller.snapshot().session.user.id,'user-3');assert.equal(h.controller.snapshot().error,'');assert.equal(h.stored(),'refresh-3');
+});
+test('late timeout after sign-out cannot restore a retained actor or restart token refresh',async()=>{
+ const old=deferred();let rotations=0;const h=setup({request:async(path)=>path.endsWith('/logout')?{}:++rotations===1?identity(1):old.promise});
+ await h.controller.refresh();const refresh=h.controller.refresh();await h.controller.signOut();old.reject(new ApiError(0,'REQUEST_TIMEOUT','Old error'));
+ assert.equal(await refresh,null);assert.equal(h.controller.snapshot().session,null);assert.equal(h.stored(),null);assert.equal(await h.controller.resume(),null);assert.equal(rotations,2);
+});

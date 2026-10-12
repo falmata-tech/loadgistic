@@ -25,6 +25,27 @@ Priorities below are proposed triage order, not measured incident severity.
   and visible results agree, and applicable owner review/release gates are met.
 - Do not store customer records, tokens, document content or mailbox bodies here.
 
+## WEB-MOB-022 — Mobile API masks upstream Auth failures as sign-in denial
+
+**Status:** Source-confirmed classification gap; no production Auth outage was
+reproduced. **Owner:** Identity/API maintainer. **Priority:** Reliability follow-up.
+
+`src/app/api/mobile/auth/[action]/route.ts` maps any refreshSession error to 401,
+and `src/lib/mobile/server.ts` does the same for getUser errors. Supabase's
+retryable fetch and service/rate-limit errors therefore look like revoked access
+to a client. The native MOB-QA-001 repair can retain its current unexpired actor
+on an actual transient response, but must still obey an explicit 401/403 denial.
+This source finding is separate from the reproduced phone-side refresh timeout.
+
+Next: define and test upstream failure classification without granting access on
+an unsuccessful verification. Include token rotation followed by profile/identity
+lookup failure: do not discard a legitimate session on a temporary read failure,
+or return unverified identity/token data to hide an outage. Retain revocation,
+staff denial, account epochs, secure storage and bounded provider retry behavior.
+Current scope changes only native lifecycle/valid-session recovery; this register
+does not claim the backend classification is repaired or permit Auth settings
+changes. No customer impact or live outage is inferred from source inspection.
+
 ## WEB-MOB-015 — Driver-map basemap failure needs browser/device recovery evidence
 
 **Status:** Observed in the October 7 local Expo browser capture after a synthetic

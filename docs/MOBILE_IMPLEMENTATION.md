@@ -72,6 +72,32 @@ not start the required closed-test clock.
 
 ### MOB-QA-001 — Transient refresh can interrupt native permission setup
 
+Completion follow-up requested by the owner after the code-6 internal release:
+
+1. [x] Specify and regression-test valid-actor resume and transient
+   refresh recovery; preserve expiry, denial, secure storage and account epochs.
+   The former controller fails five new cases; the repaired controller passes
+   all 15 session cases and eight consent cases. See FEAT-MOB-001 / NR-31.
+2. [x] Apply the smallest controller/lifecycle repair; retain the approved UI.
+3. [x] Native types/lint, mobile 157 tests, root quality 496, strict fixed-copy
+   translations 491/491 and source/spec checks pass. The focused real local
+   email/browser workflow passes: permission return causes no token rotation,
+   a simulated 503 during explicit reload preserves the workspace after a real
+   saved profile change, recovery and normal sign-out work. The UI, server auth,
+   consent and visitor expiry stay unchanged. Version 1.0.6/code 7 avoids reusing
+   Google's consumed code 6. Exact remote CI remains a separate release gate.
+4. [ ] Current: build an unused-code standalone APK/AAB using the existing isolated local
+   tooling. Verify source, manifests, signatures, ABI/alignment and startup.
+5. [ ] Verify synthetic driver consent, Android permissions, actual background
+   service/update and normal sign-out; capture qualifying footage and at least
+   four final standalone store screenshots, excluding contacts/credentials.
+6. [ ] Complete the source-backed Play declarations with actual accessible
+   footage, submit the exact closed test and independently verify its status.
+   Existing tester/country selection remains unchanged. Public Production and
+   social posts remain outside this test-launch step. The previous one-use
+   private signing retrieval is consumed; prepare the new concrete signing
+   review before any further private retrieval.
+
 **Open; source-confirmed mobile behavior, emulator network cause unconfirmed.**
 During the additional standalone synthetic independent-driver policy recording,
 the real disclosure and foreground/background Android permissions were accepted.

@@ -18,7 +18,7 @@ export function AccountProvider({ children }: PropsWithChildren) {
  }));
  useEffect(() => {
   void controller.refresh();
-  const listener = AppState.addEventListener('change', state => { controller.background(); if (state === 'active') void controller.refresh(); });
+  const listener = AppState.addEventListener('change', state => { controller.background(); if (state === 'active') void controller.resume(); });
   return () => listener.remove();
  }, [controller]);
  return <Context.Provider value={{ ...controller.snapshot(), requestCode: controller.requestCode, verifyCode: controller.verifyCode, signInReview:controller.signInReview, signOut: async()=>{try{await removeNativePushScope('MEMBER');}finally{try{await stopBackgroundTracking();}finally{await controller.signOut();}}}, reload: controller.refresh, request: controller.request }}>{children}</Context.Provider>;

@@ -1,5 +1,21 @@
 # Specification traceability
 
+October 11 native completion follow-up — FEAT-MOB-001 / NR-31 / MOB-QA-001:
+candidate 1.0.6/code 7 keeps a current actor on permission return without needless
+rotation and retains only that same unexpired actor after a transient refresh.
+`apps/mobile/tests/account-session.test.mjs` passes 15 cases; the former controller
+fails five of the new cases. Eight consent cases also pass. Mobile quality passes
+157, native types/lint and strict translations 491/491 pass; root quality passes
+496 and source/spec checks pass. `mobile-session-recovery.spec.ts` exercises actual
+local email verification, visible workspace persistence on permission return,
+real profile persistence plus deliberate refresh-503 injection, recovery and
+normal sign-out (one phone browser, 27 seconds). Traces and automatic screenshots
+are disabled for the code flow; output is sanitized. These are local gates,
+not completed standalone, signing, remote CI or Google closed-test evidence.
+No web/API/schema/hosted-settings or visible layout change is part of this fix.
+WEB-MOB-022 separately records upstream Auth failure classification for later
+backend work; it is not claimed repaired by the native lifecycle correction.
+
 October 11 verified release follow-up, FEAT-FTR-001 / FEAT-MOB-001 / FEAT-MKT-001:
 owner approved the actual 3100/8084/3135 previews. Runtime `3c13f4b` passes
 CI `38180627163` (all eight jobs), root 496/mobile 149, build/types/lint and
