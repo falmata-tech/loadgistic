@@ -1,5 +1,25 @@
 # Specification traceability
 
+October 12 final verification — FEAT-MOB-001 / FEAT-PLY-001 / NR-31/32/33:
+exact source 04e27fe passes CI 38297279274 (all eight jobs), 165 mobile tests,
+native types/lint and source/spec checks. The matching installed standalone APK
+verifies ordinary restricted login, actual consent/Android grants, both area
+switches, map Home, real service restoration after cold launch and normal
+sign-out/service stop. Both extra native sessions close. Prior unchanged
+22-minute continuous background-update evidence remains valid. Signed APK/AAB
+application entries match tested bytes; seven required/zero forbidden permissions
+and 50-library structural 16KB alignment pass. One final explicitly approved
+existing-key use is consumed; private files removed, remote associations unchanged.
+Internal code 7 is independently verified available. Console confirms the exact
+Alpha code-7 release and Changes in review, after the supported first-release
+workflow. Both location declarations are saved/reloaded with anonymous real video;
+approved icon/graphic/four genuine native screenshots and 12 selected testers
+are saved. Google quick checks completed; approval, opt-ins/14-day eligibility, physical
+GPS/push/16KB-device and iOS remain separate. Production is empty. Receipts:
+.local/mobile-completion-20261012-service-native-runtime.json,
+-service-ci.json, -service-signing-receipt.json, -service-play-final.json,
+-service-review-submission.json and -policy-declarations.json.
+
 October 12 tracking-restoration follow-up — FEAT-MOB-001 / NR-33 / MOB-QA-003:
 the corrected navigation source `b211582` passes all eight CI jobs in
 `38285221552` and actual Android route unwinding plus both area switches.

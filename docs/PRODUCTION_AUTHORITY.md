@@ -1,3 +1,27 @@
+## October 12 exact final 1.0.6 signing and closed-review execution
+
+Owner explicitly answered “Approve signing the final 1.0.6 build” for source
+04e27fe and the exact reviewed test APK/AAB. One temporary retrieval/use of the
+existing falmatad/loadgistic upload key is complete. Application entries match
+those tested; certificate 26b7c6afc5afe0cd1a721e4e2914e1ffbb57c41ffe2ac1328d1ee125c965c5fd
+and remote signing/FCM/Submit associations are unchanged. Temporary private files
+are removed. This exact final one-use authority is consumed; earlier unused
+1.0.6 artifact approvals were not transferred silently or used additionally.
+
+The app-only Play delegation was executed for verified Internal 1.0.6/code 7
+and the matching Alpha closed test, approved listing/assets and source-backed
+location declarations. Independent Console reload shows Changes in review;
+Google quick checks completed; approval and actual opt-ins remain external. Production is
+empty; the 12-person closed list, two-owner Internal list and ET/US choice remain.
+The API refuses a completed first release on a draft app. Its uncommitted edit
+was inspected/deleted and the unchanged baseline independently verified before
+using Google's supported Console preview/confirmation; no broad fallback or
+review cancellation was used. ERROR_IF_IN_REVIEW preserved existing review for
+supported edits. No hosted SQL/settings, billing, replacement key or other-app
+write occurred. Exact final artifacts/status are in MOBILE_IMPLEMENTATION and
+protected mobile-completion-20261012-service receipts. This grants no additional
+private-key export or public-production Play rollout.
+
 ## October 11 bounded local signing approval
 
 Owner explicitly answered “Approve this bounded local signing” after reviewing

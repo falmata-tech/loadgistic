@@ -9,7 +9,7 @@ observability: [account_deletion_requested, account_deletion_completed, content_
 rollout: Implement and verify locally first. Owner visual approval precedes extensive release gates. New production SQL, review identity and configuration need exact reviewed target/backup/rollback evidence; no public Play rollout is authorized by implementation alone.
 ---
 
-# Play requirements — deployed workflows; device and Console acceptance pending
+# Play requirements — verified Android test; Google review pending
 
 The owner requested all missing Play workflows on October 9. Console developer
 5256539403314542898 / app 4974969611761012361 is independently authenticated under
@@ -18,7 +18,19 @@ Loadgistic only and zero account-wide grants. This identity
 does not replace the application's administrator or Expo identity. Package stays
 com.loadgistic.app. Never treat an app entry or draft upload as publication.
 
-October 11 current release: runtime 3c13f4b / Netlify
+October 12 current release: standalone source 04e27fe passes all eight CI jobs
+38297279274 and actual normal login/consent/grants/foreground-service restoration/
+sign-out acceptance. Internal 1.0.6/code 7 is available and the exact Alpha
+release is confirmed and in Google review. Both location declarations are saved
+and independently reloaded with anonymous real Android footage; approved icon,
+regional graphic and four actual native screenshots are saved. Twelve selected
+real tester addresses are confirmed. Temporary existing-key signing is explicitly
+approved/completed, with unchanged payloads/associations and private files removed.
+Google quick checks completed; approval, real opt-ins/14-day eligibility and physical
+GPS/push/16KB-device acceptance remain external/separate. Production stays empty.
+See MOBILE_IMPLEMENTATION and TRACEABILITY for immutable artifact/status evidence.
+
+October 11 historical release: runtime 3c13f4b / Netlify
 6acc19b721f9d03af4a8246c is verified live, CI 38180627163 all eight jobs pass.
 Owner-approved bounded local signing preserves the APK/AAB application entries
 and existing upload certificate; temporary private material is removed. Exact

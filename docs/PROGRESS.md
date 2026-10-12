@@ -1,36 +1,33 @@
-## October 12 mobile completion — active
+## October 12 Android test release
 
-MOB-QA-002 is verified in Android and CI `38285221552` (all eight jobs).
-MOB-QA-003 is the next release dependency: after updating the APK, a persisted
-task skips native foreground-service restoration. Its real adapter regression
-fails before repair and all eight lifecycle cases pass afterward. The 165-test
-mobile serial suite, types/lint and source/spec checks pass. No timing assertion,
-permission, cadence, privacy radius or backend authority changed. The overloaded
-owned emulator was stopped; native session closure was not falsely recorded.
-The rebuilt cold-restoration/closure and refined signing/policy gates remain.
+Android **1.0.6/code 7** is available to Internal testers at
+https://play.google.com/apps/internaltest/4700942405023499701. The exact Alpha
+closed release is submitted; independent Google readback confirms **Changes in
+review**, with quick checks completed and no unsent changes. All 12 real tester
+addresses are saved/selected. Google approval and actual 14-day enrollment are
+external; public Production stays empty. The actual future closed opt-in link is
+https://play.google.com/apps/testing/com.loadgistic.app.
 
-The closed-tester list now contains all 12 owner-confirmed addresses; a full
-Console reload verifies its saved count and selection. Google review, tester
-opt-ins and the closed-test clock remain separate. Approved Play copy and the
-regional graphic are present; final icon/screenshot associations are unfinished.
+Final runtime `04e27fe` passes CI `38297279274` (all eight jobs), 165 mobile tests,
+native types/lint and installed ordinary login/consent/grants/two-area switching/
+map Home/foreground-service cold restoration/sign-out checks. The existing-key
+signing approval is consumed once, private material removed and remote
+associations unchanged. Exact APK/AAB payload, permission and structural 16KB
+checks pass. Both native sessions are closed. Physical moving-GPS, closed-phone
+push and physical 16KB acceptance remain separate.
 
-Installed 1.0.6/code 7 loads Capacity/Featured, restores normal review access
-after expiry, accepts genuine location grants, saves native foreground shipment
-location and stops the active foreground service on sign-out. Four actual
-portrait drafts include an authorized private map. A continuously minimized
-saved update remains unverified; the owned emulator is running a fresh,
-uninterrupted sensor test with a temporary no-network GPS helper.
+Approved icon, regional graphic, four actual native screenshots and both
+location declarations are saved/verified with real anonymous video. The
+installer at port 3136 serves the final signed APK; Loadgistic's four local
+admin/log containers are restored. Web remains live at https://loadgistic.com,
+`3c13f4b` / Netlify `6acc19b721f9d03af4a8246c`, ledger 136. Previews remain
+3100/8084/3135. Exact artifacts and evidence are in
+[MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md) and
+[GOOGLE_PLAY_SETUP.md](operations/GOOGLE_PLAY_SETUP.md); protected receipts use
+`.local/mobile-completion-20261012-*`. Other projects and pre-existing
+`.next-upload-audit/` / `apps/mobile/.claude/` are untouched.
 
-MOB-QA-002 exposed a reviewer-only area-switch loop. A real local regression
-fails on the former redirect; focused in-tab unwinding passes login, both
-switches, remembered About and logout. The existing restricted review/consent/
-private-access denial test also passes. Native types/lint and root 496/source/
-spec gates pass; the new test's explicit Page type repairs its typecheck error.
-Matching Android rebuild, new exact-source CI and refined signing review remain
-next. No 1.0.6 private key retrieval has occurred. Web runtime remains the
-already verified October 11 release; no hosted SQL/settings/billing mutation.
-
-## October 11 release outcome
+## October 11 release outcome — historical
 
 Verified runtime `3c13f4b` is live at https://loadgistic.com / Netlify
 `6acc19b721f9d03af4a8246c`; exact CI `38180627163` passes all eight jobs.

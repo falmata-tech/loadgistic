@@ -1,72 +1,56 @@
 # Loadgistic Google Play setup
 
-Updated October 11, 2026. Verified owner marketvision.tech@gmail.com, developer
+Updated October 12, 2026. Verified owner marketvision.tech@gmail.com, developer
 `5256539403314542898`, app `4974969611761012361`, package `com.loadgistic.app`.
 [Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
 
-## Latest Android test build — October 11
+## Latest Android test build — October 12
 
-**1.0.5 / code 6** contains the repaired Featured, Tracking and world-zoom map
-runtime plus approved regional copy. Expo's monthly free Android builds are
-exhausted; the owner selected a local fallback. No code-6 cloud job exists.
-
-**Google confirms Internal 4700942405023499701/release 2 is available as
-1.0.5/code 6, Not reviewed.** Use the official test link:
+**1.0.6 / code 7** is available to the unchanged two-owner Internal list:
 https://play.google.com/apps/internaltest/4700942405023499701.
-Choose falmatad97@gmail.com or marketvision.tech@gmail.com, join the test, then
-follow **Download it on Google Play**. These remain the two eligible owner
-accounts; the ten-person closed list is separate. Google may temporarily show
-com.loadgistic.app (unreviewed) until app setup/review completes. An existing
-Google Play installation can receive this update through Play normally.
+On your Android phone, choose an eligible owner Google account, join the test,
+and follow **Download it on Google Play**. Existing Play installs update through
+Play. No new Expo cloud build exists because the owner selected the local fallback.
 
-The owner-approved signed APK is `.local/loadgistic-1.0.5-android.apk`,
-94,418,387 bytes, SHA-256
-`47cb39d88e97c3ad45a4f9beb5c945749788a67a16da9911f38922b109d478d0`.
-On an Android phone connected to the Mac's Wi-Fi, open the dedicated installer
-at **http://10.210.120.53:3136**, download the APK and follow Android's prompt.
-This address works only while the Mac/server stay running and the phone can
-reach that local network; its address may change. Only this checked public APK
-and installer page are served; private paths return 404. The file is also linked
-from MOBILE_IMPLEMENTATION for local transfer.
+Final source `04e27fe` passes all eight jobs in CI `38297279274`, 165 mobile tests,
+native types/lint and actual installed permission, navigation, map Home,
+foreground-service cold restoration and sign-out acceptance. Signed payloads
+match tested bytes; the one explicitly approved existing upload-key use is
+complete, temporary key files removed and remote associations unchanged.
+Seven required/zero forbidden permissions and 50-library structural 16KB checks
+pass. Target SDK 36, min 24, arm64/x86_64. Physical moving-GPS, closed-phone push,
+physical 16KB and iOS acceptance remain separate.
 
-Its existing Expo upload signature can update an Expo-installed APK. Google
-Play's app certificate differs: use Play for an existing Play installation;
-never force an update across signatures or automatically uninstall/clear data.
-No existing signing setting, billing or other app was changed. The separately
-approved one-time export/use is complete; temporary private-key files are removed,
-remote signing/FCM/Submit references unchanged. Installed version/COLD startup, public Capacity,
-Featured, Tracking entry, normal synthetic driver map Home and actual shipment
-details work on the disposable Loadgistic emulator. These tests used the original
-temporary signature; all application entries are verified identical in the
-newly signed APK/AAB. Target SDK is 36; this local fallback includes arm64-v8a
-and x86_64, not 32-bit Android or iOS. Physical GPS/push and a real 16KB-device
-run remain separate. All eight current-source CI jobs pass.
+APK: `.local/loadgistic-1.0.6-android.apk`, 94,418,387 bytes, SHA-256
+`1f5e709487007da2db76314cb5a98237cd00bd00e4d4378360c611d6859ac19f`.
+AAB: `.local/loadgistic-1.0.6-play-testing.aab`, 57,289,739 bytes, SHA-256
+`576efb8028853ea363641306313c061ce69a52800f79ecfd5b20637429532640`.
+The APK-only local installer at port 3136 now serves this exact 1.0.6 build,
+denies private files and can update Expo-signed installs. It cannot update a
+Play-signed installation across Google's separate certificate; use Play for that.
 
-The signed AAB is `.local/loadgistic-1.0.5-play-internal.aab`, 57,289,121 bytes,
-SHA-256 `c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0`.
-Its one upload timed out, but exact-edit readback confirms code 6 and this hash;
-it was not uploaded twice. Google's explicit commit-parameter correction was
-applied after inspection with ERROR_IF_IN_REVIEW, preventing cancellation of an
-existing review. A later edit activated Internal only. Alpha stays inactive
-Draft at code 6, preserving the closed tester list and Ethiopia/US selection.
-Production is empty. The earlier Internal App Sharing NOT_PUBLISHED result is
-historical; it does not describe current official internal-track availability.
+**Closed Alpha 4699446366767369053: 1.0.6/code 7 is in Google review.**
+Independent Console reload confirms the release and its 14 setup changes under
+Changes in review. The API refuses completing a first release on a draft app;
+the uncommitted rejected edit was inspected/deleted, baseline verified, and the
+supported Console preview/confirmation used. No review was cancelled or bypassed.
+Google quick checks completed; ordinary review remains pending. Public Production is empty.
 
-The owner-approved regional English copy and single freight-yard feature graphic
-are now **saved in the actual listing Draft and independently reloaded**. Name/
-short/full lengths are 10/79/2017. The new 1024×500 opaque PNG is 1,185,997 bytes,
-SHA-256 `ff3fb65ab57039ada5723bed175f498bae65336fd3a8afe2b67e066db786947d`.
-Exact generated-art prompts are in regional-artwork-provenance.json. Original
-icon/two genuine historical screenshots are preserved. No policy declaration or
-review submission is inferred from saving the draft. A qualifying video URL,
-final standalone store captures, Google review/actual closed enrollment and two
-more real participants remain separate. Publishing overview confirms changes
-are not submitted for review, with the review button disabled until required
-setup completes. The additional emulator recording reaches real disclosure and
-Android grants, but a refresh timeout and unsuccessful single cold-start retry
-do not prove the background service. Footage is incomplete and not submitted;
-MOB-QA-001 records the native follow-up. Internal/local testing does not start
-the 14-day closed-test clock.
+Approved copy, icon, regional 1024×500 feature graphic and four genuine
+1080×1920 native screenshots are saved and independently verified. Opaque PNG
+encoding preserves their visible pixels. Both location declarations are saved
+and independently reloaded. The real demonstration is anonymously accessible:
+https://drive.google.com/file/d/1BFxg0Rlpl1mB8k2qwdCuqxA30NgcK1rT/view.
+It shows genuine disclosure/grants and the final real tracking notification;
+only this synthetic-data video has read-only link access. No credentials or
+customer records are included. The single bundle warning is missing R8 mapping;
+minification is disabled and no mapping exists. No required check was suppressed.
+
+All **12** owner-confirmed closed-tester addresses are saved and selected only
+for Alpha. The separate two-owner Internal list and ET/US eligibility are
+preserved. Eligibility is not enrollment. The closed clock has not been verified;
+12 actual testers must opt in continuously for 14 days once testing is available.
+Protected status/artifact/policy evidence uses mobile-completion-20261012 files.
 
 ## Historical official internal install — 1.0.3/code 4
 
@@ -116,55 +100,25 @@ the next standalone candidate must pass this check on its exact compiled files.
 Physical 16 KB, closed-phone alerts and moving/background GPS acceptance remain
 separate. Do not submit historical code 3 or reupload code 4.
 
-## Remaining closed-test prerequisites
+## Remaining Google and tester steps
 
-The owner delegates completion independently while busy. Keep the prepared Alpha
-release as Draft until its listing, permission demonstration and replacement
-artifact pass the applicable review gates. Additional tester recruitment proceeds
-alongside release preparation; public-production Play publication and customer
-erasure are outside this delegation.
+The delegated app-only preparation and submission are complete. Public-production
+publication and unrelated provider changes remain outside this release.
 
-1. **Artwork review — completed October 11:** the approved replacement copy and
-   new regional generated-art graphic are saved and independently reloaded in
-   the listing Draft. The original automatic approval review rejected the original graphic's
-   proposed AI declaration because its recorded provenance did not establish AI
-   involvement. The original artwork is retained in the protected backup. A new, separately authored
-   composition now records its actual Codex authorship, source and hash, with a
-   proposed AI label on. Owner reviewed and approved the concrete replacement at
-   http://127.0.0.1:3135. Do not change the original
-   declaration merely to bypass its rejection.
-2. **Android permission video:** Google requires a real walkthrough for background
-   location and the location foreground service. The exact 293-character purpose
-   and 471-character shipment feature are prepared in protected
-   `.local/play-20261010-location-permission-plan.json`. The selected service case
-   is user-initiated location sharing. No invented/public placeholder video URL is
-   entered. Neither form is claimed complete.
-   The approved replacement standalone code 6 now passes manifest/signature
-   checks and is available internally. Its real synthetic recording reaches the
-   disclosure and Android permission controls, but a native refresh timeout
-   returns to sign-in before the background service is proved. One app-only cold
-   restart does not resolve emulator networking. Host auth/refresh/logout pass.
-   Do not submit incomplete footage or invent a URL. Reproduce MOB-QA-001 on a
-   real phone and verify the service/approximate update/stop behavior, then record
-   a short actual Android walkthrough with disclosure, runtime prompt and the
-   active feature while minimized. Google supports an accessible YouTube link
-   or Google Drive MP4; do not expose private contacts, credentials or codes.
-3. **Real testers:** the owner's ten unique Google-account addresses are saved in
-   **Loadgistic closed testers**, selected only for Alpha. A reload confirms the
-   exact count and selection; the separate two-account internal owner list remains
-   unchanged. The owner is finding two more actual testers. This app's Dashboard requires
-   at least 12 testers continuously opted in for 14 days; currently 0 are opted in.
-   Eligibility is not enrollment. No invitation email was sent; contact details
-   stay in protected ignored files, not Git. Gmail aliases do not establish
-   distinct participants. Google permits starting closed testing after app setup;
-   12 continuous 14-day participants are required when applying for production
-   access, not before starting the closed release. Do not delay an otherwise
-   approved test release solely while awaiting the extra addresses.
-4. **Google review and enrollment:** complete the missing declarations/listing,
-   preview the prepared Alpha release and send the exact test release for Google
-   review. After approval/availability, share its actual opt-in link with the
-   selected testers and verify continuous enrollment. No closed-test clock has
-   started. Internal testing does not count toward that requirement.
+1. **Google review:** the exact Alpha 1.0.6/code-7 release, listing and
+   declarations are submitted. Quick checks completed; ordinary review is pending.
+   Keep the saved submission; do not remove it or replace the bundle while in review.
+2. **Test availability:** when Google approves and makes the closed release
+   available, use https://play.google.com/apps/testing/com.loadgistic.app,
+   independently read from the actual Alpha tester page. Each participant must choose
+   the Google account from the saved 12-person list, opt in and install through
+   Google Play. Internal or directly downloaded APK installations do not count.
+3. **Production eligibility:** verify at least 12 testers continuously opted in
+   for 14 days and retain their real feedback before applying for production.
+   Do not count addresses, aliases, invitations or fabricated test activity as opt-ins.
+4. **Physical follow-up:** use the closed build on real phones to verify moving
+   background GPS, notification delivery while closed and relevant 16KB devices.
+   Emulator and structural alignment evidence do not replace those measurements.
 
 [Closed-testing requirement](https://support.google.com/googleplay/android-developer/answer/14151465?hl=en),
 [background-location declaration](https://support.google.com/googleplay/android-developer/answer/9799150?hl=en),

@@ -14,8 +14,11 @@ obsolete readiness and permit bounded retries after failure or registration loss
 The real adapter fails the cold-task counterexample before repair; all eight
 `apps/mobile/tests/location-service-lifecycle.test.mjs` cases pass after repair.
 Permissions, cadence, consent, device authority and approximate coordinates are
-unchanged. Owner: native tracking maintainer. Next: prove the matching installed
-update/cold restoration, requested service and normal closure before release.
+unchanged. Owner: native tracking maintainer. Verified: matching final source
+04e27fe / CI 38297279274 all eight jobs and real installed cold restoration,
+requested foreground service, saved approximate update and normal closure pass.
+Retain these lifecycle negative checks and explicit actual-service evidence for
+future native releases; task registration alone remains insufficient.
 
 ## NR-32 — A retained authentication screen traps an authenticated area switch
 
@@ -30,8 +33,9 @@ Capacity. Preserve the two area destinations, ordinary authentication and
 normal logout. `tests/e2e/mobile-review-navigation.spec.ts` uses an isolated,
 restricted synthetic account, actual password authentication and real area
 controls; it checks both directions, a remembered About page and sign-out.
-Owner: native navigation maintainer. Next: pass that regression and verify the
-matching standalone artifact before claiming MOB-QA-002 or Play review ready.
+Owner: native navigation maintainer. Verified: regression and final installed
+04e27fe route unwinding, both area switches and normal closure pass. Preserve
+both browser workflow and actual native acceptance on future navigation changes.
 
 ## NR-31 — Transient refresh clears the current native workspace
 
@@ -47,9 +51,10 @@ failure, sign-out and account replacement never acquire this fallback.
 rotation, concurrent near-expiry renewal, recovery, expiry during a failed
 refresh, 401/403 denial, invalid responses/storage failure and late results after
 logout/account replacement. This creates no private offline cache, longer token
-lifetime or authentication bypass. Owner: mobile session maintainer. Next:
-verify the matching standalone permission return, actual service/update/stop and
-new release gates before closing MOB-QA-001 or submitting policy footage.
+lifetime or authentication bypass. Owner: mobile session maintainer. Verified:
+final standalone permission return, actual service/update/cold restoration/stop
+and exact eight-job CI pass. Keep expiry/denial/account-epoch regression checks;
+physical-phone GPS/push acceptance remains separate.
 
 ## NR-28 — Product priorities leak into promotional copy
 

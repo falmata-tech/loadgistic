@@ -1,4 +1,59 @@
-## October 11 verified web release and local Android fallback
+## October 12 Android 1.0.6 — released internally; closed test in review
+
+Final native source `04e27fe` passes all eight CI jobs in `38297279274`, all
+165 mobile tests, native types/lint and source/spec checks. Installed standalone
+acceptance verifies normal restricted sign-in, genuine consent and Android
+location grants, Marketplace/workspace switching, map Home, saved approximate
+location, restoration of the real tracking foreground service after a cold
+restart, and normal sign-out stopping that service. Both synthetic native test
+sessions are closed. The unchanged background contract also retains the earlier
+uninterrupted 22-minute saved-update evidence. MOB-QA-001/002/003 are repaired;
+physical moving-GPS, closed-phone push and a physical 16KB device remain separate.
+
+The owner approved the exact final build, then its existing upload key was used
+once in a protected temporary folder. Signed application entries are identical
+with certificate `26b7c6afc5afe0cd1a721e4e2914e1ffbb57c41ffe2ac1328d1ee125c965c5fd`.
+Temporary private material is removed; remote signing/FCM/Submit associations are
+unchanged. APK/AAB checks verify seven required and zero forbidden permissions;
+all 50 native libraries retain structural 16KB alignment. No cloud build, billing,
+hosted configuration, database or other-app change occurred.
+
+Google independently verifies **Internal 1.0.6/code 7 is available** through
+https://play.google.com/apps/internaltest/4700942405023499701. The selected
+12-person closed list, separate two-owner Internal list and Ethiopia/US choices
+are preserved. The exact final Alpha release is confirmed through Google's
+supported first-release Console workflow and now appears under **Changes in
+review**. Google quick checks completed; approval, tester opt-ins and
+the 14-day closed-test clock are not inferred. Public Production remains empty.
+
+The approved icon, regional feature graphic and four genuine 1080×1920 native
+screenshots are saved and independently verified. The screenshots' opaque PNG
+conversion preserves every visible pixel; no fabricated app UI is used.
+Background-location and location foreground-service declarations are saved and
+independently reloaded with the anonymously accessible real Android video. Its
+cuts show unchanged genuine disclosure/grants plus the final running tracking
+notification; it contains synthetic records, no credentials or customer data.
+The only release warning is absent R8 mapping; minification is disabled, so no
+R8 mapping exists. No warning or required gate was suppressed.
+
+Signed artifacts:
+
+- APK `.local/loadgistic-1.0.6-android.apk`, 94,418,387 bytes,
+  SHA-256 `1f5e709487007da2db76314cb5a98237cd00bd00e4d4378360c611d6859ac19f`.
+- AAB `.local/loadgistic-1.0.6-play-testing.aab`, 57,289,739 bytes,
+  SHA-256 `576efb8028853ea363641306313c061ce69a52800f79ecfd5b20637429532640`.
+
+The APK-only installer at port 3136 now serves the verified 1.0.6 APK and denies
+private paths. Expo-signed installations can use that APK; existing Play installs
+must update through Play's separate app signature. Web stays verified/live at
+https://loadgistic.com, runtime `3c13f4b`, Netlify `6acc19b721f9d03af4a8246c`, ledger
+136. Local previews remain 3100/8084/3135; the four temporarily paused Loadgistic
+administration/log containers are restored. Other projects are untouched.
+Protected evidence is `.local/mobile-completion-20261012-service-*`,
+`*-policy-*`, `*-store-*` and `*-tester-*`; contact lists, credentials and raw
+transient evidence stay out of Git.
+
+## October 11 verified web release and local Android fallback — historical
 
 Owner visually approved the repaired Featured/Tracking/map flow and regional promo,
 then selected a local Android fallback after Expo's monthly free build quota was
@@ -72,7 +127,7 @@ not start the required closed-test clock.
 
 ### MOB-QA-001 — Transient refresh can interrupt native permission setup
 
-**MOB-QA-003 (current dependency, October 12):** the navigation correction
+**MOB-QA-003 (verified in final 04e27fe, October 12):** the navigation correction
 `b211582` passes CI `38285221552` (all eight jobs) and actual Android review-route
 unwinding plus both area switches. A data-preserving update additionally exposes
 an absent foreground location service: the known synthetic shipment remains
@@ -90,10 +145,11 @@ a real background update; it does not prove restoration after update.
    serial rerun with their existing timing assertions unchanged. Two unrelated
    timing tests failed under host pressure before the owned emulator was stopped;
    no global cleanup, another app's process or relaxed timer was used.
-3. [ ] Current: verify the matching rebuilt update/cold restoration and normal closure,
-   then refresh exact CI/build/signing review before any private retrieval.
+3. [x] Final source 04e27fe passes CI 38297279274 (eight jobs), real installed
+   cold restoration and normal closure. Exact final owner signing approval is
+   consumed once; signed payloads are unchanged and temporary keys removed.
 
-**October 12 release follow-up — MOB-QA-002 (current):** installed code 7
+**October 12 release follow-up — MOB-QA-002 (historical reproduction):** installed code 7
 reproduces a reviewer-only return loop: the retained Marketplace review form
 redirects a signed-in actor back to driver Home when Marketplace is selected.
 The regular email-code entry is unaffected. Native code 7 otherwise loads public
@@ -111,16 +167,16 @@ service. A saved update while continuously minimized remains unverified.
    restricted-review/consent/private-scope/revocation regression also passes
    (37.3 seconds). Native types/lint pass; root 496 tests and source/spec checks
    pass. The new test's explicit browser type fixes its root typecheck finding.
-3. [ ] Current: verify both area switches and normal closure in the matching
-   native artifact; finish the remaining background update. Four actual portrait
-   drafts are captured from installed code 7, including an authorized synthetic
-   private map. They precede this additional navigation correction.
-4. [ ] Refresh exact source/build/signing review and required gates. No private
-   signing retrieval for 1.0.6 has occurred; its existing approval identifies
-   the previous exact artifact. Do not reuse a changed digest silently.
+3. [x] Final installed source 04e27fe verifies both area switches and normal
+   closure; real continuous background-update evidence is retained. Four genuine
+   native store captures are saved, including an authorized private map and the
+   final public network introduction. Unchanged screen inputs are verified.
+4. [x] Final exact-source CI/build/native/signing gates pass. The owner approved
+   final source 04e27fe explicitly; its existing-key approval was used once.
+   Earlier artifact approvals were preserved, never silently rebound.
 5. [x] Save the owner-confirmed 12-address closed-test list. Independent Console
    reload verifies count 12 and its selected association; no invitations,
-   enrollments, Google review or closed-test clock are inferred.
+   enrollments or closed-test clock are inferred. The final release is in Google review.
 
 Completion follow-up requested by the owner after the code-6 internal release:
 
@@ -136,19 +192,17 @@ Completion follow-up requested by the owner after the code-6 internal release:
    saved profile change, recovery and normal sign-out work. The UI, server auth,
    consent and visitor expiry stay unchanged. Version 1.0.6/code 7 avoids reusing
    Google's consumed code 6. Exact remote CI remains a separate release gate.
-4. [ ] Current: build an unused-code standalone APK/AAB using the existing isolated local
-   tooling. Verify source, manifests, signatures, ABI/alignment and startup.
-5. [ ] Verify synthetic driver consent, Android permissions, actual background
-   service/update and normal sign-out; capture qualifying footage and at least
-   four final standalone store screenshots, excluding contacts/credentials.
-6. [ ] Complete the source-backed Play declarations with actual accessible
-   footage, submit the exact closed test and independently verify its status.
-   Existing tester/country selection remains unchanged. Public Production and
-   social posts remain outside this test-launch step. The previous one-use
-   private signing retrieval is consumed; prepare the new concrete signing
-   review before any further private retrieval.
+4. [x] Final 1.0.6/code-7 APK/AAB built from exact source 04e27fe with isolated
+   local tooling; source, manifests, signatures, ABI/alignment and startup pass.
+5. [x] Normal synthetic consent, genuine Android permissions, service/update,
+   cold restoration and sign-out pass. Real qualifying footage and four native
+   screenshots are verified and saved, without credentials/customer records.
+6. [x] Both source-backed declarations are saved/reloaded with real accessible
+   footage; exact code-7 closed submission independently shows Changes in review.
+   Tester/country selections are preserved. Quick checks completed; Google approval and
+   actual opt-ins remain external. Public Production/social posts are separate.
 
-**Open; source-confirmed mobile behavior, emulator network cause unconfirmed.**
+**Historical reproduction; source-confirmed mobile defect repaired and verified.**
 During the additional standalone synthetic independent-driver policy recording,
 the real disclosure and foreground/background Android permissions were accepted.
 Device location was enabled through Android's system prompt on the disposable
@@ -157,14 +211,15 @@ returned the app to sign-in before a working location service was proved. One
 app-only cold restart preserved data but returned a guest Capacity loading error.
 Normal host login/refresh/logout pass (200; 2,101/970 ms for login/refresh).
 
-`apps/mobile/src/session/account-controller.ts` clears the in-memory session for
-any refresh failure, including a transient REQUEST_TIMEOUT. A dependency-free
+The former `apps/mobile/src/session/account-controller.ts` cleared the in-memory
+session for any refresh failure, including a transient REQUEST_TIMEOUT. A dependency-free
 in-memory diagnostic reproduces this even with an unexpired access token; the
 saved refresh remains unless authorization fails. This is not evidence of a web
 auth failure, Android crash, unauthorized location collection or customer impact.
 No schema, privacy consent flag or source behavior was changed to force the demo.
 
-Owner: mobile session/location maintainer. Next: reproduce a transient resume
+Owner: mobile session/location maintainer. Final acceptance above closes the
+software finding. Physical-phone follow-up: reproduce a transient resume
 failure on a real phone and add acceptance for retaining a still-valid actor on
 network failure, explicit offline/retry feedback, expiry, revoked authority,
 sign-out/account change and stale in-flight responses. Preserve all server

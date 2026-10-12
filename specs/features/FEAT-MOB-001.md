@@ -9,7 +9,16 @@ observability: [mobile_request_failed, mobile_session_expired, mobile_build_veri
 rollout: Android development preview first; owner visual review before extensive release checks; signed test APK only after required workflows pass. The owner requested Google Play preparation on October 9; prepare an internal-test AAB, preserving existing keys/package and keeping console enrollment, store declarations and public publication separate. Keep production deployment unchanged; the owner separately authorized web workspace consolidation on October 6.
 ---
 
-# Native application — implementation in progress
+# Native application — Android test release verified
+
+October 12 verification: final source 04e27fe, CI 38297279274 all eight jobs,
+165 mobile tests and actual standalone normal login, grants, two-area navigation,
+map Home, service cold restoration and sign-out pass. Exact owner-approved
+existing-key signing preserves application entries and remote associations.
+Internal 1.0.6/code 7 is available; the matching closed test is in Google review.
+Declarations and actual native store/video evidence are saved and independently
+verified. Physical GPS/push/16KB acceptance, Google approval/real opt-ins and iOS
+remain separate. See MOBILE_IMPLEMENTATION and TRACEABILITY for exact evidence.
 
 ## Tracking service restoration — October 12 completion follow-up
 
