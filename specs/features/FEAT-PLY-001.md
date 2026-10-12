@@ -18,6 +18,26 @@ Loadgistic only and zero account-wide grants. This identity
 does not replace the application's administrator or Expo identity. Package stays
 com.loadgistic.app. Never treat an app entry or draft upload as publication.
 
+October 11 current release: runtime 3c13f4b / Netlify
+6acc19b721f9d03af4a8246c is verified live, CI 38180627163 all eight jobs pass.
+Owner-approved bounded local signing preserves the APK/AAB application entries
+and existing upload certificate; temporary private material is removed. Exact
+AAB c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0
+is uploaded once, with the timeout resolved by exact-edit hash readback. Internal
+4700942405023499701/release 2 is independently available as 1.0.5/code 6,
+Not reviewed. Alpha stays inactive Draft at code 6; Production is empty. Existing
+owner/closed tester lists and countries are unchanged. The approved regional
+listing is saved, but Google confirms it is not yet submitted for review.
+
+Additional real synthetic disclosure/Android-grant footage does not complete the
+policy video: a native refresh timeout returns to sign-in; one data-preserving
+cold restart does not establish background-service proof. Host normal auth/
+refresh/logout pass. MOB-QA-001 records the source-confirmed mobile transient
+refresh response and remaining acceptance, without inventing a web defect.
+Final standalone store captures, qualifying video, physical GPS/alerts/16KB,
+Google review and closed enrollment remain pending. Internal/local tests do not
+start the 14-day clock. Historical checkpoints follow.
+
 October 9 rollout: approved SQL 131–136 committed; web runtime 9feab2d is live
 as deploy 6ac99d110f1f577818c9f7c9. Verification commit 068ac35 preserves all
 runtime/native/SQL inputs, and CI 38012117505 passes all eight latest jobs.

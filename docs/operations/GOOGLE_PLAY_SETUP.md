@@ -10,8 +10,18 @@ Updated October 11, 2026. Verified owner marketvision.tech@gmail.com, developer
 runtime plus approved regional copy. Expo's monthly free Android builds are
 exhausted; the owner selected a local fallback. No code-6 cloud job exists.
 
-The standalone APK is `.local/loadgistic-1.0.5-local-test.apk`, 94,316,424 bytes,
-SHA-256 `4a5d6790335c7f5f3db0932aedc8a9c091926d610596fbd3fa136a403f0cceb6`.
+**Google confirms Internal 4700942405023499701/release 2 is available as
+1.0.5/code 6, Not reviewed.** Use the official test link:
+https://play.google.com/apps/internaltest/4700942405023499701.
+Choose falmatad97@gmail.com or marketvision.tech@gmail.com, join the test, then
+follow **Download it on Google Play**. These remain the two eligible owner
+accounts; the ten-person closed list is separate. Google may temporarily show
+com.loadgistic.app (unreviewed) until app setup/review completes. An existing
+Google Play installation can receive this update through Play normally.
+
+The owner-approved signed APK is `.local/loadgistic-1.0.5-android.apk`,
+94,418,387 bytes, SHA-256
+`47cb39d88e97c3ad45a4f9beb5c945749788a67a16da9911f38922b109d478d0`.
 On an Android phone connected to the Mac's Wi-Fi, open the dedicated installer
 at **http://10.210.120.53:3136**, download the APK and follow Android's prompt.
 This address works only while the Mac/server stay running and the phone can
@@ -19,19 +29,28 @@ reach that local network; its address may change. Only this checked public APK
 and installer page are served; private paths return 404. The file is also linked
 from MOBILE_IMPLEMENTATION for local transfer.
 
-Its separate temporary test signature cannot update a differently signed
-Expo/Play installation. Prefer a spare device. No app uninstall or data clearing
-was performed. No Expo upload key was exported and no existing signing setting,
-billing or other app was changed. Installed version/COLD startup, public Capacity,
+Its existing Expo upload signature can update an Expo-installed APK. Google
+Play's app certificate differs: use Play for an existing Play installation;
+never force an update across signatures or automatically uninstall/clear data.
+No existing signing setting, billing or other app was changed. The separately
+approved one-time export/use is complete; temporary private-key files are removed,
+remote signing/FCM/Submit references unchanged. Installed version/COLD startup, public Capacity,
 Featured, Tracking entry, normal synthetic driver map Home and actual shipment
-details work on the disposable Loadgistic emulator. Physical GPS/push and a real
-16KB-device run remain separate. All eight current-source CI jobs pass.
+details work on the disposable Loadgistic emulator. These tests used the original
+temporary signature; all application entries are verified identical in the
+newly signed APK/AAB. Target SDK is 36; this local fallback includes arm64-v8a
+and x86_64, not 32-bit Android or iOS. Physical GPS/push and a real 16KB-device
+run remain separate. All eight current-source CI jobs pass.
 
-Google Internal App Sharing explicitly rejects this upload with `NOT_PUBLISHED`;
-there is no new Google link and no automatic retry/public rollout. The official
-internal/Alpha code-4 releases below remain historical. Updating the official
-Play testing track with code 6 needs the existing upload signer; bounded local
-retrieval/use requires separate owner approval under PRODUCTION_AUTHORITY.
+The signed AAB is `.local/loadgistic-1.0.5-play-internal.aab`, 57,289,121 bytes,
+SHA-256 `c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0`.
+Its one upload timed out, but exact-edit readback confirms code 6 and this hash;
+it was not uploaded twice. Google's explicit commit-parameter correction was
+applied after inspection with ERROR_IF_IN_REVIEW, preventing cancellation of an
+existing review. A later edit activated Internal only. Alpha stays inactive
+Draft at code 6, preserving the closed tester list and Ethiopia/US selection.
+Production is empty. The earlier Internal App Sharing NOT_PUBLISHED result is
+historical; it does not describe current official internal-track availability.
 
 The owner-approved regional English copy and single freight-yard feature graphic
 are now **saved in the actual listing Draft and independently reloaded**. Name/
@@ -40,9 +59,14 @@ SHA-256 `ff3fb65ab57039ada5723bed175f498bae65336fd3a8afe2b67e066db786947d`.
 Exact generated-art prompts are in regional-artwork-provenance.json. Original
 icon/two genuine historical screenshots are preserved. No policy declaration or
 review submission is inferred from saving the draft. A qualifying video URL,
-correctly signed replacement bundle, Google review/actual closed enrollment and
-two more real participants remain separate. This local test does not start the
-14-day closed-test clock.
+final standalone store captures, Google review/actual closed enrollment and two
+more real participants remain separate. Publishing overview confirms changes
+are not submitted for review, with the review button disabled until required
+setup completes. The additional emulator recording reaches real disclosure and
+Android grants, but a refresh timeout and unsuccessful single cold-start retry
+do not prove the background service. Footage is incomplete and not submitted;
+MOB-QA-001 records the native follow-up. Internal/local testing does not start
+the 14-day closed-test clock.
 
 ## Historical official internal install — 1.0.3/code 4
 
@@ -115,11 +139,16 @@ erasure are outside this delegation.
    `.local/play-20261010-location-permission-plan.json`. The selected service case
    is user-initiated location sharing. No invented/public placeholder video URL is
    entered. Neither form is claimed complete.
-   The repaired banner and decline flow now work in the Android development
-   preview. Review its actual layout before full release gates; a replacement
-   standalone binary with an unused Play code, manifest verification and actual
-   qualifying disclosure/permission/foreground-service footage remains required. A Metro preview is
-   not the already distributed standalone code-4 app.
+   The approved replacement standalone code 6 now passes manifest/signature
+   checks and is available internally. Its real synthetic recording reaches the
+   disclosure and Android permission controls, but a native refresh timeout
+   returns to sign-in before the background service is proved. One app-only cold
+   restart does not resolve emulator networking. Host auth/refresh/logout pass.
+   Do not submit incomplete footage or invent a URL. Reproduce MOB-QA-001 on a
+   real phone and verify the service/approximate update/stop behavior, then record
+   a short actual Android walkthrough with disclosure, runtime prompt and the
+   active feature while minimized. Google supports an accessible YouTube link
+   or Google Drive MP4; do not expose private contacts, credentials or codes.
 3. **Real testers:** the owner's ten unique Google-account addresses are saved in
    **Loadgistic closed testers**, selected only for Alpha. A reload confirms the
    exact count and selection; the separate two-account internal owner list remains

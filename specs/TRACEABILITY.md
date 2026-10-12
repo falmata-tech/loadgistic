@@ -15,11 +15,27 @@ Local standalone 1.0.5/code 6 passes compiled permissions, structural 16KB check
 installation/COLD launch, public navigation, normal synthetic driver map Home
 and actual shipment detail/status controls after actual OS location denial.
 Protected APK/capture/native-log-indicator receipts are separate from physical
-GPS/push, real 16KB-device and policy-video acceptance. Google Internal App Sharing
-rejects NOT_PUBLISHED; the APK-only local server is a test download, not closed
-enrollment or official track publication. The approved regional copy/graphic are
-saved and independently reloaded as a Play Draft. No full native/Play-complete
-status is inferred. Source/artifact/operation receipts: `.local/runtime-release-20261011b-*`.
+GPS/push, real 16KB-device and policy-video acceptance. Subsequent owner-approved
+bounded signing preserves all non-signature APK/AAB entries and the existing
+Expo certificate; temporary private files are removed, remote associations
+unchanged. Signed APK/AAB checks pass. Exact one-time AAB upload's timeout is
+resolved by code-6 hash readback, not a duplicate upload. Google independently
+confirms Internal 4700942405023499701/release 2 is available as 1.0.5/code 6,
+Not reviewed. Alpha stays inactive Draft at code 6; public Production stays empty.
+Existing tester/country settings are unchanged. Approved listing copy/graphic are
+saved; Publishing overview confirms unsubmitted review and two missing location
+declarations. ERROR_IF_IN_REVIEW prevented cancelling an existing Google review.
+No new Expo cloud build exists; Internal/local testing is not closed enrollment.
+
+Additional actual synthetic Android permission capture reaches disclosure and
+OS grants but a transient refresh timeout returns to sign-in. One app-only cold
+restart does not prove the background service. Host normal auth/refresh/logout
+pass; an in-memory diagnostic confirms session clearing on transient refresh
+even before expiry. MOB-QA-001 records the mobile finding and remaining negative
+acceptance. Protected footage is incomplete_do_not_submit; no qualifying URL or
+full native/Play-complete status is inferred. Final standalone store captures,
+physical acceptance and actual closed enrollment remain separate.
+Source/artifact/operation receipts: `.local/runtime-release-20261011b-*`.
 
 Earlier local preparation below is historical at its recorded checkpoint.
 

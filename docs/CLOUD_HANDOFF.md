@@ -19,14 +19,34 @@ login, map Home and actual shipment details. Physical moving GPS, closed-phone
 push and a 16KB device are not proved. See MOBILE_IMPLEMENTATION for the exact
 APK, local phone-download setup and signature limit.
 
-Google rejected Internal App Sharing with `NOT_PUBLISHED`; there is no new Google
-or Expo download/build link. Official internal/Alpha code 4 remains historical.
-The approved regional copy and generated-art graphic are saved and independently
-reloaded in the Play listing Draft; no review/public-production release or social
-post is claimed. A local use of the existing Expo upload signer needs the owner's
-separate approval before a replacement official test AAB can be submitted.
-The policy-video URL, real testers/Google review and actual closed enrollment
-remain separate. Two more participants are being sought; no clock has started.
+Owner-approved bounded local signing is complete with unchanged application
+entries and the existing Expo upload certificate. Temporary key files are removed;
+remote signing/FCM/Submit references are unchanged. Signed APK
+.local/loadgistic-1.0.5-android.apk has SHA-256
+47cb39d88e97c3ad45a4f9beb5c945749788a67a16da9911f38922b109d478d0;
+AAB .local/loadgistic-1.0.5-play-internal.aab has SHA-256
+c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0.
+Google independently confirms Internal 4700942405023499701/release 2 is
+available as 1.0.5/code 6, Not reviewed:
+https://play.google.com/apps/internaltest/4700942405023499701.
+Existing owner eligibility is unchanged. Alpha remains an inactive code-6 Draft;
+public Production is empty. No new Expo cloud build exists. The approved listing
+is saved, but Publishing overview confirms it is not submitted for review.
+
+The one AAB upload timed out; matching code/hash readback prevented duplicate
+upload. Google's explicit commit-parameter correction was applied only after
+inspection, using ERROR_IF_IN_REVIEW. Later activation changed Internal only.
+The original Internal App Sharing NOT_PUBLISHED result is historical, not the
+current official internal-track availability.
+
+An additional permission capture exercised real disclosure and Android grants,
+then mobile refresh timed out. One app-only cold restart preserved data but did
+not prove the background service; host normal auth/refresh/logout pass. Footage
+stays protected and is not a qualifying video. MOB-QA-001 records follow-up.
+Final store captures, policy video, physical acceptance, Google review and actual
+closed enrollment remain separate. Two more participants are sought; no 14-day
+clock or social post is claimed. No further signing export is authorized by the
+now-consumed one-retrieval approval.
 
 Only Loadgistic was touched. Previews are 3100/8084/3135; the APK-only local server
 is 3136. Protected receipts use `.local/runtime-release-20261011b-*`. Leave

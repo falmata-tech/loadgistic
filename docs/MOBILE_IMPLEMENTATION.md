@@ -17,41 +17,90 @@ API returns eight featured trucks. Post-release advisor/catalog/RLS/ACL/guard/
 PostGIS checks pass at ledger 136 with zero critical findings. No database,
 provider configuration, billing or existing signing-key change occurred.
 
-The isolated local build produces standalone Android **1.0.5/code 6**. APK:
-[Download the local test APK](../.local/loadgistic-1.0.5-local-test.apk),
-94,316,424 bytes, SHA-256
-`4a5d6790335c7f5f3db0932aedc8a9c091926d610596fbd3fa136a403f0cceb6`.
+The isolated local build produces standalone Android **1.0.5/code 6**, target SDK
+36, for arm64-v8a and x86_64. The owner approved one temporary retrieval/use of
+Loadgistic's existing Expo upload signer. Signed APK:
+[Download Android 1.0.5](../.local/loadgistic-1.0.5-android.apk),
+94,418,387 bytes, SHA-256
+`47cb39d88e97c3ad45a4f9beb5c945749788a67a16da9911f38922b109d478d0`.
+Signed AAB: `.local/loadgistic-1.0.5-play-internal.aab`, 57,289,121 bytes,
+SHA-256 `c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0`.
 Both compiled APK/AAB permission checks pass, and all 50 included ELF libraries
 meet structural 16KB alignment. The APK installs and cold-starts on the disposable
 Loadgistic emulator; public Capacity, Featured and Tracking entry render. Normal
 synthetic driver sign-in reaches map Home, the shipment list and actual shipment
 detail/status controls. Denying the genuine Android location prompt preserves
 navigation; normal Sign out restores the guest view without a stale tracking
-notice. This uses a separate local test signer, not the existing Expo/Play upload signer.
-No code-6 cloud build was created and no Expo private signing key was exported.
-It cannot replace an existing differently signed install in place. On an Android
+notice. Those installed checks used the original temporary test signature;
+every non-signature APK/AAB application entry is verified unchanged after signing
+with the existing upload certificate. Temporary private files are removed and
+remote signing/FCM/Submit references are unchanged. No code-6 cloud job exists.
+The new APK can update an Expo-signed install. Google Play uses a different app
+certificate; update a Play-installed app through the official test instead.
+On an Android
 phone using the Mac's Wi-Fi, open **http://10.210.120.53:3136** while its APK-only
 server remains running. Download integrity matches the exact hash; private paths
-are denied. Prefer a spare phone. No existing installation was removed or cleared.
-Google Internal App Sharing rejects NOT_PUBLISHED; no new Google/Expo link exists.
-This local test is not official closed enrollment or physical GPS/push/device acceptance.
+are denied. No existing installation was removed or cleared.
+Google independently confirms **Internal release 2 is available as 1.0.5/code 6**:
+https://play.google.com/apps/internaltest/4700942405023499701.
+Owner tester eligibility is unchanged. Alpha is an inactive code-6 Draft;
+Production is empty. The earlier Internal App Sharing rejection is historical.
+Internal/local testing is not closed enrollment or physical GPS/push/16KB-device
+acceptance; 32-bit Android and iOS were not built or verified in this fallback.
 
 The owner-approved regional English copy and new minimal-text freight-yard feature
 graphic are saved in the actual Play listing Draft and independently reloaded.
 Original icon/two genuine historical Android captures are preserved. The rejected
-API commit was inspected before using Console Save as draft; no review or public
-production release was submitted. Exact generated-art provenance is retained.
+API commit was inspected before using Console Save as draft. The matching signed
+bundle is uploaded once, its timeout resolved by exact version/hash readback.
+Google's explicitly rejected commit flag was removed only after inspection;
+ERROR_IF_IN_REVIEW prevents cancellation of an existing review. Later activation
+changed Internal only. Publishing overview confirms listing/closed setup are not
+submitted for review. No public-production release occurred. Exact generated-art
+provenance is retained.
 The promo ZIP and local review at 3135 use the same approved regional positioning.
-Social accounts/posting, a qualifying permission-video URL, a correctly signed
-replacement closed-track AAB and actual tester enrollment remain separate. The
-owner has been asked to approve bounded local use of the existing Expo upload
-signer; no private-key retrieval proceeds without that answer.
+Social accounts/posting, final standalone store captures, a qualifying permission
+video, Google review and actual tester enrollment remain separate. The supplied
+ten-address closed list and Ethiopia/US selection remain unchanged. Two more real
+participants are needed for production eligibility; no 14-day clock has started.
 
 Protected receipts use `.local/runtime-release-20261011b-*`; do not commit
 credentials, raw UI fields, customer records or transient logs. Previews stay at
 3100/8084/3135. Existing `.next-upload-audit/` and `apps/mobile/.claude/` remain
 untouched. Google internal/Alpha code 4 is historical; Internal App Sharing does
 not start the required closed-test clock.
+
+### MOB-QA-001 — Transient refresh can interrupt native permission setup
+
+**Open; source-confirmed mobile behavior, emulator network cause unconfirmed.**
+During the additional standalone synthetic independent-driver policy recording,
+the real disclosure and foreground/background Android permissions were accepted.
+Device location was enabled through Android's system prompt on the disposable
+Loadgistic emulator, with a controlled synthetic GPS input. A refresh timeout
+returned the app to sign-in before a working location service was proved. One
+app-only cold restart preserved data but returned a guest Capacity loading error.
+Normal host login/refresh/logout pass (200; 2,101/970 ms for login/refresh).
+
+`apps/mobile/src/session/account-controller.ts` clears the in-memory session for
+any refresh failure, including a transient REQUEST_TIMEOUT. A dependency-free
+in-memory diagnostic reproduces this even with an unexpired access token; the
+saved refresh remains unless authorization fails. This is not evidence of a web
+auth failure, Android crash, unauthorized location collection or customer impact.
+No schema, privacy consent flag or source behavior was changed to force the demo.
+
+Owner: mobile session/location maintainer. Next: reproduce a transient resume
+failure on a real phone and add acceptance for retaining a still-valid actor on
+network failure, explicit offline/retry feedback, expiry, revoked authority,
+sign-out/account change and stale in-flight responses. Preserve all server
+authorization; never retain an expired or denied session as a workaround. Verify
+the actual permission return, foreground service, background update and normal
+sign-out before closing this finding or submitting a policy video.
+
+Protected `.local/runtime-release-20261011b-policy-video-evidence.json` labels the
+footage **incomplete_do_not_submit**. It is not published or used as a qualifying
+URL. Physical moving-GPS/push/16KB acceptance is still separate. The earlier
+successful company-driver workflow test and normal sign-out remain valid; the
+additional host diagnostic session is also closed.
 
 ## October 10 native permission notice repair — local work (FEAT-PLY-001 AC1 / NR-26)
 

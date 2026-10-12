@@ -1,3 +1,48 @@
+## October 11 bounded local signing approval
+
+Owner explicitly answered “Approve this bounded local signing” after reviewing
+retrieval of the existing Loadgistic Expo Android upload key for verified 1.0.5.
+This permits one temporary protected local retrieval/use for com.loadgistic.app,
+falmatad/loadgistic / a2d7e0a9-2fe4-4188-804e-40d8c3486ac7, existing certificate
+26b7c6afc5afe0cd1a721e4e2914e1ffbb57c41ffe2ac1328d1ee125c965c5fd.
+Sign the already tested 3c13f4b APK/AAB, verify identical application entries,
+compiled permission/alignment checks and exact certificate, then remove temporary
+private key files. Existing remote signing/FCM/Submit associations stay unchanged.
+No billing, key replacement, other project, hosted database/configuration change
+or public-production Play rollout is authorized. The existing app-only Play
+setup delegation covers the reviewed replacement testing artifact and preserves
+all policy, immutable-source and monitored submission gates.
+
+Execution completed: the existing certificate signs the unchanged application
+entries in both verified APK and AAB. The temporary private-key folder is removed;
+remote signing/FCM/Submit associations match their protected baseline. This
+one-retrieval approval is consumed. APK SHA-256 is
+47cb39d88e97c3ad45a4f9beb5c945749788a67a16da9911f38922b109d478d0;
+AAB SHA-256 is c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0.
+Internal track 4700942405023499701/release 2 is independently verified available
+to the unchanged owner tester list as 1.0.5/code 6, Not reviewed. Alpha
+4699446366767369053 remains an inactive code-6 Draft; Production remains empty.
+The approved listing is saved but Google confirms it is not submitted for review.
+
+The one AAB upload timed out; exact-edit readback proved code 6 and its matching
+hash, so no duplicate upload occurred. Google explicitly rejected
+changesNotSentForReview on this app. After inspecting the unchanged edit, its
+supported commit used ERROR_IF_IN_REVIEW, preserving any existing review. A
+separate bounded edit activated Internal only and preserved Alpha/other tracks.
+Neither hosted configuration nor tester/country selection was changed.
+
+The additional emulator permission recording is incomplete: real disclosure and
+Android grants were exercised, but a mobile refresh timeout returned to sign-in.
+One data-preserving app-only restart did not establish background-service proof.
+Host normal login/refresh/logout pass; do not turn incomplete footage into a
+declaration or claim physical GPS, push or 16KB-device acceptance. Qualifying
+video, final store captures and closed-test review/enrollment remain separate.
+Receipts are protected under .local/runtime-release-20261011b-*.
+
+The obsolete Keychain request has already completed successfully; the web release
+is published/verified and that read process is closed. Do not retrieve Supabase
+credentials again merely because the owner replied “send again” to the old prompt.
+
 ## October 11 owner-approved runtime release and local Android fallback
 
 The owner approved the actual repaired Featured/Tracking/map and regional promo
@@ -17,8 +62,9 @@ The existing delegation permits bounded private test distribution for Loadgistic
 Google Internal App Sharing supports this separate signer, but its actual upload
 is rejected NOT_PUBLISHED; no link was created. The verified APK-only local
 download does not export Expo's key. Internal App Sharing is distinct from a Play testing-track release and the 14-day closed-test clock.
-No public-production Play launch or private signing-key export is authorized.
-A matching official closed-track build still requires the existing upload signer.
+At this earlier checkpoint, no private signing-key export had been authorized.
+The bounded approval and verified signing/internal rollout above supersede that
+signer blocker. Public-production Play launch remains outside the delegation.
 
 The approved regional copy/artwork are saved and independently reloaded in the
 Play listing Draft. No review submission, social post or policy-video completion

@@ -10,14 +10,25 @@ security has zero critical findings. No SQL, settings, billing or existing-key c
 Owner chose local Android building after Expo quota rejection. Standalone 1.0.5 /
 code 6 passes compiled permission/alignment/source checks, installation/COLD launch,
 public navigation, normal synthetic driver login, map Home and shipment details.
-APK-only local phone download is prepared at port 3136. Its temporary test signer
-cannot update an existing Expo/Play install. Google Internal App Sharing rejects
-`NOT_PUBLISHED`, so no Google link or new Expo cloud build exists.
+The owner then approved one bounded use of the existing Expo upload signer.
+Application entries remain identical after signing, compiled checks pass, and
+temporary private files are removed; existing remote associations are unchanged.
+The signed APK-only phone download runs at port 3136. It can update an Expo-signed
+install; a Google Play install must use Play's separate app signature.
+Google now confirms **1.0.5/code 6 is available to internal testers**, track
+4700942405023499701/release 2. No new Expo cloud job exists. Alpha is an inactive
+code-6 Draft and public Production is empty. The upload timeout was inspected and
+its exact hash confirmed before any further write; it was not uploaded twice.
 
 Approved regional listing copy/graphic are saved and independently reloaded as a
-Play Draft. Existing screenshots/icon are preserved. Full Play publication,
-policy-video URL, physical GPS/push, the existing upload signer for a closed-track
-replacement, actual tester enrollment and social accounts remain separate.
+Play listing; Publishing overview confirms it is not yet submitted for review.
+Existing screenshots/icon are preserved. Full Play publication, final standalone
+store captures, a qualifying policy-video URL, physical GPS/push/16KB acceptance,
+actual tester enrollment and social accounts remain separate. An additional real
+emulator permission recording reached disclosure and Android grants but a refresh
+timeout returned to sign-in; a single cold restart did not prove the background
+service. Host normal login/refresh/logout pass. MOB-QA-001 in MOBILE_IMPLEMENTATION
+records the observed transient-refresh behavior without inventing a web defect.
 No 14-day clock or social post is claimed. Exact artifacts and evidence are in
 MOBILE_IMPLEMENTATION, CLOUD_HANDOFF and GOOGLE_PLAY_SETUP; private receipts stay
 ignored under `.local/runtime-release-20261011b-*`.
@@ -58,8 +69,9 @@ claim that device acceptance, Google review or enrollment has already passed.
   verify availability and share its actual opt-in link. Twelve continuous 14-day
   participants are required for production access, not to begin closed testing.
 
-The current step is the listing package. Existing internal code 4 is live; its
-replacement, Google policy approval and closed enrollment are separate gates.
+The current step is final standalone captures and a qualifying permission video.
+Internal code 6 is available; Google policy approval and closed enrollment are
+separate gates.
 The local review is at http://127.0.0.1:3135. Sources are
 resources/marketing/google-play/feature-graphic.svg and listing-en-US.json.
 The revised feature graphic uses generated freight artwork and the existing
