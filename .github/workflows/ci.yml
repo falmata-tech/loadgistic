@@ -103,6 +103,9 @@ jobs:
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
 
+      - name: Verify exact Featured migration bootstrap with rolled-back fixtures
+        run: node scripts/verify-featured-bootstrap-local.mjs
+
       - name: Verify the Data API guard through SQL, REST and GraphQL
         run: node scripts/verify-data-api-guard.mjs
 

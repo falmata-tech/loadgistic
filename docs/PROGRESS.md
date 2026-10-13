@@ -1,5 +1,15 @@
 ## October 13 isolated Featured repair137 — approved; release checks pending
 
+Featured-only CI38448023976 failed at a test-order assumption: ordinary managed
+fixtures are imported after migrations, so a bootstrap assertion incorrectly
+expected those newer rows to exist during137 installation. The approved137 SQL
+and its digest remain unchanged. The repaired harness executes its actual seed
+with rollback-only pre-installation fixtures, separately from advancing-week
+behavior; missing legacy/future sources each fail the negative probe. Three pure
+guard tests and the retained continuous-roster SQL suite pass on the isolated
+restore. The complete CI rerun and fresh security check remain required before
+the approved hosted repair. No hosted write has occurred.
+
 The owner approved the exact137 SQL, protected hosted136 backup, rehearsal,
 rollback and one generation call for Loadgistic tpwyyzoqijjmbvsmmvcm.
 Migration SHA256: 9d5980b5d84e7b7aa1ee7079d399b6f2ae107a39363b142bd00bd31cceb1aed9.

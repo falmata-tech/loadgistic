@@ -37,21 +37,9 @@ begin
   select id into strict admin_id from public.profiles where active and role='ADMIN' limit 1;
   select v.organization_id into strict org from public.featured_eligible_truck_links(array['Cargo van','Mini Box Truck','Pickup truck','Light Box Truck','Medium Box Truck','Heavy Rigid Stake Body Truck']) link
     join public.vehicles v on v.id=link.vehicle_id where v.organization_id is not null limit 1;
-  -- Check migration bootstrap against original records before isolating candidates.
-  if to_regclass('public.featured_theme_rotation_selections') is not null then
-    if exists(select 1 from public.featured_rotation_selections h join public.vehicles v on v.id=h.vehicle_id
-      where h.round_number=(select max(round_number) from public.featured_rotation_selections)
-        and public.featured_truck_primary_theme(v.cargo_configuration) is not null
-        and not exists(select 1 from public.featured_theme_rotation_selections seeded
-          where seeded.primary_theme_key=public.featured_truck_primary_theme(v.cargo_configuration)
-            and seeded.vehicle_id=h.vehicle_id and seeded.driver_user_id=h.driver_user_id)) then raise exception 'LEGACY_TURNS_NOT_BOOTSTRAPPED';end if;
-    if exists(select 1 from public.featured_provider_slots s join public.featured_provider_days d on d.id=s.day_id
-      join public.vehicles v on v.id=s.vehicle_id
-      where d.feature_date>=today and public.featured_truck_primary_theme(v.cargo_configuration) is not null
-        and not exists(select 1 from public.featured_theme_rotation_selections seeded
-          where seeded.primary_theme_key=public.featured_truck_primary_theme(v.cargo_configuration)
-            and seeded.vehicle_id=s.vehicle_id and seeded.driver_user_id=s.driver_user_id)) then raise exception 'FUTURE_RESERVATIONS_NOT_BOOTSTRAPPED';end if;
-  end if;
+  -- CI imports ordinary rosters after137, so they are not migration-time inputs.
+  -- verify-featured-bootstrap-local.mjs replays the exact approved seed against
+  -- deliberate pre-seed legacy/reservation records, with missing-source negatives.
   update public.vehicles set active=false where active;
   for day_offset in 0..5 loop
     theme:=public.featured_truck_theme('2026-10-12'::date+day_offset);key:=theme->>'key';configuration:=theme->'configurations'->>0;

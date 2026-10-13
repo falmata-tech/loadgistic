@@ -11,6 +11,15 @@ rollout: Add exact truck-and-Driver slot references additively, migrate the disp
 
 # Daily Featured Trucks programme
 
+Bootstrap verification must model source rows present before installation and
+execute137's exact approved seed. CI's ordinary fixture import occurs after
+migration, so those later rows belong to the scheduling behavior tests instead.
+`scripts/verify-featured-bootstrap-local.mjs` runs rollback-only legacy/future
+source probes and two deliberate missing-source negatives; guard tests reject
+artifact drift, unapproved targets and a missing rollback boundary. The existing
+continuous-week suite retains its scheduling, history, permissions and atomic
+failure regressions.
+
 ### October 13 recurring empty-programme diagnosis
 
 Read-only live evidence confirms AUTO mode, target eight and a successful scheduled
