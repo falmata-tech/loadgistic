@@ -938,3 +938,27 @@ tests pass. The actual corrected native screen is captured in protected
 Owner: native Tracking maintainer. Owner review and replacement standalone
 release evidence remain required; no Google video or
 physical moving-location acceptance is inferred from a running service.
+
+## NR-34 — A repeating showcase is tested without advancing the calendar
+
+Observed October 13: the live worker was healthy (AUTO/READY), but five upcoming
+truck-type days had no roster. The global no-repeat ledger had five mini trucks
+left; other types had exhausted their turns. An older test repeatedly deleted
+and regenerated the same seven dates, so it did not prove a retained multiweek
+programme stays populated.
+
+Control: FEAT-FTR-001 / migration137 separates primary truck-type turns, draws
+waiting pairs first, then restarts that type to fill the daily count. Mixed Sunday
+uses those same turns. Saved/manual days and the legacy ledger stay intact.
+Real scarcity stays visible rather than inventing trucks.
+
+Negative checks: `tests/sql/featured-continuous-rounds.sql` retains four weeks
+and verifies15vans:8then7+1, mixed-day fairness, nearby-date preference/fallback,
+manual preservation, eligibility, retry stability, service-only permissions and
+real partial-write rollback. It fails before137 with
+`CONTINUOUS_TODAY_NOT_FILLED`, then passes after137 in the isolated local clone.
+The isolated137 candidate also passes its catalogue/security guard and exact
+rollback probe on a fresh hosted136 snapshot. The owner approved that repair;
+exact-source CI and monitored hosted execution remain pending. The staff-layout
+explanation correction is separately awaiting visual approval in the main task.
+Owner: Featured workflow maintainers.

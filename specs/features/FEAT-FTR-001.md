@@ -3,13 +3,68 @@ id: FEAT-FTR-001
 title: Daily Featured Trucks programme
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001, FEAT-IAM-001, FEAT-SUP-001]
 problem: Capacity seekers need a concise daily introduction to useful truck types and the Drivers operating them, while Loadgistic needs a manageable live programme that does not consume the entire day or turn provider eligibility into an endorsement.
-behavior: Each Ethiopia calendar day has one truck-type theme and an ordered roster of exact active trucks with distinct assigned Drivers. Automatic selection prepares weekly subsets across the next seven days using a persisted random no-repeat round of exact eligible truck-and-Driver pairs. The saved daily count is a ceiling (default eight, one through eight), and the actual eligible selected count determines slots and airtime. Manual-only mode and individual curated days remain available; routine automation never changes a saved day. The deterministic 08:30–12:00 Ethiopia-time schedule divides airtime equally between selected trucks with four two-minute mentions by default (including a closing mention), or fewer for a sparse roster, naming an active sponsor when available. Public cards lead with the Driver's name, role, and portrait while retaining the exact truck and provider. Sponsors stay separate.
+behavior: Each Ethiopia calendar day has one truck-type theme and an ordered roster of exact active trucks with distinct assigned Drivers. Automatic selection prepares the next seven days with independent persisted no-repeat rounds for each theme, consuming remaining pairs before starting that theme's next round. It fills the configured daily count (default eight, one through eight) when enough eligible distinct Drivers exist, including rollover within a day; scarcity alone may produce fewer entries. Manual-only mode and individual curated days remain available; routine automation never changes a saved day. The deterministic 08:30–12:00 Ethiopia-time schedule divides airtime equally between selected trucks with four two-minute mentions by default (including a closing mention), or fewer for a sparse roster, naming an active sponsor when available. Public cards lead with the Driver's name, role, and portrait while retaining the exact truck and provider. Sponsors stay separate.
 contracts: [FeaturedTruckTypeRotation, FeaturedTruckCandidate, FeaturedTruckDay, FeaturedTruckSlot, FeaturedTruckAdminCommand, PublicFeaturedTruckProjection, FeaturedTruckBoardLayout, FeaturedDaySchedule, FeaturedScheduleEntry, FeaturedScheduleConfig, DailyTikTokBroadcast]
 observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, FEATURED_DAY_AUTO_PUBLISHED audit, PLATFORM_CONTROLS_UPDATED audit, bounded worker counts, administrator roster-gap state]
 rollout: Add exact truck-and-Driver slot references additively, migrate the disposable demonstration roster to current truck candidates, retain historical provider-slot identifiers only for rollback integrity, and publish the new projection only after local Supabase, authorization, schedule, and responsive board checks pass.
 ---
 
 # Daily Featured Trucks programme
+
+### October 13 recurring empty-programme diagnosis
+
+Read-only live evidence confirms AUTO mode, target eight and a successful scheduled
+check at 15:00 UTC. The current global round has 131 eligible pairs and five
+remaining mini-truck pairs. Fifteen eligible vans have already had their turn;
+Tuesday and four following truck-type days consequently have no saved roster.
+The HTTP 200 empty response occurs on both public web and native API. This is
+the global no-repeat policy, not another candidate-read failure or stopped worker.
+The owner subsequently instructed the agent to choose the best rule that keeps
+each day's matching trucks visible and selects those still waiting in later weeks.
+Independent theme rounds below implement that decision. Preserve the global
+legacy ledger and protected saved days; do not reset or erase them.
+Regression must exercise an advancing calendar with unequal theme counts and
+mixed Sunday selection, rather than repeatedly regenerating the same seven dates.
+
+Given Featured receives an unsuccessful API response with an empty or whitespace
+error message\
+When the mobile visitor opens the programme or refreshes an existing programme\
+Then show a meaningful recoverable error and the existing retry control\
+And retain any last successfully loaded programme without presenting it as fresh\
+And normal navigation and later successful retry continue working.
+
+### Scenario: truck-type days keep filling as the calendar advances
+
+Given Automatic mode and an unsaved day with matching public-eligible truck/Driver pairs\
+When the worker prepares that day and the following six Ethiopia dates\
+Then fill the configured daily count when enough distinct eligible Drivers exist\
+And take pairs still waiting in that theme's current round before any repeat\
+And start that theme's next random round after all its currently eligible pairs have had their turn, even within the same daily roster\
+And never choose the same truck/pair or Driver twice in a day\
+And exhaustion in a different theme cannot leave this day unscheduled\
+And a smaller genuine pool shows all possible distinct Drivers instead of invented entries\
+And no eligible pairs produces an honest empty day.
+
+Given fifteen eligible vans, a daily target of eight and no saved next Tuesday\
+When two successive Tuesdays are prepared\
+Then the first uses eight pairs and the next uses the remaining seven before selecting one pair from the new round\
+And each day's order is persisted, retryable without reshuffling and within the existing airtime window.
+
+Given Sunday draws mixed trucks from the same truck-type rounds and a pair is already scheduled within six days\
+When another unseen pair has no nearby scheduled appearance\
+Then prefer that other pair before the nearby repeat\
+And if nearby appearances are unavoidable, keep filling Sunday's roster without repeating a Driver within that day\
+And a Sunday selection counts as that pair's turn in its actual truck-type round\
+And nearby-appearance preference must not prevent eligible days from being filled.
+
+Given historical global selection history, a saved future day or manual draft\
+When this policy is introduced or retried\
+Then retain the old history and seed the independent rounds from known selections\
+And retain exact saved dates, pairs, order, timing and manual source\
+And inactive, hidden, restricted-review or unassigned pairs cannot consume new public turns\
+And new/changed eligible pairs join the matching theme fairly\
+And the existing generation lock, failure rollback, audit and browser denial remain enforced\
+And staff remaining counts describe the theme rounds without double-counting mixed Sunday's overlapping pool.
 
 ### Scenario: candidate reads remain complete as the fleet grows
 
@@ -36,13 +91,13 @@ history, retry stability, manual precedence and unauthorized denial.
 
 ### Scenario: automatic daily selection with a manual day override
 
-Given automatic Featured selection is enabled with a target from one to twelve\
+Given automatic Featured selection is enabled with a target from one to eight\
 When the scheduled managed-operations worker prepares the next seven Ethiopia dates\
 Then it persists one ordered daily roster from active eligible trucks and Drivers
 matching each day's existing truck-type theme\
 And random selection draws from exact truck-and-Driver pairs not yet selected in the current round\
-And no automatic pair repeats until every currently eligible pair has been selected in that round\
-And a new round starts only after the global eligible pool is exhausted\
+And no automatic pair repeats within a theme until every currently eligible pair in that theme has been selected in that round\
+And a new theme round starts after that theme's eligible pool is exhausted\
 And each daily roster still avoids duplicate Drivers\
 And fewer eligible candidates produces a smaller honest roster, never invented entries\
 And retries do not change a saved roster, target, or its audit history\
@@ -62,20 +117,21 @@ And unauthorized callers cannot change policy or generate rosters.
 Given some eligible truck-and-Driver pairs have already been chosen\
 When automation prepares an unsaved date\
 Then only remaining pairs in the current round may be chosen, using a random draw without a learned score\
-And a day with no remaining pairs in its theme stays unscheduled instead of repeating before other themes finish\
+And a theme with all its pairs selected starts its next round instead of waiting for other themes\
 And the same truck with a newly assigned Driver is a different eligible pair\
 And newly eligible pairs may join the current round while inactive/unassigned pairs do not block its completion\
 And saved rosters and their random order remain unchanged on retries\
 And selection history survives a later manual roster edit or deletion\
 And public/authenticated browser roles cannot read or write the history or invoke generation.
 
-Given the current eligible pool has all been selected\
+Given the current theme's eligible pool has all been selected\
 When automation needs the next unsaved roster\
 Then it begins a new round and pairs become eligible for a fresh random draw\
 And the ledger records the round, pair and selection date atomically with its day\
 And the existing generation lock and unique round/pair key prevent concurrent duplicates.
 
-The user chose weekly subsets on September 21. Preserve daily themes and the
+The user chose weekly subsets on September 21 and corrected empty-day behavior
+on October 13. Preserve daily themes and the
 08:30–12:00 window. A smaller eligible subset produces fewer, longer intervals;
 no made-up entries fill a daily target. Historical published pairs bootstrap the
 first round, and manual overrides remain independently available. The no-repeat
@@ -110,7 +166,7 @@ And each candidate includes the truck configuration and image, Driver first name
 And each candidate includes the Driver-selected public portrait, or an allowlisted demo preset when present\
 And a Driver without a portrait uses a clear person silhouette with a three-spoke steering wheel in front rather than a generic disc\
 And the administrator chooses an ordered set of exact candidates rather than selecting a transporter and allowing the public projection to guess a truck\
-And the default publication target is eight entries while an administrator may set a bounded target from one through twelve\
+And the default publication target is eight entries while an administrator may set a bounded target from one through eight\
 And publication requires the selected count to equal the saved target\
 And each truck and each slot position appears at most once\
 And no candidate is silently substituted after selection.
@@ -363,7 +419,7 @@ Given the retired Courier car catalogue option
 When a Sunday roster is prepared
 Then its theme is Mixed trucks and accepts the supported freight configurations
 And Monday through Saturday retain their existing themes
-And the global no-repeat ledger, distinct-driver limit and eight-showcase ceiling still apply.
+And known past selections remain preserved, distinct-driver limits and the eight-showcase ceiling still apply; the current primary truck-type rounds are defined in the October 13 acceptance above.
 
 The bounded local demo conversion relabels upcoming automatic courier days as mixed
 without replacing their exact vehicle/driver pairs. Past and manual days remain historical.
@@ -392,3 +448,5 @@ invalidate Sunday. Preserve the invalid-roster assertion and staff permission
 checks; no production schedule or vehicle change is part of this test correction.
 Evidence: tests/sql/featured-team-permission.sql and the isolated production-backup
 restore/rehearsal.
+
+October13 regression lesson: NR-34 in `docs/SECURITY_REGRESSION_REGISTER.md`; local evidence and hosted/visual gates are tracked separately in `docs/PROGRESS.md`.

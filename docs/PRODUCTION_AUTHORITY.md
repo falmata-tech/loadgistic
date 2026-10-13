@@ -1,3 +1,19 @@
+## October 13 isolated Featured repair137 — approved; release checks pending
+
+The owner approved the exact137 SQL, protected hosted136 backup, rehearsal,
+rollback and one generation call for Loadgistic tpwyyzoqijjmbvsmmvcm.
+Migration SHA256: 9d5980b5d84e7b7aa1ee7079d399b6f2ae107a39363b142bd00bd31cceb1aed9.
+Waiting trucks are selected first within each daily truck type; selection then
+starts again to fill up to eight distinct eligible Drivers. Sunday uses the same
+turn histories. Saved/manual days and prior global history stay intact.
+
+This isolated candidate contains no new Tracking migration or unapproved map
+layout. Existing web/Android1.0.6 remain compatible. Complete exact-candidate
+CI/security/drift/backup/rollback gates before any hosted execution; verify all
+seven upcoming dates and public readback afterward. No hosted write has occurred.
+No Auth/provider/SMTP/billing/signing or other-project operation is authorized.
+Protected exact operation review: .local/featured-20261013/repair-review.md.
+
 ## October 12 exact final 1.0.6 signing and closed-review execution
 
 Owner explicitly answered “Approve signing the final 1.0.6 build” for source
