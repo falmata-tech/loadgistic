@@ -127,7 +127,7 @@ jobs:
             independent-single-truck provider-owner-fleets provider-vehicle-authority provider-live-publication-limit provider-publication-owner-scope provider-authority-recovery provider-authority-command-denials provider-authority-erasure provider-driving-intent provider-fleet-erasure provider-billing-retired capacity-search-metadata-cost capacity-multiple-options telematics telematics-account-privacy security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds featured-continuous-rounds tracking-route-map \
             fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
             public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue \
-            account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards public-capacity-policy-scope \
+            account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards play-review-business-isolation public-capacity-policy-scope \
             truck-regular-service-scope personal-public-identity staff-active-permission-preservation review-moderation-restrictions support-waiting-claim-eligibility \
             platform-brokerage-retirement customer-business-workspaces business-capacity-sharing tracking-owner-delegation location-radius-choices tracking-selected-sources \
             phone-location-installations business-support-alerts business-native-push provider-public-account-identity business-directory-verification business-directory-retention capacity-published-location-source-filter driver-manual-capacity-location; do
@@ -148,20 +148,48 @@ jobs:
       - name: Verify queued authorization and account closure races
         run: node scripts/verify-audit-concurrency.mjs
 
-      - name: Verify GPS closure and credential races on a disposable clone
+      - name: Create disposable GPS test database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: |
           set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
           test "$(docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' supabase_db_loadgistic-local)" = loadgistic-local
-          cleanup_clone() { docker exec supabase_db_loadgistic-local dropdb -U supabase_admin "$LOADGISTIC_TEST_DATABASE" >/dev/null 2>&1 || true; }
-          trap cleanup_clone EXIT
-          docker exec supabase_db_loadgistic-local createdb -U supabase_admin --owner=postgres "$LOADGISTIC_TEST_DATABASE"
-          docker exec supabase_db_loadgistic-local pg_dump -U postgres -d postgres -Fc | docker exec -i supabase_db_loadgistic-local pg_restore -U supabase_admin -d "$LOADGISTIC_TEST_DATABASE" --exit-on-error
-          node scripts/verify-telematics-privacy-concurrency-local.mjs
-          docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-ci-isolated-setup.sql
-          { printf "set loadgistic.demo_isolated_test = 'true';\n"; cat tests/sql/demo-location-arbitration.sql; } | docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1
-          node scripts/verify-driver-capacity-phone-lock-order-local.mjs ordered
+          timeout --signal=TERM --kill-after=10s 1m docker exec supabase_db_loadgistic-local createdb -U supabase_admin --owner=postgres "$LOADGISTIC_TEST_DATABASE"
+          timeout --signal=TERM --kill-after=10s 8m docker exec supabase_db_loadgistic-local pg_dump -U postgres -d postgres -Fc | timeout --signal=TERM --kill-after=10s 8m docker exec -i supabase_db_loadgistic-local pg_restore -U supabase_admin -d "$LOADGISTIC_TEST_DATABASE" --exit-on-error
+
+      - name: Verify GPS privacy and credential races on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 7m node scripts/verify-telematics-privacy-concurrency-local.mjs
+
+      - name: Install isolated GPS demo fixtures
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-ci-isolated-setup.sql
+
+      - name: Verify GPS demo location arbitration
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          { printf "set loadgistic.demo_isolated_test = 'true';\n"; cat tests/sql/demo-location-arbitration.sql; } | timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1
+
+      - name: Verify ordered phone and GPS locks
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m node scripts/verify-driver-capacity-phone-lock-order-local.mjs ordered
+
+      - name: Remove disposable GPS test database
+        if: always()
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          if [ "$(docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' supabase_db_loadgistic-local 2>/dev/null || true)" = loadgistic-local ]; then
+            timeout --signal=TERM --kill-after=10s 1m docker exec supabase_db_loadgistic-local dropdb -U supabase_admin --force --if-exists "$LOADGISTIC_TEST_DATABASE"
+          fi
 
       - name: Validate specifications and source
         run: npm run check
