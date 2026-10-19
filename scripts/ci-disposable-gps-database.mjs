@@ -1,8 +1,9 @@
 // CI-only lifecycle for the GPS race-test clone. Supabase's local DB URL is
 // used by host PostgreSQL clients so Docker exec is not on the clone path.
 import assert from 'node:assert/strict';
-import {execFileSync, spawn} from 'node:child_process';
+import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
+import {runGpsClonePipeline} from './ci-disposable-gps-clone.mjs';
 
 const container = 'supabase_db_loadgistic-local';
 const database = 'loadgistic_telematics_ci';
@@ -80,39 +81,15 @@ delete pgEnv.PGOPTIONS;
 assert.equal(localCommand('psql', ['-X', '-A', '-t', '-q', '-c', 'select current_database()'],
   {env: pgEnv}), 'postgres', 'Not connected to the isolated local primary');
 
-function waitFor(child) {
-  return new Promise((resolve) => {
-    child.once('error', (error) => resolve({code: null, error: error.code ?? 'spawn-error'}));
-    child.once('close', (code, signal) => resolve({code, signal}));
-  });
-}
-
 async function clone() {
   // Preserve the old restore role and full dump/restore assertions. Only the
   // transport moves from Docker exec to the checked local TCP endpoint.
-  const dump = spawn('pg_dump', ['-Fc', '-d', 'postgres'], {
-    env: pgEnv, stdio: ['ignore', 'pipe', 'ignore'],
+  await runGpsClonePipeline({
+    dumpCommand: 'pg_dump', dumpArgs: ['-Fc', '-d', 'postgres'],
+    restoreCommand: 'pg_restore',
+    restoreArgs: ['-d', database, '--role=supabase_admin', '--exit-on-error'],
+    env: pgEnv,
   });
-  const restore = spawn('pg_restore', [
-    '-d', database, '--role=supabase_admin', '--exit-on-error',
-  ], {env: pgEnv, stdio: ['pipe', 'ignore', 'ignore']});
-  dump.stdout.pipe(restore.stdin);
-  restore.stdin.on('error', () => {}); // pg_restore may close first on failure.
-  const timeout = setTimeout(() => {
-    dump.kill('SIGTERM');
-    restore.kill('SIGTERM');
-    setTimeout(() => {
-      dump.kill('SIGKILL');
-      restore.kill('SIGKILL');
-    }, 10_000).unref();
-  }, 8 * 60_000);
-  try {
-    const [dumpResult, restoreResult] = await Promise.all([waitFor(dump), waitFor(restore)]);
-    assert.equal(dumpResult.code, 0, 'Local pg_dump failed or timed out');
-    assert.equal(restoreResult.code, 0, 'Local pg_restore failed or timed out');
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 if (mode === 'create') {
