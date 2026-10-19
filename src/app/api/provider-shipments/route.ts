@@ -16,6 +16,7 @@ export async function POST(request:NextRequest){
     created=await createProviderShipment(user,{
       vehicleId:text(form,'vehicleId'),
       origin:text(form,'origin'),originPlaceRef:text(form,'originPlaceRef'),
+      passingPlaceRef:text(form,'passingPlaceRef'),
       destination:text(form,'destination'),destinationPlaceRef:text(form,'destinationPlaceRef'),
       cargoSummary:text(form,'cargoSummary'),customerEmail:text(form,'customerEmail'),
       additionalRecipientEmails:text(form,'additionalRecipientEmails').split(/[\s,;]+/).filter(Boolean),

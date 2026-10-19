@@ -1,11 +1,12 @@
 
 import {Localized,Text} from '@/components/localization';
-import {Camera,Trash2,Upload,UserRound} from 'lucide-react';
+import {Camera,Trash2,Upload} from 'lucide-react';
+import {PublicIdentityImage} from './public-identity-image';
 
 export function DriverPortraitEditor({portrait}:{portrait:{imageUrl:string|null;hasPortrait:boolean;custom:boolean}}){
   return <Localized as="section" copy={["aria-label"]} className="card driver-portrait-editor" aria-label="Public Driver photo">
     <h2 className="panel-heading"><Camera aria-hidden="true"/><Text message="Public Driver photo"/></h2>
-    <div className="driver-portrait-preview">{portrait.imageUrl?<Localized as="img" copy={["alt"]} src={portrait.imageUrl} alt="Your public Driver photo"/>:<UserRound aria-label="No Driver photo"/>}</div>
+    <div className="driver-portrait-preview"><PublicIdentityImage path={portrait.imageUrl} kind="person" size="large" label="" message="Your public Driver photo" fallbackMessage="No Driver photo"/></div>
     {portrait.hasPortrait&&!portrait.custom?<p className="meta"><Text message="Demo artwork. Upload your own photo or remove it."/></p>:null}
     <p className="meta"><Text message="Your photo is public and may appear beside your name on Featured. Removing it stops future access here; downloaded copies may remain."/></p>
     <Localized as="form" copy={["aria-label"]} action="/api/account/portrait" method="post" encType="multipart/form-data" className="stack" aria-label="Upload Driver photo">

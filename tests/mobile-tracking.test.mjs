@@ -1,3 +1,4 @@
+import {phoneInstallationProof} from '../src/lib/phone-location-contract.js';
 import {dateOnly} from '../src/lib/date-calendar.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -5,23 +6,38 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { z } from 'zod';
 import { trackingNextStatuses, trackingProgress } from '../src/lib/tracking-progress.js';
-const source = readFileSync(new URL('../src/lib/mobile/tracking-contract.ts', import.meta.url), 'utf8').replace("import { z } from 'zod';", '').replace("import {dateOnly} from '../date-calendar.js';",'').replaceAll('export ', '');
+import {trackingRoute,trackingMapLocation,trackingPublicTruck} from '../src/lib/tracking-map.js';
+const source = readFileSync(new URL('../src/lib/mobile/tracking-contract.ts', import.meta.url), 'utf8').replace("import { z } from 'zod';", '').replace("import {dateOnly} from '../date-calendar.js';",'').replace("import {trackingRoute,trackingMapLocation,trackingPublicTruck} from '../tracking-map.js';",'').replace("import {phoneInstallationProof} from '../phone-location-contract.js';",'').replaceAll('export ', '');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
-const { createTracking, trackingCommand, trackingDetail, trackingRecovery } = new Function('z','dateOnly', compiled + '; return { createTracking, trackingCommand, trackingDetail, trackingRecovery };')(z,dateOnly);
+const { createTracking, needsTrackingRouteUpdate,trackingCommand, trackingDetail, trackingRecovery } = new Function('phoneInstallationProof','z','dateOnly','trackingRoute','trackingMapLocation','trackingPublicTruck', compiled + '; return { createTracking,needsTrackingRouteUpdate, trackingCommand, trackingDetail, trackingRecovery };')(phoneInstallationProof,z,dateOnly,trackingRoute,trackingMapLocation,trackingPublicTruck);
 const id = '00000000-0000-4000-8000-000000000001';
+test('new Tracking fixes cap at10 without relabelling a historical20-km observation',()=>{
+ const command={action:'LOCATION',location:{approximateLat:9,approximateLng:38,locationPrecisionKm:10}};
+ assert.equal(trackingCommand.safeParse(command).success,true);assert.equal(trackingCommand.safeParse({...command,location:{...command.location,locationPrecisionKm:20}}).success,false);
+ const history=trackingDetail({tracking_mode:'LOCATION_AND_STATUS',operational_status:'IN_TRANSIT',latest_location:{location_lat:9,location_lng:38,location_precision_km:20,created_at:'2026-10-10T12:00:00Z'}},{id,role:'DRIVER'},[]);
+ assert.equal(history.location.radius,20);assert.equal(history.location.updatedAt,'2026-10-10T12:00:00Z');
+});
 test('tracking inputs reject spoofed authority, secrets, exact location and unsupported commands', () => {
- const input = { vehicleId: id, originPlaceRef: 'origin', destinationPlaceRef: 'destination', cargoSummary: 'Cargo', customerEmail: 'test@loadgistic.local', trackingMode: 'STATUS_ONLY',expectedDeliveryDate:'2026-10-12' };
+ const input = { vehicleId: id, originPlaceRef: 'origin', passingPlaceRef:'passing',destinationPlaceRef: 'destination', cargoSummary: 'Cargo', customerEmail: 'test@loadgistic.local', trackingMode: 'STATUS_ONLY',expectedDeliveryDate:'2026-10-12' };
  assert.equal(createTracking.safeParse(input).success, true);
+ assert.equal(createTracking.safeParse({...input,passingPlaceRef:undefined}).success,false);
+ const {passingPlaceRef:unused,...legacy}=input;
+ assert.equal(needsTrackingRouteUpdate(legacy),true);
+ assert.equal(needsTrackingRouteUpdate(input),false);
+ for(const changed of [{actor_user_id:id},{customerEmail:'invalid'},{destinationPlaceRef:'origin'},{passingPlaceRef:'origin'}])assert.equal(needsTrackingRouteUpdate({...legacy,...changed}),false);
+ assert.equal(createTracking.safeParse({...input,passingPlaceRef:'origin'}).success,false);
  for (const extra of [{ actor_user_id: id }, { trackingCode: 'secret' }, { trackingMode: 'INVALID' }]) assert.equal(createTracking.safeParse({ ...input, ...extra }).success, false);
  const command = { action: 'STATUS', nextStatus: 'LOADING' };
  assert.equal(trackingCommand.safeParse(command).success, true);
  for (const extra of [{ actorId: id }, { proof: { path: 'secret' } }, { nextStatus: 'CANCELLED' }, { location: { approximateLat: 9, approximateLng: 38, locationPrecisionKm: 0 } }]) assert.equal(trackingCommand.safeParse({ ...command, ...extra }).success, false);
 });
-test('tracking projection excludes reusable credentials, proof paths, precise coordinates and email failure details', () => {
- const raw = { id, assigned_driver_user_id: 'driver', tracking_access_code: 'secret-a', tracking_code_hash: 'secret-b', review_code_hash: 'secret-c', operational_status: 'LOADING', guest_access_active: true, events: [{ status: 'LOADING', has_proof: true, proof_storage_path: 'secret-d' }], tracking_recipients: [{ id, recipient_email: 'customer@loadgistic.local', recipient_role: 'OWNER', recipient_email_digest: 'secret-e' }], latest_location: { location_area: 'Around city', location_lat: 9, location_lng: 38, location_precision_km: 20, created_at: 'now' }, email_deliveries: [{ status: 'FAILED', last_error: 'secret-f' }] };
+test('tracking projection excludes credentials, proof paths and email failure details while exposing only saved obscured map fixes', () => {
+ const raw = { id, assigned_driver_user_id: 'driver', tracking_access_code: 'secret-a', tracking_code_hash: 'secret-b', review_code_hash: 'secret-c', tracking_mode:'LOCATION_AND_STATUS',operational_status: 'LOADING', guest_access_active: true, events: [{ status: 'LOADING', has_proof: true, proof_storage_path: 'secret-d' }], tracking_recipients: [{ id, recipient_email: 'customer@loadgistic.local', recipient_role: 'OWNER', recipient_email_digest: 'secret-e' }], latest_location: { location_area: 'Around city', location_lat: 9, location_lng: 38, location_precision_km: 20, created_at: 'now' }, email_deliveries: [{ status: 'FAILED', last_error: 'secret-f' }] };
  const owner = trackingDetail(raw, { id: 'owner', role: 'TRANSPORTER' }, trackingNextStatuses('LOADING'));
  assert.equal(owner.canLocate, false); assert.equal(owner.recipients[0].owner, true); assert.equal(owner.events[0].hasProof, true);
  assert.equal(JSON.stringify(owner).includes('secret-'), false); assert.equal(JSON.stringify(owner).includes('location_lat'), false);
+ assert.deepEqual(owner.location,{area:'Around city',latitude:9,longitude:38,radius:20,updatedAt:'now'});
+ assert.equal(trackingDetail({...raw,operational_status:'COMPLETED'}, {id:'driver',role:'DRIVER'}, []).location,null);
  assert.equal(trackingDetail(raw, { id: 'driver', role: 'DRIVER' }, []).canLocate, true);
  assert.equal(trackingDetail({ ...raw, operational_status: 'COMPLETED' }, { id: 'driver', role: 'DRIVER' }, []).canManageRecipients, false);
 });

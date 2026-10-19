@@ -1,0 +1,28 @@
+import {test,expect} from './browser-test';
+import {localAuditService,checked,auditIdentity} from './audit-helpers';
+import {localSupportLogin} from './provider-support-helper';
+import {localMailpitNumericCode} from './mailpit-helper';
+import {writeFileSync} from 'node:fs';
+
+test.use({trace:'off',video:'off',screenshot:'off'});
+test('owner requested local Brokerage demo is created through Team and signs in with only Brokerage access',async({page},info)=>{
+ test.skip(info.project.name!=='desktop-chromium','The explicitly retained owner demo is created exactly once.');test.setTimeout(120000);
+ const db=localAuditService(),email='falmatad97+lg-brokerage@gmail.com';
+ expect(checked(await db.from('profiles').select('id').eq('email',email))).toEqual([]);
+ const admin=await auditIdentity(db,'admin@loadgistic.local');let logout=await localSupportLogin(page,admin.id);
+ try{
+  await page.goto('/admin/support?tab=team');await page.getByRole('button',{name:'Add member',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Add member',exact:true});await dialog.getByLabel('Name',{exact:true}).fill('Loadgistic Brokerage demo');await dialog.getByLabel('Sign-in email',{exact:true}).fill(email);
+  await dialog.getByRole('checkbox',{name:'Support',exact:true}).uncheck();await dialog.getByRole('checkbox',{name:'Brokerage',exact:true}).check();
+  const saving=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/admin/support-agents'&&response.request().method()==='POST');await dialog.getByRole('button',{name:'Create member',exact:true}).click();expect((await saving).status()).toBe(303);
+  await expect(page.getByText('Team member created. They can sign in with their email code.',{exact:true})).toBeVisible();
+  const actor=checked(await db.from('profiles').select('id,role,active').eq('email',email).single());expect(actor.role).toBe('SUPPORT');expect(actor.active).toBe(true);
+  const permissions=checked(await db.from('support_agent_profiles').select('active,can_manage_support,can_manage_brokerage,can_manage_customers,can_manage_operations,can_manage_trust,can_manage_featured').eq('user_id',actor.id).single());
+  expect(permissions).toEqual({active:true,can_manage_support:false,can_manage_brokerage:true,can_manage_customers:false,can_manage_operations:false,can_manage_trust:false,can_manage_featured:false});
+  writeFileSync('.local/dashboard-restructure-20261015/brokerage-demo-receipt.json',JSON.stringify({environment:'Loadgistic local only',userId:actor.id,email,name:'Loadgistic Brokerage demo',role:'SUPPORT',permissions,createdVia:'Admin Team visible form',emailCodeSignIn:false,retainedForOwner:true},null,2)+'\n',{mode:0o600});
+  await logout();logout=async()=>{};await page.context().clearCookies();await page.goto('/login');const since=Date.now();await page.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);await page.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(page.getByTestId('email-code-form')).toBeVisible();
+  await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']));await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page).toHaveURL(/\/brokerage$/,{timeout:30000});await expect(page.getByRole('heading',{name:'Transport requests',exact:true})).toBeVisible();
+  expect((await page.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(200);expect((await page.request.get('/api/support/updates')).status()).toBe(403);
+  writeFileSync('.local/dashboard-restructure-20261015/brokerage-demo-receipt.json',JSON.stringify({environment:'Loadgistic local only',userId:actor.id,email,name:'Loadgistic Brokerage demo',role:'SUPPORT',permissions,createdVia:'Admin Team visible form',emailCodeSignIn:true,brokerageRead:200,supportDenied:403,retainedForOwner:true},null,2)+'\n',{mode:0o600});
+ }finally{await logout();await page.request.post('/api/auth/logout',{maxRedirects:0});}
+});

@@ -20,7 +20,7 @@ function trackingMessage(payload){
     ?`${text(shipment.providerName)||'Your transporter'} started a private Tracking session for your shipment.`
     :`${text(shipment.providerName)||'Your transporter'} marked your shipment complete.`;
   const accessGuidance=started
-    ?'Open the link and verify this email with one six-digit code. Ask the transporter to add anyone else who needs shipment updates.'
+    ?'Open the link and verify this email with one six-digit code. From Tracking, you can share route and status updates with others. They will not see the vehicle’s current location.'
     :'Open Tracking with this email to view your delivery record and leave a review. If you are already verified, no new code is needed.';
   const timeline=!started&&Array.isArray(shipment.events)
     ?shipment.events.map(event=>`${statusLabel(event.status)} · ${text(event.created_at)}${event.note?` · ${text(event.note)}`:''}`)
@@ -39,7 +39,7 @@ function accessMessage(payload){
   const tracking=payload.template==='tracking-access-code';
   const title=shared?'Your Private capacity code':tracking?'Your Loadgistic tracking sign-in code':'Your Loadgistic support recovery code';
   const intro=shared
-    ?'Use this six-digit code within 10 minutes to open truck capacity privately shared with this email. This does not create a Loadgistic account.'
+    ?'Use this six-digit code within 10 minutes to open vehicle capacity privately shared with this email. This does not create a Loadgistic account.'
     :tracking
       ?'Use this six-digit code within 10 minutes to open the shipment updates shared with this email. This does not create a Loadgistic account.'
     :'Use this code to return to your private support conversation.';
@@ -55,7 +55,7 @@ export function buildEmailMessage(payload){
   if(payload?.template==='fleet-driver-invitation'){
     const title='You’re invited to join a fleet on Loadgistic';
     const intro=`${text(payload.organizationName)} invited you to join as a Company driver.`;
-    const guidance='Log in using this email, then choose Join fleet. This invitation expires in seven days. Your fleet owner can assign your truck after you accept. If you were not expecting this invitation, ignore it.';
+    const guidance='Log in using this email, then choose Join fleet. This invitation expires in seven days. Your fleet owner can assign your vehicle after you accept. If you were not expecting this invitation, ignore it.';
     return {...payload,subject:title,text:[intro,guidance,text(payload.url)].join('\n\n'),
       html:emailHtml(title,[`<p>${escapeHtml(intro)}</p>`,`<p>${escapeHtml(guidance)}</p>`,`<p><a href="${escapeHtml(payload.url)}">View invitation</a></p>`])};
   }

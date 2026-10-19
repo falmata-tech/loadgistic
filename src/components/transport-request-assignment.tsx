@@ -14,7 +14,7 @@ export function TransportRequestAssignment({id,version,assignee,agents,admin,clo
   finally{pending.current=false;setBusy(false);}
  }
  if(!admin&&(assignee||closed))return null;
- return <form className="brokerage-assignment" onSubmit={submit} aria-label={t('Request assignment')}>
+ return <form className="brokerage-assignment" onSubmit={submit} aria-label={t('Request assignment')} aria-busy={busy}>
   <input type="hidden" name="version" value={expectedVersion}/><input type="hidden" name="action" value={admin?'assign':'claim'}/>
   {admin?<label><Text message="Assigned to"/><select name="assignee" value={selection} onChange={event=>{setSelection(event.target.value);setDirty(true);}} disabled={!ready||busy}><option value="">{t('Unassigned')}</option>{assignee&&!agents.some(a=>a.id===assignee)?<option value={assignee} disabled>{t('Current assignee')}</option>:null}{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>:<p><Text message="Claim this request to see contact details and follow up."/></p>}
   <button className="button secondary" disabled={!ready||busy}><Text message={busy?'Saving…':admin?'Save assignment':'Claim request'}/></button>

@@ -1,4 +1,6 @@
 import {z} from 'zod';
+import {providerAuthoritySummarySchema,truckAuthoritySchema} from './provider-authority-contract.js';
+export {publicFleetRowKey} from './public-fleet-row.js';
 
 export function publicFleetPage(value){
   const raw=String(value??'1');
@@ -8,9 +10,10 @@ export function publicFleetPage(value){
 
 const document=z.object({verification_type:z.string(),reviewed_at:z.string().nullable(),expires_on:z.string().nullable(),related_vehicle_id:z.string().uuid().nullable()});
 const fleetPage=z.object({
-  items:z.array(z.object({id:z.string().uuid(),platform_number:z.string(),make:z.string().nullable(),model:z.string().nullable(),category:z.string(),cargo_configuration:z.string().nullable()})).max(12),
+  items:z.array(z.object({id:z.string().uuid(),platform_number:z.string().nullable(),make:z.string().nullable(),model:z.string().nullable(),category:z.string(),cargo_configuration:z.string().nullable(),assigned_driver_id:z.string().uuid().nullable(),authority:truckAuthoritySchema})).max(12),
   total:z.number().int().nonnegative(),page:z.number().int().positive(),page_size:z.literal(12),page_count:z.number().int().positive(),
-  owner_operator:z.boolean(),evidence:z.object({vehicle_id:z.string().uuid(),platform_number:z.string(),document:document.nullable()}).nullable()
+  owner_operator:z.boolean(),evidence:z.object({vehicle_id:z.string().uuid(),platform_number:z.string().nullable(),document:document.nullable()}).nullable(),
+  authority_summary:providerAuthoritySummarySchema
 });
 export async function loadPublicProviderFleet(client,scope,page){
   const {data,error}=await client.rpc('public_provider_fleet_page',{
@@ -25,15 +28,4 @@ export async function loadPublicProviderFleet(client,scope,page){
 // Internal scope only; callers cannot turn an empty/malformed page into a broad query.
 export function publicFleetVehicleIds(values){
   return z.array(z.string().uuid()).max(12).parse(values);
-}
-
-/** Regular service is provider information, independent of its current fleet page.
- * Public presentation needs place labels only, never raw private record fields. */
-export function publicProviderRegularService(record){
-  if(!record)return null;
-  const labels=points=>Array.isArray(points)?points.slice(0,5).map(point=>String(point?.label||'')).filter(Boolean):[];
-  const route=labels(record.route_points_json);
-  return {geometry:record.geometry==='RADIUS'?'RADIUS':'ROUTE',
-    route_labels:route.length>=2?route:[record.origin,record.destination].filter(Boolean).map(String),
-    area_center_label:String(record.area_center_label||''),area_labels:labels(record.area_boundary_json)};
 }

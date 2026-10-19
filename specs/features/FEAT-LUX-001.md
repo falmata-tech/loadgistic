@@ -12,7 +12,8 @@ rollout: Local implementation and focused desktop/phone review first; owner visu
 # Accepted launch improvements — 2026-09-24
 
 Owner requests the important changes in docs/LAUNCH_UX_REVIEW_2026-09-24.md and
-natural, task-specific Amharic, Afaan Oromo, Somali and Tigrinya wording.
+natural, task-specific Amharic and Afaan Oromo wording. Earlier Somali and
+Tigrinya drafts are outside the current supported-language release.
 
 Given a new visitor has not requested location access
 When they open the map
@@ -94,7 +95,7 @@ Then a visible single H1 and short introduction explain truck capacity discovery
 And the heading and description exist as real elements in the server HTML before JavaScript runs
 And the description appears above the map, not over its controls
 And the previous public header slogan is removed
-And all five supported languages have contextual interface copy
+And all three supported languages have contextual interface copy
 And the page title and description accurately describe the platform without unsupported claims
 And no new action buttons or promotional counters are added.
 

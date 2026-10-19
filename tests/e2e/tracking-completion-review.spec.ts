@@ -1,5 +1,6 @@
+import {auditOpenTrackingProgress} from './audit-helpers';
 import {auditDeleteVehicles} from './audit-helpers';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
 import {localAuditService,checked,auditLogin,auditProvider,auditTrackingOwnerLogin} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
@@ -33,11 +34,12 @@ test('completed delivery emails its customer and accepts exactly one visible cus
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
     const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
     const email=`completion-${randomUUID()}@example.test`;
-    const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Synthetic demo completion',customerEmail:email,trackingMode:'STATUS_ONLY'});
+    const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Synthetic demo completion',customerEmail:email,trackingMode:'STATUS_ONLY'});
     shipmentId=shipment.id;
     await auditLogin(page,actor.email);await page.goto(`/app/provider-shipments/${shipmentId}`);
     const completedAfter=Date.now();
     for(const [status,label] of [['TO_PICKUP','Going to pickup'],['LOADING','Loading'],['IN_TRANSIT','En route'],['UNLOADING','Unloading']]){
+      await auditOpenTrackingProgress(page);
       await page.locator(`input[name=nextStatus][value=${status}]`).check();
       if(['LOADING','UNLOADING'].includes(status))await page.locator('input[name=proof]').setInputFiles('public/icon-192.png');
       // Native POST redirects stream the workspace shell before the result.

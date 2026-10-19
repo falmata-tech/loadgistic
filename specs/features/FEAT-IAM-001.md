@@ -2,7 +2,7 @@
 
 id: FEAT-IAM-001
 title: Identity, sessions, and role access
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001, FEAT-FLT-001, FEAT-PLY-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-APP-001, FEAT-FLT-001, FEAT-PLY-001, FEAT-PRV-001, FEAT-MKT-001, FEAT-FTR-001, FEAT-TRK-001]
 problem: Transport providers need secure workspace access while capacity seekers must be able to browse intentionally public supply without accounts or exposure to provider-private operations.
 behavior: Provider and platform-team identities begin at one account-access surface and prove identity through a numeric Supabase email one-time code; Google account entry is temporarily disabled by owner decision. A valid active identity receives an SSR-compatible HTTP-only session and its role-scoped workspace, while a new or signup-eligible inactive provider identity may continue only through a short-lived signup handoff before supplying provider facts. A confirmed provider-access identity that predates the profile-bootstrap trigger is repaired only when it has no role reservation or workspace association. Ordinary identities have no password entry; fixture login remains behind an explicit non-Production boundary. FEAT-PLY-001 separately defines registered synthetic reviewer login through normal authentication, without granting ordinary passwords or staff access. Anonymous visitors may read only explicit public capacity, provider microsite, and guest-code tracking projections. Support staff use a support-only role that grants no provider-workspace or administration authority.
 contracts: [IdentityLookupPort, ManagedOAuthFlow, ManagedEmailOtpFlow, ManagedSignupIdentityHandoff, AuthCallbackPolicy, SessionToken, CurrentUser, RolePolicy, SupportRolePolicy, CredentialFixtureBoundary, PrivateAccountContact, AccountDetailsInput]
@@ -11,6 +11,259 @@ rollout: Replace local signed-cookie identity with Supabase Auth in local develo
 ---
 
 # Identity and access
+
+## October 18 public account identity — approved local implementation plan
+
+Transport Provider owners choose a public Account name and unique handle,
+separately from private personal registration names and legacy organization/
+provider persistence anchors. Account manager is the current owner's first name
+only; no public manager editor or legal/father-name inference is authorized.
+
+Given a provider signs up or edits their public identity\
+When they save a chosen Account name and valid available handle\
+Then these presentation fields do not select or change account role, ownership,
+driving status, fleet qualification, customer business membership or permissions\
+And private first/Last or father names retain the existing authorized edit rules\
+And the manager value is derived from the current owner first name only.
+
+Given another provider or customer business claims the same handle concurrently\
+Then at most one succeeds and no partial profile/signup is committed\
+And an old public handle remains reserved to its original provider and resolves
+to the same current public profile, subject to existing publication/moderation.
+Business reservations never resolve to a public provider page. Different owned
+workspaces require distinct handles. Existing cross-type conflicts stop rollout
+without automatic renaming. Completed account erasure clears the chosen Account
+name together with existing personal content; private handle tombstones prevent
+impersonation and cannot resolve an unpublished or deleted provider.
+
+Legacy clients may omit the new fields without erasing them. Personal fallback
+uses only the existing public first name, never a stored business_name containing
+an old legal name. Existing deliberately public company names remain a compatible
+fallback. Additive167 and focused authorization/privacy/concurrency tests must
+pass before local installation; owner visual approval and hosted rollout remain
+separate gates. No billing or business-Team changes are part of this correction.
+
+The initial local rehearsal stopped at the global-collision gate. Read-only
+checks identified one October7 `provider-support.spec.ts` synthetic role-switch
+fixture that had created an organization and provider with the same generated
+handle. The old fixture had no page, truck or organization membership. The local
+repair is separately bounded to that exact positively identified synthetic
+organization;167 does not rename existing accounts or bypass conflict checks.
+The E2E fixture now uses distinct `support-org-` and `support-driver-` handles.
+Focused coverage: `tests/provider-public-account-identity.test.mjs` and
+`tests/sql/provider-public-account-identity.sql`; the latter exercises actual
+signup, own profile edits, global namespace conflicts/rollback, safe aliases,
+manager-only first names, search and completed erasure.
+
+## October 18 customer context — planned local implementation
+
+FEAT-ENT-001 adds a CUSTOMER workspace context after verified email identity and
+current business membership. Stored legacy SHIPPER roles grant no workspace
+permission. The authenticated projection retains its provider anchors and base
+platform role; selecting an exact authorized business changes only the effective
+workspace context. ADMIN and SUPPORT remain web-only and cannot create/join a
+customer business. Removed membership, inactive identity and stale selections
+lose access on the next authoritative request. Browser and Expo contracts carry
+only current membership summaries, never a client assertion of authority.
+
+Focused mapping: `tests/business-context-identity.test.mjs`,
+`tests/business-workspace-ui.test.mjs`, `tests/provider-support-policy.test.mjs`,
+`tests/managed-identity.test.mjs` and the existing native session/Auth/account
+checks cover context revocation, platform denial, saved-record-first editing,
+role-limited Team controls and preserved provider access. The local Chrome
+owner/staff workflow has exercised creation, delivered invitation, acceptance,
+save/cancel, permission revocation and restoration through the actual controls.
+The exact findings and screenshots are retained in the ignored local review
+folder; a separate follow-up is resolving customer Support alerts. Owner visual
+approval, the remaining workflow checks and deployment remain separate gates
+tracked under FEAT-ENT-001. `tests/web-workspace-navigation.test.mjs` also checks
+that customer Support remains visible while driver unloading alerts follow the
+verified base provider/driver identity, including after a business switch.
+
+Given a verified provider also belongs to a customer business\
+When they deliberately choose a workspace\
+Then provider and customer tasks use separate current server-verified contexts\
+And switching never converts their provider identity or exposes another business.
+
+Given a new eligible identity verifies their email\
+Then they choose provider setup or a business workspace\
+And joining a business requires its matching current invitation\
+And a platform account cannot gain customer/mobile access by selecting a business.
+
+## October 15 bounded web sign-out — verified locally
+
+Dashboard testing exposed an unbounded Auth request before logout and in logout.
+The exact POST logout route retains origin checks but skips redundant session
+refresh. A bounded provider sign-out attempt is followed by expiring only this
+project's configured Auth cookies. Normal form navigation applies the response;
+no client finally block reports success after a failed request.
+
+### Scenario: logout remains usable when the Auth service stalls
+
+Given a signed-in provider or staff member chooses Log out\
+When the remote revocation attempt exceeds its short deadline\
+Then the browser's local project session is cleared with a bounded response\
+And the page explains that signing out other devices was not confirmed\
+And other projects' cookies are unchanged\
+And cross-origin mutations remain denied\
+And ordinary authorized requests still refresh/verify their sessions.
+
+Support polling pauses before same-window form navigation/pageleave and starts
+from the exact server-rendered revision. Logout uses a fixed relative login
+redirect, preserving CSP under local/reverse proxies. Focused Auth/dashboard
+regressions pass; actual staff phone logout submits once, receives303 and lands
+on same-origin login without browser errors. See NR-52 and local evidence in
+`specs/TRACEABILITY.md`. Hosted deployment and owner visual approval are pending.
+
+## October 14 Transport Provider capabilities — implemented locally
+
+FEAT-FLT-001 / ADR-079 supersede owner account-category limits. The public name
+is Transport Provider for all provider owners. Preserve legacy role/Auth/provider
+IDs as internal compatibility, but derive owner capabilities from authenticated
+ownership and current assignments, not the marketing name or a client flag.
+An employer's personal-provider anchor is distinct from an employee's own owner
+anchor. Support/Brokerage/Admin stay web-only with unchanged staff permissions.
+The backed-up local installation and focused permission/SQL checks pass; actual
+browser, owner visual and hosted-release status is recorded in `specs/TRACEABILITY.md`.
+
+### Scenario: capabilities preserve the correct Home
+
+Given an authorized provider owner personally drives an assigned truck\
+When they open My workspace on web or Expo\
+Then Home remains the map with immediate capacity/location/Tracking controls\
+And fleet controls are additionally available in their existing truck/account area.
+
+Given a provider owner does not drive a current truck\
+Then Home shows their managed trucks/drivers rather than another driver's map.
+
+Given an employed driver belongs to either owner-anchor type\
+Then only their exact current assigned truck and saved owner-controlled permissions
+are available, never fleet/driver administration or public owner identity.
+
+### Scenario: compatibility does not escalate authority
+
+Given legacy sessions or direct commands carry old provider operating-model names\
+When current identity is resolved\
+Then persisted owner relationships decide fleet access\
+And inactive/cross-owner/staff identities cannot obtain provider authority\
+And personal first-name/public-contact privacy and private last/father names remain
+as defined in the October13 contract below.
+
+## October 13 personal identity correction — planned, local implementation
+
+Owner clarification: limit personal public details while retaining company
+business information. Personal public identity is the first name, an existing
+public handle, explicitly published contact number and optional portrait. Do not
+invent a handle or public page for an employed driver. Company names, About and
+reviewed company documents retain their existing publication rules.
+
+### Scenario: first name and private Last / father name
+
+Given a new provider or an existing eligible account edits personal identity\
+When it saves First name and Last / father name on web or mobile\
+Then the structured first name is the personal public display name\
+And the last/father name and retained full name remain private account data\
+And existing historical full names are retained without guessing a last-name split\
+And legacy personal names use a whitespace-normalized first-token fallback until
+the person saves structured details\
+And company business identity and existing handles do not change.
+
+### Scenario: fleet contact edits preserve structured personal identity
+
+Given an employed driver has chosen a compound public first name and a private
+Last / father name\
+When an authorized fleet owner corrects the legacy driver contact name or phone\
+Then the private fleet name and authorized callback are updated and audited\
+And the driver’s structured first and last names are preserved; a single legacy
+name field cannot infer or replace them\
+And foreign, inactive and self-targeted fleet mutations remain denied.
+
+Release correction 175 preserves the existing owner lock, driver scope, callback
+sync and audit. It changes no existing account records during migration. The
+rollback-only `tests/sql/personal-public-identity.sql` covers the structured-name
+preservation and public projection. Keep this privacy correction during any app
+rollback; the previous function is not a safe name-preserving fallback.
+
+### Scenario: one safe public identity at every read boundary
+
+Given personal names include spaces, tabs, newlines or Unicode whitespace\
+When public/private-email guest capacity, transporter search, Featured, public
+profiles or guest Tracking project personal identity\
+Then only the safe first name and allowed public contact/photo fields are returned\
+And neither a private surname nor a personal legacy business-name copy reaches
+HTML, serialized page data, API responses or the search index\
+And private account email/phone and portrait object references are absent\
+And company identity, visibility, truck eligibility and document access remain unchanged.
+
+Private account and authorized fleet/shipment management remain private workflows;
+their existing actor/record authority may receive necessary full names. This
+correction does not remove owner management authority or expose it to email-only
+guests. Account roles, authentication, memberships and handles are not changed.
+
+### Scenario: a driver manages their public callback independently
+
+Given an active driver edits their own personal public details\
+When they save an explicitly entered public contact number or clear it\
+Then only their current authorized public callback changes\
+And private account phone remains separate with no fallback\
+And another driver's contact, fleet permissions and assignment cannot change\
+And inactive, foreign, stale and browser-database mutations fail closed.
+
+Account/public phone validation accepts the same common spaces, parentheses,
+hyphens and periods as signup while requiring at least seven actual digits and
+bounded length. An untouched valid signup number must not prevent a later name
+edit; punctuation alone and extra authority fields remain invalid. Formatting
+does not cause an automatic private-to-public copy.
+
+### Scenario: account deletion includes new personal fields
+
+Given an eligible account has saved structured first/last names and a configured
+public contact number\
+When its existing authorized account-erasure workflow removes personal details\
+Then first_name, last_name and public_callback_phone are cleared with the older
+name/contact fields and the callback configuration is reset\
+And its signup intents are removed under the existing erasure scope\
+And unrelated accounts, shared-file safeguards, required holds and shipment
+history keep their current protection\
+And adding new identity columns cannot leave names or contacts behind after a
+successful deletion outcome.
+
+Contracts: structured firstName and lastName map to nullable first_name and
+last_name. The existing phone remains private. Optional publicCallbackPhone is
+an explicit public change; omission preserves the prior choice and an empty
+value hides it. A configured flag prevents clearing a callback from resurrecting
+an older public value. Before explicit configuration only an already intentional
+public callback may be retained; account phone/email never supply a fallback.
+Explicit compound first names are allowed; historical fallback normalizes
+Unicode whitespace before taking one token. Last names are not inferred.
+
+Compatibility: additive schema/commands precede matching clients. Retain old
+names, contacts, portraits and history; obsolete clients must never erase new
+structured fields by omission. Exact SQL, protected backup, rehearsal and rollback
+require separate hosted approval. Reverting to old public projections can
+reintroduce surname disclosure; retain the new projection for an application
+fallback, or block personal public serving during bounded database recovery.
+No hosted identity change is authorized here.
+Focused permission/serialization/normalization and real edit/reload/upload browser
+tests are required before visual review and later full release gates.
+
+### Scenario: an account editor fails closed until private details load
+
+Given a signed-in user opens their account editor without a successful current
+account-details response\
+When that initial read fails or is still pending\
+Then the editor offers clear recovery and cannot submit blank fallback fields
+as authoritative replacements\
+And retrying loads the same authorized account's saved details before enabling
+Save\
+And a failed read cannot erase an existing private last/father name or contact\
+And a previously loaded user's drafts cannot transfer to a different identity.
+
+October13 mobile maintenance audit found the initial-error path rendering blank
+fields with enabled Save. The scoped readiness/retry correction passes component
+regressions for initial failure, restored private fields, retained drafts and
+identity changes. Actual failed-read/retry/persistence browser verification is
+separate; no new account capability or hosted change is part of this correction.
 
 October 9 local implementation: FEAT-PLY-001 adds a separately registered,
 private synthetic review identity using normal password authentication. This is
@@ -291,9 +544,10 @@ And public contact fields are maintained separately with explicit profile intent
 
 The existing Account surface allows active providers (including Company
 drivers) and administrators to edit their own name and optional account phone,
-regardless of historical billing state. The name is the existing shared
-display identity and may appear with Driver activity or Support messages; it is
-not advertised as private. Company-driver name copies stay consistent. Public
+regardless of historical billing state. The October13 personal-identity correction
+above supersedes the shared-public-full-name interpretation: personal public
+reads use only the safe first name; full names remain in authorized private
+workflows. Company-driver private name copies stay consistent. Public
 callback phones and business contacts remain separate. Email proof/change,
 account closure (specified separately below), role changes and administrator editing of other users are outside
 this command.
@@ -398,6 +652,14 @@ current sessions lose workspace authority and the browser is signed out\
 And shipment/audit/message/file/assignment history remains retained\
 And inactive owners cannot activate or create trucks through a concurrent request\
 And platform-team accounts and other users cannot be closed through this command.
+
+October14 provider-fleet compatibility (FEAT-FLT/PLY-001 / ADR-079): the same
+closure blockers cover active employees and pending invitations under either
+an organization or a personal-provider employer. The personal-provider anchor
+is locked before the closing profile, matching fleet commands, and authority is
+rechecked after waiting. Resolving those memberships/invitations allows the
+existing recently email-verified deactivation without deleting fleet history.
+Focused rollback acceptance: `tests/sql/provider-fleet-erasure.sql`.
 
 Contracts: migration 092, confirmed Auth email synchronization, service-only
 closure blockers/deactivation, private signed operation handoff, own-session

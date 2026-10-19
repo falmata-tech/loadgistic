@@ -170,11 +170,11 @@ export async function listSupportAgents(user,options={}){
   if(error)throw managedError('SUPABASE_SUPPORT_AGENT_PAGE_FAILED',error);return pageFromRows(data,options,10);
 }
 
-function agentCommand(input){return {
+function agentCommand(input){if(input.canManageBrokerage)throw new Error('PLATFORM_BROKERAGE_RETIRED');return {
   name:String(input.name||''),email:String(input.email||'').trim().toLowerCase(),max_open_conversations:Number(input.maxOpenConversations)||3,
   active:Boolean(input.active),available:Boolean(input.available),can_manage_customers:Boolean(input.canManageCustomers),
   can_manage_operations:Boolean(input.canManageOperations),can_manage_trust:Boolean(input.canManageTrust),
-  can_manage_billing:Boolean(input.canManageBilling),can_manage_support:Boolean(input.canManageSupport??true),can_manage_brokerage:Boolean(input.canManageBrokerage),can_manage_featured:Boolean(input.canManageFeatured)
+  can_manage_billing:Boolean(input.canManageBilling),can_manage_support:Boolean(input.canManageSupport??true),can_manage_brokerage:false,can_manage_featured:Boolean(input.canManageFeatured)
 };}
 
 export async function createSupportAgent(user,input){

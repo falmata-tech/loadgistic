@@ -1,5 +1,4 @@
 import {
-  EXISTING_DRIVER_PORTRAIT_PRESETS,
   NEW_DRIVER_PORTRAIT_PRESETS
 } from '../src/lib/driver-portraits.js';
 
@@ -12,7 +11,7 @@ export function assignFixtureDriverPortraits(users){
     .filter(user=>user.role==='DRIVER')
     .filter(user=>!ICON_FALLBACK_FIRST_NAMES.has(String(user.name||'').trim().split(/\s+/)[0]))
     .filter((_,index)=>index%3===0)
-    .slice(0,EXISTING_DRIVER_PORTRAIT_PRESETS.length+NEW_DRIVER_PORTRAIT_PRESETS.length)
+    .slice(0,NEW_DRIVER_PORTRAIT_PRESETS.length)
     .map(user=>user.id));
   let photographedDriverIndex=0;
 
@@ -22,11 +21,7 @@ export function assignFixtureDriverPortraits(users){
       return {...user,driver_portrait_preset:null};
     }
 
-    const portraitPreset=photographedDriverIndex<EXISTING_DRIVER_PORTRAIT_PRESETS.length
-      ? EXISTING_DRIVER_PORTRAIT_PRESETS[photographedDriverIndex]
-      : NEW_DRIVER_PORTRAIT_PRESETS[
-          photographedDriverIndex-EXISTING_DRIVER_PORTRAIT_PRESETS.length
-        ]||null;
+    const portraitPreset=NEW_DRIVER_PORTRAIT_PRESETS[photographedDriverIndex]||null;
     photographedDriverIndex+=1;
 
     return {...user,driver_portrait_preset:portraitPreset};

@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 
-const languages=[['am','ስለ Loadgistic'],['om','Waa’ee Loadgistic'],['so','Ku saabsan Loadgistic'],['ti','ብዛዕባ Loadgistic'],['en','About Loadgistic']] as const;
+const languages=[['am','ስለ Loadgistic'],['om','Waa’ee Loadgistic'],['en','About Loadgistic']] as const;
 
 test('language changes preserve form content and persist across public navigation',async({page}:{page:import('playwright-core').Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(150000);const errors:string[]=[];page.on('pageerror',(error:Error)=>errors.push(error.message));
@@ -49,7 +49,10 @@ test('profile headings and filter distances translate without rewriting transpor
   await expect(page.locator('.provider-handle')).toContainText(t('Fleet transporter'));
   await expect(page.locator('.provider-hero-facts')).toContainText(t('New to Loadgistic'));
   await expect(page.locator('.provider-about-card .lede')).toHaveText(about);
-  await expect(page.locator('.provider-services small')).toHaveText(t('Transport services'));
+  await expect(page.locator('.provider-services,.provider-corridor-list,.provider-microsite-safety')).toHaveCount(0);
+  const mapAction=page.getByRole('link',{name:t('See trucks on the map'),exact:true});
+  await expect(mapAction).toHaveAttribute('href','/?provider=rift-valley-haulage-02');
+  await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
   await expect(page.getByRole('heading',{name:t('Verified shipment reviews'),exact:true})).toBeVisible();
   await expect(page.locator('.fleet-open-label')).toHaveText(t('View trucks and drivers'));
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

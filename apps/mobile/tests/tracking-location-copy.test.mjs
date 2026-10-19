@@ -21,7 +21,7 @@ test('shipment privacy instructions do not contradict consented background repor
  assert.ok(!messages.some(contradictsBackground),'An agreed native shipment continues independently of the open screen (NR-27)');
  const explanation='The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment.';
  assert.ok(messages.includes(explanation));
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const catalog=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
   assert.ok(catalog[explanation]?.trim()&&catalog[explanation]!==explanation,'Existing native explanation must stay translated: '+locale);
  }

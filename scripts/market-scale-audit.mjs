@@ -24,16 +24,24 @@ join public.organization_members member on member.organization_id=organization.i
   and member.membership_role='OWNER'
 join public.company_pages page on page.organization_id=organization.id and page.published
 where organization.type='TRANSPORT_COMPANY'
+  and exists(select 1 from public.current_provider_vehicle_authority() authority
+    where authority.organization_id=organization.id
+      and(authority.fact_kind='OWNERSHIP' or authority.fact_kind='OPERATING_LICENCE' and authority.holder_basis in('OWNED','FINANCED')))
 order by organization.id
 limit 1;
 
+do $fixture$
+begin
+ if(select count(*) from scale_owner)<>1 then raise exception 'SCALE_REVIEWED_LOCAL_OWNER_REQUIRED';end if;
+end $fixture$;
+
 insert into public.vehicles(
-  id,organization_id,label,category,make,model,cargo_configuration,plate,active,platform_number
+  id,organization_id,label,category,make,model,cargo_configuration,plate,active,platform_number,publication_status
 )
 select
   md5('loadgistic-scale-vehicle-'||series)::uuid,owner.organization_id,
   'Scale truck '||series,'Cargo van','Scale','Local','Cargo van',
-  'SCALE-'||lpad(series::text,5,'0'),true,'LG-SCALE-'||lpad(series::text,5,'0')
+  'SCALE-'||lpad(series::text,5,'0'),true,'LG-SCALE-'||lpad(series::text,5,'0'),'LIVE'
 from generate_series(1,:scale_count) series cross join scale_owner owner;
 
 insert into public.vehicle_capacity_sharing(vehicle_id,mode)

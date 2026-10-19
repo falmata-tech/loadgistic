@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {closeCapacityFilters} from './capacity-drawer-helper';
 
 // Renderer stress fixture only: the local server supplies the selected truck;

@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 
 // Leaflet's animation proxy encodes the projected center and zoom. Unlike
 // raster tiles it survives zoom transitions and does not depend on tile loading.
@@ -45,9 +45,9 @@ test('selected truck has centered readable modals and a separate attached exit r
  // Return from the direct link, pan/zoom the filtered map, then select and exit
  // twice. Selection must not overwrite the original camera or the query/draft.
  await exit.click();await expect(marker).toHaveCount(0);await expect(drawer).toBeHidden();
- const url=page.url();await page.locator('.capacity-drawer-handle button').click();
+ const url=page.url();await page.getByRole('button',{name:'Transporter search',exact:true}).click();
  const search=drawer.getByRole('searchbox',{name:'Search transporters'});await search.fill('Unsubmitted draft');
- await drawer.getByRole('button',{name:'Close filter drawer'}).click();
+ await drawer.getByRole('button',{name:'Close transporter search'}).click();
  for(let attempt=0;attempt<6&&await page.locator('.capacity-truck-map-marker').count()===0;attempt++)await page.locator('.leaflet-control-zoom-in').click();
  await expect(page.locator('.capacity-truck-map-marker').first()).toBeVisible();
  const canvas=await page.locator('.leaflet-container').boundingBox();
@@ -62,5 +62,5 @@ test('selected truck has centered readable modals and a separate attached exit r
   await exit.focus();await page.keyboard.press('Enter');await expect(marker).toHaveCount(0);await expect(drawer).toBeHidden();
   await expect.poll(()=>cameraView(page)).toEqual(camera);expect(page.url()).toBe(url);
  }
- await page.locator('.capacity-drawer-handle button').click();await expect(search).toHaveValue('Unsubmitted draft');
+ await page.getByRole('button',{name:'Transporter search',exact:true}).click();await expect(search).toHaveValue('Unsubmitted draft');
 });

@@ -3,7 +3,7 @@ id: FEAT-FLT-001
 title: Fleet driver access and owner controls
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-TRK-001]
 problem: Fleet owners need Drivers to publish assigned-truck capacity and operate assigned shipments without surrendering company ownership or unrestricted commercial authority.
-behavior: A company Driver works inside one provider organization with at most one current assignment and capacity/tracking permissions chosen by the fleet owner. Fleet owners retain multi-truck/driver management and history. Independent driver unifies former owner-operator/self-managed accounts and controls only one current truck, with ownership/permission on that truck and atomic replacement retaining old history. Independent drivers cannot manage a fleet or drivers. A rigid truck has one fixed configuration; a tractor exposes only its currently attached trailer.
+behavior: Every Transport Provider owner may manage multiple Draft trucks and employed drivers within their exact organization or personal-provider scope. One truck may go Live without document approval; additional Live trucks require exact reviewed ownership or an operating licence in the provider's name for their owned or financed truck. Employed drivers control at most one current assigned truck with owner-granted permissions. A driving owner keeps map Home and one explicit driving assignment. Ownership, financing and drive/manage permission remain distinct, and all changes preserve history and unfinished Tracking. A rigid truck has one fixed configuration; a tractor exposes only its currently attached trailer.
 contracts: [FleetDriverInvitation, FleetDriverMembership, DriverContactCommand, DriverOffboarding, DriverPermissionPolicy, DriverVehicleAssignment, ProviderVehicle, VehicleDetailsCommand, InterchangeableTrailerSet, AttachedTrailerCommand, DutyCommand, OwnerOversightProjection]
 observability: [driver_permission_audit, driver_duty_audit, vehicle_configuration_audit, denied_driver_command, update_actor]
 rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access commands with conservative defaults, retain transporter-owner access, and roll back by hiding owner controls while preserving stored settings; local development, Preview, and Production never fall back to SQLite.
@@ -11,9 +11,202 @@ rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access com
 
 # Fleet driver access
 
-## Independent driver: one current truck — owner correction, October 7
+## October18 courier configurations — planned local restoration
 
-This supersedes independent multi-truck registration in older scenarios. Company
+The latest owner request supersedes the September25 courier retirement below.
+`Courier car` and `Courier motorcycle` are supported fixed configurations with
+their existing distinct illustrations. Owner-scoped Add/Edit commands and both
+web/native pickers accept their exact catalogue values; unknown configurations,
+foreign vehicles and employed-driver fleet mutations remain denied. Neither
+type can masquerade as an interchangeable tractor or acquire trailer options.
+Registration still creates Draft inventory only; Live qualification, current
+driver pairing, ownership/use basis and unfinished Tracking protections remain.
+
+Given an authorized provider adds or edits either courier configuration\
+Then the saved record retains that exact configuration and its matching artwork\
+And no capacity, assignment, reviewed authority or publication is inferred\
+And an active shipment continues to prevent identity/configuration edits.
+
+Migration168 will narrowly restore the installed command/filter allowlists and
+remove the obsolete courier-only write rejection without rewriting stored
+vehicles, assignments or saved rosters. SQL and client tests precede local review;
+hosted installation remains separately authorized.
+
+## October15 exact selected-driver detail — local repair in progress
+
+Given a provider opens the driver assigned to a selected owned truck\
+When that driver is outside the first page of the Drivers list\
+Then the saved driver detail resolves by exact ID through persisted owner scope\
+And pagination size is not expanded and unrelated pages are not scanned\
+And the existing minimized assignment/permission/document-summary shape is retained.
+
+Given the actor's ownership, target membership, activity or assignment changes\
+When the exact detail is read or returned\
+Then existing persisted scope and exact assignment checks deny stale/foreign data\
+And an invalid or unavailable selected driver is explicit, not a silent page-one
+fallback or an editable unrelated record\
+And private file paths and credentials never enter the detail projection.
+
+Tests: focused exact-reader positive/negative/revocation/assignment cases, plus
+an actual local larger-fleet off-page driver navigation and foreign-target denial.
+No new database schema, target impersonation or hosted operation is required.
+
+## October 14 unified provider-owner fleet — implemented locally
+
+This accepted change supersedes the October7 one-current-truck limit
+for provider **owners** only. Historical one-truck test evidence below describes
+the earlier policy, not the new contract. The reviewed source is installed in the
+backed-up local preview; focused SQL, concurrency and adapter checks pass.
+Actual desktop/phone web and Expo browser acceptance now passes; owner visual
+approval, full release gates and hosted rollout remain separate gates. See the
+October14 evidence in `specs/TRACEABILITY.md`.
+ADR-079 retains identities rather than converting personal accounts to companies.
+
+### Scenario: public driver labels do not imply ownership or employment
+
+Given a truck has a current eligible assigned driver, whether its provider owner
+or an employee under an organization or personal-provider account\
+When its public/private capacity, profile roster or Featured card is rendered\
+Then the person is labelled Driver and the account remains Transport Provider\
+And driver documents follow the actual assigned subject, without inferring
+employment, ownership or reviewed authority from the provider's legacy category.
+
+### Scenario: every provider owner manages a fleet
+
+Given an active organization owner or personal provider-profile owner\
+When they register trucks or manage their employed drivers\
+Then both use the same owner-scoped fleet commands and may add multiple trucks\
+And Auth IDs, provider IDs, historical subjects, files, shipments and sharing
+relationships are preserved\
+And an employee cannot obtain provider-owner capabilities through an employer link.
+
+### Scenario: one actual driver, one current truck
+
+Given a provider owns several trucks and may personally drive one\
+When assignments change or concurrent commands assign trucks\
+Then explicit current assignments enforce at most one active truck per driver
+and one active driver per truck\
+And adding a second personal-provider truck never implicitly assigns its owner\
+And driver-specific permissions/documents do not transfer across reassignment\
+And unfinished Tracking still prevents an unsafe reassignment or retirement.
+
+### Scenario: a new driver does not inherit the previous driver's signal
+
+Given a current truck changes its active driver assignment\
+When the new pairing commits\
+Then a fresh Off Duty signal prevents the old driver's capacity and obscured
+phone position from appearing as the new driver's report\
+And old capacity/location/route/document history remains on its original pair\
+And the truck's owner-managed sharing preferences and named contacts are retained\
+And the new assigned driver must publish their own current signal/location\
+And an unchanged assignment is idempotent and cannot reset a current signal.
+This closes the previously recorded WEB-MOB-024 data-integrity gap as part of
+explicit pair authority; it does not copy old routes to the replacement driver.
+
+### Scenario: mobile Home follows a changed assignment
+
+Given a signed-in driving owner or employed driver was assigned truck A\
+When an authorized assignment changes to truck B and the app loads current
+capacity/fleet data\
+Then Home displays only the server-authorized current pair for that same actor\
+And an old vehicle ID cached at sign-in cannot hide truck B or keep truck A\
+And the fleet assignment and permission controls reflect the saved server state\
+And the app does not require sign-out or rotate credentials merely to select
+the current truck; every mutation retains existing backend authorization.
+
+Verification: a focused current-pair regression and actual Expo-browser owner
+A-to-B reassignment, including retained editor state and employee scope.
+
+### Scenario: adding is distinct from going live
+
+Given any provider owner registers a truck\
+When registration succeeds\
+Then it starts Draft and is available in their private fleet controls\
+And it is absent from public/recipient discovery, Featured and public profile
+truck lists until explicitly taken Live\
+And Live remains distinct from retirement, capacity availability and
+PUBLIC/PRIVATE/BOTH/EXCLUSIVE audience selection\
+And an otherwise Live private truck is never made public by publication alone.
+
+### Scenario: one truck may go live without document review
+
+Given an active provider owner has no other active Live truck
+When they explicitly take a Draft truck Live
+Then no document approval is required for that first truck
+And missing exact authority is visibly Not yet verified, with concise guidance
+that users must confirm the details directly
+And owner, assigned-driver, duty, location, content and sharing rules still apply.
+
+Given two commands concurrently try to take different unreviewed trucks Live
+Then an owner-anchor lock permits only one and rejects the other with the
+one-truck limit; it must not leave two active Live trucks.
+
+### Scenario: a reviewed qualifying truck unlocks a fleet
+
+Given a provider has an active truck with current unrevoked Loadgistic review
+confirming their ownership, or confirming the operating licence is in their
+name for a truck they own or are buying through financing\
+When they take an additional truck Live\
+Then the database repeats exact owner scope and qualifying-evidence checks\
+And other trucks may go Live with their own unverified status shown\
+And self-declared OWNED/FINANCED, rented/permission-only evidence, another
+provider's document and driver-only permission cannot unlock more than one Live truck\
+And the qualifying truck may itself be Draft, preventing a circular requirement.
+
+### Scenario: loss of qualification is safe and visible
+
+Given qualifying evidence expires/is revoked or its truck is retired\
+When capacity/public fleet/Featured eligibility is evaluated\
+Then a single active Live truck remains eligible without document approval
+And multiple active Live choices are withheld while no current qualifier remains
+until the owner moves all but one to Draft or supplies a qualifying review\
+And the owner sees the reason and can review or replace the qualification\
+And stored Live choices, private recipients, history and proofs are retained\
+And ongoing authorized Tracking remains accessible and completable\
+And restoring a retired truck returns it to Draft before explicit Go Live,
+so restoration cannot bypass the one-unreviewed-Live limit
+And changing a truck does not copy ownership or permission approval.
+
+Contracts: ProviderOwnerScope, ProviderWorkspaceCapabilities,
+ExplicitCurrentDriverAssignment, ProviderTruckPublicationCommand, TruckUseBasis
+(OWNED/FINANCED/PERMISSION), ProviderPublicationEligibility. Tenant boundaries use
+exact organization XOR personal-provider owner anchors. Local/hosted rollout must
+inventory existing live signals and approvals without inventing provider ownership.
+Legacy publication flags may be retained, but eligibility is not grandfathered by
+an unreviewed claim. Activate only after backed-up rehearsal, impact review,
+compatible adapters and owner approval. Roll back clients/commands without deleting
+new fleets, documents or assignments; restoring the old one-truck unique index is
+unsafe after valid multi-truck writes and requires an explicit reviewed plan.
+
+After Draft trucks or qualification-gated signals exist, retain the publication,
+qualification and discovery gates during an application rollback. Migration146's
+function-restore rehearsal proves restoration of function metadata; it does not
+prove that restoring the earlier discovery rules is safe for newer records. That
+earlier restore approach removed those gates while leaving migration150's
+compatibility marker in place. The shipped146 rollback artifact now rejects
+execution before mutation with `PROVIDER_AUTHORITY_FORWARD_REPAIR_REQUIRED`.
+`tests/sql/provider-authority-rollback-denial.sql` must execute that exact artifact
+in isolation and prove the function metadata, publication trigger and runtime
+marker are unchanged; the exact-artifact denial passes in the fresh v3 rehearsal
+with unchanged catalog metadata. Prefer a
+compatible application rollback or a separately reviewed forward containment
+plan that preserves Draft/private boundaries, current authority reviews, fleet
+erasure protections and ongoing authorized Tracking. Do not remove assignments,
+delete evidence or broaden hosted permissions/settings to perform that recovery.
+
+## October 13 regular-route ownership correction
+
+Regular routes are maintained within the selected truck's capacity controls,
+not Account settings. FEAT-CAP-001 requires the exact current truck and driver,
+including atomic stale-assignment denial. Legacy unbound route records remain
+history rather than being assigned by guesswork. The older statement retaining
+provider usual routes after a truck replacement does not authorize their use by
+the replacement truck or a different driver.
+
+## Historical independent-driver policy — October 7, superseded October 14
+
+This historical decision superseded independent multi-truck registration. The
+October14 provider-owner contract above now supersedes this section. Company
 fleets retain multi-truck/driver management. Former Owner-operator and Self-managed
 driver accounts display Independent driver, retaining DRIVER role/provider identity.
 
@@ -176,7 +369,7 @@ Given an active Fleet transporter owner, Owner-operator, or Self-managed Driver 
 When they add a truck from My Fleet or My trucks\
 Then one active truck is created for only that organization or independent provider profile\
 And make, model, standardized cargo configuration, private plate, and a server-generated immutable Loadgistic truck number are recorded\
-And the standardized configuration catalogue offers cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations but not courier cars or motorcycles\
+And the standardized configuration catalogue offers courier cars, courier motorcycles, cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations\
 And a rigid vehicle records exactly one fixed configuration\
 And a tractor records one or more compatible trailer configurations from Container trailer, Dry van trailer, and Heavy equipment trailer\
 And the tractor's currently attached trailer must be one of that same registered compatible set\
@@ -403,7 +596,7 @@ Apply schema locally before preview, then owner visual review before full gates.
 Rollback restores the prior Add/Invite entry point while retaining added identities,
 assignments and the verified-email login guard. No hosted rollout is included.
 
-## Courier retirement — 2026-09-25
+## Historical courier retirement — superseded by October18 restoration
 
 Given an owner registers or changes a vehicle configuration
 When they choose from the supported freight catalogue

@@ -3,11 +3,15 @@ begin;
 create function pg_temp.expect_account_security_denied(command text,expected text) returns void language plpgsql as $$
 begin begin execute command;exception when others then if sqlerrm=expected then return;end if;raise;end;raise exception 'EXPECTED_DENIAL';end $$;
 do $test$
-declare actor uuid; admin_id uuid; provider uuid; snapshot jsonb; blockers jsonb; code text; role_name text; vehicle uuid;
+declare actor uuid:=gen_random_uuid(); admin_id uuid:=gen_random_uuid(); provider uuid:=gen_random_uuid(); snapshot jsonb; blockers jsonb; code text; role_name text; vehicle uuid;
 begin
- select id into strict actor from profiles where email='driver@loadgistic.local';
- select id into strict admin_id from profiles where email='admin@loadgistic.local';
- select id into strict provider from provider_profiles where user_id=actor;
+ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+ values(actor,actor||'@example.invalid',clock_timestamp(),'{}'),(admin_id,admin_id||'@example.invalid',clock_timestamp(),'{}');
+ update profiles set role='DRIVER',active=true,drives_truck=true where id=actor;
+ update profiles set role='ADMIN',active=true where id=admin_id;
+ insert into provider_profiles(id,user_id,business_name,handle) values(provider,actor,'Synthetic security owner','security-'||actor);
+ perform accept_content_policy(actor,'2026-10-09');
+ vehicle:=(create_provider_vehicle(actor,'{"make":"Security","model":"Test","plate":"SECURITY-TEST","cargo_configuration":"Cargo van","use_basis":"OWNED"}')->>'id')::uuid;
  snapshot:=(select to_jsonb(p)-array['email','active','account_deactivated_at','updated_at'] from profiles p where id=actor);
  update auth.users set email='security-sql-change@example.test' where id=actor;
  if (select email from profiles where id=actor)<>'security-sql-change@example.test' then raise exception 'CONFIRMED_EMAIL_NOT_SYNCED';end if;

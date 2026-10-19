@@ -12,7 +12,7 @@ export function LocationDisclosure({ visible, decide,informational=false }: { vi
     <AppIcon name="location" size={28} color={palette.teal}/>
     <Title message="Location during your shipment"/>
     <Copy message="Loadgistic collects your phone's location to update your active shipment, even when the app is closed or not in use."/>
-    <Copy message="Only an approximate location, within your chosen radius of up to 20 km, is sent to Loadgistic and shared with authorized shipment parties. Your exact coordinates stay on your phone."/>
+    <Copy message="Only an approximate location, within your chosen radius of up to 10 km, is sent to Loadgistic and shared with authorized shipment parties. Your exact coordinates stay on your phone."/>
     <Copy message="Updates stop when unloading is approved or shipment tracking ends. You can deny or revoke location permission in your phone settings. Other app features remain available."/>
     <ExternalButton label={t('Privacy')} url="https://loadgistic.com/privacy"/>
     {informational?<Button message="Close" onPress={()=>decide(false)}/>:<><Button message="Agree and continue" onPress={() => decide(true)}/><Button secondary message="Not now" onPress={() => decide(false)}/></>}

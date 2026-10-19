@@ -28,7 +28,7 @@ export function useCapacityLocation(truck: CapacityTruck, editing: boolean, refr
       if (active()) await latest.refresh();
     } catch (error) {
       lastAttempt.current = attemptedAt;
-      if (active()) setError(error instanceof Error ? error.message : 'Could not save truck location. Please try again.');
+      if (active()) setError(error instanceof Error ? error.message : 'Could not save vehicle location. Please try again.');
     } finally { lock.current = false; setBusy(false); }
   }, []);
   useFocusEffect(useCallback(() => {
@@ -50,9 +50,9 @@ export function useCapacityLocation(truck: CapacityTruck, editing: boolean, refr
     try {
       const workspace=await latest.request('/api/mobile/capacity') as CapacityWorkspace;
       const assigned=workspace.vehicles.find(item=>item.id===latest.truck.id);
-      if (!assigned?.canLocate) throw new Error('This truck is no longer available in your workspace.');
+      if (!assigned?.canLocate || assigned.selectedLocationSource !== 'MOBILE') throw new Error('Phone location is not selected for this vehicle.');
       if (!active()) return;
-      const captured=await captureCapacityLocation(assigned.location?.radius||20,true,()=>{
+      const captured=await captureCapacityLocation(Math.min(20,assigned.location?.radius||10),true,()=>{
         if (!focused.current || current.current.editing || AppState.currentState!=='active') throw new Error('Location sharing paused. Return to this screen and try again.');
         version=generation.current;
       });
@@ -61,7 +61,7 @@ export function useCapacityLocation(truck: CapacityTruck, editing: boolean, refr
       lastAttempt.current=Date.now();
       if (active()) await latest.refresh();
     } catch (error) {
-      if (active()) setError(error instanceof Error?error.message:'Could not save truck location. Please try again.');
+      if (active()) setError(error instanceof Error?error.message:'Could not save vehicle location. Please try again.');
     } finally { lock.current=false; setBusy(false); }
   };
   return {busy, error, shareLocation};

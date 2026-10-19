@@ -5,17 +5,18 @@ import * as Linking from 'expo-linking';
 import { apiOrigin } from '../api/http';
 import { externalDestination,type PublicBadge } from '../api/public-content';
 import { Button,Copy,ErrorText,palette } from './ui';
+import {AppIcon} from './app-icon';
 export function ExternalButton({label,url}:{label:string;url:string}){
  const [error,setError]=useState('');const destination=externalDestination(url);
  if(!destination)return null;
  return <><Button secondary label={label} onPress={()=>{setError('');void Linking.openURL(destination).catch(()=>setError('This phone could not open that contact. Please try another contact method.'));}}/><ErrorText message={error}/></>;
 }
-export function PublicImage({path,label,portrait=false}:{path:string;label:string;portrait?:boolean}){
+export function PublicImage({path,label,portrait=false,identity}:{path:string;label:string;portrait?:boolean;identity?:'company'|'person'}){
  const [failed,setFailed]=useState('');
- if(!path||path===failed)return portrait?<View accessibilityLabel={label} style={{width:88,height:88,borderRadius:44,backgroundColor:'#eaf5f4',alignItems:'center',justifyContent:'center'}}><View style={{width:18,height:18,borderRadius:9,backgroundColor:palette.teal,marginBottom:3}}/><View style={{width:40,height:22,borderTopLeftRadius:20,borderTopRightRadius:20,backgroundColor:palette.teal}}/><View style={{position:"absolute",bottom:12,width:29,height:29,borderRadius:15,borderWidth:3,borderColor:"#fff",alignItems:"center",justifyContent:"center"}}><View style={{width:3,height:23,backgroundColor:"#fff"}}/><View style={{position:"absolute",width:23,height:3,backgroundColor:"#fff"}}/></View></View>:null;
+ if(!path||path===failed)return portrait||identity?<View accessible accessibilityRole="image" accessibilityLabel={label} style={{width:88,height:88,borderRadius:identity==='company'?12:44,backgroundColor:'#eaf5f4',alignItems:'center',justifyContent:'center'}}><AppIcon name={identity==='company'?'profile':'user'} size={42} color={palette.teal}/></View>:null;
  return <Image accessibilityLabel={label} source={{uri:apiOrigin+path}} onError={()=>setFailed(path)} resizeMode={portrait?'cover':'contain'} style={portrait?{width:88,height:88,borderRadius:44}:{width:160,height:110}}/>;
 }
-const labels:Record<string,string>={IDENTITY:'National ID',BUSINESS_LICENSE:'Business license',BUSINESS_ADDRESS:'Business address',DRIVER_IDENTITY:'Driver license',VEHICLE_OWNERSHIP:'Truck ownership',VEHICLE_AUTHORIZATION:'Permission to use truck',VEHICLE_AUTHORITY:'Ownership or permission to use',TRUCK_AUTHORIZATION:'Permission to use truck'};
+const labels:Record<string,string>={IDENTITY:'National ID',BUSINESS_LICENSE:'Business license',BUSINESS_ADDRESS:'Business address',DRIVER_IDENTITY:'Driver license',VEHICLE_OWNERSHIP:'Vehicle ownership',VEHICLE_OPERATING_LICENSE:'Vehicle operating licence',VEHICLE_AUTHORIZATION:'Permission to use vehicle',VEHICLE_AUTHORITY:'Ownership or permission to use',TRUCK_AUTHORIZATION:'Permission to use vehicle'};
 export function PublicBadges({items}:{items:PublicBadge[]}){
  const {t}=useLanguage();
  const [expanded,setExpanded]=useState<number|null>(null);

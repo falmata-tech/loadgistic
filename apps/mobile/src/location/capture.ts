@@ -2,7 +2,15 @@ import * as Location from 'expo-location';
 import {Platform} from 'react-native';
 import { capacityLocation, type ApproximateFix } from './privacy';
 import {authorizedForegroundCapture} from './foreground-permission';
+import {preparePhoneLocation} from './phone-installation';
+import {phoneObservation} from './phone-observation';
 export async function captureCapacityLocation(radius: number, requestPermission = true, ready?:()=>void): Promise<ApproximateFix> {
+  return captureLocation(radius,requestPermission,ready,true);
+}
+/** Account-free nearby search reads an area without enrolling a truck phone. */
+export async function captureNearbyLocation(radius:number,requestPermission=true):Promise<ApproximateFix>{return captureLocation(radius,requestPermission,undefined,false);}
+async function captureLocation(radius:number,requestPermission:boolean,ready:(()=>void)|undefined,registered:boolean):Promise<ApproximateFix>{
+  const phone=registered?await preparePhoneLocation():null;
   return authorizedForegroundCapture({read:()=>Location.getForegroundPermissionsAsync(),request:()=>Location.requestForegroundPermissionsAsync(),capture:async()=>{
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -14,7 +22,7 @@ export async function captureCapacityLocation(radius: number, requestPermission 
       new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Your phone could not find a location. Please try again.')), 20000); }),
     ]);
     // Exact coordinates exist only inside this callback; API/drafts receive the obscured fix.
-    return capacityLocation(result.coords.latitude, result.coords.longitude, result.coords.accuracy, radius);
+    return {...capacityLocation(result.coords.latitude, result.coords.longitude, result.coords.accuracy, radius),...(phone?{phoneInstallation:phone.proof(result.timestamp,phoneObservation(result.coords))}:{})};
   } finally { if (timer) clearTimeout(timer); }
   }},requestPermission,ready);
 }

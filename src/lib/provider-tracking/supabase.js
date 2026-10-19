@@ -1,4 +1,5 @@
 import {readWindowedPage} from '../pagination.js';
+import {phoneLocationCommand} from '../phone-location-command.js';
 import {randomUUID} from 'node:crypto';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {normalizePrivateContactEmail} from '../domain.js';
@@ -14,6 +15,7 @@ import {
 } from '../security.js';
 
 const TRACKING_ERRORS=[
+  'PHONE_LOCATION_UNAVAILABLE','INVALID_PHONE_LOCATION','TRACKING_OWNER_SHARES_ACCESS',
   'TRACKING_MODE_LOCKED','TRACKING_OWNER_APPROVAL_REQUIRED','TRACKING_HANDOVER_PROOF_REQUIRED','TRACKING_LOADING_PROOF_REQUIRED','TRACKING_SESSION_EXPIRED','TRACKING_APPROVAL_FORBIDDEN','TRACKING_NOT_READY_FOR_APPROVAL','TRACKING_APPEAL_NOT_READY','TRACKING_APPEAL_REASON_REQUIRED','TRACKING_INVESTIGATION_REQUIRED','TRACKING_APPEAL_CLOSED','TRACKING_STAFF_RELEASE_REQUIRED','TRACKING_DELIVERY_DATE_REQUIRED','TRACKING_DELIVERY_DATE_LOCKED',
 
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','INVALID_TRACKING_INPUT',
@@ -57,20 +59,18 @@ export async function createSupabaseProviderShipment(user,input){
   const ownerEmail=normalizePrivateContactEmail(input.customerEmail);
   const additionalEmails=[...new Set((Array.isArray(input.additionalRecipientEmails)?input.additionalRecipientEmails:[])
     .map(normalizePrivateContactEmail))].filter(email=>email!==ownerEmail);
-  if(additionalEmails.length>20)throw new Error('INVALID_TRACKING_RECIPIENTS');
+  if(additionalEmails.length)throw new Error('TRACKING_OWNER_SHARES_ACCESS');
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('create_provider_tracking_with_recipients',{
     actor_user_id:user.id,
     command:{
       id,code,vehicle_id:String(input.vehicleId||''),
       origin_place_ref:String(input.originPlaceRef||''),
+      passing_place_ref:String(input.passingPlaceRef||''),
       destination_place_ref:String(input.destinationPlaceRef||''),
       cargo_summary:String(input.cargoSummary||''),
       customer_email:ownerEmail,
       customer_email_digest:providerTrackingRecipientDigest(ownerEmail),
-      additional_recipients:additionalEmails.map(email=>({
-        email,digest:providerTrackingRecipientDigest(email)
-      })),
       expected_pickup_date:String(input.expectedPickupDate||''),
       expected_delivery_date:String(input.expectedDeliveryDate||''),
       tracking_mode:String(input.trackingMode||'STATUS_ONLY'),
@@ -118,7 +118,7 @@ export async function updateSupabaseProviderShipmentStatus(user,id,nextStatus,no
       location:locationInput?{
         area:String(locationInput.locationArea||''),lat:String(locationInput.approximateLat??''),
         lng:String(locationInput.approximateLng??''),precision_km:String(locationInput.locationPrecisionKm||''),
-        source:String(locationInput.locationSource||'')
+        source:String(locationInput.locationSource||''),...(locationInput.phoneInstallation?{phone_installation:phoneLocationCommand(locationInput.phoneInstallation)}:{})
       }:null
     }
   });
@@ -133,7 +133,7 @@ export async function updateSupabaseProviderShipmentLocation(user,id,input){
     command:{
       area:String(input.locationArea||''),lat:String(input.approximateLat??''),
       lng:String(input.approximateLng??''),precision_km:String(input.locationPrecisionKm||''),
-      source:String(input.locationSource||'')
+      source:String(input.locationSource||''),...(input.phoneInstallation?{phone_installation:phoneLocationCommand(input.phoneInstallation)}:{})
     }
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_LOCATION_FAILED',error);

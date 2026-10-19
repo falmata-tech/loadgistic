@@ -17,7 +17,13 @@ export async function POST(request:NextRequest){
       const form=await request.formData();
       const keys=[...form.keys()];
       if(new Set(keys).size!==keys.length)throw new Error('INVALID_ACCOUNT_DETAILS');
+      const changed=form.get('publicCallbackChanged');
+      if(changed!==null&&changed!=='0'&&changed!=='1')throw new Error('INVALID_ACCOUNT_DETAILS');
       input=Object.fromEntries(form.entries());
+      delete (input as Record<string,unknown>).publicCallbackChanged;
+      if(changed!=='1'&&typeof (input as Record<string,unknown>).publicCallbackPhone==='string'&&String((input as Record<string,unknown>).publicCallbackPhone).trim()===(user.publicCallbackPhone||'')){
+        delete (input as Record<string,unknown>).publicCallbackPhone;
+      }
     }else input=await request.json();
   }catch{
     return failure(errorMessage(new Error('INVALID_ACCOUNT_DETAILS')),400);

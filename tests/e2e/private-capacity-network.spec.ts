@@ -1,4 +1,4 @@
-import {expect,test} from '@playwright/test';
+import {expect,test} from './browser-test';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -27,12 +27,11 @@ async function localMailpitCode(email:string,requestedAt:number){
   throw new Error('Expected a recent Shared capacity message in the isolated local inbox.');
 }
 
-test('public route changes keep only the asynchronous transport request',async({page}:{page:any})=>{
- await page.goto('/');await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
- await expect(page.getByRole('dialog',{name:'Need help with transport?'})).toBeVisible();
- await page.goto('/featured');await expect(page.getByRole('dialog',{name:'Need help with transport?'})).toBeVisible();
- await expect(page.locator('.public-chat-start,.public-chat-composer')).toHaveCount(0);
- await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.locator('.public-assistance-dock button')).toHaveCount(1);
+test('public route changes never restore retired transport chat',async({page}:{page:any})=>{
+ for(const path of ['/','/featured','/shared-capacity']){
+  await page.goto(path,{waitUntil:'domcontentloaded'});
+  await expect(page.locator('.public-assistance-dock,.public-chat-start,.public-chat-composer')).toHaveCount(0);
+ }
 });
 
 test('provider Network and public Shared capacity remain distinct',async({page}:{page:any})=>{
@@ -56,7 +55,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
   await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
-  await expect(page.getByText('Share with Loadgistic').first()).toBeVisible();
+  await expect(page.getByText('Share with Loadgistic')).toHaveCount(0);
   const shareEmail=page.getByLabel('Share with an email').first();
   await shareEmail.fill(sharedEmail);
   await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Person or company name',{exact:true}).fill('Synthetic partner');
@@ -123,7 +122,7 @@ test('public Market returns only trucks that expose their current signal',async(
   expect(count).toBeGreaterThan(0);
 });
 
-test('capture focused transport request and Network review',async({page}:{page:any})=>{
+test('capture focused private Capacity and Network review',async({page}:{page:any})=>{
   test.setTimeout(60_000);
   test.skip(process.env.CAPTURE_VISUAL_REVIEW!=='1','Focused visual capture only');
   const output=path.resolve(process.cwd(),'artifacts/private-capacity-assisted-chat-v1');
@@ -131,11 +130,9 @@ test('capture focused transport request and Network review',async({page}:{page:a
   const project=test.info().project.name;
 
   await page.goto('/');
-  await page.getByRole('button',{name:'Need help with transport?',exact:true}).click();
-  await expect(page.getByRole('dialog',{name:'Need help with transport?'})).toBeVisible();
+  await expect(page.locator('.public-assistance-dock')).toHaveCount(0);
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.screenshot({path:path.join(output,`${project}-transport-request.png`),fullPage:true});
-  await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.screenshot({path:path.join(output,`${project}-public-capacity.png`),fullPage:true});
   await page.goto('/shared-capacity');
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

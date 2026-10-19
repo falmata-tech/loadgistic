@@ -1,15 +1,23 @@
 -- Run in a rolled-back local transaction. Synthetic contacts only.
 begin;
 do $test$
-declare owner_id uuid; driver_id uuid; other_id uuid; truck_id uuid; grant_id uuid;
+declare owner_id uuid; driver_id uuid:=gen_random_uuid(); other_id uuid; org_id uuid; truck_id uuid; other_truck_id uuid; grant_id uuid;
  result jsonb; original_creator uuid; original_time timestamptz; route_points jsonb;
 begin
- select m.user_id,d.user_id into strict owner_id,driver_id
- from organization_members m join drivers d on d.organization_id=m.organization_id and d.active
- join profiles p on p.id=d.user_id and p.active
+ select m.user_id,m.organization_id into strict owner_id,org_id
+ from organization_members m join profiles p on p.id=m.user_id and p.active and p.role='TRANSPORTER'
+ join auth.users identity on identity.id=p.id and identity.deleted_at is null and identity.email_confirmed_at is not null
+ join organizations organization on organization.id=m.organization_id and organization.type='TRANSPORT_COMPANY'
+ join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
  where m.membership_role='OWNER' limit 1;
+ perform accept_content_policy(owner_id,'2026-10-09');
+ -- Keep existing employees and their unfinished Tracking assignments intact.
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+ values(driver_id,'contact-driver-'||driver_id||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}');
+ perform fleet_accept_invitation(driver_id,fleet_invite_driver(owner_id,jsonb_build_object('email','contact-driver-'||driver_id||'@loadgistic.local','name','Synthetic contact driver','phone','+251900000001')));
+ perform accept_content_policy(driver_id,'2026-10-09');
  select id into strict other_id from profiles where role='DRIVER' and active and id<>driver_id limit 1;
- result:=create_provider_vehicle(owner_id,'{"make":"Contact audit","model":"Test","plate":"AUDIT-CONTACT-NAME","cargo_configuration":"Mini Box Truck"}');truck_id:=(result->>'id')::uuid;
+ result:=create_provider_vehicle(owner_id,'{"make":"Contact audit","model":"Test","plate":"AUDIT-CONTACT-NAME","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}');truck_id:=(result->>'id')::uuid;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_capacity',true));
  result:=grant_named_private_capacity_access(driver_id,truck_id,'contact-audit@example.invalid',repeat('d',64),'አበበ ትራንስፖርት');grant_id:=(result->>'id')::uuid;
  select created_by,created_at into original_creator,original_time from capacity_access_grants where id=grant_id;
@@ -40,6 +48,14 @@ begin
  result:=jsonb_build_object('vehicle_id',truck_id,'status','EMPTY','accepted_loads','BOTH','availability_geometry','ROUTE','visibility','PRIVATE','location_source','PRESERVE_DRIVER','sharing_mode','EXCLUSIVE',
  'exclusive_email','contact-audit@example.invalid','exclusive_digest',repeat('d',64),'exclusive_name','Main customer',
  'current_route_places',jsonb_build_array(jsonb_build_object('place_ref',route_points->0->>'place_ref'),jsonb_build_object('place_ref',route_points->1->>'place_ref')));
+ -- Publication is a separate owner action; named-contact setup needs no review.
+ if (managed_provider_publication_eligibility(owner_id)->>'qualifyingTruckCount')::integer=0 then
+  for other_truck_id in select id from vehicles
+   where organization_id=org_id and active and publication_status='LIVE' and id<>truck_id loop
+   perform set_provider_vehicle_publication(owner_id,other_truck_id,'DRAFT');
+  end loop;
+ end if;
+ perform set_provider_vehicle_publication(owner_id,truck_id,'LIVE');
  perform publish_provider_capacity(driver_id,result);
  if not exists(select 1 from jsonb_array_elements(provider_capacity_workspace(driver_id)->'capacities') c where c->>'exclusive_name'='Main customer') then raise exception 'EXCLUSIVE_NAME_NOT_RETURNED';end if;
  begin perform publish_provider_capacity(driver_id,result||'{"exclusive_name":"","exclusive_email":"bad-exclusive@example.invalid","exclusive_digest":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}');raise exception 'UNNAMED_EXCLUSIVE_ACCEPTED';exception when raise_exception then if sqlerrm<>'CONTACT_NAME_REQUIRED' then raise;end if;end;

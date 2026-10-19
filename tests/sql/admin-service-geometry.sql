@@ -2,8 +2,12 @@ begin;
 do $test$
 declare admin_id uuid; outsider uuid; route_id uuid; original_geometry text; result jsonb; detail jsonb;
 begin
-  select id into strict admin_id from profiles where email='admin@loadgistic.local';
-  select id into strict outsider from profiles where email='transporter@loadgistic.local';
+  select p.id into strict admin_id from profiles p join auth.users u on u.id=p.id
+    where u.raw_app_meta_data->>'fixture_source'='loadgistic'
+      and u.raw_user_meta_data->>'fixture_key'='user-admin';
+  select p.id into strict outsider from profiles p join auth.users u on u.id=p.id
+    where u.raw_app_meta_data->>'fixture_source'='loadgistic'
+      and u.raw_user_meta_data->>'fixture_key'='user-transporter';
   select id,geometry into strict route_id,original_geometry from profile_routes order by id limit 1;
   update profile_routes set geometry='RADIUS',origin='AUDIT-GEOMETRY-AREA',destination='AUDIT-GEOMETRY-AREA' where id=route_id;
   select payload into strict result from managed_admin_operations_page(admin_id,'ROUTES','AUDIT-GEOMETRY-AREA',0,20) where payload->>'id'=route_id::text;

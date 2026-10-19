@@ -1,10 +1,10 @@
-import {expect,test} from '@playwright/test';
+import {expect,test} from './browser-test';
 
 import {auditLogin as login} from './audit-helpers';
 
 test('truck management names its Driver and verification stays optional',async({page}:{page:any},testInfo:any)=>{
   await login(page,'transporter@loadgistic.local');
-  await page.goto('/app/fleet');
+  await page.goto('/app/fleet?view=drivers');
   const row=page.locator('.fleet-truck-row').filter({has:page.locator('.fleet-driver-assignment', {hasText:'Driver:'})}).first();
   const expectedDriver=(await row.locator('.fleet-driver-assignment').innerText()).replace(/^Driver: /,'');
   await row.getByRole('link',{name:'View truck'}).click();
@@ -43,15 +43,14 @@ test('Fleet keeps add, contact and remove actions distinct and responsive',async
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
   await expect(page.locator('.page>.page-header').getByRole('link',{name:'Add driver'})).toBeVisible();
-  const driver=page.locator('.fleet-driver-manager').first();
-  await driver.locator('summary').first().click();
-  await driver.getByText('Edit contact',{exact:true}).click();
-  await expect(driver.getByLabel('Driver name',{exact:true})).toBeVisible();
-  await expect(driver.getByLabel('Contact phone',{exact:true})).toBeVisible();
-  await expect(driver.getByText('Remove from fleet',{exact:true})).toBeVisible();
-  const checkbox=await driver.getByLabel('Capacity updates',{exact:true}).boundingBox();
+  await page.getByRole('link',{name:'Manage',exact:true}).first().click();const driver=page.locator('#driver-access');
+  await driver.getByRole('button',{name:'Edit assignment',exact:true}).click();const assignment=page.getByRole('dialog',{name:'Assigned truck',exact:true});
+  const checkbox=await assignment.getByLabel('Capacity updates',{exact:true}).boundingBox();
   expect(checkbox!.width).toBeLessThanOrEqual(24);
+  await assignment.getByRole('button',{name:'Cancel',exact:true}).click();await driver.getByRole('link',{name:'Contact',exact:true}).click();await driver.getByRole('button',{name:'Edit contact',exact:true}).click();const contact=page.getByRole('dialog',{name:'Edit contact',exact:true});
+  await expect(contact.getByLabel('Driver name',{exact:true})).toBeVisible();await expect(contact.getByLabel('Contact phone',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await driver.scrollIntoViewIfNeeded();
+  await contact.scrollIntoViewIfNeeded();
   await page.screenshot({path:info.outputPath('fleet-contact-tools.png'),fullPage:true});
+  await contact.getByRole('button',{name:'Cancel',exact:true}).click();await expect(driver.getByRole('button',{name:'Remove from fleet',exact:true})).toBeVisible();
 });

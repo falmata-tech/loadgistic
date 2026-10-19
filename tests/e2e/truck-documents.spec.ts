@@ -1,6 +1,6 @@
 import {chooseDate} from './date-picker-helper';
 import {auditDeleteVehicles} from './audit-helpers';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
 import {localAuditService,checked,auditProvider} from './audit-helpers';
@@ -23,10 +23,10 @@ test('truck document alternatives submit private evidence and show only its revi
   expect(new URL(response.headers().location,page.url()).searchParams.get('step')).toBe('code');
   await expect(page.getByTestId('email-code-form')).toBeVisible({timeout:15000});await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
   await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForURL(/\/app\/home/);
-  await page.goto(`/app/fleet/${truckId}`);await page.locator('details.workspace-related-section>summary').filter({hasText:'Truck documents'}).click();
+  await page.goto(`/app/fleet/${truckId}?view=documents`);await page.getByRole('button',{name:'Submit verification',exact:true}).click();
   const subject=page.locator('select[id$="-verification-subject"]'),type=page.locator('select[name=verificationType]');
   await expect(subject).toBeEnabled();await expect(subject).toHaveValue(`VEHICLE:${truckId}`);
-  await expect(type.locator('option')).toHaveCount(2);await type.selectOption('VEHICLE_AUTHORIZATION');
+  await expect(type.locator('option')).toHaveCount(3);await expect(type.locator('option[value=VEHICLE_OPERATING_LICENSE]')).toHaveCount(1);await type.selectOption('VEHICLE_AUTHORIZATION');
   await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(truckId);await chooseDate(page,'Permission expires',new Date(Date.now()+60*86400000).toISOString().slice(0,10));
   await page.getByLabel('Document name',{exact:true}).fill('Home');
   // A user's truck make/model and document title match English UI words deliberately.
@@ -42,7 +42,7 @@ test('truck document alternatives submit private evidence and show only its revi
   await page.goto(`/app/verification?truck=${truckId}`);await expect(type).toBeEnabled();await expect(type.locator('option[value=VEHICLE_AUTHORIZATION]')).toHaveCount(0);await expect(type.locator('option[value=VEHICLE_OWNERSHIP]')).toHaveCount(1);
   const admin=checked(await service.from('profiles').select('id').eq('role','ADMIN').eq('active',true).limit(1).single());
   checked(await service.rpc('review_managed_verification',{actor_user_id:admin.id,request_id:stored.id,review_status:'APPROVED',review_note:'Synthetic local document review'}));
-  await page.goto(`/app/fleet/${truckId}`);await page.locator('details.workspace-related-section>summary').filter({hasText:'Truck documents'}).click();const badge=page.locator('.verification-badge');await expect(badge).toHaveCount(1);await expect(badge).toContainText('Permission to use truck');await expect(badge).toContainText('Loadgistic reviewed');
+  await page.goto(`/app/fleet/${truckId}?view=documents`);const badge=page.locator('.verification-badge');await expect(badge).toHaveCount(1);await expect(badge).toContainText('Permission to use truck');await expect(badge).toContainText('Loadgistic reviewed');
   await badge.locator('summary').click();await expect(badge).toContainText('Review applies to this document category only.');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('truck-permission-reviewed.png'),fullPage:true});

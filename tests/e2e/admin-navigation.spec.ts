@@ -1,4 +1,4 @@
-import {expect,test} from '@playwright/test';
+import {expect,test} from './browser-test';
 
 import {auditLogin} from './audit-helpers';
 async function loginAsAdministrator(page:any){await auditLogin(page,'admin@loadgistic.local');}
@@ -32,7 +32,7 @@ test('administrator More navigation reaches one role-complete menu',async({page}
 test('featured management previews its canonical public programme',async({page}:{page:any})=>{
   await loginAsAdministrator(page);
   await page.goto('/admin/featured');
-  await page.locator('#featured-day-editor>summary').click();
+  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
   const preview=page.getByRole('link',{name:'View public programme'});
   await expect(preview).toBeVisible();
   await expect(preview).toHaveAttribute('href','/featured');

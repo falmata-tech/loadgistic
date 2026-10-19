@@ -1,5 +1,5 @@
 import {auditDeleteVehicles} from './audit-helpers';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {auditLogin,auditProvider,localAuditService,checked} from './audit-helpers';
 
 test('truck location remains in view after owner map container resizes',async({page,context}:{page:any;context:any},info:any)=>{

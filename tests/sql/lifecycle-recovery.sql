@@ -2,34 +2,36 @@ begin;
 create function pg_temp.expect_lifecycle_denied(command text,expected text) returns void language plpgsql as $$
 begin begin execute command;exception when others then if sqlerrm=expected then return;end if;raise;end;raise exception 'EXPECTED_DENIAL';end $$;
 do $test$
-declare owner_id uuid; outsider uuid; staff uuid; admin_id uuid; company_driver uuid; second_driver uuid; org_id uuid; a uuid; b uuid; shipment uuid:=gen_random_uuid();
+declare owner_id uuid; outsider uuid; staff uuid; admin_id uuid; company_driver uuid:=gen_random_uuid(); second_driver uuid:=gen_random_uuid(); org_id uuid; a uuid; b uuid; shipment uuid:=gen_random_uuid();
  origin_ref text; destination_ref text; provider uuid; revision text; result jsonb; command jsonb; n integer; role_name text; signature text;
+ installation_id uuid:=gen_random_uuid(); session_id uuid:=gen_random_uuid(); installation_secret text:=encode(gen_random_bytes(32),'hex'); lease_digest text:=encode(gen_random_bytes(32),'hex');
 begin
- -- Multi-truck reassignment/restoration belongs to a fleet, never an independent driver.
+ -- Use an owner fleet with two distinct employee/truck assignments.
  select m.user_id,m.organization_id into strict owner_id,org_id from organization_members m
  join profiles p on p.id=m.user_id and p.active and p.role='TRANSPORTER'
  join lateral provider_capacity_actor_scope(m.user_id) scope on scope.workspace_access
- where m.membership_role='OWNER' and (select count(*) from drivers d join profiles dp on dp.id=d.user_id and dp.active
- where d.organization_id=m.organization_id and d.active)>=2 limit 1;
+ where m.membership_role='OWNER' limit 1;
  select p.id into strict outsider from profiles p join organization_members m on m.user_id=p.id
  where p.active and p.role='TRANSPORTER' and m.membership_role='OWNER' and m.organization_id<>org_id limit 1;
- select d.user_id into strict company_driver from drivers d join profiles p on p.id=d.user_id and p.active
- where d.active and d.organization_id=org_id limit 1;
- select d.user_id into strict second_driver from drivers d join profiles p on p.id=d.user_id and p.active
- where d.active and d.organization_id=org_id and d.user_id<>company_driver limit 1;
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values
+ (company_driver,'lifecycle-first-'||company_driver||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}'),
+ (second_driver,'lifecycle-second-'||second_driver||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}');
+ perform fleet_accept_invitation(company_driver,fleet_invite_driver(owner_id,jsonb_build_object('email','lifecycle-first-'||company_driver||'@loadgistic.local','name','Synthetic first lifecycle driver','phone','+251900000001')));
+ perform fleet_accept_invitation(second_driver,fleet_invite_driver(owner_id,jsonb_build_object('email','lifecycle-second-'||second_driver||'@loadgistic.local','name','Synthetic second lifecycle driver','phone','+251900000002')));
+ perform accept_content_policy(company_driver,'2026-10-09');perform accept_content_policy(second_driver,'2026-10-09');
  select id into strict staff from profiles where active and role='SUPPORT' limit 1;
  select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  select provider.id into strict provider from provider_profiles provider join profiles p on p.id=provider.user_id
  where p.active and p.role='DRIVER' limit 1;
  select id into origin_ref from place_catalog where normalized_name='addis ababa' limit 1;
  select id into destination_ref from place_catalog where normalized_name='adama' limit 1;
- a:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Toyota','model','Lifecycle A','plate','TEST-A','cargo_configuration','Pickup truck','trailer_interchangeable',false))->>'id')::uuid;
- b:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Toyota','model','Lifecycle B','plate','TEST-B','cargo_configuration','Pickup truck','trailer_interchangeable',false))->>'id')::uuid;
+ a:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Toyota','model','Lifecycle A','plate','TEST-A','cargo_configuration','Pickup truck','trailer_interchangeable',false,'use_basis','OWNED'))->>'id')::uuid;
+ b:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Toyota','model','Lifecycle B','plate','TEST-B','cargo_configuration','Pickup truck','trailer_interchangeable',false,'use_basis','OWNED'))->>'id')::uuid;
  if a is null or b is null then raise exception 'VEHICLE_CREATE_FAILED';end if;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',company_driver,'vehicle_id',a,'can_manage_capacity',true,'can_manage_tracking',true));
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',second_driver,'vehicle_id',b,'can_manage_capacity',true,'can_manage_tracking',true));
  perform create_provider_tracking_with_recipients(owner_id,jsonb_build_object('id',shipment,'code','LGX-'||upper(substr(replace(shipment::text,'-',''),1,8)),
- 'vehicle_id',a,'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'cargo_summary','Synthetic lifecycle cargo',
+ 'vehicle_id',a,'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'passing_place_ref',(select id from place_catalog where id not in(origin_ref,destination_ref) order by id limit 1),'cargo_summary','Synthetic lifecycle cargo',
  'customer_email','lifecycle-sql@example.test','customer_email_digest',repeat('1',64),'additional_recipients','[]'::jsonb,
  'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
  perform pg_temp.expect_lifecycle_denied(format('select set_vehicle_lifecycle(%L,%L,false,%L)',owner_id,a,'Retire active truck'),'TRUCK_HAS_ACTIVE_TRACKING');
@@ -37,7 +39,7 @@ begin
  perform pg_temp.expect_lifecycle_denied(format('select set_vehicle_lifecycle(%L,%L,false,%L)',company_driver,b,'Driver retirement'),'NOT_FOUND');
  revision:=(tracking_recovery_context(owner_id,shipment)->>'revision');
  command:=jsonb_build_object('action','CORRECT','revision',revision,'reason','Correct customer instructions','cargo_summary','Corrected cargo',
-  'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'expected_pickup_date',current_date::text,'expected_delivery_date',(current_date+2)::text);
+  'origin_place_ref',origin_ref,'destination_place_ref',destination_ref,'passing_place_ref',(select id from place_catalog where id not in(origin_ref,destination_ref) order by id limit 1),'expected_pickup_date',current_date::text,'expected_delivery_date',(current_date+2)::text);
  perform pg_temp.expect_lifecycle_denied(format('select recover_provider_tracking(%L,%L,%L)',outsider,shipment,command),'NOT_FOUND');
  perform pg_temp.expect_lifecycle_denied(format('select recover_provider_tracking(%L,%L,%L)',company_driver,shipment,command),'NOT_FOUND');
  perform recover_provider_tracking(owner_id,shipment,command);
@@ -45,8 +47,10 @@ begin
  if (select cargo_summary from provider_shipments where id=shipment)<>'Corrected cargo' then raise exception 'CORRECTION_NOT_SAVED';end if;
  if (select count(*) from provider_tracking_recoveries where shipment_id=shipment)<>1 then raise exception 'RECOVERY_HISTORY_MISSING';end if;
  update provider_shipments set operational_status='IN_TRANSIT' where id=shipment;
- insert into provider_shipment_events(shipment_id,status,event_type,note,created_by,location_area,location_lat,location_lng,location_precision_km,location_source,created_at)
- values(shipment,'IN_TRANSIT','LOCATION','Before reassignment',owner_id,'Around test',9,39,20,'DEVICE_OBSCURED',now()-interval '1 minute');
+ insert into auth.sessions(id,user_id,created_at,updated_at) values(session_id,company_driver,clock_timestamp(),clock_timestamp());
+ perform register_phone_location_installation(company_driver,installation_id,installation_secret,a,false,session_id);
+ perform issue_registered_tracking_device_lease(company_driver,shipment,installation_id,installation_secret,lease_digest,10);
+ perform report_tracking_device_location(lease_digest,jsonb_build_object('area','Around synthetic test area','lat',9,'lng',39,'precision_km',10,'source','DEVICE_OBSCURED','observed_at',clock_timestamp(),'report_id',gen_random_uuid()));
  if admin_tracking_location(admin_id,shipment) is null then raise exception 'ADMIN_MAP_MISSING';end if;
  update support_agent_profiles set can_manage_operations=false where user_id=staff;
  perform pg_temp.expect_lifecycle_denied(format('select admin_tracking_location(%L,%L)',staff,shipment),'FORBIDDEN');

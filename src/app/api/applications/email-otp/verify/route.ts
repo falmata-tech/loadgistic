@@ -59,13 +59,13 @@ export async function POST(request:NextRequest){
       return response;
     }
     if(projection.active){
-      response.headers.set('Location',managedWorkspaceDestination(projection.role));
+      response.headers.set('Location',projection.role==='CUSTOMER'||['ADMIN','SUPPORT','DRIVER','TRANSPORTER'].includes(projection.role)?managedWorkspaceDestination(projection.role,projection.selected_business_workspace):'/workspaces');
       clearSignupCookie(response);
       clearOAuthCookie(response);
       return response;
     }
     if(await managedProviderSignupEligible(data.user.id)){
-      response.headers.set('Location',redirectUrl(request,'/apply?step=details').toString());
+      response.headers.set('Location',redirectUrl(request,'/workspaces').toString());
       clearOAuthCookie(response);
       return response;
     }

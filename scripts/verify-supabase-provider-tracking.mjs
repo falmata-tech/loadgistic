@@ -41,14 +41,15 @@ const driverWorkspace=await tracking.getProviderTrackingWorkspace(driver,{limit:
 if(!driverWorkspace.access?.can_manage_tracking||!driverWorkspace.vehicles?.length)throw new Error('SUPABASE_TRACKING_VERIFY_DRIVER_WORKSPACE_FAILED');
 const companyWorkspace=await tracking.getProviderTrackingWorkspace(companyDriver,{limit:10});
 if(!companyWorkspace.access?.can_manage_tracking||!companyWorkspace.vehicles?.length)throw new Error('SUPABASE_TRACKING_VERIFY_COMPANY_DRIVER_WORKSPACE_FAILED');
-const [{data:origin,error:originError},{data:destination,error:destinationError}]=await Promise.all([
+const [{data:origin,error:originError},{data:destination,error:destinationError},{data:passing,error:passingError}]=await Promise.all([
   service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).maybeSingle(),
-  service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).maybeSingle()
+  service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).maybeSingle(),
+  service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).maybeSingle()
 ]);
-if(originError||destinationError||!origin||!destination)throw new Error('SUPABASE_TRACKING_VERIFY_PLACES_MISSING');
+if(originError||destinationError||passingError||!origin||!destination||!passing)throw new Error('SUPABASE_TRACKING_VERIFY_PLACES_MISSING');
 
 const created=await tracking.createProviderShipment(driver,{
-  vehicleId:driverWorkspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,
+  vehicleId:driverWorkspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:passing.id,
   cargoSummary:'Managed Tracking verification cargo',customerEmail:'tracking-owner@example.test',
   additionalRecipientEmails:['tracking-party@example.test'],
   trackingMode:'LOCATION_AND_STATUS',expectedDeliveryDate:new Date(Date.now()+86400000).toISOString().slice(0,10)

@@ -1,5 +1,5 @@
 import {chooseTruckConfiguration} from './capacity-drawer-helper';
-import {test,expect as baseExpect} from '@playwright/test';
+import {test,expect as baseExpect} from './browser-test';
 const expect=baseExpect.configure({timeout:30000});
 import type {Page} from 'playwright-core';
 import {randomUUID} from 'node:crypto';
@@ -69,10 +69,10 @@ test('private email code unlocks only its grants and retains private scope throu
   const drawer=await openCapacityFilterDialog(page);await chooseTruckConfiguration(drawer,body.items[0].cargo_configuration);
   await drawer.getByRole('button',{name:'Show matching trucks',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.get('view')==='private'&&url.searchParams.has('vehicleCategory'));
-  await expect(page.locator('.capacity-drawer-handle button')).toBeEnabled();
-  const filtered=await openCapacityFilters(page);await filtered.getByRole('link',{name:'Clear all',exact:true}).click();
+  await expect(page.locator('.capacity-drawer-handle button[aria-controls="capacity-filter-drawer"]')).toBeEnabled();
+  const filtered=await openCapacityFilterDialog(page);await filtered.getByRole('link',{name:'Clear',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.get('view')==='private'&&!url.searchParams.has('vehicleCategory'));
-  await expect(page.locator('.capacity-drawer-handle button')).toBeEnabled();
+  await expect(page.locator('.capacity-drawer-handle button[aria-controls="capacity-filter-drawer"]')).toBeEnabled();
   expect((await (await page.request.get('/api/shared-capacity')).json()).items.map((v:{id:string})=>v.id)).toEqual([capacity.id]);
   await page.screenshot({path:info.outputPath('private-unlocked.png')});
   await choice(page).getByRole('link',{name:'Open to the public',exact:true}).click();
@@ -91,7 +91,7 @@ test('private email code unlocks only its grants and retains private scope throu
 
 test('combined view choices and locked email map remain readable in all languages',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(120000);if((page.viewportSize()?.width||1280)<500)await page.setViewportSize({width:320,height:720});await page.goto('/?view=private');
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.locator('.language-picker select:visible').selectOption(locale);
   await expect(page.locator('.capacity-view-choice a').nth(0)).toHaveText(messages['Open to the public']);
@@ -106,7 +106,7 @@ test('combined view choices and locked email map remain readable in all language
   await page.screenshot({path:info.outputPath(`private-${locale}.png`)});
  }
  await page.goto('/about');
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.locator('.language-picker select:visible').selectOption(locale);
   for(const message of ['Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.',"Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.",'Explore signals open to the public, view those privately shared with you, or share your own truck availability.'])await expect(page.locator('main')).toContainText(messages[message]);

@@ -1,3 +1,4 @@
+import {managedBusinessContext} from './business-context.js';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {getManagedCurrentUser} from './supabase';
@@ -5,7 +6,7 @@ import {getManagedCurrentUser} from './supabase';
 export async function accountSecurityActor(client:SupabaseClient){
  const {data,error}=await client.auth.getUser();if(error||!data.user)throw new Error('FORBIDDEN');
  const user=await getManagedCurrentUser(client,data.user);
- if(!user?.active||!['TRANSPORTER','DRIVER'].includes(user.role))throw new Error('FORBIDDEN');
+ if(!user?.active||!['TRANSPORTER','DRIVER'].includes(user.role)&&!managedBusinessContext(user))throw new Error('FORBIDDEN');
  return {user,authUser:data.user};
 }
 export async function accountDeactivationBlockers(actorId:string):Promise<string[]>{

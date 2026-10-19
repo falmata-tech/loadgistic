@@ -6,5 +6,7 @@ export function fleetReturnPath(value,fallback='/app/fleet'){
   const params=new URLSearchParams();
   for(const key of ['truckPage','driverPage'])if(/^[1-9][0-9]{0,4}$/.test(url.searchParams.get(key)||''))params.set(key,url.searchParams.get(key));
   for(const key of ['vehicle','driver'])if(/^[a-f0-9-]{36}$/.test(url.searchParams.get(key)||''))params.set(key,url.searchParams.get(key));
+  const choices={view:['trucks','drivers','devices','signals','details','documents','location'],scope:['retired'],task:['assignment','documents','contact']};
+  for(const [key,values] of Object.entries(choices))if(values.includes(url.searchParams.get(key)))params.set(key,url.searchParams.get(key));
   return url.pathname+(params.size?`?${params}`:'')+(url.hash==='#driver-access'?'#driver-access':'');
 }

@@ -38,7 +38,7 @@ const original=await profilePort.getSupabaseOwnCompanyPage(actor);
 if(!original?.id||!original.city_place_ref||!original.base_region_code)throw new Error('SUPABASE_PROVIDER_PROFILE_WORKSPACE_INVALID');
 
 await profilePort.updateSupabaseCompanyPage(actor,{
-  headline:original.headline||'',about:original.about||'',services:original.services||'',
+  headline:original.headline||'',about:original.about||'',
   basePlaceRef:original.city_place_ref,baseRegionCode:original.base_region_code,
   contactPhone:original.contact_phone||'',contactWhatsapp:original.contact_whatsapp||'',
   contactEmail:original.contact_email||'',contactWebsite:original.contact_website||'',

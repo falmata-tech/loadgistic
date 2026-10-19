@@ -86,7 +86,7 @@ test('OTP consumption is single-use, bounded, and rechecks revocation and the sh
   assert.doesNotMatch(projection,/recipient_email(?:'|\s*,)|code_digest|last_error|proof_storage_path/i);
 });
 
-test('provider creation and management support bounded distinct tracking parties',()=>{
+test('historical parties remain bounded while current creation accepts only the shipment owner',()=>{
   const create=migrationSection(
     'create or replace function public.create_provider_tracking_with_recipients',
     'create or replace function public.list_provider_tracking_recipients'
@@ -96,7 +96,9 @@ test('provider creation and management support bounded distinct tracking parties
   assert.match(create,/'OWNER'/);
   assert.match(create,/'TRACKING_PARTY'/);
   assert.match(create,/'TRACKING_ACCESS'/);
-  assert.match(providerForm,/name="additionalRecipientEmails"/);
+  assert.doesNotMatch(providerForm,/name="additionalRecipientEmails"/);
+  assert.match(providerForm,/name="customerEmail"/);
+  assert.match(adapter,/if\(additionalEmails\.length\)throw new Error\('TRACKING_OWNER_SHARES_ACCESS'\)/);
   assert.match(providerRoute,/additionalRecipientEmails:text\(form,'additionalRecipientEmails'\)/);
   assert.match(adapter,/create_provider_tracking_with_recipients/);
   assert.match(adapter,/providerTrackingRecipientDigest/);

@@ -12,5 +12,5 @@ export function nativePushDestination(value){
  if(value.kind==='HANDOVER')return value.event==='APPROVED'?{pathname:'/shipment-detail',params:{id:value.sourceId}}:null;
  if(value.event==='APPROVED')return null;
  if(value.kind==='SUPPORT')return {pathname:'/support-chat',params:{id:value.sourceId}};
- return value.kind==='BROKERAGE'?{pathname:'/arrange-transport'}:null;
+ return null;
 }

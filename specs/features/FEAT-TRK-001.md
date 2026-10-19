@@ -3,13 +3,104 @@ id: FEAT-TRK-001
 title: Authorized-party tracking, email verification and retention
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-REV-001, FEAT-GEO-001]
 problem: Every party explicitly authorized for an agreed shipment needs a simple, private tracking handoff without creating a Loadgistic account or relying on a reusable code alone.
-behavior: A provider starts one Tracking session after agreeing work offline, assigns one stable shipment Tracking code, authorizes one owner plus any number of additional recipient emails, and exposes currently authorized shipments after one short-lived email OTP, with a five-minute verified session and no reusable customer code entry. The provider can add or revoke recipients, one idempotent completion summary reaches the owner, guest access expires 30 days after completion, and the provider retains its operational history.
+behavior: The current local FEAT-ENT-001 implementation starts Tracking after an offline agreement with one shipment-owner email and a stable Tracking reference. The verified owner may invite route/status viewers and explicitly authorize business staff to see location; ordinary viewers never receive vehicle position. Email access uses one OTP and a five-minute session. One idempotent completion summary reaches the owner, guest access expires 30 days after completion, and provider history remains. Hosted rollout remains pending; earlier multi-recipient provider workflows below are historical.
 contracts: [CustomerTrackingCode, TrackingCodeSecret, TrackingCodeDigest, TrackingRecipient, TrackingEmailOtp, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort, ManagedTrackingRepository]
 observability: [tracking_recipient_added, tracking_recipient_revoked, tracking_otp_requested, tracking_otp_verified, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, tracking_location_saved, tracking_location_denied, completion_email_queued, completion_email_sent, completion_email_failed, completion_email_retry, guest_access_expired]
 rollout: Require one server-only Tracking code secret before Production creates its first Tracking row, keep only keyed digests in persistence, and send one owner delivery with bounded retries. The empty hosted project may cut over without a data migration; a later Tracking-secret rotation requires an explicit code-reissue migration or a compatibility key window. Keep guest access disabled in production until sender configuration, private storage, scanning, retention cleanup and monitoring are verified.
 ---
 
 # Guest tracking
+
+### October18 approved source and recipient transition — implementation in progress
+
+FEAT-ENT-001 / FEAT-SIM-001 supersede the older phone-only/all-recipient location
+contract below. Tracking must resolve the assigned truck's explicitly selected
+GPS, phone or dated manual source without depending on public Capacity visibility.
+The primary verified shipment owner and explicitly granted current business staff
+may see its obscured position. Ordinary recipients receive route/status only,
+without coordinates, source/time, proof references or hidden location fields.
+Provider-owned operational access, five-minute owner approval protection,
+mandatory proofs and terminal location shutdown remain unchanged.
+
+Given a current nonterminal shipment and selected GPS/phone/manual source\
+When the owner opens Tracking\
+Then the actual saved current source determines the obscured point and icon\
+And wrong assignment, old source epoch, pending fix or terminal state yields no
+current point rather than relabelling older data.
+
+Given a secondary recipient verifies their own email\
+When any supported web/native API or proof path is read\
+Then only the route and shipment status are available\
+And a CSS-hidden marker or a shared URL cannot grant location/proof authority.
+
+### October 13 accepted map workflow — locally implemented; review pending
+
+Given an unverified visitor opens Track on desktop, phone web or the mobile app\
+Then an empty basemap fills the available page workspace behind the email-verification form\
+And the form remains readable, operable and visible with the keyboard open\
+And no shipment route, truck, contact, location or proof is loaded before authorization\
+And OTP request, validation errors, verified entry, expiry and logout retain their existing behavior.
+
+Given an authorized provider creates a new shipment\
+When they choose pickup, one city they will pass through, and delivery\
+Then three distinct catalog cities are required and saved in that order\
+And PostgreSQL validates and snapshots each reference/coordinate\
+And existing shipments retain their genuine two-city route without an invented intermediate city\
+And existing route correction authorization, revision checks and post-pickup route lock remain enforced.
+
+Given an assigned Driver/provider or currently verified recipient opens a shipment\
+When its detail screen renders on web, phone web or native Android\
+Then the map fills most of the available workspace and shows the reported ordered city route\
+And available reported location uses only the saved obscured center and its authorized radius (at most 20 km)\
+And the route remains useful without a location report, including status-only or completed shipments\
+And the planned line is not represented as turn-by-turn road navigation\
+And a compact floating progress control opens current, next and all possible steps with the existing lifecycle authority\
+And completed/cancelled Tracking hides current location while preserving route and permitted history\
+And clicking a proof opens a bounded authorized modal, with close/Escape/focus restoration and recoverable errors\
+And clicking the truck opens its published truck/Driver/provider contact summary without private plates, recipient emails, actor IDs, exact GPS or proof paths\
+And expiry, revocation, reassignment and terminal status retain their existing denial and location-reset rules.
+
+Given an Operations-authorized member opens the shipment's existing management map\
+When the narrow administrative location projection is adapted to the shared map\
+Then the actual actor and exact shipment pass the existing Operations command
+before any saved route read and again before returning the map\
+And the final current status and obscured location come from that command\
+And only explicit saved city-route fields and tracking mode supplement it\
+And denied, revoked, missing or reset scope yields no administrative map\
+And genuine legacy two-city and current three-city routes retain their saved order\
+And no recipient data, proof reference, raw device location, private contact or
+invented truck summary enters the map contract.
+
+Given the Tracking map is already open\
+When the saved city route is corrected or its first valid reported location arrives\
+Then the camera fits the saved route and reported approximate area together\
+And status-only refreshes, equivalent route objects and subsequent location updates preserve the user's camera\
+And an update arriving before the camera is ready is applied when it becomes ready\
+And this uses only authorized saved coordinates, with no exact-location request.
+
+Given a ready camera rejects or throws while fitting an updated Tracking view\
+Then at most one retry occurs on a later rendered frame\
+And an older command failure cannot replace a newer pending view\
+And final failure displays a bounded error while shipment progress remains usable\
+And no unhandled rejection, remount or continuous recentering occurs.
+
+This adds route persistence/projection and presentation, not new location
+permission, longer access, arbitrary file support or staff administration on
+mobile. Loading/unloading photo requirements and shipment-owner completion
+approval remain authoritative. Reuse existing maps and progress controls.
+Owner visual review of concrete web/native layouts precedes extensive gates;
+new hosted SQL requires exact backup/rollback review before deployment.
+
+Local evidence: `tracking-route-map.sql`, `tracking-map.test.mjs`, actual web
+`tracking-route-map.spec.ts` and Expo `mobile-tracking-map.spec.ts` verify saved
+routes, authorized OTP/proofs, revocation, public contacts and legacy readback.
+The first-area browser case preserves the map canvas and camera on later updates.
+`tracking-camera.test.mjs` passes9 readiness/update/failure cases;
+`visitor-shipment-recovery.test.mjs` and both real email-access browser recovery
+cases verify retry after private data is cleared. NR-36 applies. Exact138 and
+rollback pass the isolated hosted136 snapshot rehearsal. Installed Android paint,
+owner visual review, full gates, matching new-client rollout and publication
+remain pending; distributed1.0.6 does not include these route inputs.
 
 ### Scenario: provider understands saved progress before choosing an update
 
@@ -292,6 +383,34 @@ physical-device limitations are recorded in `docs/BUILD_VERIFICATION.md`.
 
 ## Governed recovery (F10/F04, implementation)
 
+### Scenario: recovery controls offer only currently permitted actions
+
+Given the server returns a Tracking recovery context with its allowed actions\
+When a provider or Operations member opens the recovery controls\
+Then only those correction, reassignment and cancellation forms are displayed\
+And an Independent driver's one-truck account never receives a reassignment form\
+And a provider whose agreed tracking requires staff release sees no cancellation form\
+And an empty action list exposes no recovery controls\
+And direct unauthorized commands remain denied by the existing service and database checks.
+
+October14 local repair: the web component now honors each permitted action
+separately, preserving the existing backend authority, shipment history and form
+inputs. All five `tests/tracking-recovery-controls.test.mjs` component checks pass
+(four failed before the repair), and both actual desktop/phone role cases pass in
+`tests/e2e/tracking-recovery-permissions.spec.ts`.
+
+The separate narrow administrative map repair passes all seven
+`tests/admin-tracking-map-contract.test.mjs` checks. Both desktop/phone full
+`tests/e2e/lifecycle-recovery.spec.ts` cases now pass fresh inbox OTP verification,
+three saved cities and obscured radius, correction, reassignment/location reset,
+retirement/restoration, denied provider cancellation, investigated cancellation,
+retained history, guest revocation and exact fixture cleanup. Receipt:
+`.local/internal-workflows-20261014/lifecycle-internal-repaired-runner.json`.
+Earlier attempts remain recorded: subsequent diagnosis found stale old map
+selectors and the old administrative projection shape passed into the new map;
+it does not establish a cause for the original unclassified OTP-stage failure.
+These are focused local results, not hosted rollout or full-release evidence.
+
 Given an active owning provider or Operations-authorized team member opens a
 nonterminal Tracking record\
 When they submit a correction, reassignment or cancellation with a reason\
@@ -393,6 +512,41 @@ And a recorded investigation reason is mandatory before staff approve handover o
 And staff dismissal retains active Tracking; a release closes it without falsely claiming customer approval
 And unrelated staff, providers and guests cannot perform staff decisions.
 
+Given a Driver has submitted an appeal through the existing shipment form\
+When Operations-only staff save Approve handover, Release driver, or Keep tracking
+active with an investigation note on desktop or phone\
+Then that exact appeal records its decision, note, actor and resolution time\
+And approval completes Tracking with staff approval and both retained proofs\
+And release cancels Tracking and revokes guest rights without claiming owner approval\
+And dismissal retains Unloading and its recipient rights\
+And the existing proof events and unrelated shipments remain unchanged\
+And a closed-decision replay, provider submission, or form submitted after
+Operations permission is revoked saves no decision or success audit.
+
+Focused acceptance: `tests/e2e/operations-connected-actions.spec.ts`. Synthetic
+shipments use the real local commands and private Storage only to establish the
+preconditions; Driver appeal intake and staff decisions use the actual visible
+forms. Record actual browser results separately from SQL/source evidence.
+
+October14 actual local evidence: both desktop/phone appeal cases pass all three
+Driver intake forms and staff Approve/Release/Dismiss decisions, stored notes and
+attribution, required retained proofs/history, completion versus release semantics,
+recipient rights, replay/provider/revoked-form denial and unrelated-shipment
+isolation. Each viewport removes exactly its six acknowledged proof objects,
+three shipments and six synthetic identities with residual checks. Receipt:
+`.local/operations-connected-actions-20261014/tracking-appeals-final-desktop-phone-runner.json`.
+
+The single-proof diagnostic independently verifies equal source, acknowledged
+Storage, authorized adapter, authenticated API and actual painted Blob bytes:
+`.local/operations-connected-actions-20261014/proof-boundary-observed-desktop-runner.json`.
+A cancelled development request can expose a zero-byte intermediate response to
+the browser test; it is not the displayed image. The test now observes the actual
+painted Blob and served bytes without changing native object-URL behavior or CSP.
+Earlier failed receipts remain retained, including the diagnostic's unsupported
+`fetch(blob:)` under the existing CSP and a wrapped-select exact-label locator.
+No application, permission, schema or hosted change was made for these harness
+corrections. Owner visual review and full release gates remain separate.
+
 Overdue new-work restriction: ETA + two days is proposed; scope is awaiting the owner's
 answer. Do not disable existing login, Tracking or appeals or invent ETAs for legacy
 shipments. Native background device authority needs a separate bounded capability
@@ -407,3 +561,30 @@ can alert the currently authorized assigned driver on web and mobile and reopen
 the completed Tracking record. Approval already completes Tracking; there is no
 second driver completion action. Viewing or dismissing the alert changes only its
 private acknowledgement and never approval, proof, location or chat read state.
+
+### October13 rollout compatibility: installed two-city clients
+
+Given an authenticated installed client that cannot send a passing-city field
+When it attempts a new shipment after the three-city contract is released
+Then deny that incomplete creation before a database write and explain that it
+needs the updated app or the web shipment form
+And preserve existing shipment reads, status updates, authorized proofs, email
+access and saved legacy two-city histories
+And do not invent a passing city, silently broaden authorization or claim a
+successful creation. Deploy the new web/API and Android compatibility together;
+Featured137 does not depend on this client change.
+
+### October13 error recovery after the map-first layout
+
+Given an authorized visitor loading or refreshing a shipment
+When the response is unavailable or malformed and cannot produce authorized
+shipment data
+Then show the bounded error and an accessible Refresh updates action outside
+any conditional data/map panel so the visitor can try again
+And a successful retry restores the route and progress through the normal API
+And expired or revoked access still clears private data and returns to the normal
+verification boundary; recovery never extends or bypasses the five-minute grant.
+
+Regression: `tests/e2e/mobile-runtime-recovery.spec.ts` reproduced the missing
+retry control after the new map-first layout; owner review/release must wait for
+both phone and desktop recovery cases to pass.

@@ -5,11 +5,12 @@ import {AppIcon,type IconName} from './app-icon';
 import {palette} from './ui';
 
 // Lazy first mount; collapsing must not discard drafts or cancel pending saves.
-export function WorkspaceSection({message,icon,children,initiallyOpen=false}:PropsWithChildren<{message:string;icon:IconName;initiallyOpen?:boolean}>){
+export function WorkspaceSection({message,label,icon,children,initiallyOpen=false}:PropsWithChildren<({message:string;label?:never}|{label:string;message?:never})&{icon:IconName;initiallyOpen?:boolean}>){
  const {t}=useLanguage(),[open,setOpen]=useState(initiallyOpen),[visited,setVisited]=useState(initiallyOpen);
+ const title=label===undefined?t(message):label;
  return <View style={styles.section}>
-  <Pressable accessibilityRole="button" accessibilityLabel={t(message)} accessibilityState={{expanded:open}} onPress={()=>{Keyboard.dismiss();setVisited(true);setOpen(value=>!value);}} style={styles.heading}>
-   <AppIcon name={icon} color={palette.teal}/><Text style={styles.label}>{t(message)}</Text><View style={{transform:[{rotate:open?'90deg':'0deg'}]}}><AppIcon name="next" size={18}/></View>
+  <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{expanded:open}} onPress={()=>{Keyboard.dismiss();setVisited(true);setOpen(value=>!value);}} style={styles.heading}>
+   <AppIcon name={icon} color={palette.teal}/><Text style={styles.label}>{title}</Text><View style={{transform:[{rotate:open?'90deg':'0deg'}]}}><AppIcon name="next" size={18}/></View>
   </Pressable>
   {visited&&<View style={[styles.body,!open&&styles.hidden]} accessibilityElementsHidden={!open} importantForAccessibility={open?'auto':'no-hide-descendants'}>{children}</View>}
  </View>;

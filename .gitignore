@@ -1,8 +1,10 @@
 node_modules/
 .next/
 .next-dev/
+.next-dev-*/
 .next-e2e/
 .next-mobile-preview/
+.next-upload-audit/
 out/
 coverage/
 playwright-report/

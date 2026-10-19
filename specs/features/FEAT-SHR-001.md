@@ -3,11 +3,40 @@ id: FEAT-SHR-001
 title: Truck-scoped private capacity sharing
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FLT-001, FEAT-IAM-001, FEAT-MKT-001, FEAT-ADM-001]
 problem: Drivers need to share sensitive current geometry and approximate location with selected business contacts without forcing those contacts to create accounts or implicitly advertising a private truck in the public Market.
-behavior: Each truck has a Private capacity network. An authorized Driver may grant an email access to that truck's current capacity geometry and Driver-selected approximate location; the fleet owner can inspect and revoke every grant. One short-lived six-digit email OTP opens a restricted visitor session that shows every active truck grant for the verified email in one Shared capacity map without creating a Loadgistic member account, profile, password, or dashboard. An email with no active truck grant receives no OTP challenge or email delivery, remains on the email step, and receives a clear no-share result that identifies no transporter, truck, or prior grant. The session ends after 30 minutes without deliberate visitor activity and may be ended immediately with Log out. A Private network signal is completely absent from anonymous discovery. A Driver who wants both surfaces chooses Public Market and may additionally grant selected recipients access to that same truck. A distinct Share with Loadgistic control gives the assisted-matching team the same private projection without using a pretend email identity.
-contracts: [PrivateCapacityContactName, PrivateCapacityGrant, PrivateCapacityAudience, SharedCapacityEmailOtp, SharedCapacityVisitorSession, PrivateCapacityProjection, LoadgisticCapacityAudience]
-observability: [private_capacity_granted, private_capacity_revoked, shared_capacity_otp_requested, shared_capacity_otp_verified, private_capacity_access_denied, loadgistic_capacity_shared]
+behavior: Each truck has a Private capacity network. An authorized Driver may grant an email access to that truck's current capacity geometry and Driver-selected approximate location; the fleet owner can inspect and revoke every grant. One short-lived six-digit email OTP opens a restricted visitor session that shows every active truck grant for the verified email in one Shared capacity map without creating a Loadgistic member account, profile, password, or dashboard. An email with no active truck grant receives no OTP challenge or email delivery, remains on the email step, and receives a clear no-share result that identifies no transporter, truck, or prior grant. The session ends after 30 minutes without deliberate visitor activity and may be ended immediately with Log out. A Private network signal is completely absent from anonymous discovery. A Driver who wants both surfaces chooses Public Market and may additionally grant selected recipients access to that same truck. The former Share with Loadgistic control and LOADGISTIC audience are retired under FEAT-ENT-001; platform staff have no special brokerage feed.
+contracts: [PrivateCapacityContactName, PrivateCapacityGrant, PrivateCapacityAudience, SharedCapacityEmailOtp, SharedCapacityVisitorSession, PrivateCapacityProjection, RetiredPlatformCapacityAudience]
+observability: [private_capacity_granted, private_capacity_revoked, shared_capacity_otp_requested, shared_capacity_otp_verified, private_capacity_access_denied, platform_capacity_retired]
 rollout: Additive Supabase PostgreSQL migration 042 supplies server-only grant, OTP, delivery-queue, and private-map application ports; additive migration 058 serializes recipient-scoped OTP issuance; additive migration 059 adds lease-owned targeted delivery, challenge-aware retries, and bounded terminal guest-access retention. Existing current capacity remains public until its authorized publisher explicitly selects Private network. Roll back by hiding private-sharing routes and rejecting new grants while retaining audited grant history; never fall back to SQLite when the managed runtime is selected.
 ---
+
+## October18 planned supersession — retire platform Brokerage
+
+Implementation in progress under FEAT-ENT-001. The owner removed transport-
+arrangement chat from every public, web, Expo, staff and admin surface. Platform
+staff retain software Support and account management only. The separate brokerage
+business will use an ordinary customer workspace, without platform privileges.
+The special Share with Loadgistic grant and LOADGISTIC capacity audience retire.
+
+Given old web/native clients, cookies, bearer sessions, URLs or service calls
+When they request Brokerage intake, replies, assignment, polling, receipts, push
+registration or special Loadgistic capacity
+Then the application returns a retired/unavailable result and database authority
+also denies the operation, preserving private history and audit records.
+
+Given a platform staff member previously had only Brokerage responsibility
+When the service retires
+Then no Support or customer-workspace permission is granted automatically.
+
+Given current software Support and unloading-approval notifications
+When Brokerage is retired
+Then their authorized workflows, read receipts and delivery remain available.
+
+New evidence planned: `tests/platform-brokerage-retirement.test.mjs`,
+`tests/sql/platform-brokerage-retirement.sql`; local rehearsal and actual browser
+checks precede any separately reviewed hosted rollout. Older scenarios below are
+historical and superseded for active Brokerage/LOADGISTIC behavior, not evidence
+of its continuing availability. No private history erasure is included.
+
 
 # Private capacity network
 

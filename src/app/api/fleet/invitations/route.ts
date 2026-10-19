@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getCurrentUser} from '@/lib/auth';
 import {inviteFleetDriver,sendFleetInvitation,cancelFleetInvitation} from '@/lib/fleet-driver-management';
+import {canManageProviderFleet} from '@/lib/fleet.js';
 import {fleetReturnPath} from '@/lib/fleet-navigation.js';
 import {errorMessage} from '@/lib/errors';
 import {redirectWith,text} from '@/lib/redirects';
@@ -10,9 +11,9 @@ export async function POST(request:NextRequest){
   const user=await getCurrentUser();
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const form=await request.formData();
-  const returnTo=fleetReturnPath(text(form,'returnTo'),'/app/fleet#driver-access');
+  const returnTo=fleetReturnPath(text(form,'returnTo'),'/app/fleet?view=drivers');
   try{
-    if(user.role!=='TRANSPORTER')throw new Error('FORBIDDEN');
+    if(!canManageProviderFleet(user))throw new Error('FORBIDDEN');
     const action=text(form,'action');
     if(action==='cancel'){
       await cancelFleetInvitation(user.id,text(form,'invitationId'));
@@ -26,7 +27,7 @@ export async function POST(request:NextRequest){
     const delivery=await sendFleetInvitation(user.id,id);
     if(delivery==='failed')return redirectWith(request,returnTo,'error','Invitation saved, but the email could not be delivered. Retry email, or ask the driver to log in with the invited email.');
     return redirectWith(request,returnTo,'success',delivery==='sent'
-      ?'Invitation sent. After the driver accepts, assign their truck here.'
+      ?'Invitation sent. After the driver accepts, assign their vehicle here.'
       :'Invitation is pending. The driver can log in with the invited email. Wait a minute before retrying email.');
   }catch(error){return redirectWith(request,returnTo,'error',errorMessage(error));}
 }

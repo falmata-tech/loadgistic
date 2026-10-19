@@ -11,6 +11,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ ok: false, error: { code: 'INVALID_ORIGIN', message: 'Cross-origin mutation blocked.' } }, { status: 403 });
     }
   }
+  // Logout clears only this project's Auth cookies and attempts bounded managed
+  // revocation itself. Do not make leaving a session depend on Auth refresh.
+  if(request.method==='POST'&&request.nextUrl.pathname==='/api/auth/logout')return NextResponse.next({request});
   const { refreshSupabaseSession } = await import('@/lib/supabase/session-middleware');
   return refreshSupabaseSession(request);
 }

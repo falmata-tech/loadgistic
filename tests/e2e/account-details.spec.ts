@@ -1,9 +1,9 @@
-import {test,expect as baseExpect} from '@playwright/test';
+import {test,expect as baseExpect} from './browser-test';
 const expect=baseExpect.configure({timeout:15000});
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';
-import {mkdirSync} from 'node:fs';
+import {mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {acceptAuditContentPolicy} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
@@ -35,6 +35,14 @@ async function saveAccountDetails(page:any,form:any){
 
 test('providers and Company drivers save private account phones even with limited access',async({page}:{page:any},info:any)=>{
   test.setTimeout(180000);const service=localService();const suffix=randomUUID().slice(0,8);
+  const runtimeDiagnostics:{pageErrors:{name:string;message:string}[];moreResponses:{kind:string;status:number}[]}={pageErrors:[],moreResponses:[]};
+  page.on('pageerror',(error:{name:string;message:string})=>{
+    if(runtimeDiagnostics.pageErrors.length<20)runtimeDiagnostics.pageErrors.push({name:['Error','TypeError','SyntaxError','RangeError'].includes(error.name)?error.name:'Error',message:error.message==='frame.join is not a function'?error.message:'[message omitted]'});
+  });
+  page.on('response',(response:any)=>{
+    const url=new URL(response.url());
+    if(url.pathname==='/app/more'&&['localhost','127.0.0.1'].includes(url.hostname)&&url.port==='3100'&&response.request().method()==='GET'&&runtimeDiagnostics.moreResponses.length<32)runtimeDiagnostics.moreResponses.push({kind:url.searchParams.has('_rsc')?'refresh':'page',status:response.status()});
+  });
   const identities:{id:string;email:string;kind:string}[]=[];let orgId='';
   const snapshots=path.resolve('artifacts/account-details-2026-09-14');mkdirSync(snapshots,{recursive:true});
   try{
@@ -60,12 +68,14 @@ test('providers and Company drivers save private account phones even with limite
       await login(page,identity.email);await page.goto('/app/more');
       const form=page.getByRole('form',{name:'Account details'});
       await expect(form).toBeVisible();await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
-      await form.getByLabel('Your name',{exact:true}).fill(`Edited ${identity.kind}`);
+      await form.getByLabel('First name',{exact:true}).fill('Abebe');
+      await form.getByLabel('Last / father name',{exact:true}).fill(`Tesfaye ${identity.kind}`);
       await form.getByLabel('Account phone').fill('+251900123456');
       await saveAccountDetails(page,form);
       const saved=await service.from('profiles').select('full_name,phone,role,email,active').eq('id',identity.id).single();
-      expect(saved.error).toBeNull();expect(saved.data).toEqual({full_name:`Edited ${identity.kind}`,phone:'+251900123456',role:identity.kind==='owner'?'TRANSPORTER':'DRIVER',email:identity.email,active:true});
-      await page.reload();await expect(form.getByLabel('Your name',{exact:true})).toHaveValue(`Edited ${identity.kind}`);
+      expect(saved.error).toBeNull();expect(saved.data).toEqual({full_name:`Abebe Tesfaye ${identity.kind}`,phone:'+251900123456',role:identity.kind==='owner'?'TRANSPORTER':'DRIVER',email:identity.email,active:true});
+      await page.reload();await expect(form.getByLabel('First name',{exact:true})).toHaveValue('Abebe');
+      await expect(form.getByLabel('Last / father name',{exact:true})).toHaveValue(`Tesfaye ${identity.kind}`);
       await expect(form.getByLabel('Account phone')).toHaveValue('+251900123456');
       await expect(form.getByRole('button',{name:'Save account details'})).toBeVisible();
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -82,9 +92,24 @@ test('providers and Company drivers save private account phones even with limite
       expect((await service.from('profiles').select('phone').eq('id',identity.id).single()).data?.phone).toBeNull();
     }
     const callback=await service.from('drivers').select('name,phone').eq('user_id',company.id).single();
-    expect(callback.error).toBeNull();expect(callback.data).toEqual({name:'Edited company',phone:'+251911111111'});
+    expect(callback.error).toBeNull();expect(callback.data).toEqual({name:'Abebe Tesfaye company',phone:'+251911111111'});
     const publicAfter=await service.from('company_pages').select('*').or(`organization_id.eq.${orgId},provider_profile_id.eq.${provider.data!.id}`).order('id');
     expect(publicAfter.error).toBeNull();expect(publicAfter.data).toEqual(publicBefore.data);
+    // Own public callbacks work without fleet publication permissions; private phones stay separate.
+    for(const identity of [company,independent]){
+      await login(page,identity.email);await page.goto('/app/more');
+      const form=page.getByRole('form',{name:'Account details'});
+      await form.getByLabel('Public contact phone',{exact:true}).fill('+251900222333');
+      await saveAccountDetails(page,form);await page.reload();
+      await expect(form.getByLabel('Public contact phone',{exact:true})).toHaveValue('+251900222333');
+      expect((await service.from('profiles').select('phone,public_callback_phone').eq('id',identity.id).single()).data).toEqual({phone:null,public_callback_phone:'+251900222333'});
+      await form.getByLabel('Public contact phone',{exact:true}).fill('');await saveAccountDetails(page,form);await page.reload();
+      await expect(form.getByLabel('Public contact phone',{exact:true})).toHaveValue('');
+      expect((await service.from('profiles').select('phone,public_callback_phone').eq('id',identity.id).single()).data).toEqual({phone:null,public_callback_phone:null});
+    }
+    const companyPageAfterCallbacks=await service.from('company_pages').select('*').eq('organization_id',orgId).single();
+    expect(companyPageAfterCallbacks.error).toBeNull();expect(companyPageAfterCallbacks.data).toEqual(publicBefore.data!.find((row:{organization_id:string|null})=>row.organization_id===orgId));
+
     // Exercise this form's native POST fallback after the streamed shell renders.
     // A cloned form has no React submit handler; the visible button posts HTML.
     await page.getByRole('form',{name:'Account details'}).evaluate((form:HTMLFormElement)=>form.replaceWith(form.cloneNode(true)));
@@ -104,6 +129,7 @@ test('providers and Company drivers save private account phones even with limite
     const crossOrigin=await page.request.post('/api/account/details',{headers:{origin:'https://example.invalid'},data:{name:'Forged',phone:''}});
     expect(crossOrigin.status()).toBe(403);
   }finally{
+    const runtimePath=info.outputPath('account-runtime-diagnostics.json');mkdirSync(path.dirname(runtimePath),{recursive:true});writeFileSync(runtimePath,JSON.stringify(runtimeDiagnostics,null,2)+'\n');
     const ids=identities.map(identity=>identity.id);
     if(ids.length)expect((await service.from('audit_logs').delete().in('actor_user_id',ids)).error).toBeNull();
     if(orgId)expect((await service.from('organizations').delete().eq('id',orgId)).error).toBeNull();

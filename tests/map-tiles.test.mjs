@@ -64,8 +64,9 @@ test('Next.js serves the resolved tile CSP on application routes',async()=>{
   Object.assign(process.env,{NODE_ENV:'production',...configured});
   try{
     const groups=await nextConfig.headers();
-    const application=groups.find(group=>group.source==='/(.*)');
-    const value=application?.headers.find(header=>header.key==='Content-Security-Policy')?.value;
+    const policies=groups.filter(group=>group.source==='/(.*)').flatMap(group=>group.headers).filter(header=>header.key==='Content-Security-Policy');
+    assert.equal(policies.length,1);
+    const value=policies[0].value;
     assert.equal(value,contentSecurityPolicy(process.env));
     assert.match(value,/https:\/\/tiles\.example\.test/);
     assert.equal(value.includes('*.tile'),false);

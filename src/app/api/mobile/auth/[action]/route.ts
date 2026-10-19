@@ -3,6 +3,7 @@ import { mobileBody, mobileClient, mobileFailure, mobileJson, MobileError, mobil
 import { createSessionToken, verifySessionToken } from '@/lib/security.js';
 import { normalizeManagedAuthEmail, isNumericEmailOtp } from '@/lib/auth-flow.js';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
+import {phoneLocationRpc,verifiedLocationAuthSession} from '@/lib/mobile/phone-location';
 export const runtime = 'nodejs';
 
 export async function POST(request: Request, context: { params: Promise<{ action: string }> }) {
@@ -39,7 +40,11 @@ export async function POST(request: Request, context: { params: Promise<{ action
       catch (error) { await client.auth.signOut({ scope: 'local' }).catch(() => undefined); throw error; }
     }
     if (typeof body.accessToken !== 'string' || body.accessToken.length > 8192) throw new MobileError(401, 'SIGN_IN_REQUIRED', 'Please sign in again.');
-    await closeNativeSession(client.auth, { access_token: body.accessToken, refresh_token: body.refreshToken });
+    await closeNativeSession(client.auth, { access_token: body.accessToken, refresh_token: body.refreshToken },async(session:{access_token:string})=>{
+      const verified=await client.auth.getUser(session.access_token);
+      if(verified.error||!verified.data.user)throw new Error('LOGOUT_UNCONFIRMED');
+      await phoneLocationRpc('revoke_phone_location_auth_session',{actor_user_id:verified.data.user.id,authenticated_session_id:verifiedLocationAuthSession(session.access_token)});
+    });
     return mobileJson({ ok: true });
   } catch (error) { return mobileFailure(error); }
 }

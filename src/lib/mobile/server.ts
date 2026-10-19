@@ -26,7 +26,7 @@ export function mobileFailure(error: unknown): Response {
   return mobileJson({ error: { code: 'UNAVAILABLE', message: 'This service is temporarily unavailable. Please try again.' } }, 503);
 }
 export async function mobileBody(request: Request): Promise<Record<string, unknown>> {
-  if (!request.headers.get('content-type')?.startsWith('application/json')) throw new MobileError(415, 'JSON_REQUIRED', 'Send a JSON request.');
+  if (!request.headers.get('content-type')?.startsWith('application/json')) throw new MobileError(415, 'JSON_REQUIRED', 'Check the information and try again.');
   // Bounded streaming read: Content-Length alone cannot limit chunked requests.
   const reader = request.body?.getReader(); let size = 0; const parts: Uint8Array[] = [];
   if (!reader) throw new MobileError(400, 'INVALID_INPUT', 'Check the information and try again.');
@@ -49,14 +49,14 @@ export async function mobileVerifiedIdentity(request: Request): Promise<ManagedC
   if(data.user.app_metadata?.loadgistic_review===true&&!await reviewAccountAllowed(data.user.id))throw new MobileError(403,'ACCOUNT_UNAVAILABLE','This review account is unavailable.');
   const user = await getManagedCurrentUser(client, data.user);
   if (!user || user.id !== data.user.id) throw new MobileError(401, 'SIGN_IN_REQUIRED', 'Please sign in again.');
-  if (['ADMIN', 'SUPPORT'].includes(user.role)) throw new MobileError(403, 'WEB_ONLY', 'Use the website for staff access.');
+  if (['ADMIN', 'SUPPORT'].includes(user.platform_role || user.role)) throw new MobileError(403, 'WEB_ONLY', 'Use the website for staff access.');
   return user;
 }
 export async function mobileActor(request: Request, allowLimited = false): Promise<ManagedCurrentUser> {
   const user = await mobileVerifiedIdentity(request);
   const state = mobileAccountState(user, user.id);
   if (state !== 'ACTIVE' || !user) throw new MobileError(403, state === 'WEB_ONLY' ? 'WEB_ONLY' : 'ACCOUNT_UNAVAILABLE', state === 'WEB_ONLY' ? 'Use the website for staff access.' : 'This account cannot access the workspace.');
-  if (!allowLimited && !getManagedWorkspaceAccess(user).granted) throw new MobileError(403, 'WORKSPACE_REQUIRED', 'This account is not linked to a transport workspace.');
+  if (!allowLimited && !getManagedWorkspaceAccess(user).granted) throw new MobileError(403, 'WORKSPACE_REQUIRED', 'Choose a workspace to continue.');
   if(request.method!=='GET'&&request.method!=='HEAD'&&!await contentPolicyAccepted(user.id))throw new MobileError(403,'POLICY_REQUIRED','Read and accept the current terms before sharing content.');
   return user;
 }

@@ -1,13 +1,14 @@
 import {approximateLocationArea} from './approximate-location-area.js';
 import {browserRequest} from './browser-request';
-import { obscureCoordinate,isValidCoordinate } from './location-privacy.js';
+import { obscureCoordinate,isValidCoordinate,validateCapacityPrivacyRadius } from './location-privacy.js';
 
 export type DriverLocation={lat:number;lng:number;radius:number;area:string;updatedAt:string};
 
 // Only the obscured point leaves the geolocation callback, even for a draft.
 export function readDriverLocation(radius:number):Promise<DriverLocation>{
+  validateCapacityPrivacyRadius('BOTH',radius);
   return new Promise((resolve,reject)=>{
-    if(!window.isSecureContext||!navigator.geolocation){reject(new Error('Use a secure browser with location access to update this truck.'));return;}
+    if(!window.isSecureContext||!navigator.geolocation){reject(new Error('Use a secure browser with location access to update this vehicle.'));return;}
     navigator.geolocation.getCurrentPosition(position=>{
       if(!isValidCoordinate(position.coords.latitude,position.coords.longitude)){reject(new Error('Your device returned an invalid location. Try again.'));return;}
       const point=obscureCoordinate(position.coords.latitude,position.coords.longitude,radius);
@@ -18,7 +19,7 @@ export function readDriverLocation(radius:number):Promise<DriverLocation>{
 
 export async function saveDriverLocation(vehicleId:string,location:DriverLocation):Promise<DriverLocation>{
   const {response,data:result}=await capacityRequest<Record<string,unknown>>('/api/capacity/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleId,approximateLat:location.lat,approximateLng:location.lng,locationPrecisionKm:location.radius})});
-  if(!response.ok)throw new Error(String(result.error||'Truck location could not be saved.'));
+  if(!response.ok)throw new Error(String(result.error||'Vehicle location could not be saved.'));
   return {lat:Number(result.approximateLat),lng:Number(result.approximateLng),radius:Number(result.locationPrecisionKm),area:String(result.locationArea),updatedAt:String(result.locationUpdatedAt)};
 }
 

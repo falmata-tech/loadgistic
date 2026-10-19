@@ -4,7 +4,7 @@ import {buildEmailMessage} from './email-templates.js';
 import {sendManagedEmail} from './email-provider.js';
 
 const knownErrors=['FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','INVALID_DRIVER_CONTACT',
-  'DRIVER_ALREADY_IN_FLEET','INVITATION_LIMIT_REACHED','INVITATION_NOT_AVAILABLE','DRIVER_ACCOUNT_CONFLICT'];
+  'DRIVER_ALREADY_IN_FLEET','INVITATION_LIMIT_REACHED','INVITATION_NOT_AVAILABLE','DRIVER_ACCOUNT_CONFLICT','TRUCK_HAS_ACTIVE_TRACKING'];
 async function command(name:string,args:Record<string,unknown>):Promise<unknown>{
   const {data,error}=await createSupabaseAdminClient().rpc(name,args);
   if(error)throw new Error(knownErrors.find(code=>String(error.message).includes(code))||'FLEET_DRIVER_OPERATION_FAILED');

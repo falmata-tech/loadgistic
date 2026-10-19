@@ -1,4 +1,4 @@
-export const backgroundDisclosureVersion = 'shipment-location-2026-10-09';
+export const backgroundDisclosureVersion = 'shipment-location-2026-10-18';
 export const backgroundConsentKey = (actor: string) => `loadgistic.location.consent.${actor}`;
 type Permission = { granted: boolean };
 export type BackgroundConsentPort = {

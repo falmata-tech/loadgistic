@@ -1,32 +1,47 @@
-import { AppLink } from '../components/app-link';
 import {ContentSafety} from '../components/content-safety';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator,View } from 'react-native';
+import { ActivityIndicator,StyleSheet,Text,View } from 'react-native';
 import { usePublicQuery } from '../hooks/public-query';
 import type { PublicProvider } from '../api/public-content';
-import { Page,Title,Copy,Card,Button,ErrorText } from '../components/ui';
-import { PublicBadges,PublicImage,ExternalButton } from '../components/public-details';
+import { Page,Copy,Button,ErrorText,palette } from '../components/ui';
+import { PublicBadges,ExternalButton } from '../components/public-details';
+import {PublicCard,PublicCardAction,PublicCardFact,PublicCardHeading,PublicCardImage} from '../components/public-card';
+import {useLanguage} from '../localization/provider';
+import {publicFleetRowKey} from '../../../../src/lib/public-fleet-row.js';
+import {ProviderTruckSummary,TruckAuthorityBadges} from '../components/truck-authority';
 export default function TransporterScreen(){const {handle}=useLocalSearchParams<{handle:string}>();return <Profile key={String(handle)} handle={typeof handle==='string'?handle:''}/>;}
 function Profile({handle}:{handle:string}){
+ const {t}=useLanguage();
  const [page,setPage]=useState(1),[showFleet,setShowFleet]=useState(false),query=usePublicQuery<PublicProvider>(`/api/mobile/public/providers/${encodeURIComponent(handle)}?page=${page}`),provider=query.data;
- return <Page><ErrorText message={query.error}/>{query.loading&&!provider&&<ActivityIndicator accessibilityLabel="Loading transporter"/>}{!!query.error&&<Button message="Try again" onPress={()=>{void query.reload();}}/>}
- {provider&&<ContentSafety handle={provider.handle}><View style={{flexDirection:'row',gap:12,alignItems:'center'}}><PublicImage path={provider.image} label={provider.name} portrait/><View style={{flex:1}}><Title>{provider.name}</Title><Copy>@{provider.handle}</Copy><Copy>{provider.kind} · {provider.city}</Copy></View></View>
- {!!provider.headline&&<Copy>{provider.headline}</Copy>}
- {!!provider.contacts.phone&&<ExternalButton label="Call transporter" url={`tel:${provider.contacts.phone}`}/>}
- {!!provider.contacts.whatsapp&&<ExternalButton label="WhatsApp" url={`https://wa.me/${provider.contacts.whatsapp.replace(/\D/g,'')}`}/>}
- {!!provider.contacts.email&&<ExternalButton label="Email transporter" url={`mailto:${provider.contacts.email}`}/>}
- {!!provider.contacts.website&&<ExternalButton label="Website" url={provider.contacts.website}/>}
- {!!provider.about&&<Card><Title message={"About this transporter"}/><Copy>{provider.about}</Copy>{!!provider.services&&<><Copy message={"Transport services"}/><Copy>{provider.services}</Copy></>}</Card>}
- {!provider.about&&!!provider.services&&<Card><Title message={"Transport services"}/><Copy>{provider.services}</Copy></Card>}
- {!!provider.youtubeId&&<ExternalButton label="Watch introduction" url={`https://www.youtube.com/watch?v=${provider.youtubeId}`}/>}
- <Card><Title message={"Documents"}/><PublicBadges items={provider.badges}/><Copy message={"A review applies to the named document, not a service guarantee."}/></Card>
- {provider.regular&&<Card><Title message={"Regular service"}/><Copy>{provider.regular.places.join(provider.regular.kind==='ROUTE'?' ↔ ':' · ')}</Copy><Copy>{provider.regular.kind==='ROUTE'?'Regular two-way route':'Regular service area'} · confirm availability</Copy></Card>}
- <Card><Title message={"Verified shipment reviews"}/>{provider.reviewCount>0&&<Copy>{provider.averageRating} / 5 · {provider.reviewCount} reviews</Copy>}{!provider.reviews.length&&<Copy message={"No verified shipment reviews yet."}/>}{provider.reviews.map((review,index)=><View key={index} style={{gap:6,paddingVertical:10}}><Copy>{review.rating} / 5 · {review.createdAt.slice(0,10)}{review.disputed?' · Under dispute':''}</Copy><Copy>{review.note}</Copy>{!!review.id&&<ContentSafety handle={handle} reviewId={review.id}/>}</View>)}</Card>
- {provider.fleet.total>1&&<Button secondary label={showFleet?'Hide trucks and drivers':`View trucks and drivers (${provider.fleet.total})`} onPress={()=>setShowFleet(!showFleet)}/>}
- {(showFleet||provider.fleet.total<=1)&&<><Title message={"Trucks and drivers"}/>{!provider.trucks.length&&<Copy message={"No trucks listed."}/>}{provider.trucks.map(truck=><Card key={truck.number}><PublicImage path={truck.image} label={truck.configuration}/><Title>{truck.name}</Title><Copy>{truck.configuration} · {truck.number}</Copy><Copy>{truck.driver?`${truck.driver} · ${truck.driverKind}`:'No driver listed'}</Copy>{!!truck.phone&&<ExternalButton label="Call driver" url={`tel:${truck.phone}`}/>}<Copy>{truck.capacity?`${truck.capacity.status==='EMPTY'?'Empty':'Partial capacity'} · ${truck.capacity.updated}`:'No current available capacity signal'}</Copy>{truck.capacity&&<><Copy>{[truck.capacity.origin,truck.capacity.destination].filter(Boolean).join(' → ')}</Copy><Copy>{truck.capacity.locationUpdated}</Copy><AppLink href={{pathname:'/',params:{q:provider.handle}}} style={{color:'#0c7275',paddingVertical:12}} message={"View capacity on map"}/></>}
- <Copy message={"Driver documents"}/><PublicBadges items={truck.driverBadges}/><Copy message={"Truck documents"}/><PublicBadges items={truck.truckBadges}/></Card>)}
- {provider.fleet.pages>1&&<><Copy>Page {provider.fleet.page} of {provider.fleet.pages}</Copy><Button secondary message="Previous trucks" disabled={page<=1||query.loading} onPress={()=>setPage(value=>value-1)}/><Button secondary message="Next trucks" disabled={page>=provider.fleet.pages||query.loading} onPress={()=>setPage(value=>value+1)}/></>}</>}
+ return <Page><View style={styles.workspace}><ErrorText message={query.error}/>{query.loading&&!provider&&<ActivityIndicator accessibilityLabel="Loading transporter"/>}{!!query.error&&<Button message="Try again" onPress={()=>{void query.reload();}}/>}
+ {provider&&<ContentSafety handle={provider.handle}><View style={styles.identity}><PublicCardImage path={provider.image} label={provider.accountName||provider.name} portrait identity={provider.isCompany?'company':'person'}/><View style={styles.identityText}><Text accessibilityRole="header" style={styles.title}>{provider.accountName||provider.name}</Text><Text style={styles.caption}>@{provider.handle}</Text><Text style={styles.caption}>{t('Transport Provider')}{provider.city?` · ${provider.city}`:''}</Text>{!!provider.managerName&&<Text style={styles.caption}>{t('Account manager')} · {provider.managerName}</Text>}</View></View>
+ <ProviderTruckSummary summary={provider.authoritySummary}/>
+ {!!provider.headline&&<Text style={styles.introduction}>{provider.headline}</Text>}
+ <View style={styles.contacts}>
+ {!!provider.contacts.phone&&<View style={styles.contact}><ExternalButton label={t('Call transporter')} url={`tel:${provider.contacts.phone}`}/></View>}
+ {!!provider.contacts.whatsapp&&<View style={styles.contact}><ExternalButton label={t('WhatsApp')} url={`https://wa.me/${provider.contacts.whatsapp.replace(/\D/g,'')}`}/></View>}
+ {!!provider.contacts.email&&<View style={styles.contact}><ExternalButton label={t('Email transporter')} url={`mailto:${provider.contacts.email}`}/></View>}
+ {!!provider.contacts.website&&<View style={styles.contact}><ExternalButton label={t('Website')} url={provider.contacts.website}/></View>}
+ </View>
+ {!!provider.about&&<PublicCard><PublicCardHeading message="About this transporter"/><Copy>{provider.about}</Copy></PublicCard>}
+ {!!provider.youtubeId&&<ExternalButton label={t('Watch introduction')} url={`https://www.youtube.com/watch?v=${provider.youtubeId}`}/>}
+ <PublicCard><PublicCardHeading message="Documents"/><PublicBadges items={provider.badges}/><Text style={styles.caption}>{t('A review applies to the named document, not a service guarantee.')}</Text></PublicCard>
+ <PublicCard><PublicCardHeading message="Verified shipment reviews"/>{provider.reviewCount>0&&<Text style={styles.rating}>{t('{rating} / 5 · {count} reviews',{rating:provider.averageRating??'—',count:provider.reviewCount})}</Text>}{!provider.reviews.length&&<Copy message="No verified shipment reviews yet."/>}{provider.reviews.map((review,index)=><View key={index} style={styles.review}><Text style={styles.caption}>{review.rating} / 5 · {review.createdAt.slice(0,10)}{review.disputed?' · '+t('Under dispute'):''}</Text><Copy>{review.note}</Copy>{!!review.id&&<ContentSafety handle={handle} reviewId={review.id}/>}</View>)}</PublicCard>
+ {provider.fleet.total>0&&<PublicCardAction href={{pathname:'/',params:{provider:provider.handle}}} message="See vehicles on the map" icon="map"/>}
+ {provider.fleet.total>1&&<Button secondary label={showFleet?t('Hide vehicles and drivers'):`${t('View vehicles and drivers')} (${provider.fleet.total})`} onPress={()=>setShowFleet(!showFleet)}/>}
+ {(showFleet||provider.fleet.total<=1)&&<><PublicCardHeading message="Vehicles and drivers"/>{!provider.trucks.length&&<Copy message="No vehicles listed."/>}{provider.trucks.map((truck,index)=><PublicCard key={publicFleetRowKey(truck.number,(provider.fleet.page-1)*12+index)}>
+  <View style={styles.truckIdentity}><PublicCardImage path={truck.image} label={t(truck.configuration)}/><View style={styles.identityText}><PublicCardHeading>{truck.name}</PublicCardHeading><Text style={styles.caption}>{t(truck.configuration)}</Text>{!!truck.number&&<Text style={styles.number}>{truck.number}</Text>}</View></View>
+  <View style={styles.truckIdentity}><PublicCardImage path={truck.portrait} label={truck.driver||t('Driver not named')} portrait identity="person"/><View style={styles.identityText}><PublicCardFact icon="user">{truck.driver?`${truck.driver} · ${t(truck.driverKind)}`:t('Driver not named')}</PublicCardFact>{!!truck.phone&&<ExternalButton label={t('Call driver')} url={`tel:${truck.phone}`}/>}</View></View>
+  <TruckAuthorityBadges authority={truck.authority}/><View style={styles.sectionFacts}><Text style={styles.capacity}>{truck.capacity?`${t(truck.capacity.status==='EMPTY'?'Empty':'Partial capacity')} · ${truck.capacity.updated}`:t('No current capacity published')}</Text>{truck.capacity&&<><PublicCardFact icon="route">{[truck.capacity.origin,truck.capacity.destination].filter(Boolean).join(' → ')}</PublicCardFact><PublicCardFact icon="location">{truck.capacity.locationUpdated}</PublicCardFact><PublicCardAction href={{pathname:'/',params:{provider:provider.handle}}} message="View capacity on map" icon="map"/></>}</View>
+  {!!truck.regular&&<View style={styles.sectionFacts}><Text style={styles.label}>{t(truck.regular.kind==='ROUTE'?'Regular capacity route':'Regular service area')}</Text><PublicCardFact icon="route">{truck.regular.places.join(truck.regular.kind==='ROUTE'?' ↔ ':' · ')}</PublicCardFact><Text style={styles.caption}>{t('Confirm availability')}</Text></View>}
+  <View style={styles.sectionFacts}><Text style={styles.label}>{t('Driver documents')}</Text><PublicBadges items={truck.driverBadges}/></View><View style={styles.sectionFacts}><Text style={styles.label}>{t('Vehicle documents')}</Text><PublicBadges items={truck.truckBadges}/></View>
+ </PublicCard>)}
+ {provider.fleet.pages>1&&<><Copy>{t('Page {page} of {pages}',{page:provider.fleet.page,pages:provider.fleet.pages})}</Copy><View style={styles.contacts}><View style={styles.contact}><Button secondary message="Previous vehicles" disabled={page<=1||query.loading} onPress={()=>setPage(value=>value-1)}/></View><View style={styles.contact}><Button secondary message="Next vehicles" disabled={page>=provider.fleet.pages||query.loading} onPress={()=>setPage(value=>value+1)}/></View></View></>}</>}
  </ContentSafety>}
- </Page>;
+ </View></Page>;
 }
+const styles=StyleSheet.create({
+ workspace:{width:'100%',maxWidth:820,alignSelf:'center',gap:14},identity:{flexDirection:'row',gap:12,alignItems:'center'},identityText:{flex:1,gap:4},title:{fontSize:21,lineHeight:27,fontWeight:'700',color:palette.ink},introduction:{fontSize:14,lineHeight:21,color:palette.muted},caption:{fontSize:12,lineHeight:18,color:palette.muted},
+ contacts:{flexDirection:'row',flexWrap:'wrap',gap:10},contact:{flexBasis:'45%',flexGrow:1},sectionFacts:{gap:8,paddingTop:10,borderTopWidth:1,borderTopColor:'#e7eeee'},label:{fontSize:13,lineHeight:19,fontWeight:'600',color:palette.ink},rating:{fontSize:14,lineHeight:20,fontWeight:'600',color:palette.ink},review:{gap:7,paddingVertical:10,borderTopWidth:1,borderTopColor:'#e7eeee'},truckIdentity:{flexDirection:'row',alignItems:'center',gap:12},number:{fontSize:11,lineHeight:16,color:palette.muted},capacity:{fontSize:13,lineHeight:19,fontWeight:'600',color:palette.ink},
+});

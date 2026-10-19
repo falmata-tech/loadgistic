@@ -1,4 +1,5 @@
 import {stopBackgroundTracking} from '../location/background-task';
+import {configurePhoneLocation,releasePhoneLocation} from '../location/phone-installation';
 import {removeNativePushScope} from './native-push';
 import { createContext, useContext, useEffect, useReducer, useState, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
@@ -21,6 +22,8 @@ export function AccountProvider({ children }: PropsWithChildren) {
   const listener = AppState.addEventListener('change', state => { controller.background(); if (state === 'active') void controller.resume(); });
   return () => listener.remove();
  }, [controller]);
- return <Context.Provider value={{ ...controller.snapshot(), requestCode: controller.requestCode, verifyCode: controller.verifyCode, signInReview:controller.signInReview, signOut: async()=>{try{await removeNativePushScope('MEMBER');}finally{try{await stopBackgroundTracking();}finally{await controller.signOut();}}}, reload: controller.refresh, request: controller.request }}>{children}</Context.Provider>;
+ const snapshot=controller.snapshot(),actor=snapshot.session?.state==='ACTIVE'&&['TRANSPORTER','DRIVER'].includes(snapshot.session.user.platformRole||snapshot.session.user.role)?snapshot.session.user.id:'';
+ useEffect(()=>{configurePhoneLocation(actor,actor?controller.request:null,stopBackgroundTracking);},[actor,controller]);
+ return <Context.Provider value={{ ...snapshot, requestCode: controller.requestCode, verifyCode: controller.verifyCode, signInReview:controller.signInReview, signOut: async()=>{try{await removeNativePushScope('MEMBER');}finally{try{await stopBackgroundTracking();}finally{try{await releasePhoneLocation();}finally{await controller.signOut();}}}}, reload: controller.refresh, request: controller.request }}>{children}</Context.Provider>;
 }
 export function useAccount() { const value = useContext(Context); if (!value) throw new Error('AccountProvider required'); return value; }

@@ -5,7 +5,7 @@ import {languages as nativeLanguages} from '../apps/mobile/src/localization/cont
 import {chromium} from 'playwright';
 import {expect as baseExpect} from '@playwright/test';
 const root=new URL('../',import.meta.url),expect=baseExpect.configure({timeout:20000});
-const catalogs=Object.fromEntries(['am','om','so','ti'].map(locale=>[locale,JSON.parse(readFileSync(new URL(`src/lib/i18n/messages/${locale}.json`,root),'utf8'))]));
+const catalogs=Object.fromEntries(['am','om'].map(locale=>[locale,JSON.parse(readFileSync(new URL(`src/lib/i18n/messages/${locale}.json`,root),'utf8'))]));
 const label=(locale,key)=>catalogs[locale]?.[key]||key;
 const languages=nativeLanguages.map(item=>[item.code,item.name]),nativeLabel=(locale,key)=>nativeMessages[locale]?.[key]||label(locale,key);
 const browser=await chromium.launch({headless:true}),errors=[];let stage='setup',currentPage;
@@ -28,6 +28,6 @@ try{
   const dialog=wp.locator('.public-chat-dialog');await expect(dialog).toBeVisible();await expect(dialog.getByRole('button',{name:label(locale,'Start chat'),exact:true})).toBeVisible();await expect(dialog.getByRole('button',{name:label(locale,'Turn on chat sound'),exact:true})).toBeVisible();await capture(wp,'web-'+locale+'-320');
   if(locale==='en'){await dialog.getByRole('button',{name:'Turn on chat sound',exact:true}).click();await expect(dialog.getByRole('button',{name:'Sound on',exact:true})).toHaveAttribute('aria-pressed','true');await dialog.getByRole('button',{name:'Sound on',exact:true}).click();}
   await dialog.getByRole('button',{name:label(locale,'Close'),exact:true}).click();current=locale;
- }await wc.close();assert.deepEqual(errors,[]);console.log('PASS: five-language 320px web/native chat-update entry and dialogs, reachable close, no overflow/runtime errors and actual opt-in web audio');
+ }await wc.close();assert.deepEqual(errors,[]);console.log('PASS: three-language 320px web/native chat-update entry and dialogs, reachable close, no overflow/runtime errors and actual opt-in web audio');
 }catch(error){await currentPage?.screenshot({path:new URL('.local/chat-alert-layout-failure.png',root).pathname,fullPage:true}).catch(()=>{});throw Error('CHAT_ALERT_LAYOUT_FAILED: '+stage+' · '+error.name);}
 finally{await browser.close();}

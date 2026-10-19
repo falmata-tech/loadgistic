@@ -2,7 +2,7 @@
 export function safeNotificationPath(value){
  if(typeof value!=='string'||value.length>160)return null;
  const id='[0-9a-f-]{36}';
- return new RegExp('^(?:/support(?:\\?view=WAITING|/'+id+')?|/brokerage(?:\\?queue=UNASSIGNED|/'+id+')?|/app/support\\?conversation='+id+'|/app/provider-shipments/'+id+'|/about#transport-chat|/arrange-transport|/support-chat\\?id='+id+'|/shipment-detail\\?id='+id+')$','i').test(value)?value:null;
+ return new RegExp('^(?:/support(?:\\?view=WAITING|/'+id+')?|/app/support\\?conversation='+id+'|/app/provider-shipments/'+id+'|/support-chat\\?id='+id+'|/shipment-detail\\?id='+id+')$','i').test(value)?value:null;
 }
 export function createBrowserAlertDelivery(identity){
  let enabled=false,disposed=false,registration=null,key='',status='OFF';

@@ -1,9 +1,9 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {localAuditService,checked,auditProvider} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 
-test('Account contains business controls and retains drafts without an extra menu page',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('Independent Account contains registration controls and retains drafts without an extra menu page',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(150000);
  const service=localAuditService(),actor=await auditProvider(service,'grouped-account');
  let signOut:(()=>Promise<unknown>)|undefined;
@@ -14,7 +14,8 @@ test('Account contains business controls and retains drafts without an extra men
   await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();
   await expectHeaderControlsFit(page);
   const personal=page.getByRole('form',{name:'Account details'});
-  await personal.getByLabel('Your name',{exact:true}).fill('Grouped Account Test');
+  await personal.getByLabel('First name',{exact:true}).fill('Grouped Account');
+  await personal.getByLabel('Last / father name',{exact:true}).fill('Test');
   const [savedResponse]=await Promise.all([page.waitForResponse(response=>response.url().endsWith('/api/account/details')&&response.request().method()==='POST',{timeout:30000}),personal.getByRole('button',{name:'Save account details'}).click()]);
   expect(savedResponse.status()).toBe(200);
   await expect(personal.getByRole('status')).toHaveText('Account details saved.');
@@ -22,15 +23,17 @@ test('Account contains business controls and retains drafts without an extra men
   expect(checked(await service.from('profiles').select('full_name').eq('id',actor.id).single()).full_name).toBe('Grouped Account Test');
   const business=page.locator('#business');await business.locator(':scope>summary').click();
   await expect(business.getByRole('link',{name:'Open public page'})).toHaveAttribute('href',/^\/@/);
-  await business.getByLabel('Headline',{exact:true}).fill('Draft retained in Account');
-  await business.locator(':scope>summary').click();await business.locator(':scope>summary').click();
-  await expect(business.getByLabel('Headline',{exact:true})).toHaveValue('Draft retained in Account');
-  expect(new URL(page.url()).pathname).toBe('/app/more');
+  await expect(business.getByLabel('Headline',{exact:true})).toHaveCount(0);
+  const legacyHeadline=checked(await service.from('company_pages').select('headline').eq('provider_profile_id',actor.provider_profile_id).single()).headline;
   await business.getByLabel('Region or city administration',{exact:true}).selectOption('ADDIS_ABABA');
+  await business.locator(':scope>summary').click();await business.locator(':scope>summary').click();
+  await expect(business.getByLabel('Region or city administration',{exact:true})).toHaveValue('ADDIS_ABABA');
+  expect(new URL(page.url()).pathname).toBe('/app/more');
   await Promise.all([page.waitForURL(url=>url.pathname==='/app/more'&&url.searchParams.has('success'),{timeout:30000}),business.getByRole('button',{name:'Save transporter information',exact:true}).click()]);
   await expect(page.locator('.alert.success')).toBeVisible();
   expect(new URL(page.url()).pathname).toBe('/app/more');
-  await expect(business.getByLabel('Headline',{exact:true})).toHaveValue('Draft retained in Account');
+  await expect(business.getByLabel('Region or city administration',{exact:true})).toHaveValue('ADDIS_ABABA');
+  expect(checked(await service.from('company_pages').select('headline,base_region_code').eq('provider_profile_id',actor.provider_profile_id).single())).toEqual({headline:legacyHeadline,base_region_code:'ADDIS_ABABA'});
   const documents=business.locator('#business-documents');await documents.locator(':scope>summary').click();
   await expect(documents.locator('form[action="/api/verifications"]')).toBeVisible();
   await expect(documents.locator('input[name=subjectId]')).toHaveValue(actor.provider_profile_id);

@@ -1,3 +1,1455 @@
+## Active release completion — October19
+
+The owner requested shipping the accumulated Loadgistic web/mobile work, an
+ordered GitHub push, and only English, Amharic and Afaan Oromo. Further feature
+expansion is deferred. This task stays in Loadgistic; Suqpage is excluded.
+Existing remote history is preserved; coherent new commits will record the
+reviewed release rather than rewriting previously published commits.
+
+- [x] Record initial Git state (branch `feat/mobile-app`, HEAD `f63a5f5`, 516
+  modified and 390 untracked paths, no staged paths). Exclude generated builds,
+  credentials, runtime records and the user's mobile `.claude` settings.
+- [x] Rehearse migration174 on a protected isolated local restore; reproduce the
+  old phone/demo deadlock and prove ordered locks complete both writers. Apply
+  only to the backed-up local preview and verify matching function fingerprints.
+- [x] Exercise actual Chrome web and Expo driver Manual → Phone source changes,
+  saved API/database outcomes, owner restrictions and public source filtering.
+- [x] Narrow selectable/runtime languages to English, Amharic and Afaan Oromo;
+  saved removed locales fall back to English. Review meaning in whole messages.
+- [x] Complete mobile hook/lint repairs: zero errors/warnings, typecheck and
+  focused fleet/directory tests pass.
+- [x] Finish dynamic web-copy review: fixed-key and unmarked-JSX audits have
+  zero missing entries; bounded feedback translates and unexpected errors use
+  localized fallback. This is not native-speaker certification.
+- [x] Owner explicitly approved the three-language web/mobile screenshots and
+  continuation of release checks on October19. Prior Manual/Phone layout
+  approval remains recorded.
+- [ ] Run full source/spec/unit/type/security/workflow/build gates once focused
+  failures are resolved and visual approval is received.
+- [ ] Create explicit-path reviewed commits, push the authorized branch and wait
+  for required CI. No force-push or destructive history cleanup is planned.
+- [ ] Prepare exact hosted migration/artifact/backup/rollback review and signed
+  Android replacement. Existing one-use signing approvals are consumed.
+- [ ] Deploy and independently verify web and mobile testing release; document
+  links, exact versions and any external Play-review dependency.
+
+Local evidence: migration174 SHA256
+`a4a67d3ae5d18cd19067559b62db0391b04d278a5fedfb5166e264c59b7610f9`.
+The preview and isolated-clone function fingerprints match. SQL tests for manual
+Capacity, registered phone installations, GPS privacy, GPS commands and Tracking
+device location pass with rolled-back test writes. Current-source actual Chrome
+web and Expo driver workflows pass; real Android background operation remains a
+separate native release check. Migration175 additionally repairs a reproduced
+regression: fleet contact edits no longer overwrite a driver's structured first/
+last names. A fresh local backup, isolated restored-Production rehearsal, exact
+function/ACL comparison and rollback-only identity regression pass. The full
+138–175 sequence (37 files,147 absent) applies to the isolated production backup;
+all final release gates remain pending. Live advisors have no critical findings
+and the two previously documented warnings. The owner approved the exact
+138–175 rollout and the same two-warning exception on October19, conditional on
+final CI and refreshed backup/security checks. No production write has occurred.
+
+Release-check checkpoint: root quality passes all 976 tests and type checks;
+production Next.js build generates all 156 pages. Native tests pass 312/312,
+types/lint pass, and Expo Doctor passes all 21 checks after SDK57 patch alignment.
+The actual Android Hermes export and strict reviewed-dependency runtime check
+pass; the raw 27 tooling audit findings remain recorded and none of their
+reviewed affected packages appear in the compiled runtime. All 81 current SQL
+suites pass (66 on the initial run, 15 after isolated fixture/retired-contract
+repairs); the separately prepared demo-device clone and ordered-lock check pass.
+The 175 regression is the product repair; legacy fixture addresses, retired
+Brokerage positives and old radius/recipient expectations were test drift.
+The initially slow local Featured transaction finished and released its locks;
+no production or customer session was cancelled. Focused staff browser checks
+and the isolated default-test-signed native binary remain in progress. The exact
+138–175 SQL is now explicitly approved; new signing use and final remote
+CI/publication remain pending. The 5,000-vehicle performance gate failed at an
+8.88-second legacy overview query; the current page query is being profiled on a
+separate disposable local clone. Its five-second thresholds remain unchanged.
+No performance repair has been applied to production or added to the approved
+SQL manifest. The host was subsequently measured at load averages
+110/166/144 with about15GB swap used on a16GB Mac while native C++ compilation
+was active. Local timing is therefore inconclusive as product-regression evidence;
+the unchanged scale gate must pass on the isolated CI runner before release.
+The candidate may be committed/pushed for that check, but is not deployable yet.
+
+Google Play inspection October19 confirms code7/version1.0.6 is completed in
+Alpha and Internal; Production is empty. Code8 is available for the candidate
+1.1.0. This readback does not prove tester enrollment or the 14-day requirement.
+
+## Active Capacity filter refinement (October18)
+
+Owner requested a location-source filter for GPS device, phone, and manual updates
+on public/private Capacity. The owner confirmed removing only the separate
+Space needed filter while retaining each driver's accepted-load preference in
+the saved data and vehicle details. Empty/Partial status and accepted-load
+preference remain different facts; do not rewrite matching semantics.
+
+- [x] Define the authorized public/private/business location-source query
+  contract in FEAT-CAP/MKT-001. Never expose device IDs/IMEIs.
+- [x] Connect web and Expo filters to the same published-source predicate,
+  including combined filters, Clear all and unknown-source exclusion. Old web
+  links carrying the removed Space needed choice do not apply a hidden filter.
+- [x] Run focused SQL/API/UI checks and actual Chrome phone/desktop interactions.
+- [ ] Obtain owner visual approval before full release gates or deployment.
+
+Local-only evidence: migration171 is installed in the backed-up Loadgistic
+preview after an isolated rehearsal. Rollback-only SQL acceptance passes on the
+clone and active preview for public, email-private and business Capacity, OR
+within location source, AND with other groups, unknown sources and restricted
+function grants. The actual local public API returns only TELEMATICS for GPS,
+DEVICE_OBSCURED for phone and MANUAL_ADMIN for manual selection. Web desktop and
+phone Chrome interactions pass selection, apply, Clear and old-link behavior;
+Expo phone Chrome preview passes draft/clear/cancel. Web and native typechecks,
+24 native discovery/capacity tests,14 web/business/filter tests and strict native
+translation audit (680/680) pass. Stable review images are under
+`.local/capacity-source-171-20261018/`; web3100 and Expo8084 remain local.
+No hosted migration, Play binary or production deployment is claimed.
+
+Copy review also removed a retired platform transport-arrangement promise from
+Terms in English and all four translations. Focused retirement tests pass16/16;
+actual Chrome Terms at1440/390px shows each direct-agreement/fair-use paragraph
+at a readable width after fixing a grid placement defect; all four translated
+Terms render on a phone without overflow. Terms screenshots are
+in the same local review folder and require owner visual review with the filter.
+
+## Active addition — courier vehicles and provider account identity (October18)
+
+Classification: feature, public identity/search, demo preparation (local first).
+October18 terminology follow-up: use **vehicle** in general navigation, forms,
+marketplace, Tracking and staff copy because Courier cars and motorcycles are
+supported alongside trucks. Keep actual configuration/model names, established
+API/database identifiers and freight terms such as full truckload unchanged.
+Check web, phone web, Expo and all four translated languages before visual review.
+Owner restores Courier car and Courier motorcycle, wants fewer heavy/container
+examples without eliminating them, and chooses a social-style provider identity:
+chosen **Account name**, unique **@handle**, and **Account manager** shown publicly
+by first name only. Private first/Last-father names remain private. No provider
+ownership, staff permissions, fleet qualification or customer workspace conversion
+is implied by a personal-looking or business-looking chosen name.
+
+- [x] Record the dirty worktree, inspect catalogue/profile/search/import contracts,
+  read FEAT-PRV/IAM/CAP/FLT/FTR/MKT-001, privacy NR-40 and fixture-history rules.
+- [x] Confirm public manager privacy: owner chose first name only. Preserve prior
+  public city/About secondary matching; prioritize the three identity fields.
+- [ ] Update controlling specs and coordinate disjoint work:167 identity/search,
+  168 restored vehicle choices/Featured compatibility;169 enum and170 customer
+  business directory/documents; root integration and coordinated demo rebalance,
+  integration, authoritative rehearsal, actual browsers and account guide.
+- [ ] Implement separate chosen public Account name, owner-first-name manager,
+  stable globally unique provider handle and compatible old links. Connect signup,
+  deliberate profile edits, public profiles/search on web and Expo with four
+  native-language labels; never auto-publish a legacy private full name.
+- [ ] Restore both courier types/images in web/native choices, storage validation,
+  filters, maps and Featured eligibility without changing saved manual rosters.
+- [ ] Add broker/shipper/receiver company identity to the provider-workspace-only
+  business directory: chosen company name, globally unique handle and the current
+  owner's explicitly configured first name. No public website directory, personal
+  email, private surname or direct proof access for providers.
+- [ ] Add optional business document submission/history/review for business licence,
+  manager National ID and business address. Reuse private upload/Review Center;
+  owner submission only, Trust review only, current identity/expiry-bound badges,
+  replacement after More info/Rejected, no truck ownership/type for businesses.
+- [ ] Prepare a named synthetic-only demo rebalance with simple individual names,
+  couriers and preserved heavy examples. Preserve original vehicle/proof/history,
+  GPS001/002 relationships and every real account; use additive normal replacement
+  where an existing reviewed physical truck cannot be repurposed safely.
+- [ ] Rehearse immutable SQL on a fresh protected local restore; install only after
+  local permission/privacy/catalogue/search tests pass. Never reset the preview.
+- [ ] Exercise actual Chrome signup/edit/search/filter/profile/Featured tasks on
+  web/phone/Expo, verify saved API/database outcomes and practical demo logins.
+- [ ] Show the working changes for visual review before full release gates.
+  Earlier connected-workspace review remains pending for unchanged screens;
+  this addition does not authorize hosted SQL, production or new binaries.
+
+Local progress:167–170 are installed only in the protected preview after an
+isolated rehearsal. Six additional synthetic couriers (three cars, three
+motorcycles) were added through normal local onboarding/fleet/capacity commands;
+existing vehicle rows and saved Featured rosters were preserved. Both types are
+returned by public Capacity filters and appear as map markers on desktop/phone.
+Owner Account → business document submission, Trust More info, replacement and
+rejection roundtrip passed in Chrome; unreviewed requests produced no public
+badge. Expo business directory as-typed search/clear and owner document form
+passed in Chrome phone preview. A dev-only login `Connection closed` error did
+not block the completed workflow. Updated generic vehicle labels pass web and
+native typechecks,26 focused tests and strict native translation coverage681/681;
+the web translation audit still records296 unrelated older gaps. Courier OTP
+login and physical-device behavior remain untested. Exact local receipts/screens
+are under `.local/courier-20261018/` and `.local/business-directory-20261018/`.
+
+## Active implementation — approved workspace layout, demo devices and SEO (October18)
+
+The owner explicitly approved the Marketplace/My workspace merge and seamless
+switch on October18. This approves the interface direction, not a hosted rollout
+or enabling payments. Preserve the prior planning/audit evidence below. New
+requests belong to this ordered implementation, not a replacement task.
+
+- [x] Record owner layout approval and the explicit Email / searched Business
+  capacity-share decision. Business permitted staff inherit that capacity grant;
+  Tracking location remains a separate named-staff permission.
+- [x] Audit existing simulator and phone identity before enabling movement. Found
+  forced source/radius changes, no takeover guard and moving manual reports.
+- [x] Specify FEAT-SIM-001: exact synthetic scope, sticky real-device takeover,
+  private phone installation identity, honest capabilities and actual-source icons.
+- [x] Implement/test server arbitration and bounded demo runner; keep every real
+  account and erased fictional003 excluded. Rehearsed156–166 on isolated local
+  restores; fresh protected backups precede local installation. Actual saved GPS
+  movement and phone projection pass; runner is stopped after the bounded check.
+- [x] Connect authenticated phone installation/lifecycle and source attribution;
+  focused adapter/controller and SQL tests cover driving owners, account changes,
+  stale fixes and queued demo races. Physical Android background/takeover remains
+  a separate required installed-device acceptance check.
+- [x] Implement approved actual navigation and business membership/sharing/
+  Tracking contracts in FEAT-ENT order, without dummy enterprise success screens.
+  Actual web creation/invitation/staff acceptance, member permission revocation,
+  provider→business Capacity grant and independent Transporter search pass.
+  Actual web/Expo free Tracking invite/read/revoke and delivered local email pass.
+- [x] Research official search-engine guidance and implement useful server-readable
+  public copy, titles/canonicals, explicit public sitemap and private/filtered-page
+  indexing exclusions without shrinking maps. No fabricated structured data.
+  Actual Chrome1440/390px map/navigation/metadata checks pass; production indexing
+  and Search Console verification are not claimed.
+- [x] Finish actual Chrome/Expo business Team and Tracking back-and-forth: normal
+  OTP/terms/create/invite/delivered email/join, read-only staff Account, explicit
+  Capacity permission revoke, and Tracking position grant/revoke pass. Exact
+  accounts/relationships are in the local owner guide; no mocked success.
+- [x] Rehearse/install native customer push-registration compatibility166 with
+  own-chat notification scope, live Auth/session/binding checks and immediate
+  membership-revocation denial. Physical delivery remains a separate device test.
+- [ ] Review newly changed actual screens, then required release gates; prices,
+  checkout and exact hosted infrastructure/database rollout remain separate gates.
+
+Owner review of the connected screens was requested October18 with web3100,
+Expo8084 and the3137 exact-account guide. It is pending; concept approval is
+retained separately. No full release gate or hosted operation follows without
+the required review/authority. A one-hour opt-in demo runner was started for
+local review only; its safe state is `review-runner-state.json`. It cannot change
+source/radius/assignment, target customer accounts, or resume a real takeover.
+
+Current verified evidence: `specs/TRACEABILITY.md` records exact local SQL,
+focused tests and actual Chrome workflows. Web `http://127.0.0.1:3100`, Expo
+`http://localhost:8084`, and the updated owner-only account guide at
+`http://127.0.0.1:3137/` remain local review surfaces. Repeated create/invite runs
+respect existing OTP cooldowns; no limit or permission check was weakened. One
+earlier generic browser Error was retained and did not reproduce in two later
+checks, including exact permission revoke/redirect/restore. Full release gates,
+hosted migrations, production, payments, native binaries and physical hardware
+remain unverified by this local pass.
+
+## Approved plan — business workspace and Tracking sharing (October18)
+
+Historical planning record: product/architecture/access/UI. Only Loadgistic is in
+scope. The owner asked for the web/mobile interface plan **first**, approved its
+concept, then authorized the local implementation summarized above.
+FEAT-ENT-001 and proposed ADR-081 govern this transition; existing application
+behavior remains unchanged until implementation and release. The October15
+dashboard/GPS candidate below remains preserved, with its review/rollout pending.
+
+Confirmed direction: retire platform transport-arrangement chat and its special
+LOADGISTIC network audience; provide paid Transport Provider and broker/shipper/
+receiver workspaces with their own teams; retain free public discovery and
+individual email Capacity/Tracking. Provider Tracking creation has one owner
+email; that owner may invite route/status viewers. Updated owner answers permit
+live location for the owner **and explicitly authorized staff**, from the selected
+GPS/phone/manual source, with smaller circles on both Capacity and Tracking.
+The latest sharing clarification uses Email address for a person-only grant or
+search/select of an existing Business account for its permitted team. Saving
+the business grants team access directly; no extra recipient acceptance gate.
+
+- [x] Record current worktree and controlling contracts; audit existing web/Expo
+  navigation, identity, sharing, Tracking location, retired billing and Brokerage.
+- [x] Confirm radius direction/scope and whether authorized customer staff may
+  see live truck location. Do not preserve the superseded owner-email-only limit.
+- [x] Draft the common public/workspace navigation, personal/team share boundary,
+  recipient/location permissions and ordered implementation in FEAT-ENT-001.
+- [x] Incorporate explicit email-versus-business search/selection, including
+  permitted present/future staff access and immediate removed-staff denial.
+- [x] Prepare desktop/phone interactive layout concepts and run focused Chrome
+  interaction/layout checks. They are explicitly not a connected application or
+  backend acceptance evidence; owner review is the next unchecked item.
+- [x] Owner approved the interface concept and seamless switch100% on October18.
+  Email versus selected-business authority is confirmed; no repeat authorization
+  of those decisions. Connected actual screens and exact hosted artifacts retain
+  their separate review/rollout gates.
+- [x] Implement/rehearse additive identity, invitations, lifecycle, sharing,
+  selected-source Tracking and compatible Brokerage retirement156–166, with
+  negative SQL/API/privacy tests. Preserve software Support/free recipient access.
+  All installed only in the protected local preview; no hosted SQL was applied.
+- [x] Connect scoped web/Expo screens and run actual role-to-role local browser
+  invitation, delivery, acceptance, permission/position revoke and viewer workflows.
+  SQL covers source/assignment transitions and old-client denials; physical-device
+  lifecycle and full release acceptance remain separately pending.
+- [ ] Confirm prices, included staff, billing method, grace/lapse behavior and
+  Play-compliant payment flow before enabling commercial restrictions or charges.
+- [ ] Owner visual approval → full release gates → exact separately reviewed
+  migrations/backup/rollout → verified web and Android publication.
+
+Audit findings: current customer account access is provider/driver-only despite
+old SHIPPER/RECEIVER enum values; identity chooses one membership; private grants
+are email-only; all guest Tracking roles currently receive location; a free
+recipient cannot use profile-FK invite auditing; and GPS/manual source selection
+feeds Capacity but not shipment Tracking. Old Brokerage remains accessible through
+HTTP/RPC/push/deep links if only its UI is removed. These are implementation
+dependencies, not resolved by a new label or this planning document.
+
+No application code, database, accounts, payments, hosted settings or deployments
+are changed by this planning stage. Existing review artifacts remain distinct.
+
+Concept review: `http://127.0.0.1:3138/`, isolated under
+`.local/enterprise-plan-20261018/preview/`. The top review selector compares six
+scenes: Marketplace, provider Fleet, driver map Home, business Capacity, business
+Tracking and a restricted viewer. Actual Google Chrome checks pass at1440/390/320
+with no horizontal overflow,45 focused assertions,28 captures, zero page errors
+and zero requests outside the concept. Permission toggles only illustrate the
+planned interface; they do not prove database/API authorization. Receipt:
+`preview/evidence/receipt.json`. Root inspected phone sharing/Capacity/Tracking
+and desktop Tracking captures; no owner approval or application release follows.
+The prototype server is loopback-only3138; actual3100/8084 previews were untouched.
+
+## Earlier task — dashboard structure correction (October15, owner review rejected)
+
+The latest owner screenshots reject the earlier dashboard presentation. The
+first pass hid controls inside disclosures instead of establishing task hierarchy;
+records still opened in edit mode, and duplicate actions/headings and oversized
+empty sections remained. Previous completion evidence is retained below, but is
+not visual approval of that layout. Only Loadgistic is in scope.
+
+Classification: UI/workflow defects, navigation/loading and testing handoff.
+Contracts: FEAT-UIX/APP/MOB/FLT/GPS/TRK/ADM/SUP/TRQ-001, BASE-FE-001. No business
+feature removal, permission changes, new billing or hosted operations are needed.
+
+- [x] Inspect owner screenshots and actual affected source; identify why the
+  previous disclosure-only cleanup failed and record replacement acceptance.
+- [x] Research primary design-system guidance and assign disjoint parallel work:
+  web provider Fleet/GPS; Expo provider Fleet/GPS; admin/staff and web Tracking;
+  root navigation/loading, common contracts, integration and owner test guide.
+- [x] Latest owner addition: replace database-shaped admin inventories with an
+  account-first directory and organized account detail containing its related
+  business, fleet, people and work. Separate truck/device lists remain for genuine
+  cross-account operational tasks. Reuse bounded authorized adapters and prove
+  independent staff permissions; do not merge database identities or invent access.
+- [x] Implement named task views, compact saved summaries, one contextual primary
+  action and explicit focused Edit/Save/Cancel; preserve existing command logic.
+- [x] Repair selected-driver links beyond the first list page through an exact
+  owner-scoped reader; preserve page bounds and prove foreign/stale denials.
+- [x] Diagnose repeated loading and navigation remounts; fix measured causes
+  without weakening identity checks or exposing stale cross-user data.
+- [x] Verify actual local demo identities and relationships read-only; produce an
+  owner-only practical login/workflow guide without credentials or OTPs.
+- [x] Run focused regressions and actual web/phone/Expo interactions; capture the
+  changed read and edit states, preserve current server availability.
+- [ ] Give owner the working preview, concise change report and account guide;
+  obtain explicit visual approval of this corrected layout.
+- [ ] Only after approval run full quality/build/CI gates. Hosted schema, gateway,
+  new Android binaries and production promotion need their existing exact gates.
+
+Local verified evidence: the final focused selection passes124 tests; root/mobile
+TypeScript, source624, specs37 and fixed-copy618/618 checks pass. Actual web
+provider Fleet/GPS, thirteen-driver exact selection, admin owner/employee account
+relationships and permission denials, Featured/GPS edit/cancel, Tracking correction
+persistence and Expo owner/employee walkthroughs pass. Source/evidence mapping is
+at the top of `specs/TRACEABILITY.md`. Owner review is not implied by those tests.
+
+The owner-only guide and eight focused views are running at
+`http://127.0.0.1:3137/`; guide source/catalog are protected under
+`.local/dashboard-restructure-20261015/`. The guide names155 verified local demo
+logins and the practical core owner/driver/admin/Support/Brokerage relationships.
+Old `LGX-DEMO-0001` has no active recipient grants and is explicitly inspection-only;
+full recipient tests require a fresh normal invitation, not invented access.
+Web Account/Profile/security pass read/Edit/Cancel at1440/390 with zero writes
+or page errors. The original full walk failed its shell identity assertion after
+cold development navigation; it is preserved, not counted as a successful run.
+Separate instrumented warm Account→Network returns RSC200 and preserves window,
+document and exact shell, with no hidden replacement. Network Add contact→draft→
+Cancel→reopen restores both fields with zero writes. A direct warmed Network
+load200 and dialog interaction has zero hydration warnings. The earlier generic
+hydration console event and intermittent dev document timeouts did not reproduce
+on the frozen/warmed runtime; their exact cause remains unconfirmed, and a cold
+compiled-app console/navigation check remains a release acceptance item.
+
+The client-ready SSR→hydrated dialog proof and human Accounts directory capture
+pass. Four additional role-control regressions pass: Customers-only staff cannot
+see activation commands for protected admin/staff targets; actual admins retain
+staff actions and a Platform team link. No SQL permission was changed.
+Owner visual review was requested with the actual review URL; it remains pending.
+The final public-login probe exposed another long-lived dev-server stall. Only
+its verified Loadgistic process group was restarted; cache, database, Expo and
+other apps were preserved. Login then fully rendered200 in3.65s. Restart receipts
+are retained separately; this is preview recovery, not a production fix claim.
+
+Remaining limits: native onboarding/assignment acceptance selectors are updated
+but their mutation cases must rerun after visual approval; actual driving-company-
+owner portrait storage upload and physical Android are not proved by route mocks
+or Expo browser. Real GPS hardware and engine interlocks are unqualified. No new
+hosted SQL/configuration/server, APK/Play build, release, commit or push occurred.
+
+## Active task — dashboard cleanup and GPS fleet integration (October15)
+
+Owner accepted implementation of the audit below and requested provider fleet
+devices, GPS/mobile/manual source selection and compact map-source icons across
+web/Expo. Owner also requested engine cut/restore with safeguards defined first;
+real relay dispatch is disabled until model/firmware/hardware stationary-interlock
+qualification, fresh identity and short-lived command confirmation are verified.
+Newest owner clarification removes any need to expose/preserve old Guest support
+conversations in the dashboard. Only Provider support and transport arrangement
+remain active services. Unrelated chat history must not be erased.
+
+Controlling contracts: FEAT-GPS-001, FEAT-UIX/SUP/GST/ADM/TRQ/FLT/CAP/GEO/SHR/MOB-001,
+ADR-080. All pre-existing fleet/release work and pending approvals below remain.
+
+- [x] Record accepted scope, safety boundaries, architecture and ordered work.
+- [x] Implement admin/staff queue, Team, navigation/sign-out/context cleanup;
+  actual admin desktop/390/320 and staff phone logout pass, focused54 checks pass.
+- [x] Retire inaccessible old Guest conversations' actual assigned workload with
+  narrowly scoped migration152 and a rollback regression; preserve both current
+  services. Local152 is backed up/rehearsed/installed; double-apply rollback
+  verifier passes. Hosted retirement remains pending.
+- [x] Implement compact provider Fleet, correct document placement, direct Support
+  and consistent map Home/controls for employed and owner drivers.
+- [x] Implement private device ownership/assignment/source/telemetry/commands with
+  RLS, narrow authenticated ingestion and negative concurrency/privacy checks.
+  Six actual closure/credential races and exact fixture cleanup pass.
+- [x] Prepare isolated pinned protocol gateway, durable bridge, operations and
+  explicit device compatibility; provision separate synthetic demos and exercise
+  real local protocol/command roundtrips without touching real/hosted records.
+- [x] Complete GPS account erasure across application and gateway stores, with
+  owner/device serialization and verified exact upstream cleanup before Completed
+  (154; actual disposable protocol/disable/erase flow and cached-session denials
+  pass; employee closure preserves employer devices).
+- [x] Connect web/Expo Fleet/device/source controls and public/private marker
+  attribution, retaining exact-vs-obscured coordinates and current-pair rules.
+- [x] Rehearse151/152/153 and then154/155 on fresh protected isolated restores,
+  including strict catalog/negative/concurrency checks; install only the backed-up
+  local preview. Earlier failed fixtures remain recorded. All hosted schema,
+  settings and infrastructure remain unchanged.
+- [x] Run focused user workflows and capture desktop/phone/Expo layouts: saved
+  Manual point/accuracy-only/reload/Cancel and one visible Locate acknowledgement
+  pass; separate three-source movement simulation passes.
+- [ ] Obtain explicit owner visual approval before full quality/build/CI/release
+  gates; no earlier layout approval covers these new dashboards/GPS controls.
+- [ ] Complete separately reviewed hosted/infrastructure rollout; real hardware,
+  engine-interlock, network capacity and physical Android checks cannot be replaced
+  by simulator/browser evidence. No deployment or billing change authorized here.
+
+Local evidence: `.local/telematics/` contains the app151–155 install receipts,
+actual protocol/restart/movement/privacy receipts, six app races, the gateway
+501-row bound/race/collection-denial rehearsal and strict catalog checks. Actual
+browser flows are under `browser/`; focused owner-review captures are collected
+in `.local/dashboard-gps-review-20261015/`. Both Account forms load with normal
+sessions; the final web console check has no warning/error (an earlier dev issue
+badge did not recur and its cause remains unknown). Dirty web/native drafts keep
+original revisions and Cancel adopts saved values. Device commands do not erase
+source/assignment drafts during an explicit reread. Raw manual inputs are locked
+while saving. Public and SQL-authorized private GPS projections pass source/privacy
+denials; private-recipient browser coverage has no eligible existing demo grant
+and is not claimed. Real hardware and physical Android remain unverified.
+
+Gateway deletion originally returned204 while leaving raw history. Traccar6.3
+removed the foreign keys. ADR-080 now permits only narrowly scoped bounded erasure
+through a separate private operator; exact pre-delete proof, independent device
+scope, zero-data verification and numeric-only collection tombstones prevent false
+completion and recollection. Earlier failed fixtures/probes remain recorded.
+Production requires separately reviewed infrastructure/identity/scopes, routine
+raw-history retention, quotas/alerts, backup expiry and exact SQL/app rollout.
+The owner review is the first remaining dependency; new code is not deployed.
+Final focused checks:58 GPS/client cases, root/mobile types,585 fixed messages
+across four translations,37 specs and the source/whitespace checks pass. Current
+source hashes and remaining limits are bound in
+`.local/dashboard-gps-review-20261015/completion-evidence.json`.
+
+Parallel ownership: admin/staff cleanup; provider/driver cleanup; GPS server and
+private persistence; root integration, source markers, specs, evidence and rollout.
+Only `/Users/falmata/Desktop/Dev/loadgistic` is in scope. No Suqpage changes.
+
+## October 15 dashboard usability audit — findings recorded, cleanup now authorized
+
+Owner request: inspect busy/confusing admin, staff, Transport Provider and driver
+dashboards; distinguish transport arrangement from Transport Provider support.
+This audit is additional work, not visual approval of the pending fleet release.
+Only Loadgistic was inspected. Two parallel source reviews and local Chromium
+captures covered admin/staff desktop and phone web, provider Fleet/Account,
+employed-driver Home/Account and Expo browser previews. Existing local fixture
+sign-ins were used and closed; no business records, permissions or hosted systems
+were changed. An initial Expo capture was too early and used a second employee
+where a driving owner was intended; it is incomplete evidence, not a UI failure.
+The corrected capture waits for the actual authorized data response and uses the
+fixture's personal-provider identity. A subsequent driver capture selector used
+the visible Available space text, but the accessibility name is Update capacity
+or Location and availability; source diagnosis corrected that harness mismatch.
+Final captures include five employee/driving-owner screens and three loaded
+fleet-owner screens, with sessions closed. The24 web captures include a second
+employee previously mislabelled driving owner; the manifest now corrects that
+classification. Browser preview is not installed Android.
+
+At the audit baseline there were two current services: live transport arrangement handled by Brokerage
+(FEAT-TRQ-001), and signed-in Transport Provider help handled by Support
+(FEAT-SUP-001). The visible Guest support links lead to retained pre-retirement
+transcripts (FEAT-GST-001), not authorized new public-help intake. Its prominent
+placement and assigned-agent Live wording incorrectly suggest a third current
+service. Preserve original transcript recovery, private files and staff completion
+controls; relabel and place retained work in history when implementing cleanup.
+FEAT-GST's obsolete asynchronous-intake wording is reconciled with current
+FEAT-TRQ; no endpoint or service contract changes in this audit.
+
+| Priority | Observed issue and source | Proposed bounded repair |
+| --- | --- | --- |
+| P1 | Admin Support combines provider chats, transport-request summary, retired guest history and all platform staff permission forms (`src/app/admin/support/page.tsx`). | Give provider-chat work one clear queue; put Team management in a separate section/tab and retained public chats under history. Keep Brokerage separate. |
+| P1 | Staff sign-out is only in the sidebar, which is hidden on phones; staff receive no Account/More control (`src/components/app-shell.tsx`, `src/app/globals.css`). Actual staff phone capture confirms this. | Add reachable staff account/sign-out access at all supported widths. Preserve web-only staff and independent permissions. |
+| P1 | Admin phone navigation prioritizes Records/Network/Reviews and hides Support/Brokerage in More (`src/components/app-shell.tsx`). | Make live daily work easy to reach; group occasional management without introducing duplicate menus. |
+| P1 | Expo Fleet exposes every truck's publication/edit/retirement tools and every employee assignment/access form in one list (`apps/mobile/src/screens/fleet.tsx`). Actual two-truck preview confirms this. | Use compact truck/driver rows, opening the selected item's existing controls. Preserve explicit Draft/Live and authority rules. |
+| P1 | Web's restricted capacity branch replaces the driver's map with a text/duty form (`src/components/driver-capacity-home.tsx`). Source-confirmed; current captured employees have capacity permission. | Keep map Home for restricted employees and expose only permitted location/duty actions; prove both permission states. |
+| P1 | Personal Account's Driver documents selects every authorized DRIVER subject; Expo additionally includes provider/company subjects and repeats them in Provider documents (`src/app/app/more/page.tsx`, `apps/mobile/src/screens/account-settings.tsx`, `apps/mobile/src/navigation/document-scope.ts`). | Narrow Account to the signed-in person's driver subject. Keep employee documents with that employee and provider/company documents in their profile. Existing authorization is not a public leak. |
+| P1 | Expo's normal member menu has no Support entry; starting help is behind Chat updates then Support home (`apps/mobile/src/components/navigation-shell.tsx`, `apps/mobile/src/session/chat-alert-provider.tsx`). | Give Support a plain discoverable entry; retain the notification bell for updates. |
+| P2 | Admin Support lacks the bounded queue refresh used by staff; alerts do not refresh its queue (`src/app/admin/support/page.tsx`, `src/components/chat-alerts.tsx`). | Refresh chat summaries without replacing unsaved team edits; verify actual new-chat arrival before claiming repair. |
+| P2 | Back from Support loses queue/page; Brokerage uses an admin Support alias and loses filters; admin Support no longer highlights on its thread route (`src/app/support/[id]/page.tsx`, `src/app/brokerage/[id]/page.tsx`, AppShell). | Preserve validated return context and a consistent active section; do not accept arbitrary return URLs. |
+| P2 | Brokerage lists expose assignment, status, notes and conversation actions together (`src/components/brokerage-queue.tsx`). | Prioritize request summary and Claim/Open; disclose the existing management controls when needed. |
+| P2 | Driver Home Available space opens multiple capacity/sharing/location settings; employee My truck duplicates Home tools (`apps/mobile/src/screens/driver-home.tsx`, `manage-capacity.tsx`, `navigation/destinations.ts`). | Align labels with the actual task and distinguish Home from truck details; keep right-side map actions and current functionality. |
+| P2 | Live dominates Expo truck cards while actual availability is nested; web's empty Retired trucks section is visually oversized. | Show publication and Empty/Partial/Off Duty as separate compact facts; subordinate empty/history sections. Never imply Live means available. |
+| P2 | Sharing choices and contact management are on separate screens without a direct native connection (`manage-capacity.tsx`, Network). | Add a contextual link to existing shared-contact management and use consistent terms. |
+| P2 | An employee-assigned truck still says Assign an active driver before publishing capacity (`src/app/app/fleet/[id]/page.tsx`). | Show that instruction only when unassigned; otherwise show the actual assignment/next missing prerequisite. |
+
+Standards applied to the analysis: important task-based navigation rather than a
+site map ([GOV.UK navigation](https://design-system.service.gov.uk/patterns/navigate-a-service/));
+one clear main action rather than competing buttons
+([GOV.UK buttons](https://design-system.service.gov.uk/components/button/));
+frequent actions visible and occasional controls disclosed on request
+([NN/g progressive disclosure](https://www.nngroup.com/articles/progressive-disclosure/)).
+These are design principles, not evidence of a usability study with real users.
+
+Audit repair checklist (implemented locally above; owner review remains pending):
+
+- [x] Inspect actual role-specific navigation, queues, fleet/Home and Account;
+  distinguish source findings, local rendered evidence and untested branches.
+- [x] Record service naming, concrete defects, sources and cleanup priorities.
+- [x] Repair the clear access/context/document-placement defects with focused
+  regressions before restructuring broader presentation.
+- [x] Simplify queues and compact fleet controls while preserving every action,
+  independent permission and authority fact. Old Guest workload is retired per
+  the newest owner instruction. Actual desktop/phone/Expo review is pending.
+- [ ] Obtain the pending owner visual approval and separate exact hosted rollout
+  review; the existing provider-fleet checklist below remains active.
+
+Protected audit evidence is under `.local/dashboard-ux-20261015/`:
+`rendered-audit.json` (24 web captures),
+`native-complete/native-rendered-audit.json` (three loaded fleet-owner captures),
+`native-driver-final/native-rendered-audit.json` and `completion.json` (five driver/
+driving-owner captures, zero final capture failures, sessions closed). The initial
+native manifest is explicitly incomplete and is not acceptance evidence. Recorded
+control summaries redact contact details. `audit-completion.json` records scope
+and limitations. Spec validation passes36 specs/33 features; changed documentation
+passes whitespace checks. Production, Android binaries, hosted SQL, signing and
+full release gates remain unchanged. No product-code changes or commit occurred.
+
+## Active task — Transport Provider fleets and reviewed truck authority (October 14)
+
+Owner decisions: all provider owners are Transport Providers and may add multiple
+trucks. A driving owner keeps map Home; a fleet-only owner keeps Trucks/Drivers
+Home. Employees remain assigned-truck-only. Owned, financed, and rented/permission
+are distinct. Permission means drive/manage, never title or licence holder.
+One active truck may go Live without document approval. More than one Live truck
+requires one current reviewed ownership, or an operating licence reviewed in the
+provider's name for their owned/financed truck. Renting/drive permission alone
+does not unlock a fleet. Adding, restoring to Draft and publishing are separate.
+Owner clarification additionally requires actual user submission/waiting/rejection/
+replacement and staff/admin review workflows, not upload-only evidence.
+
+- [x] Record the clarified owner decisions and acceptance contracts before code
+  (FEAT-FLT/IAM/APP/VER/CAP/PRV-001, ADR-079; NR-18 supersession).
+- [x] Implement provider-owner scope and explicit driver assignments, retaining
+  both existing organization and personal-profile identities/history.
+- [x] Implement private evidence-backed authority reviews and revocation;
+  separate ownership, finance/licence and drive/manage permission facts.
+- [x] Add Draft/Live state and publication gate; preserve private sharing,
+  unfinished Tracking, proof/history and exact current-pair authority.
+- [x] Connect web/Expo signup, fleet, Home, Trust review and public badges/counts;
+  preserve personal first-name privacy and employed-driver restrictions.
+- [x] Run focused permission/concurrency/SQL/adapter checks against an isolated
+  backed-up Loadgistic local environment; install the exact checked source locally.
+- [x] Complete actual desktop/phone submission, waiting, rejection, resubmission
+  and staff review workflows against the running local web and Expo previews.
+- [x] Prepare the authority SQL fixture independently of CI's explicitly reviewed
+  seeded providers: create its own synthetic owner/organization/employee and
+  simulate two legacy Live trucks inside its rollback transaction, preserving
+  every denial, review, paging and privacy assertion. Only fixture setup changed:
+  reversing that setup reproduces the exact v3 test hash. Prepared source hash:
+  `0948a0ca4fe45af3675d5902f4d8888714bd725d77c3d687e55c5e77d8d17d4d`.
+- [x] Run that prepared authority suite on the isolated v3 clone and record the
+  new test hash separately; original v3 evidence does not cover this fixture edit.
+- [x] Verify a completely new Expo account through real email-code login, Terms,
+  signup, first unreviewed Live truck, explicit self-assignment and map Home.
+- [x] Capture the completed native signup form for owner review. The earlier
+  passing signup receipt predates this added capture, not a product change.
+- [x] Reconcile the fourteen changed historical fleet, location and Tracking SQL fixtures with
+  explicit ownership basis, Draft/Live and safe assignment rules. Preserve their
+  original denials/history assertions; execute only these changed rollback cases
+  in the isolated v3 clone. Do not alter seeded Tracking to force reassignment.
+- [x] Correct legacy driver labels inferred from provider category and preserve
+  authoritatively eligible organization owners in Featured candidates. Prove
+  both with focused regressions; retain current document and eligibility gates.
+- [x] Repair the five Expo-browser confirmation controls whose native Alert
+  adapter is a no-op; prove cancellation leaves records intact and confirmation
+  reaches the existing authorized command, without changing the underlying rules.
+- [x] Repair stale mobile Home/editor state after a current driver moves from
+  truck A to B; use fresh server assignment data, retain employee scope and prove
+  the actual reassignment workflow without requiring sign-out or token rotation.
+- [x] Reconcile the remaining affected browser fixtures with unified provider
+  signup, multiple Drafts, explicit assignment/publication and exact authority;
+  preserve original denial, privacy, history and pagination assertions.
+- [x] Add direct authority-command negatives for removed Trust permission,
+  suspended staff, nonapproved sources, stale revisions and invalid expiry.
+- [ ] Keep previews running, capture changed screens and obtain owner visual
+  approval before full quality/build/CI/release gates.
+- [ ] Review exact legacy-publication impact, hosted SQL, backup/rehearsal and
+  rollback with the owner before any production write; no hosted approval yet.
+
+Status: implemented and installed in the backed-up Loadgistic local preview,
+production unchanged. Final source145/146/148/149/150 passes a fresh v3 restore,
+ten focused transactional SQL suites, exact unsafe-rollback denial, security
+catalog checks and real publication/assignment concurrency with exact cleanup.
+Read-only reconciliation proves the two extension-view ACL differences are only
+pg_restore omissions; main-local installation preserves original permissions and
+matches the exact expected candidate catalog. Both previews respond200.
+
+Actual desktop browser workflows now pass: verified owner signup, two Drafts,
+unverified employee assignment followed by real email-code login, first free
+Live/additional-truck denial, private upload/Pending, rejection/note/resubmission,
+generic approval without authority, exact Trust confirmation, additional Go Live,
+revocation and replacement evidence with retained source history. A separate
+licence case passes actual expiry selection, private-file access and financed
+licence confirmation without an ownership claim. Both exact fixture cleanups pass.
+Receipts: `.local/internal-workflows-20261014/provider-owner-fleet-desktop-diagnosed-runner.json`
+and `provider-authority-expiry-desktop-fixed-runner.json`.
+
+Earlier failed attempts remain failed: hidden-switch interaction, accepting test
+consent before employee email verification, misplaced staff-fixture permission
+fields and cleanup ordering were harness defects, not production repairs. Their
+exact leftovers are separately cleaned. The initial phone run stops before Expo
+login because Metro returns500 for an existing newly added component. Only the
+verified Loadgistic8084 server is restarted with its project cache cleared.
+Actual anonymous readiness then proves bundle200, enabled login controls and no
+browser errors. The phone licence and Expo permission-document case now passes
+real OTP, expiry selection, private upload/Pending, authorized decoded image and
+closing the viewer, with exact cleanup. A fresh phone rerun additionally passes
+the compact staff confirmation checkbox's18px geometry,44px label target, actual
+label click and persisted review:
+`.local/internal-workflows-20261014/provider-compact-review-phone-runner.json`.
+
+The final owner phone case also passes its complete web workflows, Expo OTP/map
+Home, two-Live fleet and adding a third permission-basis Draft without assignment.
+Returning Home and switching Marketplace/workspace preserve the same sole owner
+assignment and a visible390×589 map. Actual telemetry proves the earlier assertion
+counted one hidden retained map alongside the visible screen; no app navigation
+change was needed. There are zero page errors, unhandled rejections, raster
+aborts or fatal overlays in this run, and exact cleanup passes. Receipt:
+`.local/internal-workflows-20261014/provider-owner-phone-navigation-runner.json`.
+The owner's current Fleet/staff-review visual question is pending. Full release
+gates and deployment have not run. SQL/local evidence:
+`.local/provider-fleets-20261014/{final-v3-rehearsal,restored-v3-catalog-reconciliation,local-install-v3-receipt,concurrency-v3-receipt,stalled-signup-cleanup}.json`.
+Existing uncommitted audit/UI work below is preserved.
+
+The independently scoped authority regression now passes with source
+`0948a0ca4fe45af3675d5902f4d8888714bd725d77c3d687e55c5e77d8d17d4d`.
+Its exact isolated transaction rolls back; the original v3 ten-suite receipt is
+retained separately. Receipt:
+`.local/provider-fleets-20261014/provider-vehicle-authority-compatibility-receipt.json`.
+New Expo-only account signup also passes with exact synthetic cleanup:
+`.local/internal-workflows-20261014/provider-native-new-account-phone-runner.json`.
+This proves the actual verified-but-inactive identity accepts Terms before
+creating its provider account, and one document-free Live truck can be explicitly
+self-assigned without an implicit assignment during registration.
+The final capture run also passes the same workflow and exact cleanup:
+`.local/internal-workflows-20261014/provider-native-signup-review-phone-runner.json`.
+Actual signup/map/Fleet image digests and their originating runs are recorded in
+`.local/provider-fleets-20261014/native-signup-review-captures.json`.
+
+The fifteen isolated compatibility cases now pass and roll back, including the
+independent authority suite and fourteen historical fleet/location/Tracking
+cases. Final test hashes are verified against their receipts in
+`.local/provider-fleets-20261014/fixture-compatibility-summary.json`.
+Earlier failures exposed stale seed aliases, missing actual policy consent and
+unsafe borrowed-driver reassignment in fixtures. They are retained as failures;
+the repaired cases use actual invitation/acceptance and owned synthetic drivers,
+without changing seed Tracking or inventing document approval. Suspended-inviter
+acceptance is still denied by the earlier active-owner lock; its test additionally
+proves the invitation stays unaccepted and the recipient inactive before the
+owner is restored and normal acceptance succeeds.
+
+WEB-MOB-041 records the two additional local source repairs: neutral Driver copy
+instead of inferred legacy categories, and Featured retaining an organization
+owner who drives when the authoritative current link accepts them. Driver facts
+retain actual-assignment document scope. The final root batch passes42 targeted
+adapter/presentation/authority/publication checks, root/mobile typechecks and
+36spec/582source checks; counts overlap earlier batches. Receipt:
+`.local/provider-fleets-20261014/final-focused-source-checks.json`.
+
+The seven additional historical fixtures are now reconciled and pass against
+the isolated v3 clone: capacity-launch-matching, public-provider-paging,
+capacity-multiple-options, capacity-viewport, public-capacity-policy-scope,
+featured-continuous-rounds and featured-random-rounds. Their original matching,
+privacy, paging, fairness and saved/manual-day assertions remain. Obsolete profile
+category/evidence expectations now check exact per-truck facts and whole-fleet
+counts with equivalent expiry/privacy negatives. The invalid Pickup Truck
+spelling remains explicitly rejected; the valid no-match test uses Pickup truck.
+No check is skipped or weakened, and these focused cases are not a full release gate.
+
+Next focused compatibility steps (resumed before full release gates):
+- [x] Update and isolate the five affected public/matching/viewport fixtures,
+  preserving original matching, privacy, expiry and pagination assertions.
+- [x] Update the two affected Featured rotation fixtures, preserving advancing
+  weeks, fairness, no-repeat and protected saved/manual-day checks.
+- [x] Run only these seven changed rollback cases against the isolated v3 clone
+  and bind each outcome to its exact source hash. Preserve failed attempts.
+- [x] Recheck the synthetic authority-fixture importer and local demo options;
+  do not reset the running preview, alter copied records or grant their trucks
+  ownership by inference. Production and saved rosters remain unchanged.
+- [x] Rehearse an additive local-only demo correction for the nine exact named
+  fixture fleet owners: fresh unmistakably fictional private proof files, new
+  Pending submissions, ordinary review and exact authority confirmation. Keep
+  all original sources, documents, declarations, assignments and saved days.
+- [x] Back up the current local database, recheck exact fixture provenance and
+  physical identity, install only that rehearsed additive correction and verify
+  the existing Featured programme/profile cards in both previews. No hosted write.
+
+Before the additive local correction, the anonymous Featured/card case fails because the
+main-local copied demo roster has eight saved slots but no currently eligible
+provider/theme candidates and zero exact authority facts. Its multi-Live fleets
+are correctly withheld under the accepted rule; generic old approvals are not
+backfilled into ownership. Read-only aggregate diagnosis:
+`.local/provider-fleets-20261014/public-featured-empty-diagnosis.json`.
+Failed browser receipt remains
+`.local/internal-workflows-20261014/provider-public-driver-presentation-phone-runner.json`.
+This is not a production read or permission bypass. A separate focused case
+proves actual Featured candidate/profile behavior using one
+owned synthetic public provider/truck, with no document approvals, saved-day
+changes or changes to existing demo fleets.
+- [x] Verify that fresh single-truck driving owner through actual eligible-link,
+  Featured adapter and native public-profile rendering, then exact cleanup.
+
+That actual one-truck/no-document case now passes: the organization owner has no
+employee-directory row, the real eligible-link/provider commands and Featured
+adapter return their pair, and the anonymous native profile displays first name,
+Driver and Not yet verified, with private name/phone absent. Exact cleanup passes;
+saved roster days and existing demo fleets are unchanged. Receipt:
+`.local/internal-workflows-20261014/provider-featured-owner-current-server-phone-runner.json`.
+The first attempts correctly caught a stale running Next module returning the
+old Company driver label despite current source. Only the independently verified
+Loadgistic3100 dev process is restarted; no cache is deleted and no other server
+changes. The fresh API and rendered profile then prove the current label.
+Process/capture receipts:
+`.local/provider-fleets-20261014/{web-preview-restart,public-owner-driver-review-capture}.json`.
+
+The next focused checkpoint passes22 isolated rollback cases with each current
+source hash verified, plus9 guarded authority-fixture checks. Evidence:
+`.local/provider-fleets-20261014/fixture-compatibility-summary-22.json`.
+Featured's four-week advancing calendar, unequal-pool rollover, nearby fallback,
+saved manual days, random draws and partial-save rollback all remain tested.
+The 1,002-provider viewport case uses actual write times after assignments and
+still reaches its unique match behind1,001 newer authorized records. The new
+public paging cases retain all original denial markers and add exact authority,
+whole-fleet totals, revoked/expired-source and driver-permission isolation checks.
+
+The local preview demo is now usable again without resetting it. Exact named
+fixture metadata and current physical fingerprints bind nine organization-owner
+subjects from provider-authority.json. A fresh protected local backup and exact
+isolated rehearsal precede nine new unmistakably fictional PDF uploads, byte-
+verified downloads, new Pending submissions, ordinary approval and exact review.
+Original verification sources, vehicles, assignments, profiles, saved days/slots
+and Tracking rows retain identical hashes. No original document is repointed or
+deleted; declarations stay unchanged. The initial rehearsal catches the normal
+verification/ storage-prefix requirement; its failed receipt remains recorded
+and the validator is retained. Plan/rehearsal/backup/apply receipts are under
+`.local/provider-fleets-20261014/local-demo-correction-*.json`.
+These fictional facts exist only in the local preview and must never be used as
+production ownership or operating-authority evidence.
+
+Actual web/Expo phone Featured/profile/card flows and desktop web cards/actions
+now pass. The existing current roster again returns eight trucks with neutral
+Driver labels. The ordinary local automatic worker creates only two missing
+future days; existing saved days and slots stay byte-identical. All seven dates
+October15–21 have eight eligible pairs, with no empty day. Receipts:
+`.local/internal-workflows-20261014/provider-repaired-demo-cards-{phone,desktop}-runner.json`
+and `.local/provider-fleets-20261014/{local-demo-featured-api-readback,local-demo-week-receipt}.json`.
+The previous anonymous empty-roster failure remains recorded. Full release gates,
+owner visual approval, hosted migration review and deployment remain pending.
+
+October15 continuation finds and repairs two additional client gaps before full
+gates. WEB-MOB-043: Home no longer lets the truck ID cached at sign-in override
+the sole current server pair, and Fleet editors remount from persisted fields
+after an awaited reload. Four real-render regressions plus thirteen existing
+owner-presentation checks pass. Actual Expo A-to-B reassignment holds the read
+in flight, preserves the selected truck, then shows B on map Home with one saved
+assignment and zero Auth refreshes. WEB-MOB-042: a shared confirmation replaces
+the no-op React Native Web Alert on five controls. Actual cancel/confirm flows
+persist invitation cancellation, driver removal, private-capacity revocation,
+Tracking-recipient removal and permitted status-only Tracking cancellation with
+history retained. Both cases pass with exact synthetic cleanup and no page errors:
+`.local/internal-workflows-20261014/provider-mobile-deep-actions-phone-corrected-runner.json`.
+Browser Escape/backdrop and actually painted-overlay checks now also pass, with
+zero mutation on dismissal, all five confirmed commands persisted and exact
+cleanup. Receipt:
+`.local/internal-workflows-20261014/provider-native-confirmation-painted-phone-runner.json`.
+
+The new exact-source rollback suite proves21 authority-command denials for
+removed Trust, suspended accounts/staff, rejected/More Info sources, swapped
+revisions and missing/past/overlong/malformed expiry. Denied operations preserve
+all own source/fact/audit snapshots; valid controls succeed. The aggregate now
+contains23 passing rollback cases with current source hashes verified:
+`.local/provider-fleets-20261014/fixture-compatibility-summary-23.json`.
+The prior22-case evidence remains unchanged. The local no-raw-log browser wrapper
+records the initial wrong preview route as failed; its exact synthetic leftovers
+are verified removed in `confirmation-first-attempt-cleanup.json`. No production
+repair was made for that harness error.
+
+All555 audited explicit native messages, including the new confirmation props,
+have all four translations. Dynamic/record copy and linguistic fluency still
+need ordinary review; the count does not prove every string in the app. Root and
+mobile types and focused lint pass. The remaining changed registration/document/
+paging cases now pass: two provider/employee registration controls; all three
+public fleet sizes including105 trucks; private document submission and terminal
+review; five Expo personal-identity/recovery/photo cases; and all three employed/
+OWNED/PERMISSION onboarding flows. The long employed case proves real email
+verification, first capacity/GPS, all permission combinations, reassignment reset,
+owner-managed capacity/location, contact editing and offboarding. Final receipts:
+`provider-document-profile-desktop-scoped-runner.json` (two passing registration
+cases; its later paging failure remains recorded),
+`provider-document-profile-all-card-scope-runner.json` (five pass),
+`provider-native-personal-current-phone-runner.json` (five pass), and
+`provider-fleet-onboarding-explicit-empty-desktop-runner.json` (three pass), all
+under `.local/internal-workflows-20261014/`.
+
+Failures were classified before changing assertions: registration selected two
+valid Add driver links; old onboarding assertions looked for duty in a moved
+header and treated a valid Off Duty reset as an incomplete Empty signal; paging
+used a single-element assertion for many cards and an oversized cleanup URL.
+Current assertions preserve all-card exclusions and explicitly select Empty
+before GPS/coverage denial. Cleanup is bounded, retains original failures and
+records exact UUID ownership/absence. The prior105-driver paging leftovers are
+separately proven absent in `paging-first-attempt-cleanup.json`; source deletion
+cascades its synthetic review through existing permissions, never a new grant.
+No product guard was weakened for a fixture failure.
+
+Final root typecheck also passes after adding explicit types to the two browser
+fixtures. The new annotations change neither emitted JavaScript syntax tree;
+the source-to-runtime parity receipt binds the new hashes to their passing
+browser runs without repeating unchanged behavior:
+`.local/provider-fleets-20261014/final-test-type-annotation-parity.json`.
+
+Owner visual review of signup/Fleet/Trust review/Home/confirmations is pending
+at the running3100/8084 previews. Full quality/build/CI and hosted rollout have
+not run; there is no new commit, production release or Android artifact.
+
+## October 14 deeper internal-team workflow audit — local verification complete
+
+Owner extension: check the less-used, nested admin, Support and transport-team
+actions against what their labels promise. Keep existing features and layout;
+repair concrete defects without adding a new product surface. Loadgistic local
+services and exact synthetic fixtures only. Contracts: FEAT-ADM-001,
+FEAT-SUP-001, FEAT-GST-001, FEAT-FTR-001, FEAT-VER-001 and FEAT-TRK-001.
+
+- [x] Finish the existing bounded staff access cases. Authenticated API, Brokerage and Owner cases pass independently; the final isolated Support maintenance case now also passes create/edit, all seven saved responsibility flags, suspend/restore, explicit revoke, current delegated reads and ordinary mobile OTP WEB_ONLY denial. Exact synthetic cleanup passes. Earlier timeouts/unclassified retries are retained as failed attempts, not product-failure or credential evidence. Final Support receipt: `.local/internal-workflows-20261014/staff-support-final-runner.json`.
+- [x] Inventory nested controls, their API/command and durable state, existing acceptance coverage and missing negative checks; source inspection is parallel, the shared browser queue stays serialized. WEB-MOB-031 through036 record the concrete findings.
+- [x] Exercise Support/Brokerage assignment, replies, retained history, closure/new-chat, attachments and read/alert boundaries with real local writes and scoped authorization. Passing focused cases cover each step; earlier combined-chain failures remain recorded rather than being relabeled as full passes. Member-Support manual transfer remains a separately recorded absent feature (WEB-MOB-037).
+- [x] Exercise Featured manual controls and admin Records/Reviews/privacy maintenance; verify saved state and permitted/denied staff access rather than page-load success. Document, rating, overlapping-moderation, deletion and Featured manual/sponsor workflows each pass desktop/phone. Featured saves draft/published state, exact manual times, sponsor save/disable and revoked-role denial without changing automatic controls. Its new harness initially used an exact label for the nested truck-count select; the existing accessible combobox role resolves that test-only mismatch. Document review's direct-child summary correction likewise changes no product behavior. Actual receipts below; release and visual gates remain separate.
+- [x] Extend actual Operations acceptance to Tracking appeal Approve/Release/Dismiss and the existing Driver-permission, Capacity Off Duty and truck-route removal controls. Both cases pass desktop/phone using actual forms, scoped synthetic records, retained proofs/history, current-authority denials and exact cleanup.
+- [x] Finish confirmed repairs and their focused workflow checks. Web Tracking honors each server-permitted recovery action (five component and two real role cases pass). Retained-guest assignment waits for hydration (two component and two browser cases pass). Driver-owner links and out-of-range Content/Privacy queues pass16 component checks and four desktop/phone cases. Function-only143/144 are installed locally after isolated SQL/rollback checks and a fresh combined restore/catalog gate (NR-43/44): all1,088 candidate function metadata records match and78 business tables remain unchanged; the original one-row runtime throttle-counter drift is retained. FIFO Claim and overlapping-moderation controls pass both viewports. The additional chat Seen, admin filter and Operations map repairs now pass their focused component/actual workflow checks below. No hosted apply.
+- [x] Update traceability, prevention lessons and the actual owner review captures. Local web/mobile previews remain running.
+- [ ] Obtain the owner's explicit approval of the current layouts before full quality/build/release gates. The consolidated review question links actual Account and Waiting captures plus both previews. Hosted SQL/fixture changes, exact signing and production rollout retain their separate requirements; this local audit does not authorize them.
+
+Additional bounded finding: admin Private capacity forwards initial repeated
+query values and transporter text into truck matching differently from its API
+and subsequent map requests (WEB-MOB-038). The local fix reuses the established
+validation/error state and preserves the search drawer and permission boundary;
+three regressions fail before the fix and all14 focused checks pass afterward.
+Two actual desktop/phone cases also pass reload denial, API400, modal correction,
+retained search text and canonical API200. Receipt:
+`.local/internal-workflows-20261014/admin-capacity-ssr-actual-runner.json`.
+No new UI layout or feature.
+
+The deeper Tracking recovery diagnostic passes genuine local email delivery
+and code verification, then exposes an actual Operations map contract mismatch
+(WEB-MOB-039 / NR-45). The old staff RPC result was passed directly into the new
+typed map renderer. The scoped adapter now preserves both database authority
+checks and allowlists actual saved route/current obscured-location fields before
+conversion; it invents no public truck summary. Six regressions fail before and
+all seven pass after the fix. Two actual desktop/phone lifecycle cases then pass
+saved three-city route / 20 km circle, correction, reassignment/reset, workspace
+correction, retire/restore, forged provider cancellation denial, investigated
+cancellation, history and guest revocation with exact cleanup. Current map and
+progress-panel selectors replace stale historical test selectors. Receipt:
+`.local/internal-workflows-20261014/lifecycle-internal-repaired-runner.json`.
+No original email failure cause is inferred and no production change occurred.
+
+Additional Operations Records acceptance now passes both desktop/phone cases:
+actual Driver-permission off/on saves, Capacity Off Duty, truck-bound route
+removal, provider denial, three revoked stale forms, exact audits and unrelated
+record isolation. Exact cleanup/residual checks pass. Receipt:
+`.local/operations-connected-actions-20261014/records-controls-desktop-phone-runner.json`.
+The first attempt stops before fixture creation because its new preflight
+evaluates an unset test-runner NODE_ENV; the corrected explicit test-only argument
+changes no process/server setting.
+
+Appeal verification exposes a separate harness boundary: the first observed
+development proof fetch has HTTP200 but an aborted zero-byte Playwright body.
+The single-object diagnostic proves the acknowledged Storage object, authorized
+adapter, served API and actual painted image Blob are all exactly the expected
+15,848 bytes. Native URL behavior and CSP remain unchanged; the test observes
+only the actual Blob argument, delegates native calls and retains no image bytes.
+Receipt: `.local/operations-connected-actions-20261014/proof-boundary-observed-desktop-runner.json`.
+The focused staff decision cases now also pass desktop/phone: actual Driver
+appeal intake, provider-denied decisions, Approve→Completed with staff approval,
+Release→Cancelled without delivery approval, Dismiss→Unloading, retained proofs/
+history, exact audit counts, revoked stale forms, terminal replay denial and
+unrelated-shipment isolation. Six acknowledged proof objects, three shipments
+and six synthetic identities are cleaned per viewport, with exact residual
+checks. Receipt:
+`.local/operations-connected-actions-20261014/tracking-appeals-final-desktop-phone-runner.json`.
+The earlier failed observations remain recorded and are not product fixes. The
+wrapped Decision select also required the established accessible combobox role
+in the test, not a product-label change.
+
+Final focused source verification passes48 checks, root/mobile types,36-spec/
+568-source validation and whitespace. These are limited verification evidence,
+not the full quality/build/remote release gate. Both preview HEAD checks return
+200. No commit, hosted write, deployment, new APK or physical-device/background
+notification result is claimed.
+
+Actual browser receipts: `.local/internal-workflows-20261014/tracking-permissions-final-runner.json`,
+`.local/internal-workflows-20261014/admin-connected-complete-runner.json` and
+`.local/internal-chat-audit-20261014/readiness/sanitized-receipt.json`.
+Installed144 additionally passes four component and two actual desktop/phone
+FIFO Claim cases: paused/full workload, tied ordering, page2, forged later claim,
+one saved first claim/event/audit, next eligibility and permission revocation.
+Receipt: `.local/internal-workflows-20261014/support-fifo-actual-runner.json`.
+Basic rating decisions pass two desktop/phone cases, including real owner email
+approval, Uphold/Remove notes/context, provider denial and terminal replay.
+Receipt: `.local/internal-workflows-20261014/rating-decisions-actual-runner.json`.
+The basic-rating harness previously omitted proof-object cleanup; future runs
+now retain exact acknowledged paths for cleanup. Unidentified historical objects
+are left untouched and are not claimed clean. A fresh focused desktop rerun now
+passes the actual decisions and this cleanup:
+`.local/internal-workflows-20261014/rating-proof-cleanup-final-runner.json`.
+Overlapping moderation passes saved Trust Hide/Restore and rating Uphold/Remove,
+canonical public HTML/API text/count/average, stale revoked-authority denial and
+exact cleanup. Deletion passes inbox verification, persisted receipt, phone-size
+admin processing, private image erasure/Auth anonymization, other-account isolation
+and exact residual cleanup. Featured manual controls also pass both viewports.
+Receipts: `.local/internal-workflows-20261014/moderation-conflict-actual-runner.json`,
+`.local/internal-workflows-20261014/play-deletion-actual-runner.json` and
+`.local/internal-workflows-20261014/featured-connected-final-runner.json`.
+Waiting's plain identity wrapper/initials retain the linked-row grid alignment;
+the fresh phone workflow/capture passes after the two scoped CSS selectors:
+`.local/internal-workflows-20261014/support-fifo-alignment-phone-runner.json`.
+Support roundtrip confirms replies, private upload/download and scoped handoff
+revocation before an unclassified older-history UI failure; an isolated
+history/sequence probe passes. Handoff in that probe is an explicit fixture
+change, not evidence of an existing member-transfer control (WEB-MOB-037).
+Brokerage's focused foreground reply case passes, and receipt-only503 recovery
+preserves Sent before real retry saves Seen on Expo/web. Its independent
+history-only run passes Refresh/Older/Latest, the original exact cursor assertion,
+new-reply isolation and visible Seen. The earlier combined history assertion
+failure remains unclassified; it is not used as proof of a product fix.
+Focused receipt negatives also pass mobile403, forged400 and stale-assignment409
+without changing stored cursors. Public Marketplace alerts preserve unread state
+outside the chat. The actual consent-dialog visibility gap is repaired using
+the existing authorized poll and guarded reporter: four component and nine
+policy checks plus the actual public→own web chat regression pass.
+
+Support Keep/End, Past chat and distinct new request pass before a stale staff
+landing-text assertion. The separate staff-Close run then passes real303 to the
+correct destination, saved CLOSED and Expo read-only retained history/reload.
+Native Brokerage Keep/End, saved access end, ended-send409, retained phone/history,
+actual staff Resolved, private-note exclusion and distinct Start-new request all
+pass. One inbox alias used as a table column was corrected only in that harness
+before its controlled retry. Exact synthetic cleanup is verified for each case;
+interrupted fixtures use a protected UUID-only ownership manifest. Receipts:
+`.local/internal-chat-audit-20261014/public-receipts-only/sanitized-receipt.json`,
+`.local/internal-chat-audit-20261014/brokerage-history-only/sanitized-receipt.json`,
+`.local/internal-chat-audit-20261014/support-staff-close-only/sanitized-receipt.json`
+and `.local/internal-chat-audit-20261014/brokerage-closure-only/sanitized-receipt.json`.
+Neither original full chat chain is relabeled passed. WEB-MOB-036 admin queue
+refresh and WEB-MOB-024 driver-handover signal policy remain recorded separately.
+Production remains unchanged.
+
+## October 13 account registration and maintenance audit — active
+
+Scope: Loadgistic only, local services and disposable test accounts. The newest
+owner request adds less-tested signup, registration, account editing and staff
+maintenance without replacing the personal-identity work below. Production is
+unchanged. Contracts: FEAT-APP-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-ADM-001,
+FEAT-SUP-001 and FEAT-GST-001; prevention rules NR-40 through NR-42.
+
+- [x] Map and independently inspect the user/admin/staff UI, APIs, database commands and existing coverage.
+- [x] Repair staff suspension/restoration: preserve all seven responsibilities, lock the staff row before copying flags, and retain chat requeue/audit/denials. Exact owner-approved142 is installed locally after backup and clone rehearsal.
+- [x] Block mobile Account Save until the current account's private details load; prove Retry, draft preservation and identity isolation.
+- [x] Preserve a committed signup or fleet join after refresh failure and retry only reads; hide an obsolete saved-photo preview after its read fails. Company-only signup fields retain drafts without entering Independent commands.
+- [x] Repair the actual new-account sign-out: global member chat/push/location activity waits for server-confirmed ACTIVE. Pending signup/join and independent guest chat remain usable; server authorization and revocation are unchanged.
+- [x] Complete20 genuine web desktop/phone cases and8 Expo cases with real Auth, uploads, persistence, privacy and scoped denial checks.
+- [x] Finish the remaining independent Support maintenance case. The final scoped case passes all maintenance/current-permission/mobile-denial assertions with exact cleanup. Authenticated-bearer, Brokerage and Owner cases remain their separate passing evidence; a denied request alone is never credential proof.
+- [ ] Obtain owner visual approval of the actual account/profile captures before full release gates. A review question is pending; previews remain3100/8084.
+- [ ] Prepare separately reviewed hosted SQL/fixture/build operations only after the required gates. Local approval is not hosted approval.
+
+Staff142 evidence: actual old-failing/new-passing SQL, a two-session race,
+drift refusal and exact rollback pass on a restored clone. The main installation
+preserves all 1,084 prior function/aggregate metadata records except the reviewed
+target, adds one owner-only backup, and changes no recorded rows or ledger.
+Rollback-only staff and141 integration pass with all 1,085 installed metadata
+records preserved. Unchanged retired-billing SQL passes with plans disabled,
+preserving historical billing rows. Receipts:
+`.local/staff-active-permission-142-retry-20261013/evidence.json` and
+`.local/staff-active-permission-142-20261013/main-install-receipt.json`.
+
+Actual web evidence: 14 identity/photo/grouped-workspace/normal-signup cases plus
+six email-change/closure/fleet-access cases pass across desktop and phone. Normal
+Company and OWNED-Independent signup creates zero subscriptions. Company signup
+also exercises unverified-driver assignment, that driver's email-code access,
+valid Tracking permission denial with no shipment, location, publication and
+reassignment. Email change confirms both inboxes, target binding, saved Auth and
+profile identity; closure preserves history and denies later access. Fleet-form
+navigation is not an actual replacement write. Receipts:
+`.local/personal-identities-web-141-20261013/web-evidence.json` and
+`.local/account-maintenance-web-20261013/evidence.json`.
+
+Actual Expo evidence: 8 distinct cases pass signup/Join, initial-read Retry,
+committed-save recovery, account/public-phone editing, separate real Driver and
+provider photo upload/replacement/Keep/Remove, private-file painting, public
+privacy, session recovery and390/320 Featured/profile/map details. Faults affect
+only read/refresh transport; writes are real. The exact new-account failure was
+verification 200/ONBOARDING and policy 200 followed by chat/handover
+403/ACCOUNT_UNAVAILABLE, then a cleared client session. Three client guard lines
+fix the lifecycle error;6 provider-component cases fail before/pass after,
+26 activity/controller/chat/background checks and37 identity/editor checks pass.
+Root/mobile types, scoped lint, 36-spec validation,23 targeted localization/API/
+image/editor checks and whitespace pass. Receipts:
+`.local/workspace-activity-scope-20261013/evidence.json` and
+`.local/personal-identity-20261013/native-acceptance-receipt.json`.
+
+The expanded staff run supplied both responsibilities' create, maintenance,
+suspend/restore, explicit revoke and ordinary mobile OTP denial evidence, with
+all14 recorded queue/Featured statuses matching without following redirects.
+Its extra401 bearer result was not accepted as authenticated403. A separate
+positive Auth/projection probe now passes12 direct/wrapped/refresh WEB_ONLY
+denials. Independent Brokerage and Owner browser cases also pass. Support's
+split case had a navigation timeout and an unclassified permission-edit failure.
+The final granular isolated Support case now passes, preserving all seven flags,
+explicit revoke and ordinary mobile OTP denial. Exact synthetic profile/Auth/
+permission cleanup passes; no product permission was weakened. Receipts:
+`.local/account-maintenance-staff-split-final-20261014/evidence.json` and
+`.local/internal-workflows-20261014/staff-support-final-runner.json`.
+
+Coverage limits remain explicit in WEB-MOB-024 through030. The shared seeded
+provider helper still inserts historical sponsored subscriptions; normal signup
+is the separate plan-free proof. Driver-change signal inheritance needs its own
+policy/runtime fix; installed Android, physical dialer/GPS/push, native actual
+truck replacement and the later5,000-truck scale gate are not inferred from web
+or Expo. External OSM tiles are mocked only in the existing Company Driver
+permission context, not claimed as physical location or tile-delivery evidence.
+
+## October 13 personal identity and portrait separation — active
+
+Owner clarification: restrict personal public details to first name, an existing
+handle, explicit public contact number and optional photo; retain company business
+information. First name and Last / father name are separate entry fields. Existing
+private full names/history and authorized fleet management remain intact.
+
+- [x] Inspect current signup/account commands, public projection paths and separate image storage; record FEAT-IAM-001 / FEAT-PRV-001 acceptance before code.
+- [x] Backend source and isolated rehearsal: add compatible structured personal-name/callback contracts and one safe public projection; prove permission, Unicode-whitespace and private-data denial across profile/search/Featured/capacity/guest Tracking.
+- [x] Frontend source and focused checks: reuse own-driver/transporter upload controls, separate first/last-father entry and explicit public callback editing; add role-specific blank icons and distinct driver/provider display images on web/mobile. Genuine browser workflows remain a separate step below.
+- [x] Prepare disjoint credential-free demo picture assignments with some blanks; apply only the exact local preset corrections, preserving existing uploads and all other fields.
+- [x] Rehearse additive SQL locally and apply the exact owner-approved141 to the local preview; verify all four rollback-only SQL checks and preserved historical data/permissions.
+- [x] Finish genuine edit/reload/upload workflows and capture desktop/phone/Expo states;20 web and8 Expo cases pass as detailed above.
+- [ ] Obtain owner visual approval of the account/profile captures; the review question remains pending.
+- [ ] After approval run full gates and prepare exact hosted SQL/fixture/build/signing reviews; this checklist grants no hosted write.
+
+Audit findings: public reads split names inconsistently and can publish an
+independent provider's personal legacy business-name copy. Existing uploads are
+subject-separated, but21 Driver preset assets reuse transporter photographs and
+no demo transporter is blank. Own-driver callback editing is missing from Account;
+its private account phone must never be reused. No employee personal handle exists
+today, so none is fabricated. Backend and frontend work have nonoverlapping owners;
+all browser jobs are serialized against the existing Loadgistic previews.
+
+Initial focused evidence:33 backend checks,16 web editor/presentation checks and30 native
+identity/card checks pass. Root/native types, scoped native lint,36-spec/568-source
+validation and five localization checks pass. Final141 passes actual isolated
+identity, account-erasure, synthetic public-privacy and unchanged140 SQL checks.
+All21 original function owners/permissions/settings and historical rows remain;
+six new helpers are service-only and backups are owner-only. Post-use rollback
+refuses before changing saved identity; pre-use rollback restores exact originals.
+Two draft SQL source errors were caught and atomically rolled back in the clone:
+parenthesize a CASE expression and replace a complete coupled expression rather
+than executing an invalid intermediate definition. Backup names use a short
+suffix within PostgreSQL's identifier bound. No main/hosted incident occurred.
+
+The local preset operation changes45 Driver picture values and five transporter
+preset values, leaves an existing user-uploaded transporter image untouched,
+and preserves all other profile/page data.24 Driver photographs and transporter
+photographs now use disjoint fixture pools; some subjects remain honestly blank.
+Source mappings and the local correction are distinct from any hosted demo update.
+
+Bounded143-fixture clone timing, three samples per read, shows added median cost:
+public page134→162ms; public searches254→374ms and331→463ms; private
+searches125→268ms and172→330ms. The130 document-scan guard remains intact;
+unpaged search candidate construction needs the later scale gate. This is not a
+5,000-truck performance pass, and no discovery reduction or extra user click is
+introduced to hide that cost.
+
+Protected rehearsal receipts:
+`.local/personal-public-identity-141-20261013/evidence.json` and
+`.local/personal-identities-141-20261013/preset-operation-receipt.json`.
+The owner explicitly approved the exact local preview141 update after automatic
+review rejected the first attempt before execution. The exact141 local install
+now passes27/21/6 function/permission integrity and all four SQL regressions;
+historical identity/routes/Services and ledger gap remain unchanged. Public read
+readiness is200. Genuine identity browser verification passes as detailed above;
+hosted141, visual approval, full release gates and matching Android remain pending.
+
+## October 13 transporter-profile and route ownership cleanup — active
+
+Newest owner instructions: About is enough descriptive provider text; remove
+Transport services, provider Regular service and the bottom booking-checklist
+block. Put a transporter-scoped See trucks on the map action above its fleet.
+Keep contacts, documents, reviews, fleet disclosure and truck-specific details.
+
+- [x] Inspect actual stored ownership, commands and every route projection; record FEAT-PRV-001, FEAT-CAP-001 and FEAT-FLT-001 acceptance before code.
+- [x] Implement provider presentation/editor removal and retained Services save/projection contracts; focused application checks pass.
+- [x] Implement pair-scoped regular reads/writes, retained unbound history and stale/unauthorized denial; final frozen140 passes isolated rehearsals and is installed only in the shared local preview.
+- [x] Verify public/private pages, clusters, search and Featured never inherit another truck's route; exercise actual scoped save/remove and preserved profile/fleet behavior.
+- [ ] Translate the map action, capture web/phone/native previews and obtain owner visual approval before full release gates.
+- [ ] Prepare exact new migration/compatibility/backup/rollback review; no hosted write or new Android signing is authorized by this local checklist.
+
+Focused application evidence:48 backend/API/projection checks,11 frontend
+component checks and4 additional native profile-card checks pass. Root/native
+types and36-spec/564-source validation pass. Two web single-truck profile cases
+and one Expo profile/map-link case at390/320 passed before140 installation.
+Final140 focused browser evidence now passes15 actual cases: seven scoped
+CRUD/regular-location/shared-leg cases and eight profile/localization/summary
+cases. Actual scoped save/update/remove preserves the other pair, legacy rows
+and current capacity; the original shared-leg separation/taps/camera assertions
+remain. Profile headings render all five languages and the native map link is
+usable at390/320. No full release or installed Android verification is inferred.
+
+The first isolated140 rehearsal passes all scoped commands, public/private
+projections, actual cluster totals and Features privacy negatives. A test initially
+used older cached city coordinates; it now uses the command's authoritative
+catalog-resolved coordinates and explicitly proves A's route inside and B/current
+geometry outside. An actual rollback attempt after a synthetic bound save is
+refused without changing the row, functions or index. Pre-use rollback restores
+all17 original function definitions/ACLs/owners/settings exactly. Final140 also
+adds existing public sharing/moderation guards to a retained server-only cluster
+function; no current HTTP/page/native caller enables its overview mode. That
+last guard change passes its fresh isolated rehearsal and shared-local rollback-
+only regression. The exact before dump is protected; original function owners/
+ACLs, route/Services fingerprints and the existing migration-ledger gap remain
+unchanged. No ledger replay, role normalization or hosted write was performed. Evidence:
+`.local/truck-regular-service-140-20261013/` and
+`.local/truck-regular-service-140-fresh-20261013/`,
+`.local/truck-regular-service-140-preview-20261013/evidence.json`,
+`.local/truck-regular-140-20261013/application-evidence.json`,
+`.local/truck-regular-editors-20261013/final-workflows/` and
+`.local/truck-regular-140-profile-final-20261013/`.
+
+Harness-only corrections remain recorded: a nested form locator failed despite
+both correct scope fields; it now inspects each SAVE/REMOVE form explicitly. A
+replacement overlap fixture added a transverse long-distance segment; restoring
+the original regional four-city geometry preserves the intended shared-leg test.
+The root browser failed before page launch under the sandbox, then all eight cases
+passed in the permitted local browser environment. No product assertion, timeout
+or map algorithm was weakened to obtain these passes. Current identity/avatar
+work supersedes these profile captures; recapture before owner visual review.
+
+Inspection confirmed existing profile_routes already have nullable truck/driver
+columns, but current commands and projections ignore them. Reuse those columns;
+do not delete, clone or guess the truck for old unbound routes. Existing Services
+omission currently becomes an empty string, so simply hiding its editor would
+erase data. Change that save contract along with its retired public/search use.
+
+Separately recorded for a later focused handover-policy/safety review: final fleet assignment
+commands leave the previous driver's vehicle capacity snapshot in place; new
+eligible assignments can expose it under the new driver's identity. Independent
+truck replacement already isolates records correctly. This predates the profile
+cleanup; distinguish intentionally retained vehicle facts from driver-specific
+ones and record exact behavior rather than silently
+claiming all current-capacity handover behavior is fixed here.
+
+## October 13 Transporter search refinement — active
+
+Newest owner clarification: truck filters do not constrain transporter search.
+Only the explicit Show trucks action connects a result to the map. Preserve
+eligible available-truck and public/private authorization requirements; retain
+the current map filters when explicitly selecting a transporter for the map.
+
+- [x] Record the independent profile-search contract in FEAT-MKT-001 before code.
+- [x] Remove truck/map fields from profile-search requests on web and mobile, and prevent map-filter changes from restarting an unchanged profile search.
+- [x] Verify independence with restrictive filters, existing blocked profiles, explicit Show trucks and actual local APIs on both previews.
+
+Inspection found an additional required web boundary: applied map-query changes
+key and remount the existing map/feed state, which also currently owns search.
+Retain that map reset behavior, but move the typed search draft/drawer/debounce
+and request-worker lifecycle above the keyed map child. The existing search
+section is rendered back into the same drawer through a typed render callback;
+it must render the map even while search is inactive. Explicit Show trucks closes
+the drawer and uses current map filters. No global/persisted result cache, new
+dependency, provider, API or authentication change is needed. Focused tests must
+prove worker/query/page/results survive map-filter navigation while changed
+public/private authority still discards old scope.
+The original filter form also performs a full-page GET; keeping a stable outer
+worker alone cannot survive that reload. Intercept only its valid JavaScript
+submit using the existing Next router with the same FormData/action and server
+validation, retaining the normal GET fallback. Preserve all hidden identity,
+private-view, multi-selection and location fields plus map reset behavior.
+Implemented with the installed Next Form router, unchanged action/fields,
+prefetch disabled and scroll preservation. Latest source checks:11 web worker/
+controller regressions and11 native search regressions pass; shared3 and retained
+native5 checks remain. A genuine320px web case and390px Expo case each pass:
+identical profile results/count/page survive restrictive map filters without
+another automatic profile request, and explicit Show trucks retains those map
+filters and adds the chosen identity. The earlier six browser cases preceded
+this final independence boundary and were not rerun. Root/native types, focused
+lint, translations and whitespace pass. Updated unedited captures:
+`.local/transporter-search-20261013/{web,mobile}-independent.png`. Independent
+search and map empty-state guidance now say which control actually changes each
+surface. Visual approval, full gates and publication remain pending.
+
+- [x] Record the owner's input-clear, Transporter search naming and results-as-you-type request in FEAT-MKT-001 before implementation.
+- [x] Add visible input clearing and bounded, cancellable live search on web and mobile; keep map filtering independent.
+- [x] Inspect existing public/private search cost and authorization; verify page reset, stale-response denial and request coalescing with focused checks.
+- [ ] Translate changed labels, capture desktop/phone previews and obtain explicit owner visual approval before full release gates.
+
+Recommend that employed drivers appear with their truck's approved first name
+and public contact, linked to their transport company's profile; independent
+drivers retain their own transporter profile. This recommendation has not changed
+driver identity, data exposure or existing profile/search eligibility.
+
+Local search read checks retain only statuses, counts and timings in
+`.local/transporter-search-20261013/`. Six public API queries return200 with at
+most15 items; both unverified private routes return401. Four SELECT-only local
+database timings are1.35–2.04seconds, which justified one actual in-flight
+request with latest-query coalescing instead of abort/restart on each keystroke.
+These are bounded local observations, not production throughput certification.
+No server, schema, authorization, rate limit or hosted setting has changed.
+
+Focused checks pass:8 web worker/form regressions,9 native search regressions,
+5 retained native map/layout/access checks and3 shared query/translation checks.
+Native regressions reproduced and corrected close-animation, marker-close,
+private pause/resume and retained-screen focus races before release. Two genuine
+Expo phone browser cases pass, including English390/320, Amharic320,44px clear
+targets, stable map requests/canvas and no page errors. Web actual-API desktop/
+phone cases pass; all4 distinct web browser cases pass, including desktop/phone
+queue, composition, clear, pagination and camera/filter preservation.
+Current catalogs cover510/510 explicit native messages; dynamic/raw content and
+fluent-speaker review remain separate. Root/native types, focused native lint,
+36-spec checks,564-source checks and whitespace pass. Ranked-search browser
+scenarios now enter meaningful text rather than submitting an empty input;
+their full-suite run remains after visual approval. No full gates or publication.
+
+Presentation follow-up noted during capture: web retains a location-retry
+control inside the transporter drawer. Its map-location purpose belongs with
+location controls rather than profile results; consolidate it in the continuing
+interface cleanup while preserving the action and the two requested map-entry
+buttons. It is pre-existing, unchanged by the live-search refinement.
+
+## October 13 interface cleanup — active
+
+Owner rejected the multi-filter/map visual review and requested deliberate cleanup
+of public web, phone web, mobile and admin presentation. Preserve features,
+workflows, permissions and existing navigation. Controlling spec: FEAT-UIX-001.
+
+- [x] Inspect About, Featured, selected-truck/profile cards and admin queues;
+  identify repeated explanations, cramped facts, oversized mobile cards and
+  prominent internal identifiers. Assign nonoverlapping files to collaborating agents.
+- [x] Root: compact audience-led About, remove its duplicate language selector,
+  audit ordinary-user copy/errors and current Play screenshot sources.
+- [x] Cards: improve native Featured/truck/profile hierarchy and focused web
+  presentation without changing data, map behavior or available actions.
+- [x] Admin: group facts/actions, shorten repeated guidance and improve record
+  labels while preserving all form fields, permissions and confirmation safeguards.
+- [x] Integrate all five languages; run focused workflow/responsive checks;
+  recapture genuine screens and keep both previews running for owner review.
+- [ ] Obtain explicit visual approval, then run full release gates and prepare
+  exact remaining SQL/build/signing reviews. No new hosted write is authorized
+  by this presentation cleanup; migration137 is already live independently.
+
+Local card testing also reproduced a shared public-profile503: an active truck
+has a null optional platform number, but the fleet adapter rejects the entire
+profile. FEAT-PRV-001 now records honest optional-number rendering and distinct
+map-row state; implement and prove it without weakening required-field/identity
+validation, inventing numbers or changing records. Reproduced503 now returns200;
+the valid null remains null/blank rather than a manufactured public identifier.
+Eight adapter/web-component checks pass, including two renderer regressions red
+before the fix; existing numbered/null profiles pass the actual desktop/phone
+check. Public document/contact scopes and twelve-row paging remain intact.
+
+Cleanup evidence:17 staff/copy/localization tests,8 fleet adapter/render tests and
+9 native card/selection/layout checks pass. Actual browser workflows:6 About
+(all five languages and reviewer sign-in reachability),3 admin,9 public/native
+card/recovery/language cases and1 legacy fleet case pass across targeted runs.
+The original failures remain classified: missing native-only menu labels in a
+web-catalog test, hidden-button measurement, real320px Brokerage overflow,
+unused deep-link filter assumptions, retained hidden canvases, a bounded pending
+Back refresh, and the real nullable-number profile defect. No check was suppressed
+or product timeout extended. Root/native typecheck, native focused lint,36-spec/
+561-source checks and511/511 explicit native translation boundaries pass.
+Dynamic/user content and fluent-speaker acceptance are separate from that count.
+
+Curated genuine browser review images: `.local/interface-cleanup-20261013/`;
+admin receipt: `.local/ui-admin-cleanup-20261013/evidence.json`; card captures:
+`.local/ui-card-cleanup-20261013/`. Owner visual review is requested; full gates,
+replacement standalone Play captures, exact SQL/signing approval and publication
+are not completed. No hosted writes, account/role changes, new business records,
+pixel-edited screenshots or commits were made by this cleanup. Both previews run.
+
+## October 13 recurring Featured gap — active
+
+Ordered task ownership and dependencies:
+
+1. Featured: restore automatic nonempty themed days, verify advancing weeks,
+   preserve manual work/history, then prepare exact protected hosted repair.
+2. Tracking: persist pickup → via city → delivery for new shipments; add private
+   route/location maps, readable progress, proof modals and public-safe contact
+   details. Legacy two-city shipments and current privacy/access rules remain.
+3. Capacity: move people/company search inside its drawer, leave map filtering
+   to truck filters, apply a profile to the map only by its explicit action,
+   maximize map space and repair the selected-truck exit hit target.
+4. Integrate shared map/contracts without overlapping edits; complete all five
+   languages, focused browser/native/API/SQL checks and local owner visual review.
+5. Extensive release gates and exact database/build/deployment reviews only
+   after their prerequisites pass. Never hide the earlier Featured fix behind
+   a later UI feature or equate local implementation with live publication.
+6. October13 follow-up: support multiple choices in meaningful truck-filter lists
+   on web and mobile, matching any choice within a group while retaining every
+   other filter requirement. Inspect API/SQL compatibility, record changed contracts,
+   test combined public/private matches, then capture and review the changed UI.
+   Keep shipment endpoints/distances coherent and every selected document required.
+
+- [x] Record the multi-selection request in FEAT-MKT-001 before implementation.
+- [x] Inspect and agree the smallest shared query/matching contract and exact file
+  ownership; implement multi-option lists and bounded compatible backend matching.
+- [x] Verify combined filters, private access, invalid inputs, pagination and reset
+  on web/mobile; provide focused local previews for owner visual approval.
+
+Multi-option local evidence: migration139 patches the installed public-map,
+profile-search and private-match functions; OR within configuration/status/load/
+stop/freshness groups, AND across groups and all required documents. Bounded
+canonical CSV preserves scalar clients and cursor order. Shared preview was
+backed up before139; production is137 after the separate Featured repair. Twenty backend cases, three web
+control cases, fourteen native contract cases and two real-component state cases
+pass; native types/lint and505/505 fixed-message translations pass. Independent
+review caught missing profile-search validation and excessive blank inputs;
+their negative tests fail before and pass after repair. SQL proves real public/
+private/profile matches, routes, document requirements, paging and denial of
+revoked, hidden or inactive records. All14 distinct visible web/Expo cases pass
+across the initial run and focused reruns. Expo checked-state accessibility is
+repaired; actual images load, native/phone controls remain usable at390/320 widths.
+The owner visual review request links current curated screenshots and live URLs.
+No hosted139, visual approval or new Android publication is claimed.
+
+- [x] Reproduce web/native public responses: today's Featured is HTTP 200,
+  unpublished, with zero trucks. Requests are dynamic and not cached.
+- [x] Read-only pinned-project diagnosis confirms AUTO/READY, target eight,
+  131 eligible pairs and five remaining mini-truck pairs in the global round.
+  All fifteen eligible vans have appeared, so Tuesday and four following themed
+  days are intentionally left unscheduled by the current global rule.
+- [x] Owner delegates the best rule that keeps days populated and chooses those
+  still waiting in later weeks. Use independent truck-type rounds, filling up
+  to eight with genuine distinct Drivers; retain saved manual days/history.
+  Sunday selections count toward the same truck-type rounds. No remote
+  data/settings write is made by diagnosis.
+- [x] Add advancing-calendar/unequal-theme regression, implement the approved
+  selection correction, verify local SQL/security/workflows, then prepare exact
+  hosted SQL/backup/rollback review before any hosted correction.
+- [x] Repair the separately reproduced native empty-error response so failure
+  cannot hide retry; preserve programme and navigation on failed refresh.
+- [x] Obtain exact137 hosted-repair approval: owner answered “Approve the Featured
+  repair” October13 for the reviewed SQL/backup/rollback and one generation call.
+- [x] Correct the requested map coverage before another local visual review:
+  Capacity extends behind the floating transport-chat launcher; unverified Track
+  has an empty map background behind its email form. Web and Expo mobile.
+- [ ] Obtain visual approval of those corrected layouts, then complete their full
+  gates. Prepare the independent137 candidate and required security/CI gates now;
+  the Featured repair does not wait on unrelated layout changes.
+
+Local evidence at October13:
+
+- Implemented137; reproduced `CONTINUOUS_TODAY_NOT_FILLED` before it, then
+  eleven SQL suites and both exact rollback rehearsals pass on the fresh isolated
+  restore of hosted ledger136. Backup and grants verified; no hosted writes.
+- Implemented138 three-city routes and safe maps; an independent review fixed
+  whitespace surname exposure, moderated/demo contacts, invalid correction
+  coordinates and native modal blur. Six real local browser/Expo workflows pass
+  (two intentional desktop skips for phone-only cases); OTP and private Storage
+  were exercised. Corrected browser header scoping now permits real basemaps;
+  both desktop/phone Tracking recaptures wait for visible map tiles to load.
+  The final queue caught missing Retry after a malformed native Tracking refresh.
+  The fix passes three component cases and both actual desktop/phone email-access,
+  failed-refresh, retry and close workflows, with private content cleared on error.
+  Independent review also found first-location/route-correction camera fitting
+  was initial-only. The stable-map repair passes six component cases and preserves
+  camera on ordinary refresh. Actual Expo browser checks fit a first saved area
+  outside the original route while keeping the same canvas; later updates keep
+  the existing city screen positions. Native command failure is bounded to one
+  later-frame retry; nine camera cases pass, including throws, rejected commands
+  and an older failure arriving after a newer route request.
+- Native API empty-error repair passes six desktop/phone recovery checks.
+- Capacity people-search/truck-filter separation implemented; three focused
+  browser failures exposed missing translations and a phone zoom-button overlap.
+  Both are repaired; all12 focused desktop/phone web/Expo cases pass, including
+  explicit profile map actions, preserved searches/filters, dismissals and
+  privacy-preserving US visitor-location filters. Clean basemap captures exist.
+- Native selected-truck exit is independent of the MapLibre hit registry. Real
+  component regression fails before and passes after; camera restoration tested.
+  Installed Android center/edge touch acceptance is still pending.
+- The integrated focused browser queue passes28 cases with two intentional
+  phone-only desktop skips after the two Tracking recovery reruns. Separate
+  painted web-map recaptures pass2 cases and first-location camera behavior passes
+  one additional Expo case. These are preview checks, not full CI
+  or installed Android acceptance.
+- Shared local preview DB was protected and updated only with137/138. Its older
+  ledger drift was not used as clean-rehearsal evidence; hosted snapshot136 was
+  restored to `loadgistic_release_20261013` for that separate proof.
+- New138 creation must be coordinated with the updated Android binary: installed
+  1.0.6 does not send a passing city. Do not deploy138 ahead of compatible clients.
+  Featured137 can restore existing clients independently.
+- Visual approval, full release gates, exact hosted SQL approval, signing approval
+  for a new binary and publication of this continuation are not yet completed.
+
+Previews: http://127.0.0.1:3100 and http://localhost:8084.
+Protected aggregate evidence: `.local/featured-20261013/read-status.json`.
+Additional blocked-manual-roster projection and generation-eligibility findings
+are recorded for focused follow-up; they are not asserted as today's live cause.
+
+October13 owner follow-up: exact137 approved; visual review requests more map
+coverage. Web/Expo now extend Capacity behind floating chat and show an empty
+Tracking basemap before email verification. Focused component checks pass;
+all four desktop/phone web cases and both Expo phone cases pass with actual tiles.
+The narrow-phone drawer scrolls its actions into view above chat; the chat touch
+region leaves attribution clear. Screenshots are retained for owner review.
+
+Independent Featured-only candidate `d3b7f1d` is committed/pushed on
+`fix/featured-continuous-20261013`, with no138 or new map layout. Full local
+quality passes496; a fresh isolated hosted136 restore passes seven Featured/
+catalogue suites, the security guard and exact rollback (nine checks total).
+CI `38448023976` failed because its fixtures were imported after137, while an
+assertion incorrectly expected those newer rows in the earlier migration seed.
+The actual approved SQL remains unchanged. Follow-up candidate `1a158f8` executes
+the exact seed against rolled-back pre-installation fixtures, with deliberate
+missing-source failures; all499 local quality tests pass. Its complete CI rerun
+is running as38454443547. Native boundaries, validate (including all SQL and
+exact bootstrap probes), build and container pass; browser shards remain pending.
+Live security is connected: ledger136/catalogue pass, zero ERROR, two existing
+WARN and44 INFO. The owner approved the Featured-only known-warning exception;
+the unchanged strict monitor remains failed/visible. Only137 plus one generation
+may proceed after remaining CI/drift gates. No138/139/settings write is covered.
+No hosted write occurred while preparing that candidate.
+
+Featured137 is now live: exact source1a158f8 / CI38454443547 all eight jobs pass;
+the approved transaction committed19:55:47UTC. One generation created five missing
+days and kept two saved days; all existing days/rosters/history/controls passed
+preservation checks. Aggregate readback shows all seven upcoming dates published,
+each with eight distinct eligible Drivers and no invalid pairs. The live Android
+endpoint returns200/published/eight trucks. Ledger137 and catalogue pass; the two
+approved WARN findings remain visible and the one-use exception is consumed.
+New Tracking138, filters139, map layouts and a new Android binary remain local.
+
 ## October 12 Android test release
 
 Android **1.0.6/code 7** is available to Internal testers at

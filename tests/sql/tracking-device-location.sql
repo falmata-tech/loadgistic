@@ -1,41 +1,49 @@
 begin;
 do $test$
 <<fixture>>
-declare owner_id uuid;driver_id uuid;other_driver uuid;org_id uuid;truck_id uuid;shipment_id uuid;device_id uuid:=gen_random_uuid();
- route_points jsonb;command jsonb;data jsonb;token_digest text:=encode(gen_random_bytes(32),'hex');rotated text:=encode(gen_random_bytes(32),'hex');
+declare owner_id uuid;driver_id uuid:=gen_random_uuid();other_driver uuid;org_id uuid;truck_id uuid;shipment_id uuid;device_id uuid:=gen_random_uuid();session_id uuid:=gen_random_uuid();
+ route_points jsonb;command jsonb;data jsonb;binding jsonb;installation_secret text:=encode(gen_random_bytes(32),'hex');token_digest text:=encode(gen_random_bytes(32),'hex');unbound text:=encode(gen_random_bytes(32),'hex');rotated text:=encode(gen_random_bytes(32),'hex');
 begin
- select m.user_id,m.organization_id,d.user_id into strict owner_id,org_id,driver_id
- from organization_members m join drivers d on d.organization_id=m.organization_id and d.active
- join profiles p on p.id=d.user_id and p.active join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
+ select m.user_id,m.organization_id into strict owner_id,org_id
+ from organization_members m join profiles p on p.id=m.user_id and p.active and p.role='TRANSPORTER'
+ join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
  where m.membership_role='OWNER' limit 1;
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+ values(driver_id,'tracking-device-'||driver_id||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}');
+ perform fleet_accept_invitation(driver_id,fleet_invite_driver(owner_id,jsonb_build_object('email','tracking-device-'||driver_id||'@loadgistic.local','name','Synthetic device driver','phone','+251900000001')));
+ perform accept_content_policy(driver_id,'2026-10-09');
  select id into strict other_driver from profiles where role='DRIVER' and active and id<>driver_id limit 1;
- data:=create_provider_vehicle(owner_id,'{"make":"Device audit","model":"Test","plate":"AUDIT-DEVICE-LOCATION","cargo_configuration":"Mini Box Truck"}');truck_id:=(data->>'id')::uuid;
+ data:=create_provider_vehicle(owner_id,'{"make":"Device audit","model":"Test","plate":"AUDIT-DEVICE-LOCATION","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}');truck_id:=(data->>'id')::uuid;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_capacity',true,'can_manage_tracking',true));
+ insert into auth.sessions(id,user_id,created_at,updated_at) values(session_id,driver_id,clock_timestamp(),clock_timestamp());
+ binding:=register_phone_location_installation(driver_id,device_id,installation_secret,truck_id,false,session_id);
  select current_route_points_json into strict route_points from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
  shipment_id:=gen_random_uuid();
  perform create_provider_tracking_with_recipients(owner_id,jsonb_build_object('id',shipment_id,'code','LGX-'||upper(substr(replace(shipment_id::text,'-',''),1,8)),
- 'vehicle_id',truck_id,'origin_place_ref',route_points->0->>'place_ref','destination_place_ref',route_points->1->>'place_ref','cargo_summary','Synthetic background device regression',
+ 'vehicle_id',truck_id,'origin_place_ref',route_points->0->>'place_ref','destination_place_ref',route_points->1->>'place_ref','passing_place_ref',(select id from place_catalog where id not in(route_points->0->>'place_ref',route_points->1->>'place_ref') order by id limit 1),'cargo_summary','Synthetic background device regression',
  'customer_email','background-owner@example.invalid','customer_email_digest',encode(gen_random_bytes(32),'hex'),'additional_recipients','[]'::jsonb,
  'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
  begin perform issue_tracking_device_lease(other_driver,shipment_id,device_id,token_digest,20);raise exception 'FOREIGN_DEVICE_LEASE';exception when raise_exception then if sqlerrm<>'NOT_FOUND' then raise;end if;end;
  begin perform issue_tracking_device_lease(owner_id,shipment_id,device_id,token_digest,20);raise exception 'OWNER_DEVICE_LEASE';exception when raise_exception then if sqlerrm<>'NOT_FOUND' then raise;end if;end;
- begin perform issue_tracking_device_lease(driver_id,shipment_id,device_id,token_digest,40);raise exception 'WIDE_DEVICE_LEASE';exception when raise_exception then if sqlerrm<>'INVALID_TRACKING_DEVICE' then raise;end if;end;
- data:=issue_tracking_device_lease(driver_id,shipment_id,device_id,token_digest,20);
- if data->>'shipmentId'<>shipment_id::text or data->>'radius'<>'20' or data ? 'recipient_email' then raise exception 'DEVICE_LEASE_RESPONSE';end if;
- command:=jsonb_build_object('lat',41.8781,'lng',-87.6298,'area','Around current device area','precision_km',20,'source','DEVICE_OBSCURED','observed_at',clock_timestamp());
+ begin perform issue_tracking_device_lease(driver_id,shipment_id,device_id,token_digest,20);raise exception 'WIDE_DEVICE_LEASE';exception when raise_exception then if sqlerrm<>'INVALID_TRACKING_DEVICE' then raise;end if;end;
+ perform issue_tracking_device_lease(driver_id,shipment_id,device_id,unbound,10);
+ begin perform report_tracking_device_location(unbound,jsonb_build_object('lat',41.8781,'lng',-87.6298,'area','Synthetic area','precision_km',10,'source','DEVICE_OBSCURED','observed_at',clock_timestamp(),'report_id',gen_random_uuid()));raise exception 'UNBOUND_DEVICE_REPORTED';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_UNAVAILABLE' then raise;end if;end;
+ data:=issue_registered_tracking_device_lease(driver_id,shipment_id,device_id,installation_secret,token_digest,10);
+ if data->>'shipmentId'<>shipment_id::text or data->>'radius'<>'10' or data ? 'recipient_email' then raise exception 'DEVICE_LEASE_RESPONSE';end if;
+ command:=jsonb_build_object('lat',41.8781,'lng',-87.6298,'area','Around current device area','precision_km',10,'source','DEVICE_OBSCURED','observed_at',clock_timestamp(),'report_id',gen_random_uuid());
  data:=report_tracking_device_location(token_digest,command);if data->>'recorded'<>'true' then raise exception 'DEVICE_FIX_NOT_SAVED';end if;
  if not exists(select 1 from provider_shipment_events where provider_shipment_events.shipment_id=fixture.shipment_id and location_lat=41.8781 and location_lng=-87.6298 and created_by=driver_id) then raise exception 'DEVICE_FIX_ACTOR';end if;
  data:=report_tracking_device_location(token_digest,command);if data->>'reason'<>'THROTTLED' then raise exception 'DEVICE_CADENCE_BYPASS';end if;
  begin perform report_tracking_device_location(token_digest,command||jsonb_build_object('observed_at',clock_timestamp()-interval '3 minutes'));raise exception 'STALE_DEVICE_FIX';exception when raise_exception then if sqlerrm<>'INVALID_TRACKING_DEVICE_LOCATION' then raise;end if;end;
- begin perform report_tracking_device_location(token_digest,command||'{"precision_km":10}');raise exception 'UNREVIEWED_DEVICE_PRECISION';exception when raise_exception then if sqlerrm<>'INVALID_TRACKING_DEVICE_LOCATION' then raise;end if;end;
- perform issue_tracking_device_lease(driver_id,shipment_id,device_id,rotated,20);
+ begin perform report_tracking_device_location(token_digest,command||'{"precision_km":5}');raise exception 'UNREVIEWED_DEVICE_PRECISION';exception when raise_exception then if sqlerrm<>'INVALID_TRACKING_DEVICE_LOCATION' then raise;end if;end;
+ perform issue_registered_tracking_device_lease(driver_id,shipment_id,device_id,installation_secret,rotated,10);
  begin perform report_tracking_device_location(token_digest,command);raise exception 'ROTATED_DEVICE_TOKEN';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_UNAVAILABLE' then raise;end if;end;
  update tracking_device_leases set expires_at=clock_timestamp()-interval '1 second' where tracking_device_leases.token_digest=fixture.rotated;
  begin perform report_tracking_device_location(rotated,command);raise exception 'EXPIRED_DEVICE_TOKEN';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_UNAVAILABLE' then raise;end if;end;
- perform issue_tracking_device_lease(driver_id,shipment_id,device_id,rotated,20);
+ perform issue_registered_tracking_device_lease(driver_id,shipment_id,device_id,installation_secret,rotated,10);
  perform revoke_tracking_device_lease(rotated);
  begin perform report_tracking_device_location(rotated,command);raise exception 'LOGGED_OUT_DEVICE_TOKEN';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_UNAVAILABLE' then raise;end if;end;
- perform issue_tracking_device_lease(driver_id,shipment_id,device_id,rotated,20);
+ perform issue_registered_tracking_device_lease(driver_id,shipment_id,device_id,installation_secret,rotated,10);
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_capacity',true,'can_manage_tracking',false));
  begin perform report_tracking_device_location(rotated,command);raise exception 'REVOKED_TRACKING_PERMISSION';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_UNAVAILABLE' then raise;end if;end;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_capacity',true,'can_manage_tracking',true));

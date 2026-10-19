@@ -3,8 +3,9 @@
 FEAT-LNG-001 / FEAT-LUX-001, 2026-09-24.
 
 Write for the action on screen, not for the English sentence structure. This
-pass curates the 146 message groups in `launch-message-keys.json` in Amharic,
-Afaan Oromo, Somali and Tigrinya. The Featured/readability pass adds 42 checked groups (including the official broadcast-window controls) in
+pass curates the 146 message groups in `launch-message-keys.json` in Amharic
+and Afaan Oromo. Earlier Somali and Tigrinya drafts are not offered in the
+current release. The Featured/readability pass adds 42 checked groups (including the official broadcast-window controls) in
 `featured-review-message-keys.json`, covering real run status, waiting turns,
 manual days and plain interface wording. These are editorial drafts; automated checks
 prove rendering and placeholder safety, not native-speaker fluency or complete
@@ -33,6 +34,10 @@ translation of the app.
 - Featured is a rotating showcase. Its schedule is not availability or ranking.
 - Error messages explain the next action. An uncertain shipment save directs
   the user to existing Tracking before another attempt; it must not say it failed.
+- Known application feedback uses its exact reviewed phrase. Unexpected API or
+  device text uses a short localized recovery message in Amharic and Afaan Oromo;
+  the specific English detail still needs its own reviewed key before it can be
+  shown verbatim in those languages. Do not use this fallback for user content.
 
 Keep Loadgistic, email, verification codes and other necessary familiar technical
 terms recognizable. Use natural whole sentences rather than concatenated
@@ -56,14 +61,14 @@ server-generated message has been localized.
 Managed transport wording (owner-approved, 2026-09-24) adds seven contextual
 messages for Arrange transport, the request title/service, document-and-tracking
 explanation, fee agreement, callback action and receipt. The launch key inventory
-checks presence across Amharic, Afaan Oromo, Somali and Tigrinya. These are UI
+checks presence across Amharic and Afaan Oromo. These are UI
 translations, not native-speaker sign-off; user routes, names and messages remain
 untouched. Brokerage staff confirm scope/fee; submission itself performs no checks,
 charges or tracking invitations.
 
 October 10 capacity-network revision: twelve whole-message groups are shared by
 web and native through `src/lib/platform-copy.js`, with contextual wording in all
-four non-English catalogs. About puts recipient access and transporter sharing
+two supported non-English catalogs. About puts recipient access and transporter sharing
 control before discovery and Tracking. Automated tests check shared usage, key
 coverage and desktop/phone rendering; they do not certify native-speaker fluency.
 Promotional captions preserve this operational meaning rather than translating

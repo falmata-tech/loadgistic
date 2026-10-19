@@ -1,5 +1,5 @@
 import type {Page,Request} from 'playwright-core';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';

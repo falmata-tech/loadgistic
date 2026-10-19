@@ -4,7 +4,7 @@ import React from 'react';
 import type {ReactNode} from 'react';
 import Link from 'next/link';
 import {Languages} from 'lucide-react';
-import {LANGUAGES,LOCALE_COOKIE,supportedLocale,translateMessage} from '@/lib/i18n/core.js';
+import {LANGUAGES,LOCALE_COOKIE,supportedLocale,translateMessage,translateFeedback} from '@/lib/i18n/core.js';
 import {loadMessages} from '@/lib/i18n/catalogs';
 import type {Locale,Messages} from '@/lib/i18n/catalogs';
 
@@ -32,6 +32,13 @@ export function useTranslation(){
 /** Explicitly marks fixed interface copy. Never wrap user-generated content. */
 export function Text({message,values}:{message:string;values?:Values}){
   const {t}=useTranslation();return t(message,values);
+}
+
+/** For app-owned feedback from an API: preserve a known message, but do not leak
+ * an untranslated or provider-specific error into a non-English interface. */
+export function FeedbackText({message,fallback}:{message:string;fallback:string}){
+  const {locale,messages}=React.useContext(LanguageContext) as Context;
+  return translateFeedback(messages,locale,message,fallback);
 }
 
 type Tag=keyof React.JSX.IntrinsicElements|'link';

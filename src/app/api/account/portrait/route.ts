@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server.js';
+import {canManageOwnDriverPortrait} from '@/lib/driver-portrait-access.js';
 import {getCurrentUser} from '@/lib/auth';
 import {updateDriverPortrait,removeDriverPortrait} from '@/lib/driver-portrait-storage.js';
 import {redirectWith,text} from '@/lib/redirects';
@@ -8,7 +9,7 @@ export const runtime='nodejs';
 export async function POST(request:NextRequest){
   const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.json({error:'Please log in.'},{status:401});
-  if(user.role!=='DRIVER')return NextResponse.json({error:'You do not have permission to change a Driver photo.'},{status:403});
+  if(!canManageOwnDriverPortrait(user))return NextResponse.json({error:'You do not have permission to change a Driver photo.'},{status:403});
   try{
     const form=await request.formData();
     const keys=[...form.keys()];

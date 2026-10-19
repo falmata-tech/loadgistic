@@ -10,6 +10,19 @@ test('invalid coordinates stay off map and malformed pagination fails', () => {
  assert.equal(parseCapacityPage({ items: [row('a', { location_lat: 100 })], hasMore: false }).items[0].latitude, null);
  assert.throws(() => parseCapacityPage({ items: [], hasMore: true }));
 });
+test('actual saved demo location provenance survives the native projection without private identifiers',()=>{
+ const parse=extra=>parseCapacityPage({items:[row('demo',{location_source:'TELEMATICS',...extra})],hasMore:false}).items[0];
+ for(const location_source of ['TELEMATICS','PHONE_OBSCURED','MANUAL']){
+  const item=parse({location_source,location_is_demo:true,demo_epoch:'private-epoch',installation_id:'private-installation',imei:'private-device'});
+  assert.equal(item.locationIsDemo,true);
+  for(const field of ['demo_epoch','installation_id','imei','location_is_demo'])assert.equal(Object.hasOwn(item,field),false,field);
+ }
+ for(const location_is_demo of [undefined,null,false,'true',1,{},[]])assert.equal(parse({location_is_demo}).locationIsDemo,false);
+ for(const extra of [{location_lat:null},{location_lng:NaN},{location_lat:91},{current_signal_geometry_visible:false}]){
+  assert.equal(parse({...extra,location_is_demo:true}).locationIsDemo,false);
+ }
+ assert.equal(parse({fixture_source:'loadgistic',demo_mode:'RUNNING'}).locationIsDemo,false,'synthetic identity/source settings are not fix provenance');
+});
 test('search is encoded; insecure external endpoints and embedded credentials fail', () => {
  assert.equal(new URL(capacityUrl('https://loadgistic.com', 'A&B')).searchParams.get('q'), 'A&B');
  assert.throws(() => capacityUrl('http://example.com', ''));

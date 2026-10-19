@@ -1,7 +1,7 @@
 ---
 id: FEAT-PLY-001
 title: Play policy workflows and review readiness
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-SUP-001, FEAT-MKT-001, FEAT-TRK-001, FEAT-LNG-001, FEAT-SEC-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-VER-001, FEAT-PRV-001, FEAT-SUP-001, FEAT-MKT-001, FEAT-TRK-001, FEAT-LNG-001, FEAT-SEC-001, FEAT-REV-001]
 problem: A verified binary alone does not meet account deletion, location consent, public-content moderation or reviewer-access requirements.
 behavior: Provide verifiable deletion requests and fulfillment, explicit location consent, report and block controls, and restricted normal-authentication reviewer access without weakening customer permissions.
 contracts: [AccountDeletionRequest, ContentSafetyCommand, BackgroundLocationConsent, ReviewAccountAccess]
@@ -10,6 +10,29 @@ rollout: Implement and verify locally first. Owner visual approval precedes exte
 ---
 
 # Play requirements — verified Android test; Google review pending
+
+## October14 provider-fleet compatibility — accepted planned
+
+FEAT-FLT/IAM/VER-001 / ADR-079 extends personal-provider employers. Existing
+account deletion holds must protect their active employees just as organization
+members are protected. Resolve active memberships before erasure; preserve the
+existing unfinished-Tracking/file-cleanup/reauthentication requirements. Approved
+fulfillment removes that provider's private invitation contacts and source-linked
+authority notes, retaining pseudonymous truck/event/audit history. This grants no
+new deletion authority and does not promise that retained shipment history is
+erased. Tests: `tests/sql/provider-fleet-erasure.sql`,
+`tests/sql/provider-authority-erasure.sql` and existing deletion acceptance.
+Local isolated evidence is recorded separately from hosted installation.
+
+October13 local presentation cleanup (FEAT-UIX-001): retain privacy, terms,
+deletion, reporting/blocking and normal-authentication reviewer workflows.
+Reviewer access is reached from transporter sign-in in the unpublished revision,
+instead of cluttering About. Existing code7 continues to use its original entry;
+the replacement Console instructions must match the final binary before upload.
+Current store driver imagery visibly contains reviewer fixture names; replacement
+screenshots must use purpose-specific plausible synthetic records, real native
+captures and refreshed source/hash/owner-review evidence. Do not suppress valid
+user data in the app or retouch screenshots to hide unverified behavior.
 
 The owner requested all missing Play workflows on October 9. Console developer
 5256539403314542898 / app 4974969611761012361 is independently authenticated under
@@ -108,6 +131,29 @@ And a failed file/Auth cleanup remains retryable rather than reported complete
 And an unrelated account, staff role or client-supplied ownership is never authority
 And deactivation is not presented as deletion.
 
+Given an administrator opens Account deletion requests with an invalid or out-of-range page\
+When its bounded authoritative read completes\
+Then invalid pages use page one and an empty later page recovers at most once to page one\
+And existing requests retain their exact account link, saved status and deletion confirmations\
+And genuine emptiness remains distinct from a failed read\
+And non-administrators cannot read the queue or perform deletion.
+
+Given an administrator requests a deletion queue page beyond its available records\
+When the authoritative API returns its specific later-range out-of-bounds response\
+Then the queue retries page one at most once\
+And first-page range errors, authorization failures and service failures remain visible failures rather than false empty or successful reads.
+
+October14 local queue repair (WEB-MOB-034, owner visual approval pending): the
+existing windowed-page reader now recovers both empty later pages and the exact
+HTTP416/PGRST103 later-range response. Actual page-component regressions retain
+first-page, authorization and503 failures and unchanged confirmation controls;
+all16 focused presentation checks pass. Four actual desktop/phone cases in
+`tests/e2e/admin-connected-queues.spec.ts` verify connected owner records and both
+queue recoveries with exact targets, preserved controls and permission denials;
+terminal receipt is `.local/internal-workflows-20261014/admin-connected-complete-runner.json`.
+This changes presentation/read pagination only, with no erasure command or
+permission change. Rollback restores the queue reader without changing requests.
+
 ## AC3 — Public-content reporting, blocking and moderation
 
 Given a visitor sees a public provider profile, picture or shipment review
@@ -119,6 +165,22 @@ And visitors can reverse their own block
 And terms prohibit objectionable content and are accepted before uploading
 And report spam, cross-tenant mutations and arbitrary target identifiers are denied
 And moderation is a persisted audited action, not merely an alert or placeholder.
+
+Given two or more reports target the same review, or that review also has a rating dispute\
+When authorized Trust staff hide or restore reported content or resolve the rating dispute\
+Then every independent HIDDEN report and terminal REMOVED rating decision continues to exclude the review from public text, count and average\
+And restoring one report never restores another report or overrides terminal rating removal\
+And upholding a dispute never overrides a HIDDEN report\
+And exact same-review decisions serialize, preserve notes and audit history, and leave unrelated records unchanged\
+And existing unauthorized, stale and terminal-command denials remain effective.
+
+October14 migration143 (WEB-MOB-035, installed locally) repairs the effective
+publication rule without adding permissions, broadening report targets or
+changing either queue's independent decision states. Isolated SQL, rollback,
+fresh restore and strict security checks pass; the local installation preserves
+business rows and permissions. Hosted installation needs exact owner review. Rollback
+restores exact previous functions and requires disabling conflicting moderation
+controls until repaired forward; it cannot reverse decisions already recorded.
 And excluding hidden/reviewer workspaces preserves the existing 5,000-truck
 query/payload limits without removing eligible signals or adding user steps.
 Existing workflow fixtures explicitly model already-consented synthetic identities
@@ -141,7 +203,7 @@ And refresh, sign-out and credential revocation retain existing security behavio
 Given the preceding workflows are tested
 Then app and public policy explain actual data, optional permissions, responsible
 contact, deletion/retention, providers and authorized location sharing consistently
-And fixed UI text is covered in all five supported languages
+And fixed UI text is covered in English, Amharic and Afaan Oromo
 And app-content/Data Safety answers derive from inspected runtime/provider behavior
 And store artwork uses the existing approved identity and real app screenshots
 And feature artwork prioritizes a striking freight visual with only the brand

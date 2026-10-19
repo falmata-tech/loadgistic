@@ -1,6 +1,7 @@
 import { ApiError, readApiResponse } from './response';
 import { Platform } from 'react-native';
 import { capacityUrl } from './public-capacity';
+import {businessApiPathAllowed,businessApiArrayResponse} from '../../../../src/lib/mobile/business-api-path.js';
 export { ApiError } from './response';
 const configured = Platform.OS === 'web' && __DEV__ && typeof window !== 'undefined'
  ? window.location.origin
@@ -8,7 +9,7 @@ const configured = Platform.OS === 'web' && __DEV__ && typeof window !== 'undefi
 export const apiOrigin = new URL(capacityUrl(configured, '')).origin;
 if (!__DEV__ && !apiOrigin.startsWith('https://')) throw new Error('HTTPS is required for installed releases');
 export async function apiRequest(path: string, options: { token?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<unknown> {
-  if (!path.startsWith('/api/mobile/') || path.includes('..')) throw new Error('Invalid API path');
+  if ((!path.startsWith('/api/mobile/')&&!businessApiPathAllowed(path)) || path.includes('..')||/[\u0000-\u001f\u007f\\#]/.test(path)) throw new Error('Invalid API path');
   const multipart = options.body instanceof FormData;
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), multipart ? 60000 : 20000);
   const abort = () => controller.abort(); options.signal?.addEventListener('abort', abort, { once: true });
@@ -18,7 +19,7 @@ export async function apiRequest(path: string, options: { token?: string; body?:
       headers: { Accept: 'application/json', ...(options.body === undefined || multipart ? {} : { 'Content-Type': 'application/json' }), ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}) },
       ...(options.body === undefined ? {} : { body: multipart ? options.body as FormData : JSON.stringify(options.body) }),
     });
-    return await readApiResponse(response);
+    return await readApiResponse(response,{allowArray:businessApiArrayResponse(path)});
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError(0, controller.signal.aborted ? 'REQUEST_TIMEOUT' : 'CONNECTION_FAILED', controller.signal.aborted ? 'The request took too long. Please try again.' : 'Could not connect. Check your connection and try again.');

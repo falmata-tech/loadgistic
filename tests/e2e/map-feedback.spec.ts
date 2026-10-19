@@ -1,5 +1,5 @@
 import {openCapacityFilters,closeCapacityFilters} from './capacity-drawer-helper';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
 

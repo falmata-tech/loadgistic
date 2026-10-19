@@ -3,13 +3,173 @@ id: FEAT-MKT-001
 title: Frictionless public capacity marketplace
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FTR-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Manufacturers, workshops, growers, producers, and other capacity seekers need to discover legitimate road-freight options immediately without creating an account or posting demand.
-behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical capacity map with Open to the public selected by default; `/?view=private` uses the same page with an empty map until email verification; `/shared-capacity` redirects to that private view, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Capacity, Track, Featured, then About. One introduction and an Open to the public / Privately shared with you selector sit above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter-name search filters the public map to that transporter's current trucks; a ranked profile search drawer identifies transport companies, owner-operators, self-managed drivers and company drivers, all backed by matching available trucks. There is no separate Provider Market or provider map. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
+behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical capacity map with Open to the public selected by default; `/?view=private` uses the same page with an empty map until email verification; `/shared-capacity` redirects to that private view, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Capacity, Track, Featured, then About. One introduction and an Open to the public / Privately shared with you selector sit above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter search identifies public profiles backed by eligible assigned trucks; an explicit Show trucks action applies the chosen profile to the map while truck filters remain separate. Truck configurations, current load, published location source, stops and freshness support several alternative choices within each group; separate groups and all selected reviewed-document requirements still combine. The driver-selected full/shared load preference remains part of capacity matching, while the separate visitor Space needed control is absent. There is no separate Provider Market or provider map. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
 contracts: [PublicAppShell, PublicWorkspaceNavigation, PublicMarketplaceView, PublicCapacityProjection, PublicTrackingEntry, LocationConsentPrompt, ProgressiveCapacityMap]
 observability: [public_workspace_navigation, public_capacity_query, public_tracking_entry, location_consent_outcome, anonymous_projection_review]
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
 ---
 
 # Public marketplace
+
+### October 13 transporter search refinement — locally verified; review pending
+
+Given truck configurations, load space, current load, reviewed documents,
+freshness, locations, routes or an exact profile are applied to the truck map\
+When searching for a transporter by name, handle, published office city or description\
+Then those truck filters do not affect the profile-search request, results, count or ranking\
+And profile search sends only its text, page and existing blocked-profile exclusions under the public or verified-private authority\
+And a profile still requires at least one eligible available assigned truck in that authorized audience, independently of the map filters\
+And only Show trucks on map applies that profile's identity to the truck map\
+And that explicit action retains the map's existing truck-filter choices\
+And changing map filters does not restart, clear or restrict an otherwise unchanged profile search.
+
+Given JavaScript is available when applying the existing truck-filter GET form\
+Then client navigation submits the same form fields and action through the existing router while preserving profile-search state\
+And server validation, private authorization, multi-selection values and the map reset key remain unchanged\
+And the ordinary GET action remains a working no-JavaScript fallback.
+
+This newest owner clarification supersedes older coupling of profile eligibility
+to the map's selected truck facts or route/document filters. Preserve privacy,
+assignment/availability eligibility and blocked-profile exclusions; do not add
+unavailable/unassigned profiles, expose extra driver data or broaden private access.
+
+Given a visitor opens the profile-search drawer on web, phone web or mobile\
+Then its title and entry control say Transporter search in the chosen language\
+And a visible, accessible Clear search control beside the input immediately clears the text, results, queued query and result page\
+And any already-issued response is invalidated and cannot restore cleared results\
+And clearing profile search leaves the map camera, applied truck filters and selected profile-to-map restriction unchanged.
+
+Given at least two characters are entered\
+When typing pauses for 500 milliseconds while the drawer is open\
+Then the existing authorized search API fetches only its bounded result page\
+And only one automatic search request runs at a time; further typing keeps only the newest query waiting\
+And obsolete results are discarded immediately and cannot present old matches as current results\
+And empty or one-character input sends no automatic search request\
+And web text composition is completed before automatic search\
+And Search or Enter submits a valid query immediately when idle, or queues the newest query while an existing request finishes\
+And a changed query starts on page one, errors remain retryable, and private search still requires the existing verified session.
+
+Clearing or closing cancels queued work and visible interest immediately. An
+already-issued HTTP request may finish without updating the interface; the
+latest interested query runs only after it settles. Unmount/access-scope cleanup
+and the existing request timeout abort transport. Browser cancellation is not
+treated as proof that a database query was cancelled.
+Typing does not query or filter the truck map. Show trucks remains the explicit
+profile-to-map action. Verify request coalescing, cancellation, clearing,
+pagination, private authorization and existing server cost before claiming live
+search is ready. No new search provider, schema or driver-profile policy is
+authorized by this refinement. The owner's driver-profile question is advice,
+not permission to remove existing records or publish additional personal data.
+
+Local verification: `tests/transporter-search.test.mjs`3,
+`tests/transporter-search-web.test.mjs`8 and native
+`apps/mobile/tests/transporter-search.test.mjs`9 checks pass, plus5 retained
+map/layout/access checks. `tests/e2e/transporter-search.spec.ts` and the updated
+real-API `capacity-people-search.spec.ts` pass4 desktop/phone cases;
+`mobile-transporter-search.spec.ts` passes2 actual Expo preview cases. Eight
+bounded local endpoint checks confirm15-row pages and unauthorized private401;
+four SELECT-only database timings establish the need for request coalescing.
+Evidence/captures: `.local/transporter-search-20261013/` and
+`.local/transporter-search-web-20261013-final/evidence.json`. Root/native types,
+focused native lint and translation checks pass. Browser setup retries corrected
+rounded-corner hit samples and obsolete5s dev readiness waits; no product timeout
+was extended. Owner visual approval, full release gates, standalone Android and
+production throughput/publishing remain unverified.
+
+Latest independence verification supersedes the earlier coupled UI:11 web and11
+native search regressions pass, including negative public/private filter leakage
+and persistence above map-query remounts. A genuine320px web browser case and
+390px Expo case prove results/count/page stay unchanged through restrictive map
+filters without another automatic profile query; Show trucks alone adds identity
+and retains the applied map filters. Installed Next Form preserves the original
+GET action/fields, server validation and fallback using client navigation. No
+SQL, API or authorization change. New empty-state guidance is translated in all
+four non-English catalogs. Evidence:
+`.local/transporter-search-web-20261013-independence/evidence.json` and
+`.local/transporter-search-20261013/independence-review-artifacts.json`.
+The earlier six browser cases preceded this final boundary; latest focused
+checks/types pass, but owner visual approval and full release gates remain pending.
+
+### October 13 accepted multi-selection filters — locally implemented; review pending
+
+Given a visitor opens Truck filters on web, phone web or the mobile app\
+When choosing truck configurations, current load, published location source, stop options or update-age options\
+Then each meaningful option list permits more than one selection and shows the selected options clearly\
+And a truck matching any selected option within one list may qualify\
+And it must still satisfy every other supplied filter group and the public or verified-private access policy\
+And no selection means that group is unrestricted\
+And selecting or removing options remains in the draft until Show matching trucks applies it\
+And Clear all restores the map and clears every selected option.
+
+Given a visitor selects reviewed document requirements\
+Then the existing requirement to match every selected document remains explicit and unchanged\
+And public profile search remains separate from truck filtering\
+And numeric distance, shipment origin/destination, direction and date bounds keep their coherent single-value meaning\
+And an existing single-option URL/client remains compatible\
+And invalid, unsupported or excessive selections cannot silently broaden results\
+And canonical multi-option queries preserve pagination and cache isolation.
+
+Given a visitor filters public or authorized private Capacity by location source\
+When one or more of GPS device, phone or manual update are selected\
+Then a truck qualifies when its published capacity location source matches any selected source\
+And that choice combines with every other truck filter before cursor paging\
+And a truck without a published source does not acquire a guessed source\
+And the same source choices apply to a business workspace's authorized Capacity map\
+And no tracker identifier, phone installation ID, exact telemetry or private location data is returned because of the filter\
+And invalid or excessive source choices fail closed under the same bounded filter contract\
+And leaving the source filter empty preserves current results and eligibility.
+
+Acceptance requires combined-option regressions against the authoritative matching
+adapter, equivalent public/private and web/mobile results, and focused desktop/
+phone previews before owner visual review. No additional hosted SQL is authorized
+by the separate approval of Featured137. Inspect existing contracts before choosing
+whether a new SQL adapter is needed.
+
+### October 13 accepted people-search drawer — locally implemented; independence review pending
+
+Given a visitor opens Capacity on desktop, phone web or the mobile app\
+Then the map fills the available workspace down to the application navigation\
+And the transport-chat launcher floats over that map without reserving a separate bottom strip\
+And map gestures, attribution, filters and people search remain usable around the launcher\
+And opening chat or the keyboard preserves the existing conversation and safe-area behavior.
+
+Given a public visitor or verified private-network viewer opens Capacity\
+When the map initially renders\
+Then maximize the usable map and expose only two floating entry controls: people search and truck filters\
+And the people drawer contains its own search input with no automatic initial results\
+And searches match only authorized public profile facts (name, handle, published office city and description), never private emails or plates\
+And profile results identify Drivers, independent drivers and transport-company/owner profiles backed by eligible available assigned trucks independently of applied truck-map filters\
+And each result opens its profile or explicitly shows that person's associated trucks on the map\
+And typing or viewing profile results alone does not apply their text search to the truck map\
+And truck filters affect map trucks independently of the people search\
+And an explicit profile-to-map action combines the selected identity with current truck filters under the existing public/private authorization\
+And the same working distinction exists on desktop, phone web and native Android.
+
+Given a truck is selected and its close control is tapped at its center or edges\
+Then selection closes and restores the prior camera/filter context\
+And the close tap cannot hit the truck-information target\
+And native full marker hit rectangles do not overlap, regardless of visual drawing order.
+
+Keep existing profile availability/assignment eligibility and approved detailed
+truck filters. Reuse the two map controls and profile cards; do not introduce a
+standalone truck search category, expose private records or expand staff access.
+Capture and review the actual local layouts before extensive release gates.
+
+Multi-option verification: `tests/capacity-filter-{values,http,ssr}.test.mjs`,
+`tests/sql/capacity-multiple-options.sql`, web control/browser tests and native
+`multiple-truck-filters.test.mjs` prove bounded canonical alternatives, draft/apply/
+reset, retained single truck registration and public/private authorization.139
+is installed only in the backed-up local preview and disposable rehearsal;
+production remains separate. Native/web pictures and five-language copy are
+included in the focused preview, not a claim of installed Android acceptance.
+
+Local evidence: `tests/e2e/capacity-people-search.spec.ts` passes12 focused
+desktop/phone web/Expo cases with actual local APIs, including independent search
+and truck filters, explicit profile map actions, deep-link dismissal and obscured
+US visitor-location filtering. `selected-truck-exit.test.mjs` proves the native
+exit is outside the marker registry and restores the previous camera. Actual
+installed Android edge/center taps remain unverified. NR-29/35 apply; owner
+visual approval, full release gates and publication remain pending.
 
 ### Scenario: capacity-network purpose leads the interface
 
@@ -19,7 +179,7 @@ Then it leads with viewing transporters' reported space, routes and approximate 
 And public discovery and email-authorized private sharing are explicit choices\
 And providers retain control of public, private, combined and exclusive sharing\
 And private shipment Tracking is a supporting workflow after transport is agreed\
-And the same contextual meaning is present on web and mobile in all five interface languages\
+And the same contextual meaning is present on web and mobile in English, Amharic and Afaan Oromo\
 And no copy implies a paid subscription, platform-owned fleet, guaranteed availability or automatic capacity alerts\
 And the compact introduction preserves map space and the existing navigation.
 
@@ -107,15 +267,16 @@ And free-text search uses published profile details; truck configuration and cur
 
 Given a visitor submits a profile name, public handle, published office city or service description\
 When eligible available trucks belong to the matching provider or are driven by the matching driver\
-Then the drawer shows distinct paginated profile cards and the map shows only those matching truck/driver pairs\
+Then the drawer shows distinct paginated profile cards backed by eligible truck/driver pairs\
+And only an explicit Show trucks action applies a chosen profile to the map\
 And provider cards select the exact provider handle without adding company map markers\
 And driver cards identify the public first name and provider, and locate the assigned truck\
 And truck-only facts, private plate, login/contact data and inactive assignments do not match profile search.
 
 ### Scenario: shipment needs determine matching trucks
 
-Given a visitor chooses full-truck or shared space and supplies optional pickup/delivery locations\
-When filtering public or authorized private capacity\
+Given an existing API caller supplies a full-truck or shared-space requirement and optional pickup/delivery locations\
+When filtering public or authorized private capacity (the current visitor UI offers current load but no separate Space needed control)\
 Then the system checks accepted load types and both current and regular routes/service areas without asking the visitor to choose a signal geometry\
 And route matching evaluates every ordered segment and the selected direction/tolerances\
 And service-area matching evaluates the complete polygon for eligible Empty trucks\
@@ -161,7 +322,8 @@ And update time is used only as a deterministic bounded-cursor retrieval key, wi
 Given a visitor uses the Truck Map on a desktop or phone\
 When search, filters, view choice, or current-location controls render\
 Then the same compact command surface remains visible without hiding beneath the workspace heading\
-And clearing search removes free text plus an exact transporter or truck selection while preserving unrelated explicit filters\
+And clearing Transporter search removes its text/results while preserving the map's applied filters and profile selection\
+And Show all transporters removes an exact profile/truck restriction while preserving other applied truck filters\
 And Clear filters removes all filter values and closes the dialog\
 And applying filters closes the dialog before navigation\
 And selecting Partial availability prevents a Service-area geometry choice because Partial capacity is route-only.
@@ -263,6 +425,30 @@ And repeated explanation moves into provider detail, provider profiles, or About
 And the generated board blends into the public white-space system while retaining a realistic evenly lit surface, numbered truck images, Driver and provider identity, readable scheduled intervals, and current-live emphasis\
 And no fixed illustration determines participant count, row count, or board dimensions.
 
+## October 18 social account identity — approved local implementation plan
+
+Given a visitor searches for a Transport Provider\
+When a query matches its chosen public Account name, canonical handle or account
+manager's first name\
+Then these three published identity fields receive primary matching/ranking\
+And existing explicitly public office city/About remain secondary matching facts\
+And private legal/father names, login emails, unpublished profiles and hidden
+records are never indexed or used as fallback account names.
+
+Given a provider's public identity changes\
+Then its profile/search/map/Featured/truck contact projections use the same
+Account name and handle without changing its truck ownership or authority\
+And personal and fleet providers retain the common Transport Provider label\
+And profile search remains independent of truck filters; only an explicit Show
+trucks action scopes the map to that provider.
+
+Contract additions are Account name and first-name manager fields with existing
+name/title aliases retained for older clients. Reuse bounded search, authorization,
+normalization and existing trigram/text scoring; no managed search service or
+private identity index is introduced. Focused authoritative167 SQL and adapter
+regressions, followed by actual web/Expo tasks, are required before claiming
+completion. Current stage: specification recorded, implementation pending.
+
 ## Contract ownership
 
 - Pages: `/` as the canonical Truck Market; `/featured` as Daily Featured Trucks; `/capacity` and `/providers` as compatibility redirects to the Market; `/track`, `/about`, and `/@handle`
@@ -299,10 +485,11 @@ owner visual approval and deployment remain pending.
 ## Ranked capacity discovery — owner request, 2026-09-27
 
 Supersedes the earlier no-list/two-type suggestion presentation. Only entities
-with a matching discoverable Empty/Partial truck are eligible (owner confirmed).
+with a discoverable Empty/Partial assigned truck are eligible. The October13
+clarification makes profile search independent of the truck map's filters.
 
 - Given open capacity, when searching profile names, public handles, published
-  office city, headline, description or services, then rank exact names/identifiers
+  office city, headline or About description, then rank exact names/identifiers
   ahead of prefixes, all-word text matches and conservative typo matches. Use
   PostgreSQL simple text parsing and pg_trgm, with no hosted search dependency.
 - Given private capacity, then search uses only the verified email projection;
@@ -312,7 +499,7 @@ with a matching discoverable Empty/Partial truck are eligible (owner confirmed).
   Self-managed driver and Company driver using labels, icons and card structure.
   Company-driver results show only the already-published first name and provider.
   A provider/driver appears once per identity, with the count of matching trucks.
-- Given any combined filter, then all criteria match the same eligible truck.
+- Given any combined truck-map filter, then all criteria match the same eligible truck.
   Filters include existing capacity/geography/freshness/configuration criteria,
   current approved document type scoped to owner,
   driver or truck. Pending/rejected/expired documents never satisfy reviewed filters.
@@ -320,9 +507,10 @@ with a matching discoverable Empty/Partial truck are eligible (owner confirmed).
   results. All detailed filter inputs move into one Filters dialog with a light
   tinted backdrop, accessible focus/close/apply and scrollable phone layout.
 - Given search changes, then stale responses are discarded, errors offer retry,
-  results are paginated server-side with stable ranking ties, and applied criteria
-  remain shared with map loading. Clear all resets results, map and filter draft.
-- Given all five UI languages, then new controls and type labels are localized;
+  and results are paginated server-side with stable ranking ties independently
+  of truck-map filters. Clear search resets only profile text/results; map filter
+  clearing resets the map/filter draft. Show trucks explicitly adds identity.
+- Given English, Amharic and Afaan Oromo, then new controls and type labels are localized;
   provider-authored text is shown verbatim and never machine-translated.
 
 Plan: inspect existing safe projections → implement additive migration 112 and
@@ -334,7 +522,7 @@ new read-only functions can remain until a separately reviewed removal.
 
 
 Owner clarification: companies never become map markers. Company cards select
-that provider and show all matching available truck/driver pairs; explicit search
+that provider and show all matching available truck/driver pairs; explicit Show trucks
 loads complete matching cursor pages independent of the initial viewport, then
 fits their truck geometry. Other applied filters remain in force. Empty search
 continues the established viewport-driven map loading.
@@ -344,7 +532,7 @@ Owner's final search clarification: the drawer contains profiles only. Remove th
 result-type/Show selector entirely. Truck facts, identifiers, routes and capacity
 are filtered through truck filters and displayed on the map, not searched as
 profile text or rendered as separate truck result cards. Search matches public
-profile names, handles, office cities and published descriptions/services, plus
+profile names, handles, office cities and published About descriptions, plus
 already-public driver names. It never indexes private account details. Legacy
 resultKind parameters have no effect. Companies still remain off the map; only
 matching available truck/driver pairs render there. Public and private eligibility
@@ -352,15 +540,17 @@ retain the active-driver requirement.
 
 Acceptance additions: GIVEN a truck identifier or make exists only on a truck,
 WHEN entered into profile search, THEN it cannot match that truck's profile by
-that fact alone. GIVEN search or truck filters are applied, THEN result pages
-contain profiles only and every profile has at least one eligible matching pair.
+that fact alone. GIVEN profile search is applied, THEN result pages
+contain profiles only and every profile has at least one eligible available pair,
+independent of the map's applied truck filters.
 GIVEN the filter modal, THEN no result-type selector is offered in any language.
 
 
 Owner simplification: office city is searched using the main public-profile search
 box. The filter dialog has no Office city field or empty Search filters group.
-Published office-city matches still constrain both profiles and their associated
-available trucks. Truck-location geography remains an independent truck filter.
+Published office-city matches constrain profile results only. Show trucks then
+explicitly applies the chosen identity to the map. Truck-location geography
+remains an independent truck filter.
 
 
 ### Scenario: overlapping map descriptions preserve native gestures
@@ -416,3 +606,5 @@ contains feed records, exact driver fixes, tracking/email credentials or recipie
 information. Unrecognized routes/query keys fall back to the area's home. Private
 results are authorized afresh; a bookmark cannot grant access. Test narrow/desktop
 layout and actual switch-return before owner visual approval and full release.
+
+October13 regression lesson: NR-35 in `docs/SECURITY_REGRESSION_REGISTER.md`; local evidence and hosted/visual gates are tracked separately in `docs/PROGRESS.md`.

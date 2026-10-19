@@ -47,3 +47,13 @@ test('wrapped world copies and dateline bounds remain valid database viewports',
  assert.deepEqual(worldCapacityViewport([-540,-90,540,90]),[-180,-85,180,85]);
  for(const bounds of [[270,-10,290,10],[170,-10,190,10],[-540,-90,540,90],[0,-5,1,5]])assert.deepEqual(parseCapacityViewport(worldCapacityViewport(bounds)),worldCapacityViewport(bounds));
 });
+
+test('multi-option database groups are canonical, independent and strictly bounded',()=>{
+ const result=capacityDatabaseFilters({status:'PARTIAL, EMPTY,PARTIAL',loadType:'PTL,FTL',stopOption:'MULTI_PICK,MULTI_DROP',freshness:'UPDATE_NEEDED,FRESH',vehicleCategory:'Pickup truck,Cargo van',locationSource:'MOBILE,GPS,MOBILE'});
+ assert.equal(result.status,'EMPTY,PARTIAL');assert.equal(result.load_type,'FTL,PTL');
+ assert.equal(result.stop_option,'MULTI_DROP,MULTI_PICK');assert.equal(result.freshness,'FRESH,UPDATE_NEEDED');
+ assert.equal(result.vehicle_category,'Cargo van,Pickup truck');
+ assert.equal(result.location_source,'GPS,MOBILE');
+ assert.equal(capacityDatabaseFilters({}).location_source,null);
+ for(const filters of [{status:'EMPTY,FULL'},{vehicleCategory:'Cargo van,Unknown'},{stopOption:'MULTI_PICK,'},{locationSource:'GPS,UNKNOWN'},{status:'EMPTY,'.repeat(40)},{status:'PARTIAL',loadType:'FTL'}])assert.throws(()=>capacityDatabaseFilters(filters));
+});

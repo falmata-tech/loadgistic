@@ -45,7 +45,7 @@ export function useNativePush(input:NativePushInput):NativePushControls{
  const latest=useRef(input),epoch=useRef(0),lock=useRef(false),again=useRef(false),pendingTap=useRef<unknown>(null),opening=useRef(false),handled=useRef(new Set<string>()),previousScopes=useRef({member:'',guest:''});
  const [status,setStatus]=useState<NativePushStatus>('OFF'),[optedIn,setOptedIn]=useState(false),[error,setError]=useState(''),[tapRevision,setTapRevision]=useState(0);
  useLayoutEffect(()=>{latest.current=input;},[input]);
- const scope=(input.session?.user.id||'')+':'+(input.guest?.id||'');
+ const scope=input.session?.user.id||'';
  const register=useCallback(async function registerNow(ask:boolean):Promise<void>{
   if(lock.current){again.current=true;return;}lock.current=true;const version=epoch.current;
   try{
@@ -55,12 +55,11 @@ export function useNativePush(input:NativePushInput):NativePushControls{
    if(!sdk){setStatus('UNAVAILABLE');return;}
    if(!enabledPreference){setStatus('OFF');return;}
    const current=latest.current;if(current.busy||!current.guestReady)return;
-   const activeGuest=current.guest&&current.guest.validUntil>Date.now()?current.guest:null;
-   const scopes={member:current.session?.user.id||'',guest:activeGuest?.id||''};
+   const scopes={member:current.session?.user.id||'',guest:''};
    if(!scopes.member||previousScopes.current.member&&previousScopes.current.member!==scopes.member)await removeNativePushScope('MEMBER');
    if(!scopes.guest||previousScopes.current.guest&&previousScopes.current.guest!==scopes.guest)await removeNativePushScope('GUEST');
    previousScopes.current=scopes;
-   if(!current.session&&!activeGuest){setStatus('OFF');return;}
+   if(!current.session){setStatus('OFF');return;}
    setStatus('BUSY');await sdk.setNotificationChannelAsync('loadgistic-updates',{name:'Loadgistic updates',importance:sdk.AndroidImportance.HIGH,lockscreenVisibility:sdk.AndroidNotificationVisibility.PRIVATE});
    let permission=await sdk.getPermissionsAsync();if(ask&&permission.status!=='granted'&&permission.canAskAgain)permission=await sdk.requestPermissionsAsync();
    if(permission.status!=='granted'){await removeNativePushScope('ALL');if(version===epoch.current)setStatus('DENIED');return;}
@@ -73,7 +72,6 @@ export function useNativePush(input:NativePushInput):NativePushControls{
    let deliveryReady=true;
    if(current.session)deliveryReady=enabled(await current.request('/api/mobile/notifications/devices',body))&&deliveryReady;
    if(version!==epoch.current)return;
-   if(activeGuest)deliveryReady=enabled(await apiRequest('/api/mobile/notifications/devices',{token:activeGuest.token,body}))&&deliveryReady;
    if(version===epoch.current){setStatus(deliveryReady?'ON':'UNAVAILABLE');if(!deliveryReady)setError('Phone delivery is being set up. In-app updates still work.');}
   }catch{if(version===epoch.current){setStatus('UNAVAILABLE');setError('Phone alerts could not connect. In-app updates still work.');}}
   finally{lock.current=false;if(again.current){again.current=false;void registerNow(false);}}
@@ -84,7 +82,7 @@ export function useNativePush(input:NativePushInput):NativePushControls{
   queueMicrotask(()=>{if(epoch.current===version)void register(false);});
   const subscription=AppState.addEventListener('change',state=>{if(state==='active'){void register(false);if(pendingTap.current)setTapRevision(value=>value+1);}});
   return()=>{advance();subscription.remove();};
- },[scope,input.busy,input.guestReady,input.guest?.token,input.guest?.validUntil,input.locale,input.session?.accessToken,register]);
+ },[scope,input.busy,input.guestReady,input.locale,input.session?.accessToken,register]);
  useEffect(()=>{
   let disposed=false;const subscriptions:{remove:()=>void}[]=[];
   void notifications().then(sdk=>{if(!sdk||disposed)return;
@@ -99,13 +97,10 @@ export function useNativePush(input:NativePushInput):NativePushControls{
   if(opening.current||!pendingTap.current||input.busy||!input.guestReady)return;
   const value=pendingTap.current,target=nativePushDestination(value),data=value as {kind?:string;sourceId?:string;eventId?:string};
   if(!target||!data.eventId||handled.current.has(data.eventId)){pendingTap.current=null;return;}
-  if(data.kind!=='BROKERAGE'&&!input.session){router.navigate('/account');return;}
+  if(!input.session){router.navigate('/account');return;}
   opening.current=true;const version=epoch.current;let finished=false;
   void (async()=>{try{
-   if(data.kind==='BROKERAGE'){
-    const guest=input.guest;if(!guest||guest.id!==data.sourceId||guest.validUntil<=Date.now())throw Error('FORBIDDEN');
-    await apiRequest('/api/mobile/brokerage',{token:guest.token});
-   }else await input.request(data.kind==='SUPPORT'?'/api/mobile/support/'+data.sourceId:'/api/mobile/shipments/'+data.sourceId);
+   await input.request(data.kind==='SUPPORT'?'/api/mobile/support/'+data.sourceId:'/api/mobile/shipments/'+data.sourceId);
    if(version!==epoch.current)return;
    router.navigate(target as Href);nativePushRefresh();finished=true;
   }catch(error){if(version!==epoch.current)return;

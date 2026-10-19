@@ -1,15 +1,160 @@
 ---
 id: FEAT-VER-001
 title: Entity and truck verification
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-CAP-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-PRV-001, FEAT-CAP-001, FEAT-ENT-001]
 problem: Public capacity seekers need visible, evidence-based trust signals for providers, Drivers, and truck authority without treating account access or a badge as a guarantee.
-behavior: Authorized providers submit private verification documents for an owned organization, Driver, truck, or existing Driver-truck pairing. Administrators review each request and expiry. Public Capacity Board cards and provider microsites derive vivid category-specific badges only from current approvals and always tell visitors to perform their own checks.
+behavior: Authorized providers submit private verification documents for their organization, personal provider, Driver, truck, or existing Driver-truck pairing. Administrators and assigned Trust staff review requests and expiry. Exact provider ownership, operating-licence holder and drive/manage permission require separate deliberate confirmation against an approved applicable source. Public truck and provider badges expose only current reviewed facts, with concise guidance to confirm details directly. One unreviewed Live truck remains allowed under FEAT-FLT-001; more than one requires its exact qualifying review.
 contracts: [VerificationSubject, VerificationTypePolicy, VerificationSubmission, VerificationReview, VerificationExpiry, DriverTruckAuthorization, VerificationBadgeSummary, VerificationBadgeMeaning, VerificationRiskNotice, VerificationFileAuthorization]
 observability: [verification_submitted_audit, verification_reviewed_audit, verification_denied_outcome]
 rollout: Document names remain extensible; use private Supabase Storage plus actor-scoped PostgreSQL commands in every runtime, seed only explicit demo approvals, and roll back by hiding badges and disabling submissions without deleting review history; never fall back to SQLite.
 ---
 
 # Verification
+
+## October18 optional business verification — planned local implementation
+
+FEAT-ENT-001 adds the BUSINESS_WORKSPACE subject, separately from providers,
+people and trucks. Business owners may submit IDENTITY (manager National ID),
+BUSINESS_LICENSE and BUSINESS_ADDRESS. Existing private upload validation,
+quarantine/scan behavior, PENDING/MORE_INFO/REJECTED/APPROVED states, audit and
+current Trust permission are reused; no truck authority or publishing gate is
+introduced. Documents remain optional for business access.
+
+Each submission records a private context fingerprint of the relevant current
+company/manager identity. Only matching, current, approved, unexpired facts enter
+the provider-only business directory summary. A field edit, transfer, account
+suspension, expiry or archival cannot leave a misleading current badge. Histories
+remain immutable and replacement submissions do not overwrite previous files.
+Only the current owner can submit/read their business proofs; a manager National
+ID remains readable only to that manager while they are the current owner, or to
+currently authorized Trust staff. Teammates/providers receive metadata only.
+
+Given the exact owner submits a valid optional documentWhen Trust requests more information and the owner submits replacement proofThen the replacement is Pending and independently reviewable in the existing queueAnd the original private source/history is retainedAnd approval affects only that exact current business fact, never a truck.
+
+Given a provider, foreign owner or ordinary business teammate requests the proofWhen they know a verification identifierThen the private file is denied even if the reviewed badge is visibleAnd neither direct table/RPC nor an old client bypasses current scope checks.
+
+Given an approved manager ID or business factWhen its relevant identity changes, expires or is no longer activeThen its badge is absent and normal replacement is availableAnd a new owner cannot read the previous manager's ID or inherit its badge.
+
+Local rollout needs169 enum then170 commands/projection, fresh backup/restore,
+negative SQL/API tests and actual owner/provider/Trust browser/file outcomes.
+Source/storage cleanup joins the existing account-erasure stages before completion
+is claimed. Hosted migration/rollout is separate.
+
+## October 14 provider truck authority — implemented locally
+
+Property ownership, financed purchase, operating-licence holder and permission
+to drive/manage are separate facts. Renting does not establish provider ownership
+or a licence in their name. This contract describes our review outcome, not a
+claim about every country's licensing law. FEAT-FLT-001 permits one Live truck
+without document approval; more than one Live truck requires the exact qualifying
+review. Missing review stays clearly labelled, without implying a service guarantee.
+
+### Scenario: reviewed relationship is exact and private
+
+Given Trust staff can review an approved document on an exact truck\
+When they confirm ownership, operating-licence holder with OWNED/FINANCED basis,
+or permission to drive/manage for its provider\
+Then an additive private review records exact source, vehicle, beneficiary
+organization XOR provider profile, factual category, reviewer/time and expiry\
+And the source must be an approved, applicable, unexpired document for that truck\
+And identity matching is deliberate, not inferred from filename, uploaded text,
+use declaration, account category or generic document approval\
+And old terminal document decisions remain unchanged\
+And stale/foreign/mismatched sources and unauthorized reviews are denied\
+And a hidden opaque revision binds the reviewed source, vehicle, beneficiary and
+review/revocation state, so a stale form cannot certify changed facts or undo a
+newer revocation.
+
+### Scenario: revocation preserves the original document history
+
+Given a reviewed relationship was confirmed\
+When authorized Trust staff revoke it with a reason\
+Then the revocation actor/time/reason and original review remain audited\
+And public badges and publication eligibility immediately exclude it\
+And no document/file/history is deleted and replay does not create a second review.
+
+### Scenario: saved staff forms recheck current authority and exact evidence
+
+Given a reviewer loaded a relationship form while Trust access was active\
+When Trust is removed, the staff profile is suspended or the account is suspended\
+Then context reads, confirmation and revocation are denied without changing any
+source document, relationship fact or audit record\
+And Rejected/More Info sources cannot become confirmed relationships\
+And one source's saved revision cannot confirm another source or beneficiary\
+And permission/licence expiry is required, valid, current and no later than the
+source expiry; an invalid date cannot partially create a review.
+
+Focused regression: `tests/sql/provider-authority-command-denials.sql` passes
+21 direct denials with exact unchanged-state comparisons and valid positive
+controls in the isolated local clone. Every fixture remains Draft and rolls back.
+
+### Scenario: qualification loss permits replacement evidence
+
+Given a truck document remains Approved in its private history but its exact
+ownership, permission or operating-licence authority is no longer current\
+When its authorized provider opens Documents and submits replacement evidence\
+Then that category is available unless another current submission is Pending\
+And the new submission starts Pending and cannot restore authority by itself\
+And current exact authority and duplicate Pending submissions still prevent
+duplicate uploads, including simultaneous requests\
+And the old approved source, private file and review history remain unchanged\
+And foreign providers and employed drivers gain no additional subject authority.
+Focused acceptance: `tests/provider-authority-recovery.test.mjs` and
+`tests/sql/provider-authority-recovery.sql` (NR-48).
+
+### Scenario: truthful badges and full-fleet counts
+
+Given an eligible live truck or provider public profile is rendered\
+Then ownership, operating licence/financing and drive/manage permission have
+separate named reviewed badges with icon/text/color\
+And financed purchase is not described as outright ownership without ownership
+proof\
+And public metadata never exposes holder's private name, document number/file,
+reviewer contact, beneficiary internal ID or a private draft\
+And provider totals are computed over the full authorized live disclosable fleet,
+not the displayed page or truck filter results\
+And mutually exclusive truck summary counts use ownership, then operating licence (owned or financed),
+then permission, then Not yet verified, while preserving orthogonal document facts\
+And a driver's own permission belongs to that exact driver/truck and never
+certifies the provider's ownership or publication qualification.
+
+Contracts: ProviderTruckAuthorityReview, ProviderTruckAuthorityRevocation,
+ProviderTruckAuthoritySummary, ProviderFleetAuthoritySummary. New private tables
+have RLS and browser-role denial before exposure; commands are service-only and
+recheck active Trust permission. Public/map/Featured/Tracking/native projections
+share an allowlisted factual summary. Existing approvals need explicit relationship
+confirmation, never an automatic ownership backfill. New licence evidence reuses
+private upload/quarantine/type checks with an applicable exact-vehicle category.
+Implementation is installed in the backed-up local preview. Exact source,
+private-file boundaries, authority transitions and recovery pass focused SQL and
+adapter checks; the v3 rehearsal also verifies the fail-closed rollback artifact.
+Actual desktop/phone submission and staff-review browser acceptance now passes.
+Owner visual approval, full release gates and hosted rollout remain pending;
+see `specs/TRACEABILITY.md`.
+
+### Scenario: local fixture recovery preserves existing document history
+
+Given an existing local demo predates exact authority facts and its named fixture
+owner/truck identity still matches the explicit manifest\
+When its guarded additive test-data correction is backed up and rehearsed\
+Then new clearly fictional private files use normal submission, document review
+and deliberate exact-authority confirmation\
+And previously Approved sources, original files, declarations, assignments,
+Tracking and saved Featured days remain unchanged\
+And changed/foreign/nonfixture identities, pending conflicts, wrong API/project
+targets and byte/revision drift stop the operation\
+And no local fictional review may be used as production ownership evidence.
+This local one-time operation is distinct from the reset-only fresh fixture import.
+
+Keep the reviewed-authority tables, source history and current publication/read
+gates during recovery. Restoring earlier discovery functions can re-expose newer
+Draft or unqualified fleets; an old application is not automatically compatible.
+The146 rollback artifact fails closed with
+`PROVIDER_AUTHORITY_FORWARD_REPAIR_REQUIRED`, before any restore or privilege
+change. FEAT-FLT-001 / NR-47 require an exact, separately reviewed compatible
+application rollback or forward repair that retains ongoing authorized Tracking
+and account-erasure protections. Exact-artifact denial and unchanged-catalog
+proof are recorded separately from a successful metadata-restore rehearsal.
 
 Independent driver unifies former owner-operator/self-managed accounts under
 FEAT-APP/FLT-001. Its truck declares OWNED or PERMISSION separately from document

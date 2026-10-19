@@ -1,5 +1,5 @@
 import {auditDeleteVehicles} from './audit-helpers';
-import {expect,test} from '@playwright/test';
+import {expect,test} from './browser-test';
 import {randomUUID} from 'node:crypto';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';

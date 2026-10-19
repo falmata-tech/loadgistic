@@ -1,45 +1,64 @@
-
 import {Text,Localized} from '@/components/localization';
-import { notFound, redirect } from 'next/navigation';
+import {notFound,redirect} from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, RefreshCw, Truck, UserRound } from 'lucide-react';
-import { requireUser } from '@/lib/auth';
-import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
-import { PageHeader } from '@/components/page-header';
-import { Flash } from '@/components/flash';
-import { CapacityForm } from '@/components/capacity-form';
-import { canManageProviderVehicles } from '@/lib/fleet.js';
+import Image from 'next/image';
+import {ArrowLeft,FileCheck2,Gauge,MapPin,RefreshCw,Truck,UserRound} from 'lucide-react';
+import {requireUser} from '@/lib/auth';
+import {getProviderCapacityWorkspace} from '@/lib/provider-capacity.js';
+import {PageHeader} from '@/components/page-header';
+import {Flash} from '@/components/flash';
+import {CapacityForm} from '@/components/capacity-form';
+import {canManageProviderVehicles} from '@/lib/fleet.js';
 import {VehicleLifecycleControl} from '@/components/lifecycle-controls';
 import {getVerificationCenter} from '@/lib/verification.js';
 import {SubjectDocuments} from '@/components/subject-documents';
 import {TruckDetailsEditor} from '@/components/truck-details-editor';
-import {retiredVehiclePage} from '@/lib/lifecycle.js';
-import {truckUseBasisLabel} from '@/lib/independent-driver.js';
+import {getProviderPublication} from '@/lib/provider-authority.js';
+import {TruckAuthorityBadges,TruckPublicationControl,ProviderPublicationNotice} from '@/components/truck-authority';
+import {TruckLocationSource} from '@/components/fleet-devices';
+import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
+import {vehicleConfigurationImage} from '@/lib/vehicle-configurations';
+import styles from '@/components/provider-fleet-workspace.module.css';
 
-export default async function FleetTruckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}) {
-  const user=await requireUser();
-  if(!canManageProviderVehicles(user))redirect('/app/home');
-  const {id}=await params;
-  const query=await searchParams;
-  const workspace=await getProviderCapacityWorkspace(user);
-  const vehicle:any=workspace.vehicles.find((item:any)=>item.id===id);
-  if(!vehicle)notFound();
-  const verification=await getVerificationCenter(user);
-  const truckEvidence=verification.subjects.find((subject:{subject_type:string;subject_id:string})=>subject.subject_type==='VEHICLE'&&subject.subject_id===id);
-  const current:any=workspace.capacities.find((item:any)=>item.vehicle_id===vehicle.id);
-  const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),driver:vehicle.assigned_driver||null,driverLocation:vehicle.driver_location||null,current:current?JSON.parse(JSON.stringify(current)):null};
-  const corridors=JSON.parse(JSON.stringify(workspace.corridors));
-  const independent=user.role==='DRIVER';
-  const history=independent?await retiredVehiclePage(user,Number(query.retiredPage)||1):null;
-  return <div className="page fleet-truck-detail-page"><PageHeader icon={Truck} title={independent?<Text message="My truck"/>:`${vehicle.make} · ${vehicle.model}`} subtitle={`${vehicle.make} ${vehicle.model} · ${vehicle.platform_number} · ${vehicle.cargo_configuration||vehicle.category} · plate ${vehicle.plate||'not recorded'}`} action={<Link className="button secondary small" href={independent?'/app/home':'/app/fleet'}><ArrowLeft aria-hidden="true"/><Text message={independent?'Home':'My Fleet'}/></Link>}/><Flash error={query.error} success={query.success}/>
-    {independent?<section className="card"><strong><Text message="How you use this truck"/></strong><p><Text message={truckUseBasisLabel(vehicle.use_basis)}/></p><p className="meta"><Text message="Document review is shown separately."/></p><Link className="button secondary" href={`/app/fleet/new?replace=${vehicle.id}`}><RefreshCw aria-hidden="true"/><Text message="Change truck"/></Link></section>:null}
-    <Localized as="section" copy={["aria-label"]} className="truck-driver-link" aria-label="Truck driver"><UserRound aria-hidden="true"/><div><small>{independent?<Text message="Driver"/>:<Text message="Assigned driver"/>}</small><strong>{vehicle.assigned_driver?.name||'No driver assigned'}</strong><span>{independent?<Text message="You operate this truck."/>:vehicle.assigned_driver?'Company driver · '+(user.organization_name||'Your fleet'):<Text message="Assign an active driver before publishing capacity."/>}</span></div>{!independent?<Link className="button secondary small" href={`/app/fleet?vehicle=${vehicle.id}#driver-access`}>{vehicle.assigned_driver?<Text message="Manage driver"/>:<Text message="Assign driver"/>}</Link>:null}</Localized>
-    {vehicle.trailer_interchangeable?<form className="attached-trailer-card" action={`/api/fleet/vehicles/${vehicle.id}/trailer`} method="post"><div><span><Text message="Interchangeable tractor"/></span><strong><Text message="Attached trailer"/></strong><small><Text message="Capacity pages show this configuration only."/></small></div><label htmlFor="attached-trailer"><Text message="Currently attached trailer"/><select id="attached-trailer" name="cargoConfiguration" defaultValue={vehicle.cargo_configuration}>{(vehicle.supported_trailer_configurations||[]).map((configuration:string)=><option key={configuration} value={configuration}>{configuration.replace('Tractor + ','')}</option>)}</select></label><button className="button secondary"><RefreshCw aria-hidden="true"/><Text message="Update trailer"/></button></form>:null}
-    <details className="workspace-related-section" open={Boolean(query.success||query.error)}><summary><Text message="Truck documents"/></summary>{truckEvidence?<SubjectDocuments center={verification} kind="VEHICLE" id={vehicle.id} returnTo={`/app/fleet/${vehicle.id}`}/>:null}</details>
-    <TruckDetailsEditor vehicle={vehicle} independent={independent}/>
-
-    <VehicleLifecycleControl id={vehicle.id}/>
-    {history?.items.length?<details className="workspace-related-section"><summary><Text message="Previous trucks"/></summary>{history.items.map((truck:{id:string;make:string;model:string;platform_number:string})=><p key={truck.id}><strong>{truck.make} {truck.model}</strong> · {truck.platform_number}</p>)}<p className="meta"><Text message="Past records are kept. Only your current truck can share capacity."/></p>{history.page>1?<Link href={`/app/fleet/${id}?retiredPage=${history.page-1}`}><Text message="Previous page"/></Link>:null}{history.page<history.pageCount?<Link href={`/app/fleet/${id}?retiredPage=${history.page+1}`}><Text message="Next page"/></Link>:null}</details>:null}
-    <section className="capacity-home-page fleet-truck-capacity-workspace"><CapacityForm vehicles={[option]} initialVehicleId={vehicle.id} allowDeviceLocation={independent} lockVehicleSelection showTruckIdentity={false} corridors={corridors} returnTo={`/app/fleet/${vehicle.id}`} allowCorridors renderedAt={Date.now()}/></section>
-  </div>;
+export default async function FleetTruckPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}){
+ const user=await requireUser();
+ if(!canManageProviderVehicles(user))redirect('/app/home');
+ const [{id},query]=await Promise.all([params,searchParams]);
+ const workspace=await getProviderCapacityWorkspace(user);
+ const vehicle:any=workspace.vehicles.find((item:any)=>item.id===id);
+ if(!vehicle)notFound();
+ const view=['details','documents','location'].includes(query.view||'')?query.view:'signals';
+ const verification=view==='documents'?await getVerificationCenter(user):null;
+ const publication=view==='details'||view==='signals'?await getProviderPublication(user):null;
+ const current:any=workspace.capacities.find((item:any)=>item.vehicle_id===id);
+ const option={id:String(vehicle.id),label:String(vehicle.label),make:String(vehicle.make||''),model:String(vehicle.model||''),cargoConfiguration:String(vehicle.cargo_configuration||vehicle.category||''),plate:String(vehicle.plate||''),platformNumber:String(vehicle.platform_number||''),driver:vehicle.assigned_driver||null,driverLocation:vehicle.driver_location||null,locationSelection:vehicle.location_selection,current:current?JSON.parse(JSON.stringify(current)):null};
+ const selfAssigned=vehicle.assigned_driver?.id===user.id;
+ const path='/app/fleet/'+id;
+ return <div className={'page fleet-truck-detail-page '+styles.page}>
+  <Link className={styles.back} href="/app/fleet"><ArrowLeft aria-hidden="true"/><Text message="My Fleet"/></Link>
+  <div className={styles.truckHeading}><Image src={vehicleConfigurationImage(vehicle.cargo_configuration||vehicle.category)} alt="" width={104} height={78}/><PageHeader title={vehicle.make+' '+vehicle.model} subtitle={<>{vehicle.plate||vehicle.platform_number} · <Text message={vehicle.cargo_configuration||vehicle.category}/></>}/><span className={'status '+(vehicle.publication_status==='LIVE'?'verified':'expired')}><Text message={vehicle.publication_status==='LIVE'?'Live':'Draft'}/></span>{view==='signals'&&publication?<form action={'/api/fleet/vehicles/'+id+'/publication'} method="post"><input type="hidden" name="state" value={vehicle.publication_status==='LIVE'?'DRAFT':'LIVE'}/><input type="hidden" name="returnTo" value={path}/><button className={'button small '+(vehicle.publication_status==='LIVE'?'secondary':'success')} disabled={vehicle.publication_status!=='LIVE'&&!publication.canPublish}><Text message={vehicle.publication_status==='LIVE'?'Move to draft':'Go live'}/></button></form>:null}</div>
+  <Flash error={query.error} success={query.success}/>
+  <Localized as="nav" copy={['aria-label']} className={styles.tabs} aria-label="Vehicle">
+   <Link href={path} aria-current={view==='signals'?'page':undefined}><Gauge aria-hidden="true"/><Text message="Capacity signals"/></Link>
+   <Link href={path+'?view=details'} aria-current={view==='details'?'page':undefined}><Truck aria-hidden="true"/><Text message="Vehicle details"/></Link>
+   <Link href={path+'?view=documents'} aria-current={view==='documents'?'page':undefined}><FileCheck2 aria-hidden="true"/><Text message="Documents"/></Link>
+   <Link href={path+'?view=location'} aria-current={view==='location'?'page':undefined}><MapPin aria-hidden="true"/><Text message="Location source"/></Link>
+  </Localized>
+  {view==='signals'?<>
+   {publication?<ProviderPublicationNotice publication={publication}/>:null}
+   <Localized as="section" copy={['aria-label']} aria-label="Vehicle driver" className={styles.driverStrip}><UserRound aria-hidden="true"/><span>{vehicle.assigned_driver?.name||<Text message="No driver assigned"/>}</span><Link href={'/app/fleet?view=drivers&vehicle='+id+(vehicle.assigned_driver?.id?'&driver='+vehicle.assigned_driver.id:'')}>{vehicle.assigned_driver?<Text message="Manage driver"/>:<Text message="Assign driver"/>}</Link></Localized>
+   <section className={'capacity-home-page fleet-truck-capacity-workspace '+styles.signalMap}><CapacityForm vehicles={[option]} initialVehicleId={id} allowDeviceLocation={selfAssigned} lockVehicleSelection showTruckIdentity={false} corridors={JSON.parse(JSON.stringify(workspace.corridors))} returnTo={path} allowCorridors renderedAt={Date.now()}/></section>
+  </>:null}
+  {view==='details'?<>
+   <section className={styles.surface}><div className={styles.sectionHeading}><h2><Text message="Vehicle details"/></h2><TruckDetailsEditor vehicle={vehicle}/></div>
+    <dl className={styles.detailFacts}><div><dt><Text message="Vehicle number"/></dt><dd>{vehicle.platform_number}</dd></div><div><dt><Text message="Plate number"/></dt><dd>{vehicle.plate||'—'}</dd></div><div><dt><Text message="Cargo configuration"/></dt><dd><Text message={vehicle.cargo_configuration||vehicle.category}/></dd></div><div><dt><Text message="How do you use this vehicle?"/></dt><dd><Text message={vehicle.use_basis==='OWNED'?'I own this vehicle':vehicle.use_basis==='FINANCED'?'I am buying this vehicle through financing':vehicle.use_basis==='PERMISSION'?'I rent it or have permission to use it':'Not set'}/></dd></div></dl>
+    <TruckAuthorityBadges authority={vehicle.authority}/>
+    {vehicle.trailer_interchangeable?<div className={styles.sectionHeading}><div><h3><Text message="Attached trailer"/></h3><p className="meta">{vehicle.cargo_configuration}</p></div><WorkspaceTaskDialog title="Attached trailer" triggerLabel="Update trailer"><form className="stack" action={'/api/fleet/vehicles/'+id+'/trailer'} method="post"><label htmlFor="attached-trailer"><Text message="Currently attached trailer"/><select id="attached-trailer" name="cargoConfiguration" defaultValue={vehicle.cargo_configuration}>{(vehicle.supported_trailer_configurations||[]).map((configuration:string)=><option key={configuration} value={configuration}>{configuration.replace('Tractor + ','')}</option>)}</select></label><button className="button success"><RefreshCw aria-hidden="true"/><Text message="Update trailer"/></button></form></WorkspaceTaskDialog></div>:null}
+   </section>
+   {publication?<TruckPublicationControl vehicleId={id} state={vehicle.publication_status} publication={publication} returnTo={path+'?view=details'}/>:null}
+   <section className={styles.lifecycle}><div><h3><Text message="Retire vehicle"/></h3><p><Text message="Retirement removes this vehicle from discovery and ends its current Driver assignment. Resolve active Tracking first; history stays available."/></p></div><VehicleLifecycleControl id={id}/></section>
+  </>:null}
+  {view==='documents'&&verification?<section className={styles.surface} id="truck-documents"><SubjectDocuments center={verification} kind="VEHICLE" id={id} returnTo={path+'?view=documents'} readOnly/></section>:null}
+  {view==='location'?<section className={styles.surface}><TruckLocationSource vehicleId={id}/></section>:null}
+ </div>;
 }

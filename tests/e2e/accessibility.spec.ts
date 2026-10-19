@@ -1,6 +1,6 @@
 import {openCapacityFilters} from './capacity-drawer-helper';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './browser-test';
 import {auditLogin} from './audit-helpers';
 
 type Page = any;

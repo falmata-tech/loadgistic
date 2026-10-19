@@ -1,6 +1,7 @@
 declare module '*location-privacy.js' {
   export function obscureCoordinate(lat: number, lng: number, distanceKm: number): { lat: number; lng: number };
   export const LOCAL_CAPACITY_PRIVACY_RADII_KM: readonly number[];
+  export function nextCapacityPrivacyRadius(value:unknown):number;
 }
 
 declare module '*tracking-progress.js' {

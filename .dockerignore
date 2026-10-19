@@ -10,6 +10,8 @@ supabase/.branches
 node_modules
 data
 artifacts
+apps/mobile
+infra/telematics
 test-results
 playwright-report
 reference-files

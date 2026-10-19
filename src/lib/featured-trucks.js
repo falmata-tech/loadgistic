@@ -1,14 +1,14 @@
 const FEATURED_TRUCK_DAYS=Object.freeze([
   {key:'mini-trucks',label:'Mini trucks',shortLabel:'Mini',configurations:['Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck']},
-  {key:'cargo-vans',label:'Cargo vans',shortLabel:'Vans',configurations:['Cargo van']},
+  {key:'cargo-vans',label:'Vans and couriers',shortLabel:'Vans & couriers',configurations:['Cargo van','Courier car','Courier motorcycle']},
   {key:'pickups',label:'Pickup trucks',shortLabel:'Pickups',configurations:['Pickup truck','Pickup stake body']},
-  {key:'light-duty',label:'Light-duty trucks',shortLabel:'Light duty',configurations:['Light Box Truck','Light Stake Body Truck']},
-  {key:'medium-duty',label:'Medium-duty trucks',shortLabel:'Medium duty',configurations:['Medium Box Truck','Medium Stake Body Truck']},
-  {key:'heavy-trucks',label:'Heavy trucks',shortLabel:'Heavy',configurations:[
+  {key:'light-duty',label:'Light-duty vehicles',shortLabel:'Light duty',configurations:['Light Box Truck','Light Stake Body Truck']},
+  {key:'medium-duty',label:'Medium-duty vehicles',shortLabel:'Medium duty',configurations:['Medium Box Truck','Medium Stake Body Truck']},
+  {key:'heavy-trucks',label:'Heavy vehicles',shortLabel:'Heavy',configurations:[
     'Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer','Tractor + Container Trailer',
     'Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer'
   ]},
-  {key:'mixed-trucks',label:'Mixed trucks',shortLabel:'Mixed',configurations:["Cargo van", "Pickup truck", "Pickup stake body", "Mini Open Body Truck", "Mini Stake Body Truck", "Mini Box Truck", "Light Stake Body Truck", "Light Box Truck", "Medium Stake Body Truck", "Medium Box Truck", "Heavy Rigid Stake Body Truck", "Heavy Rigid Stake Body Truck + Trailer", "Tractor + Container Trailer", "Tractor + Dry Van Trailer", "Tractor + Heavy Equipment Trailer"]}
+  {key:'mixed-trucks',label:'Mixed vehicles',shortLabel:'Mixed',configurations:["Courier motorcycle", "Courier car", "Cargo van", "Pickup truck", "Pickup stake body", "Mini Open Body Truck", "Mini Stake Body Truck", "Mini Box Truck", "Light Stake Body Truck", "Light Box Truck", "Medium Stake Body Truck", "Medium Box Truck", "Heavy Rigid Stake Body Truck", "Heavy Rigid Stake Body Truck + Trailer", "Tractor + Container Trailer", "Tractor + Dry Van Trailer", "Tractor + Heavy Equipment Trailer"]}
 ]);
 
 function validDate(date){

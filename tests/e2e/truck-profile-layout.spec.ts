@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {closeCapacityFilters} from './capacity-drawer-helper';
 
 test('truck modal groups identity, contacts, updates and entity documents without a long stack',async({page}:{page:any},info:any)=>{

@@ -1,6 +1,6 @@
 import type { Feature, Polygon } from 'geojson';
 import {isValidCoordinate} from '../../../../src/lib/location-privacy.js';
-export type TrackingArea = { latitude: number; longitude: number; radius: number; area: string; updatedAt: string };
+export type TrackingArea = { latitude: number; longitude: number; radius: number; area: string; updatedAt: string; source?:'GPS'|'MOBILE'|'MANUAL'|null;demo?:true };
 export function trackingAreaGeometry(location: TrackingArea): Feature<Polygon> | null {
  const { latitude, longitude, radius } = location;
  if (!isValidCoordinate(latitude,longitude) || !Number.isFinite(radius) || ![1, 3, 5, 10, 20, 40].includes(radius)) return null;

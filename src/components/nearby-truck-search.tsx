@@ -14,7 +14,7 @@ type TruckArea={id:string;label:string;lat:number;lng:number;radiusKm:number};
 
 const NearbyMap=dynamic(()=>import('./nearby-truck-map-leaflet').then(module=>module.NearbyTruckMapLeaflet),{
   ssr:false,
-  loading:()=> <SurfaceSkeleton kind="map" className="nearby-truck-map loading-map" label="Loading nearby trucks"/>
+  loading:()=> <SurfaceSkeleton kind="map" className="nearby-truck-map loading-map" label="Loading nearby vehicles"/>
 });
 
 export function NearbyTruckSearch({active,radiusKm,trucks}:{active:boolean;radiusKm:number;trucks:TruckArea[]}) {
@@ -52,7 +52,7 @@ export function NearbyTruckSearch({active,radiusKm,trucks}:{active:boolean;radiu
   }
 
   return <section className="nearby-truck-search" aria-labelledby="nearby-trucks-title">
-    <div className="nearby-truck-search-copy"><ShieldCheck aria-hidden="true"/><div><h2 id="nearby-trucks-title"><Text message="Find Local trucks near me"/></h2><p><Text message="Your exact position stays on this page. Loadgistic compares an approximate point with each truck's approximate current location."/></p></div></div>
+    <div className="nearby-truck-search-copy"><ShieldCheck aria-hidden="true"/><div><h2 id="nearby-trucks-title"><Text message="Find Local vehicles near me"/></h2><p><Text message="Your exact position stays on this page. Loadgistic compares an approximate point with each vehicle's approximate current location."/></p></div></div>
     <div className="nearby-truck-actions">
       <button type="button" className="button icon-button-label" onClick={useMyLocation} disabled={status==='locating'}><LocateFixed aria-hidden="true"/>{status==='locating'?<Text message="Finding your area..."/>:active?<Text message="Update my location"/>:<Text message="Use my location"/>}</button>
       <label htmlFor="nearby-truck-radius"><CircleDotDashed aria-hidden="true"/><Text message="Within "/><select id="nearby-truck-radius" value={radiusKm} onChange={changeRadius} disabled={!active}>{[3,5,10,20,50].map(radius=><option value={radius} key={radius}>{radius}<Text message=" km"/></option>)}</select></label>
@@ -61,6 +61,6 @@ export function NearbyTruckSearch({active,radiusKm,trucks}:{active:boolean;radiu
     {status==='error'?<p className="alert warning"><Text message="A usable location in Ethiopia was not available. You can still search by city below."/></p>:null}
     {active?<p className="nearby-distance-note"><Text message="Results are possible matches because both locations are approximate. Confirm the actual location and fit directly."/></p>:null}
     {active&&exactPoint?<NearbyMap viewer={exactPoint} trucks={trucks}/>:null}
-    {active&&!exactPoint?<p className="meta"><Text message="Use your location again to place your private “You” point on the map. Truck results below remain approximate-location matches."/></p>:null}
+    {active&&!exactPoint?<p className="meta"><Text message="Use your location again to place your private “You” point on the map. Vehicle results below remain approximate-location matches."/></p>:null}
   </section>;
 }

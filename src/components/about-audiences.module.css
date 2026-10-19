@@ -1,0 +1,19 @@
+.about{width:min(100% - 48px,880px);margin:28px auto 24px;color:var(--ink,#172c46)}
+.introduction h1{font-size:clamp(1.45rem,2.5vw,2rem);line-height:1.2;letter-spacing:-.025em;margin:0 0 10px;max-width:24ch}
+.introduction p{font-size:1rem;line-height:1.5;color:#526875;margin:0 0 24px;max-width:58ch}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.tabs button{display:flex;gap:10px;align-items:center;justify-content:center;min-height:64px;padding:12px;border:1px solid #cbdadb;background:#fff;border-radius:10px;color:#526875;font:inherit;font-weight:650;cursor:pointer}
+.tabs button[aria-selected=true]{color:#0c7275;border-color:#0c7275;background:#edf6f5;box-shadow:inset 0 -2px 0 #0c7275}
+.tabs svg{width:22px;height:22px;flex-shrink:0}
+.panel{background:#fff;border:1px solid #cbdadb;border-radius:14px;padding:24px 28px}
+.panel[hidden]{display:none}
+.panel h2{font-size:1.3rem;line-height:1.3;letter-spacing:-.015em;margin:0 0 22px}
+.facts{padding:0;margin:0 0 24px;list-style:none;display:grid;gap:18px}
+.facts li{display:flex;gap:12px;align-items:flex-start}
+.facts svg{width:18px;height:18px;flex-shrink:0;margin-top:3px;color:#0c7275}
+.facts h3{font-size:1rem;line-height:1.35;margin:0 0 4px}
+.facts p{font-size:.95rem;line-height:1.5;color:#526875;margin:0;max-width:62ch}
+.legal{display:flex;gap:6px 20px;flex-wrap:wrap;margin-top:14px}
+.legal a{display:inline-flex;align-items:center;min-height:44px;font-size:.85rem;color:#526875;text-decoration:none}
+.legal a:hover{text-decoration:underline}
+@media(max-width:600px){.about{width:calc(100% - 32px);margin-top:20px}.introduction p{margin-bottom:18px}.tabs{gap:6px;margin-bottom:12px}.tabs button{flex-direction:column;gap:6px;padding:10px 5px;font-size:.8rem;line-height:1.3;min-height:84px}.tabs svg{width:20px;height:20px}.panel{padding:18px}.panel h2{font-size:1.15rem;margin-bottom:18px}.facts{gap:16px;margin-bottom:20px}.facts h3{font-size:.9rem}.facts p{font-size:.875rem}.legal{gap:2px 16px}.legal a{font-size:.8rem}}

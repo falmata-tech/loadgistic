@@ -3,7 +3,7 @@ id: FEAT-ADM-001
 title: Focused platform operations and review center
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-PRV-001, FEAT-FTR-001, FEAT-SPN-001, FEAT-VER-001, FEAT-BIL-001, FEAT-REV-001, FEAT-SUP-001, FEAT-SHR-001, FEAT-GST-001]
 problem: Platform administrators need to manage connected client records and several evidence queues without loading or navigating multiple unrelated inventories at once.
-behavior: Administrators receive one bounded, searchable Operations view focused on a selected record type and one Review Center that links document and rating queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
+behavior: Administrators start with a bounded searchable Accounts directory and one account overview grouping its exact related business, fleet, documents and work according to independent current permissions. Purposeful operational inventories remain available, alongside one Review Center that links document and rating queues through consistent tabs and compact review rows; signup needs no application decision. Every user-authored operational entity is visible through a connected admin inventory and exposes the bounded correction, moderation, status, or ownership command appropriate to that entity. Administrators may delegate Customer, Operations, Trust and Support responsibilities independently to platform team members without granting team-management or unrestricted administrator authority.
 contracts: [AdminOperationsProjection, AdminOperationsView, AdminRecordSearch, ManagedPlatformAdminPort, AdminReviewQueue, PlatformTeamPermissionPolicy, SupportAgentManagement, UserActivationCommand, VehicleActivationCommand, SponsoredAccessCommand, AdminAudit]
 observability: [admin_operations_read, admin_record_status_audit, denied_admin_command]
 rollout: Add the inventory without changing tenant-facing visibility; status commands are reversible, audited, and deny non-admin callers.
@@ -16,16 +16,19 @@ rollout: Add the inventory without changing tenant-facing visibility; status com
 Given an authenticated platform administrator enters Loadgistic administration\
 When the administrator opens the workspace home or selects Overview\
 Then `/admin` presents a compact platform overview rather than a generic client dashboard\
-And Users, clients, trucks, Drivers, Tracking, Capacity, and routes each show a direct count and link to their filtered record inventory\
+And Accounts is the primary directory for people and their related business/work\
+And separate truck, Driver, Tracking, Capacity and route inventories serve operational tasks\
 And Featured and sponsors, private Capacity shared with Loadgistic, Review Center, customer Support, and platform-team management are directly reachable as named work areas\
-And Record management is labelled Records rather than competing with a second vague Home or Operations destination\
+And account management is labelled Accounts rather than database-shaped Users and Clients directories\
 And the selected destination remains understandable on desktop and phone.
 
 ### Scenario: administrator inspects connected platform data
 
 Given an authenticated platform administrator\
-When Records is opened or searched\
-Then one selected bounded result set shows users, workspaces, trucks, Drivers, provider-owned Tracking, regular service or latest capacity from authoritative records\
+When Accounts is opened or searched\
+Then the default bounded directory shows people with their provider context\
+And selecting a person opens its organized account overview\
+And explicitly selected operational views retain authorized truck, Driver, Tracking, route or capacity inventories\
 And records are identified with transporter, truck platform number, Tracking code, and current status\
 And private proof paths, passwords, session values, tracking secrets, and exact coordinates are absent.
 
@@ -47,6 +50,12 @@ And it identifies the selected record, its owning workspace or provider, current
 And Tracking detail includes its bounded status-event timeline\
 And the detail offers a clear return to the same inventory type without relying on a fake link or browser-only state\
 And mutations remain separate explicit controls rather than making the whole row destructive.
+
+Given an administrator opens a company Driver record\
+When they select Open owner\
+Then the link names that Driver's exact organization and its ORGANIZATION record kind\
+And the destination repeats Customers permission and exact record-kind checks\
+And an Operations-only actor receives no unauthorized workspace detail.
 
 Given the actor lacks the permission for that record type, the record does not exist, or its type and identifier do not match\
 When the detail is requested directly\
@@ -77,7 +86,8 @@ And no local SQLite repository or fallback is consulted.
 
 Given an administrator needs to review trust documents or rating evidence\
 When Review Center is opened\
-Then Documents, Ratings, and Payments are reachable as consistent tabs\
+Then Documents and Ratings are reachable as consistent tabs\
+And retired Payments are not an active review queue, as required by FEAT-BIL-001\
 And one selected queue is rendered at a time\
 And the legacy application URL redirects to Records because signup no longer needs approval\
 And the browser Back action and tab links preserve understandable navigation.
@@ -86,22 +96,60 @@ And the browser Back action and tab links preserve understandable navigation.
 
 Given an administrator opens Daily Featured Trucks management\
 When a date is selected\
-Then its fixed truck-type theme, public presentation fields, exact ordered truck-and-Driver roster, automatic or manual 07:30–09:00 EAT schedule, and eligible sponsored roster are managed together\
+Then its fixed truck-type theme, public presentation fields, exact ordered truck-and-Driver roster, automatic or manual 08:30–12:00 EAT schedule, and eligible sponsored roster are managed together under FEAT-FTR-001\
 And ordinary featured positions and sponsored positions remain distinct\
-And the administrator can add, remove, and reorder featured transporters without managing a fixed grid of empty positions\
+And the administrator can add, remove, and reorder exact truck-and-Driver pairs without managing a fixed grid of empty positions\
 And the administrator sees the complete Ethiopia-time timeline, including every featured-truck interval and up to four programme interludes of no more than two minutes, before publishing\
-And the automatic schedule shares presentation time equally, shortens low-participation sessions toward late morning and late evening, and may be regenerated after roster or break-setting changes\
+And the automatic schedule shares the remaining presentation time equally inside the official daily window, using up to eight showcases and four two-minute sponsor mentions by default\
+And a smaller eligible roster receives fewer, longer showcase intervals rather than a second evening session\
 And the administrator may switch to a validated manual schedule without changing featured-roster order\
 And every published field and placement is bounded, validated, and audited\
 And transporters cannot manage Daily Featured Trucks or sponsorship placement from their workspaces.
 
 ### Scenario: administrator suspends or restores an account
 
-Given an authenticated administrator selects an account other than their own\
+Given an authenticated administrator or delegated Customers member selects a
+provider account other than their own\
 When they suspend or restore access\
 Then the user's active state changes\
 And the actor, target, resulting state, and time are audited\
-And a non-administrator or self-suspension attempt changes nothing.
+And a caller without the required responsibility or a self-suspension attempt
+changes nothing\
+And only an administrator may change access for administrator or staff accounts.
+
+Given a delegated Customers member inspects another administrator or staff account\
+When the account's saved details are rendered\
+Then its activation is read-only and no suspend/restore task or command form is mounted\
+And this follows the actor's persisted current authority rather than a cached role\
+And provider/customer activation and disabled self-account controls remain unchanged.
+
+Given an administrator inspects a staff account\
+Then the existing Platform team management area is reachable from that account.
+
+### Scenario: suspending and restoring staff preserves assigned responsibilities
+
+Given a staff member has explicit Support, Brokerage, Featured or other delegated
+management responsibilities\
+When an authorized administrator changes only that account's active state from
+Records and later restores it\
+Then every responsibility flag retains its previous value\
+And restoration does not silently remove Brokerage or Featured access\
+And suspension retains the current safe return of open chats to their waiting
+queues, with audit attribution and no message-history deletion\
+And only the explicit team-permission editor changes assigned responsibilities\
+And an activation change serializes with an overlapping explicit permission save,
+so it reads the current flags instead of overwriting them with a stale snapshot\
+And unauthorized, self-suspension, stale-authority or unsupported commands retain the
+existing denial behavior and change no unrelated account.
+
+October13 audit: the generic User activation command forwards an older five-flag
+staff snapshot and the later updater defaults the two missing responsibilities
+to false. Its initial staff snapshot is also unlocked before the updater locks
+the row. Additive142 passes old-failing/new-passing isolated SQL and a real
+two-session serialization test. The exact owner-approved repair is installed on
+the local preview with preserved function permissions, rows and ledger; staff
+and141 identity integration checks pass in rollback-only transactions. Actual
+staff browser maintenance and hosted rollout remain separate evidence.
 
 ### Scenario: administrator suspends or restores a truck
 
@@ -120,6 +168,38 @@ And account, Driver permission, truck, Capacity, or regular-service changes comp
 And an unsupported command, missing record, self-suspension attempt, or insufficient permission changes nothing\
 And a retired record command is rejected without referencing or recreating retired storage\
 And suspending a Support team member safely returns their open conversations to the waiting queue.
+
+### Scenario: Operations controls persist the exact selected resource
+
+Given an active Operations-only team member opens a disposable Driver, Capacity,
+or truck-bound regular-service record on desktop or phone\
+When they save Driver permissions, set the selected Capacity Off Duty, or remove
+that truck-and-Driver pair's regular service through the existing form\
+Then the saved detail or destination reports the command result\
+And only the selected permissions, Capacity, or regular-service record changes\
+And current Driver assignment, other trucks' signals and routes, and unrelated
+account permissions remain unchanged\
+And each accepted command has the existing actor-attributed audit entry.
+
+Given one of those forms was opened while Operations permission was granted\
+When that permission is revoked before submission\
+Then its actual stale submission is denied without saving the command or its
+success audit\
+And the same commands from an unrelated provider remain denied.
+
+Focused acceptance: `tests/e2e/operations-connected-actions.spec.ts`. These tests
+exercise existing controls; preparation or source inspection alone is not actual
+browser evidence. No new management capability or hosted operation is included.
+
+October14 actual local evidence: both desktop/phone Records cases pass permission
+saves, Off Duty, selected truck-route removal, current Operations authority,
+provider denial, all three revoked stale forms, actor-attributed audits and
+unrelated-row preservation. Exact synthetic Auth/database/file cleanup is verified.
+Receipt: `.local/operations-connected-actions-20261014/records-controls-desktop-phone-runner.json`.
+The initial zero-fixture failure was a test worker with unset `NODE_ENV`, not an
+application email fault; the preflight now evaluates the explicit local test
+environment without changing global or server configuration. Full release gates,
+owner review of the wider UI changes and hosted rollout remain separate.
 
 ### Scenario: administrator manages support agents
 
@@ -163,6 +243,22 @@ Evidence: `tests/e2e/staff-admin-account.spec.ts`,
 Production identity inventory and local provisioning are operational evidence;
 they do not authorize deleting an unrelated identity or its retained history.
 
+## October15 account-first administration — corrective work in progress
+
+The owner rejected database-shaped navigation. Administration starts with people
+and provider accounts; one account overview groups its actual related records
+and permitted commands. Separate Trucks, Drivers and GPS inventories serve
+cross-account operational tasks, not a requirement to reconstruct an account.
+FEAT-UIX-001 defines the presentation acceptance. Existing independent Customers,
+Operations, Trust, Support, Brokerage and Featured permissions remain unchanged.
+The composite read port must authorize each section independently, bound related
+lists and exclude raw location, credentials, unrelated chats and private files.
+No database identity/ownership merge or hosted SQL is authorized by this cleanup.
+
+Tests: focused composite adapter scope/denial/empty/limit checks and actual admin
+account navigation/read/edit/cancel on desktop and phone; implementation and owner
+visual review are pending. Existing completed evidence does not cover this view.
+
 ## Contract ownership
 
 - Pages: `/admin`, `/admin/operations`, `/admin/featured`, `/admin/capacity-network`, `/admin/reviews`, and `/admin/support`
@@ -190,6 +286,27 @@ And the member may inspect its current approximate travel location only when
 location sharing is enabled and the shipment is in an eligible travel state\
 And historical assignment locations, exact device coordinates, recipients,
 codes and private Storage paths are absent from the map projection.
+
+Given Operations detail needs the shared Tracking map's route contract\
+When its map adapter runs\
+Then the existing `admin_tracking_location` command first authorizes the actual
+actor and exact shipment, and a denied or absent result performs no additional read\
+And only an authorized result permits an explicit read of the saved pickup,
+passing and delivery city references, labels, coordinates and tracking mode\
+And the same command rechecks current Operations authority, shipment state and
+assignment reset after that read, supplying the final status and obscured location\
+And a revoked or absent final result renders no map\
+And the page converts the bounded result through `trackingMapData`, preserving
+the genuine saved passing city and authorized radius\
+And it reads no recipients, proof paths, private contacts or raw device location,
+uses no `select *`, impersonation or revoked projection helper, and invents no
+public truck summary or new permission.
+
+Focused adapter evidence: `tests/admin-tracking-map-contract.test.mjs`; actual
+desktop/phone map evidence: `tests/e2e/lifecycle-recovery.spec.ts`. These must
+establish the narrow conversion separately. This repair introduces no schema,
+layout or feature change; malformed saved routes retain the existing safe
+projection behavior.
 
 Migration 091 adds the Customers-scoped workspace correction and narrow
 Operations map; migration 090 supplies shared recovery. Both precede UI rollout.
@@ -238,6 +355,31 @@ Given a stale or invalid page number is requested in any Review Center queue
 When a bounded offset read returns no rows
 Then an out-of-range page recovers to the first bounded page of the same filter
 And genuinely empty queues remain empty; query failures are never disguised as empty data.
+
+Given permitted staff open the Content reports queue with an invalid or out-of-range page\
+When its bounded authoritative read completes\
+Then invalid pages use page one and an empty later page recovers at most once to page one\
+And existing reports, their current moderation controls, and usable pagination remain visible\
+And a genuinely empty queue remains empty while either read failure is reported as unavailable\
+And the existing Trust permission and moderation commands remain unchanged.
+
+Given the content queue's requested later range is beyond the available records\
+When the authoritative API returns its specific out-of-range response rather than an empty array\
+Then that response permits the same single bounded first-page recovery\
+And first-page range errors, authorization failures and other unavailable responses remain failures without retrying them as empty data.
+
+October14 bounded repair (WEB-MOB-033/034): actual page-component regressions
+prove the Driver owner destination and content/deletion queue failures, including
+PostgREST416 and unavailable/authorization negatives;16 focused checks pass with
+the existing windowed-page reader. Four real desktop/phone cases in
+`tests/e2e/admin-connected-queues.spec.ts` verify exact owner subject, overflow and
+fractional queues, preserved controls and permission denials. Sanitized receipt:
+`.local/internal-workflows-20261014/admin-connected-complete-runner.json`. Owner
+visual approval remains pending; no SQL, API authority, remote deployment or
+data-mutation expansion is included. Root records final evidence in TRACEABILITY.
+The independent review-publication conflict
+WEB-MOB-035 has an isolated-tested migration143 artifact and remains pending
+separately reviewed local installation and actual moderation-form verification.
 
 Plan: reuse bounded page normalization/recovery for the three existing queue
 adapters, canonicalize Review Center return context, and pass it from each form.

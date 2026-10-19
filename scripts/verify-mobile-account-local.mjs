@@ -76,7 +76,7 @@ try {
  const capacityBefore = await call('capacity', undefined, session.accessToken); assert.equal(capacityBefore.status, 200);
  assert.ok(capacityBefore.value.vehicles.some(item => item.id === truck.value.id && item.canLocate), 'Owner-operator can locate their assigned truck');
  const place = async query => { const result = await call('places?q=' + encodeURIComponent(query)); assert.equal(result.status, 200); assert.ok(result.value.results[0]?.placeRef, 'City catalog result required'); assert.ok(result.value.results[0].coordinate?.length===2 && result.value.results[0].coordinate.every(Number.isFinite),'Catalog preview coordinate required'); return { placeRef: result.value.results[0].placeRef }; };
- const route = [await place('Addis Ababa'), await place('Adama')];
+ const route = [await place('Addis Ababa'), await place('Adama'), await place('Dire Dawa')];
  const location = { action: 'LOCATION', vehicleId: truck.value.id, approximateLat: 9.15, approximateLng: 38.8, locationPrecisionKm: 20 };
  assert.equal((await call('capacity', { ...location, actor_user_id: session.user.id }, session.accessToken)).status, 400);
  assert.equal((await call('capacity', { ...location, vehicleId: '00000000-0000-4000-8000-000000000000' }, session.accessToken)).status, 403);
@@ -84,7 +84,7 @@ try {
  const publication = { action: 'PUBLISH', vehicleId: truck.value.id, status: 'EMPTY', acceptedLoads: 'BOTH', availabilityGeometry: 'ROUTE', currentRoutePlaces: route, capacityAreaCenterPlaceRef: '', capacityAreaBoundaryPlaces: [], acceptsMultiPick: false, acceptsMultiDrop: false };
  const published = await call('capacity', publication, session.accessToken); assert.equal(published.status, 200, published.value.error?.message);
  const savedCapacity = await call('capacity', undefined, session.accessToken), savedTruck = savedCapacity.value.vehicles.find(item => item.id === truck.value.id);
- assert.equal(savedTruck.current.visibility, 'PRIVATE'); assert.equal(savedTruck.current.status, 'EMPTY'); assert.equal(savedTruck.current.route.length, 2); assert.ok(savedTruck.current.route.every(place=>place.coordinate?.length===2 && place.coordinate.every(Number.isFinite)),'Saved current-route preview coordinates');
+ assert.equal(savedTruck.current.visibility, 'PRIVATE'); assert.equal(savedTruck.current.status, 'EMPTY'); assert.equal(savedTruck.current.route.length, route.length); assert.ok(savedTruck.current.route.every(place=>place.coordinate?.length===2 && place.coordinate.every(Number.isFinite)),'Saved current-route preview coordinates');
  assert.equal(JSON.stringify(savedCapacity.value).includes('photo_storage_path'), false);
  assert.equal((await call('capacity', { ...publication, currentRoutePlaces: [{ placeRef: 'invalid' }, route[1]] }, session.accessToken)).status, 400);
  assert.equal((await call('capacity', { ...publication, status: 'OFF_DUTY' }, session.accessToken)).status, 200);
@@ -103,23 +103,27 @@ try {
  const assignment = { action: 'ASSIGN_DRIVER', driverId: added.value.id, vehicleId: companyTruck.value.id, canManageCapacity: false, canManageTracking: false };
  assert.equal((await call('fleet', assignment, company.accessToken)).status, 200, 'Assignment must work before driver email verification');
  const driver = await loginLocal(driverEmail); extraSessions.push(driver); assert.equal(driver.state, 'ACTIVE');
- const regular = { action: 'SAVE', replaceId: null, geometry: 'ROUTE', routePlaces: route, areaCenterPlaceRef: '', areaBoundaryPlaces: [] };
+ const regularScope = { vehicleId: companyTruck.value.id, expectedDriverId: added.value.id };
+ const regularPath = 'regular-service?' + new URLSearchParams(regularScope);
+ const regular = { action: 'SAVE', ...regularScope, replaceId: null, geometry: 'ROUTE', routePlaces: route, areaCenterPlaceRef: '', areaBoundaryPlaces: [] };
+ assert.equal((await call('regular-service', undefined, company.accessToken)).status, 400, 'Unscoped regular-service reads fail closed');
  assert.equal((await call('regular-service', regular, driver.accessToken)).status, 403);
  assert.equal((await call('regular-service', { ...regular, actorId: company.user.id }, company.accessToken)).status, 400);
  assert.equal((await call('regular-service', regular, company.accessToken)).status, 200);
- const savedService = (await call('regular-service', undefined, company.accessToken)).value.services[0]; assert.equal(savedService.route.length, 2); assert.ok(savedService.route.every(place=>place.coordinate?.length===2 && place.coordinate.every(Number.isFinite)),'Saved regular-route preview coordinates');
- assert.equal((await call('regular-service', regular, company.accessToken)).status, 400, 'One regular service per owner');
+ const savedService = (await call(regularPath, undefined, company.accessToken)).value.services[0]; assert.equal(savedService.vehicleId, regularScope.vehicleId); assert.equal(savedService.driverId, regularScope.expectedDriverId); assert.equal(savedService.route.length, route.length); assert.ok(savedService.route.every(place=>place.coordinate?.length===2 && place.coordinate.every(Number.isFinite)),'Saved regular-route preview coordinates');
+ const driverService = await call(regularPath, undefined, driver.accessToken); assert.equal(driverService.status, 200); assert.equal(driverService.value.services[0].id, savedService.id, 'Assigned company driver can read their own pair without gaining edit permission');
+ assert.equal((await call('regular-service', regular, company.accessToken)).status, 400, 'One regular service per truck-driver pair');
  const invalidReplacement = { ...regular, replaceId: savedService.id, routePlaces: [route[0], route[0]] };
  assert.equal((await call('regular-service', invalidReplacement, company.accessToken)).status, 400);
- assert.equal((await call('regular-service', undefined, company.accessToken)).value.services[0].id, savedService.id, 'Invalid replacement retains previous service atomically');
+ assert.equal((await call(regularPath, undefined, company.accessToken)).value.services[0].id, savedService.id, 'Invalid replacement retains previous service atomically');
  assert.equal((await call('regular-service', { ...regular, replaceId: savedService.id }, session.accessToken)).status, 403);
- const removeService = { action: 'REMOVE', id: savedService.id, confirm: true };
+ const removeService = { action: 'REMOVE', ...regularScope, id: savedService.id, confirm: true };
  assert.equal((await call('regular-service', removeService, driver.accessToken)).status, 403);
  assert.equal((await call('regular-service', removeService, session.accessToken)).status, 403);
  assert.equal((await call('regular-service', { ...removeService, confirm: false }, company.accessToken)).status, 400);
  assert.equal((await call('regular-service', removeService, company.accessToken)).status, 200);
- assert.equal((await call('regular-service', undefined, company.accessToken)).value.services.length, 0);
- console.log('PASS: owner regular-service persistence; single-service limit; atomic invalid replacement; driver/cross-owner/spoof denial; confirmed removal');
+ assert.equal((await call(regularPath, undefined, company.accessToken)).value.services.length, 0);
+ console.log('PASS: truck-driver scoped regular-service persistence/read; pair limit; atomic invalid replacement; driver/cross-owner/spoof mutation denial; confirmed removal');
 
  const documents = await call('verification', undefined, company.accessToken); assert.equal(documents.status, 200);
  const truckSubject = documents.value.subjects.find(item => item.id === companyTruck.value.id); assert.equal(truckSubject.kind, 'VEHICLE');
@@ -195,7 +199,7 @@ try {
  console.log('PASS: native network permission denial; idempotent grant; capacity inbox OTP; scoped truck read; cross-scope denial; renewal; explicit Loadgistic sharing toggle; live private-capacity revocation');
  assert.equal((await call('capacity', { action: 'DUTY', vehicleId: companyTruck.value.id, onDuty: false }, driver.accessToken)).status, 200);
  // Native Tracking uses the same database authority as the web workspace.
- const trackingInput = { vehicleId: companyTruck.value.id, originPlaceRef: route[0].placeRef, destinationPlaceRef: route[1].placeRef, cargoSummary: 'Local tracking test cargo', customerEmail: `mobile-customer-${Date.now()}@loadgistic.local`, trackingMode: 'LOCATION_AND_STATUS' };
+ const trackingInput = { vehicleId: companyTruck.value.id, originPlaceRef: route[0].placeRef, destinationPlaceRef: route[1].placeRef, passingPlaceRef: route[2].placeRef, cargoSummary: 'Local tracking test cargo', customerEmail: `mobile-customer-${Date.now()}@loadgistic.local`, trackingMode: 'LOCATION_AND_STATUS' };
  assert.equal((await call('shipments', trackingInput, driver.accessToken)).status, 403, 'Restricted driver cannot create tracking');
  assert.equal((await call('shipments', { ...trackingInput, actor_user_id: company.user.id }, company.accessToken)).status, 400);
  const shipment = await call('shipments', trackingInput, company.accessToken); assert.equal(shipment.status, 201, shipment.value.error?.message);
@@ -262,7 +266,7 @@ try {
  assert.equal((await call(recoveryPath, undefined, driver.accessToken)).status, 404, 'Company tracking permission must not grant owner recovery');
  assert.equal((await call(recoveryPath, undefined, session.accessToken)).status, 404);
  let recovery = await call(recoveryPath, undefined, company.accessToken); assert.equal(recovery.status, 200);
- const correction = { action: 'CORRECT', revision: recovery.value.revision, reason: 'Correct local test cargo', cargo_summary: 'Corrected local cargo', origin_place_ref: route[0].placeRef, destination_place_ref: route[1].placeRef, expected_pickup_date: '', expected_delivery_date: '' };
+ const correction = { action: 'CORRECT', revision: recovery.value.revision, reason: 'Correct local test cargo', cargo_summary: 'Corrected local cargo', origin_place_ref: route[0].placeRef, destination_place_ref: route[1].placeRef, passing_place_ref: route[2].placeRef, expected_pickup_date: '', expected_delivery_date: '' };
  assert.equal((await call(recoveryPath, correction, driver.accessToken)).status, 404);
  assert.equal((await call(recoveryPath, { ...correction, reason: 'no' }, company.accessToken)).status, 400);
  assert.equal((await call(recoveryPath, correction, company.accessToken)).status, 200);

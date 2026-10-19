@@ -10,14 +10,14 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;
   const form=await request.formData();
-  const returnTo=fleetReturnPath(String(form.get('returnTo')||''),'/app/fleet#driver-access');
+  const returnTo=fleetReturnPath(String(form.get('returnTo')||''),'/app/fleet?view=drivers');
   try {
     await updateFleetDriverAccess(user,id,{
       vehicleId:String(form.get('vehicleId')||''),
       canManageCapacity:checked(form,'canManageCapacity'),
       canManageTracking:checked(form,'canManageTracking')
     });
-    return redirectWith(request,returnTo,'success','Driver and truck updated.');
+    return redirectWith(request,returnTo,'success','Driver and vehicle updated.');
   } catch(error) {
     return redirectWith(request,returnTo,'error',errorMessage(error));
   }

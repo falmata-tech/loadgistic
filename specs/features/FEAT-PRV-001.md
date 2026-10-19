@@ -1,7 +1,7 @@
 ---
 id: FEAT-PRV-001
 title: Truck-linked public transporter microsites
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001, FEAT-LST-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-CAP-001, FEAT-MKT-001, FEAT-VER-001, FEAT-REV-001, FEAT-LST-001, FEAT-FLT-001]
 problem: Transport providers need to be represented as credible businesses, while visitors need rich public context before making contact.
 behavior: Fleet transporters and self-managed providers with current public trucks receive canonical `/@handle` microsites reached from truck details rather than a Provider Market, provider map, Area Market, or provider list. Providers manage accurate public contacts, business content, one general base region or federal city, and one validated profile image. Every microsite uses one Loadgistic-controlled white-space template and presents each active truck through a detailed safe card with a lazily opened relative map when that truck has current public capacity.
 contracts: [ProviderMicrosite, MicrositeTruckCard, MicrositeTruckMap, PublicProviderHandle, ProviderBaseRegion, ProviderOperatingModel, ProviderProfileImage, SeededTransporterPortrait, SharedProviderTemplate, PublicContactPolicy, YouTubeVideoReference, ProviderPageCommand, PublicFleetProjection]
@@ -10,6 +10,167 @@ rollout: Add profile presentation fields and actor-scoped managed profile comman
 ---
 
 # Transporter public presence
+
+## October18 chosen account identity — planned local implementation
+
+All provider owners use the public label Transport Provider. A chosen Account
+name is their main public identity, whether it is a person's name or a name for
+their transport work. Their unique `@handle` identifies the same account. This
+does not create a company category, change the provider's legal identity, or
+establish ownership/permission over any truck. Existing legal first and Last /
+father name fields remain distinct; the public Account manager is currently
+derived only from the approved first-name projection, as explicitly confirmed by
+the owner. No full legal name is inferred or published, and no separate public
+manager-name editor is introduced.
+
+### Scenario: one provider signup with a chosen public identity
+
+Given a verified eligible person sets up a provider workspace on web or Expo\
+When they choose an Account name and unique handle, enter their private manager
+details and optional driving preference, and submit\
+Then the existing provider signup command saves the public identity independently
+of legal/business fields and roles\
+And no company-versus-individual account selection appears\
+And an invalid or already-used handle leaves the entered draft available for correction.
+
+### Scenario: saved profile identity changes deliberately
+
+Given a provider opens their saved profile\
+Then Account name, `@handle` and the approved public Account manager appear in a
+compact hierarchy before any form\
+When they choose Edit profile, change Account name or handle, and save\
+Then both clients display the server's saved identity and canonical profile link\
+And Cancel restores the saved identity without a mutation\
+And unavailable/foreign provider authority cannot edit another profile.
+
+### Scenario: transporter search keeps public identity clear
+
+Given a visitor searches a provider's Account name, public manager first name or
+handle\
+Then matching public provider cards lead with Account name and `@handle`, with
+the manager first name as secondary public information when supplied\
+And every provider card uses the common Transport Provider label, without old
+company/independent labels or styling that implies stronger review\
+And private legal last names, login contacts and hidden profile fields are absent\
+And truck filters remain independent until Show trucks on map is selected.
+
+Existing personal About/contact restrictions, public image safety, reviewed
+truck authority and publication rules remain intact. Focused UI submission,
+saved/cancel, privacy and localization tests precede actual desktop/phone web
+and Expo Chrome workflows. No new hosted rollout is claimed here.
+
+## October 14 Transport Provider profile — implemented locally
+
+Use Transport Provider as the common owner label, with truthful reviewed-truck
+summary and counts defined by FEAT-VER-001. Retain company business information
+and first-name-only personal identity. No new employee public profile is created.
+Only Live public-disclosable trucks count or appear; hidden/private Draft metadata
+must not leak through full-fleet totals, search or pagination. Truck routes stay on
+the actual truck/driver pair. Ownership evidence is not a quality guarantee or
+an inferred legal category. Current search remains independent of truck filters;
+explicit View trucks is its only map association.
+Focused safe-projection and authoritative full-fleet count checks pass with the
+reviewed source installed locally. Owner visual approval and hosted release
+remain separate gates in `specs/TRACEABILITY.md`.
+
+## October 13 personal public details and separate portraits — planned
+
+FEAT-IAM-001 governs structured personal first name, private Last / father name,
+safe historical fallback and explicit public callback editing. The owner's
+clarification retains company business names, About and reviewed documents.
+Independent personal profiles omit extra personal email/website/WhatsApp/About,
+headline, registration location and introduction-video fields from public
+rendering and search indexing; their truck/document facts retain their existing
+subject-specific rules. Private registration location remains editable without
+being a public office-city search field. Company office-city search stays intact.
+No employee public handle/page is invented.
+
+### Scenario: separate identity images with honest blank states
+
+Given a transporter and its employed driver manage their public images\
+When either uploads, replaces or removes an image\
+Then the existing authorized transporter-image or own-driver-portrait command
+changes only that subject\
+And public truck/driver details use the driver's authorized portrait while the
+transporter profile uses its separate transporter image\
+And a blank company image uses a company icon and a blank personal image uses
+a person icon, without a stock person's photograph\
+And raw Storage references, hidden/moderated portraits and private account data
+never reach public clients.
+
+### Scenario: an owner previews an unpublished uploaded image privately
+
+Given an owner uploads a validated transporter profile image before publication\
+When their existing editor reloads its custom image\
+Then the existing own-image reader serves only that actor's image through an
+authenticated no-store response\
+And anonymous and employed-driver requests are denied\
+And a different owner cannot select or receive this owner's image; their own
+reader remains scoped to their own subject\
+And the public image endpoint continues to deny unpublished or moderated content\
+And neither reader returns Storage paths to the client.
+
+### Scenario: pre-launch demo identities are visually distinct
+
+Given credential-free demo image presets are assigned\
+When provider and driver identities appear together\
+Then their allocated picture pools are disjoint and individual pictured identities
+have distinct presets\
+And some transporter and driver identities intentionally remain blank\
+And no user-uploaded photo or customer record is overwritten by a fixture update.
+
+Reuse existing validated upload/storage/scan/ownership policies; no new image
+provider, storage bucket or relaxed access is justified. Fixture changes are
+bounded local preparation; a hosted correction needs exact target/record review.
+Tests must cover separate replacement/removal, actual upload controls, empty
+icons, first-name-only serialization and company information preservation.
+
+## October 13 owner correction: provider identity and truck facts
+
+This supersedes the provider-level Services and Regular service presentation
+below. About remains the provider's descriptive text. Routes belong to the
+specific truck and its current driver under FEAT-CAP-001, not to the account.
+
+### Scenario: a concise transporter profile keeps useful detail
+
+Given a visitor opens a transporter profile on web or mobile\
+When its owner details render\
+Then About, public contacts, reviewed documents, introduction media and shipment
+reviews remain available\
+And neither Transport services nor account-wide Regular service is displayed\
+And the bottom Confirm service details before booking block and generic View
+available trucks link are absent\
+And one See trucks on the map action above the truck list opens capacity scoped
+to this transporter without promising that private or unavailable trucks appear\
+And the existing single-truck display, fleet disclosure and pagination remain.
+
+### Scenario: retiring a descriptive field does not erase its stored text
+
+Given an existing profile has legacy Services text\
+When its owner edits About or contacts with a current or older client\
+Then the legacy Services value is retained without publishing or indexing it\
+And no Services editor or hidden resubmission changes it\
+And About remains public, editable and searchable under FEAT-MKT-001.
+
+Local implementation and focused verification are planned. No new hosted SQL,
+publication or visual approval is claimed by this correction.
+
+### Scenario: a missing optional truck number does not break its public profile
+
+Given an otherwise valid visible transporter has an active truck whose optional
+platform number is null\
+When its bounded public fleet page is opened on web or mobile\
+Then the profile and truck render without an invented platform number\
+And distinct truck rows retain independent closed/open map state and usable actions\
+And UUIDs, contacts and document access keep their existing projection rules\
+And malformed identities, missing required fields and oversized pages still fail closed.
+
+October13 reproduced local failure: the database permits a null platform number,
+but the fleet adapter required a string in both the item and its summary evidence,
+making a Featured-linked profile return503. The local correction aligns just that
+optional field, with tests for null, malformed fields and distinct map-row keys.
+No schema, record repair, identifier minting or hosted write is part of this fix.
+Focused profile browser checks and owner visual review remain required.
 
 October 9 local implementation: FEAT-PLY-001 governs report/block/unblock,
 content-policy acceptance, staff moderation and hidden/demo exclusions across
@@ -68,7 +229,7 @@ And unknown, reserved, malformed, or unpublished handles reveal no profile.
 
 Given a provider maintains its page\
 When a visitor opens the microsite\
-Then it may show logo or hero media, headline, about text, services, verification badges, verified-shipment review summary, active fleet presentation, the latest published capacity with its age, one regular Service area or Capacity route, and provider-selected public contacts\
+Then it may show logo or hero media, headline, about text, verification badges, verified-shipment review summary, active fleet presentation, each truck's latest published capacity with its age, and provider-selected public contacts\
 And each claim is based on owner input or current records rather than invented metrics\
 And a low rating that is awaiting review remains visible and included in the public count and average\
 And the page remains usable on mobile and without playing media.
@@ -78,8 +239,8 @@ And the page remains usable on mobile and without playing media.
 Given a visitor opens a transporter microsite on a wide or narrow screen\
 When the profile renders\
 Then a compact identity header presents the operating model, public base, fleet count, review summary, and provider-controlled contact actions without a marketing-sized hero\
-And About, transport services, reviewed company/owner documents, introduction media, regular service and shipment reviews appear next, before the truck list
-And provider regular service stays the same when the truck page changes\
+And About, reviewed company/owner documents, introduction media and shipment reviews appear next, before the truck list\
+And provider details stay the same when the truck page changes\
 And each later section has one descriptive heading and a visually distinct purpose rather than repeating the provider name or page title\
 And desktop uses the available width without compressing truck details into small tiles\
 And phone layouts use one readable column with no horizontal overflow, clipped action, or hidden truck detail.
@@ -88,7 +249,7 @@ And phone layouts use one readable column with no horizontal overflow, clipped a
 
 Given a published provider owns one or more active trucks\
 When a visitor views the truck list\
-Then every active truck can be reached through the existing bounded pagination and receives its own detailed card with platform truck number, make, model, cargo configuration, latest Empty or Partial state when published, reported Service area or Capacity route, provider regular service, separate capacity and approximate-location age, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
+Then every active truck can be reached through the existing bounded pagination and receives its own detailed card with platform truck number, make, model, cargo configuration, latest Empty or Partial state when published, reported Service area or Capacity route, pair-scoped regular service, separate capacity and approximate-location age, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
 And a Company driver names the employing fleet transporter while an Owner-operator or Self-managed driver remains clearly independent\
 And plate, Driver surname, private account details, exact coordinates, proof files, and inactive trucks remain absent\
 And trucks with no published Empty or Partial signal remain visible as part of the provider's fleet but show Ask about this truck instead of an old location or availability claim.
@@ -132,10 +293,10 @@ Given a provider edits its public business information\
 When the editor renders\
 Then color and page-hero controls are absent\
 And stored legacy provider colors are not rendered publicly\
-And white and off-white surfaces, the shared Loadgistic palette, spacing, type, cards, map treatments, header, safety notice, and footer remain consistent with the rest of the public site\
+And white and off-white surfaces, the shared Loadgistic palette, spacing, type, cards, map treatments, header, contextual document-review labels, and footer remain consistent with the rest of the public site\
 And an allowlisted video reference comes only from Loadgistic-controlled provider configuration\
 And arbitrary CSS, scripts, HTML, external styles, or layout replacement are rejected\
-And the Loadgistic safety notice, attribution, navigation, and contact semantics cannot be hidden.
+And required map attribution, document-review scope, navigation, and contact semantics cannot be hidden.
 
 ### Scenario: provider controls one public profile image
 
@@ -145,20 +306,20 @@ Then only a content-validated JPG, PNG, or WebP within the configured size limit
 And the image is stored behind an owner-scoped command and served only for a currently published provider page\
 And raw storage references remain absent from public projections\
 And Featured Provider cards and the provider microsite use that image as provider identity rather than using one of the provider's trucks\
-And a Loadgistic-supplied default transporter portrait appears when no image has been supplied\
+And a role-appropriate company or person placeholder icon appears when no image has been supplied\
 And replacing an image removes the superseded object after the new record is committed\
 And a rejected metadata command removes the newly quarantined-and-scanned object rather than leaving it orphaned\
 And browser roles cannot call the image metadata command or receive either the current or superseded storage reference.
 
-### Scenario: every seeded transporter has a distinct portrait
+### Scenario: pictured seeded identities have distinct portraits
 
 Given Loadgistic loads the pre-launch public transporter fixtures\
 When a featured portrait card or transporter microsite renders a fixture without an owner-uploaded image\
-Then that fixture uses its own generated portrait showing one adult Ethiopian man with a truck appropriate to that fixture's operating model and truck configuration\
+Then a pictured fixture uses its own portrait from a pool disjoint from Driver portraits\
 And clothing, setting, truck color, truck type, camera angle, and composition vary across the fixture set so different transporters are visually distinguishable\
 And the portrait contains no company name, logo, plate, watermark, document, or verification claim\
 And an owner-uploaded image always overrides the generated fixture portrait\
-And a non-fixture transporter without an uploaded image continues to receive the neutral Loadgistic default transporter portrait.
+And intentionally blank fixtures and non-fixture identities without an uploaded image receive the role-appropriate placeholder icon.
 
 ### Scenario: public contacts are independently controlled
 
@@ -239,20 +400,45 @@ retaining additive RPCs. Regression evidence: rollback SQL
 assertions in `tests/e2e/public-provider-paging.spec.ts`.
 
 
-## Owner-first profile layout — local evidence, 2026-09-23
+## Profile cleanup verification — October 13, local only
 
-Tests: `tests/public-provider-paging.test.mjs` and
-`tests/e2e/public-provider-paging.spec.ts` cover unchanged bounded paging,
-provider-scoped regular-service labels, privacy, collapse/keyboard expansion,
-105-truck and 13-truck traversal, and a single truck without a toggle. All six
-focused desktop/phone cases pass (initial selector correction retained in
-PROGRESS). `tests/e2e/smoke.spec.ts` now expects owner details before fleet and
-opens the disclosure before interacting with a truck map; it remains part of
-the post-approval gate. Actual Rift Valley screenshots and bookmarked reload
-checks are in `artifacts/provider-layout-owner-20260923/`.
+### Scenario: a saved portrait and failed refresh are reported truthfully
 
-Regular-service projection returns labels only from at most one provider-scoped
-row; it does not expose arbitrary record fields, author IDs or storage references.
-No schema or authorization change belongs to the profile-layout adjustment.
-Rollback restores the prior layout while retaining all fleet and document records.
-Owner visual approval and full release gates remain pending; nothing is deployed.
+Given the authorized Driver portrait command confirms an upload or removal\
+When the subsequent metadata read fails\
+Then the screen distinguishes the saved change from the unavailable current
+preview\
+And the existing Refresh photo action retries only the authorized read\
+And an obsolete image is not presented as the saved current portrait\
+And the read failure does not cause a duplicate upload/removal, destructive
+rollback, hidden error or a claim that an unconfirmed write succeeded.
+
+The existing bounded fleet disclosure, page navigation and single-truck behavior
+remain controlled by tests/public-provider-paging.test.mjs and the actual
+public-provider-paging browser workflow. The newly changed profile has no
+provider Services/Regular or bottom booking checklist. Its map action above the
+fleet preserves the selected transporter. Focused web desktop/phone and Expo
+390/320 profile checks pass before the new route migration; that preliminary
+result does not prove the SQL ownership correction. Final scoped-route and
+unchanged paging evidence must be recorded separately before release.
+
+Migration140 is additive, preserves old route rows and Services text, and requires
+compatible regular commands. Restore of old provider-wide joins is unsafe once
+new bound route data changes: rollback must fail closed then, leaving records
+and route isolation intact for a reviewed forward repair. Owner visual review,
+full gates and exact hosted rollout approval remain outstanding.
+
+## October15 driving-owner photo and explicit editing — local repair
+
+Given an active provider owner drives a truck\
+When Account offers their separate driver photo on web or mobile\
+Then the existing upload/remove route accepts that driving owner as well as an
+employed/personal Driver, subject to persisted driver eligibility and consent\
+And a non-driving provider, staff or foreign actor receives no photo-management
+authority\
+And company/provider image and personal driver portrait remain distinct.
+
+Given a saved account/profile is viewed\
+Then editors open only through an intentional task action and Cancel preserves
+saved values. Tests: focused role/route denial and upload contract tests, and the
+actual local read/edit/cancel checks in FEAT-UIX-001. Hosted behavior is unchanged.

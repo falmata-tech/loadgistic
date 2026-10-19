@@ -70,7 +70,7 @@ export async function GET(request:NextRequest) {
     }
     if(!error&&data.user&&projection?.active){
       clearSignupCookie(response);
-      response.headers.set('Location',managedWorkspaceDestination(projection.role));
+      response.headers.set('Location',managedWorkspaceDestination(projection.role,projection.selected_business_workspace));
       return response;
     }
     if(!error&&data.user&&setupAllowed&&await hasJoinableFleetInvitation(data.user.id)){
@@ -78,7 +78,7 @@ export async function GET(request:NextRequest) {
       return response;
     }
     if(!error&&data.user&&setupAllowed&&await managedProviderSignupEligible(data.user.id)){
-      response.headers.set('Location',redirectUrl(request,'/apply?step=details').toString());
+      response.headers.set('Location',redirectUrl(request,'/workspaces').toString());
       return response;
     }
     if(error||!projection||!projection.active){

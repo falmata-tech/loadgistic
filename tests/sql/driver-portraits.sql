@@ -6,13 +6,21 @@ begin
   raise exception 'EXPECTED_PORTRAIT_DENIAL';
 end $$;
 do $test$
-declare actor uuid;other_driver uuid;owner_id uuid;admin_id uuid;first_id uuid;second_id uuid;pending_id uuid;stale_id uuid;cancelled_id uuid;
+declare actor uuid:=gen_random_uuid();other_driver uuid:=gen_random_uuid();owner_id uuid:=gen_random_uuid();admin_id uuid:=gen_random_uuid();
+  first_id uuid;second_id uuid;pending_id uuid;stale_id uuid;cancelled_id uuid;
   result jsonb;original jsonb;n integer;reference text;signature text;role_name text;
 begin
-  select id into strict actor from profiles where email='driver@loadgistic.local';
-  select id into strict other_driver from profiles where role='DRIVER' and active and id<>actor limit 1;
-  select id into strict owner_id from profiles where email='transporter@loadgistic.local';
-  select id into strict admin_id from profiles where email='admin@loadgistic.local';
+  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
+    (actor,'portrait-driver-'||actor||'@example.test',now(),'{}'),
+    (other_driver,'portrait-other-'||other_driver||'@example.test',now(),'{}'),
+    (owner_id,'portrait-provider-'||owner_id||'@example.test',now(),'{}'),
+    (admin_id,'portrait-admin-'||admin_id||'@example.test',now(),'{}');
+  update profiles set role='DRIVER',active=true,drives_truck=true where id in(actor,other_driver);
+  update profiles set role='TRANSPORTER',active=true,drives_truck=false where id=owner_id;
+  update profiles set role='ADMIN',active=true where id=admin_id;
+  perform accept_content_policy(actor,'2026-10-09');
+  perform accept_content_policy(other_driver,'2026-10-09');
+  perform accept_content_policy(owner_id,'2026-10-09');
   update profiles set driver_portrait_preset='abebe-owner-operator.jpg' where id=actor;
   select to_jsonb(p)-'driver_portrait_preset' into original from profiles p where id=actor;
   if driver_portrait_workspace(actor)->>'preset'<>'abebe-owner-operator.jpg' then raise exception 'PRESET_MISSING';end if;
@@ -44,15 +52,19 @@ begin
   if public_driver_portrait_file(second_id) is not null then raise exception 'REMOVE_FAILED';end if;
   pending_id:=reserve_driver_portrait(actor,'supabase://provider-profile/driver-portrait/2026-09-14/'||gen_random_uuid()||'.jpg',1000);
   stale_id:=reserve_driver_portrait(actor,'supabase://provider-profile/driver-portrait/2026-09-14/'||gen_random_uuid()||'.jpg',1000);
-  update driver_portrait_uploads set updated_at=now()-interval '2 hours' where id=stale_id;
-  select count(*) into n from claim_driver_portrait_cleanup(1);
+  -- Order this transaction's jobs ahead of unrelated preview cleanup work.
+  -- Cleanup is a global queue; never assume it contains only our fixtures.
+  update driver_portrait_uploads set updated_at='1900-01-01 UTC' where id=stale_id;
+  update driver_portrait_uploads set updated_at='1901-01-01 UTC' where id=first_id;
+  update driver_portrait_uploads set updated_at='1902-01-01 UTC' where id=second_id;
+  select count(*) into n from claim_driver_portrait_cleanup(1) where id=stale_id;
   if n<>1 then raise exception 'CLEANUP_NOT_BOUNDED';end if;
-  perform 1 from claim_driver_portrait_cleanup(500);
+  perform 1 from claim_driver_portrait_cleanup(20);
   if exists(select 1 from driver_portrait_uploads where id in(first_id,second_id,stale_id) and state<>'DELETING') then raise exception 'CLEANUP_NOT_CLAIMED';end if;
   if (select state from driver_portrait_uploads where id=pending_id)<>'PENDING' then raise exception 'FRESH_UPLOAD_CLAIMED';end if;
   perform pg_temp.expect_portrait_denied(format('select activate_driver_portrait(%L,%L,true)',actor,stale_id),'NOT_FOUND');
-  if exists(select 1 from claim_driver_portrait_cleanup(20)) then raise exception 'EARLY_RETRY';end if;
-  update driver_portrait_uploads set updated_at=now()-interval '6 minutes' where id=first_id;
+  if exists(select 1 from claim_driver_portrait_cleanup(20) where id in(first_id,second_id,stale_id)) then raise exception 'EARLY_RETRY';end if;
+  update driver_portrait_uploads set updated_at='1900-01-01 UTC' where id=first_id;
   if not exists(select 1 from claim_driver_portrait_cleanup(20) where id=first_id) then raise exception 'RETRY_NOT_CLAIMED';end if;
   if discard_pending_driver_portrait(other_driver,pending_id) then raise exception 'CROSS_ACCOUNT_DISCARD';end if;
   perform discard_pending_driver_portrait(actor,pending_id);

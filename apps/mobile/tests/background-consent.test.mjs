@@ -30,3 +30,7 @@ test('accepted current disclosure allows permission checks without another dialo
 test('consent storage failure does not proceed to OS permission requests',async()=>{
  const f=fixture();f.port.write=async()=>{throw Error('storage');};await assert.rejects(authorizeBackgroundLocation(f.port,true),/storage/);assert.deepEqual(f.events,['read','disclose']);
 });
+
+test('the earlier20km disclosure cannot silently authorize the new10km background capture',async()=>{
+ const f=fixture({stored:'shipment-location-2026-10-09',foreground:true,background:true});assert.equal(await authorizeBackgroundLocation(f.port),false);assert.deepEqual(f.events,['read']);assert.equal(await authorizeBackgroundLocation(f.port,true),true);assert.deepEqual(f.events,['read','read','disclose','write','foreground','background']);assert.equal(f.stored(),backgroundDisclosureVersion);
+});

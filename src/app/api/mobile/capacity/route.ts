@@ -22,7 +22,8 @@ export async function POST(request: Request) {
       return mobileJson({ ok: true });
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
-      if (['FORBIDDEN', 'SUBSCRIPTION_ACCESS_REQUIRED', 'INVALID_VEHICLE', 'NOT_FOUND', 'DEVICE_LOCATION_DRIVER_ONLY'].includes(code)) throw new MobileError(403, 'FORBIDDEN', 'This action is not available for this truck and account.');
+      if (['TRUCK_NOT_LIVE','PROVIDER_VERIFICATION_REQUIRED','LOCATION_SOURCE_PENDING'].includes(code)) throw new MobileError(409, code, errorMessage(error));
+      if (['FORBIDDEN', 'SUBSCRIPTION_ACCESS_REQUIRED', 'INVALID_VEHICLE', 'NOT_FOUND', 'DEVICE_LOCATION_DRIVER_ONLY'].includes(code)) throw new MobileError(403, 'FORBIDDEN', 'This action is not available for this vehicle and account.');
       if (/^(INVALID_|DRIVER_REQUIRED_|CAPACITY_|PARTIAL_CAPACITY_|ACCEPTED_LOADS_|LOCALITY_|CONTACT_NAME_)/.test(code)) throw new MobileError(400, 'INVALID_INPUT', errorMessage(error));
       throw error;
     }

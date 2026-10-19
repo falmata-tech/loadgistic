@@ -1,4 +1,4 @@
-import {test,expect as baseExpect} from '@playwright/test';
+import {test,expect as baseExpect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {createClient} from '@supabase/supabase-js';
 import {createChunks} from '@supabase/ssr/dist/main/utils/chunker.js';
@@ -19,13 +19,13 @@ test('eight showcases reserve four mentions and manual times persist through pub
   if(!candidate.day&&new Set(candidate.candidates.filter((c:any)=>c.eligible).map((c:any)=>c.driver_user_id)).size>=8){date=candidateDate;break;}
  }
  expect(date).not.toBe('');
- async function save(button:string,message:string){const response=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:button,exact:true}).click();const result=await response;expect(result.status()).toBe(303);expect(new URL(result.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBeNull();await expect(page.getByText(message,{exact:true})).toBeVisible();}
+ async function save(button:string,message:string){const response=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:button,exact:true}).click();const result=await response;expect(result.status()).toBe(303);expect(new URL(result.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBeNull();await expect(page.getByText(message,{exact:true})).toBeVisible();if(button!=='Schedule sponsor')await page.getByRole('link',{name:'Edit programme',exact:true}).click();}
  try{
   const identity=checked(await service.auth.admin.getUserById(admin.id)).user,link=checked(await service.auth.admin.generateLink({type:'magiclink',email:identity.email!})),url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
   client=createClient(url,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
   const login=await client.auth.verifyOtp({token_hash:link.properties.hashed_token,type:'magiclink'});expect(login.error).toBeNull();
   await page.context().addCookies(createChunks(`sb-${new URL(url).hostname.split('.')[0]}-auth-token`,'base64-'+Buffer.from(JSON.stringify(login.data.session)).toString('base64url')).map(c=>({...c,url:'http://127.0.0.1:3100',sameSite:'Lax' as const})));
-  await page.goto(`/admin/featured?date=${date}`);
+  await page.goto(`/admin/featured?date=${date}&edit=day`);
   const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add truck and Driver');
   for(let i=0;i<8;i++){await expect(select).toBeEnabled();await select.selectOption((await select.locator('option').nth(1).getAttribute('value'))!);await editor.getByRole('button',{name:'Add',exact:true}).click();}
   await expect(editor.locator('.featured-roster-list>li')).toHaveCount(8);
@@ -60,7 +60,7 @@ test('eight showcases reserve four mentions and manual times persist through pub
   await page.screenshot({path:info.outputPath('broadcast-manual.png'),fullPage:true});
   await save('Publish this day','Daily feature published.');await expect(editor.getByLabel('Ends',{exact:true}).first()).toHaveValue('08:55');
   // Schedule one actual sponsor via the staff form; all four slots receive its name.
-  await page.getByText('Manage sponsors',{exact:true}).click();await page.getByLabel('Sponsor type',{exact:true}).selectOption('ADVERTISER');
+  await page.getByRole('link',{name:'Cancel editing',exact:true}).click();await page.getByRole('button',{name:'Schedule sponsor',exact:true}).click();await page.getByLabel('Sponsor type',{exact:true}).selectOption('ADVERTISER');
   await page.getByLabel('Business name',{exact:true}).fill(`Broadcast sponsor ${suffix}`);
   await page.getByLabel('Short description',{exact:true}).fill('Synthetic local sponsor for timetable verification.');
   await page.getByLabel('Website (optional)',{exact:true}).fill('https://example.test');

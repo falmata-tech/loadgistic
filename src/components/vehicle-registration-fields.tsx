@@ -26,7 +26,7 @@ export function VehicleRegistrationFields(){
       <label htmlFor="vehicle-configuration"><Text message="Vehicle configuration"/></label>
       <select id="vehicle-configuration" name="vehicleKind" required value={vehicleKind} onChange={event=>setVehicleKind(event.target.value)}>
         <option value="" disabled><Text message="Choose the vehicle body"/></option>
-        {FIXED_CONFIGURATIONS.map(item=><option value={item.name} key={item.name}>{item.name}</option>)}
+        {FIXED_CONFIGURATIONS.map(item=><option value={item.name} key={item.name}><Text message={item.name}/></option>)}
         <option value={INTERCHANGEABLE_TRACTOR}><Text message="Interchangeable tractor"/></option>
       </select>
     </div>
@@ -44,6 +44,6 @@ export function VehicleRegistrationFields(){
         <div className="trailer-compatible-options">{TRACTOR_TRAILER_CONFIGURATIONS.map(item=><label key={item.name}><input type="checkbox" name="supportedTrailerConfigurations" value={item.name} checked={compatibleTrailers.includes(item.name)} onChange={event=>{if(item.name===attachedTrailer&&!event.target.checked)return;setCompatibleTrailers((current:string[])=>event.target.checked?[...new Set([...current,item.name])]:current.filter((value:string)=>value!==item.name));}}/><span>{item.name.replace('Tractor + ','')}</span></label>)}</div>
       </div>
     </fieldset>:<input type="hidden" name="cargoConfiguration" value={vehicleKind}/>}
-    {vehicleKind?<div className="vehicle-configuration-preview full"><Image src={preview} alt={tractor?attachedTrailer:vehicleKind} width={240} height={180}/><span><strong>{tractor?<Text message="Current public configuration"/>:vehicleKind}</strong><small>{tractor?attachedTrailer.replace('Tractor + ',''):<Text message="The selected vehicle artwork is used on capacity maps."/>}</small></span></div>:null}
+    {vehicleKind?<div className="vehicle-configuration-preview full"><Image src={preview} alt="" width={240} height={180}/><span><strong>{tractor?<Text message="Current public configuration"/>:<Text message={vehicleKind}/>}</strong><small>{tractor?attachedTrailer.replace('Tractor + ',''):<Text message="The selected vehicle artwork is used on capacity maps."/>}</small></span></div>:null}
   </>;
 }

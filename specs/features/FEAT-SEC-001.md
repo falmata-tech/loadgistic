@@ -11,6 +11,26 @@ rollout: Verify exact targets and approved encrypted backups; repair the provide
 
 # Security operations
 
+## Scenario: a restored backup retains security as well as data
+
+Given a protected database snapshot has passed its source catalog checks\
+When it is restored into an isolated recovery database\
+Then the restored table RLS, browser grants, function authority and retained data
+are compared with the source snapshot before recovery is called verified\
+And recreating an extension cannot silently reset its member-table protections\
+And a mismatch blocks use of that copy as promotion or recovery evidence\
+And the documented exact local owner repair may restore the original PostGIS
+protection only in a verified isolated local copy\
+And any hosted owner operation requires its separate reviewed recovery authority\
+And aggregate object IDs are normalized to actual types/functions across databases,
+while ordinary definitions, owner, ACL, configuration and comments remain exact.
+
+NR-44: October14 restored PostGIS omitted RLS although the original local database
+was protected. The existing `scripts/check-database-security.sql` must pass after
+the separately bounded local restore-owner step. Actual protected rehearsal and
+comparison evidence lives under `.local/internal-workflows-20261014/`; no original
+or hosted table mutation is authorized by this scenario.
+
 ## Scenario: public tables cannot silently omit RLS
 
 Given a migrated database contains public application or extension tables

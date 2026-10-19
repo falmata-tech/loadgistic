@@ -1,10 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { discoveryParams,filterCount,changeSpace,changeAvailability,parseDiscovery } from '../src/api/discovery.ts';
+import {discoveryParams,filterCount,changeSpace,changeAvailability,parseDiscovery,peopleSearchFilters,profileTruckFilters,initialCapacityIdentity} from '../src/api/discovery.ts';
 import { parseCapacityPage,loadCapacity,loadSharedCapacity } from '../src/api/public-capacity.ts';
 import { markerLocation,project,signalPaths,separateMarkers } from '../src/map/capacity-geometry.ts';
 const raw={id:'truck1',status:'EMPTY',assigned_driver_first_name:'Driver',location_lat:null,location_lng:null,availability_geometry:'ROUTE',current_route_points:[{lat:9,lng:38,label:'A'},{lat:10,lng:39,label:'B'}],recurring_corridors:[{geometry:'ROUTE',route_points:[{lat:8,lng:39,label:'C'},{lat:10,lng:39,label:'B'},{lat:9,lng:38,label:'A'}]}]};
 const parse=row=>parseCapacityPage({items:[row],hasMore:false}).items[0];
+test('location source is one canonical multi-filter group on public and private maps',async()=>{
+ const filters={locationSource:'MOBILE,GPS,MOBILE',vehicleCategory:'Courier motorcycle,Courier car'};
+ const urls=[];const response=async url=>{urls.push(String(url));return Response.json({items:[],hasMore:false,nextCursor:null});};
+ await loadCapacity('https://loadgistic.com','',new AbortController().signal,()=>{},response,filters);
+ await loadSharedCapacity('',new AbortController().signal,()=>{},async path=>{urls.push('https://loadgistic.com'+path);return {items:[],hasMore:false,nextCursor:null};},filters);
+ assert.equal(urls.length,2);for(const url of urls){const params=new URL(url).searchParams;assert.equal(params.get('locationSource'),'GPS,MOBILE');assert.equal(params.get('vehicleCategory'),'Courier car,Courier motorcycle');assert.equal(params.getAll('locationSource').length,1);}
+ assert.equal(filterCount({locationSource:'GPS,MANUAL,MOBILE'}),1);
+ assert.equal(discoveryParams('',{locationSource:''}).has('locationSource'),false);
+ assert.equal(peopleSearchFilters({...filters,provider:'selected',truck:'selected-truck'}).locationSource,filters.locationSource);
+ for(const invalid of ['GPS_DEVICE','GPS,OTHER','GPS,',Array(34).fill('MOBILE').join(',')])assert.throws(()=>discoveryParams('',{locationSource:invalid}),/INVALID_CAPACITY_FILTER/);
+ assert.equal(filters.locationSource,'MOBILE,GPS,MOBILE','Encoding never mutates the draft');
+});
 test('native truck filters encode identically across public/private map pagination',async()=>{
  const filters={vehicleCategory:'Tractor + Container Trailer',truckCityPlaceRef:'city',truckCityLabel:'Private local display label',truckLocationRadiusKm:'50',ownerDocs:'IDENTITY,BUSINESS_LICENSE'};
  const urls=[];await loadCapacity('https://loadgistic.com','A&B',new AbortController().signal,()=>{},async url=>{urls.push(url);return Response.json({items:[],hasMore:false});},filters);
@@ -14,6 +26,48 @@ test('native truck filters encode identically across public/private map paginati
 });
 test('mutually exclusive load filters cannot accidentally hide all trucks',()=>{
  assert.equal(changeSpace({status:'PARTIAL'},'FTL').status,'');assert.equal(changeAvailability({loadType:'FTL'},'PARTIAL').loadType,'');assert.equal(changeSpace({status:'EMPTY'},'PTL').status,'EMPTY');
+});
+test('multi-options are canonical and identical for public/private map and people queries',async()=>{
+ const filters={vehicleCategory:'Pickup truck,Cargo van,Pickup truck',status:'PARTIAL,EMPTY',loadType:'PTL,FTL',stopOption:'MULTI_PICK,MULTI_DROP',freshness:'UPDATE_NEEDED,FRESH',truckDocs:'VEHICLE_OWNERSHIP,VEHICLE_AUTHORIZATION',originPlaceRef:'city'};
+ const urls=[];
+ await loadCapacity('https://loadgistic.com','',new AbortController().signal,()=>{},async url=>{urls.push(url);return Response.json({items:[],hasMore:false});},filters);
+ await loadSharedCapacity('',new AbortController().signal,()=>{},async path=>{urls.push('https://loadgistic.com'+path);return{items:[],hasMore:false};},filters);
+ const publicParams=new URL(urls[0]).searchParams,privateParams=new URL(urls[1]).searchParams;
+ assert.equal(publicParams.toString(),privateParams.toString());
+ assert.equal(publicParams.get('vehicleCategory'),'Cargo van,Pickup truck');assert.equal(publicParams.get('status'),'EMPTY,PARTIAL');
+ assert.equal(publicParams.get('loadType'),'FTL,PTL');assert.equal(publicParams.get('stopOption'),'MULTI_DROP,MULTI_PICK');
+ assert.equal(publicParams.get('truckDocs'),filters.truckDocs,'document requirements retain every selected type');
+ assert.equal(publicParams.getAll('vehicleCategory').length,1);
+ assert.equal(discoveryParams('public profile',peopleSearchFilters(filters)).get('vehicleCategory'),publicParams.get('vehicleCategory'));
+ assert.equal(filterCount(filters),7);assert.equal(filters.vehicleCategory,'Pickup truck,Cargo van,Pickup truck');
+});
+test('valid alternative load/occupancy combinations survive changes while invalid values fail closed',()=>{
+ assert.equal(changeSpace({status:'EMPTY,PARTIAL'},'FTL').status,'EMPTY,PARTIAL');
+ assert.equal(changeAvailability({loadType:'FTL,PTL'},'PARTIAL').loadType,'FTL,PTL');
+ assert.equal(changeSpace({status:'PARTIAL'},'FTL,PTL').status,'PARTIAL');
+ for(const [key,value]of [['status','EMPTY,OFF_DUTY'],['loadType','FTL,INVALID'],['vehicleCategory','Cargo van,Unknown truck'],['stopOption','MULTI_PICK,'],['freshness','FRESH,'.repeat(33)]])assert.throws(()=>discoveryParams('',{[key]:value}),/INVALID_CAPACITY_FILTER/);
+ assert.equal(discoveryParams('',{}).toString(),'');
+});
+test('people search drops map identity without changing detailed truck filters',()=>{
+ const filters={provider:'selected-company',truck:'selected-truck',status:'EMPTY',ownerDocs:'IDENTITY',originPlaceRef:'city'};
+ const before=JSON.stringify(filters),people=peopleSearchFilters(filters);
+ assert.deepEqual(people,{status:'EMPTY',ownerDocs:'IDENTITY',originPlaceRef:'city'});
+ assert.equal(discoveryParams('office city',people).get('q'),'office city');
+ assert.equal(discoveryParams('office city',people).has('provider'),false);
+ assert.equal(JSON.stringify(filters),before);
+});
+test('explicit profile-to-map selection combines identity with existing truck filters',()=>{
+ const filters={status:'PARTIAL',loadType:'PTL',truckDocs:'VEHICLE_OWNERSHIP',provider:'old',truck:'old-truck'};
+ const provider=profileTruckFilters(filters,{kind:'COMPANY',handle:'new-company',capacityId:''});
+ assert.deepEqual(provider,{...filters,provider:'new-company',truck:''});
+ const driver=profileTruckFilters(filters,{kind:'COMPANY_DRIVER',handle:'new-company',capacityId:'assigned-truck'});
+ assert.deepEqual(driver,{...filters,provider:'new-company',truck:'assigned-truck'});
+ assert.equal(filters.provider,'old');
+});
+test('capacity deep links apply only bounded explicit identity and keep text as a draft',()=>{
+ const truck='00000000-0000-4000-8000-000000000123';
+ assert.deepEqual(initialCapacityIdentity({provider:'published-company',truck,q:'Unsubmitted text',digest:'private'}),{provider:'published-company',truck});
+ for(const input of [{provider:'has spaces',truck:'private plate'},{provider:['a','b'],truck:['one']},{provider:'x'.repeat(65),truck:'not-uuid'}])assert.deepEqual(initialCapacityIdentity(input),{provider:'',truck:''});
 });
 test('capacity geometry excludes invalid coordinates, regular-only fake locations and hidden current signals',()=>{
  const truck=parse(raw);assert.deepEqual(markerLocation(truck),[38.5,9.5]);

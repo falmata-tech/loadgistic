@@ -8,6 +8,7 @@ import { getProviderTrackingWorkspace } from '@/lib/provider-tracking.js';
 import { PageHeader } from '@/components/page-header';
 import { ProviderShipmentForm } from '@/components/provider-shipment-form';
 import {FleetSetupEmpty} from '@/components/fleet-setup-empty';
+import {providerWorkspaceCapabilities} from '@/lib/provider-workspace.js';
 
 export default async function NewProviderShipmentPage(){
   const user=await requireUser();
@@ -15,5 +16,6 @@ export default async function NewProviderShipmentPage(){
   const workspace=await getProviderTrackingWorkspace(user,{limit:1});
   if(workspace.access?.can_manage_tracking===false)redirect('/app/provider-shipments?error=Tracking+access+is+off.');
   const vehicles=workspace.vehicles||[];
-  return <div className="page"><PageHeader icon={ClipboardPlus} title={<Text message="Start Tracking"/>} subtitle={<Text message="Give your shipment partners a private view of progress on the work you’ve agreed."/>} action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/><Text message="Tracking"/></Link>}/>{vehicles.length?<ProviderShipmentForm vehicles={vehicles} lockVehicleSelection={user.role==='DRIVER'}/>:<FleetSetupEmpty companyDriver={user.driver_kind==='COMPANY'} fleetOwner={user.role==='TRANSPORTER'}/>}</div>;
+  const capabilities=providerWorkspaceCapabilities(user);
+  return <div className="page"><PageHeader icon={ClipboardPlus} title={<Text message="Start Tracking"/>} subtitle={<Text message="Give your shipment partners a private view of progress on the work you’ve agreed."/>} action={<Link className="button secondary" href="/app/provider-shipments"><ArrowLeft aria-hidden="true"/><Text message="Tracking"/></Link>}/>{vehicles.length?<ProviderShipmentForm vehicles={vehicles} lockVehicleSelection={!capabilities.canManageFleet}/>:<FleetSetupEmpty companyDriver={user.driver_kind==='COMPANY'} fleetOwner={capabilities.canManageFleet}/>}</div>;
 }

@@ -18,8 +18,8 @@ test('saved approval delivery is silent on baseline, deduplicated, independent f
  assert.deepEqual(tracker.next({unreadCount:0,items:[{...item,unread:false}]}),[]);tracker.reset();assert.deepEqual(tracker.next({unreadCount:1,items:[item]}),[]);
 });
 test('system clicks accept only known same-site workflows; workers cache no private traffic',()=>{
- for(const path of ['/support/'+id,'/brokerage/'+id,'/app/provider-shipments/'+id,'/shipment-detail?id='+id,'/about#transport-chat'])assert.equal(safeNotificationPath(path),path);
- for(const path of ['https://evil.test','//evil.test','/admin','/support/../admin','/app/provider-shipments/'+id+'?token=secret','javascript:alert(1)'])assert.equal(safeNotificationPath(path),null);
+ for(const path of ['/support/'+id,'/app/provider-shipments/'+id,'/shipment-detail?id='+id])assert.equal(safeNotificationPath(path),path);
+ for(const path of ['/brokerage/'+id,'/about#transport-chat','/arrange-transport','https://evil.test','//evil.test','/admin','/support/../admin','/app/provider-shipments/'+id+'?token=secret','javascript:alert(1)'])assert.equal(safeNotificationPath(path),null);
  const root=readFileSync(new URL('../public/loadgistic-alerts-sw.js',import.meta.url),'utf8'),mobile=readFileSync(new URL('../apps/mobile/public/loadgistic-alerts-sw.js',import.meta.url),'utf8');assert.equal(root,mobile);assert.doesNotMatch(root,/addEventListener\(['"]fetch|caches\.|pushManager|acknowledge/);
 });
 test('unsupported browser never prevents normal alerts or requests permission',async()=>{

@@ -4,13 +4,16 @@ import {LOCALE_COOKIE,supportedLocale} from '@/lib/i18n/core.js';
 import {loadMessages,type Locale} from '@/lib/i18n/catalogs';
 import type { Metadata } from 'next';
 import './globals.css';
+import {PUBLIC_SITE_ORIGIN,searchRobots} from '@/lib/seo.js';
 import {NativeFormFeedback} from '@/components/native-form-feedback';
 
 export const runtime = 'nodejs';
 
 export const metadata: Metadata = {
+  metadataBase:new URL(PUBLIC_SITE_ORIGIN),
+  robots:searchRobots(),
   title: { default: 'Loadgistic', template: '%s | Loadgistic' },
-  description: 'Share truck capacity with your network or the open market. Keep brokers, shippers and receivers informed with private shipment tracking across Ethiopia.',
+  description: 'Keep your transport network in view. Share vehicle capacity, routes and availability with trusted contacts or the open market, and follow agreed shipments privately.',
   manifest: '/manifest.webmanifest',
   applicationName: 'Loadgistic',
   icons: {

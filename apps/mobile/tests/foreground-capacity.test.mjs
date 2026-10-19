@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {foregroundCapacityDue, refreshForegroundCapacity} from '../src/location/foreground-capacity.ts';
 import {capacityLocation} from '../src/location/privacy.ts';
-const now=2_000_000, truck={id:'assigned',canLocate:true,current:{status:'EMPTY'},location:{updatedAt:'',radius:20}};
+import {backgroundLocationDue} from '../src/location/background-state.ts';
+const now=2_000_000, truck={id:'assigned',canLocate:true,selectedLocationSource:'MOBILE',current:{status:'EMPTY'},location:{updatedAt:'',radius:20}};
 test('capacity movement refresh requires assigned on-duty driver and ten-minute cadence',()=>{
  assert.equal(foregroundCapacityDue(truck,0,now),true);
- for(const change of [{canLocate:false},{current:null},{current:{status:'OFF_DUTY'}},{current:{status:'UNKNOWN'}},{location:{radius:20,updatedAt:new Date(now-599999).toISOString()}}]) assert.equal(foregroundCapacityDue({...truck,...change},0,now),false);
+ for(const change of [{canLocate:false},{selectedLocationSource:'MANUAL'},{selectedLocationSource:'GPS'},{current:null},{current:{status:'OFF_DUTY'}},{current:{status:'UNKNOWN'}},{location:{radius:20,updatedAt:new Date(now-599999).toISOString()}}]) assert.equal(foregroundCapacityDue({...truck,...change},0,now),false);
  assert.equal(foregroundCapacityDue(truck,now-599999,now),false);
  assert.equal(foregroundCapacityDue({...truck,current:{status:'PARTIAL'}},now-600000,now),true);
 });
@@ -29,6 +30,18 @@ test('movement pipeline transmits only obscured coordinates and preserves capaci
   assert.notEqual(saves.at(-1).approximateLat,lat);assert.notEqual(saves.at(-1).approximateLng,lng);
  }
  assert.notDeepEqual(saves[0],saves[1]);
+});
+test('manual choice stops Capacity phone polling and a later phone choice resumes it',async()=>{
+ const reads=[];
+ for(const selectedLocationSource of ['MANUAL','MOBILE']){
+  let captures=0;
+  const result=await refreshForegroundCapacity({vehicleId:truck.id,lastAttempt:0,now,active:()=>true,read:async()=>{reads.push(selectedLocationSource);return{vehicles:[{...truck,selectedLocationSource}]};},capture:async radius=>{captures++;return capacityLocation(9.03,38.74,10,radius);},save:async()=>{}});
+  assert.equal(result,selectedLocationSource==='MANUAL'?'not-due':'saved');
+  assert.equal(captures,selectedLocationSource==='MANUAL'?0:1);
+ }
+ assert.deepEqual(reads,['MANUAL','MOBILE']);
+ const activeShipmentLease={expiresAt:new Date(now+86400000).toISOString(),absoluteExpiresAt:new Date(now+86400000).toISOString(),lastAttempt:0};
+ assert.equal(backgroundLocationDue(activeShipmentLease,now),true,'shipment Tracking cadence is independent of the Capacity source choice');
 });
 test('permission, capture and server denials do not retry a location mutation',async()=>{
  for(const boundary of ['capture','save']){

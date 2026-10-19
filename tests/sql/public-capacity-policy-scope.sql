@@ -3,11 +3,13 @@ do $test$
 declare actor uuid:=gen_random_uuid();provider uuid:=gen_random_uuid();truck uuid;cap uuid;route jsonb;result jsonb;rows integer;
 begin
  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values(actor,'public-policy-synthetic@example.test',now(),'{"full_name":"Synthetic policy driver"}');
- update profiles set role='DRIVER',active=true where id=actor;
+ update profiles set role='DRIVER',active=true,drives_truck=true where id=actor;
  insert into provider_profiles(id,user_id,business_name,handle) values(provider,actor,'Synthetic policy provider','policy-'||actor);
  insert into company_pages(provider_profile_id,published,about) values(provider,true,'Synthetic policy test page');
  perform accept_content_policy(actor,'2026-10-09');
  truck:=(create_provider_vehicle(actor,'{"make":"Policy audit","model":"Synthetic","plate":"POLICY-AUDIT","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;
+ perform update_fleet_driver_access(actor,jsonb_build_object('driver_user_id',actor,'vehicle_id',truck,'can_manage_capacity',true,'can_manage_tracking',true));
+ perform set_provider_vehicle_publication(actor,truck,'LIVE');
  perform refresh_provider_capacity_location(actor,jsonb_build_object('vehicle_id',truck,'approximate_lat',41.8,'approximate_lng',-87.6,'location_precision_km',20));
  select current_route_points_json into strict route from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
  cap:=publish_provider_capacity(actor,jsonb_build_object('vehicle_id',truck,'status','EMPTY','accepted_loads','BOTH','availability_geometry','ROUTE','location_source','PRESERVE_DRIVER','current_route_places',route,'sharing_mode','PUBLIC'));

@@ -1,5 +1,139 @@
 # Web gaps found during mobile implementation
 
+## WEB-MOB-046 — Legacy shipment examples have no active customer invitation
+
+Status: demo-coverage gap recorded; the owner test guide is corrected. No
+invitation, recipient grant or shipment was silently fabricated or changed.
+
+The saved local `LGX-DEMO-0001` has an assigned driver and shipment history, but
+zero `provider_tracking_recipients` and zero `shipment_party_grants`. Its contact
+fields alone do not authorize visitor access or shipment-owner approval. The
+guide now identifies it as a driver-side inspection example and directs full
+customer-side tests through a fresh shipment's normal invitation workflow.
+Future demo maintenance should exercise that workflow rather than infer grants
+from contact text. This observation is not evidence that new shipment invitations
+fail, and it does not authorize changing production demo/customer records.
+
+## WEB-MOB-045 — A successful write could be presented as a confirmed refresh
+
+Status: repaired locally with actual hook and component regression checks.
+
+Some native callers awaited a `reload()` that swallowed read failures, then
+cleared their draft and reported the new saved view. The query now provides a
+separate confirmed-read result. Network and changed Fleet editors retain a
+known-saved checkpoint after a successful write and failed reread; recovery
+retries only the GET, never the write. Selected Fleet views display the real read
+failure. Authoritative 401/403/404 clears cached private details; transient outages
+preserve the same actor/resource's content. See NR-55, FEAT-UIX/MOB/FLT-001 and
+`apps/mobile/tests/account-query.test.mjs`, `network-read-first.test.mjs`,
+`tests/provider-owner-presentation.test.mjs` and device-cache regressions.
+
+## WEB-MOB-044 — A truck's driver link depended on the first directory page
+
+Status: repaired locally; actual 13-driver browser case and foreign denial pass.
+
+Web Fleet resolved a selected driver only from the current ten-row directory
+page. A truck linked to driver 13 could therefore show no selected driver.
+An exact owner-scoped reader now resolves the selected target independently of
+pagination, repeats current provider/driver/assignment checks, and distinguishes
+removal from a temporary load failure. It neither widens the directory page nor
+searches another provider's drivers. FEAT-FLT-001; `tests/fleet-driver-detail.test.mjs`
+and `tests/e2e/fleet-driver-off-page.spec.ts`. Receipt:
+`.local/fleet-driver-detail-20261015/evidence.json` (complete and cleaned).
+
+## WEB-MOB-043 — Cached assignment can hide the current truck on mobile Home
+
+Status: repaired locally with four focused render regressions and actual Expo
+owner A-to-B reassignment acceptance. No production change.
+
+Home filtered freshly authorized capacity using the truck ID retained at sign-in.
+After reassignment from A to B this could hide B. Fleet also remounted its editor
+before the reload completed, restoring old selections. Home now selects the sole
+current server pair for its signed-in actor; editor identity follows persisted
+assignment/permission/contact fields and saves await reload. Multiple conflicting
+pairs fail closed. Session expiry, employee scope and command authorization remain.
+Acceptance: FEAT-FLT-001; `tests/mobile-current-driving-pair.test.mjs`
+and `tests/e2e/provider-native-assignment.spec.ts`.
+
+## WEB-MOB-042 — Phone-only alerts leave browser confirmation actions inert
+
+Status: five controls repaired locally; actual save/cancel, browser Escape and
+backdrop dismissal pass with persisted readback and exact cleanup. Installed
+Android and owner visual approval remain separate.
+
+The installed React Native Web Alert adapter implements an empty `alert()`.
+Remove driver, Cancel invitation, Remove capacity access, Remove Tracking
+recipient and permitted Cancel Tracking therefore displayed no confirmation and
+sent no command in the Expo preview. A shared app confirmation now preserves
+explicit cancel/confirm decisions on both platforms. Existing protected commands,
+history retention and unfinished-Tracking restrictions remain authoritative.
+Acceptance: FEAT-MOB-001; `tests/e2e/mobile-confirmation-actions.spec.ts` checks
+actual persisted changes and no mutation on cancellation. Fixed confirmation
+copy is translated in all four local languages and included in the copy auditor.
+Receipt: `.local/internal-workflows-20261014/provider-native-confirmation-painted-phone-runner.json`.
+
+## WEB-MOB-041 — Legacy provider categories mislabel drivers and exclude driving owners
+
+Status: repaired locally; focused adapter/presentation checks pass. Owner visual
+review, full release gates and hosted rollout remain separate.
+
+Public/private capacity and basic profile rows inferred a person's driver label
+from the provider's historical account category. With every provider able to
+employ drivers, this could call an employee Independent driver or call an owner
+Company driver. Featured also required an employee-directory row after the
+authoritative eligibility command had accepted a driving organization owner,
+which incorrectly removed that eligible owner from the candidate list.
+
+The public label is now Driver, while the account remains Transport Provider.
+Machine enums are retained for compatibility. Driver document presentation uses
+the existing actual-assignment-scoped records; it does not inherit employer
+identity documents. Featured trusts the current eligible-link command, safe
+identity and provider-scope checks and removes the redundant employee-row read.
+Missing links, safe identities, wrong provider scopes and ineligible providers
+still yield no candidate. No additional query or new public field is introduced.
+
+Acceptance: FEAT-FLT-001 and FEAT-FTR-001; focused regressions in
+`tests/provider-driver-presentation.test.mjs` and
+`tests/featured-candidate-reads.test.mjs`. The final root42-test batch including
+these and existing publication/authority/presentation boundaries passes;
+counts overlap earlier batches and must not be added together.
+Actual local backend/phone acceptance also passes a fresh organization owner
+driving one unreviewed Live truck without an employee row, including Featured
+candidate loading, anonymous first-name-only profile and exact cleanup. Receipt:
+`.local/internal-workflows-20261014/provider-featured-owner-current-server-phone-runner.json`.
+Before the separate additive local fixture correction, copied multi-Live demo
+fleets remained unqualified. Nine later manifest-bound fictional local reviews
+restore those demo cards; no real ownership is inferred or backfilled.
+
+## WEB-MOB-031 — Web Tracking offers recovery actions the account cannot use
+
+Status: source repair, five component regressions and actual desktop/phone
+role-specific browser cases pass locally. No production change.
+
+Contracts: FEAT-TRK-001 / FEAT-FLT-001; existing server authorization remains
+mandatory. Owner: Tracking UI maintainer.
+
+The service removes reassignment for Independent drivers and cancellation when
+agreed Tracking requires staff release. `TrackingRecoveryControls` checked only
+whether any action existed, then rendered all three forms. A user could therefore
+follow an apparently valid control to a predictable denial. Four of five new
+component scenarios fail before the repair and all five pass afterward.
+
+Render each form only when its action is in the authoritative context. Operations
+keeps all permitted controls, required reasons/revisions and explicit cancellation
+confirmation. Direct forged commands must still fail, with history and state
+unchanged. Tests: `tests/tracking-recovery-controls.test.mjs`,
+`tests/e2e/tracking-recovery-permissions.spec.ts`; the existing lifecycle recovery
+case now checks the absent provider cancellation control and a forged-command
+denial separately. Both real cases prove Independent correction-only, fleet
+correction/reassignment and all three Operations forms; permitted corrections
+persist and forged provider cancellation changes nothing. Exact fixtures are
+cleaned. The initial new test used a prefilled textarea's wrapping-label text
+instead of its accessible textbox name; no POST occurred, and no product patch
+was made for that harness mismatch. Receipt:
+`.local/internal-workflows-20261014/tracking-permissions-final-runner.json`.
+Hosted status and full release gates remain separate.
+
 Created 2026-10-05. Related work: [FEAT-MOB-001](../specs/features/FEAT-MOB-001.md)
 and [mobile completion checklist](MOBILE_IMPLEMENTATION.md).
 
@@ -8,6 +142,161 @@ existing web UI, application services and database commands while connecting the
 native app. No production incident, exploit or customer impact is inferred from
 source inspection. No web repair or production change is authorized by this list.
 Priorities below are proposed triage order, not measured incident severity.
+
+## WEB-MOB-026 — Staff suspension can remove assigned responsibilities
+
+Status: repaired on the owner-approved local preview after actual isolated SQL
+and two-session reproduction; browser maintenance and hosted rollout pending.
+Owner: account/admin maintainer.
+Contracts: FEAT-ADM-001 / NR-41.
+
+The generic User activation command forwards the older five staff permission
+fields to an updater that now also accepts Brokerage and Featured. Missing flags
+become false, so suspending/restoring staff unintentionally revokes those two
+responsibilities. Its snapshot is also read before acquiring the updater's lock;
+a concurrent explicit permission save can be overwritten.
+
+The real old command fails the preservation regression and a controlled
+two-session race, with unchanged persistent clone state after exact fixture
+cleanup.142 adds the two missing fields and locks the current staff row before
+copying its flags. The explicit permission editor remains the authority for
+changing responsibilities; existing chat requeue, roles, audit and denial remain.
+The exact local142 installation and rollback-only staff/identity integration pass;
+the receipt is `.local/staff-active-permission-142-20261013/main-install-receipt.json`.
+This is not hosted proof. The added browser
+case must save workload/Featured permission, suspend and restore both Support
+and Transport staff, verify retained grants/current access, explicitly revoke a
+responsibility and recheck web-only mobile denial.
+
+## WEB-MOB-027 — Seeded account tests still assume a historical subscription
+
+Status: audit coverage limitation; no current product failure established.
+Owner: workflow-test maintainer. Contracts: FEAT-APP-001 / FEAT-BIL-001.
+
+The shared auditProvider helper still selects an active historical plan and
+inserts a sponsored subscription for its synthetic provider. Its seeded account
+maintenance tests therefore cannot alone prove current plan-free onboarding.
+Normal signup tests must verify no new subscription and actual first-truck,
+location and capacity behavior. Before changing the broadly shared helper,
+map its existing callers and remove only unnecessary test scaffolding with
+focused evidence; never restore plans in the product to satisfy old fixtures.
+
+## WEB-MOB-028 — A failed mobile account read exposes blank editable defaults
+
+Status: repaired locally with focused component regressions; actual Expo Retry
+workflow queued. Owner: native account maintainer. Contract: FEAT-IAM-001.
+
+The initial Account request could fail and still reveal editable empty fields,
+including a private surname and phone. Save now requires authoritative details
+for the current account. Retry loads those details without writing; loaded drafts
+survive a later read failure and cannot cross to another account.
+
+## WEB-MOB-029 — A saved mobile change can look unfinished after refresh fails
+
+Status: bounded local repairs and red-to-green component checks pass; real
+save/fault/Retry workflows queued. Owner: native account maintainer.
+Contracts: FEAT-APP-001 / FEAT-PRV-001.
+
+Signup and fleet acceptance could commit successfully but leave their old forms
+when session refresh failed. An account-scoped saved checkpoint now prevents a
+duplicate submission and offers a read-only retry; workspace authority still
+comes from the server. A saved Driver photo followed by a failed preview read
+now hides the obsolete preview, acknowledges the saved change and retains the
+existing Refresh photo action. No auth shortcut or upload retry is invented.
+
+The same audit found dotted public phone numbers accepted by the existing input
+contract but hidden by the public DTO or rejected by its Call action. The DTO
+preserves accepted formatting; the actual action normalizes allowed punctuation
+to a telephone URI and rejects controls or URL payloads. Focused DTO and handler
+checks pass; actual browser persistence and visibility remain separate from an
+untested physical dialer. No broader phone-input or SQL change is claimed.
+
+## WEB-MOB-030 — Global mobile activity interrupts a new verified account
+
+Status: repaired locally after actual verification/policy success followed by
+chat-alerts/handover403/ACCOUNT_UNAVAILABLE and session reset, confirmed in9.8
+seconds. Six actual-component cases fail before/pass after;26 focused checks,
+mobile types and scoped lint pass. Actual Expo verification is running.
+Owner: native session/activity maintainer. Contracts: FEAT-APP-001 / NR-42.
+
+The global chat/handover provider treats every session as an active member,
+including ONBOARDING and JOIN_FLEET. Its endpoints require ACTIVE and correctly
+deny pending accounts; the controller clears an unavailable account. Push and
+background location have the same overly broad client scope. Gate these effects
+to the server-confirmed ACTIVE state, preserving policy/signup/join access,
+guest chat and all backend denials. Verify fresh unknown-email signup and fleet
+joining with the actual global providers mounted. Seeded active-account tests
+and isolated Account components cannot establish this workflow.
+
+## WEB-MOB-025 — Native alerts are not confirmations in the Expo web preview
+
+**Status:** Source-confirmed preview gap; scoped Regular removal passes actual
+Expo save/Keep/remove checks; own Driver and provider-photo confirmations are
+being repaired and verified separately. **Owner:** Native workflow maintainer. **Priority:** Test
+coverage follow-up for other confirmation-driven screens.
+
+Installed react-native-web/dist/exports/Alert/index.js defines alert() as an
+empty function. The existing Regular editor therefore offered Remove but never
+ran its callback in Expo's browser preview. Android's native Alert is a different
+implementation; this finding does not establish that Android removal was broken.
+
+Use the existing inline explicit confirmation pattern in each affected editor, retaining
+Keep service, confirmed Remove, actual server authority and saved state on
+failure. Photo controls keep the existing separate subject/consent/scan/storage
+commands rather than sharing an image state or relaxing permissions. Verify
+both choices and the persisted result with a real Expo browser
+case, not a test that calls a mocked Alert callback. Other Alert-dependent screens
+remain unverified in the browser: audit their actual controls separately and use
+installed Android evidence where appropriate. Do not add a global Alert shim or
+claim Expo web replaces phone permission/location/notification verification.
+
+## WEB-MOB-024 — A newly assigned driver can inherit old current capacity
+
+**Status:** Reproduced and repaired in migration145, installed in the backed-up
+Loadgistic local preview October14. Focused SQL and real concurrent assignment
+checks pass. Browser workflow verification and owner visual/release review remain
+pending. **Owner:** Fleet/capacity maintainer. **Priority:** Before release.
+
+Final update_fleet_driver_access (082) changes active assignment rows without
+resetting capacities. Latest-by-vehicle discovery (112) accepts a new eligible
+driver and presents the old snapshot under that driver's identity. Unassignment
+and offboarding hide it through eligibility, but a later assignment restores it.
+Driver location registry113 checks driver identity for workspace/publish; that
+does not validate the location embedded in the existing capacity snapshot.
+Restricted on-duty043 can also restore older owner configuration by vehicle.
+Permission-only saves reuse assignment rows, so assignment ID or assigned_at
+alone is not a safe epoch. Capacity063 forces active signals' expiry to infinity;
+expiring a row is not a valid reset.
+
+Migration145 now serializes actual pair changes, resets current capacity to Off
+Duty, requires a fresh driver location and preserves old snapshots as history.
+Permission-only saves for the same pair remain idempotent. Actual write timestamps
+advance under the truck lock, so a waiting older transaction cannot become the
+latest snapshot after a later save. The final v3 restored database passes the
+focused handover SQL and simultaneous driver/truck assignment cases, with exact
+synthetic cleanup; the same reviewed source is installed locally. Evidence:
+`.local/provider-fleets-20261014/final-v3-rehearsal.json` and
+`.local/provider-fleets-20261014/concurrency-v3-receipt.json` (NR-46).
+Regular-route migration140 is not credited with this repair. No hosted data or
+settings were changed, and browser/native-device acceptance is separate.
+
+## WEB-MOB-023 — A valid optional truck number breaks the public profile
+
+**Status:** Reproduced and repaired locally October13; release/owner review pending.
+**Owner:** Public profile/API maintainer. A Featured-linked profile returned503 on
+both its real native endpoint and direct shared-adapter read. Sanitized Zod paths
+identified `items.0.platform_number` and `evidence.platform_number`; schema013
+allows null, while the adapter required a string. The record was not changed or
+substituted. FEAT-PRV-001 now allows just that valid null, preserving UUID/required
+fields and the twelve-row bound. Web/native cards use independent private render
+keys and no displayed replacement number. Six adapter and two actual web-render
+cases pass (the null regression failed before); an actual existing-profile
+desktop/phone check passes and the original endpoint now returns200.
+
+Next: include the focused tests in the post-visual-approval release gate and
+confirm the matched hosted web/native rollout. Do not mark it deployed or repair
+data merely to satisfy an invented display requirement. Public contact/document
+projection and moderator/demo exclusions remain unchanged.
 
 ## Recording and closure rules
 
@@ -482,6 +771,14 @@ valid-coordinate/radius guards. Test a US GPS fix and combined location/search/
 truck filters on web phone and desktop. Review the focused map behavior before
 release gates; do not copy the restriction into native or change map UI.
 
+October13 follow-up: the public Capacity feed now accepts and tests a US location
+in the current preview, but the separate profile truck-map control in
+`src/components/provider-fleet-showcase.tsx` still rejects latitude outside3–15
+or longitude outside32–49 and says “outside the Ethiopia map.” Source-confirmed;
+that component was deliberately excluded from presentation cleanup. Keep this
+entry open for its dedicated valid-worldwide-GPS/recovery regression; do not infer
+all public map entry points are repaired from the homepage test.
+
 ## WEB-MOB-018 — Product master prompt contains obsolete workflow contracts
 
 **Status:** Source-confirmed documentation drift, not a newly reproduced runtime
@@ -553,3 +850,245 @@ Next: compare the actual local catalog with a clean isolated replay and reconcil
 history only from exact evidence. Preserve the existing manual preview records;
 use the normal clean CI/rehearsal for release evidence, not a falsely repaired
 local max-version value.
+
+## WEB-MOB-032 — Support Waiting offers claims the database cannot accept
+
+**Status:** Function-only144 and the matching Claim control are installed locally
+October14 after isolated/fresh-restore rehearsal. Four component and both actual
+desktop/phone staff cases pass; hosted installation remains pending.
+**Owner:** Support workflow maintainer. **Priority:** Before staff use the Waiting
+queue for triage.
+
+`src/app/support/page.tsx` renders Claim for every waiting member conversation,
+including later pages and unavailable/full staff. The managed command in
+`supabase/migrations/054_managed_support_runtime.sql` permits only the globally
+oldest waiting member conversation, requires current availability and checks the
+combined member/retained-guest workload. Moreover, the inbox orders equal creation
+times by latest message before ID, while the command uses ID immediately after
+creation time. The first displayed row is therefore not reliable claim authority.
+Selecting Claim on a row other than the command's exact oldest is rejected
+rather than doing what that control promises.
+
+Repair: add an actor-authorized exact eligibility projection to the existing inbox,
+following the retained-guest `can_claim` precedent in104. Preserve the command's
+FIFO/locking/capacity rules; do not guess from row index or substitute a direct
+service-table read. Exact SQL regression, rollback and strict catalog checks pass;
+four actual-component cases pass the matching UI. Hosted approval remains separate.
+Actual passing browser regression cases include equal
+timestamps, multiple pages, paused/full staff, a competing claim and revoked
+permission, with current database state checked after the visible action.
+Receipt: `.local/internal-workflows-20261014/support-fifo-actual-runner.json`.
+Phone capture also exposed an existing CSS rule making the plain Waiting
+identity wrapper and initials lose their grid alignment. Two scoped selectors
+retain the same avatar/name layout as linked rows. The fresh phone FIFO workflow
+and capture pass: `.local/internal-workflows-20261014/support-fifo-alignment-phone-runner.json`.
+
+## WEB-MOB-039 — Operations Tracking passes the old map format into the new renderer
+
+October14 actual lifecycle diagnosis reaches successful local inbox code
+verification, then fails at the staff map. Source confirms that the existing
+`admin_tracking_location` RPC returns an authorized legacy status/endpoint/
+approximate-location object, while `TrackingLocationMap` now dereferences a
+typed route array. The admin page passes the old object directly. Earlier
+presentation tests return null for this port and therefore miss the crash.
+
+The bounded local repair retains the database Operations authority gate, reads
+only the exact shipment's saved route columns after a nonnull authorized result,
+and rechecks the same RPC before using current status/obscured location. The page
+then uses `trackingMapData` before rendering. The saved via city and privacy
+radius remain factual; no coordinates, public consent or truck summary are
+invented. This avoids new SQL, revoked helper access or provider impersonation.
+
+Seven current-source contract checks now prove denied/null zero secondary reads,
+exact actor/record scope, the route allowlist, final revocation/location reset
+denial, private-field exclusion and the actual typed renderer connection. Six
+fail before the repair and all seven pass afterward. The focused real lifecycle
+case also passes desktop/phone: local inbox code, saved three-city route and 20 km
+circle, reassignment clearing the former location, workspace correction, truck
+retire/restore, forged provider cancellation denial, investigated cancellation,
+retained history and guest revocation. Exact cleanup passes. Receipt:
+`.local/internal-workflows-20261014/lifecycle-internal-repaired-runner.json`.
+The original
+email-code failure remains unclassified; it is not reproduced by the fresh
+diagnostic and is not attributed to a product or rate-limit defect.
+
+## WEB-MOB-038 — Admin Private capacity initial filters disagree with its API
+
+October14 parallel source review: the admin page forwards raw repeated query
+keys as arrays to `listLoadgisticSharedCapacity`, which accepts them as selection
+groups. Its GET endpoint rejects those same duplicate keys. Initial profile
+search text also enters truck matching, while subsequent map-window requests
+remove `q`. Reloading can therefore disagree with the interactive map for the
+same URL. This is a validation/consistency defect, not an established access
+bypass.
+
+Source: `src/app/admin/capacity-network/page.tsx`,
+`src/app/api/admin/capacity-network/route.ts`,
+`src/components/public-capacity-feed.tsx` and the established Home
+`capacityFilterRecord` validation. An isolated in-memory actual-page probe
+confirms the forwarded array, downstream acceptance and API rejection.
+
+The implemented local repair reuses canonical record validation and the existing
+denied initial state, skips persistence on invalid input, and retains `q` only
+for the transporter drawer. Three actual-page regressions fail before the repair;
+all14 focused SSR/HTTP/value checks pass afterward. Two actual desktop/phone
+staff cases also pass reload denial, API400, explicit modal correction, retained
+drawer text and canonical API200. Receipt:
+`.local/internal-workflows-20261014/admin-capacity-ssr-actual-runner.json`.
+Existing staff authority, truck-filter semantics and layout remain intact.
+Full release gates and hosted rollout remain separate; production is unchanged.
+
+## WEB-MOB-037 — Member Support has no manual staff-transfer control
+
+**Status:** Source-confirmed October14; an operational capability gap, not a
+rendered control that failed. **Owner:** Support workflow maintainer.
+
+Member Support currently assigns automatically and offers authorized FIFO Claim,
+reply and Close. `src/app/admin/support/page.tsx` opens the member thread, and
+`src/components/support-thread.tsx` has no manual reassignment form or member
+assignment API. The existing `guest-support-assignment.tsx` control belongs to
+retained guest-assisted chats and has separate passing desktop/phone evidence.
+
+The earlier member-handoff fixture update verifies that a former assignee loses
+message/private-file access and the new assignee retains history. It does not
+prove a manual transfer UI exists. Do not market or teach that nonexistent
+control, or silently add a new feature during this cleanup. A later product
+decision can specify a bounded audited transfer, permitted destinations and
+current capacity/permission checks if the team needs manual transfers.
+
+## WEB-MOB-036 — Administrator Support queue has no incremental refresh
+
+**Status:** Source-confirmed October14; runtime behavior not yet reproduced.
+**Owner:** Support workflow maintainer. **Priority:** Staff workflow follow-up.
+
+`src/app/admin/support/page.tsx` renders queue counts and conversations without
+the `SupportRefresh` installed by the staff Support and retained-guest queues.
+Global chat alerts can announce work but do not refresh this queue. The existing
+FEAT-SUP-001 visible-queue polling contract therefore lacks mapped evidence for
+the administrator view; no new incoming-work test has passed for this page.
+
+Next: verify a new synthetic conversation reaches the administrator's visible
+queue automatically, while an unsaved team-permission form, queue/team page and
+selected status survive. The administrator reads ten queue rows while the update
+endpoint currently defaults to fifteen, so its revision scope must match the
+displayed page. Do not add a naive route refresh that resets edits or falsely
+claims an unchanged page. Preserve the current UI and team permissions.
+
+## WEB-MOB-033 — A Driver record's Open owner link omits its record kind
+
+**Status:** Repaired and verified locally October14; page-component and actual
+desktop/phone workflows pass; owner visual approval pending. **Owner:** Admin Records maintainer. **Priority:** Before connected-record
+investigation is treated as verified.
+
+`src/app/admin/operations/[view]/[id]/page.tsx` built Open owner with
+`record.owner_kind`, but the current Driver projection in migration066 supplies
+`owner_id` from its exact organization join without `owner_kind`. The resulting
+`kind=undefined` cannot match the workspace detail's required ORGANIZATION or
+PROVIDER_PROFILE branch, so the intended owner detail is unavailable. This is a
+source-confirmed linkage defect, not an authorization bypass.
+
+Repair: infer ORGANIZATION only for the existing DRIVERS projection and preserve
+the destination's Customers permission and exact-record checks. The actual page
+href fails before the repair and passes afterward in
+`tests/admin-presentation.test.mjs`. Actual local synthetic desktop/phone cases in
+`tests/e2e/admin-connected-queues.spec.ts` follow the exact owner link, verify its
+business heading and public handle, and deny Customers detail to Operations-only
+staff. The combined run passes4/4; sanitized terminal receipt is
+`.local/internal-workflows-20261014/admin-connected-complete-runner.json`, with
+scoped record captures in its `admin-connected-complete/` directory. No API or SQL
+authority changes; owner visual approval remains separate.
+
+## WEB-MOB-034 — Content and deletion queues can claim false emptiness
+
+**Status:** Repaired and verified locally October14;16 component checks and actual
+desktop/phone queue workflows pass; owner visual approval pending. **Owner:** Admin review/privacy maintainer. **Priority:** Before saved
+queue URLs are relied on for complete review.
+
+`src/app/admin/reviews/content/page.tsx` and `src/app/admin/privacy/page.tsx` use a
+numeric page directly for their bounded range query. They accept fractional page
+values and do not recover when a later offset returns no rows, even when the exact
+count proves existing records. A saved high page therefore says no reports or
+requests yet and offers only a previous-page link through empty pages.
+
+Repair: reuse `readWindowedPage` for integer normalization and at most one first-page
+recovery; retain query failures, exact target links, saved states and all Trust/
+administrator checks and confirmation controls. A real local PostgREST probe
+confirmed that these overflow ranges return HTTP416/PGRST103 with null data and
+count, so an empty-array-only test was insufficient. Both adapters recover only
+that exact error on a later offset; first-page416, wrong-code416,503,401,403 and
+failed fallback remain failures. New actual page-component cases fail before that
+boundary fix and pass afterward. All16 focused presentation checks pass, plus
+TypeScript and spec validation. Actual synthetic queue browser cases in
+`tests/e2e/admin-connected-queues.spec.ts` pass overflow/fractional pages, exact
+account links, unchanged moderation/deletion controls and current Trust/admin
+denials on desktop and phone. Combined033/034 evidence is4/4 in
+`.local/internal-workflows-20261014/admin-connected-complete-runner.json`; scoped
+content/privacy screenshots are under `admin-connected-complete/`. No moderation
+or erasure action is submitted by these queue checks. No mutation contract change.
+
+## WEB-MOB-035 — Review moderation decisions overwrite another queue's hold
+
+**Status:** Reproduced in an isolated clone and repaired in the local preview
+October14; migration143 regression/security checks and both desktop/phone
+conflict-form workflows pass. Hosted installation remains pending.
+**Owner:** Trust/moderation maintainer. **Priority:** Before review moderation is
+treated as a durable publication boundary.
+
+Migration132's `moderate_content_report` restores a reported review by setting
+`provider_reviews.status='PUBLISHED'` without checking another HIDDEN report or a
+REMOVED rating-dispute decision. Conversely, migration044's
+`resolve_provider_review_dispute` sets PUBLISHED for UPHELD without checking active
+HIDDEN content reports. Two reports submitted while a review is published can be
+hidden, then restoring either one republishes the review although the other stays
+HIDDEN. An upheld pending dispute similarly republishes a content-hidden review.
+The canonical profile read in `src/lib/repository/supabase.js` and public review
+aggregate in migration039 check only `status='PUBLISHED'`; no later migration adds
+a HIDDEN-report guard to these paths. Public text and reputation can therefore
+reappear from these conflicting persisted states. The exact final regression
+reproduces this on the original isolated-clone functions and passes on143;
+shared-preview and hosted reproduction are not claimed.
+
+Migration143 serializes the exact review and preserves every other HIDDEN report
+and terminal REMOVED rating decision. `tests/sql/review-moderation-restrictions.sql`
+passes both command orders, multiple reports, terminal replay, revoked Trust,
+unrelated review, audit, public text predicate and actual public count/average.
+Two actual sessions prove same-review blocking and correct final publication;
+eight rollback drift cases, replay refusal and exact rollback preserve every
+original function/owner/ACL/config plus rows and ledger. Protected review evidence
+is `.local/review-moderation-143-20261014/review-manifest.json`.
+
+The initial clone's catalog failure was a restore omission (NR-44), not an exposure
+in the original local database. The fresh combined143/144 restore now restores
+the exact snapshot's PostGIS member grants/RLS and passes strict catalog checks.
+The local installation preserves78 business tables, all unrelated functions,
+permissions and ledger; a changed runtime throttle counter is separately diagnosed
+without hiding the initial guard stop. Actual Trust Hide/Restore and rating
+Uphold/Remove forms now pass on desktop/phone; canonical public HTML/API text,
+count and average agree after overlapping restrictions and revoked authority.
+Exact synthetic cleanup passes. Next: owner visual and separate hosted review.
+No hosted write occurred. See NR-43/44 and
+`.local/internal-workflows-20261014/main-143-144-install-receipt.json`.
+Browser receipt: `.local/internal-workflows-20261014/moderation-conflict-actual-runner.json`.
+
+## WEB-MOB-040 — Public provider truck maps still rejected locations outside Ethiopia
+
+**Status:** Source-confirmed October14; corrected and focused component-handler
+regressions pass. Actual desktop/phone interaction, visual review and deployment
+remain pending. The combined provider-fleet local preview update is installed;
+that installation alone does not prove actual GPS/browser interaction.
+**Owner:** Capacity/provider-profile maintainer. **Priority:** Before release.
+
+`ProviderFleetShowcase.requestLocation` rejected coordinates outside latitude
+3–15 and longitude32–49, although worldwide maps and location reporting are
+already approved. A US viewer therefore could not compare their position with a
+provider's truck. The component also left an earlier viewer marker visible if
+geolocation became unavailable.
+
+The handler now accepts only finite latitude−90…90/longitude−180…180, clears an
+unavailable or denied viewer location, and retains the selected truck, map scope
+and close-button focus. Invalid coordinates have a retry message instead of a
+country restriction. Public fleet counts, status labels, private phone fallbacks
+and map controls use the existing localization boundary; city/name values remain
+record data. `tests/provider-fleet-showcase.test.mjs` covers overseas positions,
+world boundaries, invalid GPS, denied/unavailable permission, retry and focus.
+No database or hosted operation was performed for this correction.

@@ -22,13 +22,14 @@ export function chatAlertSnapshot(value){
    typeof item.status!=='string'||typeof item.updatedAt!=='string'||item.assignedName!==null&&typeof item.assignedName!=='string'||
    item.endedAt!==null&&typeof item.endedAt!=='string')throw Error('CHAT_ALERTS_UNAVAILABLE');
  }
- return {unreadCount:value.unreadCount,waitingCount:value.waitingCount,items:value.items.map(item=>({kind:item.kind,id:item.id,status:item.status,side:item.side,queued:item.queued,assigned:item.assigned,assignedName:item.assignedName,assignmentVersion:item.assignmentVersion,teamJoined:item.teamJoined,unreadCount:item.unreadCount,incomingSequence:item.incomingSequence,endedAt:item.endedAt,chatEnabled:item.chatEnabled,updatedAt:item.updatedAt}))};
+ const active=value.items.filter(item=>item.kind==='SUPPORT'),retired=active.length!==value.items.length;
+ return {unreadCount:retired?active.filter(item=>item.status!=='CLOSED').reduce((sum,item)=>sum+item.unreadCount,0):value.unreadCount,waitingCount:retired?active.filter(item=>item.queued&&item.status!=='CLOSED').length:value.waitingCount,items:active.map(item=>({kind:item.kind,id:item.id,status:item.status,side:item.side,queued:item.queued,assigned:item.assigned,assignedName:item.assignedName,assignmentVersion:item.assignmentVersion,teamJoined:item.teamJoined,unreadCount:item.unreadCount,incomingSequence:item.incomingSequence,endedAt:item.endedAt,chatEnabled:item.chatEnabled,updatedAt:item.updatedAt}))};
 }
 // Notification presentation is separate from the saved unread/read authority.
 export function chatAlertChanges(previous,next){
  chatAlertSnapshot(next);if(!previous)return [];
  const prior=new Map(previous.items.map(item=>[item.kind+':'+item.id,item])),changes=[];
- for(const item of next.items){const old=prior.get(item.kind+':'+item.id);
+ for(const item of next.items.filter(item=>item.kind==='SUPPORT')){const old=prior.get(item.kind+':'+item.id);
   if(item.status==='CLOSED'){if(old&&old.status!=='CLOSED')changes.push({item,event:'RESOLVED'});continue;}
   if(item.queued){if(!old||!old.queued||old.assignmentVersion!==item.assignmentVersion)changes.push({item,event:'QUEUED'});continue;}
   if(item.unreadCount>0&&(!old||item.incomingSequence>old.incomingSequence))changes.push({item,event:'MESSAGE'});
@@ -41,7 +42,7 @@ export function chatAlertChanges(previous,next){
 }
 export function chatAlertHref(item){
  if(item.kind==='SUPPORT')return item.side==='CUSTOMER'?`/app/support?conversation=${chatConversationId(item.id)}`:item.queued?'/support?view=WAITING':`/support/${chatConversationId(item.id)}`;
- return item.side==='CUSTOMER'?'#transport-chat':item.queued||!item.chatEnabled?'/brokerage?queue=UNASSIGNED':`/brokerage/${chatConversationId(item.id)}`;
+ throw Error('PLATFORM_BROKERAGE_RETIRED');
 }
 export function mergeChatReadState(previous,next){
  chatReadState(next);if(!previous)return next;

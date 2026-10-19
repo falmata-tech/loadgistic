@@ -1,3 +1,20 @@
+# Current release review — 19 October 2026
+
+The 1.1.0/code8 candidate uses Expo 57.0.30, Router 57.0.28 and React Native
+0.86.3. Ten SDK57-compatible patch versions were aligned with Expo Doctor;
+this is not a framework/SDK major upgrade. Doctor passes 21/21, native tests
+pass 312/312, and types/lint pass. Fresh raw audit retains 27 affected entries
+(19 high, 8 moderate, zero critical), representing the same three reviewed
+build-tool advisories described below. The actual Android Hermes export contains
+none of those affected packages and includes the pinned decoder adapter. The
+review script passes against the final lockfile and fresh audit. No finding was
+suppressed and no forced major dependency change was used.
+
+Protected current evidence: `release-20261019-android-code8-candidate` and the
+October19 raw audit, compiled source map and runtime review. Native packaging,
+installed-device checks and final distribution approval remain separate gates.
+The dated checkpoints below are historical and do not override current results.
+
 # Mobile dependency review — 2026-10-06
 
 Scope: `apps/mobile` only. Initial review used Expo 57.0.26 / Router 57.0.24;

@@ -1,6 +1,6 @@
 import { after } from 'next/server.js';
 import { mobileActor, mobileBody, mobileFailure, mobileJson, MobileError } from '@/lib/mobile/server';
-import { createTracking, trackingWorkspace } from '@/lib/mobile/tracking-contract';
+import { createTracking, needsTrackingRouteUpdate, trackingWorkspace } from '@/lib/mobile/tracking-contract';
 import { trackingFailure } from '@/lib/mobile/tracking-server';
 import { createProviderShipment, getProviderTrackingWorkspace } from '@/lib/provider-tracking.js';
 import { deliverPendingShipmentEmails } from '@/lib/email-delivery';
@@ -11,8 +11,11 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    const user = await mobileActor(request), parsed = createTracking.safeParse(await mobileBody(request));
-    if (!parsed.success) throw new MobileError(400, 'INVALID_INPUT', 'Check the truck, route, cargo and customer emails.');
+    const user = await mobileActor(request), input=await mobileBody(request),parsed = createTracking.safeParse(input);
+    if (!parsed.success){
+      if(needsTrackingRouteUpdate(input))throw new MobileError(409,'UPDATE_REQUIRED','Update Loadgistic to choose a passing-through city, or start Tracking at loadgistic.com.');
+      throw new MobileError(400, 'INVALID_INPUT', 'Check the vehicle, route, cargo and customer emails.');
+    }
     let created;
     try { created = await createProviderShipment(user, parsed.data); } catch (error) { trackingFailure(error); }
     after(async () => { try { await deliverPendingShipmentEmails(25); } catch { /* Committed outbox retries separately. */ } });

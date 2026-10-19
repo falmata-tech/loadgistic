@@ -53,8 +53,8 @@ test('Portrait cleanup retains failed metadata for retry and reports counts only
   assert.deepEqual(result,{attempted:2,deleted:1,failed:1});assert.deepEqual(acknowledged,[ids[0]]);
   assert.doesNotMatch(JSON.stringify(result),/private|e111/);
 });
-test('Non-Driver and inactive actors are denied before the external portrait adapter',async()=>{
-  for(const actor of [{id:'x',role:'ADMIN',active:true},{id:'x',role:'TRANSPORTER',active:true},{id:'x',role:'DRIVER',active:false}]){
+test('Non-provider roles and inactive actors are denied before the external portrait adapter',async()=>{
+  for(const actor of [{id:'x',role:'ADMIN',active:true},{id:'x',role:'SUPPORT',active:true},{id:'x',role:'DRIVER',active:false}]){
     await assert.rejects(()=>getDriverPortraitWorkspace(actor),/FORBIDDEN/);
   }
 });

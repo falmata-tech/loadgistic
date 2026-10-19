@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import {createSupabaseAdminClient} from './supabase-adapter.js';
 import {trackingRecoveryActions} from './domain.js';
-import {isIndependentDriver} from './independent-driver.js';
+import {canManageProviderFleet} from './fleet.js';
 const uuid=z.string().uuid();
 const reason=z.string().trim().min(5).max(500);
 const revision=z.string().datetime({offset:true});
@@ -9,6 +9,7 @@ const date=z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/);
 const base={reason,revision};
 const correction=z.object({...base,action:z.literal('CORRECT'),cargo_summary:z.string().trim().min(3).max(500),
   origin_place_ref:z.string().min(1).max(100),destination_place_ref:z.string().min(1).max(100),
+  passing_place_ref:z.string().max(100).optional(),
   expected_pickup_date:date,expected_delivery_date:date}).strict();
 const reassign=z.object({...base,action:z.literal('REASSIGN'),vehicle_id:z.string().trim().min(1).max(50)}).strict();
 const cancel=z.object({...base,action:z.literal('CANCEL'),confirm:z.literal('CANCEL')}).strict();
@@ -22,18 +23,20 @@ async function rpc(name,args){const {data,error}=await createSupabaseAdminClient
 export function lifecycleCommand(value){
  const result=input.safeParse(value);if(!result.success)throw new Error('INVALID_LIFECYCLE_COMMAND');
  if(result.data.action==='CORRECT'){
-  if(result.data.origin_place_ref===result.data.destination_place_ref)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+  const places=[result.data.origin_place_ref,...(result.data.passing_place_ref?[result.data.passing_place_ref]:[]),result.data.destination_place_ref];
+  if(new Set(places).size!==places.length)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
   if(result.data.expected_pickup_date&&result.data.expected_delivery_date&&result.data.expected_delivery_date<result.data.expected_pickup_date)throw new Error('INVALID_DELIVERY_DATE');
  }
  return result.data;
 }
 export async function getTrackingRecovery(user,id){
  const data=await rpc('tracking_recovery_context',{actor_user_id:user.id,target_shipment_id:uuid.parse(id)});
- return data?{...data,actions:trackingRecoveryActions(data.status).filter(action=>(action!=='CANCEL'||data.cancel_allowed!==false)&&(action!=='REASSIGN'||!isIndependentDriver(user)))}:null;
+ return data?{...data,actions:trackingRecoveryActions(data.status).filter(action=>(action!=='CANCEL'||data.cancel_allowed!==false)
+  &&(action!=='REASSIGN'||canManageProviderFleet(user)||['ADMIN','SUPPORT'].includes(user.role)))}:null;
 }
 export async function recoverTracking(user,id,value){
  const command=lifecycleCommand(value);
- if(command.action==='REASSIGN'&&isIndependentDriver(user))throw new Error('FORBIDDEN');
+ if(command.action==='REASSIGN'&&!canManageProviderFleet(user)&&!['ADMIN','SUPPORT'].includes(user.role))throw new Error('FORBIDDEN');
  return rpc('recover_provider_tracking',{actor_user_id:user.id,target_shipment_id:uuid.parse(id),command});
 }
 export async function setVehicleLifecycle(user,id,value){
@@ -47,7 +50,25 @@ export async function retiredVehiclePage(user,page=1){
  return {...result,page:current,pageCount:Math.max(1,Math.ceil(result.total/10))};
 }
 
-export async function adminTrackingLocation(user,id){return rpc('admin_tracking_location',{actor_user_id:user.id,target_shipment_id:uuid.parse(id)});}
+export async function adminTrackingLocation(user,id){
+ const targetId=uuid.parse(id),args={actor_user_id:user.id,target_shipment_id:targetId};
+ // The existing command owns current Operations authority and eligible location.
+ // A denied or absent projection must not become a broader service-role read.
+ if(!await rpc('admin_tracking_location',args))return null;
+ const columns=['origin_place_ref','origin','origin_lat','origin_lng','passing_place_ref','passing','passing_lat','passing_lng',
+  'destination_place_ref','destination','destination_lat','destination_lng','tracking_mode'];
+ const {data,error}=await createSupabaseAdminClient().from('provider_shipments').select(columns.join(',')).eq('id',targetId).maybeSingle();
+ if(error)throw new Error('LIFECYCLE_OPERATION_FAILED');
+ if(!data)return null;
+ // Recheck after the route read: revocation, terminal state or a location reset
+ // cannot return the earlier location. Never derive public contacts from Records.
+ const current=await rpc('admin_tracking_location',args);
+ if(!current)return null;
+ const location=current.current_location;
+ return {...Object.fromEntries(columns.map(key=>[key,data[key]])),operational_status:current.operational_status,
+  current_location:location&&typeof location==='object'&&!Array.isArray(location)
+   ?Object.fromEntries(['location_area','location_lat','location_lng','location_precision_km','updated_at'].map(key=>[key,location[key]])):null};
+}
 export async function correctWorkspace(user,id,value){
  const parsed=z.object({kind:z.enum(['ORGANIZATION','PROVIDER_PROFILE']),name:z.string().trim().min(2).max(120),previous_name:z.string().max(120),reason}).strict().safeParse(value);
  if(!parsed.success)throw new Error('INVALID_WORKSPACE_CORRECTION');

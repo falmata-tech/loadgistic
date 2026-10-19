@@ -1,5 +1,6 @@
+import {auditOpenTrackingProgress} from './audit-helpers';
 import {auditDeleteVehicles} from './audit-helpers';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {readFileSync} from 'node:fs';
 import {translateMessage} from '../../src/lib/i18n/core.js';
 import {localAuditService,checked,auditProvider,auditTrackingOwnerLogin} from './audit-helpers';
@@ -15,7 +16,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Progress test',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
     const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
-    shipmentId=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Tracking progress review',customerEmail:`progress-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'})).id;
+    shipmentId=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Tracking progress review',customerEmail:`progress-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'})).id;
     // Normal email flow works with manual fixture-password login disabled.
     await page.goto('/login');const request=page.getByTestId('email-code-request-form');
     await request.getByLabel('Email',{exact:true}).fill(actor.email);const since=Date.now();
@@ -24,7 +25,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
     await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForURL(/\/app\/home/);
     await expect(page.locator('.app-main')).toBeVisible();await page.goto(`/app/provider-shipments/${shipmentId}`);
-    const panel=page.locator('.tracking-control-panel');const steps=panel.locator('.tracking-journey li');
+    await auditOpenTrackingProgress(page);const panel=page.locator('.tracking-control-panel');const steps=panel.locator('.tracking-journey li');
     await expect(steps).toHaveCount(5);await expect(steps.nth(0)).toContainText('Next');await expect(steps.nth(1)).toContainText('Or start here');
     await expect(steps.nth(2)).toContainText('Remaining');await expect(steps.nth(2).locator('input')).toHaveCount(0);
     await expect(page.getByRole('radio',{name:/Going to pickup/})).toBeEnabled();
@@ -33,7 +34,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     const language=page.locator('.language-picker select');
     await page.locator('input[name=nextStatus][value=ISSUE]').check();
     await panel.locator('textarea[name=note]').fill('Home <b>Account</b>');
-    for(const locale of ['am','om','so','ti','en']){
+    for(const locale of ['am','om','en']){
       const messages=locale==='en'?{}:JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
       const t=(key:string,values:Record<string,string|number>={})=>translateMessage(messages,key,values);
       await expect(language).toBeEnabled();await language.selectOption(locale);
@@ -62,7 +63,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
       if(['LOADING','UNLOADING'].includes(status))await page.locator('input[name=proof]').setInputFiles('public/icon-192.png');
       const response=page.waitForResponse((r:any)=>r.request().isNavigationRequest()&&new URL(r.url()).pathname===`/app/provider-shipments/${shipmentId}`&&new URL(r.url()).searchParams.has('success'));
       await page.getByRole('button',{name:`Save ${label}`,exact:true}).click();expect((await response).status()).toBe(200);await (await response).finished();
-      await expect(page.locator('.alert.success')).toBeVisible();
+      await expect(page.locator('.alert.success')).toBeVisible();await auditOpenTrackingProgress(page);
       expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe(status);
     }
     await save('Loading','LOADING');await expect(steps.nth(0)).toContainText('Not recorded');await expect(steps.nth(1)).toHaveAttribute('aria-current','step');await expect(steps.nth(2)).toContainText('Next');

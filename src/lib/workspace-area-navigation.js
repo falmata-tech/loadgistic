@@ -1,9 +1,9 @@
 // Presentation-only return targets. Never accept credential-bearing query keys,
 // external URLs, administrative routes or arbitrary paths from browser storage.
 const marketPaths=new Set(['/','/shared-capacity','/featured','/track','/about']);
-const workspacePaths=/^\/app\/(?:home|fleet(?:\/[a-zA-Z0-9-]+)?|provider-shipments(?:\/[a-zA-Z0-9-]+)?|network|more|support(?:\/[a-zA-Z0-9-]+)?)$/;
+const workspacePaths=/^\/app\/(?:business\/(?:capacity|tracking(?:\/[a-zA-Z0-9-]+)?|account)|home|fleet(?:\/[a-zA-Z0-9-]+)?|provider-shipments(?:\/[a-zA-Z0-9-]+)?|network|more|support(?:\/[a-zA-Z0-9-]+)?)$/;
 const marketQuery=new Set(['q','status','loadType','vehicleCategory','vehicleConfigurations','provider','truck','truckCity','truckCityPlaceRef','truckCityRadiusKm','nearLat','nearLng','nearRadiusKm','origin','originPlaceRef','destination','destinationPlaceRef','routeToleranceKm','pickupDate','documents','verifiedDocuments','sharing','view','stopOption','freshness','directionMode','ownerDocs','driverDocs','truckDocs','truckLocationRadiusKm','originRadiusKm','destinationRadiusKm']);
-const workspaceQuery=new Set(['page','driverPage','retiredPage','paymentPage','vehicleId','tab']);
+const workspaceQuery=new Set([...marketQuery,'page','driverPage','retiredPage','paymentPage','vehicleId','tab','view','scope','truckPage','driver','task','vehicle','retiredPage']);
 export function areaReturnPath(value,area){
  if(!['marketplace','workspace'].includes(area)||typeof value!=='string'||value.length>2500||!value.startsWith('/')||value.startsWith('//')||/[\u0000-\u0020\u007f\\]/.test(value))return null;
  let url;try{url=new URL(value,'https://loadgistic.invalid');}catch{return null;}

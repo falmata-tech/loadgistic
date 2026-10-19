@@ -25,7 +25,7 @@ test('Monday-first weeks, variable month grids, navigation and limits',()=>{
 test('ICU Ethiopian New Year, Pagumen leap day and every app locale',()=>{
  const expected=[['2023-09-11','2015','6'],['2023-09-12','2016','1'],['2024-09-10','2016','5'],['2024-09-11','2017','1'],['2026-09-11','2019','1']];
  for(const [iso,year,day] of expected){const value=ethiopianDate(iso);assert.ok(value);assert.equal(value.year,year);assert.equal(value.day,day);}
- for(const locale of ['en','am','om','so','ti']){const value=calendarDay('2026-10-07',locale);assert.ok(value.weekday);assert.ok(value.ethiopian);assert.ok(value.ethiopian.label);}
+ for(const locale of ['en','am','om']){const value=calendarDay('2026-10-07',locale);assert.ok(value.weekday);assert.ok(value.ethiopian);assert.ok(value.ethiopian.label);}
  assert.equal(ethiopianDate('2026-02-30'),null);
 });
 test('date-only labels remain unchanged in distant timezones',()=>{

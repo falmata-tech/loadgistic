@@ -20,9 +20,9 @@ export function capacityLoadLabel(preference, compact = false) {
 
 export function capacityLoadExplanation(preference) {
   const explanations = {
-    FTL: 'Accept one load for the whole truck.',
-    PTL: 'Accept smaller loads that share the truck.',
-    BOTH: 'Accept a full-truck load or smaller shared loads.',
+    FTL: 'Accept one load for the whole vehicle.',
+    PTL: 'Accept smaller loads that share the vehicle.',
+    BOTH: 'Accept a full-vehicle load or smaller shared loads.',
   };
   return Object.hasOwn(explanations,preference) ? explanations[preference] : 'Choose which loads you will accept.';
 }

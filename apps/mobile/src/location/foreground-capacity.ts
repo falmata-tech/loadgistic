@@ -1,9 +1,9 @@
 import type {ApproximateFix} from './privacy';
 
 export const capacityLocationInterval = 10 * 60 * 1000;
-type LocatedTruck = { id: string; canLocate: boolean; current: {status: string} | null; location: {updatedAt: string; radius: number} | null };
+type LocatedTruck = { id: string; canLocate: boolean; selectedLocationSource?: 'GPS'|'MOBILE'|'MANUAL'; current: {status: string} | null; location: {updatedAt: string; radius: number} | null };
 export function foregroundCapacityDue(truck: LocatedTruck, lastAttempt: number, now = Date.now()) {
-  return truck.canLocate && !!truck.current && ['EMPTY', 'PARTIAL'].includes(truck.current.status)
+  return truck.canLocate && truck.selectedLocationSource !== 'MANUAL' && truck.selectedLocationSource !== 'GPS' && !!truck.current && ['EMPTY', 'PARTIAL'].includes(truck.current.status)
     && now - Math.max(lastAttempt, Date.parse(truck.location?.updatedAt || '') || 0) >= capacityLocationInterval;
 }
 
@@ -20,7 +20,7 @@ export async function refreshForegroundCapacity(input: {
   const truck = (await input.read()).vehicles.find(item => item.id === input.vehicleId);
   if (!input.active()) return 'paused';
   if (!truck || !foregroundCapacityDue(truck, input.lastAttempt, input.now)) return 'not-due';
-  const fix = await input.capture(truck.location?.radius || 20);
+  const fix = await input.capture(Math.min(20,truck.location?.radius || 10));
   if (!input.active()) return 'paused';
   await input.save({action: 'LOCATION', vehicleId: truck.id, ...fix});
   return 'saved';

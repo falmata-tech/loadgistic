@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 
 test('viewport pagination preserves markers and camera until the replacement finishes',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{

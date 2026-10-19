@@ -3,7 +3,9 @@ begin;
 do $test$
 declare actor_id uuid; org uuid; shipment_id uuid; vehicle_id uuid; before_count bigint; result jsonb;
 begin
-  select id into strict actor_id from profiles where email='transporter@loadgistic.local';
+  select p.id into strict actor_id from profiles p join auth.users u on u.id=p.id
+    where u.raw_app_meta_data->>'fixture_source'='loadgistic'
+      and u.raw_user_meta_data->>'fixture_key'='user-transporter';
   select organization_id into strict org from organization_members where user_id=actor_id and membership_role='OWNER';
   select id into strict shipment_id from provider_shipments where provider_organization_id=org order by created_at limit 1;
   update provider_shipments set operational_status='CREATED' where id=shipment_id;

@@ -1,4 +1,4 @@
-import {expect,test} from '@playwright/test';
+import {expect,test} from './browser-test';
 
 import {auditLogin} from './audit-helpers';
 async function login(page:any,email:string){await auditLogin(page,email);}
@@ -16,7 +16,7 @@ test('retired account billing controls cannot be enabled by an administrator',as
 
 test('Featured automatic selection can be switched off and prepared without losing manual controls',async({page}:{page:any},info:any)=>{
   test.setTimeout(60000);await login(page,'admin@loadgistic.local');await page.goto('/admin/featured');
-  await page.locator('.featured-settings-disclosure>summary').click();
+  await page.getByRole('button',{name:'Selection settings',exact:true}).click();
   const controls=page.getByRole('region',{name:'Featured selection settings'});
   const originalCount=await controls.getByLabel('Maximum Drivers per day').inputValue();
   try{
@@ -25,8 +25,7 @@ test('Featured automatic selection can be switched off and prepared without losi
     await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
     await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toHaveCount(0);
   }finally{
-    const settings=page.locator('.featured-settings-disclosure');
-    if(await settings.getAttribute('open')===null)await settings.locator('summary').click();
+    if(!await page.getByRole('dialog',{name:'Selection settings',exact:true}).count())await page.getByRole('button',{name:'Selection settings',exact:true}).click();
     await controls.getByLabel('Selection',{exact:true}).selectOption('AUTO');
     await controls.getByLabel('Maximum Drivers per day').fill(originalCount);
     await controls.getByRole('button',{name:'Save selection settings'}).click();
@@ -34,12 +33,11 @@ test('Featured automatic selection can be switched off and prepared without losi
   await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
   await page.getByRole('button',{name:'Prepare upcoming days'}).click();
   await expect(page.getByText(/days prepared\./)).toBeVisible();
-  await page.locator('#featured-day-editor>summary').click();
+  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
   await expect(page.getByRole('button',{name:'Save draft',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Publish this day',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  const settings=page.locator('.featured-settings-disclosure');
-  if(await settings.getAttribute('open')===null)await settings.locator('summary').click();
+  await page.getByRole('link',{name:'Cancel editing',exact:true}).click();if(!await page.getByRole('dialog',{name:'Selection settings',exact:true}).count())await page.getByRole('button',{name:'Selection settings',exact:true}).click();
   await controls.screenshot({path:info.outputPath('featured-selection.png')});
   await page.goto('/featured');
   const trucks=page.locator('.featured-truck-tile');

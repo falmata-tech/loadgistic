@@ -1,7 +1,14 @@
 -- FEAT-SEC-001 / FEAT-IAM-001: local synthetic fixtures, no retained changes.
 \set ON_ERROR_STOP on
 begin;
-select id as actor from public.profiles where email='transporter@loadgistic.local' \gset
+select gen_random_uuid() as actor,gen_random_uuid() as organization \gset
+insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+values(:'actor',:'actor'||'@example.invalid',clock_timestamp(),'{}');
+update public.profiles set role='TRANSPORTER',active=true where id=:'actor';
+insert into public.organizations(id,name,handle,type) values(:'organization','Synthetic boundary owner','boundary-'||:'actor','TRANSPORT_COMPANY');
+insert into public.organization_members(organization_id,user_id,membership_role) values(:'organization',:'actor','OWNER');
+select public.accept_content_policy(:'actor','2026-10-09');
+select public.create_provider_vehicle(:'actor','{"make":"Boundary","model":"Test","plate":"BOUNDARY-TEST","cargo_configuration":"Cargo van","use_basis":"OWNED"}');
 set local request.jwt.claim.sub=:'actor';
 
 -- The application identity RPC must work without table privileges.

@@ -6,9 +6,13 @@ export function isValidCoordinate(latitude,longitude) {
     &&Math.abs(latitude)<=90&&Math.abs(longitude)<=180;
 }
 
-export const LOCAL_CAPACITY_PRIVACY_RADII_KM=Object.freeze([1,3,5,10,20,40]);
+export const LOCAL_CAPACITY_PRIVACY_RADII_KM=Object.freeze([1,3,5,10,20]);
 export const LONG_DISTANCE_CAPACITY_PRIVACY_RADII_KM=LOCAL_CAPACITY_PRIVACY_RADII_KM;
 export const BUSINESS_SEARCH_PRIVACY_KM=1;
+// For a NEW capture only. Historical renderers retain the actual saved radius.
+export function nextCapacityPrivacyRadius(value){
+ const radius=Number(value);return LOCAL_CAPACITY_PRIVACY_RADII_KM.includes(radius)?radius:radius===40?20:10;
+}
 
 export function capacityPrivacyRadii(movementScope) {
   return movementScope==='LOCAL'

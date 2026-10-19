@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {auditIdentity,auditLogin} from './audit-helpers';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
@@ -19,7 +19,7 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
   const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   const email=`location-controls-${randomUUID()}@example.test`;const marker=`Synthetic Tracking location ${randomUUID()}`;
-  const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:marker,customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});
+  const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:marker,customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});
   const guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.242'}});
   const captures=path.resolve('artifacts/tracking-location-controls-2026-09-14');mkdirSync(captures,{recursive:true});
   let posts=0;page.on('request',(request:any)=>{if(request.method()==='POST'&&request.url().endsWith(`/api/provider-shipments/${shipment.id}/location`))posts++;});
@@ -71,8 +71,8 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     const guestPage=await guest.newPage();await guestPage.goto('/track');await guestPage.getByLabel('Email',{exact:true}).fill(email);
     const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();
     await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));await guestPage.getByRole('button',{name:'Open tracking'}).click();
-    await expect(guestPage.getByRole('heading',{name:'Shipment progress'})).toBeVisible({timeout:20000});
-    await expect(guestPage.locator('.tracking-mode-banner')).toContainText('pause when it closes or the phone locks');await expect(guestPage.getByLabel('Location privacy radius')).toHaveCount(0);
+    await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible({timeout:20000});
+    await expect(guestPage.locator('.tracking-mode-banner')).toContainText('Location and status updates');await expect(guestPage.locator('.tracking-mode-banner')).not.toContainText('pause when it closes or the phone locks');await expect(guestPage.getByLabel('Location privacy radius')).toHaveCount(0);
     await guestPage.locator('.tracking-mode-banner').scrollIntoViewIfNeeded();await guestPage.screenshot({path:path.join(captures,`${info.project.name}-recipient-guidance.png`),scale:'css'});
     await expect(page.getByLabel('Status only',{exact:true})).toHaveCount(0);
   }finally{

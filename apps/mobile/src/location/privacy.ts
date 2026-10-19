@@ -1,6 +1,6 @@
 import { obscureCoordinate, isValidCoordinate, LOCAL_CAPACITY_PRIVACY_RADII_KM } from '../../../../src/lib/location-privacy.js';
 export const privacyRadii = LOCAL_CAPACITY_PRIVACY_RADII_KM;
-export type ApproximateFix = { approximateLat: number; approximateLng: number; locationPrecisionKm: number };
+export type ApproximateFix = { approximateLat: number; approximateLng: number; locationPrecisionKm: number;phoneInstallation?:import('./phone-installation-controller').PhoneLocationProof };
 export function capacityLocation(latitude: number, longitude: number, accuracy: number | null, radius: number): ApproximateFix {
   if (!isValidCoordinate(latitude,longitude)) throw new Error('Your device returned an invalid location. Try again.');
   if (!privacyRadii.includes(radius)) throw new Error('Choose an approximate location radius.');

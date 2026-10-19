@@ -3,10 +3,9 @@
 
 import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
+import Form from 'next/form';
 import {
-  Boxes,
   PanelLeftClose,
-  PanelLeftOpen,
   Clock3,
   LocateFixed,
   MapPinned,
@@ -14,19 +13,21 @@ import {
   Route,
   Search,
   SlidersHorizontal,
-  Truck,
   X
 } from 'lucide-react';
 import React from 'react';
 import {useBlockedProviders} from './content-safety';
 import {loadCapacityMapWindow,reconcileCapacityMapWindow} from '@/lib/capacity-map-loading.js';
-import { BUSINESS_SEARCH_PRIVACY_KM, obscureCoordinate } from '@/lib/location-privacy.js';
+import {BUSINESS_SEARCH_PRIVACY_KM,obscureCoordinate,isValidCoordinate} from '@/lib/location-privacy.js';
 import {CapacityConfigurationPicker} from './capacity-configuration-picker';
+import {CapacityMultiOptions} from './capacity-multi-options';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
 import { PublicCapacityMap } from './public-capacity-map';
 import { MapTruckDetails } from './map-truck-details';
 import {LoadingIndicator} from './loading-state';
 import {CapacitySearchResults,CapacityDocumentFilters} from './capacity-search-results';
+import {TRANSPORTER_SEARCH_DELAY_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
+import searchStyles from './transporter-search.module.css';
 
 type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number;filterError?:string|null};
 type Point={lat:number;lng:number};
@@ -34,17 +35,43 @@ type VisitorLocationState='idle'|'locating'|'ready'|'denied'|'timeout'|'unavaila
 
 const routeTolerances=[10,25,50,100,200];
 
-type FeedProps={initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string};
+type FeedProps={initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string;searchApiPath?:string};
+type ProfileSearchControls={
+  searchTerm:string;submittedSearch:string|null;drawerOpen:boolean;setDrawerOpen:React.Dispatch<React.SetStateAction<boolean>>;
+  inputRef:React.RefObject<HTMLInputElement|null>;change:(value:string)=>void;clear:()=>void;submit:()=>void;pause:()=>void;
+  compositionStart:()=>void;compositionEnd:(value:string)=>void;preventComposedEnter:(event:React.KeyboardEvent<HTMLInputElement>)=>void;
+};
 
 export function PublicCapacityFeed(props:FeedProps){
   const [resetVersion,setResetVersion]=React.useState(0);
-  // Filters own the feed, selected truck and viewport together. Both public and
-  // private navigation must discard that state when the applied query changes.
+  const [drawerOpen,setDrawerOpen]=React.useState(false);
+  const [searchTerm,setSearchTerm]=React.useState(props.query.q||'');
+  const [submittedSearch,setSubmittedSearch]=React.useState(null as string|null);
+  const [searchVersion,setSearchVersion]=React.useState(0);
+  const [composing,setComposing]=React.useState(false);
+  const composition=React.useRef(false),searchInput=React.useRef(null as HTMLInputElement|null),searchTimer=React.useRef(null as ReturnType<typeof setTimeout>|null);
+  function cancelSearchDelay(){if(searchTimer.current!==null){clearTimeout(searchTimer.current);searchTimer.current=null;}}
+  function changeSearch(value:string){cancelSearchDelay();setSearchTerm(value);setSubmittedSearch(null);setSearchVersion((current:number)=>current+1);}
+  function clearSearch(){changeSearch('');searchInput.current?.focus();}
+  function pauseSearch(){cancelSearchDelay();setSubmittedSearch(null);setSearchVersion((current:number)=>current+1);setDrawerOpen(false);}
+  function submitSearch(){if(composition.current)return;cancelSearchDelay();setSubmittedSearch(transporterSearchQuery(searchTerm));setSearchVersion((current:number)=>current+1);}
+  React.useEffect(()=>{
+    cancelSearchDelay();const value=transporterSearchQuery(searchTerm);
+    if(drawerOpen&&!composing&&value&&value!==submittedSearch)searchTimer.current=setTimeout(()=>{searchTimer.current=null;setSubmittedSearch(value);},TRANSPORTER_SEARCH_DELAY_MS);
+    return cancelSearchDelay;
+  },[searchTerm,drawerOpen,composing,submittedSearch]);
+  const search:ProfileSearchControls={searchTerm,submittedSearch,drawerOpen,setDrawerOpen,inputRef:searchInput,change:changeSearch,clear:clearSearch,submit:submitSearch,pause:pauseSearch,
+    compositionStart:()=>{composition.current=true;setComposing(true);cancelSearchDelay();setSubmittedSearch(null);},
+    compositionEnd:value=>{composition.current=false;setComposing(false);changeSearch(value);},
+    preventComposedEnter:event=>{if(event.key==='Enter'&&(composition.current||event.nativeEvent.isComposing))event.preventDefault();}};
+  // Truck filters still reset map state and drafts. Profile search stays above
+  // that boundary, with its request authority and exclusions owned separately.
   const queryKey=JSON.stringify(Object.entries(props.query).sort(([a],[b])=>a.localeCompare(b)));
-  return <CapacityFeedState key={`${queryKey}:${resetVersion}`} {...props} onReset={()=>setResetVersion((value:number)=>value+1)}/>;
+  return <CapacitySearchResults active={drawerOpen&&submittedSearch!==null} requestVersion={searchVersion} query={{q:submittedSearch||''}} mapQuery={props.query} view={props.apiPath==='/api/shared-capacity'?'private':props.apiPath==='/api/admin/capacity-network'?'loadgistic':'open'} searchPath={props.searchPath||'/'} apiPath={props.searchApiPath} onProfileSelect={pauseSearch} render={profileResults=><CapacityFeedState key={`${queryKey}:${resetVersion}`} {...props} search={search} profileResults={profileResults} onReset={()=>setResetVersion((value:number)=>value+1)}/>}/>;
 }
 
-function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/capacity',onReset}:FeedProps&{onReset:()=>void}){
+function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/capacity',onReset,search,profileResults}:FeedProps&{onReset:()=>void;search:ProfileSearchControls;profileResults:React.ReactNode}){
+  const {searchTerm,submittedSearch,drawerOpen,setDrawerOpen}=search;
   // A link to the current unfiltered URL does not navigate. Reset local drafts
   // and the map explicitly in that case; other clears use the new query key.
   function clearUnappliedFilters(){if(!Object.values(query).some(Boolean))onReset();}
@@ -66,14 +93,13 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const [locationState,setLocationState]:[VisitorLocationState,(value:VisitorLocationState)=>void]=React.useState('idle');
   const [locationFeedback,setLocationFeedback]=React.useState('');
   const [filterOpen,setFilterOpen]=React.useState(false);
-  const [drawerOpen,setDrawerOpen]=React.useState(false);
   const [controlsReady,setControlsReady]=React.useState(false);
   const drawerTrigger=React.useRef(null as HTMLButtonElement|null);
   const drawer=React.useRef(null as HTMLElement|null);
   const resultsScroll=React.useRef(null as HTMLDivElement|null);
   const savedResultsScroll=React.useRef(0);
   function selectTruck(id:string|null){
-    if(id){if(!selectedId)savedResultsScroll.current=resultsScroll.current?.scrollTop||0;setSelectedId(id);setDrawerOpen(false);}
+    if(id){if(!selectedId)savedResultsScroll.current=resultsScroll.current?.scrollTop||0;search.pause();setSelectedId(id);}
     else closeTruck();
   }
   function closeTruck(){
@@ -81,8 +107,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     requestAnimationFrame(()=>{if(resultsScroll.current)resultsScroll.current.scrollTop=savedResultsScroll.current;drawer.current?.focus();});
   }
   const swipeStart=React.useRef(null as {x:number;y:number}|null);
-  React.useEffect(()=>{setDrawerOpen(!selectedId&&(window.matchMedia('(min-width:761px)').matches||Boolean(query.q)));setControlsReady(true);},[]);
-  function closeDrawer(){setDrawerOpen(false);requestAnimationFrame(()=>drawerTrigger.current?.focus());}
+  React.useEffect(()=>{setControlsReady(true);},[]);
+  function closeDrawer(){search.pause();requestAnimationFrame(()=>drawerTrigger.current?.focus());}
   function openDrawer(){setDrawerOpen(true);requestAnimationFrame(()=>drawer.current?.focus());}
   function startSwipe(event:React.PointerEvent<HTMLElement>){
     if((event.target as HTMLElement).closest('button,input,select,a'))return;
@@ -96,9 +122,10 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.5){if(open&&dx<0)closeDrawer();if(!open&&dx>0)openDrawer();}
   }
   const [statusFilter,setStatusFilter]=React.useState(query.status||'');
-  const [loadFilter,setLoadFilter]=React.useState(query.loadType||'');
   const [vehicleFilter,setVehicleFilter]=React.useState(query.vehicleCategory||'');
-  const [searchTerm,setSearchTerm]=React.useState(query.q||'');
+  const [locationSourceFilter,setLocationSourceFilter]=React.useState(query.locationSource||'');
+  const [stopFilter,setStopFilter]=React.useState(query.stopOption||'');
+  const [freshnessFilter,setFreshnessFilter]=React.useState(query.freshness||'');
   const filterDialog=React.useRef(null as HTMLDialogElement|null);
   const viewport=React.useRef('');
   const selectedRef=React.useRef(selectedId);selectedRef.current=selectedId;
@@ -111,9 +138,10 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     const version=generation.current;
     const controller=new AbortController();pendingRequest.current=controller;
     const params=new URLSearchParams(query);
+    params.delete('q');
     if(blocked.length)params.set('blocked',blockKey);
     params.delete('overview');params.delete('cursor');
-    if(viewport.current&&!query.q&&!query.provider)params.set('viewport',viewport.current);
+    if(viewport.current&&!query.provider&&!query.truck)params.set('viewport',viewport.current);
     setLoading(true);setError('');
     try{
       await loadCapacityMapWindow({
@@ -122,7 +150,10 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
           const pageParams=new URLSearchParams(params);
           if(cursor)pageParams.set('cursor',cursor);
           const response=await fetch(`${apiPath}?${pageParams.toString()}`,{signal,cache:'no-store'});
-          if(!response.ok)throw new Error('Capacity could not be loaded.');
+          if(!response.ok){
+            if(apiPath.startsWith('/api/business-workspaces/')&&[401,403].includes(response.status)&&version===generation.current){setItems([]);setSelectedId(null);}
+            throw new Error('Capacity could not be loaded.');
+          }
           return response.json();
         },
         onPage:(incoming:FeedResult['items'],state:{complete:boolean})=>{
@@ -138,7 +169,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   },[apiPath,query,blockKey]);
   function explore(bounds:number[]){
     const key=bounds.map(value=>value.toFixed(4)).join(',');
-    if(key===viewport.current||viewport.current&&Boolean(query.q||query.provider))return;
+    if(key===viewport.current||viewport.current&&Boolean(query.provider||query.truck))return;
     viewport.current=key;
     void loadWindow();
   }
@@ -150,9 +181,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     setLocationState('locating');
     navigator.geolocation.getCurrentPosition(position=>{
       const exact={lat:position.coords.latitude,lng:position.coords.longitude};
-      if(exact.lat<3||exact.lat>15||exact.lng<32||exact.lng>49){
-        setLocationState('outside');
-        setLocationFeedback('Your location is outside the current Ethiopia coverage area. You can continue browsing available trucks.');
+      if(!isValidCoordinate(exact.lat,exact.lng)){
+        setLocationState('unavailable');
         return;
       }
       const displaced=obscureCoordinate(exact.lat,exact.lng,BUSINESS_SEARCH_PRIVACY_KM);
@@ -183,11 +213,6 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     setFilterOpen(false);
   }
 
-  function chooseStatus(status:string){
-    setStatusFilter(status);
-
-  }
-
   const selected=items.find((item:any)=>item.id===selectedId)||null;
   const locationActionLabel=locationState==='locating'
     ?'Finding your location…'
@@ -196,52 +221,55 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       :['denied','timeout','unavailable','outside','error'].includes(locationState)
         ?'Retry location permission'
         :'Use my location';
-  const activeFilterCount=[query.ownerDocs,query.driverDocs,query.truckDocs,query.status,query.vehicleCategory,query.loadType,query.stopOption,query.freshness,
+  const activeFilterCount=[query.ownerDocs,query.driverDocs,query.truckDocs,query.status,query.vehicleCategory,query.locationSource,query.stopOption,query.freshness,
     query.originPlaceRef||query.origin,query.destinationPlaceRef||query.destination,
     query.truckCityPlaceRef||query.truckCity||(query.nearLat&&query.nearLng)].filter(Boolean).length;
   const clearSearchParams=new URLSearchParams(query);
   ['q','provider','truck','cursor'].forEach(key=>clearSearchParams.delete(key));
   const clearSearchHref=`${searchPath}${clearSearchParams.size?`?${clearSearchParams.toString()}`:''}`;
-  const hasSearch=Boolean(searchTerm.trim()||query.provider||query.truck);
+  const hasSearch=Boolean(searchTerm||submittedSearch!==null);
   const locationNotice=locationFeedback||({
     denied:'Location permission is blocked. Enable location for this site in browser settings, then retry.',
     timeout:'The location request timed out. Move somewhere with a clearer signal and retry.',
     unavailable:'The device could not provide a location. Check the device location service and retry.',
-    unsupported:'Location is not supported by this browser. You can continue browsing all trucks.',
+    unsupported:'Location is not supported by this browser. You can continue browsing all vehicles.',
     insecure:'Location is available only through a secure connection.',
     error:'Location could not be updated. Try again or continue browsing.'
   } as Partial<Record<VisitorLocationState,string>>)[locationState]||'';
   const overlayKind=error?'error':loading?'loading':!items.length?'empty':'';
 
-  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading trucks in this map area…"/>:overlayKind==='empty'?<Text message="No truck signals match these filters. Adjust your search or check again later."/>:locationNotice}</div>:null;
+  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?<Text message="No vehicle signals match these filters. Adjust the filters or check again later."/>:locationNotice}</div>:null;
 
-  const searchControls=<div className="capacity-search-controls"><div className="capacity-map-search">
+  const searchControls=<form className="capacity-people-search-form" onSubmit={event=>{event.preventDefault();search.submit();}}><div className={searchStyles.field}>
     <label className="sr-only" htmlFor="capacity-market-search"><Text message="Search transporters"/></label><Search aria-hidden="true"/>
-    <Localized as="input" copy={["placeholder"]} id="capacity-market-search" type="search" name="q" maxLength={120} value={searchTerm} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>setSearchTerm(event.target.value)} placeholder="Name, handle, city or service"/>
-    {hasSearch?<Localized as="link" copy={["aria-label"]} href={clearSearchHref} className="capacity-search-clear" aria-label="Clear search" onClick={()=>setSearchTerm('')}><X aria-hidden="true"/></Localized>:null}
-    <Localized as="button" copy={["aria-label"]} type="submit" aria-label="Search"><Search aria-hidden="true"/></Localized>
-  </div></div>;
+    <Localized as="input" copy={["placeholder"]} ref={search.inputRef} id="capacity-market-search" type="search" name="q" maxLength={120} value={searchTerm} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>search.change(event.target.value)} onCompositionStart={search.compositionStart} onCompositionEnd={(event:React.CompositionEvent<HTMLInputElement>)=>search.compositionEnd(event.currentTarget.value)} onKeyDown={search.preventComposedEnter} placeholder="Account name, manager or @handle"/>
+    <Localized as="button" copy={["aria-label"]} type="button" className={searchStyles.clear} aria-label="Clear search" disabled={!hasSearch} onClick={search.clear}><X aria-hidden="true"/></Localized>
+    <Localized as="button" copy={["aria-label"]} type="submit" className={searchStyles.submit} aria-label="Search"><Search aria-hidden="true"/></Localized>
+  </div></form>;
 
   return <div className="market-workbench market-map-view capacity-drawer-workbench">
-    <form action={searchPath} className="capacity-discovery-form" onSubmit={closeFilters}>
-    {query.provider&&searchTerm===(query.q||'')?<input type="hidden" name="provider" value={query.provider}/>:null}
+    <Form action={searchPath} prefetch={false} scroll={false} className="capacity-discovery-form" onSubmit={closeFilters}>
+    {query.provider?<input type="hidden" name="provider" value={query.provider}/>:null}
+    {query.truck?<input type="hidden" name="truck" value={query.truck}/>:null}
+    {query.q?<input type="hidden" name="q" value={query.q}/>:null}
     <dialog ref={filterDialog} className="capacity-filter-dialog" aria-labelledby="capacity-filter-title" onClose={()=>setFilterOpen(false)}>
-      <div className="capacity-filter-dialog-head"><div><h2 id="capacity-filter-title"><Text message="Filters"/></h2></div><Localized as="button" copy={["aria-label"]} type="button" onClick={closeFilters} aria-label="Close filters"><X aria-hidden="true"/></Localized></div>
+      <div className="capacity-filter-dialog-head"><div><h2 id="capacity-filter-title"><Text message="Vehicle filters"/></h2></div><Localized as="button" copy={["aria-label"]} type="button" onClick={closeFilters} aria-label="Close filters"><X aria-hidden="true"/></Localized></div>
       <div className="capacity-detail-fields">
+        {query.provider||query.truck?<p className="capacity-identity-filter"><Text message="Showing selected profile vehicles"/> <Link href={clearSearchHref}><Text message="Show all transporters"/></Link></p>:null}
         <div className="capacity-primary-selects">
-          <label htmlFor="capacity-load-filter"><span><Boxes aria-hidden="true"/><Text message="Space needed"/></span><select id="capacity-load-filter" name="loadType" value={loadFilter} onChange={event=>{setLoadFilter(event.target.value);if(event.target.value==='FTL'&&statusFilter==='PARTIAL')setStatusFilter('');}}><option value=""><Text message="Any load size"/></option><option value="FTL"><Text message="Full truck"/></option><option value="PTL"><Text message="Shared truck space"/></option></select></label>
-          <div className="form-group"><label htmlFor="capacity-main-status"><Text message="Truck's current load"/></label><select id="capacity-main-status" name="status" value={statusFilter} onChange={event=>chooseStatus(event.target.value)}><option value=""><Text message="Any available truck"/></option><option value="EMPTY"><Text message="Empty truck"/></option><option value="PARTIAL" disabled={loadFilter==='FTL'}><Text message="Partly loaded"/></option></select></div>
-          <CapacityConfigurationPicker value={vehicleFilter} onChange={setVehicleFilter}/>
+          <CapacityMultiOptions name="status" label="Vehicle's current load" anyLabel="Any available vehicle" options={[["EMPTY","Empty vehicle"],["PARTIAL","Partly loaded"]]} value={statusFilter} onChange={setStatusFilter}/>
+          <CapacityConfigurationPicker multiple value={vehicleFilter} onChange={setVehicleFilter}/>
         </div>
-        <p className="meta"><Text message="Full truck: empty trucks accepting full loads. Shared space: trucks accepting smaller loads."/></p>
+        <p className="meta"><Text message="Select one or more options."/></p>
         <fieldset className="capacity-truck-location-filter">
-          <legend><MapPinned aria-hidden="true"/><Text message="Truck location"/></legend>
-          <p><Text message="Near the truck’s reported location, allowing for its location accuracy."/></p>
+          <legend><MapPinned aria-hidden="true"/><Text message="Vehicle location"/></legend>
+          <p><Text message="Near the vehicle’s reported location, allowing for its location accuracy."/></p>
+          <CapacityMultiOptions name="locationSource" label="Location source" anyLabel="Any location source" options={[["GPS","GPS device"],["MOBILE","Driver’s phone"],["MANUAL","Manually entered"]]} value={locationSourceFilter} onChange={setLocationSourceFilter}/>
           <div className="capacity-geography-filter">
             <div className="form-group"><label htmlFor="capacity-truck-city"><Text message="In or near a city"/></label><EthiopiaPlaceInput id="capacity-truck-city" name="truckCity" placeRefName="truckCityPlaceRef" defaultPlaceRef={query.truckCityPlaceRef||''} defaultValue={query.truckCity||''} onChange={event=>{setTruckCityName(event.target.value);setNearFilterEnabled(false);}} placeholder="Choose a city or town"/></div>
             <div className="form-group"><label htmlFor="capacity-truck-location-radius"><Text message="Distance from city"/></label><select id="capacity-truck-location-radius" name="truckLocationRadiusKm" disabled={!truckCityName.trim()&&!query.truckCityPlaceRef} defaultValue={query.truckLocationRadiusKm||'50'}>{[5,10,25,50,100,200,300].map(value=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></div>
           </div>
-          <label className="checkbox-label" htmlFor="capacity-near-enabled"><input id="capacity-near-enabled" type="checkbox" checked={nearFilterEnabled} disabled={!near||Boolean(truckCityName.trim())} onChange={event=>setNearFilterEnabled(event.target.checked)}/><span><Text message="Show trucks near my area"/></span></label>
+          <label className="checkbox-label" htmlFor="capacity-near-enabled"><input id="capacity-near-enabled" type="checkbox" checked={nearFilterEnabled} disabled={!near||Boolean(truckCityName.trim())} onChange={event=>setNearFilterEnabled(event.target.checked)}/><span><Text message="Show vehicles near my area"/></span></label>
           {nearFilterEnabled&&near?<><input type="hidden" name="nearLat" value={near.lat}/><input type="hidden" name="nearLng" value={near.lng}/><label htmlFor="capacity-near-radius"><span><Text message="Distance"/></span><select id="capacity-near-radius" name="nearRadiusKm" defaultValue={query.nearRadiusKm||'20'}>{[5,10,20,50,100].map(value=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></label></>:null}
           <p>{truckCityName.trim()?<Text message="Clear the city to use your area instead."/>:near?<Text message="Your precise location stays on this device."/>:<Text message="You can choose a city without sharing your location."/>}</p>
         </fieldset>
@@ -259,38 +287,37 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
             <label htmlFor="capacity-route-direction"><span><Text message="Direction"/></span><select id="capacity-route-direction" name="directionMode" defaultValue={query.directionMode||'DIRECT'}><option value="DIRECT"><Text message="Origin to destination"/></option><option value="EITHER"><Text message="Either direction"/></option></select></label>
           </div>
         </fieldset>
-        <fieldset>
-          <legend><Truck aria-hidden="true"/><Text message="Truck"/></legend>
-
-          <label htmlFor="capacity-stop-filter"><span><MapPinned aria-hidden="true"/><Text message="Stops"/></span><select id="capacity-stop-filter" name="stopOption" defaultValue={query.stopOption}><option value=""><Text message="Any stop pattern"/></option><option value="MULTI_PICK"><Text message="Multiple pickups"/></option><option value="MULTI_DROP"><Text message="Multiple drop-offs"/></option></select></label>
-          <label htmlFor="capacity-freshness-filter"><span><Clock3 aria-hidden="true"/><Text message="Updated"/></span><select id="capacity-freshness-filter" name="freshness" defaultValue={query.freshness}><option value=""><Text message="Any published capacity"/></option><option value="FRESH"><Text message="Within 12 hours"/></option><option value="UPDATE_NEEDED"><Text message="More than 12 hours ago"/></option></select></label>
-        </fieldset>
+        <div className="capacity-secondary-options">
+          <CapacityMultiOptions name="stopOption" label="Stops" anyLabel="Any stop pattern" options={[["MULTI_PICK","Multiple pickups"],["MULTI_DROP","Multiple drop-offs"]]} value={stopFilter} onChange={setStopFilter} icon={<MapPinned aria-hidden="true"/>}/>
+          <CapacityMultiOptions name="freshness" label="Updated" anyLabel="Any published capacity" options={[["FRESH","Within 12 hours"],["UPDATE_NEEDED","More than 12 hours ago"]]} value={freshnessFilter} onChange={setFreshnessFilter} icon={<Clock3 aria-hidden="true"/>}/>
+        </div>
 
 
-        <div className="capacity-filter-actions"><Link href={searchPath} onClick={()=>{closeFilters();clearUnappliedFilters();}}><Text message="Clear"/></Link><button className="button" type="submit"><SlidersHorizontal aria-hidden="true"/><Text message="Show matching trucks"/></button></div>
+        <div className="capacity-filter-actions"><Link href={searchPath} onClick={()=>{closeFilters();clearUnappliedFilters();}}><Text message="Clear"/></Link><button className="button" type="submit"><SlidersHorizontal aria-hidden="true"/><Text message="Show matching vehicles"/></button></div>
       </div>
     </dialog>
+    </Form>
 
-    <Localized as="aside" copy={["aria-label"]} ref={drawer} id="capacity-filter-drawer" className={`market-command-column capacity-filter-drawer${drawerOpen?' is-open':''}`} aria-label="Capacity filters" aria-hidden={!drawerOpen} inert={!drawerOpen} tabIndex={-1} onKeyDown={(event:React.KeyboardEvent<HTMLAnchorElement>)=>{if(event.key==='Escape'&&!event.defaultPrevented&&!filterOpen){event.preventDefault();closeDrawer();}}}>
+    <Localized as="aside" copy={["aria-label"]} ref={drawer} id="capacity-filter-drawer" className={`market-command-column capacity-filter-drawer capacity-people-drawer${drawerOpen?' is-open':''}`} aria-label="Transporter search" aria-hidden={!drawerOpen} inert={!drawerOpen} tabIndex={-1} onKeyDown={(event:React.KeyboardEvent<HTMLAnchorElement>)=>{if(event.key==='Escape'&&!event.defaultPrevented&&!filterOpen){event.preventDefault();closeDrawer();}}}>
       <header className="capacity-drawer-heading" onPointerDown={startSwipe} onPointerUp={event=>finishSwipe(event,true)} onPointerCancel={()=>{swipeStart.current=null;}}>
-        <div><h2><Text message="Find transport"/></h2></div><Localized as="button" copy={["aria-label"]} type="button" aria-label="Close filter drawer" onClick={closeDrawer}><PanelLeftClose aria-hidden="true"/></Localized>
+        <div><h2><Text message="Transporter search"/></h2></div><Localized as="button" copy={["aria-label"]} type="button" aria-label="Close transporter search" onClick={closeDrawer}><PanelLeftClose aria-hidden="true"/></Localized>
       </header>
       <div ref={resultsScroll} className="capacity-drawer-scroll">
         {searchControls}
         <Localized as="section" copy={["aria-label"]} className="public-capacity-toolbar" aria-label="Capacity map location controls"><button type="button" className="button location-action" onClick={useMyLocation} disabled={locationState==='locating'}><LocateFixed aria-hidden="true"/>{locationActionLabel}</button><span className="public-location-note"><Text message="Your precise location remains on this device."/></span></Localized>
         {locationNotice?<small className={`capacity-location-status ${locationState==='ready'?'ready':'attention'}`} role="status" data-testid="visitor-location-state">{locationNotice}</small>:null}
-        <CapacitySearchResults query={query} view={apiPath==='/api/shared-capacity'?'private':apiPath==='/api/admin/capacity-network'?'loadgistic':'open'} searchPath={searchPath}/>
+        {submittedSearch===null?<p className="capacity-search-instruction"><Text message={searchTerm.trim()&&!transporterSearchQuery(searchTerm)?'Enter at least two characters.':'Search by account name, manager, @handle or city.'}/></p>:null}
+        {profileResults}
 
       </div>
 
-      <footer className="capacity-drawer-actions"><button type="button" className="capacity-filter-trigger" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Filters"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</button><Link href={searchPath} onClick={clearUnappliedFilters}><Text message="Clear all"/></Link></footer>
     </Localized>
-    </form>
-    <div className="capacity-drawer-handle" hidden={drawerOpen}>
-      <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={selected?closeTruck:openDrawer}><PanelLeftOpen aria-hidden="true"/><Text message={selected?"Results":"Filters"}/>{!selected&&activeFilterCount?<span>{activeFilterCount}</span>:null}</button>
+    <div className="capacity-drawer-handle capacity-map-controls">
+      <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={()=>{if(drawerOpen)closeDrawer();else if(selected)closeTruck();else openDrawer();}}><Search aria-hidden="true"/><Text message="Transporter search"/></button>
+      <button type="button" className="capacity-filter-trigger" disabled={!controlsReady} aria-haspopup="dialog" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Vehicle filters"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</button>
     </div>
       <section id="capacity-map-view" className="public-map-shell">
-        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.q)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
+        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
         {feedback}
       </section>
     </div>;

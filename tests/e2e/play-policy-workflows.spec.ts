@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import sharp from 'sharp';
@@ -29,32 +29,66 @@ async function remove(service:any,actor:any){
 }
 
 test('Play deletion verifies the inbox, persists its receipt, erases real storage and Auth, and preserves other accounts',async({page,browser}:{page:any;browser:any},info:any)=>{
- test.setTimeout(180000);const service=localAuditService(),subject=await auditProvider(service,'play-erase'),other=await auditProvider(service,'play-kept'),staff=await admin(service);let adminContext:any;
- const file=`driver-portrait/2026-10-09/${randomUUID()}.jpg`;const bytes=await sharp(readFileSync('public/icon-192.png')).jpeg().toBuffer();
+ test.setTimeout(180000);const service=localAuditService();let subject:Awaited<ReturnType<typeof auditProvider>>|undefined,other:Awaited<ReturnType<typeof auditProvider>>|undefined,staff:Awaited<ReturnType<typeof admin>>|undefined,adminContext:any,logout:(()=>Promise<unknown>)|undefined,stage='FIXTURES';
+ const file=`driver-portrait/2026-10-09/${randomUUID()}.jpg`;
  try{
+  subject=await auditProvider(service,'play-erase');other=await auditProvider(service,'play-kept');staff=await admin(service);
+  const bytes=await sharp(readFileSync('public/icon-192.png')).jpeg().toBuffer();
   checked(await service.storage.from('provider-profile').upload(file,bytes,{contentType:'image/jpeg'}));
   checked(await service.from('driver_portrait_uploads').insert({user_id:subject.id,file_path:`supabase://provider-profile/${file}`,size_bytes:bytes.length,state:'ACTIVE',upload_finished:true}));
+  stage='INBOX_VERIFICATION';
   await page.goto('/delete-account');await page.getByLabel('Account email',{exact:true}).fill(subject.email);
   const started=Date.now();await page.getByRole('button',{name:'Verify email to request deletion',exact:true}).click();
   await expect(page.getByLabel('Email verification code',{exact:true})).toBeVisible();
   const code=await localMailpitNumericCode(subject.email,started,['Your Loadgistic sign-in code','Your Loadgistic login code','Confirm Your Signup','Magic Link']);
   await page.getByLabel('Email verification code',{exact:true}).fill(code);
+  stage='PERSISTED_DELETION_RECEIPT';
   await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Submit deletion request',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Deletion request received',exact:true})).toBeVisible();
   await page.reload();await expect(page.getByRole('heading',{name:'Deletion request received',exact:true})).toBeVisible();
-  await page.screenshot({path:'.local/play-policy-deletion-receipt-phone.png'});
+  await page.screenshot({path:info.outputPath('play-policy-deletion-receipt.png')});
   const request=checked(await service.from('account_deletion_requests').select('id,status').eq('subject_user_id',subject.id).single());expect(request.status).toBe('REQUESTED');
-  adminContext=await browser.newContext({baseURL:info.project.use.baseURL});const control=await adminContext.newPage();await localSupportLogin(control,staff.id);await control.goto('/admin/privacy');
+  stage='ADMIN_PROCESS_DELETION';
+  adminContext=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch)});const control=await adminContext.newPage();logout=await localSupportLogin(control,staff.id);await control.goto('/admin/privacy');
   const card=control.locator('section[data-request-id="'+request.id+'"]');
-  await card.getByRole('checkbox').check();await card.getByLabel('Type DELETE to confirm').fill('DELETE');await card.getByRole('button',{name:'Process deletion request',exact:true}).click();
+  await card.getByRole('button',{name:'Process deletion request',exact:true}).click();const deletion=card.getByRole('dialog',{name:'Process deletion request',exact:true});await deletion.getByRole('checkbox').check();await deletion.getByLabel('Type DELETE to confirm').fill('DELETE');await deletion.getByRole('button',{name:'Process deletion request',exact:true}).click();
   await expect(control.getByText('Deletion completed.',{exact:true})).toBeVisible();
+  stage='STORAGE_AUTH_AND_ACCOUNT_ISOLATION';
   expect(checked(await service.from('profiles').select('email,active,full_name').eq('id',subject.id).single()).full_name).toBe('Deleted account');
   expect(checked(await service.auth.admin.getUserById(subject.id)).user.email).not.toBe(subject.email);
   expect((await service.storage.from('provider-profile').download(file)).error).not.toBeNull();
   expect(checked(await service.from('profiles').select('active').eq('id',other.id).single()).active).toBe(true);
+  stage='COMPLETED_RECEIPT';
   await page.getByRole('button',{name:'Check request status',exact:true}).click();await expect(page.getByRole('heading',{name:'Deletion completed',exact:true})).toBeVisible();
+  stage='GUEST_PROCESS_DENIAL';
   const denied=await page.request.post('/api/admin/privacy/'+request.id,{form:{reviewed:'yes',confirmation:'DELETE'},maxRedirects:0});expect(new URL(denied.headers().location).searchParams.has('error')).toBe(true);
- }finally{await adminContext?.close();await service.storage.from('provider-profile').remove([file]);await remove(service,subject);await remove(service,other);await remove(service,staff);}
+ }catch{throw Error('PLAY_DELETION_WORKFLOW_FAILED: '+stage);}
+ finally{
+  let cleanupFailures=0;
+  async function clean(operation:()=>Promise<unknown>){try{await operation();}catch{cleanupFailures++;}}
+  if(logout)await clean(logout);if(adminContext)await clean(()=>adminContext.close());
+  let fileRemoved=false;
+  await clean(async()=>{
+   checked(await service.storage.from('provider-profile').remove([file]));
+   expect(checked(await service.storage.from('provider-profile').list('driver-portrait/2026-10-09',{search:file.split('/').at(-1),limit:1}))).toHaveLength(0);
+   fileRemoved=true;
+  });
+  // A pre-processing failure can leave this exact portrait row. Preserve its
+  // reference and subject identity if deleting its acknowledged file fails.
+  const subjectId=subject?.id;
+  if(subjectId&&fileRemoved)await clean(async()=>checked(await service.from('driver_portrait_uploads').delete().eq('user_id',subjectId).eq('file_path',`supabase://provider-profile/${file}`)));
+  const actors=[subject,other,staff].filter((actor):actor is NonNullable<typeof actor>=>Boolean(actor));
+  for(const actor of actors)if(actor!==subject||fileRemoved)await clean(()=>remove(service,actor));
+  const userIds=actors.map(actor=>actor.id),providerIds=[subject?.provider_profile_id,other?.provider_profile_id].filter(Boolean);
+  if(userIds.length){
+   await clean(async()=>expect(checked(await service.from('profiles').select('id').in('id',userIds))).toHaveLength(0));
+   await clean(async()=>expect(checked(await service.from('account_deletion_requests').select('id').in('subject_user_id',userIds))).toHaveLength(0));
+   await clean(async()=>expect(checked(await service.from('driver_portrait_uploads').select('id').in('user_id',userIds))).toHaveLength(0));
+   for(const id of userIds)await clean(async()=>expect((await service.auth.admin.getUserById(id)).error?.status).toBe(404));
+  }
+  if(providerIds.length)await clean(async()=>expect(checked(await service.from('provider_profiles').select('id').in('id',providerIds))).toHaveLength(0));
+  if(cleanupFailures)throw Error('PLAY_DELETION_WORKFLOW_FAILED: EXACT_CLEANUP');
+ }
 });
 
 test('Play public reporting reaches moderation, hide and restore are effective, and viewer block is reversible',async({page,browser}:{page:any;browser:any},info:any)=>{
@@ -93,7 +127,7 @@ test('Play native reviewer uses normal login and accepted terms; private guest s
   checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:truck,approximate_lat:41.8,approximate_lng:-87.6,location_precision_km:20}}));
   checked(await service.rpc('publish_provider_capacity',{actor_user_id:actor.id,command:{vehicle_id:truck,status:'EMPTY',accepted_loads:'BOTH',availability_geometry:'ROUTE',location_source:'PRESERVE_DRIVER',current_route_places:points,sharing_mode:'PRIVATE'}}));
   checked(await service.rpc('grant_private_capacity_access',{actor_user_id:actor.id,target_vehicle_id:truck,normalized_recipient_email:'synthetic@review.invalid',recipient_digest:capacityDigest}));
-  const shipment=randomUUID();checked(await service.rpc('create_provider_tracking_with_recipients',{actor_user_id:actor.id,command:{id:shipment,code:'LGX-'+shipment.replaceAll('-','').slice(0,8).toUpperCase(),vehicle_id:truck,origin_place_ref:points[0].place_ref,destination_place_ref:points[1].place_ref,cargo_summary:'Synthetic reviewer shipment',customer_email:'synthetic@review.invalid',customer_email_digest:trackingDigest,expected_delivery_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),tracking_mode:'LOCATION_AND_STATUS',tracking_code_hash:(randomUUID()+randomUUID()).replaceAll('-',''),review_code_hash:(randomUUID()+randomUUID()).replaceAll('-','')}}));
+  const shipment=randomUUID();checked(await service.rpc('create_provider_tracking_with_recipients',{actor_user_id:actor.id,command:{id:shipment,code:'LGX-'+shipment.replaceAll('-','').slice(0,8).toUpperCase(),vehicle_id:truck,origin_place_ref:points[0].place_ref,destination_place_ref:points[1].place_ref,passing_place_ref:checked(await service.from('place_catalog').select('id').not('id','in',`(${points[0].place_ref},${points[1].place_ref})`).order('id').limit(1).single()).id,cargo_summary:'Synthetic reviewer shipment',customer_email:'synthetic@review.invalid',customer_email_digest:trackingDigest,expected_delivery_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),tracking_mode:'LOCATION_AND_STATUS',tracking_code_hash:(randomUUID()+randomUUID()).replaceAll('-',''),review_code_hash:(randomUUID()+randomUUID()).replaceAll('-','')}}));
   await page.goto('http://localhost:8084/visitor-tracking');await page.getByRole('button',{name:'Open demo shipment tracking',exact:true}).click();await expect(page.getByText('Your shipments',{exact:true})).toBeVisible({timeout:20000});await expect(page.getByRole('link',{name:'View updates',exact:true})).toBeVisible({timeout:20000});await page.screenshot({path:'.local/play-policy-native-review-tracking.png'});
   await page.goto('http://localhost:8084/privacy');await page.getByRole('button',{name:'How location sharing works',exact:true}).click();await expect(page.getByText('Location during your shipment',{exact:true})).toBeVisible();await page.screenshot({path:'.local/play-policy-location-disclosure-phone.png'});await page.getByRole('button',{name:'Close',exact:true}).click();
   const login=await page.request.post('http://127.0.0.1:3100/api/mobile/review-access',{data:{email:actor.email,password}});expect(login.status()).toBe(200);const session=await login.json();

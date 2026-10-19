@@ -18,7 +18,7 @@ export function TransportRequestFollowUp({request,canReopen=true}:{request:Pick<
     }catch(caught){setError(true);setFeedback(caught instanceof Error&&caught.name==='Error'?caught.message:'Could not save. Please reload to check the request before trying again.');}
     finally{pending.current=false;setBusy(false);}
   }
-  return <form className="transport-follow-up" onSubmit={save} aria-label={t('Request follow-up')}>
+  return <form className="transport-follow-up" onSubmit={save} aria-label={t('Request follow-up')} aria-busy={busy}>
     <input type="hidden" name="version" value={version}/>
     <label><Text message="Status"/><select name="status" value={status} onChange={event=>{setStatus(event.target.value as TransportRequest['status']);setDirty(true);}} disabled={!ready||busy}><option value="NEW" disabled={!canReopen&&request.status==='CLOSED'}>{t('New')}</option><option value="CONTACTED" disabled={!canReopen&&request.status==='CLOSED'}>{t('Contacted')}</option><option value="CLOSED">{t('Resolved')}</option></select></label>
     <label className="transport-follow-up-note"><Text message="Follow-up note"/><textarea name="note" rows={2} maxLength={1000} value={note} onChange={event=>{setNote(event.target.value);setDirty(true);}} disabled={!ready||busy} placeholder={t('Who you called or referred the request to')}/></label>

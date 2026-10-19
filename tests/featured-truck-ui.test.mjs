@@ -17,7 +17,7 @@ test('public featured cards lead with the assigned Driver portrait and retain th
   assert.match(venue,/truck\.name/);
   assert.match(venue,/truck\.truck_key/);
   assert.match(venue,/truck\.public_capacity_available/);
-  assert.match(venue,/Find this truck/);
+  assert.match(venue,/Find this vehicle/);
   assert.match(venue,/driver-portrait-fallback/);
   assert.match(venue,/driver-steering-wheel/);
   assert.doesNotMatch(venue,/Disc3/);
@@ -36,7 +36,7 @@ test('empty featured roster keeps readable full-width copy and one market action
   const section=source('src/components/featured-provider-section.tsx');
   const styles=source('src/app/globals.css');
   assert.match(section,/regional-expo-empty/);
-  assert.match(section,/No trucks are scheduled today\./);
+  assert.match(section,/No vehicles are scheduled today\./);
   assert.match(section,/href="\/"><Text message="Find capacity"\s*\/>/);
   assert.match(styles,/\.regional-expo-empty\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
   assert.match(styles,/@media\(max-width:760px\)\{\.regional-expo-empty\{grid-template-columns:minmax\(0,1fr\)/);

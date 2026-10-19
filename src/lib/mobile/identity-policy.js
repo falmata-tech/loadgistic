@@ -1,4 +1,5 @@
 import {independentOperatingModel} from '../independent-driver.js';
+import {managedBusinessContext,mobileBusinessContext} from '../identity/business-context.js';
 export function mobileBearer(header) {
   if (typeof header !== 'string' || header.length > 8192) return null;
   const match = header.match(/^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/);
@@ -6,15 +7,17 @@ export function mobileBearer(header) {
 }
 export function mobileAccountState(user, authId, { canJoin = false, canSignUp = false } = {}) {
   if (!user || user.id !== authId) return 'DENIED';
-  if (['ADMIN', 'SUPPORT'].includes(user.role)) return 'WEB_ONLY';
-  if (user.active) return ['TRANSPORTER', 'DRIVER'].includes(user.role) ? 'ACTIVE' : 'DENIED';
+  if (['ADMIN', 'SUPPORT'].includes(user.platform_role || user.role)) return 'WEB_ONLY';
+  if (user.active) return ['TRANSPORTER', 'DRIVER'].includes(user.role) || managedBusinessContext(user) ? 'ACTIVE' : (canSignUp || user.business_workspace_eligible ? 'ONBOARDING' : 'DENIED');
   if (canJoin) return 'JOIN_FLEET';
   if (canSignUp) return 'ONBOARDING';
   return 'DENIED';
 }
 export function mobileIdentity(user) {
   return { id: user.id, name: user.name, email: user.email, role: user.role,
+    providerAccountName:user.provider_account_name || null,
     organizationName: user.organization_name || null,
     businessName: user.provider_business_name || null,
-    operatingModel: independentOperatingModel(user.provider_operating_model) || null };
+    operatingModel: independentOperatingModel(user.provider_operating_model) || null,
+    ...mobileBusinessContext(user) };
 }

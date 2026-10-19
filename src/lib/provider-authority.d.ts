@@ -1,0 +1,9 @@
+export type AuthorityFact={verified:boolean;reviewedAt:string|null;expiresOn:string|null};
+export type TruckAuthority={ownership:AuthorityFact;permission:AuthorityFact;operatingLicence:AuthorityFact&{holderBasis:'OWNED'|'FINANCED'|null};qualifiesProvider:boolean};
+export type ProviderAuthoritySummary={total:number;ownershipVerified:number;financedVerified:number;permissionVerified:number;notYetVerified:number;operatingLicenceVerified:number};
+export type ProviderPublication={canPublish:boolean;liveTruckCount:number;qualifyingTruckCount:number;qualifyingOwnershipCount:number;qualifyingLicenceCount:number};
+export function getProviderPublication(user:{id:string}):Promise<ProviderPublication>;
+export function getTruckAuthorities(client:unknown,vehicleIds:string[]):Promise<Map<string,TruckAuthority>>;
+export function setProviderVehiclePublication(user:{id:string},vehicleId:string,state:'LIVE'|'DRAFT'):Promise<{vehicleId:string;state:'LIVE'|'DRAFT'}>;
+export function confirmProviderVehicleAuthority(user:{id:string},requestId:string,input:{factKind:'OWNERSHIP'|'PERMISSION'|'OPERATING_LICENCE';contextRevision:string;holderBasis?:'OWNED'|'FINANCED';expiresOn?:string;reviewNote:string}):Promise<string>;
+export function revokeProviderVehicleAuthority(user:{id:string},authorityReviewId:string,reason:string):Promise<void>;

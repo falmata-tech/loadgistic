@@ -1,7 +1,7 @@
 "use client";
 
 
-import {Text,Localized,useTranslation} from '@/components/localization';
+import {Text,FeedbackText,Localized,useTranslation} from '@/components/localization';
 import React from 'react';
 import { Check, CircleCheckBig, LocateFixed, Navigation, PackageCheck, PackageOpen, RefreshCw, Route, TriangleAlert, Upload } from 'lucide-react';
 import {trackingProgress} from '@/lib/tracking-progress.js';
@@ -11,9 +11,9 @@ import {createForegroundLocationRunner,trackingLocationResult,trackingPrivacyRad
 
 const trackingActions=[
   {status:'TO_PICKUP',label:'Going to pickup',hint:'The Driver is travelling to load',Icon:Route,acceptsProof:false},
-  {status:'LOADING',label:'Loading',hint:'The truck is being loaded',Icon:PackageCheck,acceptsProof:true},
+  {status:'LOADING',label:'Loading',hint:'The vehicle is being loaded',Icon:PackageCheck,acceptsProof:true},
   {status:'IN_TRANSIT',label:'En route',hint:'The shipment is moving to delivery',Icon:Navigation,acceptsProof:false},
-  {status:'UNLOADING',label:'Unloading',hint:'The truck is being unloaded',Icon:PackageOpen,acceptsProof:true},
+  {status:'UNLOADING',label:'Unloading',hint:'The vehicle is being unloaded',Icon:PackageOpen,acceptsProof:true},
   {status:'COMPLETED',label:'Complete',hint:'Tracking is finished',Icon:CircleCheckBig,acceptsProof:false},
   {status:'ISSUE',label:'Problem',hint:'Report an issue',Icon:TriangleAlert,acceptsProof:true}
 ] as const;
@@ -121,7 +121,7 @@ export function ProviderTrackingControls({trackingId,trackingMode,operationalSta
       <div className={`automatic-location ${locationState}`} role="status"><LocateFixed aria-hidden="true"/><span><strong>{!allowDeviceLocation?<Text message="Assigned Driver location"/>:locationState==='paused'?<Text message="Location updates paused"/>:locationState==='error'?<Text message="Location update failed"/>:locationState==='requesting'?<Text message="Finding Driver location…"/>:locationState==='saving'?<Text message="Saving approximate location…"/>:locationState==='saved'?<Text message="Approximate location shared · {radius} km" values={{radius:savedPrecision??precisionKm}}/>:locationState==='waiting'?<Text message="Waiting for the next location update"/>:autoLocationActive?<Text message="Location update ready"/>:<Text message="Location starts during travel"/>}</strong><small>{allowDeviceLocation?<Text message="Updates about every 10 minutes during travel. Keep this screen open and visible; updates pause when the phone locks or you leave this screen."/>:<Text message="Updates require the assigned Driver’s open, visible Tracking screen. They pause when the phone locks or that screen closes."/>}</small></span></div>
       {allowDeviceLocation?<div className="form-group tracking-location-controls"><label htmlFor={`tracking-radius-${trackingId}`}><Text message="Location privacy radius"/></label><select id={`tracking-radius-${trackingId}`} value={precisionKm} disabled={!ready||busy||submitting} onChange={event=>setPrecisionKm(Number(event.target.value))}>{TRACKING_PRIVACY_RADII_KM.map(radius=><option key={radius} value={radius}>{radius}<Text message=" km"/></option>)}</select>{savedPrecision!==null?<small><Text message="Last saved radius: {radius} km." values={{radius:savedPrecision}}/></small>:<small><Text message="No location has been saved yet."/></small>}<small><Text message="The selected radius applies to the next saved location. A larger radius shares a broader area. Changing it does not alter earlier updates."/></small>{autoLocationActive?<button type="button" className="button secondary small" disabled={busy||submitting} onClick={()=>void sendLocation()}><RefreshCw aria-hidden="true"/>{locationState==='error'?<Text message="Retry location"/>:<Text message="Update location"/>}</button>:null}{locationState==='waiting'?<small><Text message="No new location was saved. Updates are limited to once every 10 minutes."/></small>:null}</div>:null}
     </>:null}
-    {error?<div className="flash error" role="alert"><Text message={error}/></div>:null}
+    {error?<div className="flash error" role="alert"><FeedbackText message={error} fallback="The Tracking update could not be saved."/></div>:null}
     <form action={`/api/provider-shipments/${trackingId}/status`} method="post" encType="multipart/form-data" className="tracking-action-form" onSubmit={submit}>
       {returnTo?<input type="hidden" name="returnTo" value={returnTo}/>:null}
       <fieldset className="form-group tracking-action-fieldset" disabled={!ready||busy||submitting}><legend><Text message="Shipment progress"/></legend>{journey}

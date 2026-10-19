@@ -35,3 +35,12 @@ test('native logout distinguishes a revoked credential from an unconfirmed netwo
  let scope;await closeNativeSession({setSession:async()=>({error:null}),signOut:async value=>{scope=value.scope;return {error:null};}},{});assert.equal(scope,'local');
  await assert.rejects(closeNativeSession({setSession:async()=>({error:null}),signOut:async()=>({error:Error('offline')})},{}),/LOGOUT_UNCONFIRMED/);
 });
+
+test('actual native logout revokes installation authority before closing the verified Auth session',async()=>{
+ const events=[],session={access_token:'synthetic-session-token'};
+ const auth={setSession:async()=>{events.push('authenticated');return{error:null,data:{session}};},signOut:async()=>{events.push('session closed');return{error:null};}};
+ await closeNativeSession(auth,{},async value=>{assert.equal(value,session);events.push('device authority revoked');});
+ assert.deepEqual(events,['authenticated','device authority revoked','session closed']);
+ events.length=0;await assert.rejects(closeNativeSession(auth,{},async()=>{throw Error('revocation unavailable');}),/revocation unavailable/);
+ assert.deepEqual(events,['authenticated'],'unconfirmed device revocation must not be silently treated as complete logout');
+});

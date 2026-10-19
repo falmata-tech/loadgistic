@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {LANGUAGES,supportedLocale,translateMessage} from '../src/lib/i18n/core.js';
+import {LANGUAGES,supportedLocale,translateMessage,translateFeedback} from '../src/lib/i18n/core.js';
+import {localizedUpdateLabel} from '../src/lib/i18n/update-label.js';
 
 test('language preference is allowlisted and defaults to English',()=>{
- assert.deepEqual(LANGUAGES.map(l=>l.code),['en','am','om','so','ti']);
+ assert.deepEqual(LANGUAGES.map(l=>l.code),['en','am','om']);
  for(const locale of LANGUAGES)assert.equal(supportedLocale(locale.code),locale.code);
- for(const value of [null,undefined,'AM','../../secret','fr','<script>'])assert.equal(supportedLocale(value),'en');
+ for(const value of [null,undefined,'AM','../../secret','fr','so','ti','<script>'])assert.equal(supportedLocale(value),'en');
 });
 test('catalog fallback and named values preserve content without recursive translation',()=>{
  const messages={Home:'መነሻ','Hello {name}':'ሰላም {name}',Blank:'',Spaces:'  '};
@@ -19,6 +20,33 @@ test('catalog fallback and named values preserve content without recursive trans
  assert.equal(translateMessage(messages,'Hello {name}'),'ሰላም {name}');
  assert.equal(translateMessage(messages,'toString'),'toString');
 });
+test('feedback uses translated known errors and a localized fallback for unexpected server text',()=>{
+ const messages={'Could not complete this request. Please try again.':'ጥያቄዎ መፈጸም አልቻለም። እንደገና ይሞክሩ።','Invalid location':'የተሳሳተ አካባቢ'};
+ const fallback='Could not complete this request. Please try again.';
+ assert.equal(translateFeedback(messages,'am','Invalid location',fallback),'የተሳሳተ አካባቢ');
+ assert.equal(translateFeedback(messages,'am','Untranslated GPS vendor detail',fallback),messages[fallback]);
+ assert.equal(translateFeedback(messages,'en','Untranslated GPS vendor detail',fallback),'Untranslated GPS vendor detail');
+ assert.equal(translateMessage(messages,'A user-written description'),'A user-written description');
+});
+test('capacity and location freshness labels keep the selected language at all ages',()=>{
+ const now=new Date('2026-10-19T12:00:00Z');
+ const ages=[0,1,3,5,15,40];
+ for(const locale of ['am','om']){
+  const messages=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url)));
+  const t=(key,values)=>translateMessage(messages,key,values);
+  for(const kind of ['capacity','location']){
+   for(const days of ages){
+    const updatedAt=new Date(now.getTime()-days*86400000).toISOString();
+    const subject=kind==='location'?'Location':'Capacity';
+    const label=days===0?`${subject} updated today`:days<4?`${subject} updated ${days} ${days===1?'day':'days'} ago`:days<8?`${subject} updated within the past week`:days<31?`${subject} updated within the past month`:`${subject} last updated over a month ago`;
+    const translated=localizedUpdateLabel(label,t,kind);
+    assert.notEqual(translated,label,`${locale} ${kind} ${days}`);
+    if(days>0&&days<4)assert.ok(translated.includes(String(days)));
+   }
+   assert.equal(localizedUpdateLabel(undefined,t,kind),messages[`${kind==='location'?'Location':'Capacity'} update unavailable`]);
+  }
+ }
+});
 test('all translated catalogs have matching keys and named placeholders',()=>{
  const catalogs=LANGUAGES.filter(l=>l.code!=='en').map(l=>JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${l.code}.json`,import.meta.url))));
  const keys=Object.keys(catalogs[0]).sort();assert.ok(keys.length>200);
@@ -26,7 +54,7 @@ test('all translated catalogs have matching keys and named placeholders',()=>{
  for(const catalog of catalogs){assert.deepEqual(Object.keys(catalog).sort(),keys);for(const [key,value] of Object.entries(catalog)){assert.equal(typeof value,'string');assert.ok(value.trim(),key);assert.deepEqual(variables(value),variables(key),key);}}
 });
 
-test('tracking progression and corrected visible messages have all four translations',async()=>{
+test('tracking progression and corrected visible messages have both supported translations',async()=>{
  const {trackingProgress,TRACKING_JOURNEY}=await import('../src/lib/tracking-progress.js');
  const labels=new Set(['Going to pickup','Loading','En route','Unloading','Complete','Problem',
   'Save {status}','Ready to save: {status}','Current: {status}','No available update',
@@ -35,7 +63,7 @@ test('tracking progression and corrected visible messages have all four translat
  for(const current of ['CREATED','ISSUE','CANCELLED',...TRACKING_JOURNEY]){
   for(const status of TRACKING_JOURNEY)for(const recorded of [[],TRACKING_JOURNEY])for(const next of [[],TRACKING_JOURNEY])labels.add(trackingProgress(status,current,recorded,next));
  }
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url)));
   for(const label of labels){assert.ok(messages[label],`${locale}: ${label}`);assert.notEqual(messages[label],label,`${locale}: ${label}`);}
  }
@@ -44,7 +72,7 @@ test('tracking progression and corrected visible messages have all four translat
 test('launch journeys have contextual messages in every supported non-English locale',()=>{
  const keys=[...JSON.parse(readFileSync(new URL('../resources/i18n/launch-message-keys.json',import.meta.url))),...JSON.parse(readFileSync(new URL('../resources/i18n/featured-review-message-keys.json',import.meta.url)))];
  assert.equal(new Set(keys).size,keys.length);
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url)));
   for(const key of keys){assert.ok(messages[key]?.trim(),`${locale}: ${key}`);assert.notEqual(messages[key],key,`${locale}: ${key}`);}
   const value='Home · Adama · +251900000001';

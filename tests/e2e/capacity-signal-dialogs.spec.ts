@@ -1,8 +1,10 @@
-import {auditDeleteVehicles,auditProvider,checked} from './audit-helpers';
+import {auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
 import {auditLogin} from './audit-helpers';
-import {expect,test} from '@playwright/test';
+import {expect,test} from './browser-test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
+import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 async function login(page:any,email='driver@loadgistic.local'){await auditLogin(page,email);}
 
@@ -112,16 +114,28 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
 
 test('regular service and location edit in bounded dialogs with real saves',async({page,context}:{page:any;context:any},testInfo:any)=>{
   test.setTimeout(90_000);
+  const service=localAuditService(),actor=await auditProvider(service,'regular-location');let vehicleId='';
+  try{
+  vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Route editor',model:'Assigned truck',plate:`RLOC-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  const places=checked(await service.from('place_catalog').select('id,name').in('normalized_name',['addis ababa','adama']));
+  const from=places.find((place:{name:string})=>place.name==='Addis Ababa'),to=places.find((place:{name:string})=>place.name==='Adama');expect(from&&to).toBeTruthy();
+  await publishProviderCapacity(actor,{vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:20,currentRoutePlaces:[{placeRef:from.id},{placeRef:to.id}]});
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:9.03,longitude:38.76});
   const automatic=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location'));
-  await login(page);expect((await automatic).ok()).toBe(true);
+  await login(page,actor.email);expect((await automatic).ok()).toBe(true);
   const map=page.getByTestId('capacity-summary').locator('.leaflet-container');
   await expect(map).toBeVisible();
   await map.evaluate((element:HTMLElement)=>element.setAttribute('data-original-map','yes'));
   await page.getByRole('button',{name:/^Edit regular service:/}).click();
   const regular=page.getByRole('dialog',{name:'Regular service',exact:true});
-  await expect(regular.getByRole('combobox').first()).not.toHaveValue('');
+  await expect(regular.locator('input[name="vehicleId"]')).toHaveValue(vehicleId);
+  await expect(regular.locator('input[name="expectedDriverId"]')).toHaveValue(actor.id);
+  await expect(regular.getByRole('combobox').first()).toHaveValue('');
+  for(const [index,city] of [[1,'Addis Ababa'],[2,'Adama']]){
+    await regular.getByRole('combobox',{name:`Route city ${index}`,exact:true}).fill(city);
+    await regular.getByRole('option',{name:new RegExp(`^${city},`)}).first().click();
+  }
   await expect(regular.getByRole('button',{name:'Empty',exact:true})).toHaveCount(0);
   if(testInfo.project.name.includes('mobile'))await page.setViewportSize({width:320,height:640});
   await expect(regular.getByRole('button',{name:'Save',exact:true})).toBeInViewport();
@@ -130,6 +144,8 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
   expect(dialogBounds!.height).toBeLessThan(page.viewportSize()!.height);
   await page.screenshot({path:testInfo.outputPath('regular-service-dialog.png')});
   await save(page,regular,'Save','/api/capacity/corridors');
+  const savedRoute=checked(await service.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id,route_points_json').eq('assigned_vehicle_id',vehicleId).single());
+  expect(savedRoute.assigned_driver_user_id).toBe(actor.id);expect(savedRoute.route_points_json).toHaveLength(2);
   await expect(map).toHaveAttribute('data-original-map','yes');
   await page.getByRole('button',{name:'Edit approximate location',exact:true}).click();
   const location=page.getByRole('dialog',{name:'Approximate location',exact:true});
@@ -152,6 +168,15 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
   const dock=await page.getByRole('region',{name:'Approximate truck location controls'}).boundingBox();
   expect(rail!.y+rail!.height).toBeLessThanOrEqual(dock!.y);
   await page.screenshot({path:testInfo.outputPath('saved-map.png')});
+  }finally{
+    const routeIds=checked(await service.from('profile_routes').select('id').eq('provider_profile_id',actor.provider_profile_id));
+    const capacityIds=vehicleId?checked(await service.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
+    const ids=[vehicleId,...routeIds.map((row:{id:string})=>row.id),...capacityIds.map((row:{id:string})=>row.id)].filter(Boolean);
+    if(ids.length)checked(await service.from('audit_logs').delete().in('entity_id',ids));
+    checked(await service.from('profile_routes').delete().eq('provider_profile_id',actor.provider_profile_id));
+    if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
+    checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
+  }
 });
 
 test('fleet owners edit capacity but cannot substitute their device location',async({page}:{page:any})=>{

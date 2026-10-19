@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {trackingLeases,freshBackgroundFix,backgroundLocationDue} from '../src/location/background-state.ts';
-const now=1800000000000,lease={actorId:'11111111-1111-4111-8111-111111111111',shipmentId:'22222222-2222-4222-8222-222222222222',token:'a'.repeat(43),radius:20,expiresAt:new Date(now+86400000).toISOString(),absoluteExpiresAt:new Date(now+30*86400000).toISOString(),lastAttempt:0};
+const now=1800000000000,lease={actorId:'11111111-1111-4111-8111-111111111111',shipmentId:'22222222-2222-4222-8222-222222222222',bindingId:'33333333-3333-4333-8333-333333333333',bindingRevision:'44444444-4444-4444-8444-444444444444',token:'a'.repeat(43),radius:20,expiresAt:new Date(now+86400000).toISOString(),absoluteExpiresAt:new Date(now+30*86400000).toISOString(),lastAttempt:0};
 test('background storage accepts only unexpired shipment-specific credentials with <=20-km precision',()=>{
  assert.deepEqual(trackingLeases([lease],now),[lease]);
  for(const change of [{token:'account.jwt.token'},{token:'bad'},{actorId:''},{shipmentId:''},{radius:40},{radius:2},{expiresAt:'bad'},{expiresAt:new Date(now).toISOString()},{absoluteExpiresAt:new Date(now).toISOString()}])assert.deepEqual(trackingLeases([{...lease,...change}],now),[]);

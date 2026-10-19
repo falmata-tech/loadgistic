@@ -48,8 +48,6 @@ export async function auditProvider(service:any,prefix:string,{contentPolicyAcce
   // Real managed signup creates the unpublished company page atomically.
   // Keep synthetic providers valid when Account embeds their profile editor.
   checked(await service.from('company_pages').insert({provider_profile_id:provider.id,headline:'Self-managed transport services',about:'Complete this transporter profile before publishing.',published:false}));
-  const plan=checked(await service.from('plans').select('id').eq('audience','DRIVER').eq('active',true).limit(1).single());
-  checked(await service.from('subscriptions').insert({provider_profile_id:provider.id,plan_id:plan.id,status:'SPONSORED',billing_model:'SPONSORED_FREE',starts_at:new Date().toISOString()}));
   if(contentPolicyAccepted)await acceptAuditContentPolicy(service,id);
   return {id,email,role:'DRIVER',driver_kind:'SELF_MANAGED',provider_profile_id:provider.id,suffix};
  }catch(error){checked(await service.auth.admin.deleteUser(id));throw error;}
@@ -99,4 +97,12 @@ export async function auditFleetDriver(service:any,owner:any,vehicleId:string){
  const {updateFleetDriverAccess}=await import('../../src/lib/fleet.js');
  await updateFleetDriverAccess(owner,id,{vehicleId,canManageCapacity:true,canManageTracking:true});
  return {id,role:'DRIVER',driver_kind:'COMPANY',organization_id:owner.organization_id};
+}
+
+// Tracking opens its floating progress panel deliberately, keeping map space free.
+export async function auditOpenTrackingProgress(page:any){
+ const toggle=page.locator('.tracking-progress-toggle');
+ await expect(toggle).toBeVisible();await expect(toggle).toBeEnabled();
+ if(await toggle.getAttribute('aria-expanded')==='false')await toggle.click();
+ await expect(page.locator('.tracking-progress-body')).toBeVisible();
 }

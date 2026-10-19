@@ -1,7 +1,7 @@
 ---
 id: FEAT-NOT-001
 title: Chat and driver handover alerts with visible-message read receipts
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SUP-001, FEAT-TRQ-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-LNG-001, FEAT-SEC-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SUP-001, FEAT-TRQ-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-LNG-001, FEAT-SEC-001, FEAT-ENT-001]
 problem: Customers and staff miss incoming chats, assignments and replies, while fetching a transcript is not evidence that someone viewed it.
 behavior: Existing provider Support and visitor transport conversations expose authorized unread counts and explicit Seen receipts. Contextual alerts distinguish assignment, actual assigned-agent opening, new waiting work, new unread messages and ended/resolved state. Sound and system delivery are opt-in; unavailable notification delivery never breaks chat or fabricates Seen/online state.
 contracts: [ChatReadAcknowledgement, ChatReadState, ChatAlertSnapshot, ChatAlertDelivery, DriverHandoverAlert, BrowserAlertDelivery, NativePushInstallation, NativePushBinding, NativePushOutbox]
@@ -10,6 +10,34 @@ rollout: Implement and verify locally with RLS/private service-only commands and
 ---
 
 # Chat alerts and read receipts
+
+## October 18 business customer push compatibility — implemented locally
+
+FEAT-ENT-001 retires visitor Brokerage push and adds verified business customer
+members to their own software Support notification audience. Native registration
+and every deferred delivery must accept a current provider/driver identity or a
+current active business membership. A stored SHIPPER role, saved selection,
+invitation or expired membership is not authority. This is the same person's
+private software Support context and does not subscribe them to teammates' chats.
+
+Given a verified business owner or teammate has an active authenticated session
+and opts in on a supported native build\
+Then their private installation may register for their own software Support\
+And changing presentation workspace alone does not revoke that own-person binding.
+
+Given the last eligible business membership is removed or archived, the identity
+is suspended/erased, or the exact Auth session expires or is removed\
+Then the next registration and deferred-send recheck deny the binding\
+And platform ADMIN/SUPPORT and retired guest Brokerage never gain native access.
+
+Preserve installation-secret checks, token transfer, the ten-device bound,
+outbox leases, unread/read authority, generic lock-screen content and logout.
+Migration166 and rollback-only `tests/sql/business-native-push.sql` pass the
+isolated clone, and the exact reviewed source is installed in the local preview.
+The active installation receipt is retained in the ignored October18 review
+folder. An Expo ticket, local SQL or browser preview does not prove physical
+closed-phone delivery. Hosted installation and physical device testing remain
+separate gates.
 
 ## Scope and delivery decision
 

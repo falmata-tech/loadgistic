@@ -1,13 +1,17 @@
 import { discoveryParams, type TruckFilters } from './discovery.ts';
 import { capacityLoadPreference, type CapacityLoadPreference } from '../../../../src/lib/capacity-load-preferences.js';
+import {publicTruckAuthority} from '../../../../src/lib/public-truck-authority.js';
+import type {TruckAuthority} from './public-content';
+import {publicAsset} from '../../../../src/lib/mobile/public-contract.js';
+import {locationSourceKind} from '../../../../src/lib/location-source.js';
 export type SignalPoint = {latitude:number;longitude:number;label:string};
 export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};
 export type CapacitySignal = {
-  id: string; provider: string; handle: string; driver: string;
+  authority?:TruckAuthority; id: string; provider: string; handle: string; driver: string;portrait:string;
   truck: string; status: 'EMPTY' | 'PARTIAL';
   acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
   latitude: number | null; longitude: number | null;
-  capacityAge: string; locationAge: string; configuration:string;
+  capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|'MANUAL'|null;locationIsDemo?:boolean;
   geometry:'ROUTE'|'RADIUS'|null; currentVisible:boolean; currentPoints:SignalPoint[];
   precisionKm:number; regular:RegularSignal[];
 };
@@ -43,13 +47,15 @@ export function parseCapacityPage(value: unknown): CapacityPage {
     if (row.status !== 'EMPTY' && row.status !== 'PARTIAL') continue;
     const id = text(row.id), driver = text(row.assigned_driver_first_name);
     if (!id || !driver) continue;
-    items.push({ id, driver, provider: text(row.provider_name), handle: text(row.provider_handle),
+    const latitude=coordinate(row.location_lat,90),longitude=coordinate(row.location_lng,180);
+    const currentVisible=row.current_signal_geometry_visible!==false;
+    items.push({ ...(row.authority?{authority:publicTruckAuthority(row.authority)}:{}),id, driver,portrait:publicAsset(row.assigned_driver_portrait_url), provider: text(row.provider_name), handle: text(row.provider_handle),
       truck: [text(row.vehicle_make), text(row.vehicle_model)].filter(Boolean).join(' '),
       status: row.status, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
-      latitude: coordinate(row.location_lat, 90), longitude: coordinate(row.location_lng, 180),
-      capacityAge: text(row.capacity_updated_label), locationAge: text(row.location_updated_label),
+      latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,
+      capacityAge: text(row.capacity_updated_label), locationAge: text(row.location_updated_label),locationSource:locationSourceKind(row.location_source),
       configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':row.availability_geometry==='RADIUS'?'RADIUS':null,
-      currentVisible:row.current_signal_geometry_visible!==false,
+      currentVisible,
       currentPoints:points(row.availability_geometry==='ROUTE'?row.current_route_points:row.capacity_area_boundary),
       precisionKm:typeof row.location_precision_km==='number'&&Number.isFinite(row.location_precision_km)&&row.location_precision_km>0?row.location_precision_km:20,
       regular:Array.isArray(row.recurring_corridors)?row.recurring_corridors.slice(0,1).flatMap(raw=>{

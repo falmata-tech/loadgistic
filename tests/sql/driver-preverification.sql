@@ -1,11 +1,25 @@
 -- FEAT-FLT-001 / FEAT-IAM-001: isolated fixtures, all changes rolled back.
 begin;
 do $test$
-declare owner_id uuid; outsider uuid; recipient uuid:=gen_random_uuid(); other_id uuid:=gen_random_uuid();
+declare owner_id uuid; outsider uuid; independent_id uuid; recipient uuid:=gen_random_uuid(); other_id uuid:=gen_random_uuid();
   email_value text; input jsonb; vehicle_id uuid; private_phone text; candidate uuid; other_org uuid:=gen_random_uuid();
 begin
-  select id into strict owner_id from profiles where email='transporter@loadgistic.local';
-  select id into strict outsider from profiles where email='driver@loadgistic.local';
+  select p.id into strict owner_id from profiles p
+    join auth.users identity on identity.id=p.id and identity.deleted_at is null and identity.email_confirmed_at is not null
+    join organization_members member on member.user_id=p.id and member.membership_role='OWNER'
+    join organizations organization on organization.id=member.organization_id and organization.type='TRANSPORT_COMPANY'
+    where p.active and p.role='TRANSPORTER' order by p.id limit 1;
+  perform accept_content_policy(owner_id,'2026-10-09');
+  -- Employed drivers cannot manage a fleet; personal providers now can.
+  select p.id into strict outsider from profiles p join drivers employee on employee.user_id=p.id and employee.active
+    join auth.users identity on identity.id=p.id and identity.deleted_at is null and identity.email_confirmed_at is not null
+    where p.active and p.role='DRIVER' and fleet_driver_matches_scope(p.id,employee.organization_id,employee.provider_profile_id)
+      and not exists(select 1 from provider_profiles provider where provider.user_id=p.id)
+      and not exists(select 1 from organization_members member where member.user_id=p.id and member.membership_role='OWNER')
+    order by p.id limit 1;
+  select p.id into strict independent_id from profiles p join provider_profiles provider on provider.user_id=p.id
+    join auth.users identity on identity.id=p.id and identity.deleted_at is null and identity.email_confirmed_at is not null
+    where p.active and p.role='DRIVER' order by p.id limit 1;
   email_value:='unverified-'||recipient||'@loadgistic.local';
   input:=jsonb_build_object('email',email_value,'name','Unverified Driver','phone','+251900000001');
   if fleet_driver_registration_target(owner_id,input) is not null then raise exception 'UNEXPECTED_IDENTITY';end if;
@@ -26,7 +40,7 @@ begin
   if (select can_manage_capacity or can_manage_tracking from driver_permissions where user_id=recipient) then raise exception 'BROAD_DEFAULTS';end if;
   perform set_config('request.jwt.claim.sub',recipient::text,true);
   if current_user_projection() is not null then raise exception 'UNVERIFIED_WORKSPACE_ACCESS';end if;
-  vehicle_id:=(create_provider_vehicle(owner_id,'{"make":"Isuzu","model":"Test","plate":"UNVERIFIED-123","cargo_configuration":"Mini Box Truck"}')->>'id')::uuid;
+  vehicle_id:=(create_provider_vehicle(owner_id,'{"make":"Isuzu","model":"Test","plate":"UNVERIFIED-123","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;
   perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',recipient,'vehicle_id',vehicle_id,'can_manage_capacity',true,'can_manage_tracking',true));
   if capacity_active_driver_id(vehicle_id) is distinct from recipient then raise exception 'UNVERIFIED_ASSIGNMENT_BLOCKED';end if;
   update auth.users set email_confirmed_at=now() where id=recipient;
@@ -46,7 +60,7 @@ begin
     exception when raise_exception then if sqlerrm<>'DRIVER_ACCOUNT_CONFLICT' then raise;end if;
   end;
   -- Provider/self-managed identities cannot be captured by a fleet.
-  foreach candidate in array array[owner_id,outsider] loop
+  foreach candidate in array array[owner_id,independent_id] loop
     begin perform fleet_driver_registration_target(owner_id,input||jsonb_build_object('email',(select email from profiles where id=candidate)));raise exception 'EXISTING_ACCOUNT_ADOPTED';
       exception when raise_exception then if sqlerrm<>'DRIVER_ACCOUNT_CONFLICT' then raise;end if;end;
   end loop;

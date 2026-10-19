@@ -2,7 +2,7 @@ import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {canEditAccountDetails,parseAccountDetails} from '../account-details.js';
 
 export interface AccountDetailsActor {id:string;role:string;active:boolean}
-export interface AccountDetailsInput {name:string;phone:string}
+export type AccountDetailsInput = {name:string;phone:string} | {firstName:string;lastName:string;phone:string;publicCallbackPhone?:string};
 
 export async function updateOwnAccountDetails(actor:AccountDetailsActor,input:unknown):Promise<void>{
   if(!canEditAccountDetails(actor))throw new Error('FORBIDDEN');

@@ -2,42 +2,67 @@
 import React from 'react';
 import {useBlockedProviders} from './content-safety';
 import Link from 'next/link';
-import {Building2,UserRound,UserRoundCheck,MapPin,ArrowRight,RefreshCw} from 'lucide-react';
-import {Text,Localized} from './localization';
+import {UserRound,MapPin,ArrowRight,RefreshCw} from 'lucide-react';
+import {Text,FeedbackText,Localized} from './localization';
 import {LoadingIndicator} from './loading-state';
 import type {CapacitySearchKind,CapacitySearchResult,CapacitySearchItem} from '@/lib/capacity-search';
-export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport company',OWNER_OPERATOR:'Independent driver',SELF_MANAGED_DRIVER:'Independent driver',COMPANY_DRIVER:'Company driver'};
-const icons={COMPANY:Building2,OWNER_OPERATOR:UserRoundCheck,SELF_MANAGED_DRIVER:UserRound,COMPANY_DRIVER:UserRound};
-export function CapacitySearchResults({query,view,searchPath}:{query:Record<string,string>;view:'open'|'private'|'loadgistic';searchPath:string}){
+import {TRANSPORTER_SEARCH_TIMEOUT_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
+export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport Provider',OWNER_OPERATOR:'Transport Provider',SELF_MANAGED_DRIVER:'Transport Provider',COMPANY_DRIVER:'Driver'};
+export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiPath='/api/capacity-search',active=true,requestVersion=0,render,onProfileSelect}:{query:Record<string,string>;mapQuery?:Record<string,string>;view:'open'|'private'|'loadgistic';searchPath:string;apiPath?:string;active?:boolean;requestVersion?:number;render?:(content:React.ReactNode)=>React.ReactNode;onProfileSelect?:()=>void}){
  const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
- const [page,setPage]=React.useState(1),[result,setResult]=React.useState(null as CapacitySearchResult|null),[loading,setLoading]=React.useState(true),[failed,setFailed]=React.useState(false),[retry,setRetry]=React.useState(0);
  const key=JSON.stringify({...query,...(blocked.length?{blocked:blockKey}:{})});
+ const searchKey=JSON.stringify([key,view,searchPath,apiPath,requestVersion]);
+ const [pagination,setPagination]=React.useState({key:searchKey,page:1}),[response,setResponse]=React.useState(null as {identity:string;data:CapacitySearchResult}|null),[failure,setFailure]=React.useState(null as string|null),[retry,setRetry]=React.useState(0),[completed,setCompleted]=React.useState(0);
+ const page=pagination.key===searchKey?pagination.page:1;
+ const identity=active&&transporterSearchQuery(query.q)?JSON.stringify([searchKey,page,retry]):null;
+ const wanted=React.useRef(null as {identity:string;params:URLSearchParams}|null);
+ const pending=React.useRef(null as {controller:AbortController;timeout:ReturnType<typeof setTimeout>|null}|null);
+ const mounted=React.useRef(false);
+ const params=new URLSearchParams(JSON.parse(key));params.set('page',String(page));if(view!=='open')params.set('view',view);
+ wanted.current=identity?{identity,params}:null;
+ const result=response?.identity===identity?response?.data:null,failed=identity!==null&&failure===identity,loading=!result&&!failed;
+ React.useEffect(()=>{setPagination({key:searchKey,page:1});},[searchKey]);
  React.useEffect(()=>{
-  let alive=true;const controller=new AbortController();setLoading(true);setFailed(false);
-  const params=new URLSearchParams(JSON.parse(key));params.set('page',String(page));if(view!=='open')params.set('view',view);
-  const timeout=setTimeout(()=>{controller.abort();if(alive){setFailed(true);setLoading(false);}},15000);
-  fetch(`/api/capacity-search?${params}`,{signal:controller.signal,cache:'no-store'}).then(async response=>{if(!response.ok)throw new Error();const data=await response.json() as CapacitySearchResult;if(!controller.signal.aborted)setResult(data);}).catch(()=>{if(!controller.signal.aborted)setFailed(true);}).finally(()=>{clearTimeout(timeout);if(!controller.signal.aborted)setLoading(false);});
-  return()=>{alive=false;clearTimeout(timeout);controller.abort();};
- },[key,page,view,retry]);
- function target(handle:string,id:string|null){const params=new URLSearchParams(query);params.delete('q');params.delete('truck');params.delete('resultKind');params.set('provider',handle);if(id)params.set('truck',id);return `${searchPath}?${params}`;}
- return <section className="capacity-result-panel" aria-live="polite" aria-busy={loading}>
-  {loading?<LoadingIndicator label="Finding matches…"/>:failed?<div role="alert" className="capacity-result-empty"><Text message="Search is temporarily unavailable. Please try again."/><button type="button" className="button secondary" onClick={()=>setRetry((v:number)=>v+1)}><RefreshCw/><Text message="Try again"/></button></div>:result?.filterError?<p role="alert"><Text message={result.filterError}/></p>:<>
+  mounted.current=true;
+  return()=>{mounted.current=false;const request=pending.current;pending.current=null;if(request){request.controller.abort();if(request.timeout!==null)clearTimeout(request.timeout);}};
+ },[view,searchPath,apiPath]);
+ React.useEffect(()=>{
+  const desired=wanted.current;
+  if(!desired){if(response)setResponse(null);if(failure)setFailure(null);return;}
+  if(pending.current||response?.identity===desired.identity||failure===desired.identity)return;
+  const controller=new AbortController(),request={controller,timeout:null as ReturnType<typeof setTimeout>|null};pending.current=request;
+  let finished=false;
+  function finish(){if(finished)return;finished=true;if(request.timeout!==null)clearTimeout(request.timeout);if(pending.current===request){pending.current=null;if(mounted.current)setCompleted((value:number)=>value+1);}}
+  request.timeout=setTimeout(()=>{controller.abort();if(mounted.current&&wanted.current?.identity===desired.identity)setFailure(desired.identity);finish();},TRANSPORTER_SEARCH_TIMEOUT_MS);
+  // Aborting a browser request does not prove its database work stopped. Keep
+  // one issued request until its body settles; only the latest interest runs next.
+  fetch(`${apiPath}?${desired.params}`,{signal:controller.signal,cache:'no-store'}).then(async incoming=>{
+   if(!incoming.ok)throw new Error();const data=await incoming.json() as CapacitySearchResult;
+   if(!data||!Array.isArray(data.items))throw new Error();
+   if(mounted.current&&!controller.signal.aborted&&wanted.current?.identity===desired.identity)setResponse({identity:desired.identity,data});
+  }).catch(()=>{if(mounted.current&&!controller.signal.aborted&&wanted.current?.identity===desired.identity)setFailure(desired.identity);}).finally(finish);
+ },[identity,completed,response?.identity,failure]);
+ function target(handle:string,id:string|null){const params=new URLSearchParams(mapQuery);params.delete('q');params.delete('truck');params.delete('resultKind');params.set('provider',handle);if(id)params.set('truck',id);return `${searchPath}?${params}`;}
+ if(!identity)return render?render(null):null;
+ const content=<section className="capacity-result-panel" aria-live="polite" aria-busy={loading}>
+  {loading?<LoadingIndicator label="Finding transporters"/>:failed?<div role="alert" className="capacity-result-empty"><Text message="Search is temporarily unavailable. Please try again."/><button type="button" className="button secondary" onClick={()=>setRetry((v:number)=>v+1)}><RefreshCw/><Text message="Try again"/></button></div>:result?.filterError?<p role="alert"><FeedbackText message={result.filterError} fallback="Search is temporarily unavailable. Please try again."/></p>:<>
    <p className="capacity-result-count"><Text message="{count} results" values={{count:result?.total||0}}/></p>
-   {!result?.items.length?<p className="capacity-result-empty"><Text message="No matches. Try another name or adjust your filters."/></p>:<div className="capacity-result-list">{result.items.map((item:CapacitySearchItem)=>{const Icon=icons[item.kind];return <article className={`capacity-result-card kind-${item.kind.toLowerCase()}`} key={item.key} data-result-kind={item.kind}>
-    <header><span className="capacity-result-icon"><Icon aria-hidden="true"/></span><div><small><Text message={SEARCH_KIND_LABELS[item.kind]}/></small><h3>{item.title}</h3></div></header>
-    {item.identifier?<span className="capacity-result-identifier">{`@${item.identifier}`} </span>:null}
-    {item.subtitle?<p>{item.subtitle}</p>:null}
+   {!result?.items.length?<p className="capacity-result-empty"><Text message="No transporters match this search. Try an account name, manager name, handle or city."/></p>:<div className="capacity-result-list">{result.items.map((item:CapacitySearchItem)=>{return <article className={`capacity-result-card${item.kind==='COMPANY_DRIVER'?' kind-company_driver':''}`} key={item.key} data-result-kind={item.kind}>
+    <header><span className="capacity-result-icon"><UserRound aria-hidden="true"/></span><div><small><Text message={SEARCH_KIND_LABELS[item.kind]}/></small><h3>{item.kind==='COMPANY_DRIVER'?item.title:item.accountName||item.title}</h3>{item.kind!=='COMPANY_DRIVER'&&item.handle?<span className="capacity-result-identifier">@{item.handle}</span>:null}</div></header>
+    {item.kind!=='COMPANY_DRIVER'&&item.managerName?<p><Text message="Account manager"/> · {item.managerName}</p>:null}
+    {item.kind==='COMPANY_DRIVER'?<p><Text message="Transport Provider"/> · {item.accountName||item.subtitle||`@${item.handle}`}</p>:null}
     {item.city?<p className="capacity-result-city"><MapPin aria-hidden="true"/>{item.city}</p>:null}
     {item.description?<p className="capacity-result-description">{item.description}</p>:null}
-    <small><Text message="{count} matching trucks" values={{count:item.matching_trucks}}/></small>
-    <footer><Link href={target(item.handle,item.kind==='COMPANY_DRIVER'?item.capacity_id:null)}><Text message={item.kind==='COMPANY_DRIVER'?'Show on map':'Show trucks on map'}/><ArrowRight aria-hidden="true"/></Link><Link href={`/@${item.handle}`}><Text message="Profile"/></Link></footer>
+    <small><Text message="{count} matching vehicles" values={{count:item.matching_trucks}}/></small>
+    <footer><Link href={target(item.handle,item.kind==='COMPANY_DRIVER'?item.capacity_id:null)} onClick={onProfileSelect}><Text message={item.kind==='COMPANY_DRIVER'?'Show on map':'Show vehicles on map'}/><ArrowRight aria-hidden="true"/></Link><Link href={`/@${item.handle}`}><Text message={item.kind==='COMPANY_DRIVER'?'Transport Provider':'Profile'}/></Link></footer>
    </article>;})}</div>}
-   {(result?.total||0)>15?<Localized as="nav" copy={["aria-label"]} className="capacity-result-pagination" aria-label="Search result pages"><button type="button" className="button secondary" disabled={page===1} onClick={()=>setPage((n:number)=>n-1)}><Text message="Previous"/></button><span>{page} / {Math.ceil((result?.total||0)/15)}</span><button type="button" className="button secondary" disabled={!result?.hasMore} onClick={()=>setPage((n:number)=>n+1)}><Text message="Next"/></button></Localized>:null}
+   {(result?.total||0)>15?<Localized as="nav" copy={["aria-label"]} className="capacity-result-pagination" aria-label="Search result pages"><button type="button" className="button secondary" disabled={page===1} onClick={()=>setPagination({key:searchKey,page:page-1})}><Text message="Previous"/></button><span>{page} / {Math.ceil((result?.total||0)/15)}</span><button type="button" className="button secondary" disabled={!result?.hasMore} onClick={()=>setPagination({key:searchKey,page:page+1})}><Text message="Next"/></button></Localized>:null}
   </>}
  </section>;
+ return render?render(content):content;
 }
-const documentOptions:Record<string,Array<[string,string]>>={ownerDocs:[['IDENTITY','National ID'],['BUSINESS_LICENSE','Business License'],['BUSINESS_ADDRESS','Business Address']],driverDocs:[['IDENTITY','National ID'],['DRIVER_IDENTITY','Driving licence']],truckDocs:[['VEHICLE_OWNERSHIP','Truck ownership'],['VEHICLE_AUTHORIZATION','Permission to use truck']]};
+const documentOptions:Record<string,Array<[string,string]>>={ownerDocs:[['IDENTITY','National ID'],['BUSINESS_LICENSE','Business License'],['BUSINESS_ADDRESS','Business Address']],driverDocs:[['IDENTITY','National ID'],['DRIVER_IDENTITY','Driving licence']],truckDocs:[['VEHICLE_OWNERSHIP','Vehicle ownership'],['VEHICLE_AUTHORIZATION','Permission to use vehicle'],['VEHICLE_OPERATING_LICENSE','Vehicle operating licence']]};
 export function CapacityDocumentFilters({query}:{query:Record<string,string>}){
  const [selected,setSelected]=React.useState(()=>Object.fromEntries(Object.keys(documentOptions).map(key=>[key,(query[key]||'').split(',').filter(Boolean)])) as Record<string,string[]>);
- return <fieldset className="capacity-document-filters"><legend><Text message="Reviewed documents"/></legend><p><Text message="Only current, approved documents. Every selected document must match."/></p>{Object.entries(documentOptions).map(([key,options])=><div key={key}><strong><Text message={key==='ownerDocs'?'Company or owner':key==='driverDocs'?'Driver documents':'Truck documents'}/></strong><input type="hidden" name={key} value={selected[key].join(',')}/>{options.map(([value,label])=><label className="checkbox-label" key={value}><input type="checkbox" checked={selected[key].includes(value)} onChange={event=>setSelected((old:Record<string,string[]>)=>({...old,[key]:event.target.checked?[...old[key],value]:old[key].filter((v:string)=>v!==value)}))}/><Text message={label}/></label>)}</div>)}</fieldset>;
+ return <fieldset className="capacity-document-filters"><legend><Text message="Reviewed documents"/></legend><p><Text message="Only current, approved documents. Every selected document must match."/></p>{Object.entries(documentOptions).map(([key,options])=><div key={key}><strong><Text message={key==='ownerDocs'?'Company or owner':key==='driverDocs'?'Driver documents':'Vehicle documents'}/></strong><input type="hidden" name={key} value={selected[key].join(',')}/>{options.map(([value,label])=><label className="checkbox-label" key={value}><input type="checkbox" checked={selected[key].includes(value)} onChange={event=>setSelected((old:Record<string,string[]>)=>({...old,[key]:event.target.checked?[...old[key],value]:old[key].filter((v:string)=>v!==value)}))}/><Text message={label}/></label>)}</div>)}</fieldset>;
 }

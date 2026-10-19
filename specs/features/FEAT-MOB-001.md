@@ -11,6 +11,22 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — Android test release verified
 
+## Cross-platform confirmations — October 14 local repair
+
+Given an authorized provider chooses Remove driver, Cancel invitation, Remove
+capacity access, Remove Tracking recipient or Cancel Tracking\
+When the app runs on a phone or in its Expo browser preview\
+Then the existing confirmation text and explicit confirm/cancel choices appear\
+And cancelling, dismissing or backing out sends no mutation\
+And confirming invokes the existing command once, with its current session,
+authorization, unfinished-Tracking restrictions and history retention unchanged\
+And failures remain visible in the originating screen; no permission or server
+validation is weakened to compensate for a missing browser Alert adapter.
+
+Verification: focused confirmation state/command tests and actual Expo browser
+controls with persisted readback, cancellation and command-denial checks. Local
+visual review and installed Android validation remain separate release gates.
+
 October 12 verification: final source 04e27fe, CI 38297279274 all eight jobs,
 165 mobile tests and actual standalone normal login, grants, two-area navigation,
 map Home, service cold restoration and sign-out pass. Exact owner-approved
@@ -216,7 +232,7 @@ Then full truck matches only Empty records accepting full loads; shared space
 matches Empty shared-only/either and Partial shared records. Physical occupancy
 is labeled separately, never presented as the driver's accepted-load preference.
 The existing contradictory-filter repair and scoped public/private search remain.
-All fixed labels are translated in the five supported languages; user data is not.
+All fixed labels are translated in English, Amharic and Afaan Oromo; user data is not.
 
 Focused evidence must cover mixed/coincident cluster counts and expansion, saved
 preferences across both clients, partial exclusion, private/actor denials and map
@@ -925,7 +941,7 @@ copy. Capacity and transporter entry remain accessible without creating an accou
 Privacy and terms open the published website in the phone browser; mobile must not
 silently rewrite unresolved legal wording (WEB-MOB-006).
 
-Given English, Amharic, Afaan Oromo, Somali or Tigrinya is selected
+Given English, Amharic or Afaan Oromo is selected
 Then app-owned messages use the shared catalogs and a device-local saved preference.
 Names, handles, routes, descriptions, messages and other user content are never
 passed through translation by generic text components. Missing app-owned translations

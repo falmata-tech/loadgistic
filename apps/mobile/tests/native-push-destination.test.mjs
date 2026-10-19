@@ -8,7 +8,7 @@ test('notification events open only the existing authorized phone destinations',
  for(const kind of ['SUPPORT','BROKERAGE','HANDOVER']){
   for(const event of ['MESSAGE','ASSIGNED','JOINED','ENDED','RESOLVED','APPROVED']){
    const expected=kind==='HANDOVER'?event==='APPROVED'?{pathname:'/shipment-detail',params:{id:sourceId}}:null
-    :event==='APPROVED'?null:kind==='SUPPORT'?{pathname:'/support-chat',params:{id:sourceId}}:{pathname:'/arrange-transport'};
+    :event==='APPROVED'?null:kind==='SUPPORT'?{pathname:'/support-chat',params:{id:sourceId}}:null;
    assert.deepEqual(nativePushDestination(payload(kind,event)),expected);
   }
  }

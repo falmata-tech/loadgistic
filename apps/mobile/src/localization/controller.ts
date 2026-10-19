@@ -1,6 +1,6 @@
 export const languages = [
   {code:'en',name:'English'}, {code:'am',name:'አማርኛ'},
-  {code:'om',name:'Afaan Oromo'}, {code:'so',name:'Soomaali'}, {code:'ti',name:'ትግርኛ'},
+  {code:'om',name:'Afaan Oromo'},
 ] as const;
 export type Locale = typeof languages[number]['code'];
 export type Messages = Record<string,string>;

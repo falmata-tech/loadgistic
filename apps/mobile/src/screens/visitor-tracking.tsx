@@ -1,13 +1,23 @@
 import {useLanguage} from '../localization/provider';
 import { AppLink } from '../components/app-link';
 import { useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator,ScrollView,StyleSheet,View } from 'react-native';
 import { VisitorAccess } from '../components/visitor-access';
 import { Page, Title, Copy, Card, Button, ErrorText } from '../components/ui';
 import { useVisitorQuery } from '../hooks/visitor-query';
 import { statusLabel } from '../api/tracking';
 import {parseTrackingPage,type TrackingPage} from '../api/runtime-content';
-export default function VisitorTracking() { return <Page><VisitorAccess scope="tracking"><Shipments /></VisitorAccess></Page>; }
+import {useVisitor} from '../session/visitor-provider';
+import {Map,Camera} from '../components/map-platform';
+import {mapStyle} from '../components/map-style';
+export default function VisitorTracking() {
+ const visitor=useVisitor();
+ if(visitor.ready&&visitor.snapshot.foreground&&visitor.snapshot.tracking)return <Page><VisitorAccess scope="tracking"><Shipments /></VisitorAccess></Page>;
+ return <View style={{flex:1}}>
+  <View style={StyleSheet.absoluteFill}><Map style={{flex:1}} mapStyle={mapStyle} attribution><Camera initialViewState={{center:[39.5,9],zoom:5}}/></Map></View>
+  <ScrollView pointerEvents="box-none" keyboardShouldPersistTaps="handled" style={{flexGrow:0,flexShrink:1,maxHeight:'100%'}} contentContainerStyle={{padding:20,paddingBottom:40}}><View style={{backgroundColor:'#fff',borderRadius:16}}><VisitorAccess scope="tracking"/></View></ScrollView>
+ </View>;
+}
 function Shipments() {
  const {t}=useLanguage();
  const [page, setPage] = useState(1), query = useVisitorQuery<TrackingPage>('tracking', `/api/mobile/visitor/tracking/shipments?page=${page}`,parseTrackingPage);

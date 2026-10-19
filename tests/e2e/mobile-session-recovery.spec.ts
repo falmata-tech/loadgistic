@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Page,Route} from 'playwright-core';
 import {localAuditService,checked,auditProvider,auditDeleteVehicles} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
@@ -9,6 +9,7 @@ test.use({trace:'off',screenshot:'off'});
 test('mobile permission return and transient account refresh keep the authenticated workspace',async({page}:{page:Page})=>{
  test.setTimeout(120000);
  const service=localAuditService(),actor=await auditProvider(service,'native-session');
+ const privateFullName=checked(await service.from('profiles').select('full_name').eq('id',actor.id).single()).full_name;
  let vehicle='',refreshUnavailable=false;
  try{
   vehicle=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Demo',model:'Session recovery',plate:`NS-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
@@ -27,14 +28,14 @@ test('mobile permission return and transient account refresh keep the authentica
   expect(await page.evaluate(()=>(window as Window&{__lgRefreshCount?:number}).__lgRefreshCount)).toBe(0);
   await expect(page.getByRole('button',{name:'Update capacity',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Account',exact:true}).click();
-  await expect(page.getByLabel('Your name',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('First name',{exact:true})).toBeVisible();await expect(page.getByLabel('Last / father name',{exact:true})).toHaveValue('');
   await page.route('**/api/mobile/auth/refresh',(route:Route)=>refreshUnavailable?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'This service is temporarily unavailable. Please try again.'}})}):route.continue());
-  refreshUnavailable=true;await page.getByLabel('Your name',{exact:true}).fill('Native session recovery');
+  refreshUnavailable=true;await page.getByLabel('First name',{exact:true}).fill('Native session recovery');
   await page.getByRole('button',{name:'Save changes',exact:true}).click();
   await expect(page.getByText('Account details saved.',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Send code',exact:true})).toHaveCount(0);
-  expect(checked(await service.from('profiles').select('full_name').eq('id',actor.id).single()).full_name).toBe('Native session recovery');
+  const stored=checked(await service.from('profiles').select('first_name,full_name').eq('id',actor.id).single());expect(stored.first_name).toBe('Native session recovery');expect(stored.full_name).toBe(privateFullName);
   refreshUnavailable=false;await page.getByRole('button',{name:'Save changes',exact:true}).click();
   await expect(page.getByText('Account details saved.',{exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Home',exact:true}).click();

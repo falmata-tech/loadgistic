@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {APIRequestContext} from 'playwright-core';
 
 test('retired overview input cannot switch public profile search to legacy aggregation',async({request}:{request:APIRequestContext})=>{

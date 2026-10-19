@@ -7,9 +7,8 @@ import { VEHICLE_CONFIGURATIONS } from '@/lib/vehicle-configurations';
 export function readDiscoveryFilters(request: Request) {
  try {
   const filters = discoveryFilters(new URL(request.url).searchParams) as Record<string,string>;
-  if (filters.vehicleCategory && !VEHICLE_CONFIGURATIONS.some(item=>item.name===filters.vehicleCategory)) throw new Error('INVALID');
   return filters;
- } catch { throw new MobileError(400,'INVALID_FILTER','Check your search and truck filters.'); }
+ } catch { throw new MobileError(400,'INVALID_FILTER','Check your search and vehicle filters.'); }
 }
 export async function nativeDiscovery(request: Request, privateView: boolean) {
  try {

@@ -34,8 +34,8 @@ export default async function LoginPage({
       taskKicker={<Text message="Account"/>}
       title={codeStep?'Enter your code':'Log in'}
       description={codeStep
-        ?`We sent a six-digit code to ${maskedProviderSignupEmail(handoff?.email||'')}.`
-        :'Get a one-time code in your inbox.'}
+        ?<Text message="We sent a six-digit code to {email}." values={{email:maskedProviderSignupEmail(handoff?.email||'')}}/>
+        :<Text message="Get a one-time code in your inbox."/>}
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <div className="managed-login-stack">

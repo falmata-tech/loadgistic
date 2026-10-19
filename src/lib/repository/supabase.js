@@ -1,6 +1,6 @@
 import {verificationBadgesFromApproved,truckDocumentBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
-import {loadPublicProviderFleet,publicFleetVehicleIds,publicProviderRegularService} from '../public-provider-paging.js';
+import {loadPublicProviderFleet,publicFleetVehicleIds} from '../public-provider-paging.js';
 import {privateCapacityContactName} from '../private-capacity-contact.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
 import {randomUUID} from 'node:crypto';
@@ -108,12 +108,6 @@ async function capacityOwnerBadges(client,rows){
   return new Map((data||[]).map(owner=>[owner.subject_id,verificationBadges(owner.subject_type,owner.documents)]));
 }
 
-function providerKindLabel(value){
-  if(value==='FLEET_TRANSPORTER')return 'Company driver';
-  return 'Independent driver';
-}
-
-
 export async function listSupabasePublicCapacityCursor(filters={},options={}){
   const client=createSupabaseAdminClient();
   const pageSize=Math.max(12,Math.min(16,Number(options.pageSize)||14));
@@ -166,9 +160,9 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
     const base={...row,provider_kind:undefined,driver_documents:undefined,vehicle_documents:undefined,authorization_documents:undefined,
       recurring_corridors:recurring,current_route_points:validPlacePoints(row.current_route_points,row.availability_geometry==='ROUTE'?2:0),
       capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
-      driver_kind:driverKind,driver_kind_label:providerKindLabel(row.provider_kind),
+      driver_kind:driverKind,driver_kind_label:'Driver',
       owner_verification_badges:ownerBadges.get(row.provider_organization_id||row.provider_profile_id)||[],
-      driver_verification_badges:verificationBadges(row.provider_kind==='FLEET_TRANSPORTER'?'DRIVER':'PROVIDER_PROFILE',row.driver_documents),
+      driver_verification_badges:verificationBadges('DRIVER',row.driver_documents),
       truck_verification_badges:truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number),
       possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
       near_center_distance_km:undefined,updated_label:publicBoardTime(row.updated_at),
@@ -222,15 +216,7 @@ export async function nameSupabasePrivateCapacityContact(user,input){
   return data;
 }
 
-export async function setSupabaseLoadgisticCapacityAccess(user,vehicleId,enabled){
-  const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('set_loadgistic_capacity_access',{
-    actor_user_id:user.id,target_vehicle_id:String(vehicleId||''),enabled:Boolean(enabled),
-    platform_digest:privateContactDigest('loadgistic-platform')
-  });
-  if(error)throw managedCapacityError('SUPABASE_LOADGISTIC_CAPACITY_ACCESS_FAILED',error);
-  return data;
-}
+export async function setSupabaseLoadgisticCapacityAccess(){throw new Error('PLATFORM_CAPACITY_RETIRED');}
 
 export async function revokeSupabasePrivateCapacityAccess(user,grantId){
   const client=createSupabaseAdminClient();
@@ -281,8 +267,8 @@ function projectPrivateCapacityRow(row,hasNear,nearLat,nearLng){
   return {...row,provider_kind:undefined,driver_documents:undefined,vehicle_documents:undefined,authorization_documents:undefined,
     recurring_corridors:recurring,current_route_points:validPlacePoints(row.current_route_points,row.availability_geometry==='ROUTE'?2:0),
     capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
-    driver_kind:driverKind,driver_kind_label:providerKindLabel(row.provider_kind),
-    driver_verification_badges:verificationBadges(row.provider_kind==='FLEET_TRANSPORTER'?'DRIVER':'PROVIDER_PROFILE',row.driver_documents),
+    driver_kind:driverKind,driver_kind_label:'Driver',
+    driver_verification_badges:verificationBadges('DRIVER',row.driver_documents),
     truck_verification_badges:truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number),
     possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
     updated_label:publicBoardTime(row.updated_at),capacity_update_stage:capacityAge.stage,
@@ -298,11 +284,13 @@ export async function listSupabaseSharedCapacity(emailDigest,filters={},options=
   return listSupabasePrivateCapacityProjection('EMAIL',emailDigest,null,filters,options);
 }
 
-export async function listSupabaseLoadgisticSharedCapacity(user,filters={},options={}){
-  return listSupabasePrivateCapacityProjection('LOADGISTIC',privateContactDigest('loadgistic-platform'),user.id,filters,options);
+export async function listSupabaseBusinessCapacity(actorId,workspaceId,filters={},options={}){
+  return listSupabasePrivateCapacityProjection('BUSINESS',null,actorId,filters,options,workspaceId);
 }
 
-async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorUserId,filters,options){
+export async function listSupabaseLoadgisticSharedCapacity(){throw new Error('PLATFORM_CAPACITY_RETIRED');}
+
+async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorUserId,filters,options,businessWorkspaceId){
   const client=createSupabaseAdminClient();
   const resolved=await resolveCapacityFilterPlaces(client,filters);
   if(resolved.filterError)return {items:[],hasMore:false,nextCursor:null,pageSize:100,filterError:resolved.filterError};
@@ -314,8 +302,8 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   catch{return {items:[],hasMore:false,nextCursor:null,pageSize,filterError:'Map bounds are invalid. Move the map and try again.'};}
   const hasNear=query.near_lat!==null&&query.near_lng!==null;
   const cursor=decodePublicCursor(options.cursor);
-  const {data,error}=await client.rpc('private_capacity_filtered_page',{
-    requested_audience:audience,requested_digest:emailDigest,actor_user_id:actorUserId,
+  const {data,error}=await client.rpc(businessWorkspaceId?'business_capacity_filtered_page':'private_capacity_filtered_page',{
+    ...(businessWorkspaceId?{target_workspace_id:businessWorkspaceId}:{requested_audience:audience,requested_digest:emailDigest}),actor_user_id:actorUserId,
     cursor_updated_at:cursor?.updatedAt||null,cursor_id:cursor?.id||null,requested_page_size:pageSize,query
   });
   if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_PROJECTION_FAILED',error);
@@ -387,16 +375,17 @@ function seededTransporterPortraitUrl(filename){
   return /^[a-z0-9-]+\.png$/.test(value)?`/marketing/transporters/${value}`:null;
 }
 
-async function findPublicProviderOwner(client,handle){
+async function findPublicProviderOwner(client,handle,resolveAlias=true){
   const normalized=String(handle||'').trim().toLowerCase();
   if(!normalized)return null;
   const [organizationResult,profileResult]=await Promise.all([
-    client.from('organizations').select('id,name,handle,city,type').eq('handle',normalized).eq('type','TRANSPORT_COMPANY').eq('content_hidden',false).eq('review_workspace',false).maybeSingle(),
-    client.from('provider_profiles').select('id,user_id,business_name,handle,city').eq('handle',normalized).eq('content_hidden',false).eq('review_workspace',false).maybeSingle()
+    client.from('organizations').select('id,name,handle,city,type').eq('handle',normalized).eq('type','TRANSPORT_COMPANY').eq('public_visibility','PUBLIC').eq('content_hidden',false).eq('review_workspace',false).maybeSingle(),
+    client.from('provider_profiles').select('id,user_id,handle').eq('handle',normalized).eq('public_visibility','PUBLIC').eq('content_hidden',false).eq('review_workspace',false).maybeSingle()
   ]);
   if(organizationResult.error||profileResult.error)throw new Error('SUPABASE_PUBLIC_PROVIDER_LOOKUP_FAILED',{cause:organizationResult.error||profileResult.error});
   if(organizationResult.data)return {kind:'ORGANIZATION',id:organizationResult.data.id,organization:organizationResult.data,profile:null};
   if(profileResult.data)return {kind:'PROVIDER_PROFILE',id:profileResult.data.id,organization:null,profile:profileResult.data};
+  if(resolveAlias){const result=await client.rpc('resolve_public_provider_handle',{requested_handle:normalized});if(result.error)throw new Error('SUPABASE_PUBLIC_PROVIDER_LOOKUP_FAILED');if(result.data?.handle&&result.data.handle!==normalized)return findPublicProviderOwner(client,result.data.handle,false);}
   return null;
 }
 
@@ -421,26 +410,23 @@ export async function getSupabasePublicProvider(handle,options={}){
     ?{requested_organization_id:owner.id,requested_provider_profile_id:null}
     :{requested_organization_id:null,requested_provider_profile_id:owner.id};
   const reviewOwnerColumn=owner.kind==='ORGANIZATION'?'provider_organization_id':'provider_profile_id';
-  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,providerVerificationResult,regularServiceResult]=await Promise.all([
+  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,providerVerificationResult]=await Promise.all([
     client.rpc('public_provider_page_details',reviewOwner),
     loadPublicProviderFleet(client,owner,options.truckPage),
     client.from('provider_reviews').select('id,rating,note,created_at,dispute_status').eq(reviewOwnerColumn,owner.id).eq('status','PUBLISHED').order('created_at',{ascending:false}).limit(20),
     client.rpc('public_provider_review_summary',reviewOwner),
     client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
       .eq('subject_type',owner.kind).eq('subject_id',owner.id).eq('status','APPROVED')
-      .order('reviewed_at',{ascending:false,nullsFirst:false}),
-    client.from('profile_routes').select('geometry,origin,destination,route_points_json,area_center_label,area_boundary_json')
-      .eq(owner.kind==='ORGANIZATION'?'organization_id':'provider_profile_id',owner.id).order('id').limit(1)
+      .order('reviewed_at',{ascending:false,nullsFirst:false})
   ]);
-  const initialError=pageResult.error||reviewResult.error||reviewSummaryResult.error||providerVerificationResult.error||regularServiceResult.error;
+  const initialError=pageResult.error||reviewResult.error||reviewSummaryResult.error||providerVerificationResult.error;
   if(initialError)throw new Error('SUPABASE_PUBLIC_PROVIDER_FAILED',{cause:initialError});
   const page=pageResult.data;
   if(!page||!vehicleResult)return null;
   const vehicles=vehicleResult.items;
   const vehicleIds=vehicles.map(vehicle=>vehicle.id);
   const profileUserId=owner.profile?.user_id||null;
-  const [assignmentResult,vehicleDocumentResult,authorizationDocumentResult]=await Promise.all([
-    vehicleIds.length?client.from('driver_vehicle_assignments').select('vehicle_id,driver_user_id').in('vehicle_id',vehicleIds).eq('active',true):Promise.resolve({data:[],error:null}),
+  const [vehicleDocumentResult,authorizationDocumentResult]=await Promise.all([
     vehicleIds.length?client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
       .eq('subject_type','VEHICLE').in('subject_id',vehicleIds).eq('status','APPROVED')
       .order('reviewed_at',{ascending:false,nullsFirst:false}):Promise.resolve({data:[],error:null}),
@@ -448,28 +434,23 @@ export async function getSupabasePublicProvider(handle,options={}){
       .eq('verification_type','VEHICLE_AUTHORIZATION').in('related_vehicle_id',vehicleIds).eq('status','APPROVED')
       .order('reviewed_at',{ascending:false,nullsFirst:false}):Promise.resolve({data:[],error:null})
   ]);
-  const secondaryError=assignmentResult.error||vehicleDocumentResult.error||authorizationDocumentResult.error;
+  const secondaryError=vehicleDocumentResult.error||authorizationDocumentResult.error;
   if(secondaryError)throw new Error('SUPABASE_PUBLIC_PROVIDER_DETAIL_FAILED',{cause:secondaryError});
-  const assignments=assignmentResult.data||[];
-  const driverIds=[...new Set([
-    ...assignments.map(assignment=>assignment.driver_user_id).filter(Boolean),
-    ...(owner.kind==='PROVIDER_PROFILE'&&profileUserId?[profileUserId]:[])
-  ])];
-  const [driverProfileResult,driverRecordResult,driverDocumentResult]=await Promise.all([
-    driverIds.length?client.rpc('public_provider_driver_names',{requested_user_ids:driverIds}):Promise.resolve({data:[],error:null}),
-    driverIds.length?client.from('drivers').select('user_id,phone').in('user_id',driverIds).eq('active',true):Promise.resolve({data:[],error:null}),
+  const driverIds=[...new Set(vehicles.map(vehicle=>vehicle.assigned_driver_id).filter(Boolean))];
+  const [driverProfileResult,driverDocumentResult]=await Promise.all([
+    driverIds.length?client.rpc('public_person_identities',{requested_user_ids:driverIds}):Promise.resolve({data:[],error:null}),
     driverIds.length?client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
       .eq('subject_type','DRIVER').in('subject_id',driverIds).eq('status','APPROVED')
       .order('reviewed_at',{ascending:false,nullsFirst:false}):Promise.resolve({data:[],error:null})
   ]);
-  const driverError=driverProfileResult.error||driverRecordResult.error||driverDocumentResult.error;
+  const driverError=driverProfileResult.error||driverDocumentResult.error;
   if(driverError)throw new Error('SUPABASE_PUBLIC_PROVIDER_DRIVER_FAILED',{cause:driverError});
   const allDocuments=[...(providerVerificationResult.data||[]),...(vehicleDocumentResult.data||[]),
     ...(authorizationDocumentResult.data||[]),...(driverDocumentResult.data||[])];
   const documentsFor=(subjectType,subjectId)=>allDocuments.filter(record=>record.subject_type===subjectType&&record.subject_id===subjectId);
-  const assignmentByVehicle=new Map(assignments.map(assignment=>[assignment.vehicle_id,assignment.driver_user_id]));
   const driverNameById=new Map((driverProfileResult.data||[]).map(driver=>[driver.id,driver.first_name]));
-  const driverPhoneById=new Map((driverRecordResult.data||[]).map(driver=>[driver.user_id,driver.phone]));
+  const driverPhoneById=new Map((driverProfileResult.data||[]).map(driver=>[driver.id,driver.callback_phone]));
+  const driverPortraitById=new Map((driverProfileResult.data||[]).map(driver=>[driver.id,driver.portrait_url]));
   const providerKind=owner.kind==='ORGANIZATION'?'FLEET_TRANSPORTER':'SELF_MANAGED_DRIVER';
   const capacityPage=vehicleIds.length?await listSupabasePublicCapacityCursor({...capacityFilter,vehicleIds},{pageSize:12}):{items:[]};
   const capacities=capacityPage.items;
@@ -479,44 +460,47 @@ export async function getSupabasePublicProvider(handle,options={}){
     const capacity=capacityByVehicle.get(vehicle.id)||null;
     if(capacity){
       const {vehicle_id:unusedVehicle,provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,...safeCapacity}=capacity;
-      return {platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,
+      return {authority:vehicle.authority,platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,
         cargo_configuration:vehicle.cargo_configuration||vehicle.category,
         assigned_driver_first_name:safeCapacity.assigned_driver_first_name,
+        assigned_driver_portrait_url:safeCapacity.assigned_driver_portrait_url,
         assigned_driver_phone:safeCapacity.assigned_driver_phone,
         driver_kind:safeCapacity.driver_kind,driver_kind_label:safeCapacity.driver_kind_label,
         driver_verification_badges:safeCapacity.driver_verification_badges,
         truck_verification_badges:safeCapacity.truck_verification_badges,capacity:safeCapacity};
     }
-    const driverId=owner.kind==='ORGANIZATION'?assignmentByVehicle.get(vehicle.id):profileUserId;
-    const subjectType=owner.kind==='ORGANIZATION'?'DRIVER':'PROVIDER_PROFILE';
-    const subjectId=owner.kind==='ORGANIZATION'?driverId:owner.id;
+    const driverId=vehicle.assigned_driver_id;
+    const isPersonalOwnerDriver=owner.kind==='PROVIDER_PROFILE'&&Boolean(driverId)&&driverId===profileUserId;
+    const subjectType=isPersonalOwnerDriver?'PROVIDER_PROFILE':'DRIVER';
+    const subjectId=isPersonalOwnerDriver?owner.id:driverId;
     const driverName=driverNameById.get(driverId);
     const driverKind=owner.kind==='ORGANIZATION'?'COMPANY_DRIVER':providerKind;
-    return {platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,
+    return {authority:vehicle.authority,platform_number:vehicle.platform_number,make:vehicle.make,model:vehicle.model,
       cargo_configuration:vehicle.cargo_configuration||vehicle.category,
-      assigned_driver_first_name:String(driverName||'').trim().split(/\s+/)[0]||null,
-      assigned_driver_phone:(owner.kind==='ORGANIZATION'?driverPhoneById.get(driverId):null)||publicContactPhone,
-      driver_kind:driverKind,driver_kind_label:providerKindLabel(providerKind),
-      driver_verification_badges:subjectId?verificationBadges(subjectType,documentsFor(subjectType,subjectId)):verificationBadges('DRIVER',[]),
+      assigned_driver_first_name:driverName||null,
+      assigned_driver_portrait_url:driverPortraitById.get(driverId)||null,
+      assigned_driver_phone:driverPhoneById.get(driverId)||null,
+      driver_kind:driverKind,driver_kind_label:'Driver',
+      driver_verification_badges:verificationBadges('DRIVER',subjectId?documentsFor(subjectType,subjectId):[]),
       truck_verification_badges:truckDocumentBadges(documentsFor('VEHICLE',vehicle.id),documentsFor(subjectType,subjectId),vehicle.id,vehicle.platform_number),capacity:null};
   });
   const reviews=reviewResult.data||[];
   const reviewSummary=reviewSummaryResult.data||{};
   const providerBadges=verificationBadges(owner.kind,providerVerificationResult.data||[]);
-  const providerName=owner.organization?.name||owner.profile?.business_name;
   const providerHandle=owner.organization?.handle||owner.profile?.handle;
-  return {name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:page.services,
-    city:owner.organization?.city||owner.profile?.city,theme_primary:page.theme_primary,theme_accent:page.theme_accent,
+  const providerName=page.account_name||page.public_name||owner.organization?.name||providerHandle;
+  return {account_name:providerName,manager_name:page.manager_name||null,name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:'',
+    city:owner.organization?.city||'',theme_primary:page.theme_primary,theme_accent:page.theme_accent,
     youtube_video_id:page.youtube_video_id,contact_phone:publicContactPhone,
     contact_whatsapp:page.show_contact_whatsapp?page.contact_whatsapp:null,
     contact_email:page.show_contact_email?page.contact_email:null,
     contact_website:page.show_contact_website?page.contact_website:null,
     provider_organization_id:owner.organization?.id||null,provider_profile_id:owner.profile?.id||null,
     profile_image_url:page.has_profile_image?`/api/public/providers/${encodeURIComponent(providerHandle)}/image?v=${encodeURIComponent(page.profile_image_updated_at||'1')}`:seededTransporterPortraitUrl(page.profile_image_preset),
-    provider_kind:providerKind,provider_kind_label:providerKind==='FLEET_TRANSPORTER'?'Fleet transporter':providerKindLabel(providerKind),
+    provider_kind:providerKind,provider_kind_label:'Transport Provider',authoritySummary:vehicleResult.authority_summary,
     fleet_page:{page:vehicleResult.page,pageCount:vehicleResult.page_count,total:vehicleResult.total,pageSize:vehicleResult.page_size},
     vehicles:trucks.map(({capacity:unusedCapacity,...vehicle})=>vehicle),trucks,capacities,reviews,
-    regular_service:publicProviderRegularService(regularServiceResult.data?.[0]),
+    regular_service:null,
     verification_badges:providerBadges,review_count:Number(reviewSummary.review_count||0),
     average_rating:reviewSummary.average_rating==null?null:Number(reviewSummary.average_rating)};
 }
@@ -560,13 +544,9 @@ function featuredPortraitUrl(candidate){
 }
 
 function decorateFeaturedCandidate(candidate){
-  const signal=candidate.regular_signal;
-  const corridor=signal?.geometry==='RADIUS'
-    ?[signal.area_center_label,...(signal.area_boundary||[]).map(point=>point.label)].filter(Boolean).join(' · ')
-    :(signal?.route_points||[]).map(point=>point.label).filter(Boolean).join('–');
-  return {...candidate,profile_image_url:featuredPortraitUrl(candidate),base_region:providerRegionLabel(candidate.base_region_code),
-    provider_kind_label:candidate.provider_kind==='FLEET_TRANSPORTER'?'Fleet transporter':providerKindLabel(candidate.provider_kind),
-    corridors:corridor?[corridor]:[]};
+  return {...candidate,services:'',regular_signal:null,profile_image_url:featuredPortraitUrl(candidate),base_region:providerRegionLabel(candidate.base_region_code),
+    provider_kind_label:'Transport Provider',
+    corridors:[]};
 }
 
 export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
@@ -632,7 +612,7 @@ export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
   const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,providerKeys,aliases),sponsoredProviders);
   return {feature_date:featureDate,base_place:expo.title,expo_group:expo,week:regionalExpoWeekForDate(featureDate),
     headline:day.public_headline||'Daily Featured Transporters',
-    introduction:day.public_introduction||`Meet transporters based in ${expo.title}, then find their current trucks in Open capacity.`,
+    introduction:day.public_introduction||`Meet transporters based in ${expo.title}, then find their current vehicles in Open capacity.`,
     tiktok_url:day.tiktok_url,broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,
     schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers,published:true};
 }
@@ -651,7 +631,7 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   const candidates=await loadFeaturedTruckCandidates(client,featureDate,providers);
   const truckByKey=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
   const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
-    headline:'Daily Featured Trucks',introduction:`${theme.label} · 08:30–12:00 EAT`,tiktok_url:null,
+    headline:'Daily Featured Vehicles',introduction:`${theme.label} · 08:30–12:00 EAT`,tiktok_url:null,
     broadcast_start_time:'08:30',broadcast_end_time:'12:00',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
   const day=dayResult.data;if(!day||day.expo_group_key!==theme.key)return empty();
   const {data:slots,error:slotError}=await client.from('featured_provider_slots').select('slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id').eq('day_id',day.id).order('slot_position');
@@ -673,6 +653,6 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   }
   const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,truckKeys,aliases),sponsoredProviders);
   return {feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
-    headline:day.public_headline||'Daily Featured Trucks',introduction:day.public_introduction||`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
+    headline:day.public_headline||'Daily Featured Vehicles',introduction:day.public_introduction||`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
     tiktok_url:day.tiktok_url,broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers:featured,published:true};
 }

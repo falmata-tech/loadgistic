@@ -28,13 +28,13 @@ test('worldwide offsets preserve radius, valid coordinates and honest area label
   assert.equal(isValidCoordinate(lat,lng),false);assert.throws(()=>obscureCoordinate(lat,lng,20));
  }
 });
-test('shared load and new worldwide-location copy has all four translations and intact placeholders',()=>{
+test('shared load and new worldwide-location copy has both supported translations and intact placeholders',()=>{
  const keys=['Full loads only','Shared loads only','Full or shared','Full only','Shared only','Which loads will you take?',
   'Accept one load for the whole truck.','Accept smaller loads that share the truck.','Accept a full-truck load or smaller shared loads.',
   'Choose which loads you will accept.','Load preference not set','Remaining space is for shared loads.',"Truck's current load",'Any available truck','Partly loaded',
   'Full truck: empty trucks accepting full loads. Shared space: trucks accepting smaller loads.',
   '{count} {status} trucks. Zoom in.','Your device returned an invalid location. Try again.','Approximate area'];
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const catalog=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url)));
   for(const key of keys){assert.ok(catalog[key]?.trim(),`${locale}: ${key}`);assert.deepEqual([...catalog[key].matchAll(/\{\w+\}/g)].map(m=>m[0]).sort(),[...key.matchAll(/\{\w+\}/g)].map(m=>m[0]).sort());}
  }

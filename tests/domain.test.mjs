@@ -122,10 +122,11 @@ test('device capacity location is quantized inside the promised privacy area',()
 });
 
 test('Driver controls capacity privacy across every movement scope',()=>{
- assert.deepEqual(capacityPrivacyRadii('LOCAL'),[1,3,5,10,20,40]);
- assert.deepEqual(capacityPrivacyRadii('INTERCITY'),[1,3,5,10,20,40]);
- assert.deepEqual(capacityPrivacyRadii('BOTH'),[1,3,5,10,20,40]);
+ assert.deepEqual(capacityPrivacyRadii('LOCAL'),[1,3,5,10,20]);
+ assert.deepEqual(capacityPrivacyRadii('INTERCITY'),[1,3,5,10,20]);
+ assert.deepEqual(capacityPrivacyRadii('BOTH'),[1,3,5,10,20]);
  assert.equal(validateCapacityPrivacyRadius('INTERCITY',1),1);
+ assert.throws(()=>validateCapacityPrivacyRadius('LOCAL',40),/INVALID_LOCATION_PRIVACY/);
  assert.throws(()=>validateCapacityPrivacyRadius('LOCAL',2),/INVALID_LOCATION_PRIVACY/);
  assert.deepEqual(possibleDistanceRange(12.4,5,1),{minKm:6,maxKm:18});
 });

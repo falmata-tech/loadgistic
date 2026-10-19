@@ -62,7 +62,7 @@ test('area grouping preserves existing public and provider deep-link destination
    assert.ok(!routes.has(route),`Ambiguous deep link ${route}`);routes.set(route,group);
   }
  }
- for(const route of ['/','/featured','/about','/visitor-tracking','/arrange-transport']){
+ for(const route of ['/','/featured','/about','/visitor-tracking']){
   assert.equal(normalize(route),route);assert.equal(routes.get(route),'(marketplace)');
  }
  for(const route of ['/account','/account-settings','/fleet','/manage-capacity','/shipments','/network','/support','/documents','/profile','/billing']){
@@ -72,5 +72,14 @@ test('area grouping preserves existing public and provider deep-link destination
  for(const route of ['/shipment-detail','/shipment-manage','/support-chat','/visitor-shipment']){
   assert.equal(normalize(`${route}?id=${id}`),`${route}?id=${id}`);assert.ok(routes.has(route));
  }
+ assert.equal(normalize('/arrange-transport'),'/link-unavailable');
  assert.equal(routes.has('/admin'),false);assert.equal(routes.has('/staff'),false);
+});
+
+test('explicit profile map links preserve bounded identities without sharing private credentials',()=>{
+ const id='e5df8dc7-76cc-4c33-a5b4-bb09b221ddbd';
+ assert.equal(normalize('https://loadgistic.com/?provider=rift-valley'),'/?provider=rift-valley');
+ assert.equal(normalize('/?provider=rift-valley&truck='+id),'/?provider=rift-valley&truck='+id);
+ assert.equal(normalize('/?view=private&provider=rift-valley'),'/?view=private&provider=rift-valley');
+ for(const query of ['provider=bad%20handle','provider=','provider=one&provider=two','truck=invalid','provider=rift-valley&email=private@example.test'])assert.equal(normalize('/?'+query),'/link-unavailable');
 });

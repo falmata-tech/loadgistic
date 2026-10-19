@@ -1,24 +1,43 @@
 begin;
 do $test$
-declare owner_id uuid; driver_id uuid; other_driver uuid; org_id uuid; truck_id uuid; row jsonb; saved_id uuid; route_points jsonb; command jsonb; before_time timestamptz; role_name text; missing_field text;
+declare owner_id uuid; driver_id uuid:=gen_random_uuid(); other_driver uuid; org_id uuid; truck_id uuid; other_truck_id uuid; baseline_capacity_count bigint; row jsonb; saved_id uuid; route_points jsonb; command jsonb; before_time timestamptz; role_name text; missing_field text;
 begin
- select member.user_id,member.organization_id,driver.user_id into strict owner_id,org_id,driver_id
- from organization_members member join drivers driver on driver.organization_id=member.organization_id and driver.active
- join profiles p on p.id=driver.user_id and p.active
+ select member.user_id,member.organization_id into strict owner_id,org_id
+ from organization_members member join profiles p on p.id=member.user_id and p.active and p.role='TRANSPORTER'
+ join auth.users identity on identity.id=p.id and identity.deleted_at is null and identity.email_confirmed_at is not null
+ join organizations organization on organization.id=member.organization_id and organization.type='TRANSPORT_COMPANY'
+ join lateral provider_capacity_actor_scope(member.user_id) a on a.workspace_access
  where member.membership_role='OWNER' limit 1;
+ perform accept_content_policy(owner_id,'2026-10-09');
+ -- Exercise the real employee workflow without moving a seeded Tracking driver.
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+ values(driver_id,'bootstrap-driver-'||driver_id||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}');
+ perform fleet_accept_invitation(driver_id,fleet_invite_driver(owner_id,jsonb_build_object('email','bootstrap-driver-'||driver_id||'@loadgistic.local','name','Synthetic location driver','phone','+251900000001')));
+ perform accept_content_policy(driver_id,'2026-10-09');
  select id into strict other_driver from profiles where role='DRIVER' and active and id<>driver_id limit 1;
- row:=create_provider_vehicle(owner_id,'{"make":"Location audit","model":"New truck","plate":"AUDIT-LOCATION","cargo_configuration":"Mini Box Truck"}');truck_id:=(row->>'id')::uuid;
+ row:=create_provider_vehicle(owner_id,'{"make":"Location audit","model":"New truck","plate":"AUDIT-LOCATION","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}');truck_id:=(row->>'id')::uuid;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_capacity',false,'can_manage_tracking',false));
+ -- Assignment creates an OFF_DUTY snapshot; GPS must not publish another signal.
+ select count(*) into baseline_capacity_count from capacities where vehicle_id=truck_id;
  command:=jsonb_build_object('vehicle_id',truck_id,'approximate_lat',9.03,'approximate_lng',38.76,'location_precision_km',40,'location_source','DEVICE_OBSCURED');
- begin perform refresh_provider_capacity_location(owner_id,command);raise exception 'OWNER_DEVICE_ACCEPTED';exception when raise_exception then if sqlerrm<>'DEVICE_LOCATION_DRIVER_ONLY' then raise;end if;end;
+ begin perform refresh_provider_capacity_location(owner_id,command);raise exception 'OWNER_DEVICE_ACCEPTED';exception when raise_exception then if sqlerrm<>'DRIVER_REQUIRED_FOR_CAPACITY' then raise;end if;end;
  begin perform refresh_provider_capacity_location(other_driver,command);raise exception 'FOREIGN_DRIVER_ACCEPTED';exception when raise_exception then if sqlerrm not in ('INVALID_VEHICLE','DRIVER_REQUIRED_FOR_CAPACITY') then raise;end if;end;
  begin perform refresh_provider_capacity_location(driver_id,command-'approximate_lat');raise exception 'MISSING_COORDINATE_ACCEPTED';exception when raise_exception then if sqlerrm<>'INVALID_APPROXIMATE_LOCATION' then raise;end if;end;
  row:=refresh_provider_capacity_location(driver_id,command);
- if exists(select 1 from capacities where vehicle_id=truck_id) then raise exception 'LOCATION_PUBLISHED_CAPACITY';end if;
+ if (select count(*) from capacities where vehicle_id=truck_id)<>baseline_capacity_count
+  or exists(select 1 from capacities where vehicle_id=truck_id and market_status in ('EMPTY','PARTIAL')) then raise exception 'LOCATION_PUBLISHED_CAPACITY';end if;
  if not exists(select 1 from vehicle_driver_locations where vehicle_id=truck_id and driver_user_id=driver_id) then raise exception 'BOOTSTRAP_NOT_SAVED';end if;
  if not exists(select 1 from jsonb_array_elements(provider_capacity_workspace(owner_id)->'vehicles') v where v->>'id'=truck_id::text and v->'driver_location'->>'radius'='40') then raise exception 'OWNER_CANNOT_SEE_FIRST_LOCATION';end if;
  begin perform publish_provider_capacity(driver_id,jsonb_build_object('vehicle_id',truck_id,'status','OFF_DUTY'));raise exception 'CAPACITY_PERMISSION_ESCALATED';exception when raise_exception then if sqlerrm<>'FORBIDDEN' then raise;end if;end;
  select current_route_points_json into strict route_points from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
+ -- Bootstrap above is allowed on Draft. Availability needs explicit Go Live.
+ if (managed_provider_publication_eligibility(owner_id)->>'qualifyingTruckCount')::integer=0 then
+  for other_truck_id in select id from vehicles
+   where organization_id=org_id and active and publication_status='LIVE' and id<>truck_id loop
+   perform set_provider_vehicle_publication(owner_id,other_truck_id,'DRAFT');
+  end loop;
+ end if;
+ perform set_provider_vehicle_publication(owner_id,truck_id,'LIVE');
  saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','EMPTY','availability_geometry','ROUTE','visibility','PRIVATE','accepted_loads','FTL','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
  select updated_at into before_time from capacities where id=saved_id;
  perform refresh_provider_capacity_location(driver_id,command||'{"approximate_lat":9.5,"approximate_lng":39.0}');

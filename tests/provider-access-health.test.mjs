@@ -15,19 +15,19 @@ test('new app readiness fails closed for missing, malformed or unavailable retir
  }
 });
 test('compatible contract reports readiness; failed database reads never report compatibility',async()=>{
- const contract={error:null,data:{provider_billing_retired:true,independent_single_truck:true,chat_visible_read_receipts:true,chat_assignment_unread:true,chat_read_assignment_frame:true,chat_alert_priority:true,driver_handover_alerts:true,capacity_contact_names:true,native_push_outbox:true}};
+ const contract={error:null,data:{provider_billing_retired:true,provider_owner_fleets:true,chat_visible_read_receipts:true,chat_assignment_unread:true,chat_read_assignment_frame:true,chat_alert_priority:true,driver_handover_alerts:true,capacity_contact_names:true,native_push_outbox:true}};
  const valid=await handler(contract)();assert.equal(valid.status,200);assert.equal((await valid.json()).readyForPublicProduction,true);
  const failed=await handler(contract,{count:null,error:{code:'unavailable'}})();assert.equal(failed.status,503);assert.equal((await failed.json()).readyForPublicProduction,false);
 });
-test('single-truck schema compatibility must also be installed; billing retirement alone is insufficient',async()=>{
+test('provider-fleet schema compatibility must also be installed; billing retirement alone is insufficient',async()=>{
  for(const marker of [undefined,null,false,'true']){
-  const response=await handler({error:null,data:{provider_billing_retired:true,independent_single_truck:marker}})();
-  assert.equal(response.status,503);assert.ok((await response.json()).blockers.includes('independent-truck-contract'));
+  const response=await handler({error:null,data:{provider_billing_retired:true,provider_owner_fleets:marker}})();
+  assert.equal(response.status,503);assert.ok((await response.json()).blockers.includes('provider-fleet-contract'));
  }
 });
 
 test('read receipt, per-assignment unread and stale-frame contracts must all be installed',async()=>{
- const current={provider_billing_retired:true,independent_single_truck:true,chat_visible_read_receipts:true,chat_assignment_unread:true,chat_read_assignment_frame:true,chat_alert_priority:true,driver_handover_alerts:true,capacity_contact_names:true,native_push_outbox:true};
+ const current={provider_billing_retired:true,provider_owner_fleets:true,chat_visible_read_receipts:true,chat_assignment_unread:true,chat_read_assignment_frame:true,chat_alert_priority:true,driver_handover_alerts:true,capacity_contact_names:true,native_push_outbox:true};
  for(const [field,blocker] of [['chat_visible_read_receipts','chat-read-contract'],['chat_assignment_unread','chat-assignment-unread-contract'],['chat_read_assignment_frame','chat-assignment-frame-contract'],['chat_alert_priority','chat-alert-priority-contract'],['driver_handover_alerts','driver-handover-alert-contract'],['capacity_contact_names','capacity-contact-name-contract'],['native_push_outbox','native-push-contract']]){
   for(const marker of [undefined,null,false,'true']){const response=await handler({error:null,data:{...current,[field]:marker}})();assert.equal(response.status,503);assert.ok((await response.json()).blockers.includes(blocker));}
  }

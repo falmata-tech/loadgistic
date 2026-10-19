@@ -1,6 +1,6 @@
 import {auditIdentity} from './audit-helpers';
 import {openCapacityFilters} from './capacity-drawer-helper';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';

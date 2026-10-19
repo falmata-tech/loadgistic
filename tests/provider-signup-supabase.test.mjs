@@ -13,6 +13,7 @@ const otpRequest=fs.readFileSync('src/app/api/applications/email-otp/request/rou
 const otpVerify=fs.readFileSync('src/app/api/applications/email-otp/verify/route.ts','utf8');
 const callback=fs.readFileSync('src/app/api/auth/callback/route.ts','utf8');
 const page=fs.readFileSync('src/app/apply/page.tsx','utf8');
+const detailsForm=fs.readFileSync('src/components/provider-signup-details-form.tsx','utf8');
 const accessPage=fs.readFileSync('src/app/login/page.tsx','utf8');
 
 test('managed signup has two canonical models and accepts the former owner-operator alias without a password',async()=>{
@@ -25,11 +26,11 @@ test('managed signup has two canonical models and accepts the former owner-opera
     assert.equal(result.input.applicationType,applicationType==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER':applicationType);
   }
   assert.equal(normalizeProviderSignupInput({name:'Aster',businessName:'Aster Transport',phone:'+251911000000',applicationType:'COMPANY_DRIVER'}).ok,false);
-  assert.doesNotMatch(page,/name="password"|type="password"/i);
+  assert.doesNotMatch(page+detailsForm,/name="password"|type="password"/i);
   assert.doesNotMatch(accessPage,/Continue with Google/i);
   assert.match(accessPage,/Email me a code/i);
-  assert.doesNotMatch(page,/Continue with Google|Email me a code/i);
-  assert.match(page,/provider-details-form/i);
+  assert.doesNotMatch(page+detailsForm,/Continue with Google|Email me a code/i);
+  assert.match(page,/ProviderSignupDetailsForm/);assert.match(detailsForm,/provider-details-form/i);
 });
 
 test('signup handoff is signed, short lived, and keeps the account email private',async()=>{
@@ -110,10 +111,10 @@ test('public signup proves identity first and provisions only after an authentic
   assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'signup'\}\)/);
   assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'email'\}\)/);
   assert.match(otpVerify,/authenticatedEmail!==handoff\.email/);
-  assert.match(otpVerify,/redirectUrl\(request,'\/apply\?step=details'\)/);
+  assert.match(otpVerify,/redirectUrl\(request,'\/workspaces'\)/);
   assert.match(callback,/readProviderSignupHandoff/);
   assert.match(callback,/authenticatedEmail!==signupHandoff\.email/);
-  assert.match(callback,/\/apply\?step=details/);
+  assert.match(callback,/\/workspaces/);
   assert.doesNotMatch(callback,/completeManagedProviderSignup/);
   assert.match(route,/prepareManagedProviderSignup/);
   assert.match(route,/client\.auth\.getUser\(\)/);

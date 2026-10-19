@@ -6,12 +6,22 @@ export const capacityIntroduction = Object.freeze({
 
 export const platformAbout = Object.freeze({
   title: 'Put your transport network to work.',
-  body: 'When a load comes in, know where to start. See the space and routes your transporters report together, then contact the right person.',
-  sections: [
-    ['The trucks you know', 'Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.'],
-    ['Let the right people see your space', "Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient."],
-    ['More options for your next load', 'Find another truck when you need one. Filter public capacity by route, truck configuration and the space your load needs, then confirm the job directly.'],
-    ['Keep everyone in the picture', 'Once transport is agreed, give shipment partners private progress updates, approximate location and loading and unloading photos.'],
-    ['Build confidence', 'Optional document review helps customers assess the transporter, driver and truck behind a capacity signal.'],
+  body: 'See the vehicles you work with and find space for your next load.',
+  audiences: [
+    {id:'shipping',label:'Brokers & shippers',heading:'Your regular vehicles, in one view.',facts:[
+      ['The vehicles you know', 'Ask transporters to share with your email. Verify it to see their space, routes and approximate locations together.'],
+      ['More options for your load', 'Need another vehicle? Filter public capacity, then contact the transporter to confirm the job.'],
+      ['Stay informed', 'For agreed shipments, follow private progress updates and loading and unloading photos.'],
+    ],action:'Find capacity',href:'/'},
+    {id:'individual',label:'Drivers & owners',heading:'Make your next load easier to find.',facts:[
+      ['Show your available space', 'Keep your current vehicle, routes and approximate location up to date.'],
+      ['Choose who sees it', 'Share with your contacts, open to the public, do both or choose one recipient.'],
+      ['Build confidence', 'Submit your documents for review so customers can see what Loadgistic has checked.'],
+    ],action:'Transporter login',href:'/login'},
+    {id:'company',label:'Transport companies',heading:'Keep your fleet visible to your customers.',facts:[
+      ['Manage vehicles and drivers', 'Keep assignments and available space together in your workspace.'],
+      ['Work with your regular contacts', 'Choose which vehicles each broker or customer can see on their private map.'],
+      ['Keep customers informed', 'Share private shipment updates, approximate location and proof photos once the work is agreed.'],
+    ],action:'Transporter login',href:'/login'},
   ],
 });

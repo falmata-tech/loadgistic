@@ -10,7 +10,7 @@ function placeValues(form:FormData,labelName:string,refName:string){const labels
 export async function POST(request:NextRequest){
  const wantsJson=request.headers.get('accept')?.includes('application/json');
  const json=(body:{ok?:boolean;error?:string},status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
- const user=await getCurrentUser(); if(!user) return wantsJson?json({error:'Sign in again to save this truck.'},401):NextResponse.redirect(new URL('/login',request.url),303);
+ const user=await getCurrentUser(); if(!user) return wantsJson?json({error:'Sign in again to save this vehicle.'},401):NextResponse.redirect(new URL('/login',request.url),303);
  const form=await request.formData();
  const vehicleId=text(form,'vehicleId');
  const returnTo=user.role==='TRANSPORTER'&&vehicleId?`/app/fleet/${vehicleId}`:'/app/home';

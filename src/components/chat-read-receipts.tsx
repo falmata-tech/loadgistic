@@ -15,6 +15,7 @@ function displayed(node:HTMLElement){
 export function ChatReadReceipts({endpoint,chatKey,active=true,children}:{endpoint:string;chatKey:string;active?:boolean;children:React.ReactNode}){
  const root=React.useRef(null as HTMLDivElement|null),latest=React.useRef(null as ChatReadState|null);
  const acknowledged=React.useRef(null as {version:number;through:number}|null);
+ const reportVisibility=React.useRef(()=>{});
  const [state,setState]=React.useState(null as ChatReadState|null),[denied,setDenied]=React.useState(false);
  React.useEffect(()=>{
   const hide=()=>{if(root.current){root.current.style.visibility='hidden';root.current.dataset.chatVisibleThrough='-1';}};
@@ -31,6 +32,9 @@ export function ChatReadReceipts({endpoint,chatKey,active=true,children}:{endpoi
    try{const response=await fetch(endpoint,{cache:'no-store',signal:controller.signal,headers:etag?{'If-None-Match':etag}:{}});
     if(response.status===403){if(!stopped)setDenied(true);return;}
     if(response.status!==304){if(!response.ok)throw Error('UNAVAILABLE');const value=await response.json();if(!stopped){update(value);etag=response.headers.get('etag')||'';}}
+    // A covering dialog can close without changing intersections or focus.
+    // Reuse this authorized poll; the reporter still checks actual display.
+    if(!stopped&&(response.status===200||response.status===304))reportVisibility.current();
    }catch{/* Failed delivery is not a read receipt. The next bounded poll retries. */}
    finally{clearTimeout(timeout);running=false;if(!stopped)timer=setTimeout(poll,5000);}
   };
@@ -61,11 +65,12 @@ export function ChatReadReceipts({endpoint,chatKey,active=true,children}:{endpoi
    },250);
   };
   const observer=new IntersectionObserver(entries=>{for(const entry of entries){const node=entry.target as HTMLElement;if(node.hasAttribute('data-chat-presence'))presence=entry.isIntersecting?node:null;else if(entry.isIntersecting)visible.add(node);else visible.delete(node);}report();},{threshold:0.1});
+  reportVisibility.current=report;
   for(const node of (root.current as HTMLDivElement).querySelectorAll<HTMLElement>('[data-chat-sequence],[data-chat-presence]'))observer.observe(node);
   // RSC/new-message insertion should not require a new transcript fetch to bind visibility.
   const mutations=new MutationObserver(()=>{for(const node of (root.current as HTMLDivElement|null)?.querySelectorAll<HTMLElement>('[data-chat-sequence],[data-chat-presence]')||[])observer.observe(node);});
   mutations.observe(root.current,{childList:true,subtree:true});window.addEventListener('focus',report);window.addEventListener('blur',report);document.addEventListener('visibilitychange',report);document.addEventListener('focusin',report);
-  return()=>{disposed=true;if(root.current)root.current.dataset.chatVisibleThrough='-1';observer.disconnect();mutations.disconnect();controller?.abort();clearTimeout(timer);window.removeEventListener('focus',report);window.removeEventListener('blur',report);document.removeEventListener('visibilitychange',report);document.removeEventListener('focusin',report);};
+  return()=>{disposed=true;if(reportVisibility.current===report)reportVisibility.current=()=>{};if(root.current)root.current.dataset.chatVisibleThrough='-1';observer.disconnect();mutations.disconnect();controller?.abort();clearTimeout(timer);window.removeEventListener('focus',report);window.removeEventListener('blur',report);document.removeEventListener('visibilitychange',report);document.removeEventListener('focusin',report);};
  },[endpoint,active,denied,state,update]);
  return <Context.Provider value={state}><div ref={root} className="chat-receipt-surface" data-chat-key={chatKey}>{denied?<p role="alert"><Text message="This chat is not available to you."/></p>:children}</div></Context.Provider>;
 }

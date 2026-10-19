@@ -1,4 +1,125 @@
+> October13: Featured137 is applied and verified live (1a158f8 / CI38454443547,
+> all eight jobs pass). The seven upcoming dates each have eight eligible distinct
+> Drivers. Web/Android application binaries are unchanged by that database repair.
+> Tracking138, people-search/map layouts and multi-filters139 are locally
+> implemented and verified; owner visual approval, exact hosted rollout review,
+> replacement Android validation/signing and publication remain pending.
+> Alternatives within one filter list combine with every other filter group;
+> all selected reviewed documents remain required. Current authorization,
+> five-minute Tracking access, obscured1–20km locations, mandatory loading/unloading
+> proof and shipment-owner approval remain governed by090/117 and FEAT-TRK-001.
+> Historical wording is not permission to restore obsolete40km location behavior.
+
 # Loadgistic Product Master Prompt
+
+## October18 planned business-workspace transition
+
+The latest owner direction changes the commercial/product target; it is recorded
+in draft FEAT-ENT-001 / proposed ADR-081 and is **not implemented or deployed**.
+Marketplace retains free public discovery and simple verified-email private
+Capacity/Tracking. My workspace gains broker/shipper/receiver business teams,
+opening on private Capacity with Tracking and Account beside it; provider Fleet
+and map-based driver Home remain. Business and Transport Provider workspaces
+will have paid commercial entitlements, with pricing/payment/store policy still
+to be chosen. The older plan-free rule below describes current behavior until
+that reviewed replacement is implemented; it is not authority to revive old
+trial/payment-proof code or to charge users now.
+
+Platform transport-arrangement chat, Brokerage permissions and the special Share
+with Loadgistic audience will be retired across web/Expo, APIs/RPCs and delivery.
+Software Support remains for signed-in customer/provider workspaces. Loadgistic's
+separate brokerage business uses the same ordinary customer workspace and grants
+as other businesses; there is no platform shortcut to private data.
+
+Provider Tracking setup will name one owner email. That verified owner may invite
+route/status-only viewers and explicitly authorize business staff to see current
+approximate truck location. Membership or admin status alone grants no live
+location; owner-only unloading approval stays intact. Selected GPS, phone and
+manual source integration is required because current shipment Tracking is still
+phone-derived. Smaller new circles are proposed for both maps; old fixes are not
+silently relabelled as more accurate. Personal email capacity grants remain
+personal unless the provider deliberately approves a named business/team grant.
+Sharing offers Email address for that person only, or Business account to search
+and select an existing business. Selecting/saving the business grants its permitted
+team access directly, with that audience clear before saving. A company label or
+email domain never substitutes for selecting the actual business account.
+
+The owner asks to agree the web/phone/Expo interface first. See the top active
+checklist in `docs/PROGRESS.md`; earlier local work/evidence is preserved.
+
+## October15 dashboard structure — corrected locally, owner review pending
+
+The owner rejected the initial disclosure-based cleanup. The locally implemented replacement under
+FEAT-UIX-001 separates Fleet Trucks, Drivers and GPS devices; records show saved
+facts until a deliberate Edit/Change action opens the relevant task. Duplicate
+primary actions, duplicated headings and oversized empty history sections are
+removed. The same hierarchy applies to operational queues and Tracking management. The latest
+owner request also replaces database-shaped administration with an account-first
+directory and one organized account overview, with actual related records and
+independently permitted actions. Truck/device lists remain for operational tasks.
+Existing authorization and functions remain unchanged. Driving owners/employees
+keep map-first Home. Focused regressions and actual local web/Expo walkthroughs verify the changed
+account/fleet hierarchy and permitted actions. Same-resource background reads
+retain their saved view; authoritative access denial clears private cached data.
+A successful write with failed readback offers a read-only retry rather than
+repeating the command. Dialog actions become enabled only after their client
+code is ready. These changes are not owner-approved or deployed; current
+evidence, remaining acceptance and the account guide are in `docs/PROGRESS.md`.
+
+## October15 dashboard and fleet devices — initial local implementation
+
+Provider Support and Brokerage are the two active conversation services. Old
+Guest support navigation is removed and its obsolete local Open/Waiting workload
+is retired; current-service conversations/history are preserved. Admin Support
+separates Chats from Team, and staff phone navigation exposes their workspace and
+account actions. Request detail returns to its originating queue. The first presentation grouped secondary
+management under disclosures; the corrective work above replaces this approach. Provider Fleet groups trucks, driver
+access and GPS devices; documents live with their correct account, truck or driver.
+Employed and driving-owner Home remains map-first with permitted work controls.
+
+The local GPS integration uses a separate pinned Traccar gateway and durable
+bridge. An administrator binds an exact device to its provider; the provider
+assigns it to their own truck and chooses GPS device, driver's phone or manually
+entered capacity location. Public/private markers disclose the actual saved
+source through a small top-left icon. Exact telemetry and device identifiers stay
+private; public/shared capacity uses the chosen obscured area. Unselected phone
+reports cannot replace GPS/manual, and pending selection cannot relabel an old
+report. Shipment Tracking retains its independent agreed phone-reporting rules.
+
+Saved manual locations reopen with their chosen point; changing shared accuracy
+does not require entering the point again. Unsaved device/location changes retain
+their original revision until Save or Cancel. Deactivating a provider stops GPS
+collection while retaining history. Verified account erasure waits for exact
+cleanup of both application and gateway records; late tracker reports cannot
+recreate erased history. Employee deletion preserves the employer's devices and
+unfinished shipment Tracking continues to block premature erasure.
+
+Only the isolated local fictional devices are demonstrated. Real tracker model
+command capability requires separate verification; real engine control is disabled
+without a vetted stationary hardware interlock and fresh owner confirmation.
+No production GPS server, physical device certification or hosted migration is
+claimed. Source, local evidence and remaining review are in FEAT-GPS/UIX-001,
+ADR-080 and `specs/TRACEABILITY.md`. Owner visual approval and full release gates
+remain pending for the new screens.
+
+## October14 provider-owner change — local implementation
+
+FEAT-FLT/IAM/APP/VER/CAP/PRV-001 / ADR-079: all owners display Transport Provider,
+may add multiple Draft trucks and manage assigned drivers. Driving owners retain
+map Home. One active truck can go Live without reviewed documents. More than one
+Live truck requires reviewed ownership or an operating licence reviewed in the
+provider's name for an owned/financed truck; rented/drive-manage permission never
+unlocks fleet publication. Restored trucks return to Draft before explicit Go Live. The owner corrected lease to financing. Separate honest badges
+and full live/disclosable fleet totals retain personal privacy. Existing identity,
+history, documents, private sharing and ongoing Tracking remain protected.
+The exact source is installed in the backed-up local preview after the fresh v3
+SQL, strict-catalog, rollback-denial and concurrency checks. Actual desktop/phone
+web and Expo workflow acceptance passes. Owner visual approval, full release gates
+and hosted rollout remain pending; see `specs/TRACEABILITY.md`. Earlier one-truck descriptions below reflect
+the deployed policy until this replacement is separately approved and released.
+Public cards label an assigned person Driver; they do not infer employment or
+ownership from the provider account's historical category. Featured preserves
+authoritatively eligible driving owners as well as employed drivers.
 
 ## Purpose and audience
 
@@ -13,8 +134,9 @@ Providers control whether a signal is public, private to named contacts, both,
 or exclusive to one recipient. A verified email opens only the capacity shared
 with that recipient; public discovery remains account-free. Brokers and
 enterprise contacts do not gain staff or transporter-account powers by opening
-that map. Independent drivers manage one current truck; transport companies
-manage their trucks and assigned drivers.
+that map. All Transport Provider owners can register multiple Draft trucks and manage
+assigned drivers. Publishing additional trucks follows the reviewed-authority
+rule above. Employed drivers control only their current assigned truck.
 
 Private shipment tracking supports transport that has already been agreed. It
 keeps the authorized shipment parties informed through approximate location,
@@ -28,9 +150,33 @@ of price, safety, current availability, document validity or delivery.
 The owner-approved October 10 web/native copy revision uses “Find space for your next load” above the existing public/private map choices. About
 explains how to open a shared map, how transporters control sharing, and how to
 confirm a load directly before explaining Tracking. The same contextual wording
-is supplied in English, Amharic, Afaan Oromo, Somali and Tigrinya; fluent-speaker
+is supplied in English, Amharic and Afaan Oromo; fluent-speaker
 review is distinct from automated language/rendering checks. User-generated
 names, descriptions, routes and messages are not translated.
+
+October13 locally verified presentation revision, awaiting owner visual approval: About
+groups concise benefits by brokers/shipping teams, individual transporters and
+transport companies. It uses the global language control rather than repeating
+language selection. Native Featured and truck/profile facts, plus web staff
+record/action groups, use deliberate grouping without changing features, data,
+permissions or map behavior. Reviewer sign-in remains normal authentication;
+its entry moves from About to transporter sign-in in the unpublished revision.
+Current Play screenshots and published binaries still predate this cleanup.
+Public fleet pages also tolerate the schema's existing optional null truck number;
+they retain bounded validation and independent row/map state without displaying
+a substitute identifier or changing a record.
+
+Internal-team safeguards are implemented and verified in the local preview;
+owner visual review, full release gates and hosted rollout remain pending.
+Support offers Claim only for the oldest waiting request when that agent is
+available and below the shared chat limit, then checks those conditions again
+on submission (FEAT-SUP-001). Independent content holds and terminal rating
+removals stay effective when staff decide another report or dispute, so restricted
+review text and reputation counts cannot reappear through the other queue
+(FEAT-REV-001 / FEAT-PLY-001). Document decisions, staff responsibility changes,
+deletion processing and Featured manual programmes/sponsors retain their saved
+state, permission checks and history; the focused local browser evidence is in
+`docs/PROGRESS.md`. This verification does not describe a new deployed binary.
 
 Promotional design shows practical East African road-freight operations:
 working trucks, freight yards, drivers and dispatchers. It avoids abstract tech
@@ -71,10 +217,32 @@ transport assistance is brokerage live chat, while provider Support is in the
 workspace. Public discovery creates no demand post, buyer dashboard or member
 network. The legacy `/capacity` and `/providers` addresses redirect to Capacity.
 
+The unpublished October13 search refinement names this drawer Transporter
+search and places a visible clear control beside its input. Meaningful input
+searches after a short pause; only one request runs at a time and further typing
+keeps the latest query waiting. Clearing discards results and queued work without
+resetting the truck map. Search/Enter and bounded result paging remain available.
+Show trucks explicitly applies a profile to the map. Company-driver results
+still link to the company's transporter profile; independent drivers have their
+own transporter profile. No driver-profile ownership or public-data policy was
+changed by this refinement. Visual approval and release gates remain pending.
+
+The owner's latest October13 refinement separates all truck-map filters from
+transporter-profile search: configuration, load, routes, location, freshness and
+document choices affect the map only. Searching still requires an eligible
+assigned available truck in the authorized public/private audience and respects
+blocked profiles, but results/counts/ranking do not depend on the map filters.
+Only explicitly showing a profile's trucks associates it with the map, retaining
+the user's applied truck filters. Focused real web and Expo browser checks prove
+unchanged search results/count/page through map filtering; search lives outside
+the map reset boundary and the installed Next Form preserves client state during
+filter navigation. This correction awaits owner visual review and full release
+gates; it does not change SQL or authorization.
+
 
 The public shell uses white and warm off-white working surfaces over a restrained Loadgistic-patterned canvas. Map-first capacity workspaces begin with their primary tool and use selected navigation as their visible page label; board and information-page headings use a compact task scale; detailed story and the approved workshop artwork live on About rather than delaying working routes. Loading, empty, error, and cursor states remain compact overlays inside bounded map canvases rather than layout rows that steal map height. At a 320-by-640 reflow viewport, each capacity map retains at least 300 CSS pixels of usable height and no form, chat launcher, map control, session action, or bottom navigation covers another required control.
 
-The dedicated Daily Featured Trucks workspace uses a seven-day truck-type rotation: mini trucks, cargo vans, pickups, light trucks, medium trucks, every heavy configuration on Saturday, and courier cars on Sunday. Saturday includes heavy rigid trucks, fixed-trailer heavy rigid trucks, and tractors whose current attachment is a Container, Dry van, or Heavy equipment trailer. Each published roster contains exact active trucks and their current assigned Drivers, with provider identity retained as business context. The automatic Ethiopia-time schedule divides the 07:30–09:00 EAT programme into equal whole-minute truck presentations and inserts no more than four administrator-configurable programme interludes of at most two minutes each. An interlude may identify the next active sponsor or use the neutral Programme pause label; there is no afternoon or evening session, lunch entry, or multi-hour intermission. Sponsors may be linked Loadgistic transporters or outside advertisers with a bounded business name, description, and validated public website or phone. An administrator can manage the sponsor catalogue and placements, choose a target of one to twelve exact eligible trucks, regenerate the deterministic schedule, adjust bounded interlude settings, or publish validated manual truck intervals. One compact programme command combines today's date, truck theme, featured count, week disclosure, schedule disclosure, optional live action, and the Open Transport Capacity shortcut without repeating the page title. The public timeline distinguishes the current truck presentation from a programme interlude or unscheduled time. The complete billboard fills its main column as one clean, evenly lit warm-white display surface with a thin neutral edge; it has no nested frame, heavy dark perimeter, cast shadows, or repeated Featured today heading. On wide screens, Sponsors occupy a permanent solid right-hand command panel beside the billboard rather than sharing its rendered surface. On narrow screens the programme command becomes a compact row while the Sponsors panel stays above the featured roster without delaying access to the billboard. Phones show two sponsor cards at a time and rotate deterministic pairs automatically without visitor carousel controls; keyboard focus and reduced-motion preferences hold the current pair for accessibility. Numbered tiles lead with the assigned Driver portrait, first name, and role, then keep the exact truck configuration, provider identity, and presentation time immediately visible. The deterministic launch fixture gives 21 Drivers distinct reviewed existing portraits, 24 Drivers distinct newly generated portraits, and the remaining 98 Drivers a neutral person-and-three-spoke-steering-wheel profile icon rather than repeating faces or showing broken or misleading images. A multi-configuration fixture day includes one eligible truck from each available configuration before repeating one. The responsive grid adds rows as the roster grows while remaining inside the remaining-viewport workspace. The programme never disappears because of a missing or newly ineligible daily roster: its week and current truck theme remain visible with a truthful roster-being-prepared state, without automatic production substitution or publication. The deterministic pre-launch fixture alone may materialize a missing current Ethiopia-day roster, and it never overwrites an existing administrator draft or publication. Featured truck summaries and sponsored transporter cards open the canonical transporter microsite or filtered Open Transport Capacity market; outside-advertiser cards expose only their saved website or phone action.
+The dedicated Daily Featured Trucks workspace uses seven daily truck-type themes: mini trucks, cargo vans, pickups, light trucks, medium trucks, heavy trucks and a mixed Sunday. Heavy trucks include rigid configurations and supported tractor/trailer combinations; courier cars are retired. The automatic schedule runs08:30–12:00 Ethiopia time, with a default maximum of eight distinct truck-and-driver showcases and four two-minute sponsor mentions. Airtime is divided between the selected trucks; sponsors remain separate. Each truck type retains its own history: waiting eligible pairs are selected first, then that type starts again to fill the day. Mixed Sunday uses the same histories. Saved/manual days remain intact; fewer entries reflect actual candidate/driver scarcity, and no eligible pairs produces an honest empty state. Staff with Featured permission can inspect eligibility and upcoming days, prepare missing days, manage sponsors, or publish a validated manual schedule. Numbered public cards lead with the assigned Driver's portrait, first name and role, retaining the exact truck, transporter and time. The responsive board and sponsor panel retain their approved desktop/phone layouts. FEAT-FTR-001 controls eligibility, authorization, scheduling, history preservation and generation failure handling.
 
 The Capacity Board uses cursor-based loading in bounded 12–16-result batches with visible loading feedback and duplicate prevention. One shared interactive map is the only public Market result surface and automatically appends bounded batches without a manual Load more control or ranked list. One stable command area retains search, filters, and location controls. Filters begin a new cursor chain and apply only supplied criteria. Shipment origin and destination remain visible without first choosing a signal type; either endpoint or both, Service-area proximity, truck facts, freshness, selected-city proximity to the truck’s reported location, and explicit visitor proximity work independently and combine only when supplied. Current or regular Capacity routes match each supplied endpoint against every stored segment and apply direction only when both endpoints exist. Eligible Empty current or regular Service areas match one supplied endpoint, or both endpoints when both are supplied, against the complete polygon. A compact search bar stays directly accessible over the map and produces keyboard-accessible current Transporter and Truck suggestions after meaningful input; a transporter suggestion applies its exact handle and a truck suggestion opens that truck selected on the Map. Detailed availability and geometry filters open in a dismissible modal and close before Apply or Clear navigation; featured-transporter map actions likewise close their source dialog before navigation. The compact map key starts collapsed on all screens and opens the complete key on demand. Its symbols match the map: pointed pins represent Empty or Partial, blue dashed circles represent approximate location, a green polygon represents an Empty Service area, green or yellow solid lines represent Empty or Partial Capacity routes, and a muted-orange dashed line or outlined polygon represents the one regular-service signal. A Private-network truck is absent from anonymous discovery, including its identity and regular service, unless its authorized publisher later selects Public Market. The map starts at a detailed Ethiopia view while bounded panning permits practical East Africa context without exposing a world or Africa-wide fallback. It groups crowded truck signals in deterministic screen cells at least as wide as the displayed marker using bounded linear-time work. Clusters never combine Empty with Partial, never contain more than eight trucks, and cannot absorb distant markets through transitive neighbors; each cluster stays anchored at the geographic center of its members, names its status, and uses that status treatment. A bounded, deterministic screen-space placement pass separates only genuinely overlapping Empty and Partial groups without moving them into another town or making them bounce when the same zoom state is revisited. Zooming progressively separates regional, city, town, and neighborhood activity. A cluster still crowded at maximum zoom remains compact and opens an accessible bounded truck chooser instead of exploding into overlapping individual pins. Every unclustered signal has a true circular pin head above its point and uses Loadgistic's corresponding cargo-configuration image without placing Empty or Partial text over the artwork. A complete green ring and tail mean Empty and a complete bright-yellow ring and tail mean Partial; accessible names, summaries, details, and the map key repeat the status, and no public marker, result, or filter uses a remaining-space percentage. Artwork is centered and enlarged within the proportionate head; rigid and tractor-trailer artwork keeps the cab and enough of the current attached trailer visible to distinguish the configuration. Truck and visitor-location summaries appear only on hover or keyboard focus, are offset above the related marker, and retain the tooltip pointer. Selecting one truck enters an explicit focus state that hides other markers and clusters and fits whichever current or regular geometry is authorized for that surface. Each selected-truck shape uses a wide pointer target. Hover or keyboard focus shows one temporary high-contrast signal explanation; click, Enter, or Space pins the selected signal explanation. Each explanation uses a readable light surface, restrained neutral border, matching signal-color accent, and a dismissible close control. Essential truck identity, capacity status, transporter link, visible telephone, and private-sharing guidance stay in a compact responsive selected-truck panel; a clear × exits focus and restores clustering.
 
@@ -113,7 +281,7 @@ Empty means the truck is completely empty. Partial means it has some space and i
 
 Local development data represents the intended dense city-and-town fleet: 143 active signals are distributed through weighted Ethiopian freight markets and real nearby cities, towns, and localities, without equal regional quotas, identical fleet patterns, repeated city-center coordinates, or generated diagonal lines. Larger freight markets contain more activity than smaller local markets without allowing one locality to dominate the country-wide map. The exact vehicle mix is 91 cargo vans, conventional pickups, stake-body pickups, and mini trucks; 12 courier cars; 15 light trucks; nine medium trucks; five heavy rigid trucks; five fixed-trailer heavy rigid trucks; and six interchangeable tractors, with two currently showing each supported trailer configuration. No motorcycle appears. Local cargo vans, pickups, mini trucks, and most courier cars use only road-connected routes totaling at most 30 kilometres or compact Service-area polygons whose named boundary places remain within 30 kilometres of the base city or town; three courier cars demonstrate bounded intercity small-shipment corridors. The primary single-truck Driver demo keeps its approximate location, current Capacity route, and regular Service area within one compact local market so the map tells a simple, geographically coherent story. Light-duty trucks may use 20, 50, 70, or 100 kilometre service areas or concise routes totaling no more than 100 kilometres with no leg longer than 80 kilometres. Only occasional medium and heavy vehicles demonstrate longer logical Ethiopian freight corridors. Every fixture truck resolves to an active assigned Company driver or to the owning Owner-operator or Self-managed driver identity, so every truck type in the seven-day Daily Featured rotation remains eligible on its scheduled day. Most local, Partial, and approximate-location signals exercise Private networks; the anonymous public subset is intentionally weighted toward Empty medium and heavy trucks with over-road routes. Test-recipient addresses are supplied only through ignored local configuration after the credential-free fixture is imported, never committed in fixtures or logs. A trusted email's private map includes every public or private signal explicitly shared with it, without duplicates, while Loadgistic remains a distinct platform audience.
 
-Capacity freshness comes from the latest capacity update, while approximate-location freshness comes independently from the latest Driver location update. Empty and Partial signals remain visible during early-market rollout until the provider explicitly selects Off Duty. Each timestamp is presented in one plain-language stage—Today, Past few days, Past week, Past month, or Older—and older signals tell visitors to confirm availability directly. The Map remains unranked. An older location is the last reported approximate area, not a live position. Fleet capacity requires an assigned Driver location; fleet owners may preserve but never replace the assigned Driver's obscured point.
+Capacity freshness comes from the latest capacity update, while approximate-location freshness comes independently from the latest Driver location update. Empty and Partial signals remain visible during early-market rollout until the provider explicitly selects Off Duty. Each timestamp is presented in one plain-language stage—Today, Past few days, Past week, Past month, or Older—and older signals tell visitors to confirm availability directly. The Map remains unranked. An older location is the last reported approximate area, not a live position. Capacity uses the provider's explicitly selected location source. Owners may select GPS, assigned-driver phone or manual entry; the actual saved source is disclosed and its privacy radius is preserved. A pending source retains the last honestly labelled report.
 
 The capacity editor keeps status and geography simple: Empty may use a Service area or Capacity route, while Partial always uses a Capacity route. Its map stays mounted behind focused native dialogs for Current capacity, Current coverage, Capacity sharing, Load preferences, Regular service, and Approximate location; there is no Edit all action. Current capacity contains status only; Sharing owns visibility, and Loads owns accepted load types plus pickup/drop-off preferences. New signals start Private until the provider explicitly opens them through Sharing. Each dialog contains only that group's inputs, with missing required route or location inputs included when creating or changing a signal. Save updates server-owned facts without document navigation and waits for the data refresh before another editor opens; Cancel, Close, and Escape discard the draft and restore focus. Failed saves retain inputs and explain the error in the dialog. Editing another group preserves pickup/drop-off preferences and the Driver's last confirmed location timestamp. Regular service opens with existing values and is replaced atomically so a failed edit cannot remove the saved signal. Four reserved floating zones keep the selected truck at top left, compact edit rail at top right, map key at bottom left, and location-radius shortcut plus direct refresh at bottom right. The radius shortcut opens the Location dialog. Automatic refresh is silent and pauses while editing; manual refresh produces short-lived feedback beside the dock. Dialogs keep a scrollable input body and fixed actions within the phone viewport while the map remains visible behind them.
 
@@ -124,6 +292,23 @@ location; a separate location-only action is available after publication.
 Controls enable when their client handlers are ready. This local FEAT-CAP-001
 correction preserves assigned-Driver permissions and the Private default;
 owner review is accepted and rollout remains pending.
+
+## Personal identity correction — verified locally, hosted rollout pending
+
+FEAT-IAM-001 / FEAT-PRV-001 govern the locally implemented correction: personal public
+identity uses first name, an existing public handle, explicit public contact number
+and optional photo; Last / father name and full names stay in authorized private
+workflows. Company business names, About and reviewed documents remain. Separate
+Driver and transporter uploads retain their subject authority; absent images use
+role-appropriate icons. Independent registration details and legacy About/contact
+extras are retained privately and excluded from public search; company business
+information and office-city search remain. Truck location and route facts retain
+their signal-specific publication rules. No employee handle, new account role or public contact
+fallback is introduced. Owner-approved141 is installed only in the local preview;
+20 web and8 Expo workflows verify identity/contact/photo editing, privacy and
+recovery. Pending accounts no longer start ACTIVE-only chat/push/location effects.
+Owner visual review and full gates still precede separately reviewed hosted
+schema/client rollout. These local results do not describe the deployed version.
 
 ## Location privacy and maps
 
@@ -136,6 +321,18 @@ broader result set. Match explanation text is not eligibility authority.
 The assigned Driver chooses a permitted location privacy radius. The browser displaces the exact coordinate before application state or submission. Only the displaced center, privacy radius, source, timestamp, and general-area label reach the server. No public surface receives a private plate, exact truck coordinate, raw proof path, tracking secret, or account contact.
 
 Map meaning never relies on color alone. A selected signal always shows a violet dashed circle sized by the Driver's chosen location accuracy. All user-facing copy calls it Approximate current location or Approximate location radius; location privacy remains an internal data-policy term. Green Empty availability uses a hollow Service-area outline or solid Capacity route, yellow Partial availability uses a solid Capacity route, and blue dashed or outlined regular service remains visibly separate. Area and location interiors do not block routes beneath them; overlapping current and regular route strokes receive small opposite visual offsets so each is independently selectable without changing stored geography. Clicking a signal pins only that signal's explanation. Public and provider capacity-summary maps use the same rules. Every map uses one centrally configured HTTPS tile origin with visible linked attribution. The bounded pilot may fall back to the direct OpenStreetMap community endpoint with a launch warning, but Loadgistic never treats it as an SLA and never proxies, prefetches, bulk-copies, or self-hosts those tiles on Netlify.
+
+## Planned local profile and route correction — October 13
+
+FEAT-PRV-001 and FEAT-CAP-001 retire provider-level Services and Regular service
+from public profiles and account editing. About remains the provider description;
+contacts, reviewed documents and shipment reviews remain. The repeated bottom
+booking checklist is replaced by a transporter-scoped See trucks on the map
+action above the fleet. Usual routes move to the exact selected truck and current
+driver, retaining unbound legacy records without inheriting them across a fleet.
+Stored legacy Services is preserved but excluded from new public/search output.
+These changes are being implemented locally, await focused evidence and owner
+visual review, and do not describe the currently deployed web/Android release.
 
 ## Provider microsites
 

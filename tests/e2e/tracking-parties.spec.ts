@@ -1,5 +1,5 @@
 import {auditDeleteVehicles} from './audit-helpers';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {localAuditService,checked,auditProvider} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
@@ -28,7 +28,7 @@ test('added Tracking party saves inline, receives invitation and OTP, and loses 
     vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Party test',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
     const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
-    shipmentId=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,cargoSummary:'Tracking party verification',customerEmail:`owner-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'})).id;
+    shipmentId=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Tracking party verification',customerEmail:`owner-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'})).id;
     await page.goto('/login');const login=page.getByTestId('email-code-request-form');await login.getByLabel('Email',{exact:true}).fill(actor.email);const loginAt=Date.now();
     await login.getByRole('button',{name:'Email me a code'}).click();await expect(page.getByTestId('email-code-form')).toBeVisible();
     await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(actor.email,loginAt,'Your Loadgistic sign-in code'));await page.getByRole('button',{name:'Continue',exact:true}).click();

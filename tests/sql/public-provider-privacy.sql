@@ -1,9 +1,13 @@
 begin;
 do $test$
-declare actor uuid; provider uuid; result jsonb; name_value text;
+declare actor uuid:=gen_random_uuid(); provider uuid:=gen_random_uuid(); result jsonb; name_value text;
 begin
- select id into strict actor from profiles where email='driver@loadgistic.local';
- select id into strict provider from provider_profiles where user_id=actor;
+ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+ values(actor,'public-privacy-'||actor||'@example.test',now(),'{}');
+ update profiles set role='DRIVER',active=true,full_name='PublicFirst PrivateSurname' where id=actor;
+ insert into provider_profiles(id,user_id,business_name,handle,public_visibility)
+ values(provider,actor,'Historical Private Name','public-privacy-'||provider,'PUBLIC');
+ insert into company_pages(provider_profile_id) values(provider);
  update company_pages set published=true,contact_phone='+251900000001',contact_email='hidden-contact@example.invalid',
   contact_whatsapp='+251900000002',contact_website='https://hidden-site.invalid',show_contact_phone=false,show_contact_email=false,
   show_contact_whatsapp=false,show_contact_website=false,profile_image_path='private-image-object' where provider_profile_id=provider;
@@ -14,8 +18,8 @@ begin
   or result::text like '%private-image-object%' or result::text like '%hidden-contact%' then raise exception 'PRIVATE_METADATA_RETURNED';end if;
  update company_pages set show_contact_phone=true,show_contact_email=true,show_contact_whatsapp=true,show_contact_website=true where provider_profile_id=provider;
  result:=public_provider_page_details(null,provider);
- if result->>'contact_phone'<>'+251900000001' or result->>'contact_email'<>'hidden-contact@example.invalid'
-  or result->>'contact_whatsapp'<>'+251900000002' or result->>'contact_website'<>'https://hidden-site.invalid' then raise exception 'PUBLIC_CONTACT_LOST';end if;
+ if result->>'contact_phone'<>'+251900000001' or result->>'contact_email' is not null
+  or result->>'contact_whatsapp' is not null or result->>'contact_website' is not null then raise exception 'PERSONAL_PUBLIC_CONTACT_ALLOWLIST_WRONG';end if;
  update company_pages set published=false where provider_profile_id=provider;
  if public_provider_page_details(null,provider) is not null then raise exception 'UNPUBLISHED_METADATA';end if;
  begin perform public_provider_page_details(null,null);raise exception 'MISSING_SCOPE_ACCEPTED';exception when others then if sqlerrm<>'INVALID_PROVIDER_SCOPE' then raise;end if;end;

@@ -6,6 +6,9 @@ import {apiOrigin} from '../api/http';
 import {backgroundLocationDue,freshBackgroundFix,trackingLeases,type TrackingLease} from './background-state';
 import {backgroundConsentKey,backgroundDisclosureVersion} from './background-consent';
 import {createLocationServiceLifecycle} from './service-lifecycle';
+import {locationInstallationIdentity} from './phone-installation';
+import {randomUUID} from 'expo-crypto';
+import {phoneObservation} from './phone-observation';
 export const taskName='loadgistic.shipment-location.v1';
 const serviceLifecycle=createLocationServiceLifecycle({
  available:TaskManager.isAvailableAsync,
@@ -13,14 +16,14 @@ const serviceLifecycle=createLocationServiceLifecycle({
  start:copy=>Location.startLocationUpdatesAsync(taskName,{accuracy:Location.Accuracy.Balanced,timeInterval:600000,distanceInterval:0,deferredUpdatesInterval:600000,pausesUpdatesAutomatically:false,showsBackgroundLocationIndicator:true,foregroundService:{notificationTitle:copy.title,notificationBody:copy.body,notificationColor:'#0c7275',killServiceOnDestroy:false}}),
  stop:()=>Location.stopLocationUpdatesAsync(taskName),
 });
-const leaseKey='loadgistic.shipment.location.leases.v1',deviceKey='loadgistic.shipment.location.device.v1';
+const leaseKey='loadgistic.shipment.location.leases.v1';
 let storageFlight:Promise<unknown>=Promise.resolve();
 let epoch=0;
 function serial<T>(work:()=>Promise<T>):Promise<T>{const next=storageFlight.then(work,work);storageFlight=next.catch(()=>undefined);return next;}
 const write=(leases:TrackingLease[])=>SecureStore.setItemAsync(leaseKey,JSON.stringify(leases),{keychainAccessible:SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY});
 export const readTrackingLeases=()=>serial(async()=>{const raw=await SecureStore.getItemAsync(leaseKey);try{return trackingLeases(raw?JSON.parse(raw):[]);}catch{return[];}});
 export function replaceTrackingLeases(leases:TrackingLease[]){epoch++;return serial(()=>write(leases));}
-export async function deviceTrackingId(){return serial(async()=>{const saved=await SecureStore.getItemAsync(deviceKey);if(saved)return saved;const {randomUUID}=await import('expo-crypto');const id=randomUUID();await SecureStore.setItemAsync(deviceKey,id,{keychainAccessible:SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY});return id;});}
+export async function deviceTrackingId(){return (await locationInstallationIdentity()).installationId;}
 async function send(token:string,body:unknown){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);try{
  const response=await fetch(`${apiOrigin}/api/mobile/tracking-device`,{method:'POST',credentials:'omit',redirect:'error',signal:controller.signal,headers:{Accept:'application/json','Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(body)});
  const data:unknown=response.ok?await response.json():null;
@@ -46,7 +49,7 @@ TaskManager.defineTask<{locations:Location.LocationObject[]}>(taskName,async({da
   if(await SecureStore.getItemAsync(backgroundConsentKey(lease.actorId))!==backgroundDisclosureVersion){await revokeTrackingLease(lease);continue;}
   if(!backgroundLocationDue(lease)){next.push(lease);continue;}
   const now=Date.now(),point=obscureCoordinate(fix.coords.latitude,fix.coords.longitude,lease.radius);
-  try{const response=await send(lease.token,{latitude:point.lat,longitude:point.lng,radius:lease.radius,observedAt:fix.timestamp});
+  try{const response=await send(lease.token,{latitude:point.lat,longitude:point.lng,radius:lease.radius,observedAt:fix.timestamp,reportId:randomUUID(),...phoneObservation(fix.coords)});
    if([401,403,404].includes(response.status))continue;
    const result=response.ok&&response.data&&typeof response.data==='object'&&'recorded' in response.data&&typeof response.data.recorded==='boolean'?response.data:null;
    next.push({...lease,lastAttempt:now,expiresAt:result?new Date(Math.min(now+86400000,Date.parse(lease.absoluteExpiresAt))).toISOString():lease.expiresAt});

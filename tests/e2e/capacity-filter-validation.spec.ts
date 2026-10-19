@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 
 test('unresolved locations do not silently broaden the market and can be corrected',async({page}:{page:any})=>{
   await page.goto('/?originPlaceRef=missing-audit-place&origin=Unresolved');

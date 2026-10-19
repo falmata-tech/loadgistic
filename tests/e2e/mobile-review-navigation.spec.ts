@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {randomUUID} from 'node:crypto';
 import {localAuditService,checked,auditProvider,auditDeleteVehicles} from './audit-helpers';

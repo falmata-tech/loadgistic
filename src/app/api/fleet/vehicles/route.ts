@@ -16,7 +16,7 @@ export async function POST(request:NextRequest){
       useBasis:text(form,'useBasis'),replaceVehicleId:text(form,'replaceVehicleId'),replacementConfirmed:text(form,'replacementConfirmed')==='on',
       supportedTrailerConfigurations:form.getAll('supportedTrailerConfigurations').map(String)
     });
-    return redirectWith(request,`/app/fleet/${vehicle.id}`,'success',text(form,'replaceVehicleId')?'Truck changed. Add fresh location and capacity for this truck.':'Truck added. Complete its capacity and document details when ready.');
+    return redirectWith(request,`/app/fleet/${vehicle.id}`,'success',text(form,'replaceVehicleId')?'Vehicle changed. Add fresh location and capacity for this vehicle.':'Vehicle added. Complete its capacity and document details when ready.');
   }catch(error){
     const replacement=text(form,'replaceVehicleId');
     return redirectWith(request,'/app/fleet/new'+(/^[0-9a-f-]{36}$/i.test(replacement)?'?replace='+replacement:''),'error',errorMessage(error));

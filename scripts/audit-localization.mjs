@@ -2,7 +2,7 @@ import {readFileSync,readdirSync} from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 // A static coverage inventory, not proof of natural wording or dynamic-copy coverage.
-const languages=['am','om','so','ti'];
+const languages=['am','om'];
 const catalogs=Object.fromEntries(languages.map(language=>[language,JSON.parse(readFileSync(`src/lib/i18n/messages/${language}.json`,'utf8'))]));
 const messages=new Map(),unmarked=[],dynamic=[];
 function record(message,file,node,source){
@@ -36,7 +36,9 @@ function walk(directory){for(const entry of readdirSync(directory,{withFileTypes
 walk('src/app');walk('src/components');
 // Product names, units, literal examples and numeric notation intentionally stay unchanged.
 const unchanged=new Set(['Loadgistic','Isuzu','NPR','WhatsApp','km','km.','MB.','AM','+251…','07:30–09:00 EAT','35000','10 km','25 km','50 km','100 km','200 km','name@example.com','https://example.com','https://www.tiktok.com/@loadgistic/live','LG-RV-XXXX-XXXX-XXXX-XXXX','LG-XXXX-XXXX-XXXX-XXXX']);
+const unchangedRaw=new Set(['IMEI','GT06','Teltonika','JT808','km','km ·','EAT']);
+const pendingRaw=unmarked.filter(entry=>!unchangedRaw.has(entry.text));
 const missing=[...messages].filter(([key])=>!unchanged.has(key)).map(([key,locations])=>({message:key,locales:languages.filter(language=>!catalogs[language][key]),locations})).filter(entry=>entry.locales.length);
-const report={status:missing.length||unmarked.length||dynamic.length?'incomplete':'static-coverage-passed',catalogEntries:Object.fromEntries(languages.map(language=>[language,Object.keys(catalogs[language]).length])),markedMessages:messages.size,missingCount:missing.length,unmarkedCount:unmarked.length,dynamicReviewCount:dynamic.length,
- limitations:['Dynamic findings require review: some contain user content that must remain unchanged. This is an inventory, not an instruction to translate arbitrary values.','Computed copy, metadata, native browser messages and outbound email still need separate review.','Catalog parity and coverage do not establish translation quality.'],missing,unmarked,dynamic};
-console.log(JSON.stringify(report,null,2));if(process.argv.includes('--strict')&&(missing.length||unmarked.length||dynamic.length))process.exitCode=1;
+const report={status:missing.length||pendingRaw.length||dynamic.length?'incomplete':'static-coverage-passed',catalogEntries:Object.fromEntries(languages.map(language=>[language,Object.keys(catalogs[language]).length])),markedMessages:messages.size,missingCount:missing.length,unmarkedCount:pendingRaw.length,dynamicReviewCount:dynamic.length,
+ limitations:['Dynamic findings require review: some contain user content that must remain unchanged. This is an inventory, not an instruction to translate arbitrary values.','Computed copy, metadata, native browser messages and outbound email still need separate review.','Catalog parity and coverage do not establish translation quality.'],missing,unmarked:pendingRaw,dynamic};
+console.log(JSON.stringify(report,null,2));if(process.argv.includes('--strict')&&(missing.length||pendingRaw.length||dynamic.length))process.exitCode=1;

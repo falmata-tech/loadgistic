@@ -5,15 +5,15 @@ create function pg_temp.push_due_work() returns void language sql as $$ update p
 -- Synthetic due-time advancement: this rollback-only DO block has a fixed now().
 do $test$
 <<fixture>>
-declare customer uuid:=gen_random_uuid();agent uuid:=gen_random_uuid();broker uuid:=gen_random_uuid();other uuid:=gen_random_uuid();uid uuid;
+declare customer uuid:=gen_random_uuid();agent uuid:=gen_random_uuid();other uuid:=gen_random_uuid();uid uuid;
  session uuid:=gen_random_uuid();installation uuid:=gen_random_uuid();visitor_installation uuid:=gen_random_uuid();guest_request uuid:=gen_random_uuid();chat uuid:=gen_random_uuid();
  worker uuid:=gen_random_uuid();worker_two uuid:=gen_random_uuid();delivery uuid;old_delivery uuid;items jsonb;value jsonb;seq bigint;version bigint;initial_count bigint;read_before jsonb;role_name text;row_name text;attempt integer;
 begin
- foreach uid in array array[customer,agent,broker,other] loop
+ foreach uid in array array[customer,agent,other] loop
   insert into auth.users(id,email,email_confirmed_at) values(uid,uid||'@example.test',now());
   update profiles set role=case when uid in (customer,other) then 'DRIVER'::user_role else 'SUPPORT'::user_role end,active=true where id=uid;
-  if uid in(agent,broker) then insert into support_agent_profiles(user_id,active,available,max_open_conversations,can_manage_support,can_manage_brokerage)
-   values(uid,true,true,20,uid=agent,uid=broker);end if;
+  if uid=agent then insert into support_agent_profiles(user_id,active,available,max_open_conversations,can_manage_support,can_manage_brokerage)
+   values(uid,true,true,20,true,false);end if;
  end loop;
  insert into auth.sessions(id,user_id,created_at,updated_at) values(session,customer,now(),now());
  insert into support_conversations(id,customer_user_id,assigned_agent_user_id,category,status,assigned_at) values(chat,customer,agent,'ACCOUNT','OPEN',now());
@@ -65,32 +65,46 @@ begin
  if finish_native_push_delivery(delivery,worker,'{"code":"ACCEPTED","ticketId":"late-ticket"}') then raise exception 'STALE_LEASE_FINISHED';end if;
  perform claim_native_push_batch(worker_two,40);
  if (select state from native_push_outbox where id=delivery)<>'FAILED' then raise exception 'CRASHED_LEASE_UNBOUNDED';end if;
- perform create_transport_chat_request(guest_request,'{"name":"Synthetic push visitor","phone":"+251900000007","origin":"Adama","destination":"Dire Dawa"}',repeat('c',64));
- perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-guest-token]','am',null,null,guest_request,repeat('c',64));
- perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''en'',null,null,%L,%L)',gen_random_uuid(),repeat('e',64),'ExpoPushToken[synthetic-wrong-guest]',guest_request,repeat('f',64)));
- perform assign_transport_service_request(broker,guest_request,1,null,true);
- if not exists(select 1 from native_push_outbox where source_id=guest_request and event='ASSIGNED') then raise exception 'GUEST_ASSIGNMENT_NOT_NOTIFIED';end if;
- perform send_transport_chat_message(guest_request,null,broker,gen_random_uuid(),'Synthetic broker reply');
+ -- A retired visitor cannot register or receive Brokerage pushes. Prove token
+ -- rotation and receipt handling on a second active Support member device.
+ perform pg_temp.push_denial(format('select create_transport_chat_request(%L,%L::jsonb,%L)',guest_request,
+  '{"name":"Retired push visitor","phone":"+251900000007","origin":"Adama","destination":"Dire Dawa"}',repeat('c',64)),'PLATFORM_BROKERAGE_RETIRED');
+ perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''am'',null,null,%L,%L)',visitor_installation,
+  repeat('d',64),'ExpoPushToken[synthetic-guest-token]',guest_request,repeat('c',64)));
+ if exists(select 1 from native_push_bindings where installation_id=visitor_installation and audience='GUEST') or
+    exists(select 1 from native_push_outbox where source_id=guest_request and kind='BROKERAGE')
+    then raise exception 'RETIRED_BROKERAGE_PUSH_ACTIVE';end if;
+ perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-second-token]','am',customer,session,null,null);
+ perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''en'',%L,%L,null,null)',visitor_installation,
+  repeat('e',64),'ExpoPushToken[synthetic-wrong-device]',customer,session));
+ perform send_managed_support_message(agent,chat,'Synthetic second-device reply');
  perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
- select id into strict delivery from native_push_outbox where source_id=guest_request and event='MESSAGE' and lease_id=worker order by created_at desc limit 1;
- value:=native_push_delivery_context(delivery,worker);if value is null or value->>'kind'<>'BROKERAGE' then raise exception 'GUEST_REPLY_NOT_AUTHORIZED';end if;
+ select q.id into strict delivery from native_push_outbox q join native_push_bindings b on b.id=q.binding_id
+  where b.installation_id=visitor_installation and q.source_id=chat and q.event='MESSAGE' and q.lease_id=worker
+  order by q.created_at desc limit 1;
+ value:=native_push_delivery_context(delivery,worker);
+ if value is null or value->>'kind'<>'SUPPORT' or value::text like '%Synthetic%' then raise exception 'SECOND_DEVICE_REPLY_NOT_AUTHORIZED';end if;
  perform finish_native_push_delivery(delivery,worker,'{"code":"ACCEPTED","ticketId":"synthetic-ticket"}');
  if (select state from native_push_outbox where id=delivery)<>'SUBMITTED' or (select next_attempt_at from native_push_outbox where id=delivery)<now()+interval '14 minutes' then raise exception 'RECEIPT_NOT_DEFERRED';end if;
  -- Old invalid-token receipt cannot disable a rotated token.
- perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-rotated-token]','am',null,null,guest_request,repeat('c',64));
+ perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-rotated-token]','am',customer,session,null,null);
  update native_push_outbox set next_attempt_at=now()-interval '1 second' where id=delivery;
  perform pg_temp.push_due_work();items:=claim_native_push_batch(worker_two,40);perform native_push_delivery_context(delivery,worker_two);
  perform finish_native_push_delivery(delivery,worker_two,'{"code":"DeviceNotRegistered"}');
  if not (select enabled from native_push_installations where id=visitor_installation) then raise exception 'OLD_RECEIPT_DISABLED_NEW_TOKEN';end if;
  -- Current invalid token disables that device, not another installation.
- perform send_transport_chat_message(guest_request,null,broker,gen_random_uuid(),'Synthetic current token reply');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
- select id into strict delivery from native_push_outbox where source_id=guest_request and event='MESSAGE' and lease_id=worker order by created_at desc limit 1;
+ perform send_managed_support_message(agent,chat,'Synthetic current token reply');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
+ select q.id into strict delivery from native_push_outbox q join native_push_bindings b on b.id=q.binding_id
+  where b.installation_id=visitor_installation and q.source_id=chat and q.event='MESSAGE' and q.lease_id=worker
+  order by q.created_at desc limit 1;
  perform native_push_delivery_context(delivery,worker);perform finish_native_push_delivery(delivery,worker,'{"code":"DeviceNotRegistered"}');
  if (select enabled from native_push_installations where id=visitor_installation) or not (select enabled from native_push_installations where id=installation) then raise exception 'TOKEN_REJECTION_SCOPE_WRONG';end if;
- perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-new-guest-token]','am',null,null,guest_request,repeat('c',64));
- perform send_transport_chat_message(guest_request,null,broker,gen_random_uuid(),'Synthetic before expiry');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
- update transport_chat_access set expires_at=now()-interval '1 second' where request_id=guest_request;
- for delivery in select id from native_push_outbox where source_id=guest_request and lease_id=worker loop if native_push_delivery_context(delivery,worker) is not null then raise exception 'EXPIRED_GUEST_PUSH';end if;end loop;
+ perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-new-device-token]','am',customer,session,null,null);
+ perform send_managed_support_message(agent,chat,'Synthetic before expiry');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
+ update native_push_bindings set expires_at=now()-interval '1 second' where installation_id=visitor_installation;
+ for delivery in select q.id from native_push_outbox q join native_push_bindings b on b.id=q.binding_id
+  where b.installation_id=visitor_installation and q.lease_id=worker loop
+  if native_push_delivery_context(delivery,worker) is not null then raise exception 'EXPIRED_MEMBER_PUSH';end if;end loop;
  perform send_managed_support_message(agent,chat,'Synthetic before logout');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
  delete from auth.sessions where id=session;
  for delivery in select id from native_push_outbox where source_id=chat and lease_id=worker loop if native_push_delivery_context(delivery,worker) is not null then raise exception 'LOGGED_OUT_SESSION_PUSH';end if;end loop;
@@ -106,6 +120,6 @@ begin
  end loop;
  perform pg_temp.push_denial(format('select claim_native_push_batch(%L,41)',worker),'INVALID_PUSH_INPUT');
  perform pg_temp.push_denial(format('select claim_native_push_batch(%L,null)',worker),'INVALID_PUSH_INPUT');
- raise notice 'PASS: push registration/current scope, no replay/own-message/read fabrication, real join, leases, guest expiry, logout, token rotation/rejection and browser ACL/RLS.';
+ raise notice 'PASS: push registration/current scope, no replay/own-message/read fabrication, real join, leases, retired guest denial, member expiry, logout, token rotation/rejection and browser ACL/RLS.';
 end $test$;
 rollback;

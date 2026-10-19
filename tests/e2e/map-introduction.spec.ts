@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Browser,Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
 import {openCapacityFilters,closeCapacityFilters} from './capacity-drawer-helper';
@@ -29,7 +29,7 @@ test('introduction stays above a usable map across screen sizes and languages',a
   await page.screenshot({path:info.outputPath(`map-controls-${width}.png`)});
  }
  await page.setViewportSize(mobile?{width:390,height:844}:{width:1280,height:800});
- for(const locale of ['am','om','so','ti']){
+ for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await page.locator('main').evaluate(el=>el.scrollTop=0);
   await page.locator('.language-picker select:visible').selectOption(locale);

@@ -3,7 +3,7 @@ id: FEAT-DAT-001
 title: Supply-first local development dataset
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-VER-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-REV-001]
 problem: Public capacity discovery needs enough realistic provider and truck variation to test cursor loading, clustering, provider pages, and responsive layouts without retaining obsolete demand fixtures.
-behavior: Every explicitly reset non-Production Supabase project receives a deterministic supply-only market centered on city and town freight. The 143 active fleet-capacity records include 100 cargo vans, conventional pickups, stake-body pickups, and mini trucks; this compact freight cohort stays within 30 kilometres. Courier cars and motorcycles are excluded. Eighteen light trucks, nine medium trucks, five heavy rigid trucks, five heavy rigid-with-trailer trucks, and six interchangeable tractors with two examples of each attached-trailer configuration form smaller comparison cohorts. Each tractor registers a compatible trailer set while its current record shows only the attached trailer. Each truck's approximate location and current capacity geometry remain close to the same provider regular-service geometry so one selected-truck map tells a geographically coherent story. Truck placement follows weighted Ethiopian market areas and real nearby localities rather than equal regional quotas, identical fleet patterns, repeated center coordinates, or diagonal coordinate offsets. Open capacity is larger than either configured recipient's or Loadgistic's explicitly shared demo set; a Private signal contributes nothing to anonymous discovery, while an Open signal may also have a private-network grant. The fixture assigns each available portrait to one fictional male Driver only: 21 Drivers use reviewed existing imagery, 24 use newly generated imagery, and the remaining 98 use the neutral profile icon. Tractor conversions reuse only trucks assigned to those icon-fallback Drivers, so no additional Driver or vehicle is manufactured to satisfy artwork coverage. Credential-free fixtures never contain personal tester emails; an explicit local-only configurator grants a bounded smaller set to operator-provided test emails and the first-class Loadgistic audience after import. Each provider retains one regular Service area or Capacity route; the managed fixture contains no legacy demand, future-trip, Business-account, or relationship records and is imported without SQLite. A separately guarded additive Production-pilot import may materialize the same clearly synthetic supply data only after an exact project confirmation, collision preflight, logical backup, and rollback rehearsal; it never invokes the destructive local reset path or installs a reusable demo password.
+behavior: Every explicitly reset non-Production Supabase project receives a deterministic supply-only market centered on city and town freight. The 143 active fleet-capacity records include94 cargo vans, conventional pickups, stake-body pickups and mini trucks, plus six courier cars and six courier motorcycles; this compact freight cohort stays within30 kilometres. Eighteen light trucks, nine medium trucks, two heavy rigid trucks, two heavy rigid-with-trailer trucks, and six interchangeable tractors with two examples of each attached-trailer configuration form smaller comparison cohorts. Each tractor registers a compatible trailer set while its current record shows only the attached trailer. Each truck's approximate location and current capacity geometry remain close to the same provider regular-service geometry so one selected-truck map tells a geographically coherent story. Truck placement follows weighted Ethiopian market areas and real nearby localities rather than equal regional quotas, identical fleet patterns, repeated center coordinates, or diagonal coordinate offsets. Open capacity is larger than each explicitly configured email recipient’s demo set; a Private signal contributes nothing to anonymous discovery, while an Open signal may also have a private-network grant. The deterministic portrait policy assigns24 distinct reviewed portraits to fictional Drivers and leaves119 neutral profile icons. Tractor conversions reuse only trucks assigned to those icon-fallback Drivers, so no additional Driver or vehicle is manufactured to satisfy artwork coverage. Credential-free fixtures never contain personal tester emails; an explicit local-only configurator grants a bounded smaller set to operator-provided test emails after import, without the retired privileged Loadgistic audience. Each provider retains one regular Service area or Capacity route; the managed fixture contains no legacy demand, future-trip, Business-account, or relationship records and is imported without SQLite. A separately guarded additive Production-pilot import may materialize the same clearly synthetic supply data only after an exact project confirmation, collision preflight, logical backup, and rollback rehearsal; it never invokes the destructive local reset path or installs a reusable demo password.
 contracts: [DevelopmentDatabaseSeed, PublicCapacityCohort, LegacyDemandPurge, RetiredDemandBoundary]
 observability: [database_reset_summary, public_capacity_cursor_count, seed_integrity_failure, retired_demand_request]
 rollout: Destructive fixture reset remains deterministic and local-only. The separately named Production-pilot importer is additive, project-bound, credential-free, and reversible by its exact deterministic namespace. Production rollout requires a fresh logical backup and checksum; rollback deletes only namespaced pilot identities and exact pilot rows while retaining shared place-catalog and plan configuration.
@@ -11,21 +11,57 @@ rollout: Destructive fixture reset remains deterministic and local-only. The sep
 
 # Supply-first local development dataset
 
+## October18 courier rebalance — planned local fixture update
+
+The restored catalogue replaces the retired no-courier fixture policy. A fresh,
+explicit local reset keeps143 truck-and-driver pairs:94 compact vans/pickups/mini
+trucks, six Courier cars, six Courier motorcycles,18 light trucks, nine medium
+trucks and ten heavy/tractor combinations. All six interchangeable tractors,
+including two of each attached trailer, remain. The twelve courier conversions
+use an exact fixture-only allowlist, never an arbitrary customer's vehicles.
+Individual public Account names use the fixture person's first name; private
+identity and handles remain unchanged. Company names remain unchanged.
+
+Given the credential-free fixture is prepared for a fresh local reset\
+When its vehicle catalogue is projected\
+Then exactly six former heavy individual examples and six mini fleet spares
+become the twelve courier examples\
+And the main phone/GPS demonstration trucks and every existing driver assignment
+remain unchanged\
+And every courier's current and retained unbound regular geometry is coherent
+within its local market, with no regional heavy-truck route left on a courier\
+And at least eight eligible heavy truck-and-driver pairs remain for Featured.
+
+Given the already-installed local preview contains reviewed physical vehicles,
+proofs, saved Featured pairs or unfinished Tracking\
+When the separately reviewed six-courier preview operation is prepared\
+Then the plan names exact synthetic identities and checks their current records\
+And it never reinterprets an existing reviewed physical truck as another vehicle\
+And a replacement uses normal Draft, assignment and first-Live commands, retains
+the old record/history, and does not inherit an old document approval\
+And blocked Tracking or saved/manual Featured references stop that replacement
+instead of being deleted or silently rescheduled.
+
+Verification: `tests/capacity-market.test.mjs`,
+`tests/supabase-fixtures.test.mjs`, and the guarded local fixture verifier.
+The existing-preview one-off manifest and dry-run are separate local evidence;
+these source changes neither run a reset nor authorize hosted data changes.
+
 ### Scenario: normal reset creates a busy capacity market
 
 Given the process targets the isolated local Supabase project and is not running in Production\
 When its managed fixture is reset\
 Then it contains 30 published provider pages across nine fleet companies and 21 self-managed provider profiles\
 And it contains 143 active current-capacity signals with Empty, Partial, Service-area, and Capacity-route variation\
-And 100 of those trucks are cargo vans, conventional pickups, stake-body pickups, or mini trucks, with the three mini-truck configurations forming the largest share\
-And no courier car or motorcycle appears in the vehicle catalogue or managed fixture\
-And the remaining cohort contains 18 light-duty trucks, nine medium trucks, five heavy rigid trucks, five heavy rigid trucks with fixed trailers, and six interchangeable tractors\
+And94 of those trucks are cargo vans, conventional pickups, stake-body pickups or mini trucks, with the three mini-truck configurations forming the largest share\
+And six Courier cars and six Courier motorcycles are available with their matching catalogue artwork\
+And the remaining cohort contains18 light-duty trucks, nine medium trucks, two heavy rigid trucks, two heavy rigid trucks with fixed trailers, and six interchangeable tractors\
 And exactly two tractors currently show each of Container trailer, Dry van trailer, and Heavy equipment trailer while preserving a compatible trailer set on the same vehicle\
 And light, medium, rigid heavy, and tractor variants provide useful examples without visually dominating the Market\
 And independent Owner-operator and Self-managed driver provider records outnumber fleet-transporter provider records\
 And every current truck resolves to one visible Company driver, Owner-operator, or Self-managed driver identity with deterministic public callback and document-category status\
-And 21 Drivers receive distinct reviewed existing portrait presets and 24 receive distinct newly generated portrait presets\
-And the remaining 98 Drivers use the tested neutral profile-icon fallback\
+And24 Drivers receive distinct reviewed portrait presets\
+And the remaining119 Drivers use the tested neutral profile-icon fallback\
 And only icon-fallback Driver assignments are reconfigured into six interchangeable tractors without changing the 143-Driver or 143-vehicle total\
 And every active independent-provider truck is assigned to its owning Driver identity during import without replacing an existing active assignment\
 And each provider has one regular-service signal while no provider has more than one\
@@ -52,7 +88,7 @@ And zooming into a market reveals separate nearby activity instead of one nation
 
 ### Scenario: local-delivery vehicles stay within 30 kilometres
 
-Given the deterministic capacity cohort contains a cargo van, pickup, or mini truck\
+Given the deterministic capacity cohort contains a courier car, courier motorcycle, cargo van, pickup or mini truck\
 When its current or regular capacity geography is generated\
 Then a Service area is centered on the truck's city or town and uses no more than a 30 kilometre working range\
 And every named boundary city, town, village, or urban edge remains within 30 kilometres of that center, allowing only a small coordinate tolerance\
@@ -110,7 +146,8 @@ This is a local fixture repair, not permission to change hosted customer policie
 
 Given a developer explicitly supplies one or more normalized test emails to the local fixture configurator\
 When private networks are prepared after the credential-free managed fixture import\
-Then a bounded subset smaller than the Open-capacity cohort receives idempotent email-audience grants for each supplied address plus a first-class Loadgistic audience grant\
+Then a bounded subset smaller than the Open-capacity cohort receives idempotent email-audience grants for each supplied address\
+And the retired privileged Loadgistic audience receives no new grant\
 And the same authorized email's Private Transport Capacity map includes all public and private current signals shared with it without duplicates\
 And no personal email, OTP, access code, or reversible credential is written into the tracked fixture or command output\
 And Production rejects this local test-grant operation before reading or mutating data.

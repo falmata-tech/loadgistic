@@ -9,7 +9,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const user=await getCurrentUser();
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {id}=await params;const form=await request.formData();
-  const returnTo=fleetReturnPath(text(form,'returnTo'),'/app/fleet#driver-access');
+  const returnTo=fleetReturnPath(text(form,'returnTo'),'/app/fleet?view=drivers');
   try{
     if(text(form,'action')==='remove'){
       if(text(form,'confirm')!=='on')return redirectWith(request,returnTo,'error','Confirm removal before continuing.');

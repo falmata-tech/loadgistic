@@ -18,7 +18,7 @@ export async function GET(request:NextRequest){
    state=await supportConversationRevision({actorId:user?.id||null,conversationId,guest,emailDigest:session?.conversationId===conversationId?session.emailDigest:null});
   }else{
    if(!user)return NextResponse.json({error:'Access required.'},{status:401,headers});
-   const options={page:Number(query.get('page'))||1,pageSize:15};const view=query.get('view')||'ASSIGNED';
+   const options={page:Number(query.get('page'))||1,pageSize:user.role==='ADMIN'&&query.get('pageSize')==='10'?10:15};const view=query.get('view')||'ASSIGNED';
    state=guest?await listGuestSupportInbox(user,view,options):await listSupportInbox(user,view,options);
   }
   const tag=supportRevisionTag(state);const responseHeaders={...headers,ETag:tag};

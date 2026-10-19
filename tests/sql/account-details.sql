@@ -8,20 +8,24 @@ begin
   raise exception 'EXPECTED_ACCOUNT_DENIAL';
 end $$;
 do $test$
-declare actor uuid; owner_id uuid; org uuid; outsider uuid; staff uuid; admin_id uuid;
+declare actor uuid:=gen_random_uuid(); owner_id uuid:=gen_random_uuid(); org uuid:=gen_random_uuid(); outsider uuid:=gen_random_uuid(); staff uuid:=gen_random_uuid(); admin_id uuid:=gen_random_uuid();
   original jsonb; unrelated jsonb; public_contacts jsonb; memberships jsonb; authorities jsonb; auth_identity jsonb;
   command jsonb; role_name text; count_before integer; n integer;
 begin
-  select id into strict actor from profiles where email='driver@loadgistic.local';
-  select id into strict owner_id from profiles where email='transporter@loadgistic.local';
-  select organization_id into strict org from organization_members where user_id=owner_id and membership_role='OWNER';
-  select id into strict outsider from profiles where role='DRIVER' and id<>actor limit 1;
-  select id into strict staff from profiles where email='support@loadgistic.local';
-  select id into strict admin_id from profiles where email='admin@loadgistic.local';
+  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+  select u,u||'@example.invalid',clock_timestamp(),'{}'::jsonb from unnest(array[actor,owner_id,outsider,staff,admin_id]) u;
+  update profiles set role='DRIVER',active=true where id in(actor,outsider);
+  update profiles set role='TRANSPORTER',active=true where id=owner_id;
+  update profiles set role='SUPPORT',active=true where id=staff;
+  update profiles set role='ADMIN',active=true where id=admin_id;
+  perform accept_content_policy(actor,'2026-10-09');
+  perform accept_content_policy(owner_id,'2026-10-09');
+  insert into organizations(id,name,handle,type) values(org,'Synthetic account owner','account-'||org,'TRANSPORT_COMPANY');
+  insert into organization_members(organization_id,user_id,membership_role) values(org,owner_id,'OWNER');
   -- Create only a transaction-local active fleet relationship for this fixture.
   delete from drivers where user_id=actor;
   insert into drivers(user_id,organization_id,name,phone) values(actor,org,'Original Driver','+251911111111');
-  insert into organization_members(organization_id,user_id,membership_role) values(org,actor,'MEMBER') on conflict do nothing;
+  insert into organization_members(organization_id,user_id,membership_role) values(org,actor,'DRIVER') on conflict do nothing;
   select to_jsonb(p)-array['full_name','phone','updated_at'] into original from profiles p where id=actor;
   select to_jsonb(p) into unrelated from profiles p where id=outsider;
   select jsonb_agg(to_jsonb(p)) into public_contacts from company_pages p;

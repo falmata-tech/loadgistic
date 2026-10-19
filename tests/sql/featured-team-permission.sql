@@ -1,7 +1,7 @@
 begin;
-create function pg_temp.expect_featured_denied(command text) returns void language plpgsql as $$
+create function pg_temp.expect_featured_denied(command text,expected text default 'FORBIDDEN') returns void language plpgsql as $$
 begin
- begin execute command;exception when others then if sqlerrm='FORBIDDEN' then return;end if;raise;end;
+ begin execute command;exception when others then if sqlerrm=expected then return;end if;raise;end;
  raise exception 'EXPECTED_FEATURED_DENIAL';
 end $$;
 do $test$
@@ -24,7 +24,7 @@ begin
  perform pg_temp.expect_featured_denied(format('select save_managed_featured_controls(%L,''{"section":"ACCESS","mode":"FREE","target_count":3}''::jsonb)',staff_id));
  perform pg_temp.expect_featured_denied(format('select managed_platform_controls(%L)',staff_id));
  perform pg_temp.expect_featured_denied(format('select save_managed_platform_controls(%L,''{"section":"ACCESS","mode":"FREE"}''::jsonb)',staff_id));
- perform pg_temp.expect_featured_denied(format('select brokerage_request_inbox(%L,''MINE'',''ALL'',1)',staff_id));
+ perform pg_temp.expect_featured_denied(format('select brokerage_request_inbox(%L,''MINE'',''ALL'',1)',staff_id),'PLATFORM_BROKERAGE_RETIRED');
  perform pg_temp.expect_featured_denied(format('select managed_support_agent_page(%L,1,10)',staff_id));
  perform pg_temp.expect_featured_denied(format('select update_managed_support_agent(%L,%L,''{"active":true,"can_manage_featured":true}''::jsonb)',staff_id,other_id));
  foreach uid in array array[other_id,null::uuid] loop
@@ -53,10 +53,10 @@ begin
   update vehicles set cargo_configuration=old_configuration where id=vehicle_id_value;
  end if;
  -- Independent responsibilities combine, and revoking Featured preserves others.
- perform update_managed_support_agent(admin_id,other_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":true,"can_manage_brokerage":true,"can_manage_featured":true,"can_manage_billing":true,"can_manage_customers":true}');
- if not can_manage_featured(other_id) or not can_manage_brokerage(other_id) or not exists(select 1 from support_agent_profiles where user_id=other_id and can_manage_support and can_manage_billing and can_manage_customers) then raise exception 'COMBINED_CAPABILITIES_LOST';end if;
- perform update_managed_support_agent(admin_id,other_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":true,"can_manage_brokerage":true,"can_manage_featured":false,"can_manage_billing":true,"can_manage_customers":true}');
- if can_manage_featured(other_id) or not can_manage_brokerage(other_id) or not exists(select 1 from support_agent_profiles where user_id=other_id and can_manage_support and can_manage_billing and can_manage_customers) then raise exception 'INDEPENDENT_REVOCATION_FAILED';end if;
+ perform update_managed_support_agent(admin_id,other_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":true,"can_manage_brokerage":false,"can_manage_featured":true,"can_manage_billing":true,"can_manage_customers":true}');
+ if not can_manage_featured(other_id) or can_manage_brokerage(other_id) or not exists(select 1 from support_agent_profiles where user_id=other_id and can_manage_support and can_manage_billing and can_manage_customers) then raise exception 'COMBINED_CAPABILITIES_LOST';end if;
+ perform update_managed_support_agent(admin_id,other_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":true,"can_manage_brokerage":false,"can_manage_featured":false,"can_manage_billing":true,"can_manage_customers":true}');
+ if can_manage_featured(other_id) or can_manage_brokerage(other_id) or not exists(select 1 from support_agent_profiles where user_id=other_id and can_manage_support and can_manage_billing and can_manage_customers) then raise exception 'INDEPENDENT_REVOCATION_FAILED';end if;
  perform update_managed_support_agent(admin_id,staff_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":false,"can_manage_featured":false}');
  perform pg_temp.expect_featured_denied(format('select prepare_managed_featured_days(%L)',staff_id));
  perform pg_temp.expect_featured_denied(format('select save_managed_featured_truck_day(%L,''{}''::jsonb)',staff_id));

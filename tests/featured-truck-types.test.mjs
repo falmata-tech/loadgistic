@@ -7,9 +7,9 @@ test('the seven-day programme rotates through distinct truck-type themes',()=>{
   assert.equal(week.length,7);
   assert.equal(new Set(week.map(day=>day.key)).size,7);
   assert.equal(week[0].label,'Mini trucks');
-  assert.equal(week[5].label,'Heavy trucks');
-  assert.equal(week[6].label,'Mixed trucks');
-  assert.deepEqual(featuredTruckTypeForDate('2026-09-08').configurations,['Cargo van']);
+  assert.equal(week[5].label,'Heavy vehicles');
+  assert.equal(week[6].label,'Mixed vehicles');
+  assert.deepEqual(featuredTruckTypeForDate('2026-09-08').configurations,['Cargo van','Courier car','Courier motorcycle']);
   assert.deepEqual(featuredTruckTypeForDate('2026-09-09').configurations,['Pickup truck','Pickup stake body']);
   assert.deepEqual(featuredTruckTypeForDate('2026-09-12').configurations,[
     'Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer','Tractor + Container Trailer',
@@ -17,7 +17,7 @@ test('the seven-day programme rotates through distinct truck-type themes',()=>{
   ]);
   const sunday=featuredTruckTypeForDate('2026-09-13');
   assert.deepEqual(new Set(sunday.configurations),new Set(week.slice(0,6).flatMap(day=>day.configurations)));
-  assert.equal(sunday.configurations.some(name=>name.includes('Courier')),false);
+  assert.ok(sunday.configurations.includes('Courier car'));assert.ok(sunday.configurations.includes('Courier motorcycle'));assert.equal(sunday.configurations.length,17);assert.equal(week[1].key,'cargo-vans');assert.equal(week[1].label,'Vans and couriers');
 });
 
 test('multi-configuration days demonstrate each heavy configuration before repeating one',()=>{

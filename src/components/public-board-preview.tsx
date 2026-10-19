@@ -26,8 +26,8 @@ function shipmentRoute(shipment:ShipmentPreview){
 }
 
 function acceptedLoads(truck:TruckPreview){
-  if(truck.accepts_full_load&&truck.accepts_partial_load)return 'Full or partial truckload';
-  if(truck.accepts_partial_load)return 'Partial Truckload (PTL)';
+  if(truck.accepts_full_load&&truck.accepts_partial_load)return 'Whole vehicle or shared space';
+  if(truck.accepts_partial_load)return 'Shared space';
   return 'Full Truckload (FTL)';
 }
 
@@ -64,11 +64,11 @@ export function PublicBoardPreview({initialBoard,shipments,trucks,shared}:{initi
   };
   const rows=active==='SHIPMENTS'?shipments:trucks;
   return <section className="public-board-section" aria-labelledby="marketplace-preview-title"><div className="container">
-    <div className="public-board-heading"><div><span className="eyebrow"><Eye aria-hidden="true"/><Text message="Live marketplace"/></span><h2 id="marketplace-preview-title"><Text message="Shipments meet available trucks."/></h2></div></div>
+    <div className="public-board-heading"><div><span className="eyebrow"><Eye aria-hidden="true"/><Text message="Live marketplace"/></span><h2 id="marketplace-preview-title"><Text message="Shipments meet available vehicles."/></h2></div></div>
     <div className="public-board-shell">
       <Localized as="div" copy={["aria-label"]} className="public-board-tabs" role="tablist" aria-label="Marketplace boards">
         <button type="button" role="tab" aria-controls="marketplace-preview-panel" aria-selected={active==='SHIPMENTS'} className={active==='SHIPMENTS'?'active':''} onClick={()=>selectBoard('SHIPMENTS')}><Boxes aria-hidden="true"/><span><Text message="Shipment Board"/></span></button>
-        <button type="button" role="tab" aria-controls="marketplace-preview-panel" aria-selected={active==='TRUCKS'} className={active==='TRUCKS'?'active':''} onClick={()=>selectBoard('TRUCKS')}><Truck aria-hidden="true"/><span><Text message="Truck Board"/></span></button>
+        <button type="button" role="tab" aria-controls="marketplace-preview-panel" aria-selected={active==='TRUCKS'} className={active==='TRUCKS'?'active':''} onClick={()=>selectBoard('TRUCKS')}><Truck aria-hidden="true"/><span><Text message="Vehicle Board"/></span></button>
       </Localized>
       <div className="public-board-list" id="marketplace-preview-panel" role="tabpanel">
         {active==='SHIPMENTS'?<>
@@ -78,11 +78,11 @@ export function PublicBoardPreview({initialBoard,shipments,trucks,shared}:{initi
           </div>:null}
           {(shipments as ShipmentPreview[]).map((shipment,index)=><article className="locked-board-card rich-preview-card" key={index}>
           <div className="preview-card-main"><div className="preview-card-title"><span className="status green">{shipment.load_type||'Freight'}</span><h3>{shipment.vehicle_category||'Road-freight shipment'}</h3></div><p className="preview-route"><Waypoints aria-hidden="true"/>{shipmentRoute(shipment)}</p></div>
-          <div className="locked-card-facts"><div><Truck aria-hidden="true"/><span><small><Text message="Truck needed"/></small><strong>{shipment.vehicle_category||'Discuss directly'}</strong></span></div><div><CalendarClock aria-hidden="true"/><span><small><Text message="Pick up before"/></small><strong>{shipment.pickup_label||'Date open'}</strong></span></div><div><Clock3 aria-hidden="true"/><span><small><Text message="Drop off before"/></small><strong>{shipment.delivery_label||'Date open'}</strong></span></div><div><Banknote aria-hidden="true"/><span><small><Text message="Price"/></small><strong>{priceLabel(shipment)}</strong></span></div></div>
+          <div className="locked-card-facts"><div><Truck aria-hidden="true"/><span><small><Text message="Vehicle needed"/></small><strong>{shipment.vehicle_category||'Discuss directly'}</strong></span></div><div><CalendarClock aria-hidden="true"/><span><small><Text message="Pick up before"/></small><strong>{shipment.pickup_label||'Date open'}</strong></span></div><div><Clock3 aria-hidden="true"/><span><small><Text message="Drop off before"/></small><strong>{shipment.delivery_label||'Date open'}</strong></span></div><div><Banknote aria-hidden="true"/><span><small><Text message="Price"/></small><strong>{priceLabel(shipment)}</strong></span></div></div>
           <div className="preview-tags"><span>{shipment.movement_scope==='LOCAL'?<Text message="Local"/>:<Text message="Long-distance route"/>}</span><span>{shipment.distribution_mode==='OPEN_MARKET'?<Text message="Public"/>:<Text message="Limited"/>}</span><span><Text message="Posted "/>{shipment.posted_label||'recently'}</span></div>
           <div className="preview-card-actions"><Link href="/login" className="button secondary"><Eye aria-hidden="true"/><Text message="Details"/></Link><Link href="/login" className="button"><UserRound aria-hidden="true"/><Text message="Contact"/><ArrowRight aria-hidden="true"/></Link></div>
         </article>)}</>:(trucks as TruckPreview[]).map((truck,index)=><article className="locked-board-card rich-preview-card" key={index}>
-          <div className="preview-card-main truck-preview-main"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt={truck.cargo_configuration||'Truck configuration'} width={120} height={120}/><div><div className="preview-card-title"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}>{capacityStatus(truck.status)}</span><h3>{truck.cargo_configuration||'Available truck'}</h3></div><p className="preview-route"><Route aria-hidden="true"/>{truckRoute(truck)}</p></div></div>
+          <div className="preview-card-main truck-preview-main"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt="" width={120} height={120}/><div><div className="preview-card-title"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}>{capacityStatus(truck.status)}</span><h3><Text message={truck.cargo_configuration||'Available vehicle'}/></h3></div><p className="preview-route"><Route aria-hidden="true"/>{truckRoute(truck)}</p></div></div>
           <div className="locked-card-facts"><div><MapPin aria-hidden="true"/><span><small><Text message="Current area"/></small><strong>{truck.location_area||truck.local_place_label||'Area not set'}</strong></span></div><div><Boxes aria-hidden="true"/><span><small><Text message="Shipment size"/></small><strong>{acceptedLoads(truck)}</strong></span></div><div><Route aria-hidden="true"/><span><small><Text message="Stops"/></small><strong>{stopPolicy(truck)}</strong></span></div><div><Clock3 aria-hidden="true"/><span><small><Text message="Updated"/></small><strong>{truck.updated_label||truck.freshness||'Recently updated'}</strong></span></div></div>
           <div className="preview-tags"><span>{truck.movement_scope==='BOTH'?<Text message="Local + long-distance"/>:truck.movement_scope==='LOCAL'?<Text message="Local"/>:<Text message="Long-distance route"/>}</span><span>{truck.proof_available?<Text message="Photo recorded"/>:<Text message="No photo"/>}</span></div>
           <div className="preview-card-actions"><Link href="/login" className="button secondary"><Eye aria-hidden="true"/><Text message="Details"/></Link><Link href="/login" className="button"><UserRound aria-hidden="true"/><Text message="Contact"/><ArrowRight aria-hidden="true"/></Link></div>

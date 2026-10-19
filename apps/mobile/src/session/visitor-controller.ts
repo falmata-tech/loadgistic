@@ -1,7 +1,7 @@
 export type VisitorScope = 'tracking' | 'capacity';
 export type VisitorGrant = { token: string; scope: VisitorScope; startedAt: number; expiresAt: number; lastActivityAt: number; renewedAt: number; clockOffsetMs: number; reviewActorId?:string };
 type Port = { now: () => number; read: (scope: VisitorScope) => Promise<string | null>; write: (scope: VisitorScope, value: string) => Promise<void>; remove: (scope: VisitorScope) => Promise<void>; request: (path: string, options: { token?: string; body?: unknown; signal?: AbortSignal }) => Promise<unknown>; changed: () => void; storageError?: (scope: VisitorScope, message: string) => void };
-const IDLE = 30 * 60000, MAX_TRACKING = 8 * 60 * 60000;
+const IDLE = 30 * 60000, MAX_TRACKING = 5 * 60000;
 export function parseVisitorGrant(value: unknown, scope: VisitorScope, now: number): VisitorGrant {
  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Verify your email to continue.');
  const item = value as Record<string, unknown>;

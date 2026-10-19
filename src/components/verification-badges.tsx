@@ -7,10 +7,11 @@ const labels: Record<string,string> = {
   BUSINESS_LICENSE: 'Business License',
   BUSINESS_ADDRESS: 'Business Address',
   DRIVER_IDENTITY: 'Driver license',
-  VEHICLE_OWNERSHIP: 'Truck ownership',
-  VEHICLE_AUTHORIZATION: 'Permission to use truck',
-  VEHICLE_AUTHORITY: 'Truck document',
-  TRUCK_AUTHORIZATION: 'Permission to use truck'
+  VEHICLE_OWNERSHIP: 'Vehicle ownership',
+  VEHICLE_AUTHORIZATION: 'Permission to use vehicle',
+  VEHICLE_OPERATING_LICENSE: 'Vehicle operating licence',
+  VEHICLE_AUTHORITY: 'Vehicle document',
+  TRUCK_AUTHORIZATION: 'Permission to use vehicle'
 };
 
 const icons:Record<string,typeof Shield>={
@@ -20,6 +21,7 @@ const icons:Record<string,typeof Shield>={
   DRIVER_IDENTITY:BadgeCheck,
   VEHICLE_OWNERSHIP:KeyRound,
   VEHICLE_AUTHORIZATION:KeyRound,
+  VEHICLE_OPERATING_LICENSE:BadgeCheck,
   VEHICLE_AUTHORITY:KeyRound,
   TRUCK_AUTHORIZATION:KeyRound
 };
@@ -35,12 +37,12 @@ export function VerificationBadges({badges,compact=false,label,reviewCount=0,ave
       const Icon=icons[badge.type]||Shield;
       const state=badge.verified?'verified':badge.expired?'expired':'unverified';
       const stateLabel=badge.verified?'Loadgistic reviewed':badge.expired?'Expired':'Not verified';
-      return <details className={`verification-badge ${state} badge-${badge.type.toLowerCase().replaceAll('_','-')}`} key={`${badge.type}:${badge.vehicleLabel||''}`} title={`${labels[badge.type]||badge.type}: ${badge.verified?'Verified':badge.expired?'Expired':'Not verified'}`}>
+      return <details className={`verification-badge ${state} badge-${badge.type.toLowerCase().replaceAll('_','-')}`} key={`${badge.type}:${badge.vehicleLabel||''}`}>
         <summary><Icon aria-hidden="true"/><span><Text message={labels[badge.type]||badge.type.replaceAll('_',' ')}/></span><small><Text message={stateLabel}/></small></summary>
         <div className="verification-badge-details"><strong><Text message={stateLabel}/></strong>{badge.vehicleLabel?<span>{badge.vehicleLabel}</span>:null}{badge.reviewedAt?<span><Text message="Reviewed "/>{new Date(badge.reviewedAt).toLocaleDateString()}</span>:null}{badge.expiresOn?<span><CalendarClock aria-hidden="true"/><Text message="Expires "/>{badge.expiresOn}</span>:null}<span>{badge.verified?<Text message="Review applies to this document category only."/>:<Text message="No current reviewed evidence on Loadgistic. Ask the provider for documents."/>}</span></div>
       </details>;
     })}
-    {reviewCount?<span className="verification-badge verified reputation" title={`${averageRating || 0} of 5 from ${reviewCount} published reviews`}><Star aria-hidden="true"/><span>{averageRating} / 5</span><small>{reviewCount}<Text message=" published "/>{reviewCount===1?<Text message="review"/>:<Text message="reviews"/>}</small></span>:null}
+    {reviewCount?<span className="verification-badge verified reputation"><Star aria-hidden="true"/><span>{averageRating} / 5</span><small>{reviewCount}<Text message=" published "/>{reviewCount===1?<Text message="review"/>:<Text message="reviews"/>}</small></span>:null}
     </div>
   </div>;
 }

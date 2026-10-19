@@ -15,7 +15,7 @@ async function command(name,args){
 
 /** @param {{id:string,role:string,active:boolean}} actor */
 export async function getDriverPortraitWorkspace(actor){
-  if(!actor.active||actor.role!=='DRIVER')throw new Error('FORBIDDEN');
+  if(!actor.active||!['DRIVER','TRANSPORTER'].includes(actor.role))throw new Error('FORBIDDEN');
   const data=workspace.parse(await command('driver_portrait_workspace',{actor_user_id:actor.id}));
   const imageUrl=uploadedDriverPortraitUrl(data.public_id)||driverPortraitUrl(data.preset);
   return {imageUrl,hasPortrait:Boolean(imageUrl),custom:Boolean(data.public_id)};

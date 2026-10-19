@@ -1,11 +1,12 @@
 const http = require('node:http');
 const {createReadStream}=require('node:fs');
 const path=require('node:path');
+const {businessApiPathAllowed}=require('../../../src/lib/mobile/business-api-path.js');
 const allowedPath = value => {
  try {
   const pathname=decodeURIComponent(value.split('?')[0]);
   if (pathname.includes('\\') || pathname.split('/').some(part=>part==='.'||part==='..')) return false;
-  return /^\/(?:api\/(?:mobile|public)\/|vehicle-configurations\/|marketing\/)/.test(pathname);
+  return /^\/(?:api\/(?:mobile|public)\/|vehicle-configurations\/|marketing\/)/.test(pathname)||businessApiPathAllowed(value);
  } catch { return false; }
 };
 function localPreviewProxy(middleware) {

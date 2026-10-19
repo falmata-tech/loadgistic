@@ -3,10 +3,10 @@ id: FEAT-LNG-001
 title: Plain-language interface localization
 related_ids: [BASE-FE-001, BASE-DEP-001, FEAT-UIX-001, FEAT-IAM-001]
 problem: People need to use public capacity and role workspaces in familiar languages without changing the content others published.
-behavior: Visitors and signed-in users choose English, Amharic, Afaan Oromo, Somali or Tigrinya for application-owned interface text while user-generated content remains unchanged.
+behavior: Visitors and signed-in users choose English, Amharic or Afaan Oromo for application-owned interface text while user-generated content remains unchanged.
 contracts: [InterfaceLocale, MessageCatalog, LanguagePreference, OwnedInterfaceText]
 observability: [catalog_coverage, untranslated_interface_inventory, localized_browser_checks]
-rollout: Implement locally, verify all five languages and unchanged user content on desktop and phone, obtain owner visual and language review, then run full release gates before separately authorized publication.
+rollout: Implement locally, verify all three languages and unchanged user content on desktop and phone, obtain owner visual and language review, then run full release gates before separately authorized publication.
 ---
 
 # Interface localization
@@ -14,12 +14,12 @@ rollout: Implement locally, verify all five languages and unchanged user content
 ### Scenario: choosing and retaining a language
 
 Given a visitor or signed-in user opens any public or dashboard page\
-When they choose English, አማርኛ, Afaan Oromo, Soomaali or ትግርኛ\
+When they choose English, አማርኛ or Afaan Oromo\
 Then application-owned navigation, controls, guidance and status copy use that language\
 And the choice persists in a first-party preference cookie across navigation and reloads\
 And the document language matches the selected supported locale\
 And the current route, filters and form data are preserved\
-And missing or invalid preferences select English without redirecting the visitor.
+And a previously saved Somali or Tigrinya preference also selects English without redirecting the visitor.
 
 ### Scenario: user content and machine values are preserved
 
@@ -42,7 +42,7 @@ And missing translations remain recorded as incomplete coverage, not counted as 
 
 ### Scenario: accessible and responsive presentation
 
-Given any of the five languages is active\
+Given any of the three supported languages is active\
 When the interface renders on desktop or phone\
 Then labels, hints, empty states and accessible names agree\
 And Ethiopic text renders with a readable system font fallback\
@@ -78,6 +78,15 @@ And status labels are translated before insertion into whole named messages\
 And user names, descriptions, notes and persisted enum values remain unchanged\
 And an unresolved dynamic boundary cannot be counted as complete localization.
 
+### Scenario: unexpected service feedback stays understandable
+
+Given an API or external device returns feedback that has no reviewed message key\
+When a person uses the Amharic or Afaan Oromo interface\
+Then the feedback surface shows a localized, action-oriented fallback for that operation\
+And it never translates provider names, descriptions, locations or other user content\
+And English retains the detailed original feedback for diagnosis. A generic fallback
+does not count as a reviewed translation of the underlying service error.
+
 ## Contextual wording — owner request 2026-09-24
 
 Write labels for the action the screen enables in each language, not by replacing
@@ -98,5 +107,19 @@ Then that option announces its checked state and all other options are unchecked
 And existing selection/storage/error behavior and user-generated text remain unchanged.
 The local browser audit reproduced a visible selected option without an ARIA
 checked state on React Native Web; supply the web state explicitly while retaining
-native accessibility state. Verify actual option semantics in the five-language
+native accessibility state. Verify actual option semantics in the three-language
 transport-chat preview, not only source appearance.
+
+### Supported-language focus — October 19 release
+
+Given a new web or native session, or a legacy saved preference\
+When the interface language is chosen or restored\
+Then only English, Amharic and Afaan Oromo are offered\
+And any retired-language preference safely falls back to English\
+And user content, stored machine values, access and records remain unchanged.
+
+Given application-owned copy is added to a supported-language screen\
+When a coverage audit runs\
+Then Amharic and Afaan Oromo are checked against the same message keys\
+And unmarked or dynamic application copy is reported separately rather than
+claimed translated merely because the page has a language picker.

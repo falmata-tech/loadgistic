@@ -226,7 +226,9 @@ test('Shared Capacity and Tracking use distinct customer-safe application templa
   assert.equal(tracking.subject,'Your Loadgistic tracking access');
   assert.match(tracking.text,/verify this email/);
   assert.doesNotMatch(tracking.text,/LG-0000-1111-2222-3333/);
-  assert.match(tracking.text,/Ask the transporter to add anyone else/i);
+  assert.match(tracking.text,/you can share route and status updates with others/i);
+  assert.match(tracking.text,/will not see the vehicle’s current location/i);
+  assert.doesNotMatch(tracking.text,/Ask the transporter to add anyone else/i);
   assert.match(tracking.text,/six-digit code/i);
 });
 

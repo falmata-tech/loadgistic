@@ -7,7 +7,7 @@ export const runtime='nodejs';
 
 export async function POST(request:NextRequest){
   const user=await getCurrentUser();
-  if(!user)return NextResponse.json({error:'Sign in again to refresh this truck location.'},{status:401});
+  if(!user)return NextResponse.json({error:'Sign in again to refresh this vehicle location.'},{status:401});
   try{
     const input=await request.json();
     return NextResponse.json(await refreshProviderCapacityLocation(user,{

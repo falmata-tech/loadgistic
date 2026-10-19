@@ -3,13 +3,77 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive explicitly granted details through FEAT-SHR-001. Providers may also publish no more than one provider-level undated regular-service signal using either geometry; it accompanies an otherwise eligible Public Market truck but never makes a Private-network truck anonymously discoverable. Exact truck and visitor coordinates remain private.
+behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive explicitly granted details through FEAT-SHR-001. An authorized owner or independent driver may also publish no more than one undated regular-service signal per current truck-and-driver pair using either geometry; it accompanies an otherwise eligible Public Market truck but never makes a Private-network truck anonymously discoverable. Exact truck and visitor coordinates remain private.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
 rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
 ---
 
 # Public truck-capacity signals
+
+## October18 courier configurations — planned local restoration
+
+The owner restores `Courier car` and `Courier motorcycle` alongside the existing
+fifteen configurations. Public/private/business Capacity filters support either
+or both using the existing OR-within/AND-across-group rules. Web and native maps,
+cards and selectors reuse their existing distinct configuration artwork; an
+unknown value remains invalid and never silently becomes another vehicle type.
+This changes the supported catalogue, not eligibility, sharing, location source,
+radius, assignment, publication or ongoing Tracking authority.
+
+Given a current authorized truck-and-driver pair uses either courier configuration\
+When an otherwise permitted viewer filters for that configuration\
+Then its actual signal can match the same map rules as other vehicle types\
+And selecting both types includes either, while unrelated filters still apply.
+
+Verification: shared catalogue/filter/image and native picker tests, matched SQL
+filter/registration/Featured acceptance and actual local desktop/phone review.
+Migration168 is reviewed and installed separately; no fixture conversion or
+hosted mutation is implied by restoring choices.
+
+### October18 filter-source selection and illustrated choices — local implementation
+
+Given a visitor, verified email viewer or permitted business teammate opens the
+Capacity vehicle filters, when they select GPS device, Driver’s phone or Entered
+by provider, then `locationSource=GPS,MOBILE,MANUAL` carries one canonical
+comma-separated OR group and remains ANDed with other truck criteria. Selecting
+Any clears only this group. Edits stay in the draft until Show matching vehicles;
+transporter profile search remains independent of the map filters.
+
+The owner’s later clarification removes the separate Space needed control from
+web and Expo vehicle filters. Opening and applying those filters, including an
+older link carrying `loadType`, must not retain a hidden load-size choice. This
+does not remove the driver’s accepted-load preference from saved capacity or
+vehicle details; existing API callers may still use the bounded load-type query.
+
+Given a pictured configuration picker opens inside a filter dialog, when the
+visitor sees the Courier car or Courier motorcycle option, then its actual
+configuration artwork loads without requiring an extra selection or scroll.
+Closed pickers retain lazy loading; opening the choices may load their thumbnails
+eagerly without changing submitted single/multiple selection values.
+
+Verification: focused native draft/encoding/selection tests and actual desktop
+and phone Chrome artwork/map checks; backend filtering follows FEAT-MKT-001.
+
+## October 14 live-truck qualification — implemented locally
+
+FEAT-FLT-001 owns Draft/Live and provider qualification; FEAT-VER-001 owns exact
+reviewed relationships. Public and authorized recipient capacity, regular routes,
+search matching and Featured require a Live truck and actual current assigned
+driver, in addition to existing visibility/duty/location rules. A provider with
+one active Live truck needs no reviewed documents; multiple Live trucks require
+the exact ownership/financed-licence qualification.
+Qualification never reveals PRIVATE/EXCLUSIVE signals anonymously. Losing a
+qualifier with multiple Live choices withholds capacity until the owner moves
+all but one to Draft or supplies current qualification, without deleting saved
+signals or stopping ongoing Tracking. Adapter/schema drift fails visibly and closed; it cannot fall back to
+an older unqualified projection. Driver assignment remains concurrency-safe.
+World coordinates, load preferences, independent profile search, multi-filters,
+obscured locations and freshness labels retain their existing contracts.
+The backed-up local installation passes the v3 SQL/strict-catalog and publication
+concurrency checks recorded in `specs/TRACEABILITY.md`. Actual owner/publication
+browser acceptance passes; owner visual approval, full release gates and hosted
+rollout remain separate gates.
 
 ### Scenario: fleet-managed drivers can reach duty controls on a phone
 
@@ -73,14 +137,46 @@ Clusters remain status-separated and colored/text-labeled Empty or Partial.
 | Partial / PTL | excluded | included |
 | Off Duty | excluded | excluded |
 
-Given filters offer Space needed and Truck's current load
-Then describe requested full/shared space independently from Empty/Partly loaded
-occupancy. Existing full-versus-partial contradiction handling remains explicit.
+The visitor Truck filters show current load and the published location source,
+but no separate Space needed control. Driver-selected full/shared load acceptance
+remains authoritative and existing callers may still submit load-type filters.
+Existing full-versus-partial contradiction handling remains explicit. The
+accepted multi-selection contract (FEAT-MKT-001) permits multiple occupancy,
+location-source, configuration, stop and freshness choices. Match any selected
+option within each group and every supplied group against the same authorized
+truck. Partial remains shared-load/route-only; a combination with another valid
+alternative must not be erased by singleton-only contradiction handling. Every
+selected reviewed document remains required. Canonical bounded lists preserve
+existing scalar clients, pagination, privacy and independent profile search.
 Public, authorized private, profile results and truck markers apply the same
 saved acceptance flags. Driver/truck assignment, owner permission, approximate
 location, geometry and private grants remain authoritative at the server command.
 Validate this matrix through actual save/read/search and negative permissions,
 not solely a UI snapshot. New schema or hosted changes require separate review.
+
+### Scenario: staff private-capacity rendering uses the same validated filters as its API
+
+Given an authorized administrator or Support account opens Private capacity
+shared with Loadgistic\
+When the page first renders from its URL\
+Then the existing current-account authorization remains required before any
+capacity read\
+And each valid option group is canonicalized under the same bounded contract as
+the map API\
+And repeated URL keys, unsupported options or excessive values produce the
+existing filter-review state without reading capacity\
+And that denied state remains denied when the client requests map updates\
+And transporter-search text is retained in the drawer but is absent from the
+initial truck-matching request, just as it is absent from later map requests\
+And an explicit selected transporter and every truck filter remain in scope.
+
+Regression: `tests/capacity-filter-ssr.test.mjs` exercises the actual admin page
+with its existing authorization boundary, canonical groups, denied-query zero
+reads and independent search text. The focused staff browser case in
+`tests/e2e/admin-connected-queues.spec.ts` checks reload denial, actual API400,
+explicit filter correction, retained drawer text and successful canonical read.
+This changes no layout, staff permissions,
+database function or hosted setting; existing API filter validation remains.
 
 ### Scenario: current availability uses a Service area or Capacity route
 
@@ -105,11 +201,13 @@ And when its geometry is Capacity route a labeled green Empty or yellow Partial 
 And color is reinforced by text and shape rather than being the only meaning\
 And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
 
-### Scenario: regular service is one undated Service area or Capacity route
+### Scenario: regular service belongs to one truck and its current driver
 
-Given a provider regularly serves an area or route\
-When its owner maintains regular service\
-Then the provider may retain exactly zero or one regular-service signal\
+Given an assigned truck regularly serves an area or route\
+When an authorized fleet owner or independent driver maintains its regular service\
+Then the selected truck and expected current driver are required and rechecked
+inside the command\
+And that truck-and-driver pair may retain exactly zero or one regular-service signal\
 And that signal is either a structured Service area with one center plus three through five surrounding cities or a structured two-way Capacity route with two through five ordered cities\
 And another addition is rejected without changing the saved signal\
 And regular service asks for no date and never claims that a truck is currently available\
@@ -118,12 +216,31 @@ And a regular Capacity route joins its cities with ↔ while a regular Service a
 And both state Confirm availability\
 And the shared map uses a blue dashed polyline for Regular capacity route or a blue outlined polygon for Regular service area.
 
+### Scenario: regular routes cannot leak across trucks or assignments
+
+Given a fleet has two assigned trucks with distinct usual routes\
+When their workspace, public/private capacity, filtered pages, clusters, profile
+truck cards, search rows or Featured candidates are projected\
+Then each truck receives only its current truck-and-driver pair's regular route\
+And account-level profile details never include regular route geometry\
+And a stale edit naming a previous driver is denied without changing a record\
+And unauthorized users and browser database roles remain denied\
+And legacy unbound routes are retained but not copied, inferred or inherited by
+every truck\
+And replacing a truck or changing its driver never transfers a regular route
+to a different pair.
+
+Current clients must send the selected truck and expected driver to regular
+commands. Old unscoped commands fail closed with update guidance. Any additive
+hosted migration waits for reviewed SQL, backup/rehearsal and compatible web and
+Android rollout; local implementation is not production completion.
+
 ### Scenario: Off Duty removes current availability
 
 Given a truck has current capacity\
 When an authorized actor selects Off Duty\
 Then its current signal is absent from public discovery\
-And its provider regular-service signal remains a separate record governed by its own state\
+And its pair-scoped regular-service signal remains a separate record governed by its own state\
 And Busy is rejected.
 
 ### Scenario: older signals remain visible with honest age
@@ -204,7 +321,8 @@ Then every current Capacity route contains two through five distinct cities in a
 And the route passes through or immediately beside the truck's approximate current city rather than jumping to an unrelated part of Ethiopia\
 And every Service area uses a center near the truck's approximate current city and a boundary that contains that center\
 And cargo vans, pickups, and mini trucks expose current capacity geography within 30 kilometres of their base city or town\
-And every provider regular-service signal contains or closely approaches the approximate current location of every one of that provider's demonstration trucks\
+And each explicitly truck-and-driver-bound regular signal contains or closely approaches only that pair's demonstration location\
+And older unbound provider route fixtures remain retained history without a guessed truck assignment\
 And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a nearby center and enclosing boundary\
 And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
 

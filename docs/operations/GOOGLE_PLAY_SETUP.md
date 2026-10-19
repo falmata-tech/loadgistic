@@ -1,3 +1,26 @@
+## October19 verified testing-track status
+
+A fresh publisher API inspection reports1.0.6/code7 as `completed` on both
+Alpha and Internal. Production remains empty. The temporary inspection edit was
+deleted without publishing any changes. The pending1.1.0/code8 replacement is
+not yet built or uploaded; code8 was unused at inspection. API track status does
+not prove tester enrollment or completion of the continuous14-day requirement.
+Protected receipt: `.local/release-20261019/play-current.json`. The October12
+review-pending text below is historical, superseded by this readback.
+
+## October15 GPS integration — unpublished Data safety review required
+
+The new local fleet integration changes the earlier location-only description:
+GPS trackers send private exact coordinates and device telemetry to Loadgistic;
+provider-selected manual points are also sent to the server. Capacity audiences
+still receive only the obscured area/source, and shipment phone tracking remains
+obscured before upload. The shared web/Expo privacy text now describes these
+separate paths. Review the Play Data safety answers, location disclosures and
+retention/account-deletion acceptance for this exact new binary before submission.
+The prior submitted1.0.6 artifact is unchanged; no updated policy answer or store
+submission is claimed. Physical hardware/background-device acceptance remains
+separate from local GT06 simulation.
+
 # Loadgistic Google Play setup
 
 Updated October 12, 2026. Verified owner marketvision.tech@gmail.com, developer
@@ -132,6 +155,14 @@ release notes. Use only its existing synthetic agreed shipment. Start the screen
 recording before the shipment-location disclosure, show **Agree and continue**,
 the actual Android permission flow, active Tracking/foreground notification and
 an obscured location update. Do not record passwords/codes/customer records.
+
+October13 unpublished cleanup: reviewer access now sits on **Transporter login →
+Review access**, keeping About focused on users. Keep the code7 instructions
+above for the currently published binary; update Google's saved reviewer path
+only together with the replacement build. The old store Driver screenshot also
+contains internal reviewer names and must be recaptured with meaningful synthetic
+display records. Browser previews are review evidence, not replacement standalone
+Play screenshots; never edit image pixels to invent the revised UI.
 Google recommends a short video around 30 seconds; host it on an accessible
 public/unlisted YouTube URL only after checking the actual footage. If no agreed
 shipment is available, stop and inspect the demo scope rather than create a real

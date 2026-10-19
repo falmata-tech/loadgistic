@@ -8,13 +8,13 @@ import {chatAlertCopy,createChatAlertTracker} from '@/lib/chat-alert-delivery.js
 import type {ChatAlertSnapshot,ChatAlertEvent,ChatAlertItem} from '@/lib/chat-alert-contract';
 import {createBrowserAlertDelivery,type BrowserAlertDelivery,type BrowserAlertStatus} from '@/lib/browser-alert-delivery.js';
 import {handoverAlertSnapshot,handoverAlertCopy,handoverAlertHref,createHandoverAlertTracker,type HandoverAlertSnapshot,type HandoverAlert} from '@/lib/handover-alerts.js';
-export function useChatAlerts(endpoint:string,identity:string){
+export function useChatAlerts(endpoint:string,identity:string,allowHandoverAlerts=false){
  const [snapshot,setSnapshot]=React.useState(null as ChatAlertSnapshot|null),[toast,setToast]=React.useState(null as ChatAlertEvent|null),[offline,setOffline]=React.useState(false);
  const [sound,setSound]=React.useState(false),audio=React.useRef(null as AudioContext|null),soundEnabled=React.useRef(false);
  const [browserStatus,setBrowserStatus]=React.useState('OFF' as BrowserAlertStatus),delivery=React.useRef(null as BrowserAlertDelivery|null),{t}=useTranslation(),translate=React.useRef(t);translate.current=t;
  React.useEffect(()=>{const adapter=createBrowserAlertDelivery(identity);delivery.current=adapter;setBrowserStatus('OFF');let live=true;void adapter.prepare().then(status=>{if(live){setBrowserStatus(status);window.dispatchEvent(new Event('loadgistic-chat-refresh'));}});return()=>{live=false;if(delivery.current===adapter)delivery.current=null;void adapter.dispose();};},[identity]);
  const ding=React.useCallback(()=>{if(soundEnabled.current&&audio.current?.state==='running'){const context=audio.current,oscillator=context.createOscillator(),gain=context.createGain();oscillator.connect(gain);gain.connect(context.destination);oscillator.frequency.value=660;gain.gain.setValueAtTime(.07,context.currentTime);gain.gain.exponentialRampToValueAtTime(.001,context.currentTime+.2);oscillator.start();oscillator.stop(context.currentTime+.2);}},[]);
- const handover=useHandoverAlerts(identity,!endpoint.includes('scope=VISITOR'),delivery,translate,ding);
+ const handover=useHandoverAlerts(identity,allowHandoverAlerts&&!endpoint.includes('scope=VISITOR'),delivery,translate,ding);
  React.useEffect(()=>{
   setSnapshot(null);setToast(null);setOffline(false);let disposed=false,running=false,etag='',timer:ReturnType<typeof setTimeout>|undefined,controller:AbortController|undefined;
   const tracker=createChatAlertTracker();let failures=0;
@@ -59,8 +59,8 @@ function useHandoverAlerts(identity:string,enabled:boolean,delivery:React.RefObj
  async function acknowledge(item:HandoverAlert){setToast(null);try{const response=await fetch('/api/notifications/handover',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({id:item.id,approvedAt:item.approvedAt})});if(response.ok)setSnapshot(handoverAlertSnapshot(await response.json()));else setOffline(true);}catch{setOffline(true);}}
  return {snapshot,toast,offline,acknowledge,dismiss:()=>setToast(null)};
 }
-export function ChatAlerts({identity}:{identity:string}){
- const alerts=useChatAlerts('/api/chat/alerts',identity),[open,setOpen]=React.useState(false),dialog=React.useRef(null as HTMLDialogElement|null),{t}=useTranslation();
+export function ChatAlerts({identity,allowHandoverAlerts=false}:{identity:string;allowHandoverAlerts?:boolean}){
+ const alerts=useChatAlerts('/api/chat/alerts',identity,allowHandoverAlerts),[open,setOpen]=React.useState(false),dialog=React.useRef(null as HTMLDialogElement|null),{t}=useTranslation();
  React.useEffect(()=>{if(open&&!dialog.current?.open)dialog.current?.showModal();if(!open&&dialog.current?.open)dialog.current.close();},[open]);
  const count=(alerts.snapshot?.unreadCount||0)+(alerts.snapshot?.waitingCount||0)+(alerts.handover.snapshot?.unreadCount||0);
  return <><button className="button secondary small chat-alert-button" type="button" aria-label={count?t('Updates · {count} new or waiting',{count}):t('Updates')} aria-haspopup="dialog" onClick={()=>setOpen(true)}><Bell size={20} aria-hidden="true"/>{count>0&&<span className="chat-alert-badge">{count>99?'99+':count}</span>}</button>

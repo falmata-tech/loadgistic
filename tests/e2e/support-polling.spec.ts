@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {localAuditService,checked,auditLogin,auditProvider,auditIdentity} from './audit-helpers';
 
 test('Support skips unchanged transcripts, preserves drafts and rechecks access before 304',async({page,browser}:{page:any;browser:any},info:any)=>{

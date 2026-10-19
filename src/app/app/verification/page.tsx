@@ -16,8 +16,8 @@ const verificationLabels:Record<string,string>={
   BUSINESS_LICENSE:'Business license',
   BUSINESS_ADDRESS:'Business address',
   DRIVER_IDENTITY:'Driver license',
-  VEHICLE_OWNERSHIP:'Truck ownership',
-  VEHICLE_AUTHORIZATION:'Permission to use truck'
+  VEHICLE_OWNERSHIP:'Vehicle ownership',
+  VEHICLE_AUTHORIZATION:'Permission to use vehicle'
 };
 
 export default async function VerificationPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {

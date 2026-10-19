@@ -1,19 +1,23 @@
 begin;
 do $test$
 <<fixture>>
-declare owner_id uuid;driver_id uuid;truck_id uuid;shipment_id uuid:=gen_random_uuid();
+declare owner_id uuid;driver_id uuid:=gen_random_uuid();truck_id uuid;shipment_id uuid:=gen_random_uuid();
  route_points jsonb;command jsonb;proof jsonb;data jsonb;recipient_id uuid;completed_event uuid;
  digest_owner text:=repeat('c',64);event_count bigint;proof_count bigint;
 begin
- select m.user_id,d.user_id into strict owner_id,driver_id
- from organization_members m join drivers d on d.organization_id=m.organization_id and d.active
- join profiles p on p.id=d.user_id and p.active join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
+ select m.user_id into strict owner_id
+ from organization_members m join profiles p on p.id=m.user_id and p.active and p.role='TRANSPORTER'
+ join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
  where m.membership_role='OWNER' limit 1;
- truck_id:=(create_provider_vehicle(owner_id,'{"make":"Retention audit","model":"Test","plate":"AUDIT-APPROVAL-RETENTION","cargo_configuration":"Mini Box Truck"}')->>'id')::uuid;
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+ values(driver_id,'tracking-retention-'||driver_id||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}');
+ perform fleet_accept_invitation(driver_id,fleet_invite_driver(owner_id,jsonb_build_object('email','tracking-retention-'||driver_id||'@loadgistic.local','name','Synthetic retention driver','phone','+251900000001')));
+ perform accept_content_policy(driver_id,'2026-10-09');
+ truck_id:=(create_provider_vehicle(owner_id,'{"make":"Retention audit","model":"Test","plate":"AUDIT-APPROVAL-RETENTION","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_tracking',true,'can_manage_capacity',true));
  select current_route_points_json into strict route_points from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
  command:=jsonb_build_object('vehicle_id',truck_id,'id',shipment_id,'code','LGX-'||upper(substr(replace(shipment_id::text,'-',''),1,8)),
- 'origin_place_ref',route_points->0->>'place_ref','destination_place_ref',route_points->1->>'place_ref','cargo_summary','Synthetic retention regression',
+ 'origin_place_ref',route_points->0->>'place_ref','destination_place_ref',route_points->1->>'place_ref','passing_place_ref',(select id from place_catalog where id not in(route_points->0->>'place_ref',route_points->1->>'place_ref') order by id limit 1),'cargo_summary','Synthetic retention regression',
  'customer_email','retention-owner@example.invalid','customer_email_digest',digest_owner,'additional_recipients','[]'::jsonb,
  'expected_delivery_date',(current_date+2)::text,'tracking_mode','STATUS_ONLY','tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex'));
  perform create_provider_tracking_with_recipients(owner_id,command);

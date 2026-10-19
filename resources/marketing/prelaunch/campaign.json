@@ -10,7 +10,7 @@
       "width": 1080,
       "height": 1920,
       "headline": [
-        "The trucks you know.",
+        "Your transport network.",
         "The space you need."
       ],
       "status": "Web live · Android soon"
@@ -20,7 +20,7 @@
       "width": 1080,
       "height": 1350,
       "headline": [
-        "The trucks you know.",
+        "Your transport network.",
         "The space you need."
       ],
       "status": "Web live · Android soon"
@@ -30,7 +30,7 @@
       "width": 1080,
       "height": 1080,
       "headline": [
-        "The trucks you know.",
+        "Your transport network.",
         "The space you need."
       ],
       "status": "Web live · Android soon"
@@ -39,9 +39,9 @@
   "captions": {
     "en": {
       "teaser": "A load comes in. Which of your transporters has room for it? Loadgistic brings the space and routes they report onto one map, so you know where to start before you call. Keep your regular transporters close, and find new options when you need them. Try it now at loadgistic.com. Android app coming soon.",
-      "private-network": "The trucks you know. The space you need. Ask the transporters you work with to share with your email, then see their reported space and routes together on your private map. Less starting from scratch. A clearer place to begin your next load. loadgistic.com",
-      "transporter": "Let your next customer see the space you have. Share your truck’s available room and routes with the brokers and shipping teams you work with. You choose who sees it: your contacts, the public, both, or one recipient. loadgistic.com",
-      "public-discovery": "Your usual truck can’t take this load? Find another place to start. Explore public capacity on Loadgistic and narrow it to the route, truck and space you need. Check the latest report, then call the transporter and agree on the job. loadgistic.com",
+      "private-network": "The transporters you know. The space you need. Ask the providers you work with to share with your email, then see their reported available vehicles and routes together on your private map. Know where to start before you call. loadgistic.com",
+      "transporter": "Let your next customer see the space you have. Share your vehicle’s available room and routes with the brokers and shipping teams you work with. You choose who sees it: your contacts, the public, both, or one recipient. loadgistic.com",
+      "public-discovery": "Your usual transporter cannot take this load? Explore public capacity by route, vehicle type and current load. Check when the signal was updated, then call the provider to confirm the work. loadgistic.com",
       "tracking": "The job is agreed. Keep everyone in the picture. Give the people involved private shipment updates, approximate location and loading and unloading photos—without making the shipment public. loadgistic.com"
     },
     "am": {
@@ -60,9 +60,9 @@
   "hashtags": [
     "#Loadgistic",
     "#FreightTransport",
-    "#TruckCapacity"
+    "#TransportCapacity"
   ],
-  "profileBio": "The trucks you know. The space you need. loadgistic.com",
+  "profileBio": "Your transport network. The space you need. loadgistic.com",
   "schedule": [
     {
       "day": 1,
@@ -118,6 +118,6 @@
     "https://support.google.com/googleplay/android-developer/answer/14151465?hl=en"
   ],
   "suggestedPostingTime": "10:00 AM Africa/Addis_Ababa (EAT); adjust after actual audience analytics",
-  "coreMessage": "The trucks you know. The space you need.",
-  "claimBoundary": "Recipients view trucks explicitly shared with their verified email. This is not paid subscription access, an owned fleet, automatic capacity notifications or guaranteed availability."
+  "coreMessage": "Your transport network. The space you need.",
+  "claimBoundary": "Recipients see only vehicle signals shared with their verified email or permitted business team. Availability is reported, not guaranteed; public browsing is not a booking or payment service."
 }

@@ -1,13 +1,42 @@
 ---
 id: FEAT-TRQ-001
-title: Private transport requests and brokerage conversations
+title: Retired platform transport-arrangement conversations
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SUP-001, FEAT-GST-001, FEAT-SEC-001, FEAT-LNG-001]
 problem: Visitors need to reach real brokerage staff and return to their conversation; staff need a private assigned queue with replies and offline follow-up.
-behavior: Arrange transport collects route, name and phone then opens a durable private conversation, restored in the originating browser for seven days. Admin and explicitly authorized assigned Brokerage staff reply through their own queue, while call notes stay private. Active conversations update automatically through authorized APIs. Visitors may end messaging while retaining an open phone follow-up; staff distinguish active chats, follow-up and resolved requests. Older callback records remain phone follow-ups. General public Help remains retired and transport-provider dashboard Support is separate. No public demand, email, member account, automatic document approval, fee or shipment is created.
+behavior: Platform transport-arrangement intake, conversations, Brokerage staff capability and special Loadgistic capacity access are retired under FEAT-ENT-001. Legacy web/native/RPC/push authorities deny access while private history is preserved. Platform staff manage software Support and accounts only; a brokerage business uses an ordinary customer workspace without platform privileges.
 contracts: [TransportRequestInput, PrivateTransportRequestQueue, TransportRequestFollowUp, TransportChatAuthority, TransportChatSnapshot]
 observability: [transport_request_created, transport_request_updated, transport_request_denied, transport_message_sent]
 rollout: Apply additive migrations 103, 104, 110 and 111 with RLS and service-only RPCs before application release. Verify isolated SQL denial and desktop/phone submission-to-admin workflows, obtain visual review, then use normal release gates. Roll back the app while retaining private requests and history.
 ---
+
+## October18 planned supersession — retire platform Brokerage
+
+Implementation in progress under FEAT-ENT-001. The owner removed transport-
+arrangement chat from every public, web, Expo, staff and admin surface. Platform
+staff retain software Support and account management only. The separate brokerage
+business will use an ordinary customer workspace, without platform privileges.
+The special Share with Loadgistic grant and LOADGISTIC capacity audience retire.
+
+Given old web/native clients, cookies, bearer sessions, URLs or service calls
+When they request Brokerage intake, replies, assignment, polling, receipts, push
+registration or special Loadgistic capacity
+Then the application returns a retired/unavailable result and database authority
+also denies the operation, preserving private history and audit records.
+
+Given a platform staff member previously had only Brokerage responsibility
+When the service retires
+Then no Support or customer-workspace permission is granted automatically.
+
+Given current software Support and unloading-approval notifications
+When Brokerage is retired
+Then their authorized workflows, read receipts and delivery remain available.
+
+New evidence planned: `tests/platform-brokerage-retirement.test.mjs`,
+`tests/sql/platform-brokerage-retirement.sql`; local rehearsal and actual browser
+checks precede any separately reviewed hosted rollout. Older scenarios below are
+historical and superseded for active Brokerage/LOADGISTIC behavior, not evidence
+of its continuing availability. No private history erasure is included.
+
 
 October 7 launcher presentation: primary “Need help with transport?” with smaller
 “Let us handle it · Live chat” beneath on web/native. The accessible action names

@@ -1,20 +1,37 @@
 -- Synthetic, rollback-only tests against the actual command and projection functions.
 begin;
 do $test$
-declare owner_id uuid; driver_id uuid; other_driver uuid; org_id uuid; truck_id uuid; saved_id uuid;
+declare owner_id uuid; driver_id uuid:=gen_random_uuid(); other_driver uuid; org_id uuid; truck_id uuid; other_truck_id uuid; saved_id uuid;
  route_points jsonb; command jsonb; result jsonb; mode_value text; expected_public boolean; expected_private boolean;
  digest_a text:=repeat('a',64); digest_b text:=repeat('b',64); grant_a uuid; payload jsonb;
 begin
- select m.user_id,m.organization_id,d.user_id into strict owner_id,org_id,driver_id
- from organization_members m join drivers d on d.organization_id=m.organization_id and d.active
- join profiles p on p.id=d.user_id and p.active join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
+ select m.user_id,m.organization_id into strict owner_id,org_id
+ from organization_members m join profiles p on p.id=m.user_id and p.active and p.role='TRANSPORTER'
+ join auth.users identity on identity.id=p.id and identity.deleted_at is null and identity.email_confirmed_at is not null
+ join organizations organization on organization.id=m.organization_id and organization.type='TRANSPORT_COMPANY'
+ join lateral provider_capacity_actor_scope(m.user_id) a on a.workspace_access
  where m.membership_role='OWNER' limit 1;
+ perform accept_content_policy(owner_id,'2026-10-09');
+ -- A fresh employee has no pre-existing shipment to interrupt by assignment.
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+ values(driver_id,'sharing-driver-'||driver_id||'@loadgistic.local',clock_timestamp(),'{"fixture_source":"loadgistic"}','{}');
+ perform fleet_accept_invitation(driver_id,fleet_invite_driver(owner_id,jsonb_build_object('email','sharing-driver-'||driver_id||'@loadgistic.local','name','Synthetic sharing driver','phone','+251900000001')));
+ perform accept_content_policy(driver_id,'2026-10-09');
  select id into strict other_driver from profiles where role='DRIVER' and active and id<>driver_id limit 1;
- result:=create_provider_vehicle(owner_id,'{"make":"Sharing audit","model":"Test","plate":"AUDIT-SHARING-POLICY","cargo_configuration":"Mini Box Truck"}');truck_id:=(result->>'id')::uuid;
+ result:=create_provider_vehicle(owner_id,'{"make":"Sharing audit","model":"Test","plate":"AUDIT-SHARING-POLICY","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}');truck_id:=(result->>'id')::uuid;
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',truck_id,'can_manage_capacity',true,'can_manage_tracking',true));
  perform refresh_provider_capacity_location(driver_id,jsonb_build_object('vehicle_id',truck_id,'approximate_lat',41.8781,'approximate_lng',-87.6298,'location_precision_km',20));
  select current_route_points_json into strict route_points from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
  update company_pages set published=true where organization_id=org_id;
+ -- Keep the sharing matrix independent of legacy multi-Live seed state.
+ -- Withdraw only this selected provider's other trucks when it has no review.
+ if (managed_provider_publication_eligibility(owner_id)->>'qualifyingTruckCount')::integer=0 then
+  for other_truck_id in select id from vehicles
+   where organization_id=org_id and active and publication_status='LIVE' and id<>truck_id loop
+   perform set_provider_vehicle_publication(owner_id,other_truck_id,'DRAFT');
+  end loop;
+ end if;
+ perform set_provider_vehicle_publication(owner_id,truck_id,'LIVE');
  command:=jsonb_build_object('vehicle_id',truck_id,'status','EMPTY','accepted_loads','BOTH','availability_geometry','ROUTE','location_source','PRESERVE_DRIVER','current_route_places',route_points);
  saved_id:=publish_provider_capacity(owner_id,command||'{"sharing_mode":"PUBLIC"}');
  result:=grant_private_capacity_access(owner_id,truck_id,'sharing-a@example.invalid',digest_a);grant_a:=(result->>'id')::uuid;
@@ -34,7 +51,7 @@ begin
   if expected_private and (payload->>'sharing_mode'<>mode_value or payload ? 'exclusive_email' or payload ? 'exclusive_digest' or payload ? 'grants') then raise exception 'MODE_OR_CONTACT_PROJECTION_LEAK';end if;
  end loop;
  begin perform grant_private_capacity_access(owner_id,truck_id,'sharing-b@example.invalid',digest_b);raise exception 'EXCLUSIVE_EXTRA_EMAIL_ALLOWED';exception when raise_exception then if sqlerrm<>'EXCLUSIVE_RECIPIENT_ONLY' then raise;end if;end;
- begin perform set_loadgistic_capacity_access(owner_id,truck_id,true,repeat('c',64));raise exception 'EXCLUSIVE_PLATFORM_ALLOWED';exception when raise_exception then if sqlerrm<>'EXCLUSIVE_RECIPIENT_ONLY' then raise;end if;end;
+ begin perform set_loadgistic_capacity_access(owner_id,truck_id,true,repeat('c',64));raise exception 'EXCLUSIVE_PLATFORM_ALLOWED';exception when raise_exception then if sqlerrm<>'PLATFORM_BROKERAGE_RETIRED' then raise;end if;end;
  begin perform set_provider_capacity_sharing(other_driver,truck_id,'PUBLIC');raise exception 'FOREIGN_POLICY_MUTATION';exception when raise_exception then if sqlerrm<>'NOT_FOUND' then raise;end if;end;
  begin perform set_provider_capacity_sharing(owner_id,truck_id,'EXCLUSIVE',null,null);raise exception 'MISSING_EXCLUSIVE_RECIPIENT';exception when raise_exception then if sqlerrm<>'EXCLUSIVE_EMAIL_REQUIRED' then raise;end if;end;
  -- Both OTP stages recheck sharing policy, including stale challenges after a change.

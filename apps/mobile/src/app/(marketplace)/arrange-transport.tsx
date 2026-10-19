@@ -1,1 +1,2 @@
-export {default} from '../../screens/arrange-transport';
+import {Redirect} from 'expo-router';
+export default function RetiredTransportArrangement(){return <Redirect href="/"/>;}

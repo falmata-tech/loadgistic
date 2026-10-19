@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {chatReadInput,chatConversationId,chatReadState,chatAlertSnapshot,chatAlertChanges,chatAlertHref,mergeChatReadState,visibleChatSequence} from '../src/lib/chat-read-policy.js';
 import {createChatAlertTracker,chatAlertCopy} from '../src/lib/chat-alert-delivery.js';
 const id='11111111-1111-4111-8111-111111111111';
-const item={kind:'BROKERAGE',id,status:'NEW',side:'CUSTOMER',queued:false,assigned:false,assignedName:null,assignmentVersion:0,teamJoined:false,unreadCount:0,incomingSequence:0,endedAt:null,chatEnabled:true,updatedAt:'2026-10-07T20:00:00Z'};
+const item={kind:'SUPPORT',id,status:'OPEN',side:'CUSTOMER',queued:false,assigned:false,assignedName:null,assignmentVersion:0,teamJoined:false,unreadCount:0,incomingSequence:0,endedAt:null,chatEnabled:true,updatedAt:'2026-10-07T20:00:00Z'};
 const feed=(patch={})=>({unreadCount:patch.unreadCount||0,waitingCount:0,items:[{...item,...patch}]});
 const read={customerSeen:0,teamSeen:0,ownSeen:0,latestSequence:2,ownSide:'CUSTOMER',unreadCount:1,teamJoined:false,joinedAt:null,assignmentVersion:0};
 test('acknowledgement is only a bounded cursor and assignment frame, never claimed identity',()=>{
@@ -39,7 +39,7 @@ test('waiting, ended and resolved work has its own notification without restorin
  assert.deepEqual(chatAlertChanges(feed(),feed({side:'TEAM',queued:true})).map(e=>e.event),['QUEUED']);
  assert.deepEqual(chatAlertChanges(feed(),feed({endedAt:'2026-10-07T21:00:00Z'})).map(e=>e.event),['ENDED']);
  assert.deepEqual(chatAlertChanges(feed(),feed({status:'CLOSED',teamJoined:true})).map(e=>e.event),['RESOLVED']);
- assert.equal(chatAlertHref({...item,side:'TEAM',queued:true}),'/brokerage?queue=UNASSIGNED');
+ assert.equal(chatAlertHref({...item,side:'TEAM',queued:true}),'/support?view=WAITING');
  assert.equal(chatAlertHref({...item,kind:'SUPPORT',side:'CUSTOMER'}),`/app/support?conversation=${id}`);
 });
 test('only visible messages in an active focused chat can advance a read cursor',()=>{

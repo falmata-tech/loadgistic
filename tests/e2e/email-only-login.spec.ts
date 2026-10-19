@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {localAuditService,auditProvider,checked} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createManagedOAuthHandoff,MANAGED_OAUTH_COOKIE} from '../../src/lib/managed-oauth-flow.js';

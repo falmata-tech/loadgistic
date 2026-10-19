@@ -5,7 +5,7 @@ import test from 'node:test';
 const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const supportRoutes=[
   'src/app/app/support/page.tsx','src/app/support/page.tsx','src/app/support/[id]/page.tsx',
-  'src/app/support/assisted/page.tsx','src/app/support/assisted/[id]/page.tsx','src/app/admin/support/page.tsx',
+  'src/app/admin/support/page.tsx',
   'src/app/help/[id]/page.tsx','src/app/api/support/availability/route.ts',
   'src/app/api/support/conversations/route.ts','src/app/api/support/conversations/[id]/claim/route.ts',
   'src/app/api/support/conversations/[id]/close/route.ts','src/app/api/support/conversations/[id]/messages/route.ts',
@@ -16,7 +16,7 @@ const supportRoutes=[
   'src/app/api/admin/support-agents/route.ts','src/app/api/admin/support-agents/[id]/route.ts'
 ];
 
-test('active Support and Assisted matching routes use the managed Support port',()=>{
+test('active Support and retained recovery adapters use the managed Support port',()=>{
   for(const path of supportRoutes){
     const source=read(path);assert.doesNotMatch(source,/lib\/repository\.js/,path);assert.match(source,/lib\/support\.js/,path);
   }
@@ -59,4 +59,8 @@ test('shared platform permission scope covers every documented responsibility',(
   for(const permission of ['CUSTOMERS','OPERATIONS','TRUST','BILLING','SUPPORT'])assert.match(sql,new RegExp(`when '${permission}'`));
   assert.match(sql,/profile\.role='ADMIN'/);
   assert.match(sql,/revoke all[^;]+from public,anon,authenticated/is);
+});
+
+test('retired staff guest pages cannot render a third live queue or read private transcripts',()=>{
+ for(const path of ['src/app/support/assisted/page.tsx','src/app/support/assisted/[id]/page.tsx']){const source=read(path);assert.match(source,/notFound\(\)/);assert.doesNotMatch(source,/lib\/support|GuestSupportThread|GuestSupportAssignment/);}
 });

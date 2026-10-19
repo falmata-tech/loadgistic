@@ -9,7 +9,7 @@ observability: [support_conversation_created, support_message_sent, support_conv
 rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Preview, and Production with visibility-aware bounded refreshes and message/query windows; durable database records remain authoritative so authorized Realtime notifications can be enabled without changing ownership, and managed failure never falls back to SQLite.
 ---
 
-# Customer support inbox
+# Transport Provider support inbox
 
 ### Scenario: every retained message remains reachable
 
@@ -107,6 +107,32 @@ When its queue row is rendered\
 Then the conversation identity is plain content rather than a link to `#` or another dead destination\
 And only an authorized Claim action is presented\
 And an Open action appears only when the actor can actually open the conversation detail.
+
+Given a Waiting row uses plain identity content instead of an Open link\
+When the queue is viewed on a phone or desktop\
+Then its avatar and customer identity retain the same aligned layout as linked
+conversation rows, with initials centered inside the avatar.
+
+Given several member conversations are waiting, including equal creation times
+or a later queue page\
+When a staff member opens Waiting\
+Then Claim is offered only for the exact oldest conversation accepted by the
+current database command, while the agent is available and below their shared
+member/retained-guest workload limit\
+And displayed row order alone is not treated as authority to claim\
+And the database repeats these checks when the action is submitted.
+
+October14 WEB-MOB-032: local144 adds authoritative `can_claim` and aligns equal-time
+ordering with the unchanged command. Fresh backup/restore, SQL regression and
+exact rollback pass. The installed local function retains permissions, shared
+workload checks and command-time revalidation; the matching UI passes four actual
+component checks and both genuine desktop/phone workflows in
+`tests/e2e/support-waiting-claim.spec.ts`: paused/full agents, tied FIFO, later pages,
+forged later claims, one persisted first claim/event/audit, the next eligible row
+and revoked permission. Exact synthetic cleanup passes. Receipt:
+`.local/internal-workflows-20261014/support-fifo-actual-runner.json`.
+No client-side first-row guess or direct-table authorization substitute is used;
+owner visual acceptance and hosted rollout remain separate.
 
 ### Scenario: compact refresh preserves performance
 
@@ -229,6 +255,24 @@ Given an administrator opens Add member on a phone\
 When they select Support or Brokerage and scroll the form\
 Then Create member stays above fixed navigation and is reachable with a normal tap.
 
+### Scenario: retained-guest assignment waits for client readiness
+
+Given an administrator opens a retained guest conversation while client scripts
+are still loading\
+When its assignment form first appears\
+Then both the assignee selection and Save assignment are disabled until handlers
+attach\
+And the first enabled selection is sent with the observed prior assignee and
+persists through the existing authorized assignment command\
+And background refresh does not replace an unsaved selection or silently adopt a
+new concurrency value.
+
+Evidence: `tests/support-staff-readiness.test.mjs` exercises the actual component
+before/after effects and its submit handler. The real delayed-script assignment
+workflow is in `tests/e2e/support-staff-readiness.spec.ts`; it uses only an exact
+synthetic retained conversation and staff identity. Local focused verification
+is distinct from owner visual approval and hosted rollout.
+
 Featured is a separate default-off team responsibility (FEAT-FTR-001, migration
 106). Admin creation/edit forms persist it and log the grant/revocation. A
 Featured-only member signs in to Featured, with no Support/Brokerage or other
@@ -279,3 +323,26 @@ Keep Support/Brokerage scopes, guest capabilities, private files and staff-web-o
 access unchanged. Sound/system delivery is opt-in; closed-app push is not implied
 by polling. Local implementation/permission/device evidence and owner visual
 approval are required before publication.
+
+### Scenario: a visible web reply becomes Seen after a covering dialog closes
+
+Given a focused member Support chat has an intersecting reply covered by a
+consent or Updates dialog, and its saved cursor has not reached that reply\
+When the dialog closes without a new intersection, scroll or focus event\
+And the existing bounded receipt poll returns an authorized HTTP200 or304\
+Then the client rechecks current geometry and occlusion and acknowledges only
+the actually displayed sequence with its current assignment frame\
+And a still-covered reply, hidden or unfocused page, or HTTP403 response never
+advances Seen\
+And no extra polling, optimistic acknowledgement or unconditional mark-read is
+introduced. FEAT-NOT-001 / ADR-077 remain the receipt authority contract.
+
+October14 regression: the actual public-provider Updates/consent flow reached a
+visible reply but failed to save Seen before the repair. The no-event component
+case fails before and passes after; four actual-component cases plus nine
+receipt-policy tests pass, including occluded/hidden/unfocused/403 negatives.
+The exact public browser flow now passes real consent, no-private-body Updates,
+visible-message Seen and revoked-permission reload, with checked fixture cleanup.
+Evidence: `.local/internal-chat-audit-20261014/web-visibility-component-red-green.json`
+and `.local/internal-chat-audit-20261014/public-receipts-only/sanitized-receipt.json`.
+This is verified locally; production promotion remains separate.

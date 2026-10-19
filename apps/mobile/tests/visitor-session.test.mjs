@@ -4,14 +4,14 @@ import { createVisitorController, parseVisitorGrant } from '../src/session/visit
 const initial = 1800000000000;
 function setup() {
  let now = initial; const stored = new Map(), calls = [];
- const grant = scope => ({ scope, token: 'payload.signature', startedAt: initial, issuedAt: now, expiresAt: now + 1800000 });
+ const grant = scope => ({ scope, token: 'payload.signature', startedAt: initial, issuedAt: now, expiresAt: scope === 'tracking' ? initial + 300000 : now + 1800000 });
  const port = { now: () => now, read: async scope => stored.get(scope) || null, write: async (scope, value) => { stored.set(scope, value); }, remove: async scope => { stored.delete(scope); }, request: async (path, options) => { calls.push({ path, options }); return grant(path.includes('/tracking/') ? 'tracking' : 'capacity'); }, changed: () => {} };
  return { port, stored, calls, grant, advance: ms => { now += ms; }, controller: createVisitorController(port) };
 }
-test('visitor credentials reject another scope, expired grants and a tracking lifetime beyond eight hours', () => {
- const valid = { token: 'payload.signature', scope: 'tracking', startedAt: initial, expiresAt: initial + 1800000 };
+test('visitor credentials reject another scope, expired grants and a tracking lifetime beyond five minutes', () => {
+ const valid = { token: 'payload.signature', scope: 'tracking', startedAt: initial, expiresAt: initial + 300000 };
  assert.equal(parseVisitorGrant(valid, 'tracking', initial).scope, 'tracking');
- for (const value of [{ ...valid, scope: 'capacity' }, { ...valid, expiresAt: initial }, { ...valid, startedAt: initial - 8 * 3600000 }, { ...valid, token: 'a.b.c' }, { ...valid, renewedAt: initial + 1 }, { ...valid, renewedAt: -1 }, { ...valid, lastActivityAt: 'invalid' }, { ...valid, lastActivityAt: -1 }]) assert.throws(() => parseVisitorGrant(value, 'tracking', initial));
+ for (const value of [{ ...valid, scope: 'capacity' }, { ...valid, expiresAt: initial }, { ...valid, expiresAt: initial + 300001 }, { ...valid, token: 'a.b.c' }, { ...valid, renewedAt: initial + 1 }, { ...valid, renewedAt: -1 }, { ...valid, lastActivityAt: 'invalid' }, { ...valid, lastActivityAt: -1 }]) assert.throws(() => parseVisitorGrant(value, 'tracking', initial));
 });
 test('logout separates scopes and late private reads cannot restore content', async () => {
  const x = setup(); await x.controller.verify('tracking', 'handoff', '123456'); await x.controller.verify('capacity', 'handoff', '123456');
@@ -68,9 +68,18 @@ test('phone clock skew and response delay preserve bounded visitor expiry across
 });
 test('skew-adjusted renewal preserves the Tracking identity and rejects excessive server lifetime', async () => {
  const x = setup(), serverStart = initial + 120000;
- x.port.request = async () => ({ scope: 'tracking', token: 'payload.signature', startedAt: serverStart, issuedAt: x.port.now() + 120000, expiresAt: x.port.now() + 120000 + 1800000 });
+ x.port.request = async () => ({ scope: 'tracking', token: 'payload.signature', startedAt: serverStart, issuedAt: x.port.now() + 120000, expiresAt: serverStart + 300000 });
  await x.controller.verify('tracking', 'handoff', '123456'); x.advance(61000); await x.controller.touch('tracking');
  assert.equal(x.controller.snapshot().tracking.startedAt, serverStart);
- x.port.request = async () => ({ scope: 'tracking', token: 'payload.signature', startedAt: serverStart - 8 * 3600000, issuedAt: x.port.now() + 120000, expiresAt: x.port.now() + 120000 + 1800000 });
+ x.port.request = async () => ({ scope: 'tracking', token: 'payload.signature', startedAt: serverStart - 300001, issuedAt: x.port.now() + 120000, expiresAt: serverStart + 300000 });
  await assert.rejects(x.controller.verify('tracking', 'handoff', '123456')); assert.equal(x.controller.snapshot().tracking, null);
+});
+
+test('tracking closes at five minutes even with active renewal; private capacity stays separate',async()=>{
+ const x=setup();await x.controller.verify('tracking','handoff','123456');await x.controller.verify('capacity','handoff','123456');
+ for(let i=0;i<4;i++){x.advance(60001);await x.controller.touch('tracking');assert.equal(x.controller.snapshot().tracking.expiresAt,initial+300000);}
+ x.advance(60000);await x.controller.expire();assert.equal(x.controller.snapshot().tracking,null);assert.equal(x.stored.has('tracking'),false);assert.ok(x.controller.snapshot().capacity);
+});
+test('restoring an obsolete thirty-minute Tracking grant clears it before exposing private content',async()=>{
+ const x=setup();x.stored.set('tracking',JSON.stringify({token:'payload.signature',scope:'tracking',startedAt:initial,expiresAt:initial+1800000}));await x.controller.restore('tracking');assert.equal(x.controller.snapshot().tracking,null);assert.equal(x.stored.has('tracking'),false);
 });

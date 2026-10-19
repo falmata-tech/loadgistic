@@ -1,3 +1,67 @@
+## October 19 reviewed workspace and three-language rollout — approved, pending gates
+
+The owner explicitly answered “Approve this reviewed database rollout” for
+`.local/release-20261019/rollout-review.md`, after approving the English, Amharic
+and Afaan Oromo layouts and requesting web/mobile deployment and GitHub push.
+This authorizes the exact 37 migrations 138–175 (147 absent) on Loadgistic project
+`tpwyyzoqijjmbvsmmvcm`, manifest SHA256
+`19a8faef28b6c8fcdd5bfd8c162a5075fb7e886ea84e7ced9921d6160355a70c`,
+after final same-source CI, fresh protected backup/restore evidence, target/ledger
+and catalogue checks. The restored137 rehearsal passed all37 through175.
+
+For this rollout only, the same existing advisor WARN findings
+`authenticated_security_definer_function_executable` and
+`auth_leaked_password_protection` may remain visible. The strict advisor result
+stays failed; no check or Auth setting is disabled. Any additional/different WARN,
+ERROR, failed RLS/ACL/catalogue, source/target drift or ambiguous write stops rollout.
+Do not retry an uncertain mutation or restore a broad backup automatically.
+
+The existing deployment request covers the matching verified web and Android
+testing release. This SQL approval does not authorize private signing-key export,
+Auth/SMTP/provider settings, GPS hosting/network/costs, real engine commands,
+production demo seeding, customer erasure, another app or public Play publication.
+The prior1.0.6 signing authority is consumed; an exact new artifact review is needed
+before using the existing upload key. No hosted migration or new release has been
+executed at this checkpoint.
+
+## October 13 exact Featured137 repair — applied and verified
+
+The owner answered “Approve the Featured repair” to the review at
+`.local/featured-20261013/repair-review.md`. This authorizes only migration137 on
+Loadgistic `tpwyyzoqijjmbvsmmvcm` and one existing
+`generate_managed_featured_days()` call to prepare missing days, preserving saved
+manual days/history. Migration SHA256:
+`9d5980b5d84e7b7aa1ee7079d399b6f2ae107a39363b142bd00bd31cceb1aed9`.
+The protected hosted136 backup and isolated restore/rehearsal are recorded in
+that exact review. Target, drift, security, immutable-source CI, transaction,
+rollback and monitored public/aggregate readback gates still apply.
+
+The owner subsequently answered “Approve this Featured-only exception” for
+`.local/featured-20261013/known-warning-review.md`: permit only137 with the two
+existing WARN findings (caller-only current_user_projection and breached-password
+protection) visible. The strict advisor monitor remains failed; its rule is
+unchanged. Any ERROR, other/additional WARN, failed catalogue/CI/backup/target/
+digest check or ambiguous result stops execution. This exception ends after137
+plus one generation/readback and authorizes no Auth/permission/settings change,
+Tracking138, filters139, signing or future release.
+
+No138 Tracking migration, new layout publication, private-key retrieval, billing,
+Auth/SMTP/provider configuration, other account/project or customer-record
+deletion is authorized by this answer. The owner requested larger map coverage
+instead of approving the proposed layouts: correct them locally and repeat
+focused review before their full release gates.137 can repair existing clients
+independently. The exact137 transaction was committed at19:55:47UTC after all
+eight jobs in CI38454443547 passed for1a158f8. One generation created five missing
+days and preserved two saved days; global/seed histories, old rosters and controls
+were verified unchanged. Live readback shows all seven upcoming dates published
+with eight distinct eligible Drivers each, and the mobile public endpoint returns
+eight trucks. Hosted ledger is137; post-catalogue passes and the only two WARN
+findings remain those explicitly approved. The one-use exception is consumed.
+No138/139 or new web/Android interface has been published in this operation.
+Protected evidence: `.local/featured-20261013/production-137-applied.json`,
+`production-137-post-readback.json`, `public-native-readback.json` and
+`live-security-after.json`.
+
 ## October 12 exact final 1.0.6 signing and closed-review execution
 
 Owner explicitly answered “Approve signing the final 1.0.6 build” for source

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { FileText, Info, LayoutDashboard, LockKeyhole, Truck, MapPinned, Route, Users } from 'lucide-react';
 import React from 'react';
+import styles from './public-navigation.module.css';
 
 const destinations = [
   { key: 'market', href: '/', label: 'Capacity', desktopLabel: 'Capacity', icon: MapPinned },
@@ -55,17 +56,16 @@ export function PublicMobileNav({signedIn=false,providerWorkspace=false}:{signed
 
   const sessionDestination=signedIn
     ?{key:'dashboard',href:'/app/home',label:providerWorkspace?'My workspace':'Dashboard',desktopLabel:providerWorkspace?'My workspace':'Dashboard',icon:LayoutDashboard}
-    :{key:'login',href:'/login',label:'Transporter login',desktopLabel:'Transporter login',icon:Truck};
+    :{key:'login',href:'/login',label:'Sign in',desktopLabel:'Sign in',icon:Truck};
 
   return <>
-    <Localized as="nav" copy={["aria-label"]} className="public-workspace-nav" aria-label="Public workspace navigation">
-      <span className="public-nav-group"><Text message="Explore"/></span>
-      {destinations.slice(0,3).map(destination=>destinationLink(destination,false))}
-      {!providerWorkspace&&<><span className="public-nav-group"><Text message="Account"/></span>{destinationLink(sessionDestination,false,'public-nav-secondary')}</>}
-      <span className="public-nav-group"><Text message="Loadgistic"/></span>
-      {destinationLink(destinations[3],false)}
-      {destinationLink({key:'privacy',href:'/privacy',label:'Privacy',desktopLabel:'Privacy',icon:LockKeyhole},false,'public-nav-secondary')}
-      {destinationLink({key:'terms',href:'/terms',label:'Terms',desktopLabel:'Terms',icon:FileText},false,'public-nav-secondary')}
+    <Localized as="nav" copy={["aria-label"]} className={`public-workspace-nav ${styles.rail}`} aria-label="Public workspace navigation">
+      {destinations.map(destination=>destinationLink(destination,false))}
+      {signedIn&&!providerWorkspace?destinationLink(sessionDestination,false,'public-nav-secondary'):null}
+      <div className={styles.legal}>
+        {destinationLink({key:'privacy',href:'/privacy',label:'Privacy',desktopLabel:'Privacy',icon:LockKeyhole},false,'public-nav-secondary')}
+        {destinationLink({key:'terms',href:'/terms',label:'Terms',desktopLabel:'Terms',icon:FileText},false,'public-nav-secondary')}
+      </div>
     </Localized>
     <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Public mobile navigation">
       {destinations.slice(0,3).map(destination=>destinationLink(destination,true))}

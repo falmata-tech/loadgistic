@@ -1,9 +1,9 @@
 ---
 id: FEAT-REV-001
 title: Verified guest reviews for transport providers
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-SHP-001, FEAT-TRK-001, FEAT-PRV-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-SHP-001, FEAT-TRK-001, FEAT-PRV-001, FEAT-PLY-001]
 problem: A capacity seeker without an account still needs a trustworthy way to review the provider after a real completed shipment, without letting low ratings be hidden during moderation.
-behavior: The emailed customer owner may submit one verified review of the transport provider after completion. The provider never rates the guest or other people sharing Tracking access. Every rating publishes and counts immediately. A provider may dispute a one-, two-, or three-star rating, but the rating stays public and counted while that dispute is pending.
+behavior: The emailed customer owner may submit one verified review of the transport provider after completion. The provider never rates the guest or other people sharing Tracking access. Every rating publishes and counts immediately. A provider may dispute a one-, two-, or three-star rating; that dispute alone does not hide or exclude the rating. Independent current content-moderation restrictions and terminal rating removal remain effective across both review queues.
 contracts: [VerifiedProviderReview, ReviewAuthorizationGrant, ProviderReviewSummary, LowRatingReviewRequest, ManagedProviderReviewRepository]
 observability: [provider_review_submitted, low_rating_review_requested, low_rating_review_resolved, provider_review_denial]
 rollout: Add provider-review ownership and guest authorization additively, purge fake local Business-to-Business reviews, and switch public reputation only after the new projection and authorization tests pass.
@@ -36,7 +36,48 @@ Then the dispute enters Pending review\
 And the original rating and note remain public and continue to count\
 And opening a dispute does not suspend the guest or provider\
 And an administrator may record a terminal Uphold or Remove decision with an audit note\
-And only a terminal Remove decision excludes the review from the public summary.
+And only a terminal Remove decision in the rating-dispute workflow excludes the review from the public summary; an independent content-moderation restriction remains governed by FEAT-PLY-001.
+
+### Scenario: independent review restrictions survive decisions in either queue
+
+Given a review has one or more HIDDEN content reports or a terminal REMOVED rating-dispute decision\
+When authorized Trust staff uphold its pending dispute or restore one reported-content decision\
+Then the review remains excluded from public text, count and average while any other current restriction remains\
+And restoring a content report cannot change its terminal rating-dispute decision\
+And upholding a dispute cannot restore or dismiss any content report\
+And the review publishes only when the explicit permitted decision leaves no HIDDEN report and no terminal rating removal\
+And decisions on the same review serialize with one another and retain each report, decision note and audit attribution.
+
+Given a review decision has become terminal or the actor loses Trust authority\
+When that actor replays a rating or content decision\
+Then existing denial rules remain effective and no unrelated review, report or reputation changes.
+
+October14 WEB-MOB-035 repair (migration143, installed locally): replace only the
+two existing decision function bodies through exact asserted patches, retain
+their service-only permissions/metadata and protected previous definitions, and
+verify old-failing/new-passing isolated SQL for both command orders, multiple
+reports, terminal replay, revoked Trust and unrelated records. Verify exact
+rollback and refusal on function/metadata drift before hosted owner review. The
+current audit request covers the reversible local repair; hosted installation
+remains separately restricted. Browser moderation and
+public projection evidence remain separate from the isolated rehearsal.
+
+Isolated143 evidence: `tests/sql/review-moderation-restrictions.sql` fails on exact
+original functions and passes on the candidate, including public text predicate
+and actual count/average. Two real sessions, eight rollback-drift refusals,
+candidate replay refusal and exact metadata/row/ledger restoration pass. The
+initial restored-clone `public.spatial_ref_sys` failure was classified as the
+NR-44 restore omission, with the original local database protected. The combined
+fresh restore and local143/144 installation now pass both regressions and strict
+catalog checks, preserve all other function permissions and78 business tables,
+and retain the original stop on one independently changing rate-limit counter.
+Receipts: `.local/review-moderation-143-20261014/review-manifest.json` and
+`.local/internal-workflows-20261014/main-143-144-install-receipt.json`.
+Both actual desktop/phone conflict-form cases now pass: saved Trust Hide/Restore,
+rating Uphold/Remove, canonical public HTML/API text/count/average after every
+restriction, stale revoked-Trust denial and exact cleanup. Receipt:
+`.local/internal-workflows-20261014/moderation-conflict-actual-runner.json`.
+No hosted install; owner visual and full release gates remain separate.
 
 ### Scenario: provider cannot rate a guest or dispute higher ratings
 

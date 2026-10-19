@@ -1,3 +1,4 @@
+import {canManageOwnDriverPortrait} from '@/lib/driver-portrait-access.js';
 import { mobileActor,mobileBody,mobileFailure,mobileJson,MobileError } from '@/lib/mobile/server';
 import { mobileUpload,fileFailure } from '@/lib/mobile/file-server';
 import { portraitUpload,portraitRemove } from '@/lib/mobile/portrait-contract.js';
@@ -5,7 +6,7 @@ import { getDriverPortraitWorkspace,updateDriverPortrait,removeDriverPortrait } 
 import { publicAsset } from '@/lib/mobile/public-contract.js';
 import { checkRateLimit } from '@/lib/rate-limit';
 export const runtime='nodejs';
-async function driver(request:Request){const actor=await mobileActor(request,true);if(actor.role!=='DRIVER')throw new MobileError(403,'FORBIDDEN','Only a driver can manage their own public photo.');return actor;}
+async function driver(request:Request){const actor=await mobileActor(request,true);if(!canManageOwnDriverPortrait(actor))throw new MobileError(403,'FORBIDDEN','Only a driver can manage their own public photo.');return actor;}
 export async function GET(request:Request){try{const actor=await driver(request),data=await getDriverPortraitWorkspace(actor);return mobileJson({image:publicAsset(data.imageUrl),hasPortrait:data.hasPortrait});}catch(error){return mobileFailure(error);}}
 export async function POST(request:Request){try{
  const actor=await driver(request),rate=await checkRateLimit(`mobile-driver-portrait:${actor.id}`,8,600000);if(!rate.allowed)throw new MobileError(429,'PLEASE_WAIT','Please wait before changing your photo again.');

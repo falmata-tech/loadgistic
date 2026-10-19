@@ -12,3 +12,11 @@ test('profile projection cannot leak private source fields or return standalone 
  assert.equal(result.items.length,1);assert.equal(result.items[0].capacityId,'');assert.equal(result.items[0].matchingTrucks,2);assert.equal(JSON.stringify(result).includes('secret'),false);assert.equal('email' in result.items[0],false);
  assert.throws(()=>discoveryProfiles({filterError:'bad place'}));
 });
+
+test('discovery permits valid OR groups while preserving scalar and invalid-filter denial',()=>{
+ const input={vehicleCategory:'Pickup truck,Cargo van',status:'PARTIAL,EMPTY,PARTIAL',loadType:'PTL,FTL',stopOption:'MULTI_PICK,MULTI_DROP',freshness:'UPDATE_NEEDED,FRESH'};
+ const result=discoveryFilters(new URLSearchParams(input));
+ assert.equal(result.status,'EMPTY,PARTIAL');assert.equal(result.vehicleCategory,'Cargo van,Pickup truck');assert.equal(result.loadType,'FTL,PTL');
+ assert.equal(discoveryFilters(new URLSearchParams('status=PARTIAL&loadType=FTL,PTL')).status,'PARTIAL');
+ for(const query of ['status=EMPTY,FULL','vehicleCategory=Cargo+van,Unknown','stopOption=MULTI_PICK,','status=EMPTY&status=PARTIAL'])assert.throws(()=>discoveryFilters(new URLSearchParams(query)));
+});

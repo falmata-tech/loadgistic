@@ -9,10 +9,10 @@ begin
   select p.id into strict outsider from profiles p join organization_members m on m.user_id=p.id
     where p.active and p.role='TRANSPORTER' and m.organization_id<>org limit 1;
   select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
-  truck:=(create_provider_vehicle(owner_id,'{"make":"Isuzu","model":"Document test","plate":"DOC-TEST","cargo_configuration":"Mini Box Truck"}')->>'id')::uuid;
+  truck:=(create_provider_vehicle(owner_id,'{"make":"Isuzu","model":"Document test","plate":"DOC-TEST","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;
   center:=managed_verification_center(owner_id);
   if not exists(select 1 from jsonb_array_elements(center->'subjects') subject where subject->>'subject_type'='VEHICLE'
-    and subject->>'subject_id'=truck::text and subject->'verification_types'='["VEHICLE_OWNERSHIP","VEHICLE_AUTHORIZATION"]'::jsonb) then raise exception 'TRUCK_CHOICES_MISSING';end if;
+    and subject->>'subject_id'=truck::text and subject->'verification_types'='["VEHICLE_OWNERSHIP","VEHICLE_AUTHORIZATION","VEHICLE_OPERATING_LICENSE"]'::jsonb) then raise exception 'TRUCK_CHOICES_MISSING';end if;
   if center::text like '%storage_path%' then raise exception 'PRIVATE_PATH_IN_CENTER';end if;
   command:=jsonb_build_object('subject_type','VEHICLE','subject_id',truck,'verification_type','VEHICLE_OWNERSHIP',
     'document_name','Private test document','storage_path','supabase://verification/verification/test.pdf','original_name','test.pdf','mime_type','application/pdf');

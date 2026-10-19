@@ -1,5 +1,5 @@
 import type {Featured} from './public-content.ts';
-import type {TrackingSummary} from './tracking.ts';
+import type {TrackingSummary,TrackingPublicTruck,TrackingRoutePoint} from './tracking.ts';
 
 type Row=Record<string,unknown>;
 const row=(value:unknown):value is Row=>Boolean(value)&&typeof value==='object'&&!Array.isArray(value);
@@ -9,7 +9,8 @@ const integer=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(val
 const summary=(value:unknown)=>row(value)&&strings(value,['id','code','origin','destination','cargo','status','driver','truck','updatedAt']);
 const event=(value:unknown)=>row(value)&&strings(value,['id','status','note','createdAt'])&&typeof value.hasProof==='boolean';
 export type TrackingPage={items:TrackingSummary[];total:number;page:number;pageCount:number};
-export type VisitorShipment=TrackingSummary&{provider:string;mode:string;canReview:boolean;canApprove:boolean;
+export type VisitorShipment=TrackingSummary&{provider:string;mode:string;canReview:boolean;canApprove:boolean;canShare?:boolean;canViewLocation?:boolean;
+ route:TrackingRoutePoint[];publicTruck:TrackingPublicTruck|null;
  events:{id:string;status:string;note:string;hasProof:boolean;createdAt:string}[];
  location:{latitude:number;longitude:number;area:string;radius:number;updatedAt:string}|null;
  review:{rating:number;note:string}|null};
@@ -36,8 +37,12 @@ export function parseVisitorShipment(value:unknown):VisitorShipment{
   &&typeof location.longitude==='number'&&Number.isFinite(location.longitude)&&Math.abs(location.longitude)<=180
   &&typeof location.radius==='number'&&[1,3,5,10,20].includes(location.radius);
  const reviewed=review===null||row(review)&&typeof review.rating==='number'&&Number.isInteger(review.rating)&&review.rating>=1&&review.rating<=5&&typeof review.note==='string';
- if(!row(value)||!summary(value)||!strings(value,['provider','mode'])||typeof value.canReview!=='boolean'
-  ||typeof value.canApprove!=='boolean'||!list(value.events,event)||!located||!reviewed)
+ const route=row(value)?value.route:undefined,truck=row(value)?value.publicTruck:undefined;
+ const routed=Array.isArray(route)&&(route.length===0||route.length===2||route.length===3)&&list(route,item=>row(item)&&strings(item,['placeRef','label'])&&Array.isArray(item.coordinate)&&item.coordinate.length===2&&item.coordinate.every(point=>typeof point==='number'&&Number.isFinite(point))&&Math.abs(item.coordinate[0])<=180&&Math.abs(item.coordinate[1])<=90)
+  &&new Set(route.map(item=>(item as TrackingRoutePoint).placeRef)).size===route.length;
+ const publicTruck=truck===null||row(truck)&&strings(truck,['platformNumber','make','model','configuration','providerName','providerHandle','driverName','driverPhone','contactPhone']);
+ if(!row(value)||!summary(value)||!strings(value,['provider','mode'])||!routed||!publicTruck||typeof value.canReview!=='boolean'
+  ||typeof value.canApprove!=='boolean'||value.canShare!==undefined&&typeof value.canShare!=='boolean'||value.canViewLocation!==undefined&&typeof value.canViewLocation!=='boolean'||value.canViewLocation===false&&location!==null||!list(value.events,event)||!located||!reviewed)
   throw Error('Could not load shipment updates. Please try again.');
  return value as VisitorShipment;
 }

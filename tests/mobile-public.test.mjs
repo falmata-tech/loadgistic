@@ -17,3 +17,8 @@ test('public assets and contact destinations reject private paths and executable
  for(const value of ['javascript:alert(1)','file:///tmp/a','intent://app','https://user:pass@example.test'])assert.equal(publicWebsite(value),'');
  assert.equal(publicWebsite('https://example.test/'),'https://example.test/');
 });
+test('retired provider Services and Regular never reappear while truck regular exposes labels only',()=>{
+ const projected=nativePublicProvider({services:'RETIRED-PRIVATE-SERVICE',regular_service:{geometry:'ROUTE',route_labels:['RETIRED-PROVIDER-ROUTE']},trucks:[{capacity:{status:'EMPTY',recurring_corridors:[{id:'private-route-id',driver_user_id:'private-driver',vehicle_id:'private-truck',geometry:'ROUTE',route_points:[{label:'City A',lat:9,lng:38},{label:'City B',lat:10,lng:39}]}]}}]});
+ assert.equal(projected.services,'');assert.equal(projected.regular,null);assert.deepEqual(projected.trucks[0].regular,{kind:'ROUTE',places:['City A','City B']});
+ for(const hidden of ['RETIRED-','private-route-id','private-driver','private-truck','"lat"','"lng"'])assert.equal(JSON.stringify(projected).includes(hidden),false);
+});

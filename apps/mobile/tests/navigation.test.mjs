@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {publicDestinations,workspaceDestinations,hasWorkspace,workspaceRoleLabel,accountSections,activeDestination,isWorkspace} from '../src/navigation/destinations.ts';
+import {publicDestinations,workspaceDestinations,hasWorkspace,workspaceRoleLabel,workspaceCapabilities,accountSections,activeDestination,isWorkspace} from '../src/navigation/destinations.ts';
 import {parseSession} from '../src/session/contract.ts';
 const session=(role='TRANSPORTER',operatingModel='FLEET_TRANSPORTER',granted=true)=>({state:'ACTIVE',user:{id:'local',role,operatingModel},access:{granted}});
 const links=items=>items.map(item=>item.href);
@@ -42,10 +42,25 @@ test('session parser retains known operating models without accepting arbitrary 
  assert.equal(parseSession({...raw,user:{...raw.user,operatingModel:'ADMIN'}}).user.operatingModel,null);
 });
 
-test('workspace identity labels distinguish owners from each driving model',()=>{
- assert.equal(workspaceRoleLabel(session()),'Fleet transporter');
- assert.equal(workspaceRoleLabel(session('DRIVER','OWNER_OPERATOR')),'Independent driver');
+test('provider owners share one label while employed drivers keep their job label',()=>{
+ assert.equal(workspaceRoleLabel(session()),'Transport Provider');
+ assert.equal(workspaceRoleLabel(session('DRIVER','OWNER_OPERATOR')),'Transport Provider');
  assert.equal(workspaceRoleLabel(session('DRIVER','COMPANY_DRIVER')),'Company driver');
- assert.equal(workspaceRoleLabel(session('DRIVER','SELF_MANAGED_DRIVER')),'Independent driver');
+ assert.equal(workspaceRoleLabel(session('DRIVER','SELF_MANAGED_DRIVER')),'Transport Provider');
  assert.equal(workspaceRoleLabel(null),'');
+});
+
+test('authoritative driving and fleet capabilities control navigation independently of legacy role',()=>{
+ const owner=(role,drivesTruck)=>({...session(role,role==='DRIVER'?'SELF_MANAGED_DRIVER':'FLEET_TRANSPORTER'),user:{...session(role).user,ownsProviderAccount:true,canManageFleet:true,drivesTruck,currentDriverId:drivesTruck?'local':null,currentDrivenVehicleId:null}});
+ for(const role of ['DRIVER','TRANSPORTER']){
+  const driving=owner(role,true),managing=owner(role,false);
+  assert.deepEqual(links(workspaceDestinations(driving)),['/account','/fleet','/shipments','/network','/account-settings']);
+  assert.deepEqual(links(workspaceDestinations(managing)),['/account','/shipments','/network','/account-settings']);
+  assert.equal(activeDestination('/fleet',true,driving),'/fleet');assert.equal(activeDestination('/fleet',true,managing),'/account');
+  assert.equal(workspaceCapabilities(driving).drivesTruck,true);assert.equal(workspaceCapabilities(managing).drivesTruck,false);
+ }
+ const employee={...session('DRIVER','COMPANY_DRIVER'),user:{...session('DRIVER','COMPANY_DRIVER').user,ownsProviderAccount:false,canManageFleet:false,drivesTruck:true,currentDriverId:'local',currentDrivenVehicleId:'assigned'}};
+ assert.ok(!links(workspaceDestinations(employee)).includes('/fleet'));assert.equal(workspaceCapabilities(employee).currentDrivenVehicleId,'assigned');
+ const denied={...owner('TRANSPORTER',true),user:{...owner('TRANSPORTER',true).user,ownsProviderAccount:false,canManageFleet:false}};
+ assert.equal(workspaceCapabilities(denied).canManageFleet,false,'an authoritative denial overrides a legacy owner role');
 });

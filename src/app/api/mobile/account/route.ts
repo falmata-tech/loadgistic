@@ -1,8 +1,9 @@
 import { mobileActor, mobileBody, mobileFailure, mobileJson, MobileError } from '@/lib/mobile/server';
 import { updateOwnAccountDetails } from '@/lib/identity/account-details';
+import {historicalPublicFirstName} from '@/lib/personal-identity.js';
 export const runtime = 'nodejs';
 export async function GET(request: Request) {
-  try { const user = await mobileActor(request, true); return mobileJson({ name: user.name, phone: user.phone || '', email: user.email }); }
+  try { const user = await mobileActor(request, true); return mobileJson({ name: user.name,firstName:user.firstName||historicalPublicFirstName(user.name),lastName:user.lastName||'',publicCallbackPhone:user.publicCallbackPhone||'', phone: user.phone || '', email: user.email }); }
   catch (error) { return mobileFailure(error); }
 }
 export async function POST(request: Request) {

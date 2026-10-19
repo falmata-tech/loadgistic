@@ -4,7 +4,7 @@ import { AppLink } from '../components/app-link';
 import { foregroundTrackingDue } from '../location/tracking-area';
 import { FilePicker, PrivateFile, uploadBody, useFileSelection } from '../components/private-file';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, Text, View } from 'react-native';
 import { Redirect, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackingLocationResult } from '../../../../src/lib/tracking-location-controls.js';
 import { TRACKING_JOURNEY, trackingProgress } from '../../../../src/lib/tracking-progress.js';
@@ -15,21 +15,19 @@ import { captureCapacityLocation } from '../location/capture';
 import { privacyRadii } from '../location/privacy';
 import { Page, Title, Copy, Card, Field, Button, ErrorText, palette } from '../components/ui';
 import { Choices } from '../components/choices';
+import {TrackingWorkspace} from '../components/tracking-workspace';
 export default function ShipmentDetail() {
  const params = useLocalSearchParams<{ id?: string }>(), id = typeof params.id === 'string' ? params.id : '';
  const account = useAccount(), query = useAccountQuery<TrackingDetail>(`/api/mobile/shipments/${encodeURIComponent(id)}`);
  if (account.busy) return <Page><ActivityIndicator /></Page>;
  if (!account.session) return <Redirect href="/account" />;
- return <Page><ErrorText message={query.error} />{!query.data && !query.error && <ActivityIndicator accessibilityLabel="Loading shipment" />}
-  <Button secondary message="Refresh shipment" onPress={() => { void query.reload(); }} busy={query.loading} />
-  {query.data && <Shipment key={account.session.user.id + id} data={query.data} reload={query.reload} />}
- </Page>;
+ return query.data?<View style={{flex:1}}><Shipment key={account.session.user.id+id} data={query.data} reload={query.reload}/><ErrorText message={query.error}/></View>:<Page><ErrorText message={query.error}/>{!query.error&&<ActivityIndicator accessibilityLabel="Loading shipment"/>}<Button secondary message="Refresh shipment" onPress={()=>void query.reload()} busy={query.loading}/></Page>;
 }
 function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promise<void> }) {
  const {t}=useLanguage();
  const proof = useFileSelection();
- const account = useAccount(), [selected, setSelected] = useState(''), [note, setNote] = useState(''), [email, setEmail] = useState(''),[appealReason,setAppealReason]=useState('');
- const [radius, setRadius] = useState(String(Math.min(20,data.location?.radius || 20))), [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [feedbackAt, setFeedbackAt] = useState('STATUS');
+ const account = useAccount(), [selected, setSelected] = useState(''), [note, setNote] = useState(''),[appealReason,setAppealReason]=useState('');
+ const [radius, setRadius] = useState(String(Math.min(10,data.location?.radius || 10))), [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [feedbackAt, setFeedbackAt] = useState('STATUS');
  const lock = useRef(false), active = useRef(false), generation = useRef(0), lastAttempt = useRef(0), autoUpdate = useRef<() => void>(() => undefined);
  useFocusEffect(useCallback(() => { active.current = true; return () => { active.current = false; generation.current++; }; }, []));
  useEffect(() => { const listener = AppState.addEventListener('change', state => { if (state !== 'active') generation.current++; }); return () => listener.remove(); }, []);
@@ -37,22 +35,21 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
  const locationMode = data.mode === 'LOCATION_AND_STATUS';
  const needsLocation = locationMode && ['TO_PICKUP', 'IN_TRANSIT'].includes(selected);
  const validChoice = data.nextStatuses.includes(selected);
- async function save(action: 'STATUS' | 'LOCATION' | 'ADD_RECIPIENT' | 'REVOKE_RECIPIENT', recipientId?: string) {
+ async function save(action: 'STATUS' | 'LOCATION') {
   if (lock.current) return;
   setFeedbackAt(action);
   if (action === 'STATUS' && (!validChoice || selected === 'ISSUE' && !note.trim())) { setError('Choose an available step. Add a note when reporting an issue.'); return; }
   if(action==='STATUS'&&['LOADING','UNLOADING'].includes(selected)&&!proof.file){setError(t('Attach photo proof when recording loading or unloading.'));return;}
-  if (action === 'ADD_RECIPIENT' && !email.trim()) { setError('Enter the recipient’s email.'); return; }
   lock.current = true; setFeedbackAt(action); setBusy(true); setError(''); setMessage(''); const version = generation.current;
   try {
    const location = action === 'LOCATION' || action === 'STATUS' && needsLocation ? await captureCapacityLocation(Number(radius)) : undefined;
    // Never submit a late GPS fix after leaving the screen or locking the phone.
    if (!visible(version)) return;
-   const body = action === 'STATUS' ? { action, nextStatus: selected, note, ...(location ? { location } : {}) } : action === 'LOCATION' ? { action, location } : action === 'ADD_RECIPIENT' ? { action, email: email.trim() } : { action, recipientId };
+   const body = action === 'STATUS' ? { action, nextStatus: selected, note, ...(location ? { location } : {}) } : { action, location };
    const result = await account.request(`/api/mobile/shipments/${data.id}`, action === 'STATUS' && proof.file && ['LOADING', 'UNLOADING', 'ISSUE'].includes(selected) ? uploadBody(body, proof.file) : body) as { recorded?: boolean; reason?: string };
    if (!visible(version)) return;
-   setMessage(action === 'LOCATION' ? trackingLocationResult(result) === 'waiting' ? 'Your recent location is still current. You can update it again shortly.' : 'Approximate location saved.' : action === 'ADD_RECIPIENT' ? 'Recipient added. Their access email is queued for delivery.' : action === 'REVOKE_RECIPIENT' ? 'Recipient access removed.' : 'Status saved.');
-   if (action === 'STATUS') { setSelected(''); setNote(''); proof.setFile(null); } if (action === 'ADD_RECIPIENT') setEmail('');
+   setMessage(action === 'LOCATION' ? trackingLocationResult(result) === 'waiting' ? 'Your recent location is still current. You can update it again shortly.' : 'Approximate location saved.' : 'Status saved.');
+   if (action === 'STATUS') { setSelected(''); setNote(''); proof.setFile(null); }
    await reload();
   } catch (error) { if (visible(version)) setError(`${error instanceof Error ? error.message : 'Could not confirm the update.'} Refresh the shipment to check its saved state before trying again.`); }
   finally { lock.current = false; setBusy(false); }
@@ -70,7 +67,7 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
  async function appeal(){if(lock.current)return;lock.current=true;setBusy(true);setFeedbackAt('APPEAL');setError('');setMessage('');try{await account.request(`/api/mobile/shipments/${data.id}/appeal`,{reason:appealReason});await reload();setAppealReason('');setMessage('Your appeal is saved. The team can review this shipment and its proof.');}catch(error){setError(error instanceof Error?error.message:'Could not confirm the appeal. Refresh before trying again.');}finally{lock.current=false;setBusy(false);}}
  const recorded = data.events.map(item => item.status);
  const feedback = <><ErrorText message={error} />{!!message && <Copy>{t(message)}</Copy>}</>;
- return <><Title>{data.origin} → {data.destination}</Title><Copy>{data.code} · {t(statusLabel(data.status))}</Copy><Copy>{data.truck} · {data.driver}</Copy><Copy>{data.cargo}</Copy>
+ return <TrackingWorkspace code={data.code} status={data.status} route={data.route} location={data.location} truck={data.publicTruck}><Button secondary message="Refresh shipment" onPress={()=>void reload()} busy={busy}/><Copy>{data.cargo}</Copy>
   {!!data.pickupDate && <Copy>{t('Pickup: {date}',{date:data.pickupDate})}</Copy>}{!!data.deliveryDate && <Copy>{t('Delivery: {date}',{date:data.deliveryDate})}</Copy>}
   {data.status==='UNLOADING'&&<Card><Title message="Waiting for shipment owner approval"/><Copy message="The shipment owner can approve unloading from their tracking page. If approval is delayed or disputed, ask our team to review."/>{data.canLocate&&!data.appeals?.some(item=>item.status==='OPEN')&&<><Field message="Explain the approval problem" value={appealReason} onChangeText={setAppealReason} multiline maxLength={1000} editable={!busy}/><Button message="Ask the team to review" busy={busy} disabled={appealReason.trim().length<5} onPress={()=>void appeal()}/></>}{data.appeals?.map(item=><View key={item.id}><Copy>{item.reason} · {t(item.status)}</Copy>{!!item.resolutionNote&&<Copy>{item.resolutionNote}</Copy>}</View>)}{feedbackAt==='APPEAL'&&feedback}</Card>}
   <Card><Title message={"Shipment progress"}/><Copy message={"Choose the next step, then save it."}/>
@@ -85,16 +82,14 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
    {!data.nextStatuses.length && <Copy message={"This shipment is closed."}/>}{feedbackAt === 'STATUS' && feedback}
   </Card>
   {locationMode && <Card><Title message={"Approximate location"}/><Copy>{data.location ? `${locationAreaLabel(data.location.area,t)} · ${t('{radius} km radius',{radius:data.location.radius})}\n${t('Location updated {date}',{date:new Date(data.location.updatedAt).toLocaleString()})}` : t('No location shared yet.')}</Copy>
-   {data.canLocate && data.nextStatuses.length > 0 && <><Copy message={"Location privacy"}/><Choices value={radius} options={privacyRadii.filter(value=>value<=20).map(value => ({ id: String(value), label: `${value} km radius` }))} onChange={setRadius} disabled={busy} /><Copy message="The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment."/><Button message="Share current location" busy={busy} onPress={() => { void save('LOCATION'); }} /></>}
+   {data.canLocate && data.nextStatuses.length > 0 && <><Copy message={"Location privacy"}/><Choices value={radius} options={privacyRadii.filter(value=>value<=10).map(value => ({ id: String(value), label: `${value} km radius` }))} onChange={setRadius} disabled={busy} /><Copy message="The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment."/><Button message="Share current location" busy={busy} onPress={() => { void save('LOCATION'); }} /></>}
    {feedbackAt === 'LOCATION' && feedback}
   </Card>}
-  <Card><Title message={"Tracking recipients"}/><Copy message={"Customers sign in with a code sent to their email."}/>
-   {data.recipients.map(person => <View key={person.id} style={{ gap: 8, paddingVertical: 8 }}><Copy>{person.email}{person.owner ? ' · Customer' : ''}{person.revoked ? ' · Access removed' : ''}</Copy>{data.canManageRecipients && !person.owner && !person.revoked && <Button secondary label={`Remove access for ${person.email}`} busy={busy} onPress={() => Alert.alert('Remove tracking access?', 'This person will no longer be able to view this shipment.', [{ text: 'Keep access', style: 'cancel' }, { text: 'Remove access', style: 'destructive', onPress: () => { void save('REVOKE_RECIPIENT', person.id); } }])} />}</View>)}
-   {data.canManageRecipients && <><Field message="Recipient email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} editable={!busy} /><Button message="Add recipient" busy={busy} onPress={() => { void save('ADD_RECIPIENT'); }} /></>}
-   {['ADD_RECIPIENT', 'REVOKE_RECIPIENT'].includes(feedbackAt) && feedback}
-   {data.deliveries.some(item => item.status !== 'SENT') && <Copy message={"Some emails are still awaiting delivery. You do not need to add those recipients again."}/>}
+  <Card><Title message="Shipment owner"/><Copy message="The shipment owner manages who can follow this shipment."/>
+   {data.recipients.filter(person=>person.owner).map(person=><View key={person.id}><Copy>{person.email}</Copy></View>)}
+   {data.deliveries.some(item=>item.status!=='SENT')&&<Copy message="The shipment owner's email is still awaiting delivery."/>}
   </Card>
   {data.canRecover && <AppLink href={{ pathname: '/shipment-manage', params: { id: data.id } }} style={{ paddingVertical: 14, color: palette.teal }} message={"Correct, reassign or cancel shipment"}/>}
   <Card><Title message={"Update history"}/>{data.events.map(event => <View key={event.id} style={{ gap: 4, paddingVertical: 8 }}><Copy>{t(statusLabel(event.status))} · {new Date(event.createdAt).toLocaleString()}</Copy>{!!event.note && <Copy>{event.note}</Copy>}{event.hasProof && <PrivateFile label={t('View photo proof')} load={() => account.request(`/api/mobile/shipments/${data.id}/proof/${event.id}`)} />}</View>)}</Card>
- </>;
+ </TrackingWorkspace>;
 }

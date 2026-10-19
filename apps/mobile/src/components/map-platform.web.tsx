@@ -16,7 +16,7 @@ export type GeoJSONSourceRef={getClusterExpansionZoom:(id:number)=>Promise<numbe
 type PressEvent={nativeEvent:{features:Feature[]};stopPropagation:()=>void};
 const Context=createContext<BrowserMap|null>(null);
 const SourceContext=createContext<string>('');
-type MapProps=PropsWithChildren<{style?:StyleProp<ViewStyle>;mapStyle:StyleSpecification;attribution?:boolean;androidView?:string;onDidFinishLoadingMap?:()=>void;onDidFailLoadingMap?:()=>void;onDidFinishRenderingFrame?:()=>void;onRegionIsChanging?:(event:RegionEvent)=>void;onRegionDidChange?:(event:RegionEvent)=>void}>;
+type MapProps=PropsWithChildren<{onPress?:(event:{nativeEvent:{lngLat:Coordinate;point:[number,number]}})=>void;style?:StyleProp<ViewStyle>;mapStyle:StyleSpecification;attribution?:boolean;androidView?:string;onDidFinishLoadingMap?:()=>void;onDidFailLoadingMap?:()=>void;onDidFinishRenderingFrame?:()=>void;onRegionIsChanging?:(event:RegionEvent)=>void;onRegionDidChange?:(event:RegionEvent)=>void}>;
 
 export const Map=forwardRef<MapRef,MapProps>(function BrowserMapView(props,ref){
  const node=useRef<HTMLDivElement>(null),instance=useRef<BrowserMap|null>(null),latest=useRef(props);
@@ -38,6 +38,7 @@ export const Map=forwardRef<MapRef,MapProps>(function BrowserMapView(props,ref){
   map.on('render',()=>latest.current.onDidFinishRenderingFrame?.());
   map.on('move',()=>latest.current.onRegionIsChanging?.(region()));
   map.on('moveend',()=>latest.current.onRegionDidChange?.(region()));
+  map.on('click',event=>latest.current.onPress?.({nativeEvent:{lngLat:event.lngLat.toArray() as Coordinate,point:[event.point.x,event.point.y]}}));
   const resize=new ResizeObserver(()=>map.resize());resize.observe(node.current);
   return()=>{resize.disconnect();instance.current=null;map.remove();};
  },[]);

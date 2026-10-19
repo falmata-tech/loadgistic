@@ -1,13 +1,26 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import {closeCapacityFilters} from './capacity-drawer-helper';
+import {auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
+import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {addProviderRegularCapacity,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes separately tappable',async({page}:{page:any},info:any)=>{
   test.setTimeout(120000);
-  const data=await (await page.request.get('/api/public/capacity?q=Merkato&status=PARTIAL')).json();
-  const truck=data.items.find((item:{vehicle_model:string;current_route_points:{label:string}[]})=>item.vehicle_model==='X200'&&item.current_route_points?.[1]?.label.startsWith('Shinile'));
-  expect(truck,'real local fixture matching the owner screenshot').toBeTruthy();
+  const service=localAuditService(),actor=await auditProvider(service,'shared-route');let vehicleId='';
+  try{
+  const rows=checked(await service.from('place_catalog').select('id,name,latitude,longitude').in('normalized_name',['dire dawa','shinile','melka jebdu','dengego']));
+  const place=(name:string)=>{const found=rows.find((row:{name:string})=>row.name===name);expect(found,`local ${name} place fixture`).toBeTruthy();return found;};
+  const city=[place('Dire Dawa'),place('Shinile'),place('Melka Jebdu'),place('Dengego')];
+  checked(await service.from('company_pages').update({published:true,headline:'Regional freight from Dire Dawa',about:'Independent driver serving Dire Dawa, Shinile, Melka Jebdu and Dengego.'}).eq('provider_profile_id',actor.provider_profile_id));
+  vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'JAC',model:'X200',plate:`SHARED-${actor.suffix}`,cargoConfiguration:'Mini Box Truck',trailerInterchangeable:false})).id;
+  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:city[0].latitude+.005,approximateLng:city[0].longitude+.005,locationPrecisionKm:3,currentRoutePlaces:city.slice(0,2).map(row=>({placeRef:row.id}))});
+  const regularId=await addProviderRegularCapacity(actor,{vehicleId,expectedDriverId:actor.id,geometry:'ROUTE',routePlaces:city.map(row=>({placeRef:row.id})),areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
+  const response=await page.request.get(`/api/public/capacity?provider=${encodeURIComponent(`shared-route-${actor.suffix}`)}&status=PARTIAL`);expect(response.ok()).toBe(true);const data=await response.json();
+  const truck=data.items.find((item:{vehicle_id:string})=>item.vehicle_id===vehicleId);
+  expect(truck,'disposable current truck has real published geometry').toBeTruthy();expect(truck.current_route_points[1].label).toMatch(/^Shinile,/);expect(truck.recurring_corridors).toHaveLength(1);expect(truck.recurring_corridors[0].id).toBe(regularId);
+  const saved=checked(await service.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id').eq('id',regularId).single());expect(saved).toEqual({assigned_vehicle_id:vehicleId,assigned_driver_user_id:actor.id});
   const loaded=page.waitForResponse((r:any)=>r.url().includes('/api/public/capacity?'));
-  await page.goto(`/?q=Merkato&status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);await loaded;
+  await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);await loaded;
   await closeCapacityFilters(page);
   await expect(page.locator('.map-current-route')).toHaveAttribute('stroke','#eab308');
   // Selection now fits the complete regular route too. Inspect the shared leg
@@ -104,5 +117,13 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
   if(info.project.name.includes('mobile')){await page.touchscreen.tap(background!.x,background!.y);await page.touchscreen.tap(background!.x,background!.y);}
   else await page.mouse.dblclick(background!.x,background!.y);
   await expect.poll(zoomScale).toBe(beforeBackground*2);
-
+  }finally{
+    const routes=checked(await service.from('profile_routes').select('id').eq('provider_profile_id',actor.provider_profile_id));
+    const capacities=vehicleId?checked(await service.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
+    const ids=[vehicleId,...routes.map((row:{id:string})=>row.id),...capacities.map((row:{id:string})=>row.id)].filter(Boolean);
+    if(ids.length)checked(await service.from('audit_logs').delete().in('entity_id',ids));
+    checked(await service.from('profile_routes').delete().eq('provider_profile_id',actor.provider_profile_id));
+    if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
+    checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
+  }
 });

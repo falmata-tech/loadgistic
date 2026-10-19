@@ -12,6 +12,6 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();const action=text(form,'action');
   if(!['RETIRE','RESTORE'].includes(action)||text(form,'confirm')!==action)throw new Error('LIFECYCLE_CONFIRMATION_REQUIRED');
   await setVehicleLifecycle(user,id,{active:action==='RESTORE',reason:text(form,'reason')});
-  return redirectWith(request,'/app/fleet','success',action==='RETIRE'?'Truck retired. Its history is retained.':'Truck restored. Assign a Driver and publish fresh capacity when ready.');
+  return redirectWith(request,'/app/fleet','success',action==='RETIRE'?'Vehicle retired. Its history is retained.':'Vehicle restored. Assign a Driver and publish fresh capacity when ready.');
  }catch(error){return redirectWith(request,'/app/fleet','error',errorMessage(error));}
 }

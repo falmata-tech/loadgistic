@@ -1,0 +1,37 @@
+.accountView { display:grid; gap:20px; }
+.accountView > :global(.page-header) { margin:0; }
+.accountView section { min-width:0; padding:20px; border:1px solid var(--line); border-radius:12px; background:white; }
+.accountView section > header { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+.accountView section > header h2 { flex:1; display:flex; align-items:center; gap:9px; min-width:0; font-size:1rem; margin:0; }
+.accountView h2 svg { width:20px; height:20px; color:var(--teal,#0d6b6e); }
+.accountView dl { margin:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+.accountView dt { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.78rem; margin-bottom:7px; }
+.accountView dt span,.readOnly { color:var(--muted); padding:2px 6px; background:#f3f5f7; border-radius:4px; font-size:.68rem; }
+.accountView dd { margin:0; font-size:.9rem; font-weight:600; line-height:1.5; overflow-wrap:anywhere; }
+.providerIdentity { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+.providerIdentity h3 { font-size:1.1rem; margin:0 0 7px; }
+.providerIdentity p { color:var(--muted); margin:0 0 10px; font-size:.85rem; }
+.relationship { display:inline-flex; color:#0d6b6e; font-size:.75rem; font-weight:650; background:#e9f4f4; padding:5px 8px; border-radius:5px; }
+.providerCounts { display:flex; gap:26px; border-top:1px solid var(--line); padding-top:16px; margin-top:18px; }
+.providerCounts span { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.8rem; }
+.providerCounts strong { color:var(--ink); font-size:1rem; }
+.workGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; align-items:start; }
+.records { margin:0; padding:0; list-style:none; }
+.records > li { display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid var(--line); padding:15px 0; }
+.records > li:first-child { padding-top:0; }
+.records > li:last-child { border-bottom:0; padding-bottom:0; }
+.records > li > div:first-child { display:grid; gap:6px; min-width:0; }
+.records strong { font-size:.88rem; line-height:1.4; overflow-wrap:anywhere; }
+.records small { color:var(--muted); font-size:.76rem; line-height:1.5; overflow-wrap:anywhere; }
+.records small a { text-decoration:underline; text-underline-offset:3px; color:var(--teal); }
+.recordEnd { display:flex; flex-direction:column; align-items:flex-end; gap:9px; flex-shrink:0; }
+.count { font-size:.8rem; font-weight:650; color:var(--muted); }
+.unavailable,.empty { color:var(--muted); font-size:.85rem; line-height:1.5; margin:0; padding:8px 0; }
+.unavailable { border-left:3px solid var(--line); padding:8px 12px; background:#f8fafb; }
+.connections { list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:10px; }
+.connections a { display:grid; gap:5px; padding:10px; border:1px solid var(--line); border-radius:6px; font-size:.86rem; }
+.connections a[aria-current=page] { border-color:var(--teal); background:#edf7f7; }
+.connections small { font-size:.72rem; color:var(--muted); }
+@media(max-width:760px) { .accountView { gap:16px; } .accountView section { padding:16px; } .workGrid { grid-template-columns:1fr; gap:16px; } .accountView dl { grid-template-columns:1fr; gap:15px; } .records > li { flex-wrap:wrap; gap:12px; } .recordEnd { flex-direction:row; flex-wrap:wrap; align-items:center; width:100%; } .providerCounts { gap:16px; flex-wrap:wrap; } }
+
+.context{margin:0 0 14px;color:var(--muted,#5d6c75);font-size:.875rem;line-height:1.5}.context a{font-weight:650}.entityDocuments{border:1px solid var(--border,#dbe4e7);border-radius:14px;padding:20px;background:#fff}.entityDocuments header{margin-bottom:16px}.entityDocuments h2{margin:0;font-size:1.1rem}

@@ -1,7 +1,7 @@
 "use client";
 
 
-import {Localized,Text} from '@/components/localization';
+import {Localized,Text,useTranslation} from '@/components/localization';
 import React from 'react';
 import { Check, Search, SlidersHorizontal, X } from 'lucide-react';
 
@@ -36,6 +36,7 @@ export function BoardFilterSheet({
   search,
   children
 }:BoardFilterSheetProps){
+  const {t}=useTranslation();
   const dialogRef=React.useRef(null) as {current:HTMLDialogElement|null};
   const dialogId=React.useId();
   const open=()=>dialogRef.current?.showModal();
@@ -47,18 +48,18 @@ export function BoardFilterSheet({
         {Object.entries(search.hiddenFields||{}).filter(([,value])=>Boolean(value)).map(([name,value])=><input key={name} type="hidden" name={name} value={value}/>)}
         <label className="sr-only" htmlFor={search.id}><Text message="Search"/></label>
         <Search aria-hidden="true"/>
-        <input id={search.id} name="q" type="search" defaultValue={search.value} placeholder={search.placeholder}/>
+        <input id={search.id} name="q" type="search" defaultValue={search.value} placeholder={t(search.placeholder)}/>
         <Localized as="button" copy={["aria-label","title"]} className="button icon-only" aria-label="Search" title="Search"><Search aria-hidden="true"/></Localized>
       </form>:null}
       <button className="button secondary icon-button-label" type="button" onClick={open} {...{command:'show-modal',commandfor:dialogId}}>
-        <SlidersHorizontal aria-hidden="true"/><Text message="Filters"/>{activeFilters.length?<span className="filter-count" aria-label={`${activeFilters.length} active filters`}>{activeFilters.length}</span>:null}
+        <SlidersHorizontal aria-hidden="true"/><Text message="Filters"/>{activeFilters.length?<span className="filter-count" aria-label={t('{count} active filters',{count:activeFilters.length})}>{activeFilters.length}</span>:null}
       </button>
       <strong className="board-result-count">{resultLabel}</strong>
     </div>
     {activeFilters.length?<Localized as="div" copy={["aria-label"]} className="applied-filter-row" aria-label="Active filters">
       {activeFilters.map((filter,index)=>filter.href
-        ?<a className="applied-filter" href={filter.href} key={`${filter.label}-${index}`} aria-label={`Remove ${filter.label}`} title={`Remove ${filter.label}`}>
-          <span>{filter.label}</span><X aria-hidden="true"/>
+        ?<a className="applied-filter" href={filter.href} key={`${filter.label}-${index}`} aria-label={t('Remove {label}',{label:t(filter.label)})} title={t('Remove {label}',{label:t(filter.label)})}>
+          <span>{t(filter.label)}</span><X aria-hidden="true"/>
         </a>
         :<span className="applied-filter" key={`${filter.label}-${index}`}>{filter.label}</span>)}
       <a className="clear-filter-link" href={clearHref}><X aria-hidden="true"/><Text message="Clear all"/></a>

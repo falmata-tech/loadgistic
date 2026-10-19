@@ -2,7 +2,7 @@
   "expo": {
     "name": "Loadgistic",
     "slug": "loadgistic",
-    "version": "1.0.6",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/loadgistic-icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.loadgistic.app",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/loadgistic-icon.png",
         "backgroundColor": "#ffffff"
@@ -40,7 +40,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Loadgistic to use your location when you choose to update your truck location or find nearby trucks.",
+          "locationWhenInUsePermission": "Allow Loadgistic to use your location when you choose to update your vehicle location or find nearby vehicles.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": true,

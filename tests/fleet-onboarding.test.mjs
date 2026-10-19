@@ -8,6 +8,9 @@ test('Fleet redirects keep truck/pagination context without accepting external d
   const id='12345678-1234-1234-1234-123456789012';
   assert.equal(fleetReturnPath(`/app/fleet?driverPage=3&vehicle=${id}&success=spoof#driver-access`),`/app/fleet?driverPage=3&vehicle=${id}#driver-access`);
   assert.equal(fleetReturnPath(`/app/fleet/${id}`),`/app/fleet/${id}`);
+  assert.equal(fleetReturnPath(`/app/fleet?view=drivers&driver=${id}&task=contact`),`/app/fleet?driver=${id}&view=drivers&task=contact`);
+  assert.equal(fleetReturnPath(`/app/fleet?view=trucks&scope=retired&unknown=private`),'/app/fleet?view=trucks&scope=retired');
+  assert.equal(fleetReturnPath(`/app/fleet/${id}?view=documents&task=secret&scope=hidden`),`/app/fleet/${id}?view=documents`);
   for(const unsafe of ['https://example.com','//example.com','/\\example.com','/admin','/api/auth/logout','/app/fleet/../../admin'])assert.equal(fleetReturnPath(unsafe),'/app/fleet');
 });
 
@@ -15,14 +18,14 @@ test('Fleet invitation email explains consent and escapes provider content',()=>
   const result=buildEmailMessage({template:'fleet-driver-invitation',to:'driver@example.test',organizationName:'Fleet <script>',url:'https://example.test/join-fleet'});
   assert.match(result.text,/Company driver/);assert.match(result.text,/seven days/);
   assert.match(result.html,/Fleet &lt;script&gt;/);assert.doesNotMatch(result.html,/<script>/);
-  assert.match(result.text,/assign your truck after you accept/);
+  assert.match(result.text,/assign your vehicle after you accept/);
 });
 
 test('OTP and OAuth complete identity verification before offering fleet acceptance',()=>{
   for(const file of ['src/app/api/auth/callback/route.ts','src/app/api/applications/email-otp/verify/route.ts']){
     const source=readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
     assert.ok(source.indexOf('hasJoinableFleetInvitation(data.user.id)')>source.indexOf('const projection='));
-    assert.ok(source.indexOf("redirectUrl(request,'/join-fleet')")<source.indexOf("redirectUrl(request,'/apply?step=details')"));
+    assert.ok(source.indexOf("redirectUrl(request,'/join-fleet')")<source.indexOf('await managedProviderSignupEligible(data.user.id)'));
   }
 });
 

@@ -7,7 +7,8 @@ import {canManageProviderVehicles} from '../src/lib/fleet.js';
 const root=path.resolve(process.cwd());
 
 test('only provider owners receive the truck-registration affordance',()=>{
-  assert.equal(canManageProviderVehicles({role:'TRANSPORTER'}),true);
+  assert.equal(canManageProviderVehicles({role:'TRANSPORTER',organization_id:'organization-1'}),true);
+  assert.equal(canManageProviderVehicles({role:'TRANSPORTER'}),false);
   assert.equal(canManageProviderVehicles({role:'DRIVER',driver_kind:'SELF_MANAGED',provider_profile_id:'provider-1'}),true);
   assert.equal(canManageProviderVehicles({role:'DRIVER',driver_kind:'OWNER_OPERATOR',provider_profile_id:'provider-1'}),true);
   assert.equal(canManageProviderVehicles({role:'DRIVER',driver_kind:'COMPANY'}),false);
@@ -63,10 +64,12 @@ test('a fixed truck detail keeps map tools but omits its redundant selected-truc
   assert.match(detail,/showTruckIdentity=\{false\}/);
 });
 
-test('the public catalogue has freight configurations and distinct trailers without courier vehicles',()=>{
+test('the public catalogue includes courier configurations and distinct trailers',()=>{
   const catalog=fs.readFileSync(path.join(root,'src/lib/vehicle-configurations.ts'),'utf8');
   const registration=fs.readFileSync(path.join(root,'src/components/vehicle-registration-fields.tsx'),'utf8');
   for(const [name,file] of [
+    ['Courier car','courier-car.jpg'],
+    ['Courier motorcycle','courier-motorcycle.jpg'],
     ['Tractor + Container Trailer','tractor-container-flatbed.jpg'],
     ['Tractor + Dry Van Trailer','tractor-dry-van-trailer.jpg'],
     ['Tractor + Heavy Equipment Trailer','tractor-heavy-equipment-trailer.jpg']
@@ -77,7 +80,7 @@ test('the public catalogue has freight configurations and distinct trailers with
   assert.match(registration,/Interchangeable tractor/);
   assert.match(registration,/Compatible trailers/);
   assert.match(registration,/Currently attached trailer/);
-  assert.doesNotMatch(catalog,/Courier/);
+  assert.match(catalog,/Courier car/);assert.match(catalog,/Courier motorcycle/);
 });
 
 test('fleet pages expose add and detail destinations while company drivers are filtered out',()=>{
@@ -87,7 +90,7 @@ test('fleet pages expose add and detail destinations while company drivers are f
   const menu=fs.readFileSync(path.join(root,'src/app/app/menu/page.tsx'),'utf8');
   const shell=fs.readFileSync(path.join(root,'src/components/app-shell.tsx'),'utf8');
   assert.match(fleet,/href="\/app\/fleet\/new"/);
-  assert.match(fleet,/href=\{`\/app\/fleet\/\$\{vehicle\.id\}`\}/);
+  assert.match(fleet,/href=\{'\/app\/fleet\/\'\+vehicle\.id\}/);
   assert.match(menu,/canManageProviderVehicles/);
   assert.match(shell,/\['\/app\/company-page','\/app\/fleet'\]\.includes\(item\.href\)/);
 });

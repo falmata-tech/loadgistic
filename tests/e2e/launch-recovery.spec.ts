@@ -1,5 +1,5 @@
 import {chooseDate} from './date-picker-helper';
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {localAuditService,auditIdentity} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';

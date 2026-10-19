@@ -1,13 +1,18 @@
+import {capacityLocationSource,selectedCapacityLocation} from '../capacity-location-selection.js';
 import { z } from 'zod';
 import { mobileCatalogPlace } from './place-projection.js';
 import { capacityLoadPreference } from '../capacity-load-preferences.js';
 import {isValidCoordinate} from '../location-privacy.js';
+import {regularService} from './regular-contract';
+import {phoneInstallationProof} from '../phone-location-contract.js';
+import {locationSourceKind} from '../location-source.js';
 
 const place = z.object({ placeRef: z.string().trim().min(1).max(150) }).strict();
 const location = {
   approximateLat: z.number().finite().min(-90).max(90),
   approximateLng: z.number().finite().min(-180).max(180),
-  locationPrecisionKm: z.number().refine(value => [1, 3, 5, 10, 20, 40].includes(value)),
+  locationPrecisionKm: z.number().refine(value => [1, 3, 5, 10, 20].includes(value)),
+  phoneInstallation:phoneInstallationProof.optional(),
 };
 const vehicleId = z.string().uuid();
 export const capacityCommand = z.discriminatedUnion('action', [
@@ -15,6 +20,7 @@ export const capacityCommand = z.discriminatedUnion('action', [
   z.object({ action: z.literal('DUTY'), vehicleId, onDuty: z.boolean(),
     approximateLat: location.approximateLat.optional(), approximateLng: location.approximateLng.optional(),
     locationPrecisionKm: location.locationPrecisionKm.optional(),
+    phoneInstallation:phoneInstallationProof.optional(),
   }).strict(),
   z.object({ action: z.literal('PUBLISH'), vehicleId,
     status: z.enum(['EMPTY', 'PARTIAL', 'OFF_DUTY']),
@@ -47,12 +53,21 @@ export function projectMobileCapacity(workspace: unknown, actorId: string, role:
     vehicles: list(data.vehicles).map(value => {
       const row = object(value), driver = object(row.assigned_driver), location = object(row.driver_location);
       const current = capacities.find(item => item.vehicle_id === row.id);
+      const selection=object(row.location_selection),published=current?.location_updated_at?approximateLocation(current,true):null;
+      const phone=location.updatedAt?approximateLocation(location):null;
+      const chosen=selectedCapacityLocation({selection,published,phone});
+      const isCurrentDriver=['DRIVER','TRANSPORTER'].includes(role)&&driver.id===actorId;
       return {
+        selectedLocationSource:capacityLocationSource(selection),
+        publishedLocationSource:chosen===phone&&phone?'MOBILE':chosen===published&&published?locationSourceKind(current?.location_source):null,
+        locationIsDemo:chosen===phone&&phone?location.location_is_demo===true:chosen===published&&published?current?.location_is_demo===true:false,
+        configuration:text(row.cargo_configuration),
         id: text(row.id), label: [row.make, row.model].filter(Boolean).join(' '), plate: text(row.plate),
-        driver: text(driver.name), canLocate: role === 'DRIVER' && driver.id === actorId,
+        driver: text(driver.name), driverId:text(driver.id), canLocate: capacityLocationSource(selection)==='MOBILE' && isCurrentDriver,
+        canSetManualLocation:isCurrentDriver,canSetPhoneLocation:isCurrentDriver,
+        regularServices:regularService({corridors:list(data.corridors).map(object).filter(signal=>signal.vehicle_id===row.id&&signal.driver_user_id===driver.id)}).slice(0,1),
         dutyConfigured: row.duty_configuration_available === true,
-        location: location.updatedAt ? approximateLocation(location)
-          : current?.location_updated_at ? approximateLocation(current, true) : null,
+        location:chosen,
         current: current ? {
           status: text(current.status), visibility: text(current.visibility), sharingMode: text(current.sharing_mode), exclusiveEmail: text(current.exclusive_email), exclusiveName: text(current.exclusive_name), updatedAt: text(current.updated_at),
           acceptedLoads: capacityLoadPreference(current.status, current.accepts_full_load, current.accepts_partial_load),

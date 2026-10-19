@@ -9,6 +9,7 @@ import { KeyRound } from 'lucide-react';
 import { PublicHeader } from '@/components/public-header';
 import { Flash } from '@/components/flash';
 import { TrackingUnlockForm } from '@/components/tracking-unlock-form';
+import { TrackingEntryMap } from '@/components/tracking-entry-map';
 import {localAuthInboxUrl} from '@/lib/auth-flow.js';
 
 export default async function TrackingUnlockPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
@@ -25,7 +26,7 @@ export default async function TrackingUnlockPage({searchParams}:{searchParams:Pr
       <nav className="actions" aria-label="Pagination">{page>1?<Link className="button secondary" href={`/track?page=${page-1}`}><Text message="Previous"/></Link>:null}{page*20<shared.total?<Link className="button secondary" href={`/track?page=${page+1}`}><Text message="Next"/></Link>:null}</nav>
       </section></TrackingSessionBoundary></main></>;
   }
-  return <><PublicHeader/><main className="public-app-page public-form-workspace"><div className="container tracking-unlock-shell public-form-container">
+  return <><PublicHeader/><main className="public-app-page public-form-workspace tracking-entry-workspace"><div className="tracking-entry-stage"><TrackingEntryMap/><div className="container tracking-unlock-shell public-form-container">
     <section className="tracking-unlock-panel">
       <div className="tracking-unlock-icon"><KeyRound aria-hidden="true"/></div>
       <div>
@@ -36,5 +37,5 @@ export default async function TrackingUnlockPage({searchParams}:{searchParams:Pr
       <TrackingUnlockForm localInbox={localAuthInboxUrl()}/>
       <p className="meta"><Text message="No account required. A one-time email code protects private updates."/></p>
     </section>
-  </div></main></>;
+  </div></div></main></>;
 }

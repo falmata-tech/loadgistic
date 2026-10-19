@@ -1,3 +1,4 @@
+import {normalizePublicAccountIdentity} from '../provider-public-identity.js';
 import {commitPrivateUpload} from '../private-upload-commit.js';
 import {readPrivateUpload,removePrivateUpload,storePrivateUpload} from '../private-storage.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
@@ -5,7 +6,7 @@ import {createSupabaseAdminClient} from '../supabase-adapter.js';
 const MANAGED_ERRORS=[
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','LOCALITY_REQUIRED','BASE_LOCATION_REQUIRED',
   'PROVIDER_BASE_REGION_REQUIRED','INVALID_PROVIDER_PROFILE_INPUT','INVALID_WEBSITE_URL',
-  'PROFILE_IMAGE_REQUIRED','PROFILE_IMAGE_TYPE_INVALID'
+  'ACCOUNT_HANDLE_UNAVAILABLE','INVALID_ACCOUNT_HANDLE','INVALID_PUBLIC_ACCOUNT_NAME','INVALID_PUBLIC_ACCOUNT_IDENTITY','PROFILE_IMAGE_REQUIRED','PROFILE_IMAGE_TYPE_INVALID'
 ];
 
 function managedError(code,error){
@@ -26,6 +27,7 @@ export function projectSupabaseOwnCompanyPage(payload){
   const custom=Boolean(page.profile_image_is_custom);
   return {
     ...page,
+    services:'',
     profile_image_is_custom:custom,
     profile_image_url:custom&&handle
       ?`/api/public/providers/${encodeURIComponent(handle)}/image?v=${encodeURIComponent(page.profile_image_updated_at||'1')}`
@@ -40,16 +42,20 @@ export async function getSupabaseOwnCompanyPage(user){
   return projectSupabaseOwnCompanyPage(data);
 }
 
+export function providerProfileCommand(input){
+  if(Object.hasOwn(input,'managerName')||Object.hasOwn(input,'manager_name'))throw Error('INVALID_PUBLIC_ACCOUNT_IDENTITY');
+  const identity=normalizePublicAccountIdentity(input);
+  const command={...(identity.accountName?{account_name:identity.accountName,handle:identity.handle}:{})};
+  for(const [source,target] of Object.entries({headline:'headline',about:'about',basePlaceRef:'base_place_ref',baseRegionCode:'base_region_code',contactPhone:'contact_phone',contactWhatsapp:'contact_whatsapp',contactEmail:'contact_email',contactWebsite:'contact_website'})){
+    if(Object.hasOwn(input,source))command[target]=String(input[source]||'');
+  }
+  for(const [source,target] of Object.entries({showContactPhone:'show_contact_phone',showContactWhatsapp:'show_contact_whatsapp',showContactEmail:'show_contact_email',showContactWebsite:'show_contact_website',published:'published'})){
+    if(Object.hasOwn(input,source))command[target]=Boolean(input[source]);
+  }
+  return command;
+}
 export async function updateSupabaseCompanyPage(user,input){
-  const command={
-    headline:String(input.headline||''),about:String(input.about||''),services:String(input.services||''),
-    base_place_ref:String(input.basePlaceRef||''),base_region_code:String(input.baseRegionCode||''),
-    contact_phone:String(input.contactPhone||''),contact_whatsapp:String(input.contactWhatsapp||''),
-    contact_email:String(input.contactEmail||''),contact_website:String(input.contactWebsite||''),
-    show_contact_phone:Boolean(input.showContactPhone),show_contact_whatsapp:Boolean(input.showContactWhatsapp),
-    show_contact_email:Boolean(input.showContactEmail),show_contact_website:Boolean(input.showContactWebsite),
-    published:Boolean(input.published)
-  };
+  const command=providerProfileCommand(input);
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('update_provider_profile_page',{actor_user_id:user.id,command});
   if(error)throw managedError('SUPABASE_PROVIDER_PROFILE_UPDATE_FAILED',error);

@@ -1,4 +1,89 @@
-## October 12 Android 1.0.6 — released internally; closed test in review
+## October 15 GPS and dashboard cleanup — local preview
+
+Expo Fleet now keeps truck/driver controls compact, provides direct Support,
+separates personal/employee/provider document scope, and retains map Home with
+permitted driver actions. New GPS controls use the same typed private fleet port
+as web: assigned devices, actual telemetry, explicit GPS/phone/manual source and
+approximate shared location accuracy. Public truck circles show a small actual
+source icon; no raw GPS/device identity is added to public capacity.
+
+Actual local email-code login, GPS/source presentation, negative US coordinates,
+Cancel and dirty/hidden polling checks pass at390px with zero page/abort errors.
+Web save/readback restores the exact original GPS source/accuracy after testing;
+employees are denied both device APIs. Existing source switching never alters
+shipment Tracking. Saved-manual-point reopening, accuracy-only save, reload and Cancel now pass on
+web and Expo with exact original-source restoration. App/upstream account erasure
+passes separately with a disposable real protocol tracker; numeric-only retired
+collection guards block cached reports. The visible web Locate button reaches
+actual acknowledgement. Protected evidence is in the active Progress checklist.
+
+These are Expo browser checks. Physical Android permissions, background reporting,
+real trackers, hosted infrastructure and a new Android binary are not verified by
+these receipts. Owner visual review precedes full release checks. Keep8084 running.
+
+## October 14 Transport Provider fleets — local preview only
+
+FEAT-FLT/IAM/APP/VER/CAP/PRV-001 / ADR-079 unifies provider-owner capabilities,
+retaining legacy identities and the assigned-truck-only employee boundary.
+Owners can add multiple Draft trucks; one may go Live unreviewed. Additional
+Live trucks require current exact reviewed ownership or an eligible operating
+licence for an owned/financed truck. Drive/manage permission remains distinct.
+Driving owners keep map Home and an explicit single driving assignment.
+
+Actual desktop/phone web workflows and Expo preview now pass verified signup,
+unverified employee assignment followed by normal OTP, Draft/Live controls,
+private document submission/Pending, rejection/resubmission, exact staff review,
+revocation/replacement, expiry calendars and authorized private-image viewing.
+Adding another Draft and returning Home preserve the original assignment and
+visible map; hidden retained Expo screens are counted separately in the test.
+The additional completely new Expo signup case also passes actual email code,
+Terms before account creation, an optional blank business name, driving intent,
+one document-free Live truck and explicit self-assignment. Public driver copy is
+neutral Driver; Featured preserves authoritatively eligible provider owners who
+drive without requiring an employee-directory record. Focused projections retain
+actual subject document scope and reject missing/foreign eligibility.
+Exact fixture cleanup passes. Current evidence is in `specs/TRACEABILITY.md` and
+`docs/PROGRESS.md`. Previews remain3100/8084. A project-only Metro cache restart
+and actual bundle/rendered-login check repair the stale local file graph.
+Owner visual approval and full release gates remain pending; this is not a new
+Android build, physical-phone acceptance, signing authorization or hosted rollout.
+
+The local demo's empty Featured roster is also resolved. Nine exact named local
+fixture fleet subjects receive additive, explicitly fictional private proof and
+normal review records after backup/rehearsal; original sources, truck declarations,
+assignments, saved schedules and Tracking remain unchanged. These are local test
+facts only. Both Expo/web phone card and profile flows plus desktop web actions
+pass. The normal local worker fills two missing dates while retaining saved days;
+all seven upcoming dates show eight eligible pairs. The full22-case isolated SQL
+compatibility receipt is recorded in `specs/TRACEABILITY.md`. No hosted apply.
+
+## October 13 local mobile changes — not distributed
+
+FEAT-MKT-001 separates submitted people search from map truck filters and keeps
+profile-to-map actions explicit. The native selected-truck exit is outside the
+MapLibre marker hit registry; prior camera/filter/search state survives dismissal.
+FEAT-TRK-001 adds required pickup/via/delivery inputs for new shipments, a map-first
+detail with existing progress, private proofs and public-safe contact modals.
+Legacy shipments retain genuine endpoints. The new map fits a corrected route or
+first saved approximate area and preserves the camera on ordinary refreshes.
+Tracking errors clear private content and keep Retry usable. No location/OTP/
+proof authority or foreground-service permission is widened.
+
+Focused web/Expo browser, actual local OTP/Storage, component/native types/lint,
+translation and isolated SQL checks are recorded in PROGRESS.md and the related
+specs. These are not installed Android validation. Owner visual approval, full
+release/CI gates, coordinated138 backend rollout, replacement binary and fresh
+exact existing-key signing approval remain required. The previous1.0.6 signing
+permission is consumed and no new key retrieval is authorized by these changes.
+Current distribution remains1.0.6/code7;137 Featured scheduling is now repaired
+for those clients. The live endpoint returns eight trucks, all seven upcoming
+days have eight eligible distinct Drivers, and web desktop/phone checks pass.
+The new multiple-option filters are local: same bounded backend match for web/
+mobile, real private OTP/pairs and actual pictures tested, all14 browser cases pass.
+Their visual review is pending; new139/full gates/signing are separate.
+Previews remain3100/8084.
+
+## October 12 Android 1.0.6 — historical release checkpoint
 
 Final native source `04e27fe` passes all eight CI jobs in `38297279274`, all
 165 mobile tests, native types/lint and source/spec checks. Installed standalone
