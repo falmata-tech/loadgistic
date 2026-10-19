@@ -209,6 +209,8 @@ Then its first page contains 15 profiles, its total includes every synthetic Dri
 and the provider, and its response stays bounded\
 And the normal no-text vehicle-map page and route-filtered page for the
 selected provider, plus the map overview, remain bounded and complete\
+And provider-scoped map optimization preserves the exact vehicle rows, order,
+public fields, publication eligibility, sharing rules and cursor behavior\
 And each measured query stays within the existing five-second scale limit\
 And all synthetic vehicles and identities are rolled back afterward.
 
@@ -218,6 +220,10 @@ timing gate (7.52 seconds against five); an isolated local actual-RPC probe
 returned 5,001 profiles and a 15-item first page but took 119.57 seconds under
 Docker Desktop contention. Neither result is a passing scale gate. The revised
 gate and any search-cost repair need a passing isolated CI run before release.
+The October 19 profile-search repair passed that part of CI, but the normal
+provider-scoped map page took 7.18 seconds and its route-filtered page 7.67
+seconds. Migration178 is an internal map-query cost candidate; its exact
+result and five-second gate still require verification before release.
 
 ### Scenario: obsolete overview requests preserve normal discovery
 

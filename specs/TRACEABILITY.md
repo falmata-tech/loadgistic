@@ -9,6 +9,26 @@ installation and the current10 km maximum fixture.
 
 # Specification traceability
 
+## October19 provider-scoped map page cost — isolated candidate
+
+FEAT-MKT-001 / FEAT-LST-001 / NR-13: CI run39341423939 passed the actual
+profile-search timing but the selected-provider vehicle map took7.18 seconds
+and its route-filtered page7.67 seconds against the unchanged five-second
+limit. Local query-only function counters found the public account-name and
+publication helpers repeated for each of5,000 vehicles under one provider.
+Migration178 caches those checks by their exact provider pairs; the installed
+latest-signal, Driver, sharing, moderation, filter, cursor and card projection
+stay in the public map RPC. The original definition is retained as a
+service-inaccessible rollback copy. On the isolated local schema177 clone,
+`tests/sql/public-provider-map-page-cost.sql` passes exact JSON parity across
+two new synthetic providers, combined filters, route, viewport, cursor and
+service-only ACL. The test accounts and records roll back. A separate
+rollback-only5,000-vehicle probe returned15 correct map/route rows in10.04/
+10.78 seconds on contended Docker Desktop; the old saved map query exceeded
+30 seconds in that environment. These local timings are **not** a passing
+five-second gate. The clean CI scale run and any hosted migration review remain
+pending.
+
 ## October19 Transporter search page cost — isolated candidate
 
 FEAT-MKT-001 / FEAT-LST-001: proposed migration177 keeps the ordinary public
