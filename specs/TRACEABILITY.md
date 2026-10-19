@@ -9,6 +9,30 @@ installation and the current10 km maximum fixture.
 
 # Specification traceability
 
+## October19 Transporter search page cost — isolated candidate
+
+FEAT-MKT-001 / FEAT-LST-001: proposed migration177 keeps the ordinary public
+vehicle map producer unchanged. Its private profile producer retains the same
+authorization and filter CTEs, caches the active Driver for each latest vehicle
+and the public account name for each provider,
+and defers displayed document badges until the selected profile page. The
+public profile result still groups and ranks every matching vehicle; private
+EMAIL and business results continue through the previous implementation.
+
+Migration177 applied to a disposable restored schema175 clone. The
+rollback-only `tests/sql/profile-search-page-cost.sql` passes exact result JSON,
+page-two and internal-matcher parity; it compares public/private-producer ID
+sets for text, blocked handles, status, vehicle category, location source,
+route and reviewed-document filters. Its synthetic reviewed owner, Driver and
+vehicle authority documents are created inside the transaction and rolled
+back. The ordinary map projection is identical to the saved definition.
+At 5,000 synthetic Drivers, the actual `capacity_search_results` call returned
+5,001 profiles,15 page items and7,195 bytes in11.699 seconds on local Docker,
+versus119.57 seconds before the candidate. A prior EXPLAIN showed the uncached
+private producer consumed44.56 seconds and1.32 million shared-buffer hits.
+The strict5-second CI gate and
+hosted migration review remain pending; this is **not release evidence**.
+
 ## October19 synthetic Play business isolation — isolated local rehearsal
 
 FEAT-PLY-001 AC4 / FEAT-ENT-001: migration176 makes business membership,

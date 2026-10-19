@@ -18,12 +18,18 @@ const sql=String.raw`
 begin;
 
 create temporary table scale_owner on commit drop as
-select organization.id as organization_id,member.user_id as owner_user_id
+select organization.id as organization_id,organization.handle as provider_handle,
+  member.user_id as owner_user_id
 from public.organizations organization
 join public.organization_members member on member.organization_id=organization.id
   and member.membership_role='OWNER'
+join public.profiles owner_profile on owner_profile.id=member.user_id
+  and owner_profile.active and owner_profile.role='TRANSPORTER'
+join auth.users owner_auth on owner_auth.id=member.user_id and owner_auth.deleted_at is null
 join public.company_pages page on page.organization_id=organization.id and page.published
-where organization.type='TRANSPORT_COMPANY'
+where organization.type='TRANSPORT_COMPANY' and organization.public_visibility='PUBLIC'
+  and not organization.content_hidden and not organization.review_workspace
+  and public.provider_scope_can_publish(organization.id,null)
   and exists(select 1 from public.current_provider_vehicle_authority() authority
     where authority.organization_id=organization.id
       and(authority.fact_kind='OWNERSHIP' or authority.fact_kind='OPERATING_LICENCE' and authority.holder_basis in('OWNED','FINANCED')))
@@ -103,24 +109,44 @@ analyze public.driver_vehicle_assignments;
 do $audit$
 declare
   started_at timestamptz;
-  query_ms numeric;
+  profile_ms numeric;
+  map_ms numeric;
   route_ms numeric;
   overview_ms numeric; overview_rows integer; overview_trucks bigint; overview_bytes bigint;
-  result_rows integer;
-  route_rows integer;
-  payload_bytes bigint;
+  profile_result jsonb; profile_total integer; profile_rows integer; profile_bytes bigint;
+  map_rows integer; map_bytes bigint; map_provider_match boolean; map_fixture_match boolean;
+  route_rows integer; route_provider_match boolean; route_fixture_match boolean;
 begin
-  -- Search the synthetic public Driver name: truck identifiers are no longer searchable.
+  -- This is the same profile-search RPC used by Transporter search, not the
+  -- legacy text predicate on the vehicle map. All synthetic Drivers match,
+  -- plus their shared provider profile.
   started_at:=clock_timestamp();
-  select count(*),coalesce(sum(octet_length(payload::text)),0)
-    into result_rows,payload_bytes
-  from public.public_capacity_page('{"q":"scaleaudit"}'::jsonb,null,null,14);
-  query_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
+  select public.capacity_search_results('{"q":"scaleaudit"}'::jsonb)
+    into profile_result;
+  profile_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
+  profile_total:=(profile_result->>'total')::integer;
+  profile_rows:=jsonb_array_length(profile_result->'items');
+  profile_bytes:=octet_length(profile_result::text);
+
+  -- Show trucks for the selected provider uses the ordinary vehicle page
+  -- without a transporter text query. Scope to the fixture provider so
+  -- unrelated pilot vehicles cannot satisfy the page-size assertion.
+  started_at:=clock_timestamp();
+  select count(*),coalesce(sum(octet_length(payload::text)),0),
+    bool_and(payload->>'provider_handle'=(select provider_handle from scale_owner)),
+    bool_or(payload->>'platform_number' like 'LG-SCALE-%')
+    into map_rows,map_bytes,map_provider_match,map_fixture_match
+  from public.public_capacity_page(
+    jsonb_build_object('provider',(select provider_handle from scale_owner)),null,null,14);
+  map_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
 
   started_at:=clock_timestamp();
-  select count(*) into route_rows
+  select count(*),bool_and(payload->>'provider_handle'=(select provider_handle from scale_owner)),
+    bool_or(payload->>'platform_number' like 'LG-SCALE-%')
+    into route_rows,route_provider_match,route_fixture_match
   from public.public_capacity_page(
-    '{"origin_lat":9.03,"origin_lng":38.74,"destination_lat":8.75,"destination_lng":38.99,"origin_radius_km":10,"destination_radius_km":10}'::jsonb,
+    '{"origin_lat":9.03,"origin_lng":38.74,"destination_lat":8.75,"destination_lng":38.99,"origin_radius_km":10,"destination_radius_km":10}'::jsonb
+      ||jsonb_build_object('provider',(select provider_handle from scale_owner)),
     null,null,14
   );
   route_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
@@ -129,25 +155,28 @@ begin
   select count(*),coalesce(sum((payload->>'count')::bigint),0),coalesce(sum(octet_length(payload::text)),0)
     into overview_rows,overview_trucks,overview_bytes
   -- Legacy aggregation is service-only and not an HTTP discovery mode. Its raw
-  -- performance fixture uses its legacy identifier predicate; the current
-  -- public page above is separately tested with the actual Driver-name search.
+  -- performance fixture retains its legacy identifier predicate.
   from public.public_capacity_clusters('{"q":"lg-scale","viewport":[38,8,40,10]}'::jsonb);
   overview_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
   if overview_rows>200 or overview_trucks<>${requested} or overview_bytes>100000 then raise exception 'SCALE_OVERVIEW_BOUND_FAILED:cells=%,trucks=%,bytes=%',overview_rows,overview_trucks,overview_bytes;end if;
   if overview_ms>5000 then raise exception 'SCALE_OVERVIEW_TOO_SLOW:%',overview_ms;end if;
-  raise notice 'LOADGISTIC_OVERVIEW_RESULT cells=% trucks=% bytes=% query_ms=%',overview_rows,overview_trucks,overview_bytes,round(overview_ms,3);
+  raise notice 'LOADGISTIC_OVERVIEW_RESULT cells=% trucks=% bytes=% overview_ms=%',overview_rows,overview_trucks,overview_bytes,round(overview_ms,3);
 
-  if result_rows<>15 or route_rows<>15 then
-    raise exception 'SCALE_BOUNDED_PAGE_FAILED:%,%',result_rows,route_rows;
+  if profile_total is distinct from (${requested}+1) or profile_rows is distinct from 15
+    or map_rows is distinct from 15 or route_rows is distinct from 15
+    or map_provider_match is distinct from true or route_provider_match is distinct from true
+    or map_fixture_match is distinct from true or route_fixture_match is distinct from true then
+    raise exception 'SCALE_BOUNDED_PAGE_FAILED:profile_total=%,profile_rows=%,map_rows=%,route_rows=%',
+      profile_total,profile_rows,map_rows,route_rows;
   end if;
-  if payload_bytes>1000000 then
-    raise exception 'SCALE_PAYLOAD_TOO_LARGE:%',payload_bytes;
+  if profile_bytes is null or profile_bytes>100000 or map_bytes>1000000 then
+    raise exception 'SCALE_PAYLOAD_TOO_LARGE:profile=%,map=%',profile_bytes,map_bytes;
   end if;
-  if query_ms>5000 or route_ms>5000 then
-    raise exception 'SCALE_QUERY_TOO_SLOW:%,%',query_ms,route_ms;
+  if profile_ms>5000 or map_ms>5000 or route_ms>5000 then
+    raise exception 'SCALE_QUERY_TOO_SLOW:profile=%,map=%,route=%',profile_ms,map_ms,route_ms;
   end if;
-  raise notice 'LOADGISTIC_SCALE_RESULT trucks=${requested} rows=% bytes=% query_ms=% route_rows=% route_ms=%',
-    result_rows,payload_bytes,round(query_ms,3),route_rows,round(route_ms,3);
+  raise notice 'LOADGISTIC_SCALE_RESULT trucks=${requested} profiles=% profile_rows=% profile_bytes=% profile_ms=% map_rows=% map_bytes=% map_ms=% route_rows=% route_ms=%',
+    profile_total,profile_rows,profile_bytes,round(profile_ms,3),map_rows,map_bytes,round(map_ms,3),route_rows,round(route_ms,3);
 end
 $audit$;
 

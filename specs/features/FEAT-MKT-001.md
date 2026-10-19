@@ -200,6 +200,25 @@ And result eligibility, search score, privacy and user actions are unchanged.
 Verification: `tests/sql/capacity-search-metadata-cost.sql`, the existing ranked
 search/document regressions and the unchanged five-second 5,000-truck scale gate.
 
+### Scenario: transporter search and vehicle map stay bounded at scale
+
+Given at least 5,000 disposable, eligible vehicles with distinct assigned Drivers under
+one published provider\
+When the real Transporter search requests their shared first-name term\
+Then its first page contains 15 profiles, its total includes every synthetic Driver
+and the provider, and its response stays bounded\
+And the normal no-text vehicle-map page and route-filtered page for the
+selected provider, plus the map overview, remain bounded and complete\
+And each measured query stays within the existing five-second scale limit\
+And all synthetic vehicles and identities are rolled back afterward.
+
+`scripts/market-scale-audit.mjs` exercises the actual profile-search RPC and
+these separate map paths. Its October 19 CI run failed the older map-text search
+timing gate (7.52 seconds against five); an isolated local actual-RPC probe
+returned 5,001 profiles and a 15-item first page but took 119.57 seconds under
+Docker Desktop contention. Neither result is a passing scale gate. The revised
+gate and any search-cost repair need a passing isolated CI run before release.
+
 ### Scenario: obsolete overview requests preserve normal discovery
 
 Given a caller sends the retired overview parameter with public profile and truck filters\
