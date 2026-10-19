@@ -1,7 +1,7 @@
 ---
 id: FEAT-PLY-001
 title: Play policy workflows and review readiness
-related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-VER-001, FEAT-PRV-001, FEAT-SUP-001, FEAT-MKT-001, FEAT-TRK-001, FEAT-LNG-001, FEAT-SEC-001, FEAT-REV-001]
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-VER-001, FEAT-PRV-001, FEAT-SUP-001, FEAT-MKT-001, FEAT-TRK-001, FEAT-LNG-001, FEAT-SEC-001, FEAT-REV-001, FEAT-ENT-001]
 problem: A verified binary alone does not meet account deletion, location consent, public-content moderation or reviewer-access requirements.
 behavior: Provide verifiable deletion requests and fulfillment, explicit location consent, report and block controls, and restricted normal-authentication reviewer access without weakening customer permissions.
 contracts: [AccountDeletionRequest, ContentSafetyCommand, BackgroundLocationConsent, ReviewAccountAccess]
@@ -197,6 +197,33 @@ And ordinary production accounts retain email-code sign-in
 And absent configuration, bad credentials, inactive users and staff roles fail
 closed with no session or token in logs, source or app payload
 And refresh, sign-out and credential revocation retain existing security behavior.
+
+### Business workspace coverage — planned local follow-up after schema175
+
+Given two existing registered synthetic Play-review identities use their normal
+reusable credentials
+When one creates a Broker/Shipper review workspace and invites the other as staff
+Then both can exercise the same business Capacity, Tracking and Team workflows
+their current membership grants, without receiving platform-staff authority
+And the review business and its synthetic shares do not appear in ordinary
+provider business search, recipient search, customer workspaces or public data.
+
+Given an ordinary account or review account guesses a business/workspace/grant ID
+When it reads, selects, invites, joins or shares across the review boundary
+Then the server denies before returning or mutating the foreign data, including
+by direct API/SQL command, expired invitation, disabled reviewer and stale member.
+
+Given an existing review account opens the installed Android review entry
+When it signs in and switches between provider and synthetic business workspaces
+Then the UI uses the existing Review access form and truthfully describes that
+only synthetic records are available; no separate public login or password bypass
+is introduced. The reviewer credentials and role paths are given privately to
+Google Play through App access, not in source, screenshots or logs.
+
+Migration176, new synthetic business membership and any changed Android binary
+are outside the approved 138–175/1.1.0-code8 rollout. They require separate
+local SQL/browser tests, visual review, exact hosted migration approval and
+new Android signing approval before claiming reviewer business coverage.
 
 ## AC5 — Privacy, declarations and release evidence
 

@@ -9,6 +9,33 @@ installation and the current10 km maximum fixture.
 
 # Specification traceability
 
+## October19 synthetic Play business isolation — isolated local rehearsal
+
+FEAT-PLY-001 AC4 / FEAT-ENT-001: migration176 makes business membership,
+invitations, directory/search, Capacity and Tracking honor a durable synthetic
+reviewer boundary. Both business-feed grant branches are scoped, so a personal
+email share cannot enter a reviewer team feed from a real provider. A real
+provider cannot create a new private Capacity or Tracking recipient addressed
+to a registered reviewer; review providers can address new shares only to
+registered synthetic reviewers. Tracking business attachment and every business
+read recheck the shipment source, including a preexisting/misaddressed owner.
+
+The migration installed on a disposable clone of the schema175 rehearsal;
+`tests/sql/play-review-business-isolation.sql` passed with a rolled-back
+synthetic owner/staff and real provider/recipient fixture. Negative cases cover
+guessed IDs, mismatched/legacy email grants, outbound review email, late review
+registration, Tracking attachment/direct-detail/list and mixed shipment
+ownership. The six adjacent SQL suites and mobile typecheck passed locally.
+`tests/e2e/play-review-business.spec.ts` passed against an isolated Supabase
+stack and Expo browser preview: actual owner/staff login, business creation,
+invitation and acceptance, Capacity and Tracking responses, staff Team denial,
+database membership readback and synthetic record cleanup. Root source/spec,
+unit and build gates and mobile typecheck/lint/unit/Android export passed.
+This is **local evidence only**: no shared preview, hosted database, reviewer
+fixture, web release, Android binary or Play entry was changed by migration176.
+Exact owner SQL review, installed Android verification and release gates remain
+separate requirements before publication.
+
 ## October18 vehicle and location-source filter — local review
 
 FEAT-CAP/MKT-001: generic vehicle labels include courier cars and motorcycles;

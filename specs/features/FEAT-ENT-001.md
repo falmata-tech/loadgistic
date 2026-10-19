@@ -11,6 +11,32 @@ rollout: Confirm the interface and open commercial decisions, implement additive
 
 # October18 business workspace plan
 
+## Play-review business isolation — planned local follow-up
+
+A registered synthetic Play reviewer may use an ordinary business workspace
+only when that business is itself marked synthetic review data. Reviewer status
+is a durable server-side marker, so disabling sign-in cannot turn an existing
+review member into an ordinary customer. All business membership, invitations,
+owner creation, capacity grants and Tracking reads continue to use normal
+business permissions plus this review-data boundary. Normal users and reviewers
+cannot discover or address each other's business by search or a guessed ID;
+sample businesses are absent from the real provider directory. Review staff
+receive no Loadgistic software staff role. The existing provider reviewer login
+and Marketplace remain unchanged. Planned migration176 and its synthetic data
+are not part of the approved hosted 138–175 rollout.
+
+Acceptance: a reviewer-owned business and another registered reviewer staff
+member can access only their synthetic team Capacity/Tracking; ordinary actors
+cannot join/search/share/view it; review actors cannot join/search/share/view a
+real business; arbitrary invitations from sample accounts are denied before
+email delivery; disabling the reviewer does not expose or convert the sample
+business. A real provider cannot share a shipment or email-based private
+Capacity with a registered reviewer; neither a personal email grant nor a
+guessed business ID can bypass the review boundary. Existing synthetic demo
+recipient aliases remain scoped to their synthetic provider. Handle collisions
+use the normal unique-name error, without exposing a hidden review flag. See
+FEAT-PLY-001 AC4 and the negative SQL/browser review tests.
+
 Status: **design approved October18; connected local implementation under review**.
 The October18 user direction supersedes the earlier brokerage-revenue-only
 direction. Web/Expo connected flows and additive SQL are installed and tested

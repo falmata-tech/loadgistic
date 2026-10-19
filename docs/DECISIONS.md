@@ -2,8 +2,10 @@
 
 ## ADR-081 — Business workspace context and explicit recipient authority (2026-10-18)
 
-Status: **design approved October18; implementation in progress**, FEAT-ENT-001. No schema,
-application or commercial implementation is claimed. The user confirms retirement
+Status: **design approved October18; local implementation under release review**, FEAT-ENT-001.
+Schema160–175 and the matching application are implemented and tested locally;
+hosted publication and commercial entitlement enforcement are not claimed. The
+user confirms retirement
 of platform Brokerage and special Loadgistic capacity access; paid provider and
 business workspaces; retained free recipient access; one primary Tracking owner;
 status-only invitations and owner-authorized staff location access. Smaller
@@ -12,10 +14,18 @@ Capacity/Tracking circles and all-source current truck location are required.
 Use one verified customer identity with explicit active workspace membership and
 workspace-local roles/permissions. Preserve current provider organization/profile
 anchors and histories. Do not enable dormant SHIPPER/RECEIVER global roles as a
-shortcut: current Auth/mobile projections choose one provider membership and
-exclude usable enterprise accounts. A business staff invitation is not platform
+shortcut: the older Auth/mobile projections chose one provider membership and
+excluded usable enterprise accounts. A business staff invitation is not platform
 Team creation; existing platform administrator/Support identities remain separate
 and web-only. Do not automatically convert retired Brokerage-only staff.
+
+For Google Play review, registered synthetic identities may exercise a normal
+business workspace only inside a durable synthetic partition. Membership,
+invitations, recipient discovery, Capacity email/team grants and Tracking
+attachment/read must reject real-to-sample and sample-to-real access, including
+stale or disabled reviewer records. A sample business is not public test data.
+Migration176 adds this local boundary after schema175; its hosted installation
+requires separate exact SQL review and release evidence under FEAT-PLY-001.
 
 Keep Marketplace/My workspace as the area model. The customer business opens its
 scoped Capacity map; Capacity/Tracking/Account are its primary destinations. Named

@@ -21,6 +21,7 @@ const rows=[
  ['Finish account setup','የመለያ ዝግጅትን ጨርስ','Qophii herregaa xumuri'],
  ['Sign out','ውጣ','Baʼi'],
  ['Sign-out could not finish. Please try again.','ከመለያዎ መውጣት አልተጠናቀቀም። እንደገና ይሞክሩ።','Herrega keessaa baʼuun hin xumuramne. Irra deebiʼaa yaalaa.'],
+ ['Use the demo credentials provided in Play Console. These accounts contain sample records and cannot access real customer data or Loadgistic staff tools.','በPlay Console የተሰጡትን የሙከራ መግቢያ መረጃዎች ይጠቀሙ። እነዚህ መለያዎች ለሙከራ የተዘጋጀ መረጃ ብቻ አላቸው፤ የእውነተኛ ደንበኞችን መረጃ ወይም የLoadgistic ሠራተኞችን መሣሪያዎች ማግኘት አይችሉም።','Odeeffannoo ittiin seentan kan Play Console keessatti kennametti fayyadamaa. Herregoonni kun odeeffannoo yaalii qofa qabu; odeeffannoo maamiltoota dhugaa yookaan meeshaalee hojii hojjettoota Loadgistic hin argan.'],
  ['Your driving workspace','መኪናዎንና ጭነቶችዎን ያስተዳድሩ','Konkolaataa fi feʼumsa keessan bulchaa'],
  ['Your transport workspace','የትራንስፖርት ሥራዎን ያስተዳድሩ','Hojii geejjibaa keessan bulchaa'],
  ['Close vehicle details','የመኪና ዝርዝርን ዝጋ','Odeeffannoo konkolaataa cufi'],

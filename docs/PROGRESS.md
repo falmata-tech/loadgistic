@@ -71,9 +71,25 @@ verification, signing and Play testing update remain pending.
 Play reviewer access uses three separate synthetic accounts saved privately in
 Google Play Console. Google's reusable-password requirement is met through the
 existing small Review access entry because ordinary sign-in uses one-time email
-codes; no new reviewer interface is part of this release. The code8 Console
+codes; no new reviewer interface is part of this release. The code9 Console
 instructions must name the current Transporter login → Review access path when
 the replacement build is submitted, while code7 remains on its older path.
+
+October19 follow-up: the owner approved the updated reviewer screen. A local
+post-175 migration176 now partitions synthetic reviewer business workspaces
+from real business discovery, private Capacity and Tracking, with rollback-only
+SQL regression and independent RLS/ACL checks passing on disposable clones.
+Root quality passes 978 tests, the web production build passes, mobile tests
+pass 312/312, native typecheck/lint/Android export pass and Expo Doctor passes
+21/21. The next Android candidate is 1.1.1/code9 because code8 does not contain
+the reviewer business change. The isolated Chrome owner/staff flow passed: both
+signed in through Expo, the owner created and invited staff to a synthetic
+business, Capacity and Tracking loaded for both, staff Team access was denied,
+local records matched those permissions, and all test actors were removed.
+Exact-source CI, hosted176 review/backup/rehearsal, signing and Play submission
+remain pending.
+No hosted data, web production or Play test track has been changed by this
+follow-up.
 
 Local evidence: migration174 SHA256
 `a4a67d3ae5d18cd19067559b62db0391b04d278a5fedfb5166e264c59b7610f9`.

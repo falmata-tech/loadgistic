@@ -10,9 +10,11 @@ begin
  insert into app_review_accounts(user_id,provider_profile_id,expected_role,capacity_digest,tracking_digest) values(actor,provider,'DRIVER',digest,encode(gen_random_bytes(32),'hex'));
  if native_review_visitor_digest(actor,'capacity')<>digest or native_review_visitor_digest(other,'capacity') is not null then raise exception 'REVIEW_SCOPE_AUTHORITY';end if;
  insert into vehicles(id,provider_profile_id,label,category,cargo_configuration,active) values(truck,foreign_provider,'Synthetic foreign truck','BOX','Mini Box Truck',true);
- insert into capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by) values(truck,'EMAIL','synthetic@review.invalid',digest,other);
- if native_review_visitor_digest(actor,'capacity') is not null then raise exception 'REVIEW_FOREIGN_CAPACITY_EXPOSED';end if;
- delete from capacity_access_grants where vehicle_id=truck;
+ denied:=false;begin
+  insert into capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by)
+  values(truck,'EMAIL','synthetic@review.invalid',digest,other);
+ exception when others then if sqlerrm='REVIEW_WORKSPACE_ONLY' then denied:=true;else raise;end if;end;
+ if not denied or native_review_visitor_digest(actor,'capacity')<>digest then raise exception 'REVIEW_FOREIGN_CAPACITY_EXPOSED';end if;
  update app_review_accounts set enabled=false where user_id=actor;
  if native_review_visitor_digest(actor,'tracking') is not null then raise exception 'REVOKED_VISITOR_ALLOWED';end if;
  r:=request_account_deletion(actor);perform prepare_account_erasure(admin_id,(r->>'id')::uuid);

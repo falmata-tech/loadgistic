@@ -1,5 +1,35 @@
 # Security failures we must not repeat
 
+## NR-59 — Synthetic Play workspace inherits real email shares
+
+A registered Play reviewer can use the normal business customer flow. Before
+migration176, its business would appear in ordinary provider discovery; a
+business Capacity feed also included grants to the member's email, independent
+of team grants. If a real provider addressed that email or a real shipment used
+it as Tracking owner, a synthetic business could inherit real Capacity or attach
+the shipment and expose its status and authorized location to review staff.
+
+Keep the review marker durable when a reviewer login is disabled. Enforce
+review/ordinary parity at membership, invitation, provider discovery, both
+Capacity-feed grant branches, direct email-grant/Tracking-recipient creation,
+Tracking business attachment and Tracking read. Preflight existing mismatches;
+never silently move a real shipment or grant into a sample workspace. New
+synthetic outbound email shares must target registered reviewer emails, not
+arbitrary real addresses. The source owning the vehicle/agreement, not a
+client label or `created_by` alone, decides its review scope.
+
+Owner: Play/business tenancy maintainers. Migration176 and the rollback-only
+`tests/sql/play-review-business-isolation.sql` pass on a disposable local clone
+of schema175, with real/review email, guessed-ID, legacy grant, source mismatch,
+late registration and status-only staff negatives. No hosted repair or Play
+reviewer business has been provisioned by this local proof.
+Email digests are HMACs derived from the normalized recipient email by the
+server adapters, not caller inputs; the database does not hold their secrets.
+The email/digest binding therefore remains a service-adapter trust boundary.
+Browser roles cannot call the private share RPCs or write their tables. A
+compromised service-role caller could forge both values and requires separate
+credential containment, not an invented database copy of the HMAC secret.
+
 ## NR-58 — Revoked queued invitation still contains private shipment details
 
 A Tracking viewer invitation could wait in the email outbox after its recipient
