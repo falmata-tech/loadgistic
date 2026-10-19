@@ -17,7 +17,8 @@ process.env.SESSION_SECRET=process.env.SESSION_SECRET||'provider-signup-local-ve
 
 const service=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 const anon=createClient(url,anonKey,{auth:{autoRefreshToken:false,persistSession:false}});
-const {prepareManagedProviderSignup,providerSignupIntentDigest}=await import('../src/lib/provider-signup.js');
+const {normalizeProviderSignupInput,prepareManagedProviderSignup,providerSignupIntentDigest}=await import('../src/lib/provider-signup.js');
+const {contentPolicyVersion}=await import('../src/lib/privacy/content-policy.js');
 
 const otpEmail=`signup-otp-${randomBytes(8).toString('hex')}@loadgistic.local`;
 let otpAuthUserId=null;
@@ -195,27 +196,39 @@ try{
   if(await signupEligible(otpAuthUserId)!==true)throw new Error('SUPABASE_SIGNUP_VERIFY_PRISTINE_BOOTSTRAP_REJECTED');
 
   const {token, digest:tokenDigest}=verificationToken();
-  await prepareManagedProviderSignup({
-    name:'Managed Signup Driver',businessName:'Managed Signup Transport',phone:'+251 911 222 333',
-    applicationType:'OWNER_OPERATOR',notes:'Local managed signup verification.'
-  },token);
+  const accountName='Managed Signup Transport';
+  const accountHandle=uniqueHandle('current-provider');
+  const signup=normalizeProviderSignupInput({
+    accountName,handle:accountHandle,firstName:'Managed',lastName:'PrivateSignupFather',
+    phone:'+251 911 222 333',applicationType:'TRANSPORT_PROVIDER',drivesTruck:true,
+    notes:'Local managed signup verification.'
+  });
+  if(!signup.ok)throw new Error('SUPABASE_SIGNUP_VERIFY_CURRENT_FORM_REJECTED');
+  const {error:policyError}=await service.rpc('accept_content_policy',{
+    actor_user_id:otpAuthUserId,policy_version:contentPolicyVersion
+  });
+  if(policyError)throw new Error('SUPABASE_SIGNUP_VERIFY_POLICY_ACCEPTANCE_FAILED');
+  await prepareManagedProviderSignup(signup.input,token);
   const {data:completed,error:completionError}=await completeEligibleSignup(otpAuthUserId,tokenDigest);
-  if(completionError||!completed)throw new Error('SUPABASE_SIGNUP_VERIFY_ELIGIBLE_COMPLETION_FAILED');
+  if(completionError||!completed){
+    const code=completionError?.code||String(completionError?.message||'').match(/\b[A-Z][A-Z0-9_]{4,}\b/)?.[0]||'EMPTY';
+    throw new Error(`SUPABASE_SIGNUP_VERIFY_ELIGIBLE_COMPLETION_FAILED:${code}`);
+  }
   applicationId=completed.applicationId;
   const [{data:profile,error:profileError},{data:provider,error:providerError},{data:application,error:applicationError}]=await Promise.all([
-    service.from('profiles').select('active,role,phone').eq('id',otpAuthUserId).maybeSingle(),
+    service.from('profiles').select('active,role,phone,first_name,last_name').eq('id',otpAuthUserId).maybeSingle(),
     service.from('provider_profiles').select('id,handle').eq('user_id',otpAuthUserId).maybeSingle(),
     service.from('applications').select('id,status,application_type').eq('user_id',otpAuthUserId).maybeSingle()
   ]);
-  if(profileError||providerError||applicationError||!profile?.active||profile.role!=='DRIVER'||!provider||application?.status!=='APPROVED'||application.application_type!=='SELF_MANAGED_DRIVER'){
+  if(profileError||providerError||applicationError||!profile?.active||profile.role!=='DRIVER'||profile.first_name!=='Managed'||profile.last_name!=='PrivateSignupFather'||!provider||provider.handle!==accountHandle||application?.status!=='APPROVED'||application.application_type!=='SELF_MANAGED_DRIVER'){
     throw new Error('SUPABASE_SIGNUP_VERIFY_WORKSPACE_FAILED');
   }
   const [{data:page,error:pageError},{data:subscription,error:subscriptionError},{data:audit,error:auditError}]=await Promise.all([
-    service.from('company_pages').select('published').eq('provider_profile_id',provider.id).maybeSingle(),
+    service.from('company_pages').select('published,account_name').eq('provider_profile_id',provider.id).maybeSingle(),
     service.from('subscriptions').select('status,starts_at,ends_at').eq('provider_profile_id',provider.id).maybeSingle(),
     service.from('audit_logs').select('action').eq('entity_id',application.id).maybeSingle()
   ]);
-  if(pageError||subscriptionError||auditError||page?.published!==false||subscription!==null||audit?.action!=='ACCOUNT_SELF_PROVISIONED'){
+  if(pageError||subscriptionError||auditError||page?.published!==false||page.account_name!==accountName||subscription!==null||audit?.action!=='ACCOUNT_SELF_PROVISIONED'){
     throw new Error('SUPABASE_SIGNUP_VERIFY_AGGREGATE_FAILED');
   }
   if(await signupEligible(otpAuthUserId)!==false)throw new Error('SUPABASE_SIGNUP_VERIFY_PROVISIONED_REMAINS_ELIGIBLE');

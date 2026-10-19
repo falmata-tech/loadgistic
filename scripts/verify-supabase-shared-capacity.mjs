@@ -1,4 +1,5 @@
 import {randomBytes,randomUUID} from 'node:crypto';
+import assert from 'node:assert/strict';
 import {createClient} from '@supabase/supabase-js';
 
 const url=String(process.env.SUPABASE_SEED_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||'').trim();
@@ -25,6 +26,31 @@ const {
   accessEmailDeliveryIsDeliverable,recordAccessEmailDeliveryAttempt
 }=await import('../src/lib/access-email.js');
 const {privateContactDigest}=await import('../src/lib/security.js');
+
+// The retention RPC deletes expired deliveries across the local database. Run
+// it only with fixture-only Auth; CI requires that condition. On a mixed local
+// preview, keep the ordinary email-sharing checks scoped to fixture owners.
+async function fixtureAccountScope(){
+  const fixtureIds=new Set();
+  let count=0,mixed=false;
+  for(let page=1;;page+=1){
+    const {data,error}=await service.auth.admin.listUsers({page,perPage:1000});
+    if(error)throw new Error('SUPABASE_SHARED_VERIFY_FIXTURE_SCOPE_UNAVAILABLE');
+    const users=data?.users||[];
+    for(const user of users){
+      if(user.app_metadata?.fixture_source==='loadgistic')fixtureIds.add(user.id);
+      else mixed=true;
+    }
+    count+=users.length;
+    if(users.length<1000)break;
+  }
+  if(count===0||fixtureIds.size===0)throw new Error('SUPABASE_SHARED_VERIFY_FIXTURES_MISSING');
+  if((mixed&&process.env.CI==='true')
+    ||(process.env.CI!=='true'&&process.env.LOADGISTIC_BOUNDED_LOCAL_PREVIEW!=='1')){
+    throw new Error('SUPABASE_SHARED_VERIFY_MIXED_PREVIEW_REFUSED');
+  }
+  return {fixtureIds,onlyFixtures:!mixed};
+}
 
 async function verifySharedCapacityDeliveryRetention(){
   const suffix=randomUUID().slice(0,12);
@@ -216,7 +242,10 @@ async function verifySharedCapacityDeliveryRetention(){
   }
 }
 
-await verifySharedCapacityDeliveryRetention();
+const fixtureScope=await fixtureAccountScope();
+const retentionVerified=process.env.CI==='true'&&fixtureScope.onlyFixtures;
+if(retentionVerified)await verifySharedCapacityDeliveryRetention();
+else process.stdout.write('NOT_TESTED: global retention cleanup in bounded local preview; fixture-only CI must run it.\n');
 
 async function verifyIneligibleSharedCapacityOtp(){
   const recipientEmail=`shared-ineligible-${randomUUID()}@loadgistic.local`;
@@ -291,17 +320,20 @@ async function verifyConcurrentSharedCapacityOtpIssuance(owner,vehicleId){
       await service.from('access_email_deliveries').delete().eq('delivery_kind','SHARED_CAPACITY').in('entity_id',challengeIds);
       await service.from('shared_capacity_email_otps').delete().in('id',challengeIds);
     }
-    if(grant?.id)await revokePrivateCapacityAccess(owner,grant.id).catch(()=>{});
+    if(grant?.id){
+      const {error:grantCleanupError}=await service.from('capacity_access_grants').delete().eq('id',grant.id);
+      if(grantCleanupError)throw new Error('SUPABASE_SHARED_CONCURRENCY_GRANT_CLEANUP_FAILED');
+    }
   }
 }
 
-const sharedEmail='shared-capacity-verify@loadgistic.local';
+const sharedEmail=`shared-capacity-verify-${randomUUID()}@loadgistic.local`;
 const sharedDigest=privateContactDigest(sharedEmail);
 const platformDigest=privateContactDigest('loadgistic-platform');
 const {data:platformGrants,error:platformGrantError}=await service.from('capacity_access_grants').select('vehicle_id')
-  .eq('audience_type','LOADGISTIC').eq('recipient_email_digest',platformDigest).is('revoked_at',null);
+  .eq('audience_type','LOADGISTIC').is('revoked_at',null);
 if(platformGrantError)throw new Error(`SUPABASE_SHARED_VERIFY_PLATFORM_READ_FAILED:${platformGrantError.message}`);
-const alreadyShared=new Set((platformGrants||[]).map(grant=>grant.vehicle_id));
+if(platformGrants?.length)throw new Error('SUPABASE_SHARED_VERIFY_RETIRED_PLATFORM_GRANT_ACTIVE');
 const {data:capacityCandidates,error:capacityError}=await service.from('capacities').select('id,vehicle_id,visibility')
   .not('provider_organization_id','is',null).in('market_status',['EMPTY','PARTIAL'])
   .gt('expires_at',new Date().toISOString()).order('updated_at',{ascending:false}).limit(50);
@@ -318,7 +350,7 @@ if(membershipError||!memberships?.length)throw new Error(`SUPABASE_SHARED_VERIFY
 const ownerByOrganization=new Map(memberships.map(candidate=>[candidate.organization_id,candidate.user_id]));
 const capacity=capacityCandidates.find(candidate=>{
   const organizationId=vehicleById.get(candidate.vehicle_id)?.organization_id;
-  return !alreadyShared.has(candidate.vehicle_id)&&ownerByOrganization.has(organizationId);
+  return fixtureScope.fixtureIds.has(ownerByOrganization.get(organizationId));
 });
 if(!capacity)throw new Error('SUPABASE_SHARED_VERIFY_ISOLATED_VEHICLE_MISSING');
 const vehicle=vehicleById.get(capacity.vehicle_id);
@@ -329,30 +361,30 @@ const owner={...ownerProfile,organization_id:vehicle.organization_id,workspace_s
 
 await verifyConcurrentSharedCapacityOtpIssuance(owner,vehicle.id);
 
-await service.from('capacity_access_grants').delete().eq('recipient_email_digest',sharedDigest);
-
-const grant=await grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:sharedEmail,name:'Synthetic shared recipient'});
-if(!grant?.id||!grant.created)throw new Error('SUPABASE_SHARED_VERIFY_GRANT_FAILED');
-const network=await listPrivateCapacityNetwork(owner);
-if(!network.some(item=>item.id===vehicle.id&&item.grants.some(candidate=>candidate.id===grant.id)))throw new Error('SUPABASE_SHARED_VERIFY_NETWORK_FAILED');
-if(JSON.stringify(network).includes('recipient_email_digest'))throw new Error('SUPABASE_SHARED_VERIFY_DIGEST_LEAK');
-
-const challenge=await requestSharedCapacityOtp(sharedEmail);
-if(!challenge.deliveryQueued||!/^\d{6}$/.test(challenge.accessCode))throw new Error('SUPABASE_SHARED_VERIFY_OTP_REQUEST_FAILED');
-const {data:storedChallenge,error:challengeError}=await service.from('shared_capacity_email_otps')
-  .select('code_digest').eq('id',challenge.challengeId).maybeSingle();
-if(challengeError||!storedChallenge||storedChallenge.code_digest===challenge.accessCode)throw new Error('SUPABASE_SHARED_VERIFY_PLAINTEXT_OTP');
-const delivery=await claimAccessEmailDelivery('SHARED_CAPACITY',challenge.challengeId);
-if(!delivery)throw new Error('SUPABASE_SHARED_VERIFY_DELIVERY_QUEUE_FAILED');
-if(!await recordAccessEmailDeliveryAttempt(delivery.id,{leaseToken:delivery.lease_token,sent:true})){
-  throw new Error('SUPABASE_SHARED_VERIFY_DELIVERY_RECORD_FAILED');
-}
-const {data:sentDelivery,error:sentError}=await service.from('access_email_deliveries').select('status,attempts')
-  .eq('id',delivery.id).maybeSingle();
-if(sentError||sentDelivery?.status!=='SENT'||sentDelivery.attempts!==1)throw new Error('SUPABASE_SHARED_VERIFY_DELIVERY_RECORD_FAILED');
-
-await service.from('capacities').update({visibility:'PRIVATE'}).eq('id',capacity.id);
+let grant,challenge;
 try{
+  grant=await grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:sharedEmail,name:'Synthetic shared recipient'});
+  if(!grant?.id||!grant.created)throw new Error('SUPABASE_SHARED_VERIFY_GRANT_FAILED');
+  const network=await listPrivateCapacityNetwork(owner);
+  if(!network.some(item=>item.id===vehicle.id&&item.grants.some(candidate=>candidate.id===grant.id)))throw new Error('SUPABASE_SHARED_VERIFY_NETWORK_FAILED');
+  if(JSON.stringify(network).includes('recipient_email_digest'))throw new Error('SUPABASE_SHARED_VERIFY_DIGEST_LEAK');
+
+  challenge=await requestSharedCapacityOtp(sharedEmail);
+  if(!challenge.deliveryQueued||!/^\d{6}$/.test(challenge.accessCode))throw new Error('SUPABASE_SHARED_VERIFY_OTP_REQUEST_FAILED');
+  const {data:storedChallenge,error:challengeError}=await service.from('shared_capacity_email_otps')
+    .select('code_digest').eq('id',challenge.challengeId).maybeSingle();
+  if(challengeError||!storedChallenge||storedChallenge.code_digest===challenge.accessCode)throw new Error('SUPABASE_SHARED_VERIFY_PLAINTEXT_OTP');
+  const delivery=await claimAccessEmailDelivery('SHARED_CAPACITY',challenge.challengeId);
+  if(!delivery)throw new Error('SUPABASE_SHARED_VERIFY_DELIVERY_QUEUE_FAILED');
+  if(!await recordAccessEmailDeliveryAttempt(delivery.id,{leaseToken:delivery.lease_token,sent:true})){
+    throw new Error('SUPABASE_SHARED_VERIFY_DELIVERY_RECORD_FAILED');
+  }
+  const {data:sentDelivery,error:sentError}=await service.from('access_email_deliveries').select('status,attempts')
+    .eq('id',delivery.id).maybeSingle();
+  if(sentError||sentDelivery?.status!=='SENT'||sentDelivery.attempts!==1)throw new Error('SUPABASE_SHARED_VERIFY_DELIVERY_RECORD_FAILED');
+
+  const {error:privateError}=await service.from('capacities').update({visibility:'PRIVATE'}).eq('id',capacity.id);
+  if(privateError)throw new Error(`SUPABASE_SHARED_VERIFY_PRIVATE_SETUP_FAILED:${privateError.message}`);
   const access=await verifySharedCapacityAccess(sharedEmail,challenge.accessCode);
   if(access.emailDigest!==sharedDigest)throw new Error('SUPABASE_SHARED_VERIFY_DIGEST_MISMATCH');
   const shared=await listSharedCapacity(access.emailDigest,{capacityId:capacity.id});
@@ -363,22 +395,43 @@ try{
     error=>{if(!/SHARED_CAPACITY_ACCESS_DENIED/.test(String(error?.message)))throw error;}
   );
 
-  const {data:admin,error:adminError}=await service.from('profiles').select('id,role').eq('email','admin@loadgistic.local').maybeSingle();
-  if(adminError||!admin)throw new Error(`SUPABASE_SHARED_VERIFY_ADMIN_MISSING:${adminError?.message||''}`);
-  await setLoadgisticCapacityAccess(owner,vehicle.id,true);
-  const operations=await listLoadgisticSharedCapacity(admin,{capacityId:capacity.id});
-  if(operations.items.length!==1)throw new Error('SUPABASE_SHARED_VERIFY_OPERATIONS_PROJECTION_FAILED');
-  await setLoadgisticCapacityAccess(owner,vehicle.id,false);
+  await assert.rejects(()=>setLoadgisticCapacityAccess(owner,vehicle.id,true),/PLATFORM_CAPACITY_RETIRED/);
+  await assert.rejects(()=>listLoadgisticSharedCapacity(owner,{capacityId:capacity.id}),/PLATFORM_CAPACITY_RETIRED/);
+  const {error:retiredReadError}=await service.rpc('private_capacity_projection',{
+    requested_audience:'LOADGISTIC',requested_digest:platformDigest
+  });
+  if(!/PLATFORM_CAPACITY_RETIRED/.test(retiredReadError?.message||'')){
+    throw new Error('SUPABASE_SHARED_VERIFY_RETIRED_PLATFORM_READ_ALLOWED');
+  }
+  const {error:retiredGrantError}=await service.from('capacity_access_grants').insert({
+    vehicle_id:vehicle.id,audience_type:'LOADGISTIC',recipient_email_digest:platformDigest,created_by:owner.id
+  });
+  if(!/PLATFORM_CAPACITY_RETIRED/.test(retiredGrantError?.message||'')){
+    throw new Error('SUPABASE_SHARED_VERIFY_RETIRED_PLATFORM_GRANT_ALLOWED');
+  }
 
   const {error:anonymousProjectionError}=await anon.rpc('private_capacity_projection',{
     requested_audience:'EMAIL',requested_digest:sharedDigest,actor_user_id:null
   });
   if(!anonymousProjectionError)throw new Error('SUPABASE_SHARED_VERIFY_ANONYMOUS_RPC_ALLOWED');
+  await revokePrivateCapacityAccess(owner,grant.id);
+  const revoked=await listSharedCapacity(sharedDigest,{capacityId:capacity.id});
+  if(revoked.items.length!==0)throw new Error('SUPABASE_SHARED_VERIFY_REVOCATION_FAILED');
 }finally{
-  await service.from('capacities').update({visibility:capacity.visibility}).eq('id',capacity.id);
-  await revokePrivateCapacityAccess(owner,grant.id).catch(()=>{});
+  const cleanupErrors=[];
+  const {error:restoreError}=await service.from('capacities').update({visibility:capacity.visibility}).eq('id',capacity.id);
+  if(restoreError)cleanupErrors.push('VISIBILITY');
+  if(challenge?.challengeId){
+    const {error:deliveryCleanupError}=await service.from('access_email_deliveries').delete()
+      .eq('delivery_kind','SHARED_CAPACITY').eq('entity_id',challenge.challengeId);
+    if(deliveryCleanupError)cleanupErrors.push('DELIVERY');
+    const {error:challengeCleanupError}=await service.from('shared_capacity_email_otps').delete().eq('id',challenge.challengeId);
+    if(challengeCleanupError)cleanupErrors.push('CHALLENGE');
+  }
+  if(grant?.id){
+    const {error:grantCleanupError}=await service.from('capacity_access_grants').delete().eq('id',grant.id);
+    if(grantCleanupError)cleanupErrors.push('GRANT');
+  }
+  if(cleanupErrors.length)throw new Error(`SUPABASE_SHARED_VERIFY_FIXTURE_CLEANUP_FAILED:${cleanupErrors.join(',')}`);
 }
-
-const revoked=await listSharedCapacity(sharedDigest,{capacityId:capacity.id});
-if(revoked.items.length!==0)throw new Error('SUPABASE_SHARED_VERIFY_REVOCATION_FAILED');
-process.stdout.write('Supabase Shared capacity grant, OTP concurrency, delivery, projection, Operations, and revocation checks passed.\n');
+process.stdout.write(`Supabase Shared capacity grant, OTP concurrency, delivery, projection, retired platform denial, and revocation checks passed${retentionVerified?' with full retention coverage':' in bounded local mode; global retention NOT_TESTED'}.\n`);
