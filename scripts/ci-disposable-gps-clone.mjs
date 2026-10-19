@@ -4,6 +4,27 @@ import {spawn} from 'node:child_process';
 
 const STDERR_LIMIT = 8192;
 
+export function checkedLocalGpsPassword(status) {
+  let url;
+  try {
+    url = new URL(status?.DB_URL);
+  } catch {
+    throw new Error('GPS CI local database URL is missing or invalid');
+  }
+  if (!['postgresql:', 'postgres:'].includes(url.protocol)
+      || url.hostname !== '127.0.0.1' || url.port !== '55322'
+      || url.pathname !== '/postgres' || decodeURIComponent(url.username) !== 'postgres'
+      || !url.password || url.search || url.hash) {
+    throw new Error('GPS CI local database target mismatch');
+  }
+  return decodeURIComponent(url.password);
+}
+
+export function checkedLocalRestoreRole(user) {
+  if (user !== 'supabase_admin') throw new Error('GPS CI local restore role mismatch');
+  return user;
+}
+
 export function postgresErrorCategory(stderr) {
   if (/server version mismatch|aborting because of server version mismatch/i.test(stderr)) return 'version-mismatch';
   if (/password authentication failed|SASL authentication failed/i.test(stderr)) return 'authentication-failed';

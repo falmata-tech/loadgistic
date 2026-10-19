@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {postgresErrorCategory, runGpsClonePipeline} from '../scripts/ci-disposable-gps-clone.mjs';
+import {
+  checkedLocalGpsPassword, checkedLocalRestoreRole,
+  postgresErrorCategory, runGpsClonePipeline,
+} from '../scripts/ci-disposable-gps-clone.mjs';
 
 const child = (source) => [process.execPath, ['-e', source]];
 
@@ -85,4 +88,31 @@ test('GPS CI clone reports a missing client without waiting for its peer', async
 test('PostgreSQL category classifier emits a fixed label for unknown sensitive output', () => {
   assert.equal(postgresErrorCategory('secret=reviewer-password'), 'unclassified');
   assert.equal(postgresErrorCategory('pg_restore: error: could not execute query: ERROR: duplicate'), 'restore-sql-error');
+});
+
+test('GPS CI target accepts only the exact local Supabase database, without leaking its password', () => {
+  const secret = 'local-only-secret';
+  const valid = {DB_URL: `postgresql://postgres:${secret}@127.0.0.1:55322/postgres`};
+  assert.equal(checkedLocalGpsPassword(valid), secret);
+  for (const value of [
+    `postgresql://postgres:${secret}@localhost:55322/postgres`,
+    `postgresql://postgres:${secret}@127.0.0.1:5432/postgres`,
+    `postgresql://postgres:${secret}@127.0.0.1:55322/other`,
+    `postgresql://supabase_admin:${secret}@127.0.0.1:55322/postgres`,
+    `postgresql://postgres:${secret}@127.0.0.1:55322/postgres?sslmode=require`,
+    'postgresql://postgres@127.0.0.1:55322/postgres',
+  ]) {
+    assert.throws(() => checkedLocalGpsPassword({DB_URL: value}), (error) => {
+      assert.match(error.message, /GPS CI local database target mismatch/);
+      assert.doesNotMatch(error.message, /local-only-secret/);
+      return true;
+    });
+  }
+});
+
+test('GPS CI restore rejects a wrong authenticated role', () => {
+  assert.equal(checkedLocalRestoreRole('supabase_admin'), 'supabase_admin');
+  for (const role of ['postgres', 'anon', '']) {
+    assert.throws(() => checkedLocalRestoreRole(role), /GPS CI local restore role mismatch/);
+  }
 });

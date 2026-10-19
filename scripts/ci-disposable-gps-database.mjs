@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-import {runGpsClonePipeline} from './ci-disposable-gps-clone.mjs';
+import {checkedLocalGpsPassword,checkedLocalRestoreRole,runGpsClonePipeline} from './ci-disposable-gps-clone.mjs';
 
 const container = 'supabase_db_loadgistic-local';
 const database = 'loadgistic_telematics_ci';
@@ -50,19 +50,11 @@ try {
 } catch {
   throw new Error('Could not read structured local Supabase status');
 }
-const url = new URL(status.DB_URL);
-assert.ok(url.protocol === 'postgresql:' || url.protocol === 'postgres:');
-assert.equal(url.hostname, '127.0.0.1');
-assert.equal(url.port, '55322');
-assert.equal(url.pathname, '/postgres');
-assert.equal(decodeURIComponent(url.username), 'postgres');
-assert.ok(url.password, 'Local PostgreSQL password missing');
-assert.equal(url.search, '');
-assert.equal(url.hash, '');
+const localPassword = checkedLocalGpsPassword(status);
 
 const clientVersion = localCommand('pg_dump', ['--version']);
 const major = Number(clientVersion.match(/PostgreSQL\)\s+(\d+)/)?.[1]);
-assert.ok(major >= 15, 'PostgreSQL host client must support the local server');
+assert.equal(major, 17, 'PostgreSQL 17 host client is required for the local server');
 const pgEnv = {
   ...process.env,
   PGHOST: '127.0.0.1',
@@ -70,7 +62,7 @@ const pgEnv = {
   PGPORT: '55322',
   PGUSER: 'postgres',
   PGDATABASE: 'postgres',
-  PGPASSWORD: decodeURIComponent(url.password),
+  PGPASSWORD: localPassword,
   PGSSLMODE: 'disable',
   PGCONNECT_TIMEOUT: '5',
 };
@@ -80,15 +72,26 @@ delete pgEnv.PGOPTIONS;
 
 assert.equal(localCommand('psql', ['-X', '-A', '-t', '-q', '-c', 'select current_database()'],
   {env: pgEnv}), 'postgres', 'Not connected to the isolated local primary');
+const serverMajor = Math.floor(Number(localCommand('psql', [
+  '-X', '-A', '-t', '-q', '-c', 'show server_version_num',
+], {env: pgEnv})) / 10000);
+assert.equal(serverMajor, major, 'PostgreSQL host client/server major version mismatch');
+// Local Supabase makes this role available on the same checked loopback server.
+// The full catalog needs its privileges; postgres cannot SET ROLE to it.
+const restoreEnv = {...pgEnv, PGUSER: 'supabase_admin'};
+checkedLocalRestoreRole(localCommand('psql', [
+  '-X', '-A', '-t', '-q', '-c', 'select current_user',
+], {env: restoreEnv}));
 
 async function clone() {
-  // Preserve the old restore role and full dump/restore assertions. Only the
-  // transport moves from Docker exec to the checked local TCP endpoint.
+  // Use the verified local admin role for the full Supabase catalog. The
+  // checked postgres login creates the disposable database, but cannot SET
+  // ROLE to supabase_admin during pg_restore.
   await runGpsClonePipeline({
     dumpCommand: 'pg_dump', dumpArgs: ['-Fc', '-d', 'postgres'],
     restoreCommand: 'pg_restore',
-    restoreArgs: ['-d', database, '--role=supabase_admin', '--exit-on-error'],
-    env: pgEnv,
+    restoreArgs: ['-d', database, '--exit-on-error'],
+    env: restoreEnv,
   });
 }
 
