@@ -22,7 +22,7 @@ test('city and distance filter matches reported truck locations without GPS perm
   await page.getByLabel('Distance from city',{exact:true}).selectOption('25');
   await page.locator('.capacity-truck-location-filter').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(captures,`${info.project.name}-city-filter.png`),scale:'css'});
-  await page.getByRole('button',{name:'Show matching trucks'}).click();
+  await page.getByRole('button',{name:'Show matching vehicles'}).click();
   await expect(page).toHaveURL(/truckCityPlaceRef=/);
   const url=new URL(page.url());expect(url.searchParams.get('truckLocationRadiusKm')).toBe('25');
   expect(url.searchParams.has('nearLat')).toBe(false);

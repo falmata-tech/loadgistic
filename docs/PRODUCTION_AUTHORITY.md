@@ -1,3 +1,30 @@
+## October 19 bounded Android 1.1.0 signing — approved, unused
+
+The owner also approved accepting Loadgistic's content policy on **one dedicated
+synthetic Play-review account** solely to complete the installed Android 1.1.0
+sign-in, workspace and sign-out check after the matching web/database release is
+live. This is a test-account consent record, not permission to change customer
+accounts, grant staff authority, modify policy text or bypass any access check.
+Record the exact test-account ID, successful UI action and closed session in
+protected local evidence without printing its credentials or codes.
+
+The owner answered “Approve signing 1.1.0 after checks pass” for the exact
+APK and AAB in `.local/release-20261019-android-code8-candidate/signing-review.md`.
+This permits one temporary use of the existing `falmatad/loadgistic` Android
+upload key after the remaining release checks pass, for `com.loadgistic.app`
+version1.1.0/code8. The reviewed APK SHA256 is
+`549ec1295fcdcf9eb356186522519c9453091b81ad443fd49a5dcdc3ff0cdc38`;
+the AAB SHA256 is
+`8ae47bdec69fc664aefc0a3f9025970812d0d6ca07a2ca85095bff728c55aea1`.
+Application archive entries must remain identical after signing, and the upload
+certificate must remain
+`26b7c6afc5afe0cd1a721e4e2914e1ffbb57c41ffe2ac1328d1ee125c965c5fd`.
+Keep private material in protected temporary files, remove it after this use,
+and verify unchanged Expo signing, FCM and Submit associations. No replacement
+key, billing change, other-app access or public Play release is authorized.
+This approval remains unused; test-signature install and restart evidence do
+not replace signed-in workflow and release checks.
+
 ## October 19 reviewed workspace and three-language rollout — approved, pending gates
 
 The owner explicitly answered “Approve this reviewed database rollout” for
@@ -20,8 +47,8 @@ The existing deployment request covers the matching verified web and Android
 testing release. This SQL approval does not authorize private signing-key export,
 Auth/SMTP/provider settings, GPS hosting/network/costs, real engine commands,
 production demo seeding, customer erasure, another app or public Play publication.
-The prior1.0.6 signing authority is consumed; an exact new artifact review is needed
-before using the existing upload key. No hosted migration or new release has been
+The prior1.0.6 signing authority is consumed; the separate exact 1.1.0
+approval is recorded above and remains unused. No hosted migration or new release has been
 executed at this checkpoint.
 
 ## October 13 exact Featured137 repair — applied and verified

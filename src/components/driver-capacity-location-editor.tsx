@@ -65,15 +65,15 @@ export function DriverCapacityLocationEditor({vehicleId,location,publishedSource
   event.preventDefault();if(submitting.current||!snapshot||mode==='GPS'||mode==='MANUAL'&&!point)return;
   submitting.current=true;setBusy(true);onBusyChange(true);setError('');
   try{
-   // An explicit phone capture is needed before an Off Duty driver can become Available.
-   // Only Available capacity reports are sent to the server; the Off Duty capture
-   // stays in this editor's parent until the driver submits the duty change.
+   // An explicit, obscured phone fix must be saved even while Off Duty so a
+   // fleet owner can configure the first capacity signal for this driver.
+   // Saving the fix alone never publishes availability.
    const captured=mode==='MOBILE'?await readDriverLocation(radius):null;
    if(mode==='MANUAL'||snapshot.source!=='MOBILE'||radius!==snapshot.precisionKm){
     const revision=await switchSource(snapshot,mode,radius,point);
     setSnapshot({...snapshot,source:mode,precisionKm:radius,revision,manualPoint:mode==='MANUAL'&&point?{latitude:point.lat,longitude:point.lng}:null});
    }
-   const saved=mode==='MOBILE'&&captured?(onDuty?await saveDriverLocation(vehicleId,captured):captured):null;
+   const saved=mode==='MOBILE'&&captured?await saveDriverLocation(vehicleId,captured):null;
    onSaved(mode,saved);
   }catch(reason){setError(reason instanceof Error?reason.message:'Could not save this vehicle’s location. Refresh before retrying.');}
   finally{submitting.current=false;setBusy(false);onBusyChange(false);}

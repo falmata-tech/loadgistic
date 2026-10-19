@@ -35,13 +35,13 @@ test('viewport pagination preserves markers and camera until the replacement fin
   const camera=await page.locator('.leaflet-map-pane').evaluate(el=>(el as HTMLElement).style.transform);
   releaseFirst();await expect.poll(()=>continued).toBe(true);
   await expect(markers).toHaveCount(count);
-  await expect(page.getByTestId('capacity-feed-state')).toContainText('Loading trucks');
+  await expect(page.getByTestId('capacity-feed-state')).toContainText('Loading vehicles');
   expect(await instance!.evaluate(el=>el.isConnected)).toBe(true);
   expect(await page.locator('.leaflet-map-pane').evaluate(el=>(el as HTMLElement).style.transform)).toBe(camera);
   await page.screenshot({path:info.outputPath('map-refresh-retains-trucks.png')});
   releaseLast();
   await expect(markers).toHaveCount(0); // Successful authoritative empty result.
-  await expect(page.getByTestId('capacity-feed-state')).toContainText('No truck signals');
+  await expect(page.getByTestId('capacity-feed-state')).toContainText('No vehicle signals');
   // Observe beyond the 350ms viewport debounce: rendering must not start a loop.
   await page.waitForTimeout(900);
   expect(requests,JSON.stringify(windows)).toBe(2);

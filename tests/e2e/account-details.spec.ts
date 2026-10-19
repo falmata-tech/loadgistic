@@ -32,6 +32,12 @@ async function saveAccountDetails(page:any,form:any){
   const saved=await response;expect(saved.status()).toBe(200);expect(await saved.json()).toEqual({ok:true});
   await expect(form.getByRole('status')).toHaveText('Account details saved.');
 }
+async function openAccountDetails(page:any){
+  await page.getByRole('button',{name:'Edit details',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Account details',exact:true});
+  await expect(dialog).toBeVisible();
+  return dialog.getByRole('form',{name:'Account details'});
+}
 
 test('providers and Company drivers save private account phones even with limited access',async({page}:{page:any},info:any)=>{
   test.setTimeout(180000);const service=localService();const suffix=randomUUID().slice(0,8);
@@ -50,7 +56,7 @@ test('providers and Company drivers save private account phones even with limite
       const email=`account-${kind}-${suffix}@loadgistic.local`;
       const created=await service.auth.admin.createUser({email,password:'Loadgistic123!',email_confirm:true});
       expect(created.error).toBeNull();const id=created.data.user!.id;identities.push({id,email,kind});
-      expect((await service.from('profiles').update({role:kind==='owner'?'TRANSPORTER':'DRIVER',active:true,full_name:`Account ${kind}`,phone:'+251900000010'}).eq('id',id)).error).toBeNull();
+      expect((await service.from('profiles').update({role:kind==='owner'?'TRANSPORTER':'DRIVER',active:true,drives_truck:kind!=='owner',full_name:`Account ${kind}`,phone:'+251900000010'}).eq('id',id)).error).toBeNull();
     }
     const [owner,company,independent]=identities;
     const org=await service.from('organizations').insert({name:`Account Fleet ${suffix}`,handle:`account-${suffix}`,type:'TRANSPORT_COMPANY'}).select('id').single();
@@ -65,8 +71,8 @@ test('providers and Company drivers save private account phones even with limite
     expect(publicBefore.error).toBeNull();
     for(const identity of identities){
       await acceptAuditContentPolicy(service,identity.id);
-      await login(page,identity.email);await page.goto('/app/more');
-      const form=page.getByRole('form',{name:'Account details'});
+      await login(page,identity.email);await page.goto('/app/more?tab=details');
+      let form=await openAccountDetails(page);
       await expect(form).toBeVisible();await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
       await form.getByLabel('First name',{exact:true}).fill('Abebe');
       await form.getByLabel('Last / father name',{exact:true}).fill(`Tesfaye ${identity.kind}`);
@@ -74,7 +80,7 @@ test('providers and Company drivers save private account phones even with limite
       await saveAccountDetails(page,form);
       const saved=await service.from('profiles').select('full_name,phone,role,email,active').eq('id',identity.id).single();
       expect(saved.error).toBeNull();expect(saved.data).toEqual({full_name:`Abebe Tesfaye ${identity.kind}`,phone:'+251900123456',role:identity.kind==='owner'?'TRANSPORTER':'DRIVER',email:identity.email,active:true});
-      await page.reload();await expect(form.getByLabel('First name',{exact:true})).toHaveValue('Abebe');
+      await page.reload();form=await openAccountDetails(page);await expect(form.getByLabel('First name',{exact:true})).toHaveValue('Abebe');
       await expect(form.getByLabel('Last / father name',{exact:true})).toHaveValue(`Tesfaye ${identity.kind}`);
       await expect(form.getByLabel('Account phone')).toHaveValue('+251900123456');
       await expect(form.getByRole('button',{name:'Save account details'})).toBeVisible();
@@ -88,7 +94,7 @@ test('providers and Company drivers save private account phones even with limite
       const forged=await post(page,{name:'Forged',phone:'',actor_user_id:owner.id,role:'ADMIN',email:'tampered@example.test'});
       expect(forged.status).toBe(400);
       await form.getByLabel('Account phone').fill('');await saveAccountDetails(page,form);
-      await page.reload();await expect(form.getByLabel('Account phone')).toHaveValue('');
+      await page.reload();form=await openAccountDetails(page);await expect(form.getByLabel('Account phone')).toHaveValue('');
       expect((await service.from('profiles').select('phone').eq('id',identity.id).single()).data?.phone).toBeNull();
     }
     const callback=await service.from('drivers').select('name,phone').eq('user_id',company.id).single();
@@ -97,13 +103,13 @@ test('providers and Company drivers save private account phones even with limite
     expect(publicAfter.error).toBeNull();expect(publicAfter.data).toEqual(publicBefore.data);
     // Own public callbacks work without fleet publication permissions; private phones stay separate.
     for(const identity of [company,independent]){
-      await login(page,identity.email);await page.goto('/app/more');
-      const form=page.getByRole('form',{name:'Account details'});
+      await login(page,identity.email);await page.goto('/app/more?tab=details');
+      let form=await openAccountDetails(page);
       await form.getByLabel('Public contact phone',{exact:true}).fill('+251900222333');
-      await saveAccountDetails(page,form);await page.reload();
+      await saveAccountDetails(page,form);await page.reload();form=await openAccountDetails(page);
       await expect(form.getByLabel('Public contact phone',{exact:true})).toHaveValue('+251900222333');
       expect((await service.from('profiles').select('phone,public_callback_phone').eq('id',identity.id).single()).data).toEqual({phone:null,public_callback_phone:'+251900222333'});
-      await form.getByLabel('Public contact phone',{exact:true}).fill('');await saveAccountDetails(page,form);await page.reload();
+      await form.getByLabel('Public contact phone',{exact:true}).fill('');await saveAccountDetails(page,form);await page.reload();form=await openAccountDetails(page);
       await expect(form.getByLabel('Public contact phone',{exact:true})).toHaveValue('');
       expect((await service.from('profiles').select('phone,public_callback_phone').eq('id',identity.id).single()).data).toEqual({phone:null,public_callback_phone:null});
     }
@@ -112,14 +118,14 @@ test('providers and Company drivers save private account phones even with limite
 
     // Exercise this form's native POST fallback after the streamed shell renders.
     // A cloned form has no React submit handler; the visible button posts HTML.
-    await page.getByRole('form',{name:'Account details'}).evaluate((form:HTMLFormElement)=>form.replaceWith(form.cloneNode(true)));
-    const nativeForm=page.getByRole('form',{name:'Account details'});
+    await page.getByRole('dialog',{name:'Account details',exact:true}).getByRole('form',{name:'Account details'}).evaluate((form:HTMLFormElement)=>form.replaceWith(form.cloneNode(true)));
+    const nativeForm=page.getByRole('dialog',{name:'Account details',exact:true}).getByRole('form',{name:'Account details'});
     await nativeForm.getByLabel('Account phone').fill('+251900654321');
     const nativePost=page.waitForResponse((response:any)=>response.url().includes('/api/account/details')&&response.request().method()==='POST');
     await nativeForm.getByRole('button',{name:'Save account details'}).click();
     expect((await nativePost).status()).toBe(303);
     await expect(page.getByRole('status').filter({hasText:'Account details saved.'})).toBeVisible();
-    await expect(nativeForm.getByLabel('Account phone')).toHaveValue('+251900654321');
+    const savedForm=await openAccountDetails(page);await expect(savedForm.getByLabel('Account phone')).toHaveValue('+251900654321');
     expect(new URL(page.url()).searchParams.has('phone')).toBe(false);
     // Same browser's session is revalidated against current persisted activation.
     expect((await service.from('profiles').update({active:false}).eq('id',independent.id)).error).toBeNull();

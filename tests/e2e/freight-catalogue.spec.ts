@@ -7,7 +7,7 @@ import {openCapacityFilterDialog} from './capacity-drawer-helper';
 test('public courier filters and guest workspace entry retain their destinations',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);
  await page.goto('/');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
- const drawer=await openCapacityFilterDialog(page),config=drawer.getByRole('group',{name:'Truck configuration',exact:true});await config.locator('summary').click();
+ const drawer=await openCapacityFilterDialog(page),config=drawer.getByRole('group',{name:'Vehicle type',exact:true});await config.locator('summary').click();
  await expect(config.getByRole('checkbox',{name:'Courier car',exact:true})).toHaveCount(1);await expect(config.getByRole('checkbox',{name:'Courier motorcycle',exact:true})).toHaveCount(1);
  await expect(config.getByRole('checkbox',{name:'Cargo van',exact:true})).toHaveCount(1);
  await page.screenshot({path:info.outputPath('freight-filter.png')});
@@ -42,8 +42,8 @@ test('Featured shows the mixed Sunday theme alongside the unchanged weekdays',as
  test.setTimeout(90000);await page.goto('/featured');
  await expect(page.locator('.featured-provider-tile')).toHaveCount(8);
  await page.locator('.regional-expo-week-panel summary').click();
- await expect(page.getByRole('region',{name:'Weekly featured truck types'}).getByText('Mixed',{exact:true})).toBeVisible();
- await expect(page.getByRole('region',{name:'Weekly featured truck types'}).getByText('Vans & couriers',{exact:true})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Weekly featured vehicle types'}).getByText('Mixed',{exact:true})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Weekly featured vehicle types'}).getByText('Vans & couriers',{exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-freight.png'),fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

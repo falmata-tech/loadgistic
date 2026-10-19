@@ -39,7 +39,7 @@ test('map refresh uses a horizontal activity bar without hiding controls or anno
     const feedback=page.getByTestId('capacity-feed-state');
     const track=feedback.locator('.loading-progress-track');
     await expect(track).toBeVisible();
-    await expect(feedback.getByRole('status')).toContainText('Loading trucks');
+    await expect(feedback.getByRole('status')).toContainText('Loading vehicles');
     await expect(feedback.locator('[aria-valuenow]')).toHaveCount(0);
     const box=await track.boundingBox();expect(box.width).toBeGreaterThan(box.height*10);
     expect(await feedback.locator('.sr-only').evaluate((el:HTMLElement)=>getComputedStyle(el).position)).toBe('absolute');

@@ -15,20 +15,20 @@ test('personal Transport Provider owner can add trucks and drivers while new reg
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading',{name:'My Fleet'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Add truck',exact:true}).first()).toHaveAttribute('href','/app/fleet/new');
+  await expect(page.getByRole('link',{name:'Add vehicle',exact:true}).first()).toHaveAttribute('href','/app/fleet/new');
   await expect(page.locator('.fleet-setup-actions').getByRole('link',{name:'Add driver',exact:true})).toHaveAttribute('href',/^\/app\/fleet\/drivers\/new(?:\?|$)/);
-  await page.getByRole('link',{name:'Add truck',exact:true}).first().click();
+  await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
   await expect(page).toHaveURL(/\/app\/fleet\/new$/);
-  await expect(page.getByRole('heading',{name:'Add truck',exact:true})).toBeVisible();
-  await expect(page.getByRole('radio',{name:'I own this truck',exact:true})).toBeVisible();
-  await expect(page.getByRole('radio',{name:'I am buying this truck through financing',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Add vehicle',exact:true})).toBeVisible();
+  await expect(page.getByRole('radio',{name:'I own this vehicle',exact:true})).toBeVisible();
+  await expect(page.getByRole('radio',{name:'I am buying this vehicle through financing',exact:true})).toBeVisible();
   await expect(page.getByRole('radio',{name:'I rent it or have permission to use it',exact:true})).toBeVisible();
   await expect(page.getByRole('checkbox',{name:'Keep my previous truck in history and use this truck instead.',exact:true})).toHaveCount(0);
   await expect(page.getByLabel('Make')).toBeVisible();
   await expect(page.getByLabel('Model')).toBeVisible();
   await expect(page.getByLabel('Vehicle configuration')).toBeVisible();
   await expect(page.getByLabel('Plate number')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Add truck',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Add vehicle',exact:true})).toBeVisible();
 });
 
 test('fleet transporter reaches truck registration while company driver cannot create trucks',async({page}:{page:any})=>{
@@ -36,7 +36,7 @@ test('fleet transporter reaches truck registration while company driver cannot c
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading',{name:'My Fleet'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Add truck'}).first()).toHaveAttribute('href','/app/fleet/new');
+  await expect(page.getByRole('link',{name:'Add vehicle'}).first()).toHaveAttribute('href','/app/fleet/new');
 
   await page.context().clearCookies();
   await login(page,'company-driver@loadgistic.local');

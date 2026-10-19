@@ -2,7 +2,7 @@ import {test,expect} from './browser-test';
 import sharp from 'sharp';
 
 async function waitForNativeMapPaint(page:any){
-  await expect(page.getByRole('progressbar',{name:'Loading truck availability',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0);
   await expect.poll(async()=>{
     const box=await page.locator('.maplibregl-canvas').first().boundingBox();if(!box||box.width<100||box.height<100)return false;
     const bytes=await page.screenshot({clip:{x:box.x+box.width*.2,y:box.y+box.height*.35,width:box.width*.6,height:box.height*.3}});
@@ -40,10 +40,10 @@ test('transporter search updates after a pause and applies identity only through
   await card.getByRole('link',{name:/Show.*map/}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.get('provider')===profile.handle&&url.searchParams.get('status')==='EMPTY'&&!url.searchParams.has('q'),{timeout:30000});
   await expect(page.locator('.leaflet-container')).toBeVisible();await expect(people).toBeHidden();
-  await controls.getByRole('button',{name:/Truck filters/}).click();
-  const filters=page.getByRole('dialog',{name:'Truck filters',exact:true});await expect(filters).toBeVisible();
+  await controls.getByRole('button',{name:/Vehicle filters/}).click();
+  const filters=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(filters).toBeVisible();
   await expect(filters.getByRole('searchbox')).toHaveCount(0);await expect(filters.locator('input[type="hidden"][name="status"]')).toHaveValue('EMPTY');
-  await filters.getByRole('button',{name:'Show matching trucks',exact:true}).click();
+  await filters.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.get('provider')===profile.handle&&url.searchParams.get('status')==='EMPTY');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('capacity-selected-profile-map.png')});
@@ -69,11 +69,11 @@ test('native Capacity preview keeps people-search requests separate from map req
   expect(searches.some(query=>new URLSearchParams(query).get('q')===profile.title)).toBe(true);
   expect(maps.every(query=>new URLSearchParams(query).get('q')!==profile.title)).toBe(true);
   await page.screenshot({path:info.outputPath('native-capacity-people-search.png')});
-  await page.getByRole('button',{name:'Show trucks on map',exact:true}).first().click();
+  await page.getByRole('button',{name:'Show vehicles on map',exact:true}).first().click();
   await expect(page.getByLabel('Search transporters')).toHaveCount(0);
   await expect.poll(()=>maps.some(query=>new URLSearchParams(query).get('provider')===profile.handle)).toBe(true);
-  await page.getByRole('button',{name:/Truck filters/}).click();
-  await expect(page.getByText('Showing selected profile trucks',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/Vehicle filters/}).click();
+  await expect(page.getByText('Showing selected profile vehicles',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
   await waitForNativeMapPaint(page);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -108,7 +108,7 @@ test('native explicit profile and truck deep links initialize map filters',async
   await waitForNativeMapPaint(page);
   await expect.poll(()=>maps.some(query=>{const params=new URLSearchParams(query);return params.get('provider')===truck.provider_handle&&params.get('truck')===truck.id&&!params.has('q');})).toBe(true);
   expect(searches).toEqual([]);
-  await page.getByRole('button',{name:/Truck filters/}).click();await expect(page.getByText('Showing selected profile trucks',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/Vehicle filters/}).click();await expect(page.getByText('Showing selected profile vehicles',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
   await waitForNativeMapPaint(page);
   const exit=page.getByRole('button',{name:'Back to map',exact:true});await expect(exit).toBeVisible();
@@ -125,9 +125,9 @@ test('US visitor location can become an obscured web truck-near filter',async({p
   await page.goto('/');await page.getByRole('button',{name:'Transporter search',exact:true}).click();
   await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');
-  await page.getByRole('button',{name:/Truck filters/}).click();const filters=page.getByRole('dialog',{name:'Truck filters',exact:true});
-  await filters.getByLabel('Show trucks near my area',{exact:true}).check();
-  await filters.getByRole('button',{name:'Show matching trucks',exact:true}).click();
+  await page.getByRole('button',{name:/Vehicle filters/}).click();const filters=page.getByRole('dialog',{name:'Vehicle filters',exact:true});
+  await filters.getByLabel('Show vehicles near my area',{exact:true}).check();
+  await filters.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.has('nearLat')&&Number(url.searchParams.get('nearLng'))<0);
   const params=new URL(page.url()).searchParams;
   expect(Number(params.get('nearLat'))).not.toBe(fix.latitude);expect(Number(params.get('nearLng'))).not.toBe(fix.longitude);expect(params.get('nearRadiusKm')).toBe('20');
@@ -138,10 +138,10 @@ test('US visitor location can become an obscured native truck-near filter',async
   test.setTimeout(90000);const fix={latitude:41.8781,longitude:-87.6298},requests:string[]=[];
   await context.grantPermissions(['geolocation'],{origin:'http://127.0.0.1:8084'});await context.setGeolocation(fix);
   page.on('request',(request:any)=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')requests.push(url.search);});
-  await page.goto('http://127.0.0.1:8084/');await page.getByRole('button',{name:/Truck filters/}).click();
+  await page.goto('http://127.0.0.1:8084/');await page.getByRole('button',{name:/Vehicle filters/}).click();
   await page.getByRole('button',{name:'Use my approximate area',exact:true}).click();
   await expect(page.getByRole('button',{name:'Update my approximate area',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Show matching trucks',exact:true}).click();
+  await page.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
   await expect.poll(()=>requests.some(query=>Number(new URLSearchParams(query).get('nearLng'))<0)).toBe(true);
   const params=new URLSearchParams(requests.find(query=>Number(new URLSearchParams(query).get('nearLng'))<0));
   expect(Number(params.get('nearLat'))).not.toBe(fix.latitude);expect(Number(params.get('nearLng'))).not.toBe(fix.longitude);expect(params.get('nearRadiusKm')).toBe('50');

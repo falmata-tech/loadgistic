@@ -30,18 +30,18 @@ function editorHarness(source,onDuty){
 }
 async function settle(){for(let i=0;i<20;i++)await Promise.resolve();}
 
-test('explicit Off Duty phone capture is held for Available without a premature server report',async()=>{
+test('explicit Off Duty phone Save persists an obscured fix for first owner publication',async()=>{
  const h=editorHarness('MOBILE',false);h.render();await settle();const form=h.render();
  assert.equal(button(form,'Save location').props.disabled,false);
  await form.props.onSubmit({preventDefault(){}});
- assert.deepEqual(h.calls,['GET','CAPTURE']);
+ assert.deepEqual(h.calls,['GET','CAPTURE','PHONE_REPORT']);
  assert.deepEqual(h.saved,[['MOBILE',savedPhone]]);
 });
 
-test('switching from manual to phone while Off Duty saves the choice and captures locally',async()=>{
+test('switching from manual to phone while Off Duty saves the choice and the new phone fix',async()=>{
  const h=editorHarness('MANUAL',false);h.render();await settle();let form=h.render();
  button(form,'Use my phone').props.onClick();form=h.render();await form.props.onSubmit({preventDefault(){}});
- assert.deepEqual(h.calls,['GET','CAPTURE','POST']);
+ assert.deepEqual(h.calls,['GET','CAPTURE','POST','PHONE_REPORT']);
  assert.deepEqual(h.saved,[['MOBILE',savedPhone]]);
 });
 

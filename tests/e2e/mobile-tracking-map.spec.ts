@@ -66,7 +66,7 @@ test('Expo phone Tracking uses a route-first map, existing progress and public c
   const frame=await page.getByTestId('tracking-native-map-workspace').locator('.maplibregl-map').boundingBox();expect(frame?.height).toBeGreaterThan(page.viewportSize()!.height*.55);
   await open.click();await expect(page.getByRole('radio')).toHaveCount(5);await expect(page.getByText('Synthetic native Tracking map',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close shipment progress',exact:true}).click();
-  await page.getByRole('button',{name:'Truck details',exact:true}).last().click();
+  await page.getByRole('button',{name:'Vehicle details',exact:true}).last().click();
   const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog).toContainText('Native map');
   await expect(dialog).not.toContainText(`NMAP-${data.actor.suffix}`);await expect(dialog).not.toContainText(`Audit Driver ${data.actor.suffix}`);
   await expect(dialog.getByRole('link',{name:/Call driver/})).toHaveAttribute('href','tel:+251900000000');

@@ -94,7 +94,7 @@ export function EthiopiaPlaceInput({id,onChange,onBlur,value,defaultValue,placeR
     }} autoComplete="off" role="combobox" aria-autocomplete="list" aria-expanded={open&&Boolean(results.length)} aria-controls={`${id}-results`}/>
     {loading?<LoadingIndicator className="place-loading" label="Searching places"/>:null}
     {open&&results.length?<div className="place-results" id={`${id}-results`} role="listbox">
-      {results.map((place:PlaceResult)=><button type="button" role="option" className="place-result" key={place.id} onMouseDown={event=>event.preventDefault()} onClick={()=>choose(place)}>
+      {results.map((place:PlaceResult)=><button type="button" role="option" className="place-result" key={place.id} onPointerDown={event=>event.preventDefault()} onClick={()=>choose(place)}>
         <MapPin aria-hidden="true"/><span><strong>{place.display_name}</strong><small>{place.place_type}</small></span>
       </button>)}
     </div>:null}

@@ -63,7 +63,7 @@ test('selected truck feedback stays readable through location denial and refresh
   try{
     await page.locator('.leaflet-control-zoom-out').click();
     await page.mouse.move(0,0);
-    await expect(page.getByTestId('capacity-feed-state')).toContainText('Loading trucks');
+    await expect(page.getByTestId('capacity-feed-state')).toContainText('Loading vehicles');
     await assertReadableFeedback(page,true);
     await expect.poll(()=>Boolean(release)).toBe(true);
     release!();

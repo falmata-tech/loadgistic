@@ -63,8 +63,14 @@ begin
  if count_rows<>1 or chosen is distinct from(select c.id from capacities c where c.vehicle_id=trucks[1002] order by c.updated_at desc,c.id desc limit 1) then raise exception 'MATCH_AFTER_1000_NOT_REACHABLE';end if;
  select count(*) into count_rows from private_capacity_filtered_page('EMAIL',repeat('d',64),null,null,null,14,'{}');
  if count_rows<>0 then raise exception 'WRONG_RECIPIENT_VISIBLE';end if;
- select count(*) into count_rows from private_capacity_filtered_page('LOADGISTIC',recipient,actor,null,null,14,'{}');
- if count_rows<>0 then raise exception 'NON_OPERATIONS_VISIBLE';end if;
+ -- Platform Brokerage has no private Capacity audience after its retirement.
+ -- Require the exact denial; an empty result could hide a restored access path.
+ begin
+  perform private_capacity_filtered_page('LOADGISTIC',recipient,actor,null,null,14,'{}');
+  raise exception 'RETIRED_PLATFORM_AUDIENCE_ACCEPTED';
+ exception when raise_exception then
+  if sqlerrm<>'PLATFORM_CAPACITY_RETIRED' then raise;end if;
+ end;
  select coalesce(sum((payload->>'count')::bigint),0) into before_count from public_capacity_clusters('{"viewport":[45,13,49,15]}'::jsonb);
  update capacities set visibility='OPEN' where id=chosen;
  update vehicle_capacity_sharing set mode='PUBLIC' where vehicle_id=trucks[1002];

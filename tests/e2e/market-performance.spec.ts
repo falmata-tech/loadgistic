@@ -28,7 +28,7 @@ test('low-end phone automatically loads viewport pages and settles after panning
   await page.mouse.move(box!.x+box!.width*.7,box!.y+box!.height*.55);await page.mouse.down();
   await page.mouse.move(box!.x+box!.width*.3,box!.y+box!.height*.55,{steps:5});await page.mouse.up();
   await expect.poll(()=>viewports.at(-1),{timeout:10000}).not.toBe(before);
-  await expect(page.getByText('Loading trucks in this map area…',{exact:true})).toHaveCount(0);
+  await expect(page.getByText('Loading vehicles in this map area…',{exact:true})).toHaveCount(0);
   expect(overviewRequests).toBe(0);
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
   const settled=viewports.length;await page.waitForTimeout(1000);expect(viewports.length).toBe(settled);

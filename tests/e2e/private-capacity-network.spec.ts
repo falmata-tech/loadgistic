@@ -54,9 +54,11 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
 
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
-  await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Network',exact:true})).toBeVisible();
   await expect(page.getByText('Share with Loadgistic')).toHaveCount(0);
-  const shareEmail=page.getByLabel('Share with an email').first();
+  await page.getByRole('button',{name:'Add access',exact:true}).first().click();
+  const access=page.getByRole('dialog',{name:'Add access',exact:true});
+  const shareEmail=access.getByLabel('Share with an email',{exact:true});
   await shareEmail.fill(sharedEmail);
   await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Person or company name',{exact:true}).fill('Synthetic partner');
   await shareEmail.locator('xpath=ancestor::form[1]').getByRole('button',{name:'Add access'}).click();
@@ -71,7 +73,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await expect(page.getByRole('link',{name:'Open the local inbox in a new tab'})).toBeVisible();
   await page.getByLabel('6-digit email code').fill(await localMailpitCode(sharedEmail,requestedAt));
   await page.getByRole('button',{name:'View shared signals'}).click();
-  await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Privately shared vehicle capacity'})).toBeVisible();
   await expect(page.getByLabel(/access ends after 30 minutes without activity/i)).toBeVisible();
   const initialViewport=page.viewportSize();
   await page.setViewportSize({width:320,height:640});
@@ -140,7 +142,7 @@ test('capture focused private Capacity and Network review',async({page}:{page:an
 
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/network');
-  await expect(page.getByRole('heading',{name:'Who can see my trucks'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Network',exact:true})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:path.join(output,`${project}-network.png`),fullPage:true});
 });

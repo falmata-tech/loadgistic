@@ -5,13 +5,14 @@ import type {Page} from 'playwright-core';
 const configurations=['Cargo van','Mini Box Truck'];
 const selection=(page:Page,key:string)=>page.locator(`.capacity-filter-dialog input[type="hidden"][name="${key}"]`);
 
-test('five multi-option filter groups remain draft until apply and clear back to the map',async({page},info)=>{
+test('five current multi-option filter groups remain draft until apply and clear back to the map',async({page},info)=>{
  test.setTimeout(90_000);await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible();
  const before=page.url(),dialog=await openCapacityFilterDialog(page);
  await chooseTruckConfiguration(dialog,configurations);
- await chooseCapacityOptions(dialog,'loadType',['FTL','PTL']);await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);
+ await expect(selection(page,'loadType')).toHaveCount(0);
+ await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);await chooseCapacityOptions(dialog,'locationSource',['GPS','MOBILE']);
  await chooseCapacityOptions(dialog,'stopOption',['MULTI_PICK','MULTI_DROP']);await chooseCapacityOptions(dialog,'freshness',['FRESH','UPDATE_NEEDED']);
- const expected={vehicleCategory:'Cargo van,Mini Box Truck',loadType:'FTL,PTL',status:'EMPTY,PARTIAL',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'};
+ const expected={vehicleCategory:'Cargo van,Mini Box Truck',status:'EMPTY,PARTIAL',locationSource:'GPS,MOBILE',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'};
  for(const [key,value] of Object.entries(expected)){await expect(selection(page,key)).toHaveCount(1);await expect(selection(page,key)).toHaveValue(value);}
  expect(page.url()).toBe(before);await expect(dialog.getByRole('group',{name:'Reviewed documents',exact:true})).toContainText('Every selected document must match.');
  await expect(dialog.getByRole('combobox',{name:'Direction',exact:true})).toHaveCount(1);await expect(dialog.getByRole('combobox',{name:'Distance from city',exact:true})).toHaveCount(1);
@@ -27,12 +28,12 @@ test('five multi-option filter groups remain draft until apply and clear back to
   }
   await page.setViewportSize(original);
  }
- await dialog.getByRole('button',{name:'Show matching trucks',exact:true}).click();
- await expect(page).toHaveURL(url=>Object.entries(expected).every(([key,value])=>url.searchParams.get(key)===value&&url.searchParams.getAll(key).length===1));
+ await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
+ await expect(page).toHaveURL(url=>!url.searchParams.has('loadType')&&Object.entries(expected).every(([key,value])=>url.searchParams.get(key)===value&&url.searchParams.getAll(key).length===1));
  await expect(page.locator('.public-feed-overlay.loading')).not.toBeVisible({timeout:30_000});
  await openCapacityFilterDialog(page);await chooseCapacityOptions(dialog,'status',['EMPTY']);await expect(selection(page,'status')).toHaveValue('EMPTY');expect(new URL(page.url()).searchParams.get('status')).toBe('EMPTY,PARTIAL');
  await dialog.getByRole('button',{name:'Close filters',exact:true}).click();await openCapacityFilterDialog(page);await expect(selection(page,'status')).toHaveValue('EMPTY');
- await dialog.getByRole('link',{name:'Clear',exact:true}).click();await expect(page).toHaveURL(url=>!Object.keys(expected).some(key=>url.searchParams.get(key)));
+ await dialog.getByRole('link',{name:'Clear',exact:true}).click();await expect(page).toHaveURL(url=>!url.searchParams.has('loadType')&&!Object.keys(expected).some(key=>url.searchParams.get(key)));
  await expect(page.locator('.leaflet-container')).toBeVisible();await openCapacityFilterDialog(page);
  for(const key of Object.keys(expected))await expect(selection(page,key)).toHaveValue('');
  await page.screenshot({path:info.outputPath('multiple-filter-cleared.png'),scale:'css'});
@@ -67,9 +68,9 @@ test('multiple configurations form a union while other option groups intersect u
 test('invalid multi-option deep links stay denied until an explicit filter correction',async({page})=>{
  test.setTimeout(60_000);await page.goto('/?vehicleCategory=Cargo%20van,unsupported');
  await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');await page.getByRole('button',{name:'Review filters',exact:true}).click();
- const dialog=page.getByRole('dialog',{name:'Truck filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
- await dialog.getByRole('button',{name:'Show matching trucks',exact:true}).click();await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
- await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await dialog.getByRole('button',{name:'Show matching trucks',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
+ await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
+ await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
  await expect(page).toHaveURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30_000});
  await page.goto('/?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
  expect((await page.request.get('/api/public/capacity?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck')).status()).toBe(400);

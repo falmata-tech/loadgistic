@@ -33,7 +33,7 @@ test('existing local numbered and legacy null-number trucks keep closed maps and
     const panel=card.locator('.provider-truck-map-panel');await expect(panel).toBeVisible();await expect(page.locator('.provider-truck-map-panel')).toHaveCount(1);await expect(panel).not.toHaveAttribute('aria-label',/null|undefined|row:|number:/);
     await expect(panel.locator('.leaflet-container')).toBeVisible({timeout:30000});await panel.getByRole('button',{name:'Close map',exact:true}).click();await expect(page.locator('.provider-truck-map-panel')).toHaveCount(0);
     await expect(card.getByRole('button',{name:'View capacity on map',exact:true})).toBeFocused();
-   }else await expect(card.getByRole('link',{name:'Ask about this truck',exact:true})).toHaveAttribute('href','#provider-contacts');
+   }else await expect(card.getByRole('link',{name:'Ask about this vehicle',exact:true})).toHaveAttribute('href','#provider-contacts');
   }
  }
  expect(errors).toEqual([]);

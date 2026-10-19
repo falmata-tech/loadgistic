@@ -89,12 +89,12 @@ test('document reviews persist notes and context; each truck excludes its pendin
         try{
           await page.goto(`/app/verification?truck=${vehicles[index]}`,{waitUntil:'commit'});
           await expect(page.getByLabel('Verification type',{exact:true})).toBeDisabled();
-          await expect(page.getByLabel('Profile, driver, or truck',{exact:true})).toBeDisabled();
+          await expect(page.getByLabel('Profile, driver, or vehicle',{exact:true})).toBeDisabled();
         }finally{releaseScripts();}
       }else await page.goto(`/app/verification?truck=${vehicles[index]}`);
       await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_AUTHORIZATION');
       await expect(page.getByLabel('Verification type',{exact:true})).toHaveValue('VEHICLE_AUTHORIZATION');
-      await expect(page.getByLabel('Profile, driver, or truck',{exact:true})).toHaveValue(`VEHICLE:${vehicles[index]}`);
+      await expect(page.getByLabel('Profile, driver, or vehicle',{exact:true})).toHaveValue(`VEHICLE:${vehicles[index]}`);
       await expect(page.locator('input[name=relatedVehicleId]')).toHaveValue(vehicles[index]);
       await chooseDate(page,'Permission expires',new Date(Date.now()+60*86400000).toISOString().slice(0,10));
       await page.getByLabel('Document name',{exact:true}).fill(`${marker}-${index}`);

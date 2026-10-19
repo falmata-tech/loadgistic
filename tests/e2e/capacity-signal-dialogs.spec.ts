@@ -165,7 +165,7 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
   await expect(map).toHaveAttribute('data-original-map','yes');
   await expect(page.getByRole('button',{name:'Edit approximate location',exact:true})).toBeEnabled();
   const rail=await page.getByRole('navigation',{name:'Edit capacity signals'}).boundingBox();
-  const dock=await page.getByRole('region',{name:'Approximate truck location controls'}).boundingBox();
+  const dock=await page.getByRole('region',{name:'Approximate vehicle location controls'}).boundingBox();
   expect(rail!.y+rail!.height).toBeLessThanOrEqual(dock!.y);
   await page.screenshot({path:testInfo.outputPath('saved-map.png')});
   }finally{
@@ -182,7 +182,7 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
 test('fleet owners edit capacity but cannot substitute their device location',async({page}:{page:any})=>{
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
-  await page.getByRole('link',{name:'View truck',exact:true}).first().click();
+  await page.getByRole('link',{name:'View vehicle',exact:true}).first().click();
   await page.getByRole('button',{name:'Edit approximate location',exact:true}).click();
   const location=page.getByRole('dialog',{name:'Approximate location',exact:true});
   await expect(location).toContainText('The assigned driver updates this truck’s approximate location from Home.');

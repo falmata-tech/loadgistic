@@ -29,9 +29,51 @@ reviewed release rather than rewriting previously published commits.
 - [ ] Create explicit-path reviewed commits, push the authorized branch and wait
   for required CI. No force-push or destructive history cleanup is planned.
 - [ ] Prepare exact hosted migration/artifact/backup/rollback review and signed
-  Android replacement. Existing one-use signing approvals are consumed.
+  Android replacement. The new one-use 1.1.0 signing approval is unused.
 - [ ] Deploy and independently verify web and mobile testing release; document
   links, exact versions and any external Play-review dependency.
+
+October19 release-gate checkpoint: GitHub run `39278321323` on `51838ccb`
+passed its Android job. Validation stopped in `capacity-viewport.sql` because
+the test still expected the retired platform Brokerage audience to return an
+empty private Capacity page. Migration159 correctly rejects it with
+`PLATFORM_CAPACITY_RETIRED`; the local test now requires that exact denial and
+still checks unrelated recipient isolation. The corrected SQL passes on the
+isolated restored database as `supabase_admin`, and the local preview suite now
+passes its `capacity-viewport` case. Desktop/phone Chrome passed the current-load
+filter, Tracking owner-sharing, public entry and account-details/security
+workflows (2/2 each). Focused Tracking smoke then exposed two real defects:
+status-only Loading sent an empty location claim to the device validator, and
+touch selection of a route city could lose its catalog reference. The source
+fixes and regression assertions passed focused tests; the full Tracking browser
+rerun passed on desktop and phone (2/2), including the three-city route,
+status-only Loading with proof, owner invitation and restricted viewer map.
+The new same-source CI remains a release gate. The completed
+Android 1.1.0/code8 candidate remains test-signed; owner approval for one use
+of the existing upload key is recorded and unused. The approved deployment
+remains gated; this checkpoint does not claim release gates passed.
+
+The local web preview is running again for the final browser checks. Source/spec
+checks, 979 unit tests, TypeScript and the 156-page production build passed
+after those Tracking fixes. The focused provider first-location desktop Chrome
+test passed (1/1): a restricted Off Duty Driver saved a 10 km obscured phone
+fix, no capacity was published before the owner's action, then the owner
+published Empty capacity from that exact saved fix. Synthetic actors were
+removed afterward. The older full fleet-onboarding browser script still has
+stale selectors and has not passed as a whole; the new focused test covers this
+changed first-location contract.
+The earlier
+automatic approval reviewer usage limit was resolved; the bounded local SQL
+rerun completed without a hosted write. Commit/push, final same-commit CI, a fresh
+backup and security check, hosted migration, web publication, native sign-in
+verification, signing and Play testing update remain pending.
+
+Play reviewer access uses three separate synthetic accounts saved privately in
+Google Play Console. Google's reusable-password requirement is met through the
+existing small Review access entry because ordinary sign-in uses one-time email
+codes; no new reviewer interface is part of this release. The code8 Console
+instructions must name the current Transporter login → Review access path when
+the replacement build is submitted, while code7 remains on its older path.
 
 Local evidence: migration174 SHA256
 `a4a67d3ae5d18cd19067559b62db0391b04d278a5fedfb5166e264c59b7610f9`.

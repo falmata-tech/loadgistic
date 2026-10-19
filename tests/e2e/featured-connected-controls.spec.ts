@@ -24,14 +24,14 @@ test('Featured staff save and publish an isolated manual day and manage its spon
   phase('UNAUTHENTICATED_DENIAL');expect((await page.request.post('/api/admin/featured',{form:{featureDate:date,command:'PUBLISH'},maxRedirects:0})).status()).toBe(303);
   phase('STAFF_LOGIN');logout=await localSupportLogin(page,id);phase('EDITOR');await page.goto(`/admin/featured?date=${date}&edit=day`);
   const editor=page.locator('.featured-roster-editor');await expect(editor).toBeVisible();
-  const select=editor.getByLabel('Add truck and Driver');await expect(select).toBeEnabled();
+  const select=editor.getByLabel('Add vehicle and Driver');await expect(select).toBeEnabled();
   expect(await select.locator('option').count()).toBeGreaterThan(2);
   for(let index=0;index<2;index++){
    const key=await select.locator('option').nth(1).getAttribute('value');expect(key).toBeTruthy();
    await select.selectOption(key!);await editor.getByRole('button',{name:'Add',exact:true}).click();
   }
   await expect(editor.locator('.featured-roster-list>li')).toHaveCount(2);
-  await editor.getByRole('combobox',{name:'Featured trucks',exact:true}).selectOption('2');
+  await editor.getByRole('combobox',{name:'Featured vehicles',exact:true}).selectOption('2');
   await page.getByLabel('Headline',{exact:true}).fill(marker);
   await page.getByLabel('Short introduction',{exact:true}).fill('Meet the trucks and drivers on this morning programme.');
   phase('DRAFT');await Promise.all([page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST'),page.getByRole('button',{name:'Save draft',exact:true}).click()]);

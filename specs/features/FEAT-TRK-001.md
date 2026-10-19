@@ -44,9 +44,15 @@ And OTP request, validation errors, verified entry, expiry and logout retain the
 Given an authorized provider creates a new shipment\
 When they choose pickup, one city they will pass through, and delivery\
 Then three distinct catalog cities are required and saved in that order\
+And choosing a suggestion by touch, mouse or keyboard retains its catalog reference before the form submits\
 And PostgreSQL validates and snapshots each reference/coordinate\
 And existing shipments retain their genuine two-city route without an invented intermediate city\
 And existing route correction authorization, revision checks and post-pickup route lock remain enforced.
+
+Given an assigned provider saves Loading or another permitted status without a new location report\
+When the status form contains no location coordinates or device claim\
+Then the event saves with its required proof and current route intact\
+And a supplied but invalid location remains rejected by the existing device-location validation.
 
 Given an assigned Driver/provider or currently verified recipient opens a shipment\
 When its detail screen renders on web, phone web or native Android\

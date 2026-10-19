@@ -28,7 +28,7 @@ async function configs(page:Page,info?:{outputPath:(name:string)=>string}){
  await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('button',{name:'2 configurations selected',exact:true})).toBeVisible();
 }
 async function checkControls(page:Page){
- for(const label of ['Cancel','Show matching trucks']){
+ for(const label of ['Cancel','Show matching vehicles']){
   const button=page.getByRole('button',{name:label,exact:true});await button.click({trial:true});
   const box=await button.boundingBox(),viewport=page.viewportSize()!;expect(box!.height).toBeGreaterThanOrEqual(44);expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.y).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width);expect(box!.y+box!.height).toBeLessThanOrEqual(viewport.height);
  }
@@ -39,7 +39,7 @@ async function checkControls(page:Page){
 }
 
 async function mapPainted(page:Page){
- await expect(page.getByRole('progressbar',{name:'Loading truck availability',exact:true})).toHaveCount(0,{timeout:30_000});
+ await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
  await expect.poll(async()=>{
   const box=await page.locator('.maplibregl-canvas').first().boundingBox();if(!box||box.width<100||box.height<100)return false;
   const stats=await sharp(await page.screenshot({clip:{x:box.x+box.width*.2,y:box.y+box.height*.25,width:box.width*.6,height:box.height*.5}})).stats();
@@ -51,10 +51,11 @@ test('Expo multi-option controls keep drafts and submit all five canonical group
  test.setTimeout(120_000);const requests:URL[]=[];
  page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')requests.push(url);});
  await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8084/?q=Preserved%20people%20draft');
- await expect(page.getByRole('button',{name:'Truck filters',exact:true})).toBeVisible({timeout:45_000});await expect(page.getByRole('progressbar',{name:'Loading truck availability',exact:true})).toHaveCount(0,{timeout:30_000});
- await page.getByRole('button',{name:'Truck filters',exact:true}).click();await configs(page,info);
- for(const label of ['Full truck','Shared space','Empty truck','Partly loaded','Multiple pickups','Multiple deliveries','Within 12 hours','Over 12 hours ago']){await page.getByRole('checkbox',{name:label,exact:true}).check();await expect(page.getByRole('checkbox',{name:label,exact:true})).toBeChecked();}
- const expected={vehicleCategory:csv,loadType:'FTL,PTL',status:'EMPTY,PARTIAL',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'};
+ await expect(page.getByRole('button',{name:'Vehicle filters',exact:true})).toBeVisible({timeout:45_000});await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
+ await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();await configs(page,info);
+ for(const label of ['Full truck','Shared space'])await expect(page.getByRole('checkbox',{name:label,exact:true})).toHaveCount(0);
+ for(const label of ['Empty vehicle','Partly loaded','GPS device','Manually entered','Multiple pickups','Multiple deliveries','Within 12 hours','Over 12 hours ago']){await page.getByRole('checkbox',{name:label,exact:true}).check();await expect(page.getByRole('checkbox',{name:label,exact:true})).toBeChecked();}
+ const expected={vehicleCategory:csv,status:'EMPTY,PARTIAL',locationSource:'GPS,MANUAL',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'};
  expect(requests.every(url=>!Object.keys(expected).some(key=>url.searchParams.get(key)))).toBe(true);
  for(const width of [390,320]){
   await page.setViewportSize({width,height:width===320?640:844});await checkControls(page);
@@ -64,13 +65,13 @@ test('Expo multi-option controls keep drafts and submit all five canonical group
   const summary=page.getByRole('button',{name:'2 configurations selected',exact:true});await summary.scrollIntoViewIfNeeded();await expect(summary.locator('..').locator('img')).toHaveCount(2);
   await page.screenshot({path:info.outputPath(`native-multiple-configurations-selected-${width}.png`),scale:'css'});
  }
- const applied=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&Object.entries(expected).every(([key,value])=>url.searchParams.get(key)===value&&url.searchParams.getAll(key).length===1);});
- await page.getByRole('button',{name:'Show matching trucks',exact:true}).click();expect((await applied).ok()).toBe(true);
- await expect(page.getByRole('progressbar',{name:'Loading truck availability',exact:true})).toHaveCount(0,{timeout:30_000});
+ const applied=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&!url.searchParams.has('loadType')&&Object.entries(expected).every(([key,value])=>url.searchParams.get(key)===value&&url.searchParams.getAll(key).length===1);});
+ await page.getByRole('button',{name:'Show matching vehicles',exact:true}).click();expect((await applied).ok()).toBe(true);
+ await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
  await page.getByRole('button',{name:'Transporter search',exact:true}).click();await expect(page.getByLabel('Search transporters')).toHaveValue('Preserved people draft');await page.getByRole('button',{name:'Close transporter search',exact:true}).click();
- await page.getByRole('button',{name:/Truck filters/}).click();await page.getByRole('button',{name:'Reset truck filters',exact:true}).click();
- const reset=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&!Object.keys(expected).some(key=>url.searchParams.get(key));});
- await page.getByRole('button',{name:'Show matching trucks',exact:true}).click();expect((await reset).ok()).toBe(true);
+ await page.getByRole('button',{name:/Vehicle filters/}).click();await page.getByRole('button',{name:'Reset vehicle filters',exact:true}).click();
+ const reset=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&!url.searchParams.has('loadType')&&!Object.keys(expected).some(key=>url.searchParams.get(key));});
+ await page.getByRole('button',{name:'Show matching vehicles',exact:true}).click();expect((await reset).ok()).toBe(true);
  await expect(page.locator('.maplibregl-canvas').first()).toBeVisible();
 });
 
@@ -89,9 +90,9 @@ test('Expo multi configurations retain exact recipient pairs after real private 
   expect((await page.request.get(`/api/mobile/visitor/capacity/signals?vehicleCategory=${encodeURIComponent(csv)}`)).status()).toBe(401);
   await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8084/?view=private');await expect(page.getByLabel('Your email')).toBeVisible({timeout:45_000});await page.getByLabel('Your email').fill(email);const requestedAt=Date.now();await page.getByRole('button',{name:'Send email code',exact:true}).click();
   await page.getByLabel('Email verification code').fill(await localMailpitNumericCode(email,requestedAt,'Your Private capacity code'));await page.getByRole('button',{name:'Open private access',exact:true}).click();await expect(page.getByRole('button',{name:'Close private access',exact:true})).toBeVisible({timeout:30_000});
-  await page.getByRole('button',{name:'Truck filters',exact:true}).click();await configs(page);for(const label of ['Empty truck','Partly loaded','Full truck','Shared space'])await page.getByRole('checkbox',{name:label,exact:true}).check();await checkControls(page);
-  const signals=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/mobile/visitor/capacity/signals'&&url.searchParams.get('vehicleCategory')===csv&&url.searchParams.get('status')==='EMPTY,PARTIAL'&&url.searchParams.get('loadType')==='FTL,PTL';});
-  await page.getByRole('button',{name:'Show matching trucks',exact:true}).click();const response=await signals;expect(response.status()).toBe(200);const result=await response.json();expect(result.items.map((item:any)=>item.id).sort()).toEqual(capacityIds.sort());expect(result.items.every((item:any)=>item.status==='EMPTY'&&['Cargo van','Mini Box Truck'].includes(item.cargo_configuration))).toBe(true);
+  await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();await configs(page);for(const label of ['Empty vehicle','Partly loaded'])await page.getByRole('checkbox',{name:label,exact:true}).check();for(const label of ['Full truck','Shared space'])await expect(page.getByRole('checkbox',{name:label,exact:true})).toHaveCount(0);await checkControls(page);
+  const signals=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/mobile/visitor/capacity/signals'&&url.searchParams.get('vehicleCategory')===csv&&url.searchParams.get('status')==='EMPTY,PARTIAL'&&!url.searchParams.has('loadType');});
+  await page.getByRole('button',{name:'Show matching vehicles',exact:true}).click();const response=await signals;expect(response.status()).toBe(200);const result=await response.json();expect(result.items.map((item:any)=>item.id).sort()).toEqual(capacityIds.sort());expect(result.items.every((item:any)=>item.status==='EMPTY'&&['Cargo van','Mini Box Truck'].includes(item.cargo_configuration))).toBe(true);
  await mapPainted(page);await page.screenshot({path:info.outputPath('native-multiple-private-map.png'),scale:'css'});
   await page.getByRole('button',{name:'Close private access',exact:true}).click();await expect(page.getByLabel('Your email')).toBeVisible();
   expect((await page.request.get('/api/mobile/visitor/capacity/signals?vehicleCategory=unsupported')).status()).toBe(401);

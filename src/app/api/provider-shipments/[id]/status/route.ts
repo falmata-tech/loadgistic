@@ -7,6 +7,7 @@ import { deliverPendingShipmentEmails } from '@/lib/email-delivery';
 import { removePrivateUpload, storePrivateUpload } from '@/lib/private-storage.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text } from '@/lib/redirects';
+import { statusLocationOrNull } from '@/lib/provider-tracking/status-location.js';
 
 export const runtime='nodejs';
 
@@ -26,10 +27,11 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       upload=await storePrivateUpload(file,'tracking-proof');
     }
     const proof=upload?{path:upload.path,originalName:upload.originalName,mimeType:upload.mimeType}:null;
-    const result=await commitPrivateUpload(upload,()=>updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,{
+    const location=statusLocationOrNull({
       locationArea:text(form,'locationArea'),approximateLat:text(form,'approximateLat'),approximateLng:text(form,'approximateLng'),
       locationPrecisionKm:text(form,'locationPrecisionKm'),locationSource:text(form,'locationSource')
-    }),removePrivateUpload);
+    });
+    const result=await commitPrivateUpload(upload,()=>updateProviderShipmentStatus(user,id,nextStatus,text(form,'note'),proof,location),removePrivateUpload);
     if(result.status==='COMPLETED')await deliverPendingShipmentEmails(2);
     revalidatePath('/app/provider-shipments');
     revalidatePath(`/app/provider-shipments/${id}`);

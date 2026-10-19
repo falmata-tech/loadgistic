@@ -96,7 +96,7 @@ test('email-unlocked private map reserves navigation and logout space',async({pa
     await expect(page.getByLabel('6-digit email code')).toBeVisible({timeout:30_000});
     await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Private capacity code'));
     await page.getByRole('button',{name:'View shared signals'}).click();
-    await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible({timeout:30_000});
+    await expect(page.getByRole('region',{name:'Privately shared vehicle capacity'})).toBeVisible({timeout:30_000});
     await verifyShell(page,testInfo,'private');
     await page.goto('/shared-capacity');
     await page.getByRole('button',{name:'Log out',exact:true}).click();

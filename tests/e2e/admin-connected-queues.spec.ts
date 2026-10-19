@@ -48,7 +48,7 @@ test('Private capacity keeps invalid staff deep links denied until the filters a
   stage='EXPLICIT_CORRECTION';await page.getByRole('button',{name:'Review filters',exact:true}).click();
   const dialog=page.locator('.capacity-filter-dialog');await expect(dialog).toBeVisible();
   await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);
-  await dialog.getByRole('button',{name:'Show matching trucks',exact:true}).click();
+  await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
   await expect(page).toHaveURL(url=>url.pathname==='/admin/capacity-network'&&url.searchParams.getAll('status').length===1&&url.searchParams.get('status')==='EMPTY,PARTIAL');
   await expect(page.locator('.public-feed-overlay.error')).toHaveCount(0);
   await expect(page.locator('.public-feed-overlay.loading')).not.toBeVisible({timeout:30000});

@@ -105,14 +105,14 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
       }))));
     }
     checkpoint('PUBLIC_PROFILE');const pages=Math.ceil(count/12);await page.goto(`/@${handle}`);
-    await expect(page.locator('.provider-hero-facts')).toContainText(`${count} active ${count===1?'truck':'trucks'}`);
+    await expect(page.locator('.provider-hero-facts')).toContainText(`${count} active ${count===1?'vehicle':'vehicles'}`);
     const seen=new Set<string>();const cards=page.locator('.provider-truck-card');const nav=page.getByRole('navigation',{name:'Results pages',exact:true});
     const details=page.locator('.provider-fleet-disclosure');
     const information=page.locator('.provider-site-overview-grid');
     const regular=page.locator('.provider-corridor-list');
     await expect(regular).toHaveCount(0);
     await expect(page.locator('.provider-services,.provider-microsite-safety')).toHaveCount(0);
-    const mapAction=page.getByRole('link',{name:'See trucks on the map',exact:true});
+    const mapAction=page.getByRole('link',{name:'See vehicles on the map',exact:true});
     await expect(mapAction).toHaveAttribute('href',`/?provider=${handle}`);
     await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
     await expect(information).toBeVisible();
@@ -159,7 +159,7 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
       await expect(finalAvailable.locator('.leaflet-container')).toBeVisible({timeout:30000});
       await finalAvailable.locator('.leaflet-container').scrollIntoViewIfNeeded();
       await page.screenshot({path:path.join(captures,`${info.project.name}-last-capacity-map.png`),scale:'css'});
-      for(const index of [101,102,103,104])await expect(cards.filter({hasText:vehicles[index].platform_number}).getByRole('link',{name:'Ask about this truck',exact:true})).toBeVisible();
+      for(const index of [101,102,103,104])await expect(cards.filter({hasText:vehicles[index].platform_number}).getByRole('link',{name:'Ask about this vehicle',exact:true})).toBeVisible();
     }
     checkpoint('PAGING_BOUNDARIES');if(pages>1){
     await nav.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(captures,`${info.project.name}-${kind}-last-page.png`),scale:'css'});

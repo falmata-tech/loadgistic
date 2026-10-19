@@ -42,12 +42,12 @@ test('truck document alternatives submit private evidence and show only its revi
   await page.goto(`/app/verification?truck=${truckId}`);await expect(type).toBeEnabled();await expect(type.locator('option[value=VEHICLE_AUTHORIZATION]')).toHaveCount(0);await expect(type.locator('option[value=VEHICLE_OWNERSHIP]')).toHaveCount(1);
   const admin=checked(await service.from('profiles').select('id').eq('role','ADMIN').eq('active',true).limit(1).single());
   checked(await service.rpc('review_managed_verification',{actor_user_id:admin.id,request_id:stored.id,review_status:'APPROVED',review_note:'Synthetic local document review'}));
-  await page.goto(`/app/fleet/${truckId}?view=documents`);const badge=page.locator('.verification-badge');await expect(badge).toHaveCount(1);await expect(badge).toContainText('Permission to use truck');await expect(badge).toContainText('Loadgistic reviewed');
+  await page.goto(`/app/fleet/${truckId}?view=documents`);const badge=page.locator('.verification-badge');await expect(badge).toHaveCount(1);await expect(badge).toContainText('Permission to use vehicle');await expect(badge).toContainText('Loadgistic reviewed');
   await badge.locator('summary').click();await expect(badge).toContainText('Review applies to this document category only.');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('truck-permission-reviewed.png'),fullPage:true});
   await page.goto('/app/company-page');const owner=page.locator('#documents');await owner.locator(':scope>summary').click();
-  await expect(owner).toBeVisible();await expect(owner.locator('.verification-badge')).toHaveCount(2);await expect(owner).not.toContainText('Permission to use truck');
+  await expect(owner).toBeVisible();await expect(owner.locator('.verification-badge')).toHaveCount(2);await expect(owner).not.toContainText('Permission to use vehicle');
   await owner.screenshot({path:info.outputPath('owner-document-scope.png')});
  }finally{
   if(paths.length)checked(await service.storage.from('verification').remove(paths));
@@ -66,7 +66,7 @@ test('public truck separates company, Driver and truck evidence without exposing
  expect(truck.owner_verification_badges.map((badge:{type:string})=>badge.type)).toEqual(['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']);
  expect(JSON.stringify(result)).not.toMatch(/storage_path|original_name|supabase:\/\/verification/);
  await page.goto(`/?truck=${truck.id}`);await page.locator('.map-info-bubble.truck').click({timeout:30000});const sheet=page.locator('.map-capacity-sheet');await expect(sheet).toBeVisible();
- await expect(sheet.getByText('Company documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Driver documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Truck documents',{exact:true})).toBeVisible();
+ await expect(sheet.getByText('Company documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Driver documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Vehicle documents',{exact:true})).toBeVisible();
  await sheet.getByText('Company documents',{exact:true}).click();await expect(sheet.locator('.badge-business_license, .badge-business-license')).toContainText('Business License');
  await page.screenshot({path:info.outputPath('public-entity-documents.png'),fullPage:true});
 });

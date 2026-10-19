@@ -26,11 +26,11 @@ test('eight showcases reserve four mentions and manual times persist through pub
   const login=await client.auth.verifyOtp({token_hash:link.properties.hashed_token,type:'magiclink'});expect(login.error).toBeNull();
   await page.context().addCookies(createChunks(`sb-${new URL(url).hostname.split('.')[0]}-auth-token`,'base64-'+Buffer.from(JSON.stringify(login.data.session)).toString('base64url')).map(c=>({...c,url:'http://127.0.0.1:3100',sameSite:'Lax' as const})));
   await page.goto(`/admin/featured?date=${date}&edit=day`);
-  const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add truck and Driver');
+  const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add vehicle and Driver');
   for(let i=0;i<8;i++){await expect(select).toBeEnabled();await select.selectOption((await select.locator('option').nth(1).getAttribute('value'))!);await editor.getByRole('button',{name:'Add',exact:true}).click();}
   await expect(editor.locator('.featured-roster-list>li')).toHaveCount(8);
   await expect(editor.getByRole('button',{name:'Add',exact:true})).toBeDisabled();
-  await expect(editor.getByRole('combobox',{name:'Featured trucks',exact:true}).locator('option')).toHaveCount(8);
+  await expect(editor.getByRole('combobox',{name:'Featured vehicles',exact:true}).locator('option')).toHaveCount(8);
   await expect(editor.getByRole('combobox',{name:'Sponsor mentions',exact:true})).toHaveValue('4');
   await expect(editor.locator('.featured-schedule-timeline>li')).toHaveCount(12);
   await expect(editor.locator('.featured-schedule-timeline>li').first()).toContainText('08:30–08:56');

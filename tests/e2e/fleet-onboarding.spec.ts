@@ -57,9 +57,9 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
   // Keep the onboarding gate independent of public tile-provider availability.
   // Actual tile delivery is checked separately; this fixture exercises map rendering.
   await driverContext.route('https://tile.openstreetmap.org/**',async(route:any)=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/></svg>'}));
-  let orgId='',stage='SIGNUP',cleanupStage='NOT_STARTED',complete=false,cleaned=false,cleanupFailed=false;
+  let providerId='',stage='SIGNUP',cleanupStage='NOT_STARTED',complete=false,cleaned=false,cleanupFailed=false;
   let primaryFailure:unknown=null;
-  const owned={ownerId:'',employeeId:'',organizationId:'',vehicleIds:[] as string[]};
+  const owned={ownerId:'',employeeId:'',providerId:'',vehicleIds:[] as string[]};
   let absence:Record<string,number>|null=null;
   const evidence=()=>{writeFileSync(info.outputPath('fleet-onboarding-owned.json'),JSON.stringify(owned,null,2),{mode:0o600});writeFileSync(info.outputPath('fleet-onboarding-checks.json'),JSON.stringify({target:'loadgistic-local',stage,cleanupStage,complete,cleaned,cleanupFailed,absence},null,2),{mode:0o600});};
   const checkpoint=(next:string)=>{stage=next;evidence();};evidence();
@@ -67,57 +67,59 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     // No seeded owner, driver, membership or assignment: both identities use the public flow.
     await verifyNewEmail(page,ownerEmail);
     const signupIdentity=await service.from('profiles').select('id').eq('email',ownerEmail).single();expect(signupIdentity.error).toBeNull();owned.ownerId=signupIdentity.data!.id;evidence();
+    await acceptContentRules(page);
+    await page.getByRole('button',{name:/Transport Provider.*Set up your vehicles/}).click();
     await expect(page.getByTestId('provider-details-form')).toBeVisible();
+    await expect(page.getByLabel('Account name',{exact:true})).toBeEmpty();
+    await expect(page.getByLabel('Handle',{exact:true})).toBeEmpty();
     await page.getByLabel('First name',{exact:true}).fill(ownerName);
     await page.getByLabel('Last / father name',{exact:true}).fill('');
-    await page.getByLabel('Business name (optional)',{exact:true}).fill(`Workflow Fleet ${suffix}`);
+    await page.getByLabel('Account name',{exact:true}).fill(`Workflow Fleet ${suffix}`);
+    await page.getByLabel('Handle',{exact:true}).fill(`workflow-fleet-${suffix}`);
     await expect(page.locator('input[name="applicationType"]')).toHaveValue('TRANSPORT_PROVIDER');
     await expect(page.getByRole('radio')).toHaveCount(0);
-    await expect(page.getByRole('checkbox',{name:/^I drive a truck/})).not.toBeChecked();
+    await expect(page.getByRole('checkbox',{name:/^I drive a vehicle/})).not.toBeChecked();
     await page.getByLabel('Account phone',{exact:true}).fill('+251900000011');
     await page.getByRole('button',{name:'Create transporter workspace'}).click();
     await expect(page).toHaveURL(/\/app\/home$/);
-    const createdMembership=await service.from('organization_members').select('organization_id').eq('user_id',owned.ownerId).eq('membership_role','OWNER').single();expect(createdMembership.error).toBeNull();orgId=createdMembership.data!.organization_id;owned.organizationId=orgId;checkpoint('FIRST_TRUCK');
-    await acceptContentRules(page);
-    await expect(page.getByRole('heading',{name:'No trucks added yet.',exact:true})).toBeVisible({timeout:15000});
+    await expect(page.getByRole('heading',{name:'No vehicles added yet.',exact:true})).toBeVisible({timeout:15000});
+    const createdProvider=await service.from('provider_profiles').select('id').eq('user_id',owned.ownerId).single();expect(createdProvider.error).toBeNull();providerId=createdProvider.data!.id;owned.providerId=providerId;checkpoint('FIRST_TRUCK');
     await page.screenshot({path:info.outputPath('first-truck-guidance.png'),fullPage:true});
-    await page.getByRole('link',{name:'Add truck',exact:true}).first().click();
-    await expect(page.getByRole('heading',{name:'Add truck',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
+    await expect(page.getByRole('heading',{name:'Add vehicle',exact:true})).toBeVisible();
     await page.goto('/app/fleet');
-    await expect(page.getByText('No trucks added yet.',{exact:true})).toBeVisible();
+    await expect(page.getByText('No vehicles added yet.',{exact:true})).toBeVisible();
     const owner=await service.from('profiles').select('id').eq('email',ownerEmail).single();
     expect(owner.error).toBeNull();
-    const membership=await service.from('organization_members').select('organization_id').eq('user_id',owner.data!.id).single();
-    orgId=membership.data!.organization_id;
-    const companySubscriptions=await service.from('subscriptions').select('id',{count:'exact',head:true}).eq('organization_id',orgId);
+    const companySubscriptions=await service.from('subscriptions').select('id',{count:'exact',head:true}).eq('provider_profile_id',providerId);
     expect(companySubscriptions.error).toBeNull();expect(companySubscriptions.count).toBe(0);
     await page.goto('/app/provider-shipments/new');
-    await expect(page.getByRole('link',{name:'Add truck'})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Add vehicle'})).toBeVisible();
     await expect(page.locator('form.provider-shipment-form')).toHaveCount(0);
     await page.goto('/app/network');
     await expect(page.getByRole('link',{name:'Manage drivers'})).toBeVisible();
-    await page.getByRole('link',{name:'Add truck'}).click();
+    await page.getByRole('link',{name:'Add vehicle'}).click();
     await page.getByLabel('Make',{exact:true}).fill('Isuzu');
     await page.getByLabel('Model',{exact:true}).fill('Workflow mini');
     await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');
     await page.getByLabel('Plate number',{exact:true}).fill(`TEST-${suffix}`);
-    await page.getByRole('radio',{name:'I own this truck',exact:true}).check();
-    await page.getByRole('button',{name:'Add truck',exact:true}).click();
+    await page.getByRole('radio',{name:'I own this vehicle',exact:true}).check();
+    await page.getByRole('button',{name:'Add vehicle',exact:true}).click();
     await expect(page).toHaveURL(/\/app\/fleet\/[0-9a-f-]+(?:\?.*)?$/);
     const truckPath=new URL(page.url()).pathname;
     const truckId=truckPath.split('/').at(-1)!;owned.vehicleIds.push(truckId);evidence();
-    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText('No driver assigned');
+    await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText('No driver assigned');
     await expect(page.getByRole('button',{name:'Go live',exact:true})).toBeEnabled();
     await page.getByRole('button',{name:'Go live',exact:true}).click();
     await page.getByRole('link',{name:'Assign driver',exact:true}).click();
-    await expect(page.locator('.fleet-assignment-context')).toContainText('Workflow mini');
+    await expect(page.getByText('Assign a driver to Isuzu Workflow mini. Choose a driver below and save.',{exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Add driver',exact:true}).first().click();
     await page.getByLabel('Driver name',{exact:true}).fill(driverName);
     await page.getByLabel('Email',{exact:true}).fill(driverEmail);
     await page.getByLabel('Contact phone',{exact:true}).fill('+251900000022');
     await page.screenshot({path:info.outputPath('add-driver-form.png')});
     await page.getByRole('button',{name:'Add driver',exact:true}).click();
-    await expect(page.getByText('Driver added. You can assign a truck now; email verification happens when they log in.')).toBeVisible();
+    await expect(page.getByText('Driver added. You can assign a vehicle now; email verification happens when they log in.')).toBeVisible();
     await expect(page.locator('.fleet-invitation-row')).toHaveCount(0);
     const identity=await service.from('profiles').select('id').eq('email',driverEmail).single();
     expect(identity.error).toBeNull();owned.employeeId=identity.data!.id;checkpoint('EMPLOYEE_ASSIGNMENT');
@@ -128,12 +130,12 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.goto('/app/home');
     await expect(driverPage).toHaveURL(/\/login/);
     const driver=await openFleetDriver(page,{name:driverName},true);
-    await expect(driver.getByRole('combobox',{name:'Truck',exact:true})).toHaveValue(truckId);
+    await expect(driver.getByRole('combobox',{name:'Vehicle',exact:true})).toHaveValue(truckId);
     await driver.getByLabel('Capacity updates',{exact:true}).check();
     await driver.getByLabel('Tracking updates',{exact:true}).check();
     await driver.getByRole('button',{name:'Save driver',exact:true}).click();
     await expect(page).toHaveURL(new RegExp(`${truckPath}\\?success=`));
-    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText(driverName);
+    await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText(driverName);
     const assignment=await service.from('driver_vehicle_assignments').select('driver_user_id').eq('vehicle_id',truckId).eq('active',true).single();
     expect(assignment.data?.driver_user_id).toBe(identity.data!.id);
     expect((await service.auth.admin.getUserById(identity.data!.id)).data.user?.email_confirmed_at).toBeFalsy();
@@ -142,10 +144,10 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await expect(driverPage).toHaveURL(/\/app\/home$/);
     await acceptContentRules(driverPage);
     expect((await service.auth.admin.getUserById(identity.data!.id)).data.user?.email_confirmed_at).toBeTruthy();
-    await page.getByRole('link',{name:'Truck details',exact:true}).click();await page.getByRole('button',{name:'Edit truck details',exact:true}).click();
+    await page.getByRole('link',{name:'Vehicle details',exact:true}).click();await page.getByRole('button',{name:'Edit vehicle details',exact:true}).click();
     await page.getByLabel('Model',{exact:true}).fill('Corrected mini');
     const updatedPage=page.waitForResponse((response:any)=>new URL(response.url()).pathname===truckPath&&response.request().method()==='GET');
-    await page.getByRole('button',{name:'Save truck details'}).click();
+    await page.getByRole('button',{name:'Save vehicle details'}).click();
     const rendered=await updatedPage;expect(rendered.status()).toBe(200);await rendered.finished();
     await expect(page.getByRole('heading',{name:'Isuzu Corrected mini'})).toBeVisible();
     const denialRoute=await Promise.all(['addis ababa','adama','dire dawa'].map(async city=>{
@@ -165,7 +167,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     for(const trackingAllowed of [true,false]){
       await permissions(false,trackingAllowed);await driverPage.goto('/app/home');
       await expect(driverPage.getByText('Fleet-managed capacity',{exact:true})).toBeVisible();
-      await expect(driverPage.getByText('Ask your fleet owner to set up capacity before marking this truck Available.')).toBeVisible();
+      await expect(driverPage.getByText('Ask your fleet owner to set up capacity before marking this vehicle Available.')).toBeVisible();
       await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeDisabled();
       const denied=await driverPage.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:truckId,status:'OFF_DUTY'}});
       expect(denied.status()).toBe(400);expect(await denied.json()).toEqual({error:'You do not have permission to perform that action.'});
@@ -189,7 +191,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
       const overlaps=(a:DOMRect,b:DOMRect)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
       return [...document.querySelectorAll('.capacity-map-empty>svg,.capacity-map-empty>strong,.capacity-map-empty>span')].some(el=>overlaps(banner,el.getBoundingClientRect()));
     });
-    expect(obstruction,'truck banner must not cover first-publication content').toBe(false);
+    expect(obstruction,'vehicle banner must not cover first-publication content').toBe(false);
     await expect(driverPage.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true})).toBeEnabled();
     await expect(driverPage.getByRole('button',{name:'Edit approximate location',exact:true})).toBeEnabled();
     // Hold hydration on a fresh load: the first enabled action must work.
@@ -247,7 +249,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await permissions(true,true);
     await driverPage.goto('/app/provider-shipments/new');
     await expect(driverPage.locator('input[name=vehicleId]')).toHaveValue(truckId);
-    await expect(driverPage.getByRole('combobox',{name:/Truck/})).toHaveCount(0);
+    await expect(driverPage.getByRole('combobox',{name:/Vehicle/})).toHaveCount(0);
     await driverPage.goto('/app/network');
     await expect(driverPage.getByRole('button',{name:'Add access',exact:true})).toBeVisible();
 
@@ -258,18 +260,18 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByLabel('Model',{exact:true}).fill('Owner managed');
     await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');
     await page.getByLabel('Plate number',{exact:true}).fill(`SECOND-${suffix}`);
-    await page.getByRole('radio',{name:'I own this truck',exact:true}).check();
-    await page.getByRole('button',{name:'Add truck',exact:true}).click();
+    await page.getByRole('radio',{name:'I own this vehicle',exact:true}).check();
+    await page.getByRole('button',{name:'Add vehicle',exact:true}).click();
     await expect(page).toHaveURL(/\/app\/fleet\/[0-9a-f-]+(?:\?.*)?$/);
     const secondPath=new URL(page.url()).pathname,secondId=secondPath.split('/').at(-1)!;owned.vehicleIds.push(secondId);evidence();
-    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText('No driver assigned');
+    await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText('No driver assigned');
     await page.getByRole('link',{name:'Assign driver',exact:true}).click();
     const reassigned=await openFleetDriver(page,{name:driverName},true);
-    await expect(reassigned.getByLabel('Truck',{exact:true})).toHaveValue(secondId);
+    await expect(reassigned.getByLabel('Vehicle',{exact:true})).toHaveValue(secondId);
     await reassigned.getByLabel('Capacity updates',{exact:true}).uncheck();
     await reassigned.getByLabel('Tracking updates',{exact:true}).uncheck();
     await reassigned.getByRole('button',{name:'Save driver',exact:true}).click();
-    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText(driverName);
+    await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText(driverName);
     // Reuse the one document-free Live slot without inventing qualification.
     // Retain the original truck, pair history and capacity records as Draft.
     await page.goto(truckPath);await page.getByRole('button',{name:'Move to draft',exact:true}).click();
@@ -288,15 +290,21 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
       navigator.geolocation.getCurrentPosition=(...args)=>{(window as any).locationReads++;return original(...args);};
     });
     await driverPage.goto('/app/home');
-    await expect(driverPage.getByRole('button',{name:'Share truck location',exact:true})).toBeEnabled();
+    await expect(driverPage.getByRole('button',{name:'Edit capacity location',exact:true})).toBeEnabled();
     expect(await driverPage.evaluate(()=>(window as any).locationReads)).toBe(0);
     await driverPage.screenshot({path:info.outputPath('owner-managed-first-location.png'),fullPage:true});
-    await driverPage.getByRole('button',{name:'Share truck location',exact:true}).click();
-    await expect(driverPage.getByRole('button',{name:'Refresh truck location',exact:true})).toBeEnabled();
+    await driverPage.getByRole('button',{name:'Edit capacity location',exact:true}).click();
+    const firstLocation=driverPage.getByRole('dialog',{name:'Capacity map location',exact:true});
+    await expect(firstLocation.getByRole('button',{name:'Use my phone',exact:true})).toHaveAttribute('aria-pressed','true');
+    await expect(firstLocation.getByText('Phone location can be shared when this vehicle is Available.',{exact:true})).toBeVisible();
+    await firstLocation.getByLabel('Shared location accuracy').selectOption('10');
+    const firstLocationSave=driverPage.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/capacity/location'&&response.request().method()==='POST');
+    await firstLocation.getByRole('button',{name:'Save location',exact:true}).click();
+    expect((await firstLocationSave).status()).toBe(200);await expect(firstLocation).toHaveCount(0);
     expect(await driverPage.evaluate(()=>(window as any).locationReads)).toBe(1);
     expect((await service.from('capacities').select('id',{count:'exact',head:true}).eq('vehicle_id',secondId).neq('market_status','OFF_DUTY')).count).toBe(0);
     const firstFix=await service.from('vehicle_driver_locations').select('driver_user_id,precision_km,latitude,longitude').eq('vehicle_id',secondId).single();
-    expect(firstFix.error).toBeNull();expect(firstFix.data).toMatchObject({driver_user_id:identity.data!.id,precision_km:40});
+    expect(firstFix.error).toBeNull();expect(firstFix.data).toMatchObject({driver_user_id:identity.data!.id,precision_km:10});
     expect(firstFix.data!.latitude).not.toBe(9.03);expect(firstFix.data!.longitude).not.toBe(38.76);
     await page.reload();
     await page.getByRole('button',{name:/^Edit current capacity:/}).click();
@@ -326,8 +334,12 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     }
     await offDuty.click();
     await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeDisabled();
-    await expect(driverPage.getByText('Refresh your truck location before marking it Available.')).toBeVisible();
-    await driverPage.getByRole('button',{name:'Refresh truck location',exact:true}).click();
+    await expect(driverPage.getByText('Refresh your vehicle location before marking it Available.')).toBeVisible();
+    await driverPage.getByRole('button',{name:'Edit capacity location',exact:true}).click();
+    const renewedLocation=driverPage.getByRole('dialog',{name:'Capacity map location',exact:true});
+    const renewedSave=driverPage.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/capacity/location'&&response.request().method()==='POST');
+    await renewedLocation.getByRole('button',{name:'Save location',exact:true}).click();
+    expect((await renewedSave).status()).toBe(200);await expect(renewedLocation).toHaveCount(0);
     await expect(driverPage.getByRole('button',{name:'Available',exact:true})).toBeEnabled();
     await driverPage.getByRole('button',{name:'Available',exact:true}).click();
     await expect(driverPage.getByRole('button',{name:'Off Duty',exact:true})).toBeEnabled();
@@ -348,7 +360,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await removal.getByRole('button',{name:'Remove driver',exact:true}).click();
     await expect(page.getByText(`Updated Driver ${suffix}`,{exact:true})).toHaveCount(0);
     await page.goto(truckPath);
-    await expect(page.getByRole('region',{name:'Truck driver'})).toContainText('No driver assigned');
+    await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText('No driver assigned');
     await driverPage.goto('/app/home');
     await expect(driverPage).toHaveURL(/\/login\?error=/);
     complete=true;checkpoint('COMPLETE');
@@ -360,21 +372,17 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     const profiles=await service.from('profiles').select('id,email').in('email',[ownerEmail,driverEmail]);expect(profiles.error).toBeNull();
     const ids=(profiles.data||[]).map((profile:{id:string;email:string})=>{if(profile.email===ownerEmail)owned.ownerId=profile.id;else if(profile.email===driverEmail)owned.employeeId=profile.id;else throw Error('FIXTURE_IDENTITY_NOT_PROVEN');return profile.id;});
     for(const profile of profiles.data||[]){const identity=await service.auth.admin.getUserById(profile.id);expect(identity.error).toBeNull();expect(identity.data.user?.email).toBe(profile.email);}
-    if(!orgId&&owned.ownerId){const membership=await service.from('organization_members').select('organization_id').eq('user_id',owned.ownerId).eq('membership_role','OWNER').maybeSingle();expect(membership.error).toBeNull();orgId=membership.data?.organization_id||'';}
-    owned.organizationId=orgId;evidence();
-    if(orgId){
-      const workspace=await service.from('organizations').select('name').eq('id',orgId).single();expect(workspace.error).toBeNull();expect(workspace.data?.name).toBe(`Workflow Fleet ${suffix}`);
-      const membership=await service.from('organization_members').select('user_id').eq('organization_id',orgId).eq('membership_role','OWNER').single();expect(membership.error).toBeNull();expect(membership.data?.user_id).toBe(owned.ownerId);
-      const trucks=await service.from('vehicles').select('id,plate').eq('organization_id',orgId);expect(trucks.error).toBeNull();expect((trucks.data||[]).every((truck:{id:string;plate:string})=>[`TEST-${suffix}`,`SECOND-${suffix}`].includes(truck.plate))).toBe(true);owned.vehicleIds=[...new Set([...owned.vehicleIds,...(trucks.data||[]).map((truck:{id:string;plate:string})=>truck.id)])];evidence();
-      const shipments=await service.from('provider_shipments').select('id').eq('provider_organization_id',orgId);expect(shipments.error).toBeNull();expect(shipments.data).toHaveLength(0);
-      const children=await service.from('drivers').select('user_id').eq('organization_id',orgId);expect(children.error).toBeNull();expect((children.data||[]).every((driver:{user_id:string})=>driver.user_id===owned.employeeId)).toBe(true);
-      cleanupStage='REMOVE_OWNED_WORKSPACE';evidence();
-      for(const table of ['fleet_driver_invitations','audit_logs']){
-        const deleted=await service.from(table).delete().eq('organization_id',orgId);expect(deleted.error).toBeNull();
-      }
-      const capacities=await service.from('capacities').delete().eq('provider_organization_id',orgId);expect(capacities.error).toBeNull();
-      const vehicles=await auditDeleteVehicles(service,'organization_id',orgId);expect(vehicles.error).toBeNull();
-      const deleted=await service.from('organizations').delete().eq('id',orgId);expect(deleted.error).toBeNull();
+    if(!providerId&&owned.ownerId){const provider=await service.from('provider_profiles').select('id').eq('user_id',owned.ownerId).maybeSingle();expect(provider.error).toBeNull();providerId=provider.data?.id||'';}
+    owned.providerId=providerId;evidence();
+    if(providerId){
+      const provider=await service.from('provider_profiles').select('user_id,business_name').eq('id',providerId).single();expect(provider.error).toBeNull();expect(provider.data?.user_id).toBe(owned.ownerId);expect(provider.data?.business_name).toBe(`Workflow Fleet ${suffix}`);
+      const trucks=await service.from('vehicles').select('id,plate').eq('provider_profile_id',providerId);expect(trucks.error).toBeNull();expect((trucks.data||[]).every((truck:{id:string;plate:string})=>[`TEST-${suffix}`,`SECOND-${suffix}`].includes(truck.plate))).toBe(true);owned.vehicleIds=[...new Set([...owned.vehicleIds,...(trucks.data||[]).map((truck:{id:string;plate:string})=>truck.id)])];evidence();
+      const shipments=await service.from('provider_shipments').select('id').eq('provider_profile_id',providerId);expect(shipments.error).toBeNull();expect(shipments.data).toHaveLength(0);
+      const children=await service.from('drivers').select('user_id').eq('provider_profile_id',providerId);expect(children.error).toBeNull();expect((children.data||[]).every((driver:{user_id:string})=>driver.user_id===owned.employeeId)).toBe(true);
+      cleanupStage='REMOVE_OWNED_PROVIDER';evidence();
+      const invitations=await service.from('fleet_driver_invitations').delete().eq('provider_profile_id',providerId);expect(invitations.error).toBeNull();
+      const capacities=await service.from('capacities').delete().eq('provider_profile_id',providerId);expect(capacities.error).toBeNull();
+      const vehicles=await auditDeleteVehicles(service,'provider_profile_id',providerId);expect(vehicles.error).toBeNull();
     }
     if(ids.length){
       cleanupStage='REMOVE_OWNED_IDENTITIES';evidence();
@@ -386,13 +394,13 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     cleanupStage='VERIFY_ABSENCE';evidence();const actors=[owned.ownerId,owned.employeeId].filter(Boolean);
     const remainingProfiles=actors.length?await service.from('profiles').select('id').in('id',actors):{data:[],error:null};expect(remainingProfiles.error).toBeNull();expect(remainingProfiles.data).toHaveLength(0);
     const remainingTrucks=owned.vehicleIds.length?await service.from('vehicles').select('id').in('id',owned.vehicleIds):{data:[],error:null};expect(remainingTrucks.error).toBeNull();expect(remainingTrucks.data).toHaveLength(0);
-    const remainingOrganization=orgId?await service.from('organizations').select('id').eq('id',orgId):{data:[],error:null};expect(remainingOrganization.error).toBeNull();expect(remainingOrganization.data).toHaveLength(0);
+    const remainingProvider=providerId?await service.from('provider_profiles').select('id').eq('id',providerId):{data:[],error:null};expect(remainingProvider.error).toBeNull();expect(remainingProvider.data).toHaveLength(0);
     const remainingDrivers=actors.length?await service.from('drivers').select('id').in('user_id',actors):{data:[],error:null};expect(remainingDrivers.error).toBeNull();expect(remainingDrivers.data).toHaveLength(0);
     const remainingCapacities=owned.vehicleIds.length?await service.from('capacities').select('id').in('vehicle_id',owned.vehicleIds):{data:[],error:null};expect(remainingCapacities.error).toBeNull();expect(remainingCapacities.data).toHaveLength(0);
     const remainingAssignments=owned.vehicleIds.length?await service.from('driver_vehicle_assignments').select('id').in('vehicle_id',owned.vehicleIds):{data:[],error:null};expect(remainingAssignments.error).toBeNull();expect(remainingAssignments.data).toHaveLength(0);
     const remainingIntents=actors.length?await service.from('provider_signup_intents').select('auth_user_id').in('auth_user_id',actors):{data:[],error:null};expect(remainingIntents.error).toBeNull();expect(remainingIntents.data).toHaveLength(0);
     let remainingAuth=0;for(const id of actors){const result=await service.auth.admin.getUserById(id);if(result.data.user)remainingAuth++;else expect(result.error?.status).toBe(404);}expect(remainingAuth).toBe(0);
-    absence={profiles:0,vehicles:0,organizations:0,drivers:0,capacities:0,assignments:0,signupIntents:0,authActors:remainingAuth};cleaned=true;cleanupStage='COMPLETE';
+    absence={profiles:0,vehicles:0,providers:0,drivers:0,capacities:0,assignments:0,signupIntents:0,authActors:remainingAuth};cleaned=true;cleanupStage='COMPLETE';
     }catch(error){cleanupFailed=true;info.annotations.push({type:'cleanup-failure',description:cleanupStage});if(!primaryFailure)throw error;}finally{evidence();}
   }
 });
@@ -408,30 +416,34 @@ for(const useBasis of ['OWNED','PERMISSION']){
   let userId='',providerId='',vehicleId='';
   try{
    await verifyNewEmail(page,email);
+   await acceptContentRules(page);
+   await page.getByRole('button',{name:/Transport Provider.*Set up your vehicles/}).click();
    await expect(page.locator('input[name="applicationType"]')).toHaveValue('TRANSPORT_PROVIDER');
+   await expect(page.getByLabel('Account name',{exact:true})).toBeEmpty();
+   await expect(page.getByLabel('Handle',{exact:true})).toBeEmpty();
+   await page.getByLabel('Account name',{exact:true}).fill(`Independent ${suffix}`);
+   await page.getByLabel('Handle',{exact:true}).fill(`independent-${suffix}`);
    await page.getByLabel('First name',{exact:true}).fill(`Independent ${suffix}`);
    await page.getByLabel('Last / father name',{exact:true}).fill('PrivateSurname');
-   await expect(page.getByLabel('Business name (optional)',{exact:true})).toHaveValue('');
-   await page.locator('label.rich-toggle').click();await expect(page.getByRole('checkbox',{name:/^I drive a truck/})).toBeChecked();
+   await page.locator('label.rich-toggle').click();await expect(page.getByRole('checkbox',{name:/^I drive a vehicle/})).toBeChecked();
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
    await page.getByRole('button',{name:'Create transporter workspace'}).click();
    await expect(page).toHaveURL(/\/app\/home$/);
-   await acceptContentRules(page);
-   await expect(page.getByText('Choose the truck you drive in Fleet.',{exact:true})).toBeVisible();
+   await expect(page.getByText('Choose the vehicle you drive in Fleet.',{exact:true})).toBeVisible();
    const identity=await service.from('profiles').select('id,role').eq('email',email).single();
    expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
    const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;
    const independentSubscriptions=await service.from('subscriptions').select('id',{count:'exact',head:true}).eq('provider_profile_id',providerId);
    expect(independentSubscriptions.error).toBeNull();expect(independentSubscriptions.count).toBe(0);
-   await page.getByRole('link',{name:'Add truck',exact:true}).first().click();
-   await page.getByRole('radio',{name:useBasis==='OWNED'?'I own this truck':'I rent it or have permission to use it',exact:true}).check();
+   await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
+   await page.getByRole('radio',{name:useBasis==='OWNED'?'I own this vehicle':'I rent it or have permission to use it',exact:true}).check();
    await page.getByLabel('Make',{exact:true}).fill('Isuzu');await page.getByLabel('Model',{exact:true}).fill('Independent mini');
    await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');await page.getByLabel('Plate number',{exact:true}).fill(`IND-${suffix}`);
-   await page.getByRole('button',{name:'Add truck',exact:true}).click();
-   await expect(page.getByRole('region',{name:'Truck driver'})).toContainText('No driver assigned');vehicleId=new URL(page.url()).pathname.split('/').at(-1)!;
+   await page.getByRole('button',{name:'Add vehicle',exact:true}).click();
+   await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText('No driver assigned');vehicleId=new URL(page.url()).pathname.split('/').at(-1)!;
    expect((await service.from('vehicles').select('use_basis').eq('id',vehicleId).single()).data?.use_basis).toBe(useBasis);
    const truckPath=new URL(page.url()).pathname;await page.getByRole('link',{name:'Assign driver',exact:true}).click();
-   const self=await openFleetDriver(page,{id:userId},true);await self.getByRole('combobox',{name:'Truck',exact:true}).selectOption(vehicleId);await self.getByRole('button',{name:'Save driver',exact:true}).click();await expect(page).toHaveURL(new RegExp(truckPath));
+   const self=await openFleetDriver(page,{id:userId},true);await self.getByRole('combobox',{name:'Vehicle',exact:true}).selectOption(vehicleId);await self.getByRole('button',{name:'Save driver',exact:true}).click();await expect(page).toHaveURL(new RegExp(truckPath));
    expect((await service.from('driver_vehicle_assignments').select('driver_user_id').eq('vehicle_id',vehicleId).eq('active',true).single()).data?.driver_user_id).toBe(userId);await page.getByRole('button',{name:'Go live',exact:true}).click();
    await page.goto('/app/home');await page.getByRole('button',{name:'Set capacity',exact:true}).click();
    const dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});

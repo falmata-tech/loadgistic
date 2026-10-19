@@ -175,7 +175,7 @@ test('public filters support keyboard entry, Escape, and trigger focus restorati
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close filters' })).toBeFocused();
   await expectAccessible(page,'capacity filters');
-  await expectMinimumTarget(dialog.getByRole('button',{name:'Show matching trucks'}),'filter submit');
+  await expectMinimumTarget(dialog.getByRole('button',{name:'Show matching vehicles'}),'filter submit');
   const dialogBox=await dialog.boundingBox();
   const viewport=page.viewportSize();
   expect(dialogBox).not.toBeNull();

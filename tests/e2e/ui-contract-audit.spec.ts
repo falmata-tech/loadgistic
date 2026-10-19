@@ -29,8 +29,8 @@ test('admin capacity wording and platform access match their actual state',async
   for(const row of await rows.all()){
     const status=(await row.locator('.status').innerText()).trim().toLowerCase();
     const copy=await row.locator('small').innerText();
-    if(status.includes('off duty')){expect(copy).toContain('Off Duty');expect(copy).not.toContain('Empty truck');}
-    if(status==='empty')expect(copy).toContain('Empty truck');
+    if(status.includes('off duty')){expect(copy).toContain('Off Duty');expect(copy).not.toContain('Empty vehicle');}
+    if(status==='empty')expect(copy).toContain('Empty vehicle');
     if(status==='partial')expect(copy).toContain('Partial space');
   }
   await page.goto('/app/more');
@@ -59,7 +59,7 @@ test('admin truck save persists and returns to the same searched inventory',asyn
     await page.screenshot({path:info.outputPath('admin-truck-save-context.png'),fullPage:true});
     await page.goto(`/admin/operations?view=CAPACITY&q=${suffix}`);
     await expect(page.locator('.admin-record-list article small')).toContainText('Off Duty');
-    await expect(page.locator('.admin-record-list article small')).not.toContainText('Empty truck');
+    await expect(page.locator('.admin-record-list article small')).not.toContainText('Empty vehicle');
     // A second-page form retains its selected inventory even when the server denies a missing record.
     await page.goto('/admin/operations?view=USERS&page=2');
     const form=page.locator('.admin-record-list form').first();

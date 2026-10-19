@@ -31,7 +31,7 @@ test('real provider and Operations recovery controls match their authoritative a
    evidence.stage=kind+'_CONTROLS';
    const recovery=page.getByRole('region',{name:'Tracking recovery',exact:true});await expect(recovery).toBeVisible();
    await expect(recovery.getByRole('button',{name:'Cancel Tracking',exact:true})).toHaveCount(0);
-   await expect(recovery.getByRole('button',{name:'Change truck',exact:true})).toHaveCount(1);
+   await expect(recovery.getByRole('button',{name:'Change vehicle',exact:true})).toHaveCount(1);
    evidence.stage=kind+'_OPEN_CORRECTION';await expect(page.getByRole('textbox',{name:'Cargo summary',exact:true})).toHaveCount(0);await recovery.getByRole('button',{name:'Edit details',exact:true}).click();const correction=page.getByRole('dialog',{name:'Correct Tracking details',exact:true});
    evidence.stage=kind+'_EDIT_CORRECTION';
    // A prefilled textarea contributes text to its wrapping label's textContent.
@@ -48,7 +48,7 @@ test('real provider and Operations recovery controls match their authoritative a
   }
   evidence.stage='OPERATIONS';const admin=checked(await db.from('profiles').select('id').eq('active',true).eq('role','ADMIN').order('id').limit(1).single());sessions.push(await localSupportLogin(page,admin.id));
   await page.goto(`/admin/operations/tracking/${shipments[1]}`,{waitUntil:'domcontentloaded'});const recovery=page.getByRole('region',{name:'Tracking recovery',exact:true});await expect(recovery).toBeVisible();
-  for(const name of ['Edit details','Change truck','Cancel Tracking'])await expect(recovery.getByRole('button',{name,exact:true})).toHaveCount(1);await expect(page.getByRole('dialog')).toHaveCount(0);
+  for(const name of ['Edit details','Change vehicle','Cancel Tracking'])await expect(recovery.getByRole('button',{name,exact:true})).toHaveCount(1);await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:info.outputPath('operations-permitted-recovery.png'),fullPage:true});
   evidence.roles.push({kind:'OPERATIONS',expectedActions:['CORRECT','REASSIGN','CANCEL'],allControlsVisible:true});evidence.stage='COMPLETE';
  }catch(error){evidence.failureStage=evidence.stage;const safe=error instanceof Error?error.message:'';evidence.roles.push({failureStage:evidence.stage,failureCode:/^[A-Z][A-Z0-9_]{3,70}(?=:| |$)/.exec(safe)?.[0]||null,failureCategory:/plan|subscription/i.test(safe)?'LEGACY_BILLING_FIXTURE':/driver|assign/i.test(safe)?'ASSIGNMENT':/pick.?up|delivery|date|arrival/i.test(safe)?'DATES':/publication|live|draft/i.test(safe)?'LIFECYCLE':'OTHER'});

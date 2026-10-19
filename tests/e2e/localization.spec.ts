@@ -50,11 +50,11 @@ test('profile headings and filter distances translate without rewriting transpor
   await expect(page.locator('.provider-hero-facts')).toContainText(t('New to Loadgistic'));
   await expect(page.locator('.provider-about-card .lede')).toHaveText(about);
   await expect(page.locator('.provider-services,.provider-corridor-list,.provider-microsite-safety')).toHaveCount(0);
-  const mapAction=page.getByRole('link',{name:t('See trucks on the map'),exact:true});
+  const mapAction=page.getByRole('link',{name:t('See vehicles on the map'),exact:true});
   await expect(mapAction).toHaveAttribute('href','/?provider=rift-valley-haulage-02');
   await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
   await expect(page.getByRole('heading',{name:t('Verified shipment reviews'),exact:true})).toBeVisible();
-  await expect(page.locator('.fleet-open-label')).toHaveText(t('View trucks and drivers'));
+  await expect(page.locator('.fleet-open-label')).toHaveText(t('View vehicles and drivers'));
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath(`profile-${locale}.png`),fullPage:true});
  }

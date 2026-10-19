@@ -21,21 +21,21 @@ test('native transporter profile keeps useful detail and scopes its map action a
     }
     await expect(page.getByRole('heading',{name:'Documents',exact:true})).toBeVisible();
     await expect(page.getByRole('heading',{name:'Verified shipment reviews',exact:true})).toBeVisible();
-    const map=page.getByRole('link',{name:'See trucks on the map',exact:true});
+    const map=page.getByRole('link',{name:'See vehicles on the map',exact:true});
     await expect(map).toHaveAttribute('href',`/?provider=${encodeURIComponent(handle)}`);
     await page.screenshot({path:info.outputPath(`native-profile-overview-${width}.png`),scale:'css'});
     await map.scrollIntoViewIfNeeded();
     const bounds=await map.boundingBox();
     expect(bounds).not.toBeNull();expect(bounds!.height).toBeGreaterThanOrEqual(44);
     expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width+.5);
-    const next=provider.fleet.total>1?page.getByRole('button',{name:new RegExp('^View trucks and drivers')}):page.getByRole('heading',{name:'Trucks and drivers',exact:true});
+    const next=provider.fleet.total>1?page.getByRole('button',{name:new RegExp('^View vehicles and drivers')}):page.getByRole('heading',{name:'Vehicles and published capacity',exact:true});
     await expect(next).toBeVisible();
     expect(bounds!.y+bounds!.height).toBeLessThanOrEqual((await next.boundingBox())!.y+.5);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`native-profile-${width}.png`),fullPage:true,scale:'css'});
   }
   const filtered=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('provider')===handle;});
-  await page.getByRole('link',{name:'See trucks on the map',exact:true}).click();
+  await page.getByRole('link',{name:'See vehicles on the map',exact:true}).click();
   const result=await filtered;expect(result.ok()).toBe(true);
   const rows=await result.json();expect(rows.items.length).toBeGreaterThan(0);
   expect(rows.items.every((row:{provider_handle:string})=>row.provider_handle===handle)).toBe(true);

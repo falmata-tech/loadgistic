@@ -63,11 +63,11 @@ test('private email code unlocks only its grants and retains private scope throu
   const verified=page.waitForResponse(r=>r.url().endsWith('/api/shared-capacity/access')&&r.request().method()==='POST');
   await page.getByRole('button',{name:'View shared signals',exact:true}).click();
   const verification=await verified;expect(verification.status()).toBe(200);expect((await verification.json()).ok).toBe(true);
-  await expect(page.getByRole('region',{name:'Privately shared truck capacity'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Privately shared vehicle capacity'})).toBeVisible();
   const response=await page.request.get('/api/shared-capacity');expect(response.status()).toBe(200);expect(response.headers()['cache-control']).toContain('no-store');
   const body=await response.json();expect(body.items.map((v:{id:string})=>v.id)).toEqual([capacity.id]);
   const drawer=await openCapacityFilterDialog(page);await chooseTruckConfiguration(drawer,body.items[0].cargo_configuration);
-  await drawer.getByRole('button',{name:'Show matching trucks',exact:true}).click();
+  await drawer.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.get('view')==='private'&&url.searchParams.has('vehicleCategory'));
   await expect(page.locator('.capacity-drawer-handle button[aria-controls="capacity-filter-drawer"]')).toBeEnabled();
   const filtered=await openCapacityFilterDialog(page);await filtered.getByRole('link',{name:'Clear',exact:true}).click();
@@ -96,7 +96,7 @@ test('combined view choices and locked email map remain readable in all language
   await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.locator('.language-picker select:visible').selectOption(locale);
   await expect(page.locator('.capacity-view-choice a').nth(0)).toHaveText(messages['Open to the public']);
   await expect(page.locator('.capacity-view-choice a').nth(1)).toHaveText(messages['Privately shared with you']);
-  await expect(page.locator('.locked-capacity-access h2')).toHaveText(messages['Trucks shared with you']);
+  await expect(page.locator('.locked-capacity-access h2')).toHaveText(messages['Vehicles shared with you']);
   await expect(page.locator('.market-introduction p')).toHaveText(messages['Keep your transporters close. See the space and routes they report, or find new options in the public market.']);
   await expect(page.locator('.locked-capacity-access h2 + p')).toHaveText(messages['Enter the email a transporter shared with. Verify it with a code to see their capacity, routes and availability. No account needed.']);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

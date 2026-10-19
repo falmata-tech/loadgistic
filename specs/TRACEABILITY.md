@@ -1077,6 +1077,14 @@ recorded in MOBILE_IMPLEMENTATION.md.
 
 ## Simplified Tracking email sessions — local evidence, 2026-09-28
 
+This section records the September28 historical 30-minute design. The current
+FEAT-TRK-001 and FEAT-ENT-001 contract uses a five-minute email session,
+one provider-selected shipment-owner email, and owner-managed status-only
+viewer invitations. The owner and explicitly authorized business staff may
+see current vehicle location; ordinary viewers may not. Current browser
+coverage is `tests/e2e/tracking-parties.spec.ts`; the October19 desktop/phone
+local owner-sharing run passed, while the complete release gate remains open.
+
 FEAT-TRK-001 / FEAT-REV-001, ADR-073, NR-01/02/03/08/10/13: migration 114
 adds email-only OTP, paginated current-recipient shipment listing and owner-scoped
 review submission. Signed sessions enforce thirty idle minutes and eight hours

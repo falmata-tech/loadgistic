@@ -19,7 +19,7 @@ test('Expo Capacity keeps full map and search controls without retired transport
  for(const width of [390,320]){
   await page.setViewportSize({width,height:width===320?640:844});await page.goto(preview+'/');
   await expect(page.getByRole('button',{name:'Transporter search',exact:true})).toBeVisible({timeout:30000});
-  await expect(page.getByRole('progressbar',{name:'Loading truck availability',exact:true})).toHaveCount(0,{timeout:30000});
+  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30000});
   const map=await paintedMap(page),chat=page.getByRole('link',{name:'Need help with transport?',exact:true});
   const [frame,tabs,attribution]=await Promise.all([map.boundingBox(),page.getByRole('tab',{name:'Capacity',exact:true}).boundingBox(),map.locator('.maplibregl-ctrl-attrib').boundingBox()]);
   expect(frame&&tabs&&attribution).toBeTruthy();
