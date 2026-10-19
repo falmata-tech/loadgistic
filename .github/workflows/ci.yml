@@ -106,15 +106,13 @@ jobs:
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
 
+      - name: Install PostgreSQL host client for disposable GPS clone
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
       - name: Create disposable GPS test database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
-        run: |
-          set -euo pipefail
-          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
-          test "$(docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' supabase_db_loadgistic-local)" = loadgistic-local
-          timeout --signal=TERM --kill-after=10s 1m docker exec supabase_db_loadgistic-local createdb -U supabase_admin --owner=postgres "$LOADGISTIC_TEST_DATABASE"
-          timeout --signal=TERM --kill-after=10s 8m docker exec supabase_db_loadgistic-local pg_dump -U postgres -d postgres -Fc | timeout --signal=TERM --kill-after=10s 8m docker exec -i supabase_db_loadgistic-local pg_restore -U supabase_admin -d "$LOADGISTIC_TEST_DATABASE" --exit-on-error
+        run: node scripts/ci-disposable-gps-database.mjs create
 
       - name: Verify GPS privacy and credential races on disposable database
         env:
@@ -142,12 +140,7 @@ jobs:
         if: always()
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
-        run: |
-          set -euo pipefail
-          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
-          if [ "$(docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' supabase_db_loadgistic-local 2>/dev/null || true)" = loadgistic-local ]; then
-            timeout --signal=TERM --kill-after=10s 1m docker exec supabase_db_loadgistic-local dropdb -U supabase_admin --force --if-exists "$LOADGISTIC_TEST_DATABASE"
-          fi
+        run: node scripts/ci-disposable-gps-database.mjs remove
 
       - name: Verify exact Featured migration bootstrap with rolled-back fixtures
         run: node scripts/verify-featured-bootstrap-local.mjs
