@@ -128,10 +128,17 @@ const {error:anonymousUnlockError}=await anon.rpc('unlock_provider_tracking',{tr
 if(!anonymousUnlockError)throw new Error('SUPABASE_TRACKING_VERIFY_ANONYMOUS_UNLOCK_ALLOWED');
 
 if(await tracking.getProviderShipment(owner,created.id)!==null)throw new Error('SUPABASE_TRACKING_VERIFY_CROSS_PROVIDER_READ');
+const beforeCrossProvider=await tracking.getProviderShipment(driver,created.id);
+// Device attribution checks the current driver assignment before the older
+// shipment lookup. A foreign provider is denied there, without changing data.
 await expectCode(tracking.updateProviderShipmentStatus(owner,created.id,'TO_PICKUP','',null,{
   locationArea:'Around Addis Ababa, Ethiopia',approximateLat:9.03,approximateLng:38.75,
   locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'
-}),/NOT_FOUND/);
+}),/^FORBIDDEN$/);
+const afterCrossProvider=await tracking.getProviderShipment(driver,created.id);
+if(JSON.stringify(afterCrossProvider)!==JSON.stringify(beforeCrossProvider)){
+  throw new Error('SUPABASE_TRACKING_VERIFY_CROSS_PROVIDER_MUTATION');
+}
 await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP'),/TRACKING_DEVICE_LOCATION_REQUIRED/);
 
 await tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP','Going to pickup',null,{
