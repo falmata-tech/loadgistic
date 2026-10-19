@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   checkedLocalGpsPassword, checkedLocalRestoreRole, checkedMatchingPgMajor,
-  postgresErrorCategory, runGpsClonePipeline,
+  postgresErrorCategory, runGpsClonePipeline, splitPgGraphqlAclToc,
 } from '../scripts/ci-disposable-gps-clone.mjs';
 
 const child = (source) => [process.execPath, ['-e', source]];
@@ -123,4 +123,14 @@ test('GPS CI client matches only a reviewed local server major', () => {
   for (const pair of [[17, 15], [15, 17], [16, 16], [18, 18]]) {
     assert.throws(() => checkedMatchingPgMajor(...pair), /GPS CI PostgreSQL client\/server major mismatch/);
   }
+});
+
+test('GPS CI defers only the PG15 GraphQL wrapper ACL and retains all other grants', () => {
+  const special = '3664; 0 0 ACL graphql_public FUNCTION graphql("operationName" text, query text, variables jsonb, extensions jsonb) supabase_admin';
+  const other = '3665; 0 0 ACL public TABLE vehicles postgres';
+  const result = splitPgGraphqlAclToc(`; archive\n${special}\n${other}\n`);
+  assert.equal(result.deferred, `${special}\n`);
+  assert.equal(result.main, `; archive\n${other}\n`);
+  assert.throws(() => splitPgGraphqlAclToc(other), /expected one Supabase pg_graphql wrapper ACL/);
+  assert.throws(() => splitPgGraphqlAclToc(`${special}\n${special}`), /expected one Supabase pg_graphql wrapper ACL/);
 });

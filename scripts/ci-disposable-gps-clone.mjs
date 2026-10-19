@@ -32,6 +32,20 @@ export function checkedMatchingPgMajor(clientMajor, serverMajor) {
   return clientMajor;
 }
 
+// Supabase PostgreSQL 15's pg_graphql archive grants access to this
+// extension-owned wrapper before pg_restore has recreated the wrapper. Defer
+// this single ACL; every other catalog entry still restores with stop-on-error.
+export function splitPgGraphqlAclToc(toc) {
+  const lines = toc.split(/\r?\n/);
+  const pattern = /^\d+; \d+ \d+ ACL graphql_public FUNCTION graphql\("operationName" text, query text, variables jsonb, extensions jsonb\) supabase_admin$/;
+  const deferred = lines.filter((line) => pattern.test(line));
+  if (deferred.length !== 1) throw new Error('GPS CI expected one Supabase pg_graphql wrapper ACL');
+  return {
+    main: `${lines.filter((line) => !pattern.test(line)).join('\n').trimEnd()}\n`,
+    deferred: `${deferred[0]}\n`,
+  };
+}
+
 export function postgresErrorCategory(stderr) {
   if (/server version mismatch|aborting because of server version mismatch/i.test(stderr)) return 'version-mismatch';
   if (/password authentication failed|SASL authentication failed/i.test(stderr)) return 'authentication-failed';
