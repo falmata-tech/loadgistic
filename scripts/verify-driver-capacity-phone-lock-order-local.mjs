@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {spawn} from 'node:child_process';
+import {postgresErrorCategory} from './ci-disposable-gps-clone.mjs';
 
 const container='supabase_db_loadgistic-local';
 const database=process.env.LOADGISTIC_TEST_DATABASE||'';
@@ -22,7 +23,7 @@ function session(){
  let out='',error='';active.add(child);
  const timer=setTimeout(()=>child.kill(),25000);
  child.stdout.on('data',chunk=>out+=chunk);
- child.stderr.on('data',chunk=>error+=chunk);
+ child.stderr.on('data',chunk=>error=(error+chunk).slice(-8192));
  const done=new Promise((resolve,reject)=>{
   child.on('error',reject);
   child.on('close',code=>{clearTimeout(timer);active.delete(child);resolve({code,out:out.trim(),error});});
@@ -30,7 +31,8 @@ function session(){
  return {child,done,write:sql=>child.stdin.write(sql+'\n'),end:()=>child.stdin.end(),async until(marker){
   const deadline=Date.now()+10000;
   while(!out.includes(marker)){
-   if(Date.now()>deadline||child.exitCode!==null)throw Error('LOCK_ORDER_MARKER_MISSING');
+   if(Date.now()>deadline||child.exitCode!==null)
+    throw Error(`LOCK_ORDER_MARKER_MISSING:exit=${child.exitCode??'running'};category=${postgresErrorCategory(error)}`);
    await new Promise(resolve=>setTimeout(resolve,50));
   }
  }};
@@ -79,12 +81,14 @@ try{
  const deviceSession=session(),phoneSession=session();
  phase='two-session race';
  try{
-  deviceSession.write(`set statement_timeout='15s';set lock_timeout='10s';set deadlock_timeout='300ms';begin;
+  // PostgreSQL 15 reserves deadlock_timeout for privileged roles. The server's
+  // default deadlock detector still resolves the old-order race well within the
+  // bounded session and statement deadlines below.
+  deviceSession.write(`set statement_timeout='15s';set lock_timeout='10s';begin;
    select 1 from telematics_devices where id=${quote(context.deviceId)} for update;
    select ${quote(marker)};`);
   await deviceSession.until(marker);
-  phoneSession.write(`set application_name=${quote(tag)};set statement_timeout='15s';set lock_timeout='10s';
-   set deadlock_timeout='300ms';begin;
+  phoneSession.write(`set application_name=${quote(tag)};set statement_timeout='15s';set lock_timeout='10s';begin;
    select refresh_provider_capacity_location(${quote(context.driverId)},
     jsonb_build_object('vehicle_id',${quote(vehicle)},'approximate_lat',9.03,'approximate_lng',38.76,
      'location_precision_km',10));rollback;`);

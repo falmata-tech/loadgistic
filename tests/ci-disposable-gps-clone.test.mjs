@@ -88,6 +88,7 @@ test('GPS CI clone reports a missing client without waiting for its peer', async
 test('PostgreSQL category classifier emits a fixed label for unknown sensitive output', () => {
   assert.equal(postgresErrorCategory('secret=reviewer-password'), 'unclassified');
   assert.equal(postgresErrorCategory('pg_restore: error: could not execute query: ERROR: duplicate'), 'restore-sql-error');
+  assert.equal(postgresErrorCategory('ERROR: permission denied to set parameter "deadlock_timeout"'), 'permission-denied');
 });
 
 test('GPS CI target accepts only the exact local Supabase database, without leaking its password', () => {
