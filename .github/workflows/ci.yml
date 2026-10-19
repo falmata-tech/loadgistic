@@ -106,48 +106,6 @@ jobs:
       - name: Import and verify managed fixtures
         run: npm run supabase:local:configure
 
-      - name: Verify exact Featured migration bootstrap with rolled-back fixtures
-        run: node scripts/verify-featured-bootstrap-local.mjs
-
-      - name: Verify the Data API guard through SQL, REST and GraphQL
-        run: node scripts/verify-data-api-guard.mjs
-
-      - name: Audit high-severity dependency advisories
-        run: npm audit --audit-level=high
-
-      - name: Verify Driver linkage and optional documents without retaining test writes
-        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/capacity-driver-eligibility.sql
-
-      - name: Verify plan-free access and automatic Featured with rollback
-        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/platform-controls.sql
-
-      - name: Verify audit authorization and privacy regressions with rollback
-        run: |
-          for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-owner-retention tracking-device-location capacity-launch-matching \
-            independent-single-truck provider-owner-fleets provider-vehicle-authority provider-live-publication-limit provider-publication-owner-scope provider-authority-recovery provider-authority-command-denials provider-authority-erasure provider-driving-intent provider-fleet-erasure provider-billing-retired capacity-search-metadata-cost capacity-multiple-options telematics telematics-account-privacy security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds featured-continuous-rounds tracking-route-map \
-            fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
-            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue \
-            account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards play-review-business-isolation public-capacity-policy-scope \
-            truck-regular-service-scope personal-public-identity staff-active-permission-preservation review-moderation-restrictions support-waiting-claim-eligibility \
-            platform-brokerage-retirement customer-business-workspaces business-capacity-sharing tracking-owner-delegation location-radius-choices tracking-selected-sources \
-            phone-location-installations business-support-alerts business-native-push provider-public-account-identity business-directory-verification business-directory-retention capacity-published-location-source-filter driver-manual-capacity-location; do
-            echo "::group::SQL regression: $suite"
-            docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
-            echo "::endgroup::"
-          done
-
-      - name: Verify retired Guest workload twice with rollback
-        run: node scripts/verify-retired-guest-workload-local.mjs
-
-      - name: Prove authority recovery cannot restore unsafe publication rules
-        run: node scripts/verify-provider-authority-rollback-local.mjs
-
-      - name: Verify provider truck publication and assignment races
-        run: node scripts/verify-independent-truck-concurrency-local.mjs
-
-      - name: Verify queued authorization and account closure races
-        run: node scripts/verify-audit-concurrency.mjs
-
       - name: Create disposable GPS test database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
@@ -190,6 +148,48 @@ jobs:
           if [ "$(docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' supabase_db_loadgistic-local 2>/dev/null || true)" = loadgistic-local ]; then
             timeout --signal=TERM --kill-after=10s 1m docker exec supabase_db_loadgistic-local dropdb -U supabase_admin --force --if-exists "$LOADGISTIC_TEST_DATABASE"
           fi
+
+      - name: Verify exact Featured migration bootstrap with rolled-back fixtures
+        run: node scripts/verify-featured-bootstrap-local.mjs
+
+      - name: Verify the Data API guard through SQL, REST and GraphQL
+        run: node scripts/verify-data-api-guard.mjs
+
+      - name: Audit high-severity dependency advisories
+        run: npm audit --audit-level=high
+
+      - name: Verify Driver linkage and optional documents without retaining test writes
+        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/capacity-driver-eligibility.sql
+
+      - name: Verify plan-free access and automatic Featured with rollback
+        run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/platform-controls.sql
+
+      - name: Verify audit authorization and privacy regressions with rollback
+        run: |
+          for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-owner-retention tracking-device-location capacity-launch-matching \
+            independent-single-truck provider-owner-fleets provider-vehicle-authority provider-live-publication-limit provider-publication-owner-scope provider-authority-recovery provider-authority-command-denials provider-authority-erasure provider-driving-intent provider-fleet-erasure provider-billing-retired capacity-search-metadata-cost capacity-multiple-options telematics telematics-account-privacy security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds featured-continuous-rounds tracking-route-map \
+            fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
+            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue \
+            account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards play-review-business-isolation public-capacity-policy-scope \
+            truck-regular-service-scope personal-public-identity staff-active-permission-preservation review-moderation-restrictions support-waiting-claim-eligibility \
+            platform-brokerage-retirement customer-business-workspaces business-capacity-sharing tracking-owner-delegation location-radius-choices tracking-selected-sources \
+            phone-location-installations business-support-alerts business-native-push provider-public-account-identity business-directory-verification business-directory-retention capacity-published-location-source-filter driver-manual-capacity-location; do
+            echo "::group::SQL regression: $suite"
+            docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+            echo "::endgroup::"
+          done
+
+      - name: Verify retired Guest workload twice with rollback
+        run: node scripts/verify-retired-guest-workload-local.mjs
+
+      - name: Prove authority recovery cannot restore unsafe publication rules
+        run: node scripts/verify-provider-authority-rollback-local.mjs
+
+      - name: Verify provider truck publication and assignment races
+        run: node scripts/verify-independent-truck-concurrency-local.mjs
+
+      - name: Verify queued authorization and account closure races
+        run: node scripts/verify-audit-concurrency.mjs
 
       - name: Validate specifications and source
         run: npm run check
