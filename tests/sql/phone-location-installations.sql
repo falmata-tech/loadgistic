@@ -1,25 +1,33 @@
 -- Isolated transaction: never operate against a hosted project.
 begin;
 do $test$
-declare actor uuid;other_actor uuid;vehicle uuid;first uuid:=gen_random_uuid();second uuid:=gen_random_uuid();session_id uuid:=gen_random_uuid();
+declare actor uuid:=gen_random_uuid();other_actor uuid:=gen_random_uuid();provider uuid:=gen_random_uuid();vehicle uuid;first uuid:=gen_random_uuid();second uuid:=gen_random_uuid();foreign_installation uuid:=gen_random_uuid();session_id uuid:=gen_random_uuid();other_session_id uuid:=gen_random_uuid();
  secret text:=encode(gen_random_bytes(32),'hex');second_secret text:=encode(gen_random_bytes(32),'hex');binding jsonb;other_binding jsonb;proof jsonb;result jsonb;stamp timestamptz;
 begin
- select a.driver_user_id,a.vehicle_id into strict actor,vehicle from driver_vehicle_assignments a join vehicles v on v.id=a.vehicle_id and v.active
-  join profiles p on p.id=a.driver_user_id and p.active join auth.users u on u.id=p.id
-  left join telematics_location_sources s on s.vehicle_id=v.id
-  where a.active and u.raw_app_meta_data->>'fixture_source'='loadgistic' and coalesce(s.source,'MOBILE')='MOBILE'
-   and (p.role='DRIVER' or p.role='TRANSPORTER' and p.drives_truck) and public.fleet_actor_can_use_vehicle(p.id,v.id)
-  order by v.id limit 1;
- select p.id into strict other_actor from profiles p where p.active and p.id<>actor and not public.fleet_actor_can_use_vehicle(p.id,vehicle,true) order by p.id limit 1;
- -- Existing real-device bindings must not be silently cleared by a test.
- if real_location_device_in_use(vehicle) then raise exception 'ISOLATED_PHONE_FIXTURE_REQUIRED';end if;
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(actor,actor||'@example.invalid',clock_timestamp(),'{}','{}'),
+   (other_actor,other_actor||'@example.invalid',clock_timestamp(),'{}','{}');
+ update profiles set role='DRIVER',active=true,drives_truck=true,full_name='Synthetic phone installation owner' where id=actor;
+ update profiles set role='DRIVER',active=true,drives_truck=true,full_name='Synthetic foreign phone actor' where id=other_actor;
+ insert into provider_profiles(id,user_id,business_name,handle) values(provider,actor,'Phone installation fixture','phone-installation-'||actor);
+ perform accept_content_policy(actor,'2026-10-09');
+ vehicle:=(create_provider_vehicle(actor,'{"make":"Phone fixture","model":"Truck","plate":"PHONE-157-REG","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;
+ perform update_fleet_driver_access(actor,jsonb_build_object('driver_user_id',actor,'vehicle_id',vehicle,'can_manage_capacity',true,'can_manage_tracking',true));
+ if coalesce((select source from telematics_location_sources where vehicle_id=vehicle),'MOBILE')<>'MOBILE'
+  or real_location_device_in_use(vehicle) then raise exception 'ISOLATED_PHONE_FIXTURE_REQUIRED';end if;
  insert into auth.sessions(id,user_id,created_at,updated_at) values(session_id,actor,clock_timestamp(),clock_timestamp());
  binding:=register_phone_location_installation(actor,first,secret,vehicle,false,session_id);
  if binding->>'actorId'<>actor::text or binding->>'installationId'<>first::text or not real_location_device_in_use(vehicle) then raise exception 'PHONE_REGISTRATION_RESULT';end if;
  result:=register_phone_location_installation(actor,first,secret,vehicle,false,session_id);
  if result->>'bindingId'<>binding->>'bindingId' then raise exception 'PHONE_IDEMPOTENT_REGISTRATION';end if;
  begin perform register_phone_location_installation(actor,first,second_secret,vehicle,false,session_id);raise exception 'PHONE_SECRET_BYPASS';exception when raise_exception then if sqlerrm<>'PHONE_LOCATION_UNAVAILABLE' then raise;end if;end;
- begin perform register_phone_location_installation(other_actor,first,secret,vehicle,false,session_id);raise exception 'FOREIGN_PHONE_REGISTRATION';exception when raise_exception then if sqlerrm not in('NOT_FOUND','FORBIDDEN') then raise;end if;end;
+ begin perform register_phone_location_installation(other_actor,foreign_installation,secret,vehicle,false,session_id);raise exception 'FOREIGN_SESSION_PHONE_REGISTRATION';exception when raise_exception then if sqlerrm<>'PHONE_LOCATION_UNAVAILABLE' then raise;end if;end;
+ insert into auth.sessions(id,user_id,created_at,updated_at) values(other_session_id,other_actor,clock_timestamp(),clock_timestamp());
+ begin perform register_phone_location_installation(other_actor,foreign_installation,secret,vehicle,false,other_session_id);raise exception 'FOREIGN_VEHICLE_PHONE_REGISTRATION';exception when raise_exception then if sqlerrm<>'NOT_FOUND' then raise;end if;end;
+ if exists(select 1 from phone_location_installations where id=foreign_installation)
+  or (select count(*) from phone_location_bindings where vehicle_id=vehicle and revoked_at is null)<>1
+  or not phone_location_binding_is_current((binding->>'bindingId')::uuid)
+  then raise exception 'FOREIGN_PHONE_REGISTRATION_CHANGED_BINDING';end if;
  begin perform register_phone_location_installation(actor,second,second_secret,vehicle,false,session_id);raise exception 'UNCONFIRMED_PHONE_TAKEOVER';exception when raise_exception then if sqlerrm<>'PHONE_LOCATION_IN_USE' then raise;end if;end;
  other_binding:=register_phone_location_installation(actor,second,second_secret,vehicle,true,session_id);
  begin perform register_phone_location_installation(actor,first,secret,vehicle,false,session_id);raise exception 'SUPERSEDED_PHONE_RECLAIM';exception when raise_exception then if sqlerrm<>'PHONE_LOCATION_SUPERSEDED' then raise;end if;end;
