@@ -216,7 +216,9 @@ try{
   const hiddenAfterOffDuty=await listSupabasePublicCapacityCursor({capacityId:freshnessTarget.capacity.id},{pageSize:14});
   if(hiddenAfterOffDuty.items.length)throw new Error('SUPABASE_FIXTURE_VERIFY_OFF_DUTY_PUBLIC');
   const {data:afterOffDuty,error:afterOffDutyError}=await service.rpc('public_featured_provider_candidates',{
-    requested_region_codes:[freshnessTarget.candidate.base_region_code]
+    // Personal provider payloads deliberately omit their region. Use the same
+    // public region selection, then match the exact provider ID below.
+    requested_region_codes:regionCodes
   });
   if(afterOffDutyError)throw new Error(`SUPABASE_FIXTURE_VERIFY_OFF_DUTY_FEATURED_FAILED:${afterOffDutyError.message}`);
   const featuredAfter=(afterOffDuty||[]).find(row=>row.provider_profile_id===freshnessTarget.candidate.provider_profile_id);

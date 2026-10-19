@@ -33,6 +33,9 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
+      - name: Install locked dependencies for shared pure contracts
+        working-directory: .
+        run: npm ci --ignore-scripts
       - name: Install locked mobile dependencies and checked decoder adapter
         run: npm ci
       - name: Check native types, lint, permissions and state invariants

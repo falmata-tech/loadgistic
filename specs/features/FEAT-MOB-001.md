@@ -1158,3 +1158,17 @@ Keep Support/Brokerage scopes, guest capabilities, private files and staff-web-o
 access unchanged. Sound/system delivery is opt-in; closed-app push is not implied
 by polling. Local implementation/permission/device evidence and owner visual
 approval are required before publication.
+
+### Release acceptance: clean shared-source dependency resolution
+
+Given a clean checkout with separate root and mobile lockfiles
+When mobile CI validates imported pure contracts under `src/lib`
+Then it installs the root's locked dependencies for those shared source files
+And installs mobile dependencies from the mobile lockfile
+And TypeScript and Node tests resolve the real validators without implicit-any fallbacks
+And Metro continues to resolve native runtime validation from mobile's pinned Zod
+And no server credential or web runtime is added to the Android artifact.
+
+Verification: the mobile CI job's clean installs, type/lint/unit gates and actual
+Android export/runtime dependency review. Root-only dependency availability on a
+developer machine is not clean-install evidence.
