@@ -50,7 +50,7 @@ try{
  'origin_place_ref',(select id from place_catalog where normalized_name='addis ababa' limit 1),'destination_place_ref',(select id from place_catalog where normalized_name='adama' limit 1),'passing_place_ref',(select id from place_catalog where normalized_name='dire dawa' limit 1),
  'cargo_summary','Concurrency regression','customer_email','audit-concurrency@example.invalid','customer_email_digest',repeat('c',64),'additional_recipients','[]'::jsonb,'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',repeat('d',64),'review_code_hash',repeat('e',64)));
  commit;`);
- const location={area:'Around Addis Ababa',lat:'9',lng:'38.7',precision_km:'20',source:'DEVICE_OBSCURED'};
+ const location={area:'Around Addis Ababa',lat:'9',lng:'38.7',precision_km:'10',source:'DEVICE_OBSCURED'};
  for(const kind of ['status','location']){
   await sql(`update provider_shipments set assigned_vehicle_id=${literal(truck1)},assigned_driver_user_id=${literal(oldDriver)},operational_status=${literal(kind==='status'?'CREATED':'TO_PICKUP')} where id=${literal(tracking)};`);
   const command=kind==='status'?{next_status:'TO_PICKUP',note:'Queued former Driver',location}:location;
