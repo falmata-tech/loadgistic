@@ -20,7 +20,7 @@ begin
   on conflict(id) do update set role=excluded.role,active=true;
  end loop;
  insert into public.support_agent_profiles(user_id,active,available,max_open_conversations,can_manage_support,can_manage_brokerage)
- values(agent,true,true,1,true,false),(other_agent,true,false,3,true,true);
+ values(agent,true,true,1,true,false),(other_agent,true,false,3,true,false);
  insert into public.guest_support_conversations(id,email,email_digest,phone,status,assigned_agent_user_id,closed_at,closed_by_user_id)
  values(opened,'retired-open@example.test',md5(opened::text)||md5(agent::text),'+251900000152','OPEN',agent,null,null),
  (waiting,'retired-waiting@example.test',md5(waiting::text)||md5(agent::text),'+251900000153','WAITING',null,null,null),
