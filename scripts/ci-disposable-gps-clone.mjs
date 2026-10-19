@@ -25,6 +25,13 @@ export function checkedLocalRestoreRole(user) {
   return user;
 }
 
+export function checkedMatchingPgMajor(clientMajor, serverMajor) {
+  if (![15, 17].includes(clientMajor) || clientMajor !== serverMajor) {
+    throw new Error('GPS CI PostgreSQL client/server major mismatch');
+  }
+  return clientMajor;
+}
+
 export function postgresErrorCategory(stderr) {
   if (/server version mismatch|aborting because of server version mismatch/i.test(stderr)) return 'version-mismatch';
   if (/password authentication failed|SASL authentication failed/i.test(stderr)) return 'authentication-failed';

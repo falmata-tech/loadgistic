@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  checkedLocalGpsPassword, checkedLocalRestoreRole,
+  checkedLocalGpsPassword, checkedLocalRestoreRole, checkedMatchingPgMajor,
   postgresErrorCategory, runGpsClonePipeline,
 } from '../scripts/ci-disposable-gps-clone.mjs';
 
@@ -114,5 +114,13 @@ test('GPS CI restore rejects a wrong authenticated role', () => {
   assert.equal(checkedLocalRestoreRole('supabase_admin'), 'supabase_admin');
   for (const role of ['postgres', 'anon', '']) {
     assert.throws(() => checkedLocalRestoreRole(role), /GPS CI local restore role mismatch/);
+  }
+});
+
+test('GPS CI client matches only a reviewed local server major', () => {
+  assert.equal(checkedMatchingPgMajor(15, 15), 15);
+  assert.equal(checkedMatchingPgMajor(17, 17), 17);
+  for (const pair of [[17, 15], [15, 17], [16, 16], [18, 18]]) {
+    assert.throws(() => checkedMatchingPgMajor(...pair), /GPS CI PostgreSQL client\/server major mismatch/);
   }
 });

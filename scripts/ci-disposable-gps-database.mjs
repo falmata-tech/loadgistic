@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-import {checkedLocalGpsPassword,checkedLocalRestoreRole,runGpsClonePipeline} from './ci-disposable-gps-clone.mjs';
+import {checkedLocalGpsPassword,checkedLocalRestoreRole,checkedMatchingPgMajor,runGpsClonePipeline} from './ci-disposable-gps-clone.mjs';
 
 const container = 'supabase_db_loadgistic-local';
 const database = 'loadgistic_telematics_ci';
@@ -54,7 +54,6 @@ const localPassword = checkedLocalGpsPassword(status);
 
 const clientVersion = localCommand('pg_dump', ['--version']);
 const major = Number(clientVersion.match(/PostgreSQL\)\s+(\d+)/)?.[1]);
-assert.equal(major, 17, 'PostgreSQL 17 host client is required for the local server');
 const pgEnv = {
   ...process.env,
   PGHOST: '127.0.0.1',
@@ -75,7 +74,7 @@ assert.equal(localCommand('psql', ['-X', '-A', '-t', '-q', '-c', 'select current
 const serverMajor = Math.floor(Number(localCommand('psql', [
   '-X', '-A', '-t', '-q', '-c', 'show server_version_num',
 ], {env: pgEnv})) / 10000);
-assert.equal(serverMajor, major, 'PostgreSQL host client/server major version mismatch');
+checkedMatchingPgMajor(major, serverMajor);
 // Local Supabase makes this role available on the same checked loopback server.
 // The full catalog needs its privileges; postgres cannot SET ROLE to it.
 const restoreEnv = {...pgEnv, PGUSER: 'supabase_admin'};
