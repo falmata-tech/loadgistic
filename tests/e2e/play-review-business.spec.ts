@@ -22,6 +22,15 @@ function checked<T>(result:{data:T;error:{code?:string}|null},label:string):T{
  if(result.error)throw Error(`${label}:${result.error.code||'DATABASE_ERROR'}`);
  return result.data;
 }
+function requireId(value:unknown,label:string):string{
+ if(!value||typeof value!=='object'||!('id' in value)||typeof value.id!=='string'||!value.id)
+  throw Error(`${label}:MISSING_ID`);
+ return value.id;
+}
+function requireCreatedUserId(value:unknown):string{
+ if(!value||typeof value!=='object'||!('user' in value))throw Error('CREATE_REVIEW_USER:MISSING_USER');
+ return requireId(value.user,'CREATE_REVIEW_USER');
+}
 function localSql(statement:string){
  const endpoint=new URL(process.env.LOADGISTIC_REVIEW_E2E_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||'');
  const container=endpoint.port==='56321'&&process.env.LOADGISTIC_REVIEW_E2E_LOCAL_STACK==='1'
@@ -48,16 +57,16 @@ test('Play reviewer owner and teammate use one private business workspace throug
  let ownerContext:Awaited<ReturnType<typeof browser.newContext>>|undefined,staffContext:Awaited<ReturnType<typeof browser.newContext>>|undefined;
  let primaryFailure:unknown=null;
  async function makeReviewer(email:string,label:string){
-  const user=checked(await service.auth.admin.createUser({email,password,email_confirm:true,app_metadata:{loadgistic_review:true}}),'CREATE_REVIEW_USER').user;
-  created.users.push(user.id);
-  checked(await service.from('profiles').update({role:'DRIVER',active:true,full_name:label,first_name:label}).eq('id',user.id),'REVIEW_PROFILE');
-  const profile=checked(await service.from('provider_profiles').insert({user_id:user.id,business_name:label,
-   handle:`review-${nonce}-${label.toLowerCase()}`,review_workspace:true,public_visibility:'PRIVATE'}).select('id').single(),'REVIEW_PROVIDER');
-  created.profiles.push(profile.id);
-  checked(await service.from('app_review_accounts').insert({user_id:user.id,provider_profile_id:profile.id,
-   expected_role:'DRIVER',capacity_digest:randomBytes(32).toString('hex'),tracking_digest:randomBytes(32).toString('hex')}),'REVIEW_REGISTRATION');
-  checked(await service.rpc('accept_content_policy',{actor_user_id:user.id,policy_version:'2026-10-09'}),'REVIEW_POLICY');
-  return user.id;
+  const userId=requireCreatedUserId(checked(await service.auth.admin.createUser({email,password,email_confirm:true,app_metadata:{loadgistic_review:true}}),'CREATE_REVIEW_USER'));
+  created.users.push(userId);
+  checked(await service.from('profiles').update({role:'DRIVER',active:true,full_name:label,first_name:label}).eq('id',userId),'REVIEW_PROFILE');
+  const profileId=requireId(checked(await service.from('provider_profiles').insert({user_id:userId,business_name:label,
+   handle:`review-${nonce}-${label.toLowerCase()}`,review_workspace:true,public_visibility:'PRIVATE'}).select('id').single(),'REVIEW_PROVIDER'),'REVIEW_PROVIDER');
+  created.profiles.push(profileId);
+  checked(await service.from('app_review_accounts').insert({user_id:userId,provider_profile_id:profileId,
+   expected_role:'DRIVER',capacity_digest:Buffer.from(randomBytes(32)).toString('hex'),tracking_digest:Buffer.from(randomBytes(32)).toString('hex')}),'REVIEW_REGISTRATION');
+  checked(await service.rpc('accept_content_policy',{actor_user_id:userId,policy_version:'2026-10-09'}),'REVIEW_POLICY');
+  return userId;
  }
  async function signIn(page:import('playwright-core').Page,email:string){
   await page.goto('/review-access');
