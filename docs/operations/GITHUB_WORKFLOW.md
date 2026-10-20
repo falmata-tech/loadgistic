@@ -4,11 +4,11 @@ This is Loadgistic's working convention. AGENTS and production authority control
 permissions; these instructions do not install GitHub protections or authorize
 a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR results.
 
-## Verified setup, October20
+## Verified setup, October 20
 
 The public repository is `falmata-tech/loadgistic`; its default branch is `main`,
 not `master`. Live branch SHAs matched the local comparison: `feat/mobile-app`
-is101 commits ahead and0 behind `main`, with no PR. Draft PR15 points to the older
+was 101 commits ahead and 0 behind `main` at the audit baseline, with no PR. Draft PR15 points to the older
 `feat/focused-capacity-dialogs`, not this release candidate. Its old green checks
 cannot certify current work. All existing branches report unprotected; the
 accessible ruleset list is empty. No provider setting was changed in this review.
@@ -20,8 +20,13 @@ can also run a separate push build: per-ref cancellation does not deduplicate
 them. `release-ready` aggregates validation, browser/Featured, mobile and container
 outcomes; it fails when a required dependency does not succeed. Keep those gates.
 
-`netlify.toml` sets the build and Node version, not the hosted production branch,
-auto-publish or preview credential scope. Those settings are still unverified.
+`netlify.toml` sets the build and Node version. A separate read-only Netlify site
+check confirms production branch `main`, allowed branches `[main]`, build command
+`npm run build` and provider reported as `manual`, with a GitHub repository path.
+The current published deployment is ready on branch `main`. These fields do not
+prove an active Git webhook, automatic publication or preview credential scope;
+those remain unverified. No configuration was changed. Protected receipt:
+`.local/test-audit-20261020/netlify-branch-readonly.json`.
 A local Git branch or successful PR does not identify the live Netlify artifact.
 
 ## Normal work after this release is integrated
@@ -66,7 +71,7 @@ an unchanged short-lived branch only until its merge/result has been verified.
 
 ## Integrating the existing long branch
 
-This is a separate pending operation, not a request to rewrite101 commits.
+This is a separate pending operation, not a request to rewrite the existing commits.
 
 1. Finish the current audit, reviewed task commits and exact-source CI.
 2. Prepare a catch-up PR from `feat/mobile-app` to `main` describing the entire

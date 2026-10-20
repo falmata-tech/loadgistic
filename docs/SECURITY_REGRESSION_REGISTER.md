@@ -1,5 +1,34 @@
 # Security failures we must not repeat
 
+## NR-64 — A correct assertion checks the wrong randomly ordered record
+
+**Observed:** CI39508786726 stopped at `PRIVATE_ALARM_MISSING`. The GPS fixture
+creates a reporting device and an unreported control device with the same label;
+the workspace sorts by label and UUID. The test checked array position zero,
+which could belong to either device. Previously SQL NULL allowed the missing
+value to pass. Making the comparison NULL-safe exposed the wrong-record
+assumption. Source review and one successful local run did not catch it.
+**Control:** Locate the exact created record by identity unless ordering is the
+contract under test. Make a competing record sort first deliberately, retain
+strict missing-value rejection, and prove the original assertion fails before
+the fix. Review setup and record selection together when strengthening checks.
+Do not change the API order, loosen assertions or classify this fixture defect
+as a proven product failure. A source audit is not execution evidence.
+**Evidence:** `tests/sql/telematics.sql`; protected
+`telematics-device-order-red.json` and `telematics-device-order-green.json` under
+`.local/test-audit-20261020/`: deterministic original failure in8.500s, corrected
+exact-device check passes in10.816s, public/Auth row fingerprints preserved.
+The first full local SQL launcher then failed before any suite because its
+progress marker used SQL `+` instead of `||`; its failed receipt is preserved.
+This was a separate harness error, corrected before one controlled retry.
+The subsequent exact CI SQL group passes all 84 suites in354.323s with zero
+failure/skip and unchanged public/Auth table row fingerprints. Every tested
+source and workflow hash still matches. Sequences were not fingerprinted.
+Receipt: `.local/test-audit-20261020/current-ci-sql-matrix-result.json`.
+**Owner:** test/release maintainer. **Next:** commit this repair and request one
+new CI run. Preserve the failed CI and launcher results rather than overwriting
+them with success. This local group does not replace the other CI jobs.
+
 ## NR-63 — Browser control failure mistaken for the owner's missing session
 
 **Observed:** Name-based Chrome automation inspected a different Chrome instance

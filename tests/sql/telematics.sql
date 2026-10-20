@@ -61,7 +61,9 @@ begin
  update auth.users set email='falmatad97+gps-owner-'||owner_id||'@gmail.com' where id=owner_id;
  result:=provision_telematics_device(admin_id,command);device:=(result->>'id')::uuid;revision:=result->>'revision';
  perform pg_temp.gps_denied(format('select provision_telematics_device(%L,%L::jsonb)',admin_id,command),'DEVICE_BINDING_CONFLICT');
- result:=provision_telematics_device(admin_id,command||jsonb_build_object('gatewayId',real_gateway,'gatewayDeviceId',152,'imei','990000000000152','protocolDeviceId','990000000000152','synthetic',false,'modelProfile','UNVERIFIED'));
+ -- Keep the unreported control device first so array order cannot silently
+ -- turn the reporting-device alarm assertion into a random UUID choice.
+ result:=provision_telematics_device(admin_id,command||jsonb_build_object('label','A unreported control GPS','gatewayId',real_gateway,'gatewayDeviceId',152,'imei','990000000000152','protocolDeviceId','990000000000152','synthetic',false,'modelProfile','UNVERIFIED'));
  real_device:=(result->>'id')::uuid;
  command:=jsonb_build_object('deviceId',device,'vehicleId',truck,'expectedRevision',revision);
  perform pg_temp.gps_denied(format('select assign_telematics_device(%L,%L::jsonb)',other_owner,command),'NOT_FOUND');
@@ -87,8 +89,8 @@ begin
  select payload into published from public_capacity_page(jsonb_build_object('capacity_id',capacity_id));
  if published->>'location_source' is distinct from 'TELEMATICS' or published::text like '%990000000000151%' or published ? 'speedKph' or published ? 'attributes'
   or exists(select 1 from capacities where id=capacity_id and location_lat=9.031 and location_lng=38.748) then raise exception 'PUBLIC_GPS_PRIVACY_BROKEN';end if;
- rows:=telematics_workspace(owner_id,1);
- if rows->'devices'->0->'position'->>'alarm' is distinct from 'vibration' then raise exception 'PRIVATE_ALARM_MISSING';end if;
+ select item into rows from jsonb_array_elements(telematics_workspace(owner_id,1)->'devices') item where item->>'id'=device::text;
+ if rows->'position'->>'alarm' is distinct from 'vibration' then raise exception 'PRIVATE_ALARM_MISSING';end if;
  perform grant_private_capacity_access(owner_id,truck,'gps-recipient@example.invalid',repeat('d',64));
  select payload into rows from private_capacity_filtered_page('EMAIL',repeat('d',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text;
  if rows is null or rows->>'location_source' is distinct from 'TELEMATICS' or rows::text like '%990000000000151%'

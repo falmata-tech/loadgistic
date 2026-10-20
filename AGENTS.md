@@ -40,7 +40,7 @@ Before major authentication, authorization, workflow, public-data, file, schema,
   `loadgistic-release` for preparing/resuming an authorized rollout.
   `loadgistic-github` handles branch/PR/review and authorized merge work, following
   `docs/operations/GITHUB_WORKFLOW.md`. Use the
-  applicable skill; do not load all three by default. They supplement these
+  applicable skill; do not load every skill by default. They supplement these
   instructions and never grant additional permissions.
 - Use `docs/AGENT_LESSONS.md` for the applicable failure category and practical
   stack-specific loop. Update affected tests/fixtures with behavior changes,

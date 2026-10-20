@@ -9,8 +9,10 @@ do not read it as current instructions or restart work from its old pending item
 ## Objective and boundaries
 
 Finish the owner-requested whole-test audit, then ship the approved web/database
-release and Android Play test build. CI is paused until known findings are
-resolved. Broader engineering housekeeping is ongoing: improve recurring cost
+release and Android Play test build. The first post-audit CI stopped at a
+randomly ordered GPS test fixture; its deterministic repair passes locally.
+All 84 tests in the exact local CI SQL group now pass before one replacement CI. Broader
+engineering housekeeping is ongoing: improve recurring cost
 and friction across code, tests, scripts, tooling, agents and shipping, rather
 than addressing today's incident alone.
 
@@ -39,19 +41,35 @@ than addressing today's incident alone.
 - [x] Complete one full local quality gate:1028 tests pass, zero failure/skip;
   source/spec/workflow checks and typecheck pass.
 - [x] Review and commit only owned audit/housekeeping paths (`0479833`).
-- [ ] Current: push the reviewed task source for one exact-source CI. Historical positive Brokerage SQL is archived unchanged;
-  valid retirement/denial and retained-history tests remain executable.
+- [x] Push the reviewed task source (`2015d53`) and run CI39508786726 to terminal.
+  Mobile boundaries passed; validation failed at `PRIVATE_ALARM_MISSING`.
+  Browser jobs did not run. The strengthened assertion exposed a test selecting
+  the first of two randomly ordered GPS devices, not a proven product failure.
+  Historical positive Brokerage SQL is archived unchanged; valid retirement/
+  denial and retained-history tests remain executable.
 - [x] Repair the actual Featured page-height bug without changing its contents.
   Both original desktop/phone captures pass; owner explicitly approved the fix.
 - [x] Run affected focused tests, including actual desktop/phone Chrome return
   navigation:2/2 pass in35.6s. Keep security, denial, persistence and recovery.
 - [x] Complete local quality; preserve the existing scale/CI gates as subsequent
   independent requirements.
-- [ ] Push once and run one exact-source CI.
+- [x] Finish the exact local CI SQL group after the deterministic
+  exact-device repair. Original assertion fails in8.500s; corrected test passes
+  in10.816s with the competing device deliberately first (NR-64). All 84 suites
+  pass in354.323s; public/Auth row fingerprints match after rollback. Source
+  hashes match. Sequences were not fingerprinted.
+- [ ] Current: commit the bounded test/lesson changes, push once and run exact-source CI.
   No new CI while another known finding remains unresolved.
-- [ ] Prepare one matching web package: the changed stylesheet invalidates the
-  frozen web package's executable equality. Android runtime is unchanged by
-  mobile test-only corrections, but reuse still needs exact equivalence evidence.
+- [x] Build and inspect the matching 2015 web package: 1989 source files and six
+  function ZIPs verified; no hosted writes. A failed CI makes it unpromotable.
+- [x] Run its actual compiled runtime against local schema180: health, public
+  capacity, synthetic provider sign-in/workspace and private document access/
+  anonymous denial all pass. This is local runtime evidence, not production
+  readiness or hosted publication.
+- [ ] Prove packaged web equality to the next tested source if changes remain
+  test/docs-only. Android offline
+  preflight confirms 534 identical manifest files, five reviewed non-native
+  deltas and 210 unchanged emitted project sources; no key read or signing.
 - [ ] Refresh short-lived backup/restore/security checks only after stable gates.
   Bind the approved SQL and signing artifacts to the current execution plan;
   apply the original target/digest/CI/approval rules without extending freshness.
@@ -78,7 +96,8 @@ as fresh evidence. Physical GPS capability and Google Play's tester enrollment/
 | Public Chrome | Eight normal map/save/private-network workflows pass. Two original Featured captures then pass after the real sizing fix in21.623s. These are separate runs. |
 | Tracking Chrome | Six desktop/phone progress, completion/review and proof-access cases pass with exact cleanup. |
 | Workspace capture | Two desktop/phone cases pass in152.827s after exact lookup/navigation-completion waits;90-second case budget unchanged, zero skip/retry. Initial failures are retained separately. |
-| Complete local quality |1028 tests pass in50.381s, zero failures/skips; current source/spec/workflow checks and typecheck pass. Remote CI remains pending. |
+| Complete local quality |1028 tests pass in50.381s, zero failures/skips; source/spec/workflow checks and typecheck pass. This did not execute the full SQL matrix; the later CI failure and repair remain separate. |
+| Exact local CI SQL group |84 suites pass, zero failure/skip, in354.323s after the deterministic GPS test repair. Every source/workflow hash matches; public/Auth table rows are preserved after rollback. No hosted writes. |
 
 Protected reports are in `.local/test-audit-20261020/`; they contain the per-file
 source hashes and bounded results. The Feature-height captures are under
@@ -121,7 +140,10 @@ not a hosted protection/settings write or an unreviewed merge/deployment.
   zero model turns/global configuration writes. Official GitHub, OpenAI, VS Code
   and Netlify sources are linked in the workflow; provider enforcement stays
   clearly separate from local instructions.
-- [ ] Hosted follow-up: review exact protections and production/preview branch
+- [x] Read Netlify's exact site build metadata: production/allowed branch is main;
+  provider reports manual. No settings or environment values changed/retained.
+  Automatic publication and preview credential scope remain unverified.
+- [ ] Hosted follow-up: review exact protections and remaining publication/preview
   settings, then obtain required authority before applying or merging. This is
   separate from the already approved artifact/database release.
 

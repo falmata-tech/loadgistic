@@ -1,4 +1,27 @@
-## October 19 bounded Android 1.1.0 signing — approved, unused
+## Current October 20 release authority — approved, pending gates
+
+The owner's additional answer, “Approve these final five database fixes after CI
+passes,” covers only migrations 176–180 on Loadgistic `tpwyyzoqijjmbvsmmvcm`, in
+`.local/release-20261020/phone-additional176180-rollout-review.md` (SHA256
+`37a742f6018b0897f3def2086c86c229aacbeff5617201d87dabc25ef5eb8402`).
+It supplements the exact 138–175 approval below; same-source CI, fresh backup/
+restore, target, ledger and catalogue checks still apply. The same two approved
+warnings remain visible. This is approval, not evidence of a hosted write.
+
+For Android, the current selection is 1.1.1/code 9, superseding the unused code 8
+candidate below. The owner answered “Approve signing these files after CI passes”
+for `.local/release-20261020-android-code9-fresh-candidate/signing-review.md` (SHA256
+`6315e2562c1315f1293a91fa5ccf212850899284894c820e7af7cf80dbe524ad`).
+It authorizes one temporary use of the existing upload key for APK SHA256
+`52a1fc80b1a49e33ec438a372595bd2728d89689f83ece1686758f08f1d348c2` and AAB SHA256
+`d65ae10bd2e72af0c4835e3678544c3698566c5f4e61b39e4e7f312437f2e89a`.
+The original approval and artifact-source records remain immutable. Any later
+tested source requires explicit executable-input equivalence and current passing
+CI; it does not relabel the frozen artifact or approve changed bytes. This
+approval is unused. Preserve the existing certificate and private-key cleanup
+requirements; no replacement key, billing change or public Play launch.
+
+## October 19 bounded Android 1.1.0 signing — unused historical candidate
 
 The owner also approved accepting Loadgistic's content policy on **one dedicated
 synthetic Play-review account** solely to complete the installed Android 1.1.0
