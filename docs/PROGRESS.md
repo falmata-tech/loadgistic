@@ -11,7 +11,9 @@ do not read it as current instructions or restart work from its old pending item
 Finish the owner-requested whole-test audit, then ship the approved web/database
 release and Android Play test build. The first post-audit CI stopped at a
 randomly ordered GPS test fixture; its deterministic repair passes locally.
-All 84 tests in the exact local CI SQL group now pass before one replacement CI. Broader
+All 84 tests in the exact local CI SQL group now pass. CI39511514293 then passed
+13 jobs; one browser action-order test failed, along with its two summary jobs.
+Its complete focused workflow now passes in44.4s without an app/UI change. Broader
 engineering housekeeping is ongoing: improve recurring cost
 and friction across code, tests, scripts, tooling, agents and shipping, rather
 than addressing today's incident alone.
@@ -58,7 +60,15 @@ than addressing today's incident alone.
   in10.816s with the competing device deliberately first (NR-64). All 84 suites
   pass in354.323s; public/Auth row fingerprints match after rollback. Source
   hashes match. Sequences were not fingerprinted.
-- [ ] Current: commit the bounded test/lesson changes, push once and run exact-source CI.
+- [x] Commit the deterministic GPS repair as `f1f0a11`, push and run
+  CI39511514293 to terminal:13 successes, one browser failure, two dependent
+  summary failures. All other seven browser groups passed.
+- [x] Diagnose the remaining Go-live test in actual Chrome. Ordinary publication
+  works and saves LIVE; wait for the target before the original wheel scroll,
+  retain the clearance assertion as a numeric gap, and await redirect completion.
+  Full driver Expo/web/manual/phone/publication/public-map case passes in44.4s;
+  no timeout increase or UI change. See NR-65.
+- [ ] Current: commit this bounded test/lesson repair, then run exact-source CI.
   No new CI while another known finding remains unresolved.
 - [x] Build and inspect the matching 2015 web package: 1989 source files and six
   function ZIPs verified; no hosted writes. A failed CI makes it unpromotable.

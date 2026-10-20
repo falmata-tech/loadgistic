@@ -59,13 +59,20 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   const ownerPage=await ownerContext.newPage();await localSupportLogin(ownerPage,owner.id);
   await ownerPage.goto(`/app/fleet/${vehicle.id}?view=details`,{waitUntil:'domcontentloaded'});
   await ownerPage.setViewportSize({width:390,height:844});
-  await ownerPage.mouse.wheel(0,500);
   const publishButton=ownerPage.getByRole('button',{name:'Go live',exact:true});
+  // The streamed loading screen may not have a scroll range yet.
   await expect(publishButton).toBeVisible();
-  await expect.poll(async()=>{const action=await publishButton.boundingBox(),nav=await ownerPage.locator('.mobile-nav').boundingBox();return Boolean(action&&nav&&action.y+action.height<=nav.y);}).toBe(true);
+  await ownerPage.mouse.wheel(0,500);
+  await expect.poll(async()=>{
+   const action=await publishButton.boundingBox(),nav=await ownerPage.locator('.mobile-nav').boundingBox();
+   return action&&nav?action.y+action.height-nav.y:Number.POSITIVE_INFINITY;
+  },{message:'Go live stays above the phone navigation after scrolling'}).toBeLessThanOrEqual(0);
   await ownerPage.screenshot({path:`${evidence}/owner-go-live-visible-phone.png`});
   const publicationSaved=ownerPage.waitForResponse(response=>new URL(response.url()).pathname===`/api/fleet/vehicles/${vehicle.id}/publication`&&response.request().method()==='POST');
-  await ownerPage.getByRole('button',{name:'Go live',exact:true}).click();expect((await publicationSaved).status()).toBe(303);await expect(ownerPage.getByRole('button',{name:'Move to draft',exact:true})).toBeVisible();
+  const publishedPage=ownerPage.waitForResponse(response=>new URL(response.url()).pathname===`/app/fleet/${vehicle.id}`&&response.request().isNavigationRequest()&&response.request().method()==='GET');
+  await publishButton.click();expect((await publicationSaved).status()).toBe(303);
+  const destination=await publishedPage;expect(destination.status()).toBe(200);await destination.finished();
+  await expect(ownerPage.getByRole('button',{name:'Move to draft',exact:true})).toBeVisible();
   expect(checked(await db.from('vehicles').select('publication_status').eq('id',vehicle.id).single()).publication_status).toBe('LIVE');
   checked(await db.from('company_pages').update({published:true}).eq('organization_id',owner.organization_id));
   await publishProviderCapacity(owner,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:places.map((place:{id:string;name:string})=>({placeRef:place.id,label:place.name}))});

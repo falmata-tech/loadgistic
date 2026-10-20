@@ -1,5 +1,38 @@
 # Security failures we must not repeat
 
+## NR-65 — Browser actions run before their target screen is ready
+
+**Observed:** CI39511514293 passed 13 jobs; browser shard4 failed the owner
+Go-live position assertion in `driver-manual-mobile-preview.spec.ts:65`, with
+the two dependent summaries failing too. The test scrolled immediately after
+DOMContentLoaded and resizing, before waiting for the action. A loading screen
+can consume that scroll. This ordering defect is observable in source; the
+exact CI scheduling race was not reconstructed. The focused Chrome probe found
+no permanent obstruction: button bottom464px, navigation top778px, ordinary
+click303, database LIVE, completed destination200 and Move to draft visible.
+
+**Control:** Wait for the rendered target before sending its normal scroll.
+Keep the original clearance requirement and report a numeric gap when it fails.
+After a redirect, await the exact destination response completion before checking
+its content. Do not increase timeouts, force clicks, change CSS or suppress the
+position check to make a test pass. Source review must cover action order and
+loading transitions, not only current labels and fixtures.
+
+**Evidence:** The first tentative scrollIntoView-only repair still failed the
+original bound; it did not account for the fixed navigation. Retaining the
+original wheel after target readiness passes the complete driver Expo/web flow
+in44.4s, including real manual/phone saves, public filtering, publication and
+database readback. The original240-second budget is unchanged. Protected probe:
+`.local/diagnosis-driver-publication-20261021/diagnosis-summary.json`.
+GitHub CLI also refused log output containing terminal escapes. Diagnose that
+tool error explicitly; any permitted raw capture stays in memory, with escapes
+removed and contacts/credentials excluded before output. Never repeatedly retry
+a log endpoint as if that client-side refusal were a network failure.
+
+**Owner:** browser-test maintainer. **Next:** commit the bounded test repair and
+run current-source CI. Keep all13 prior successes as historical evidence, not
+as passing checks for a different commit. App/UI and signed artifacts are unchanged.
+
 ## NR-64 — A correct assertion checks the wrong randomly ordered record
 
 **Observed:** CI39508786726 stopped at `PRIVATE_ALARM_MISSING`. The GPS fixture
