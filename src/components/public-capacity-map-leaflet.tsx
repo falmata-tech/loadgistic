@@ -310,7 +310,17 @@ function MapInfoModal({accent,label,onClose,children}:{accent:MapSignalInfo['acc
     const element=dialog.current;if(!element)return;
     const host=element.parentElement!;
     const previousFocus=document.activeElement as HTMLElement|null;
-    const place=()=>{const box=host.getBoundingClientRect();element.style.left=`${box.left+box.width/2}px`;element.style.top=`${box.top+box.height/2}px`;element.style.maxHeight=`${Math.max(100,Math.min(box.height,window.innerHeight)-32)}px`;element.style.width=`${Math.min(accent==='truck'?540:430,box.width-32)}px`;};
+    const place=()=>{
+      const box=host.getBoundingClientRect();
+      const availableHeight=Math.max(0,window.innerHeight-32);
+      const halfMinimum=Math.min(100,availableHeight)/2;
+      const centreY=Math.max(16+halfMinimum,Math.min(box.top+box.height/2,window.innerHeight-16-halfMinimum));
+      const maxHeight=Math.max(0,2*Math.min(centreY-16,window.innerHeight-16-centreY));
+      element.style.left=`${box.left+box.width/2}px`;
+      element.style.top=`${centreY}px`;
+      element.style.maxHeight=`${maxHeight}px`;
+      element.style.width=`${Math.min(accent==='truck'?540:430,box.width-32)}px`;
+    };
     place();element.showModal();
     const observer=new ResizeObserver(place);observer.observe(host);
     window.addEventListener('resize',place);window.addEventListener('scroll',place,true);

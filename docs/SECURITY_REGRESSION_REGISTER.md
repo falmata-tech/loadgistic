@@ -1461,6 +1461,16 @@ phone reproduction pass. Private map bounds now test parent containment directly
 and pass20 viewport/surface combinations. The vehicle-modal CI discrepancy and
 full release gate remain open; these focused passes do not close them.
 
+CI39484290410 then passed seven browser groups, leaving only a19px phone-card
+overflow. Polling its unchanged geometry did not fix the finite height limit.
+A controlled confirmation-notice row reproduced20px overflow on the same
+otherwise-fitting profile; the map-height cap left usable screen space idle.
+The exact CI notice state and Linux-font cause were not established. Layout
+regressions must explicitly cover optional notices and long text, rather than
+relying on whichever fresh/aged fixture appears first. The viewport-bound
+repair retains every field and44px target; six affected cases pass in Chromium
+and six in Google Chrome. Owner review and the new full CI remain required.
+
 **Evidence:** The earlier browser follow-up supplies valid inputs and preserves
 denial, privacy, history and completion assertions. The October20 local
 `fixture-contract-preflight.spec.ts` passed with disposable data and saved-state

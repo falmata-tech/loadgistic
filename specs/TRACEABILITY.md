@@ -1,3 +1,13 @@
+October20 FEAT-UIX-001 / NR-21 vehicle-dialog height follow-up:
+`tests/e2e/truck-profile-layout.spec.ts` passes6/6 desktop/phone cases in Chromium
+and6/6 in Google Chrome: real profile contacts/document disclosures/translations,
+controlled confirmation notice, viewport-bound resizing and retained long-text
+scrolling. The modal uses available screen height around its map centre rather
+than the smaller canvas height. No text, touch targets or disclosures are removed.
+Source/spec/type checks pass; the owner explicitly approved the actual phone and
+desktop captures. New same-source release CI and rollout remain pending.
+Evidence: `.local/browser-repair-20261020/vehicle-dialog-height/`.
+
 October20 NR-60 / FEAT-SHR-001 / FEAT-FLT-001 local first-save correction:
 `tests/sql/personal-fleet-capacity-sharing.sql` reproduces the assigned-personal-
 employee denial before180 and passes with the narrow candidate. Protected local

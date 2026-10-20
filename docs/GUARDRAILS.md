@@ -150,6 +150,12 @@ and timeout. A timeout under competing CPU/memory load must be classified with
 the same isolated case before changing code or a budget; do not raise the SMTP
 parser's five-second process limit to accommodate overloaded test scheduling.
 
+For bounded detail layouts, exercise optional notices and longer text explicitly.
+A polling assertion cannot repair a stable overflow, and a fresh fixture does
+not prove the same card fits once an age/verification notice adds another row.
+Retain text size, touch targets, all fields and viewport bounds while repairing
+the measured layout; keep unusually long content scrollable.
+
 The dedicated fixture-preflight runner must report exactly one passed test and
 zero skipped, flaky or failed tests. A Playwright exit code of zero after a skip
 does not count. The `release-ready` CI job must see validation, every browser

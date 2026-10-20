@@ -1,3 +1,27 @@
+## October20 remaining phone-card failure — active
+
+- [x] Inspect terminal CI39484290410: seven browser groups and all other
+  component jobs pass; group7 has61 passes, one reviewed skip and one failure.
+  The required aggregate/release jobs correctly fail. No deployment/signing ran.
+- [x] Reproduce the finite map-height cap with a legitimate confirmation row:
+  the same phone fixture changes from no scroll to20px overflow; Linux font
+  substitution reduces wrapping and does not prove the CI font hypothesis.
+  Numeric evidence: `artifacts/truck-modal-linux-font-20261020/geometry-probe-receipt.json`.
+- [x] Apply FEAT-UIX-001 viewport-bounded dialog height without changing
+  its composition, labels, text size or touch targets; exercise ordinary,
+  confirmation and long-content desktop/phone cases:6/6 Chromium and6/6 actual
+  Google Chrome pass, including bounded phone/short-desktop resizing. Source,
+  spec and type checks pass. No long-content or touch-target assertion was removed.
+- [x] Obtain owner visual approval: the owner answered “Approve the card fix and
+  continue release” for the actual phone/desktop captures.
+- [x] Run the quality gate after approval:1,017 tests pass with zero failures,
+  skips or cancellations; spec/source checks and typecheck pass.
+- [ ] Current: push the exact source for production build and full release CI. Existing SQL and Android approvals remain
+  recorded; unchanged bytes require explicit equivalence, not relabelled receipts.
+- [ ] Refresh the backup/rehearsal and security evidence after passing CI, then
+  finish the authorized SQL/web/signing/testing rollout. The19:42 V8 backup keeps
+  its original timestamp; no stale receipt will be re-dated.
+
 ## October20 latest release checkpoint
 
 Exact-source CI39472158885 on `d5aadaf9ba58a6f71dfedb63be786d049d2b1a62`

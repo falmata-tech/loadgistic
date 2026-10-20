@@ -62,6 +62,30 @@ test('truck modal groups identity, contacts, updates and entity documents withou
  await expect(page.locator('.capacity-truck-map-marker.selected')).toBeVisible();
 });
 
+test('vehicle confirmation notice fits the screen around the map centre',async({page}:{page:any},info:any)=>{
+ test.setTimeout(60000);
+ const original=await currentProfileSignal(page,item=>Boolean(item.assigned_driver_first_name)&&item.owner_verification_badges?.length>0);
+ const truck={...original,capacity_confirmation_needed:true};
+ // This is a layout variant of the real public projection, not a saved-state test.
+ await page.route('**/api/public/capacity?**',(route:any)=>route.fulfill({json:{items:[truck],hasMore:false,nextCursor:null}}));
+ await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`,{waitUntil:'domcontentloaded'});
+ await page.locator('.map-info-bubble.truck').click({timeout:30000});
+ const modal=page.locator('dialog.capacity-info-card.truck'),content=modal.locator('.capacity-info-content');
+ await expect(content).toContainText('Confirm availability directly.');
+ await expect.poll(()=>content.evaluate((el:HTMLElement)=>({horizontal:el.scrollWidth-el.clientWidth,vertical:el.scrollHeight-el.clientHeight}))).toEqual({horizontal:0,vertical:0});
+ await page.screenshot({path:info.outputPath('vehicle-confirmation-fits.png')});
+ const viewports=info.project.name.includes('mobile')?[{width:320,height:640},{width:390,height:844},{width:412,height:839}]:[{width:1280,height:720},{width:1280,height:560}];
+ for(const viewport of viewports){
+  await page.setViewportSize(viewport);
+  await expect.poll(()=>modal.evaluate((el:HTMLElement)=>{
+   const box=el.getBoundingClientRect();return box.top>=15&&box.bottom<=innerHeight-15&&box.left>=15&&box.right<=innerWidth-15;
+  })).toBe(true);
+  expect(await content.evaluate((el:HTMLElement)=>el.scrollWidth-el.clientWidth)).toBe(0);
+ }
+ await modal.getByRole('button',{name:'Close map signal details'}).click();
+ await expect(page.locator('.capacity-truck-map-marker.selected')).toBeVisible();
+});
+
 test('long truck profiles stay bounded and a fallback phone belongs to the transporter',async({page}:{page:any})=>{
  test.setTimeout(60000);
  const original=await currentProfileSignal(page,item=>Boolean(item.contact_phone||item.assigned_driver_phone));

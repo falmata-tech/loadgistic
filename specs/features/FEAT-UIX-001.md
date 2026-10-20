@@ -11,6 +11,27 @@ rollout: Apply shared primitives before page-specific simplification; retain pri
 
 # Low-friction interface
 
+## October20 vehicle-dialog height — locally verified and owner approved
+
+Given a normal vehicle detail includes its availability-confirmation notice\
+When the map canvas is shorter than the available phone screen\
+Then the centred dialog may use the available viewport height around the same
+map centre, rather than an artificial map-height cap\
+And the ordinary profile fits without scrolling when the screen has room\
+And all dialog edges remain inside the viewport, including after resizing\
+And unusually long content still scrolls within the bounded dialog without
+shrinking text, touch targets, or omitting notices and reviewed documents.
+
+Verification must include the real public-profile flow and a controlled
+confirmation-notice layout case in desktop/phone Chrome. The existing long-name
+case must still scroll. Focused visual approval precedes full release checks.
+All six affected cases pass in Chromium and in actual Google Chrome, including
+bounded320×640,390×844,412×839 and short-desktop resizing. Source/spec/type
+checks pass. Captures are under
+`.local/browser-repair-20261020/vehicle-dialog-height/chrome-results/`.
+The owner explicitly approved the phone/desktop repair and continuation of the
+release; the full same-source gates and rollout remain pending.
+
 ## October18 provider account identity hierarchy — planned
 
 Provider signup starts with the chosen public Account name and unique handle,
