@@ -1,4 +1,32 @@
-## October20 remaining phone-card failure — active
+## October20 shared-dialog test contract — active
+
+- [x] Inspect terminal CI39491588105 for `e65a2bd`: validation, container,
+  mobile, all three Featured groups and seven browser groups pass. Group6 has
+  60 passes, two reviewed skips and one phone failure in `map-feedback.spec.ts`.
+  Aggregate/release checks correctly fail; no hosted rollout or signing occurred.
+- [x] Reproduce the failed assertion: at320×640 only canvas containment fails.
+  The dialog extends44.9px beyond the short canvas while all edges remain inside
+  the viewport and feedback, close/retry reachability, zoom blocking and page
+  bounds pass. This is the viewport behavior already approved by the owner,
+  not a new interface change. Geometry: `artifacts/map-feedback-contract-20261020/geometry.json`.
+- [x] Align that test with FEAT-UIX-001 viewport containment and finish
+  its full location-denial/outage/retry workflow with adjacent desktop/phone map
+  and modal checks. All18 cases pass in Chromium and all18 in actual Google
+  Chrome, with zero skips/retries/failures. Every feedback, reachability and
+  recovery assertion remains. Evidence: `artifacts/map-feedback-contract-20261020/validation/summary.json`.
+- [ ] Current: push the test-only correction for exact-source CI. Preserve the inspected
+  e65 web package and approved Android files; prove executable-source equality
+  before reusing either artifact. Do not relabel their original source receipts.
+- [ ] Refresh backup/security prerequisites after the new gates, then finish
+  the approved SQL, matching web and Android testing rollout.
+
+The e65 package passed inspection and local compiled health, public Capacity,
+provider workspace and authorized/private-document checks. The fresh20:40:47UTC
+backup restored with original owners and passed all42 migrations plus the180
+permission regression in isolation. These are completed local/read-only results;
+they do not override failed CI or extend the backup's30-minute lifetime.
+
+## October20 remaining phone-card failure — preceding checkpoint
 
 - [x] Inspect terminal CI39484290410: seven browser groups and all other
   component jobs pass; group7 has61 passes, one reviewed skip and one failure.
@@ -16,7 +44,7 @@
   continue release” for the actual phone/desktop captures.
 - [x] Run the quality gate after approval:1,017 tests pass with zero failures,
   skips or cancellations; spec/source checks and typecheck pass.
-- [ ] Current: push the exact source for production build and full release CI. Existing SQL and Android approvals remain
+- [x] Push `e65a2bd` for production build and CI39491588105. Existing SQL and Android approvals remain
   recorded; unchanged bytes require explicit equivalence, not relabelled receipts.
 - [ ] Refresh the backup/rehearsal and security evidence after passing CI, then
   finish the authorized SQL/web/signing/testing rollout. The19:42 V8 backup keeps

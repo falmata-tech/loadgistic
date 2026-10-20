@@ -1471,6 +1471,16 @@ relying on whichever fresh/aged fixture appears first. The viewport-bound
 repair retains every field and44px target; six affected cases pass in Chromium
 and six in Google Chrome. Owner review and the new full CI remain required.
 
+CI39491588105 passed the card's own tests but failed the adjacent feedback
+workflow: its old assertion still confined the dialog to the canvas. The
+320×640 reproduction showed only that assertion failing; the approved dialog
+remained viewport-bounded and all other feedback/reachability/page checks passed.
+The author had not inventoried every test using the shared modal before the
+full run. For future geometry changes, search those component references and
+run feedback/recovery, modal and public/private shell cases together on desktop
+and phone. Correct an obsolete boundary from the approved spec, retaining all
+other assertions; never change the interface merely to satisfy the old test.
+
 **Evidence:** The earlier browser follow-up supplies valid inputs and preserves
 denial, privacy, history and completion assertions. The October20 local
 `fixture-contract-preflight.spec.ts` passed with disposable data and saved-state

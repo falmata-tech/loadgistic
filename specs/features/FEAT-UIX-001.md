@@ -32,6 +32,14 @@ checks pass. Captures are under
 The owner explicitly approved the phone/desktop repair and continuation of the
 release; the full same-source gates and rollout remain pending.
 
+The shared `map-feedback.spec.ts` workflow uses the same viewport boundary for
+the dialog while retaining canvas containment for inline feedback. Its full
+location-denial, outage, retry and selection-recovery flow passes on desktop and
+phone. The combined modal, public/private shell, drawer and map-interaction
+matrix passes18/18 in Chromium and18/18 in actual Google Chrome, with zero skips
+or retries. Evidence: `artifacts/map-feedback-contract-20261020/validation/summary.json`.
+This corrects the old test boundary; no interface or application code changed.
+
 ## October18 provider account identity hierarchy — planned
 
 Provider signup starts with the chosen public Account name and unique handle,

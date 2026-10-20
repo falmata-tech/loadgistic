@@ -27,20 +27,19 @@ async function assertReadableFeedback(page:any,withFeedback=false){
   if(withFeedback)await page.locator('.public-feed-overlay').scrollIntoViewIfNeeded();
   await expect.poll(()=>page.evaluate(()=>{
     const modal=document.querySelector('.capacity-info-card');
-    const drawer=modal?.getBoundingClientRect();
+    const dialog=modal?.getBoundingClientRect();
     const scroll=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
-    const canvas=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
     const feedback=document.querySelector('.public-feed-overlay')?.getBoundingClientRect();
     const reachable=(element:Element)=>{const r=element.getBoundingClientRect();return element.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));};
     return {
-      contained:!drawer||(drawer.top>=canvas.top&&drawer.bottom<=canvas.bottom+1&&drawer.left>=canvas.left&&drawer.right<=canvas.right),
+      dialogWithinViewport:!dialog||(dialog.top>=15&&dialog.bottom<=innerHeight-15&&dialog.left>=15&&dialog.right<=innerWidth-15),
       feedbackReadable:!feedback||(feedback.left>=scroll.left&&feedback.right<=scroll.right&&feedback.top>=scroll.top-1&&feedback.bottom<=scroll.bottom+1),
       retryReachable:[...document.querySelectorAll('.public-feed-overlay button')].every(reachable),
       closeReachable:!modal||reachable(document.querySelector('.capacity-info-card>header button')!),
       zoomInteractionCorrect:[...document.querySelectorAll('.leaflet-control-zoom a')].every(element=>reachable(element)===!modal),
       noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight,
     };
-  })).toEqual({contained:true,feedbackReadable:true,retryReachable:true,closeReachable:true,zoomInteractionCorrect:true,noOverflow:true});
+  })).toEqual({dialogWithinViewport:true,feedbackReadable:true,retryReachable:true,closeReachable:true,zoomInteractionCorrect:true,noOverflow:true});
 }
 
 test('selected truck feedback stays readable through location denial and refresh recovery',async({page}: {page:any},info:any)=>{

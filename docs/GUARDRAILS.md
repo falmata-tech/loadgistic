@@ -189,6 +189,15 @@ that parser restricted to those files and typed keys; never publish arbitrary
 matcher values or error text. This retains useful geometry evidence while the
 raw JSON remains private and is discarded after the run.
 
+For a shared map/modal geometry change, search all tests referencing the changed
+component and record the affected test files before the next complete gate.
+Run the feedback/outage/retry workflow alongside modal and public/private shell
+cases on desktop and phone. Their containment assertions must use the same
+approved boundary: a viewport-bounded dialog may extend beyond a short map,
+while inline feedback stays inside its canvas. Updating only the modal's own
+spec leaves the shared workflow unchecked; compilation and one passing file do
+not close that gap. See NR-21.
+
 Featured Prepare writes persistent rotation history. Keep its three tagged,
 always-on browser workflows out of the ordinary E2E shards only while the
 separate required `featured-prepare` matrix runs each one on its own freshly

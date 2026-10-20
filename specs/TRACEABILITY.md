@@ -1,3 +1,15 @@
+October20 FEAT-UIX-001 / NR-21 shared-dialog contract follow-up:
+`map-feedback.spec.ts` now checks the approved viewport bounds for the dialog,
+retaining canvas-relative feedback, close/retry hit-testing, zoom blocking,
+document bounds,44px retry targets and the complete recovery/selection flow.
+The adjacent modal, public/private shell, private drawer and map-interaction
+matrix passes18/18 in Chromium and18/18 in actual Google Chrome, with zero
+skips, retries or failures. Geometry reproduces the stale canvas assertion at
+320×640; the same interface remains viewport-bounded. No application code changed.
+Evidence: `artifacts/map-feedback-contract-20261020/{geometry.json,validation/summary.json}`.
+The preceding e65CI39491588105 failed only this old phone oracle; all other
+component/browser groups passed. New exact-source CI and rollout remain pending.
+
 October20 FEAT-UIX-001 / NR-21 vehicle-dialog height follow-up:
 `tests/e2e/truck-profile-layout.spec.ts` passes6/6 desktop/phone cases in Chromium
 and6/6 in Google Chrome: real profile contacts/document disclosures/translations,
