@@ -1,4 +1,4 @@
-import {auditDeleteVehicles} from './audit-helpers';
+import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from './browser-test';
 import {auditLogin,auditProvider,localAuditService,checked} from './audit-helpers';
 
@@ -8,10 +8,12 @@ test('truck location remains in view after owner map container resizes',async({p
  const service=localAuditService(),actor=await auditProvider(service,'map-resize');let vehicleId='';
  try{
  const created=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Resize test',model:'Mini',plate:`RESIZE-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));vehicleId=created.id;
- checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:vehicleId,approximate_lat:9.03,approximate_lng:38.76,location_precision_km:40}}));
+ await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicleId);
+ checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:vehicleId,approximate_lat:9.03,approximate_lng:38.76,location_precision_km:20}}));
  await auditLogin(page,actor.email);await page.goto(`/app/fleet/${vehicleId}`);
- await page.getByRole('button',{name:'Edit current capacity: Not set',exact:true}).click();
+ await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
  const firstCapacity=page.getByRole('dialog',{name:'Current capacity',exact:true});
+ await firstCapacity.getByRole('button',{name:'Empty',exact:true}).click();
  await firstCapacity.getByRole('button',{name:'Capacity route',exact:true}).click();
  for(const [label,name] of [['City 1','Addis Ababa'],['City 2','Sebeta']]){
   await firstCapacity.getByRole('combobox',{name:label,exact:true}).fill(name);

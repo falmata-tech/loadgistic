@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, feat/mobile-app, 'release/**']
   workflow_dispatch:
 
 permissions:
@@ -92,7 +92,7 @@ jobs:
           version: 2.111.0
 
       - name: Start isolated Supabase
-        run: npm run supabase:start
+        run: node scripts/ci-start-local-supabase.mjs
 
       - name: Apply provider-owned PostGIS containment on isolated local services
         run: node scripts/prepare-local-security.mjs
@@ -252,7 +252,7 @@ jobs:
           version: 2.111.0
 
       - name: Start isolated Supabase
-        run: npm run supabase:start
+        run: node scripts/ci-start-local-supabase.mjs
 
       - name: Apply provider-owned PostGIS containment on isolated local services
         run: node scripts/prepare-local-security.mjs
@@ -269,6 +269,9 @@ jobs:
       - name: Install Chromium runtime
         run: npx playwright install --with-deps chromium
 
+      - name: Check browser fixture contract before long workflows
+        run: node scripts/ci-fixture-preflight.mjs
+
       - name: Install locked Expo preview dependencies
         working-directory: apps/mobile
         run: npm ci
@@ -281,7 +284,7 @@ jobs:
           echo "$!" > ../../.local/ci-mobile-preview.pid
 
       - name: Run desktop and mobile browser workflows
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/8
+        run: node scripts/ci-browser-shard.mjs '${{ matrix.shard }}'
 
       - name: Stop the task-owned Expo preview
         if: always()
@@ -294,13 +297,75 @@ jobs:
         if: always()
         run: supabase stop --no-backup
 
+  featured-prepare:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        featured_case: [platform-controls, featured-operations-review, featured-team-permission]
+    # Prepare persists rotation history. Each case has its own database, and
+    # desktop/phone runs stay sequential inside that case's runner.
+    timeout-minutes: 60
+    env:
+      CI: true
+      SESSION_SECRET: ci-only-session-secret-not-for-production-123456
+      TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Set up pinned Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.111.0
+
+      - name: Start isolated Supabase
+        run: node scripts/ci-start-local-supabase.mjs
+
+      - name: Apply provider-owned PostGIS containment on isolated local services
+        run: node scripts/prepare-local-security.mjs
+
+      - name: Reject unsafe public RLS, browser relation grants and definer RPCs
+        run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
+
+      - name: Import and verify managed fixtures
+        run: npm run supabase:local:configure
+
+      - name: Verify the Data API guard through SQL, REST and GraphQL
+        run: node scripts/verify-data-api-guard.mjs
+
+      - name: Install Chromium runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Check browser fixture contract before Featured workflows
+        run: node scripts/ci-fixture-preflight.mjs
+
+      - name: Run isolated Featured Prepare workflow on desktop and phone
+        run: node scripts/ci-featured-prepare.mjs '${{ matrix.featured_case }}'
+
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --no-backup
+
   e2e:
-    needs: e2e-shards
+    needs: [e2e-shards, featured-prepare]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Require every browser shard to pass
-        run: test '${{ needs.e2e-shards.result }}' = 'success'
+      - name: Require every browser shard and isolated Featured workflow to pass
+        run: |
+          test '${{ needs.e2e-shards.result }}' = 'success'
+          test '${{ needs.featured-prepare.result }}' = 'success'
 
   container:
     needs: validate
@@ -317,3 +382,17 @@ jobs:
 
       - name: Build standalone container
         run: docker build --tag loadgistic:${{ github.sha }} .
+
+  release-ready:
+    needs: [validate, e2e, featured-prepare, mobile-internal, container]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every exact-commit release boundary to pass
+        run: |
+          set -euo pipefail
+          test '${{ needs.validate.result }}' = 'success'
+          test '${{ needs.e2e.result }}' = 'success'
+          test '${{ needs.featured-prepare.result }}' = 'success'
+          test '${{ needs.mobile-internal.result }}' = 'success'
+          test '${{ needs.container.result }}' = 'success'

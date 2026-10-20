@@ -752,11 +752,16 @@ Do not rotate application runtime keys blindly or change global credentials here
 2. If the owner later enables automation, give it a separate repository identity/token with only necessary
    branch/PR permissions, no repository administration and no production secrets.
    Keep workflow changes owner-reviewed. Do not share the owner's `gh` session.
-3. Protect `main`: require `validate`, `e2e`, `container`, an up-to-date branch,
+3. Protect `main`: require the aggregate `release-ready` check, which fails unless
+   `validate`, `e2e` (all eight ordinary shards and three separately isolated
+   Featured Prepare workflows), `featured-prepare`, `mobile-internal` and
+   `container` all pass on the same commit;
+   require an up-to-date branch,
    conversation resolution and independent review; dismiss stale reviews, require
    approval after the last push, enforce administrators, disallow force-push/delete.
    Protect security scripts, workflows, migrations and this contract with owner
-   review. The exact proposal is `operations/repository-protection-plan.json`.
+   review. The exact, not-installed proposal is
+   `docs/operations/repository-protection-plan.json`.
    An agent and human using the same GitHub account cannot provide independent
    review; establish the separate identity before enforcing a gate that locks out
    the sole owner. CODEOWNERS text without required code-owner review is insufficient.

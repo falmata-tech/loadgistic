@@ -9,6 +9,37 @@ installation and the current10 km maximum fixture.
 
 # Specification traceability
 
+## October20 browser-fixture and release-gate correction — local evidence
+
+BASE-DEP-001 / NR-21: `tests/e2e/fixture-contract-preflight.spec.ts` owns a
+disposable provider and verifies Draft/no-driver creation, explicit assignment
+and Live publication, Capacity save, and public API readback. The real local
+Playwright fixture/API preflight passed with one test and zero skips; it is not
+evidence of clicked UI tasks. `scripts/ci-fixture-preflight.mjs` checks the
+actual Playwright report for exactly one expected pass and no skips, flakes or
+errors; the strict local runner passed exactly one test and zero skips.
+`tests/ci-browser-gate.test.mjs` covers that contract and the CI job
+ordering. `.github/workflows/ci.yml` places the preflight before all eight
+browser shards and requires validation, aggregate browser, mobile and container
+success in `release-ready` on one commit. The owner approved the small visible
+fixes. `tests/e2e/play-policy-workflows.spec.ts` now passes the actual local
+public report, moderation, block and unblock flow on desktop and phone (2/2);
+the owner approved the final changed Report placement. Ordinary CI
+skips `CAPTURE_VISUAL_REVIEW` screenshots and guarded local-demo/legacy-record
+cases unless explicitly opted in. `docs/GUARDRAILS.md` inventories their files;
+these skips are not covered workflows or release evidence. The new
+`scripts/ci-browser-shard.mjs` requires exact selected/completed test identity,
+at least one pass, no retries/flakes, and only the 55 exact reviewed skips in
+`tests/e2e/ci-allowed-skips.json`; static gate tests pass, CI execution remains
+pending. Focused workflow
+repairs continue. Same-commit remote CI, branch protection and release
+deployment remain pending. Three persistent Featured preparation tests run in
+separate fresh-database `featured-prepare` CI jobs instead of the shared browser
+shards. `scripts/ci-featured-prepare.mjs` requires desktop and phone passes with
+no skip, flake or error for each; the local static selection and gate tests pass,
+but those isolated browser jobs still need remote evidence. `docs/PROGRESS.md`
+is the release-status source.
+
 ## October19 provider-scoped map page cost — isolated candidate
 
 FEAT-MKT-001 / FEAT-LST-001 / NR-13: CI run39341423939 passed the actual

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {z} from 'zod';
-import {adminAccountReturnPath,adminOperationReturnPath} from '../src/lib/admin-account-navigation.js';
+import {adminAccountReturnPath,adminOperationReturnPath,adminOperationListReturnPath} from '../src/lib/admin-account-navigation.js';
 
 const actorId='00000000-0000-4000-8000-000000000001',userId='00000000-0000-4000-8000-000000000002',orgId='00000000-0000-4000-8000-000000000003',truckId='00000000-0000-4000-8000-000000000004',otherTruck='00000000-0000-4000-8000-000000000005',otherDriver='00000000-0000-4000-8000-000000000006';
 const stamp='2026-10-15T00:00:00Z';
@@ -89,6 +89,21 @@ test('child record returns retain only one validated account context',()=>{
  const account=`/admin/operations/users/${userId}?provider=ORGANIZATION:${orgId}`,child=`/admin/operations/trucks/${truckId}?${new URLSearchParams({returnTo:account})}`;
  assert.equal(adminOperationReturnPath(child),child.replace('ORGANIZATION%3A','ORGANIZATION%253A'));
  for(const path of[`/admin/operations-evil/${truckId}`,`/admin/operations/trucks/${truckId}?returnTo=https://evil.invalid`,`/admin/operations/trucks/${truckId}?returnTo=/admin/operations/trucks/${otherTruck}`,`/admin/operations/trucks/${truckId}?other=x`])assert.equal(adminOperationReturnPath(path),null);
+});
+
+test('record actions retain only their own bounded searched inventory',()=>{
+ const list='/admin/operations?view=TRUCKS&q=Audit&page=2';
+ const child=`/admin/operations/trucks/${truckId}?${new URLSearchParams({returnTo:list})}`;
+ assert.equal(adminOperationListReturnPath(list,'TRUCKS'),list);
+ assert.equal(adminOperationReturnPath(child),child);
+ for(const bad of[
+  '/admin/operations?view=USERS&q=Audit&page=2',
+  '/admin/operations?view=TRUCKS&page=0',
+  '/admin/operations?view=TRUCKS&page=2&other=1',
+  'https://outside.invalid/admin/operations?view=TRUCKS',
+  '/admin/operations/trucks/'+otherTruck
+ ])assert.equal(adminOperationListReturnPath(bad,'TRUCKS'),null);
+ assert.equal(adminOperationReturnPath(`/admin/operations/trucks/${truckId}?returnTo=${encodeURIComponent('/admin/operations?view=USERS')}`),null);
 });
 
 test('a mismatched workspace projection cannot authorize a subsequent provider query',async()=>{

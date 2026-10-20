@@ -54,7 +54,7 @@ test('Featured staff save and publish an isolated manual day and manage its spon
   const sponsorForm=page.locator('.featured-sponsor-form');await sponsorForm.getByLabel('Sponsor type',{exact:true}).selectOption('ADVERTISER');
   await sponsorForm.getByLabel('Business name',{exact:true}).fill(marker+' sponsor');await sponsorForm.getByLabel('Short description',{exact:true}).fill('Synthetic spare parts supplier for this isolated programme.');
   await sponsorForm.getByLabel('Website (optional)',{exact:true}).fill('https://example.com');
-  await Promise.all([page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST'),sponsorForm.getByRole('button',{name:'Schedule sponsor',exact:true}).click()]);
+  await Promise.all([page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST'),sponsorForm.getByRole('button',{name:'Save',exact:true}).click()]);
   await expect(page.getByText('Sponsored placement saved.',{exact:true})).toBeVisible();
   const sponsor=checked(await db.from('sponsors').select('id,business_name').eq('created_by',id).single());sponsorId=sponsor.id;expect(sponsor.business_name).toBe(marker+' sponsor');
   const placement=checked(await db.from('sponsor_placements').select('id,active,starts_on,ends_on').eq('sponsor_id',sponsorId).single());placementId=placement.id;expect(placement).toMatchObject({active:true,starts_on:date,ends_on:date});

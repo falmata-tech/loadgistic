@@ -11,6 +11,7 @@ import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {addProviderRegularCapacity,publishProviderCapacity,refreshProviderCapacityLocation} from '../../src/lib/provider-capacity.js';
 import {createProviderShipment,readProviderTrackingProof,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 import {emailDeliveryStatus} from '../../src/lib/email-provider.js';
+import {localFleetPublication} from './provider-publication-helper';
 
 const expect=baseExpect.configure({timeout:20000});
 test.use({trace:'off',video:'off',screenshot:'off',actionTimeout:15000,navigationTimeout:30000});
@@ -22,7 +23,7 @@ const proofBytes=readFileSync('public/icon-192.png');
 // UUID-only ownership survives an interrupted local runner. It contains no
 // addresses, recipient digests, OTPs, credentials, messages or private paths.
 function fixture(db:SupabaseClient,info:TestInfo){
- let owner:Owner|undefined;const identities:string[]=[],vehicles:string[]=[],shipments:string[]=[],routes:string[]=[],proofs:{shipmentId:string;objectName:string}[]=[],logouts:Array<()=>Promise<unknown>>=[];
+ let owner:Owner|undefined,publication:ReturnType<typeof localFleetPublication>|undefined;const identities:string[]=[],vehicles:string[]=[],shipments:string[]=[],routes:string[]=[],proofs:{shipmentId:string;objectName:string}[]=[],logouts:Array<()=>Promise<unknown>>=[];
  const manifest=info.outputPath('synthetic-ownership.json');mkdirSync(path.dirname(manifest),{recursive:true});
  function remember(){writeFileSync(manifest,JSON.stringify({organizationId:owner?.organization_id||null,identities,vehicles,shipments,routes,proofObjects:proofs.map(item=>({shipmentId:item.shipmentId,objectId:item.objectName.split('/').at(-1)?.replace('.png','')})),complete:false},null,2)+'\n',{mode:0o600});}
  async function preflight(){
@@ -32,7 +33,7 @@ function fixture(db:SupabaseClient,info:TestInfo){
   const mailpit=new URL(process.env.LOADGISTIC_LOCAL_MAILPIT_URL||'');expect(['127.0.0.1','localhost']).toContain(mailpit.hostname);expect(mailpit.port).toBe('55324');
   const response=await fetch('http://127.0.0.1:3100/login',{signal:AbortSignal.timeout(15000)});expect(response.ok).toBe(true);await response.body?.cancel();
  }
- async function makeOwner(){owner=await auditFleetProvider(db,'operations-connected');identities.push(owner.id);remember();return owner;}
+ async function makeOwner(){owner=await auditFleetProvider(db,'operations-connected');publication=localFleetPublication(db,owner);identities.push(owner.id);remember();return owner;}
  async function staff(operations:boolean){
   const id=checked(await db.auth.admin.createUser({email:`operations-controls-${randomUUID()}@example.test`,email_confirm:true})).user.id;identities.push(id);remember();
   checked(await db.from('profiles').update({role:'SUPPORT',active:true,full_name:'Synthetic Operations reviewer'}).eq('id',id));
@@ -41,7 +42,7 @@ function fixture(db:SupabaseClient,info:TestInfo){
  async function pair(label:string){
   if(!owner)throw Error('SYNTHETIC_OWNER_REQUIRED');
   const truck=await createProviderVehicle(owner,{useBasis:'OWNED',make:'Operations audit',model:label,plate:`OPS-${owner.suffix}-${label}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicles.push(truck.id);remember();
-  const driver=await auditFleetDriver(db,owner,truck.id);identities.push(driver.id);remember();return {vehicleId:truck.id,driver};
+  const driver=await auditFleetDriver(db,owner,truck.id);identities.push(driver.id);remember();await publication?.publish(truck.id);return {vehicleId:truck.id,driver};
  }
  async function login(page:Page,id:string){logouts.push(await localSupportLogin(page,id));}
  async function proof(shipmentId:string){
@@ -64,6 +65,7 @@ function fixture(db:SupabaseClient,info:TestInfo){
    expect(checked(await db.from('provider_shipment_events').select('id').in('shipment_id',shipments))).toEqual([]);
   }
   if(owner){
+   await publication?.cleanup();
    const routeRows:{id:string}[]=checked(await db.from('profile_routes').select('id').eq('organization_id',owner.organization_id));
    const capacityRows:{id:string}[]=vehicles.length?checked(await db.from('capacities').select('id').in('vehicle_id',vehicles)):[];
    const entityIds=[...routes,...routeRows.map(row=>row.id),...vehicles,...capacityRows.map(row=>row.id),...identities,owner.organization_id];
@@ -84,7 +86,20 @@ function fixture(db:SupabaseClient,info:TestInfo){
 function diagnostics(info:TestInfo){
  const file=info.outputPath('operations-diagnostics.json');mkdirSync(path.dirname(file),{recursive:true});let stage='SETUP';
  const evidence:{proofStatus?:number;proofBytesMatch?:boolean}={};
- return {phase(value:string){stage=value;writeFileSync(file,JSON.stringify({stage,...evidence},null,2)+'\n');},proofStatus(value:number){evidence.proofStatus=value;},proofBytesMatch(value:boolean){evidence.proofBytesMatch=value;},fail(error:unknown){const name=error instanceof Error?error.name:'OTHER',message=error instanceof Error?error.message:'';const failureClass=message.includes('strict mode violation')?'MULTIPLE_MATCH':message.includes('toBeVisible')?'VISIBILITY_ASSERTION':message.includes('toHaveValue')?'VALUE_ASSERTION':message.includes('toEqual')?'ROW_STATE_ASSERTION':['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';writeFileSync(file,JSON.stringify({stage,failureClass,...evidence},null,2)+'\n');console.log('OPERATIONS_CONTROLS_STAGE '+stage+' '+failureClass);throw Error('OPERATIONS_CONTROLS_FAILED '+stage);}};
+ return {
+  phase(value:string){stage=value;writeFileSync(file,JSON.stringify({stage,...evidence},null,2)+'\n');},
+  proofStatus(value:number){evidence.proofStatus=value;},
+  proofBytesMatch(value:boolean){evidence.proofBytesMatch=value;},
+  fail(error:unknown){
+   const name=error instanceof Error?error.name:'OTHER',message=error instanceof Error?error.message:'';
+   const failureClass=message.includes('strict mode violation')?'MULTIPLE_MATCH':message.includes('toBeVisible')?'VISIBILITY_ASSERTION':message.includes('toHaveValue')?'VALUE_ASSERTION':message.includes('toEqual')?'ROW_STATE_ASSERTION':['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';
+   const failureSite=Number((error instanceof Error?error.stack:'')?.match(/operations-connected-actions\.spec\.ts:(\d+):/)?.[1]||0);
+   const knownCode=['TRUCK_NOT_LIVE','PROVIDER_VERIFICATION_REQUIRED','CAPACITY_DRIVER_LOCATION_REQUIRED','TRUCK_DRIVER_CHANGED','INVALID_VEHICLE','INVALID_VEHICLE_USE_BASIS','REGULAR_TRUCK_DRIVER_REQUIRED','TRACKING_DEVICE_LOCATION_REQUIRED','DRIVER_REQUIRED_FOR_CAPACITY'].find(code=>message.includes(code))||null;
+   writeFileSync(file,JSON.stringify({stage,failureClass,failureSite,knownCode,...evidence},null,2)+'\n');
+   console.log('OPERATIONS_CONTROLS_STAGE '+stage+' '+failureClass+' line '+failureSite+(knownCode?' '+knownCode:''));
+   throw Error('OPERATIONS_CONTROLS_FAILED '+stage);
+  }
+ };
 }
 async function posted(page:Page,form:Locator,endpoint:string,button:string){
  const pending=page.waitForResponse(response=>new URL(response.url()).pathname===endpoint&&response.request().method()==='POST');
@@ -119,7 +134,7 @@ test('Operations saves Driver permissions, Off Duty and regular-route removal wi
   await data.preflight();const owner=await data.makeOwner(),a=await data.pair('First'),b=await data.pair('Other'),operator=await data.staff(true),cities=await places(db);
   const routePlaces=[cities.origin,cities.destination].map(city=>({placeRef:city.id,label:city.name}));
   for(const pair of [a,b]){await refreshProviderCapacityLocation(pair.driver,{vehicleId:pair.vehicleId,approximateLat:9.03,approximateLng:38.74,locationPrecisionKm:20});await publishProviderCapacity(owner,{vehicleId:pair.vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:routePlaces});await addProviderRegularCapacity(owner,{vehicleId:pair.vehicleId,expectedDriverId:pair.driver.id,geometry:'ROUTE',routePlaces,areaCenterPlaceRef:'',areaBoundaryPlaces:[]});}
-  const capacityA=checked(await db.from('capacities').select('*').eq('vehicle_id',a.vehicleId).single()),capacityB=checked(await db.from('capacities').select('*').eq('vehicle_id',b.vehicleId).single());
+  const capacityA=checked(await db.from('capacities').select('*').eq('vehicle_id',a.vehicleId).eq('market_status','EMPTY').single()),capacityB=checked(await db.from('capacities').select('*').eq('vehicle_id',b.vehicleId).eq('market_status','EMPTY').single());
   const routeA=checked(await db.from('profile_routes').select('*').eq('assigned_vehicle_id',a.vehicleId).single()),routeB=checked(await db.from('profile_routes').select('*').eq('assigned_vehicle_id',b.vehicleId).single());data.routes.push(routeA.id,routeB.id);data.remember();
   const driverB=checked(await db.from('driver_permissions').select('*').eq('user_id',b.driver.id).single()),vehicleA=checked(await db.from('vehicles').select('*').eq('id',a.vehicleId).single());
   diag.phase('PROVIDER_DENIAL');await data.login(page,owner.id);
@@ -149,7 +164,7 @@ test('Operations investigates all three Driver appeal decisions while retaining 
   for(const decision of ['APPROVED','RELEASED','DISMISSED'] as const){
    diag.phase('PREPARE_'+decision);const pair=await data.pair(decision);
    const shipment=await createProviderShipment(owner,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:pair.vehicleId,originPlaceRef:cities.origin.id,destinationPlaceRef:cities.destination.id,passingPlaceRef:cities.passing.id,cargoSummary:'Synthetic Operations handover '+decision,customerEmail:`operations-owner-${randomUUID()}@example.test`,trackingMode:'LOCATION_AND_STATUS'});data.shipments.push(shipment.id);data.remember();
-   const location={locationArea:'Around synthetic Addis Ababa',approximateLat:'9.03',approximateLng:'38.74',locationPrecisionKm:'20',locationSource:'DEVICE_OBSCURED'};
+   const location={locationArea:'Around synthetic Addis Ababa',approximateLat:'9.03',approximateLng:'38.74',locationPrecisionKm:'10',locationSource:'DEVICE_OBSCURED'};
    await updateProviderShipmentStatus(pair.driver,shipment.id,'LOADING','Synthetic loading proof',await data.proof(shipment.id));await updateProviderShipmentStatus(pair.driver,shipment.id,'IN_TRANSIT','Synthetic trip',null,location);await updateProviderShipmentStatus(pair.driver,shipment.id,'UNLOADING','Synthetic unloading proof',await data.proof(shipment.id));
    diag.phase('DRIVER_APPEAL_'+decision);await data.login(page,pair.driver.id);await page.goto(`/app/provider-shipments/${shipment.id}`);await auditOpenTrackingProgress(page);const appealForm=page.locator(`form[action="/api/provider-shipments/${shipment.id}/appeal"]`);await expect(appealForm).toBeVisible();await appealForm.getByRole('textbox',{name:'Explain the approval problem',exact:true}).fill('Synthetic driver awaiting the customer unloading decision.');await posted(page,appealForm,`/api/provider-shipments/${shipment.id}/appeal`,'Ask the team to review');await expect(page.getByText('Your appeal is saved. The team can review this shipment and its proof.',{exact:true})).toBeVisible();
    const appeal=checked(await db.from('provider_tracking_appeals').select('id,status,driver_user_id').eq('shipment_id',shipment.id).single());expect(appeal).toMatchObject({status:'OPEN',driver_user_id:pair.driver.id});expect(await auditCount(db,pair.driver.id,shipment.id,'TRACKING_APPEAL_OPENED')).toBe(1);
@@ -159,18 +174,18 @@ test('Operations investigates all three Driver appeal decisions while retaining 
   diag.phase('PROVIDER_APPEAL_DECISION_DENIED');await data.login(page,owner.id);for(const item of cases){const denied=await page.request.post(`/api/admin/tracking-appeals/${item.appealId}`,{form:{decision:item.decision,note:'Provider cannot investigate their own appeal.'},maxRedirects:0});expect(denied.status()).toBe(303);expect(new URL(denied.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBe('You do not have permission to perform that action.');expect(await auditCount(db,owner.id,item.shipmentId,'TRACKING_APPEAL_RESOLVED')).toBe(0);}
   for(const [index,item] of cases.entries()){
    const untouched=cases.filter(other=>other!==item),before=await Promise.all(untouched.map(async other=>({shipment:checked(await db.from('provider_shipments').select('*').eq('id',other.shipmentId).single()),appeal:checked(await db.from('provider_tracking_appeals').select('*').eq('id',other.appealId).single())})));
-   diag.phase('STAFF_'+item.decision);await data.login(page,operator);await page.goto(`/admin/operations/tracking/${item.shipmentId}`);let form=page.locator(`form[action="/api/admin/tracking-appeals/${item.appealId}"]`);await expect(form).toBeVisible();
+   diag.phase('STAFF_'+item.decision);await data.login(page,operator);await page.goto(`/admin/operations/tracking/${item.shipmentId}`);let form=page.locator(`form[action="/api/admin/tracking-appeals/${item.appealId}"]`);await expect(form).toHaveCount(0);await expect(page.getByRole('button',{name:'Review appeal',exact:true})).toBeVisible();
    diag.phase('PROOF_LOOKUP_'+item.decision);const loadingProof=item.proofEvents.find(event=>event.status==='LOADING');expect(loadingProof).toBeTruthy();const endpoint=`/api/provider-shipments/${item.shipmentId}/proofs/${loadingProof!.id}`;const proofResponse=page.waitForResponse(response=>new URL(response.url()).pathname===endpoint);const timeline=page.locator('.admin-operation-timeline li').filter({has:page.getByText('Loading',{exact:true})});await timeline.getByRole('button',{name:'Open proof',exact:true}).click();const opened=await proofResponse;diag.proofStatus(opened.status());diag.phase('PROOF_RESPONSE_'+item.decision);expect(opened.status()).toBe(200);
    // React development effects can cancel the first response after its headers.
    // Verify the actual painted blob and an authorized served payload instead.
-   const proofBytesMatch=(await paintedProofBytes(page)).equals(proofBytes);diag.proofBytesMatch(proofBytesMatch);diag.phase('PROOF_BYTES_'+item.decision);expect(proofBytesMatch).toBe(true);const served=await page.request.get(endpoint);expect(served.status()).toBe(200);expect(Buffer.from(await served.body()).equals(proofBytes)).toBe(true);await page.getByRole('button',{name:'Close proof',exact:true}).click();
+   const proofBytesMatch=(await paintedProofBytes(page)).equals(proofBytes);diag.proofBytesMatch(proofBytesMatch);diag.phase('PROOF_BYTES_'+item.decision);expect(proofBytesMatch).toBe(true);const served=await page.request.get(endpoint);expect(served.status()).toBe(200);expect(Buffer.from(await served.body()).equals(proofBytes)).toBe(true);await page.getByRole('button',{name:'Close proof',exact:true}).click();await page.getByRole('button',{name:'Review appeal',exact:true}).click();await expect(form).toBeVisible();
    diag.phase('STAFF_FORM_'+item.decision);
    await form.getByLabel('Investigation note',{exact:true}).fill('Synthetic investigation confirmed proof and customer contact.');await form.getByRole('combobox',{name:'Decision',exact:true}).selectOption(item.decision);
    let resolvingActor=operator;
    if(index===2){
     diag.phase('STALE_APPEAL_DENIAL');checked(await db.from('support_agent_profiles').update({can_manage_operations:false}).eq('user_id',operator));const appealBefore=checked(await db.from('provider_tracking_appeals').select('*').eq('id',item.appealId).single()),shipmentBefore=checked(await db.from('provider_shipments').select('*').eq('id',item.shipmentId).single());
     expect((await posted(page,form,`/api/admin/tracking-appeals/${item.appealId}`,'Save decision')).searchParams.get('error')).toBe('You do not have permission to perform that action.');expect(checked(await db.from('provider_tracking_appeals').select('*').eq('id',item.appealId).single())).toEqual(appealBefore);expect(checked(await db.from('provider_shipments').select('*').eq('id',item.shipmentId).single())).toEqual(shipmentBefore);expect(await auditCount(db,operator,item.shipmentId,'TRACKING_APPEAL_RESOLVED')).toBe(0);
-    resolvingActor=fallback;await data.login(page,fallback);await page.goto(`/admin/operations/tracking/${item.shipmentId}`);form=page.locator(`form[action="/api/admin/tracking-appeals/${item.appealId}"]`);await form.getByLabel('Investigation note',{exact:true}).fill('Synthetic investigation confirmed proof and customer contact.');await form.getByRole('combobox',{name:'Decision',exact:true}).selectOption(item.decision);
+    resolvingActor=fallback;await data.login(page,fallback);await page.goto(`/admin/operations/tracking/${item.shipmentId}`);form=page.locator(`form[action="/api/admin/tracking-appeals/${item.appealId}"]`);await expect(form).toHaveCount(0);await page.getByRole('button',{name:'Review appeal',exact:true}).click();await expect(form).toBeVisible();await form.getByLabel('Investigation note',{exact:true}).fill('Synthetic investigation confirmed proof and customer contact.');await form.getByRole('combobox',{name:'Decision',exact:true}).selectOption(item.decision);
    }
    diag.phase('SAVE_'+item.decision);await posted(page,form,`/api/admin/tracking-appeals/${item.appealId}`,'Save decision');await expect(page.getByText('The appeal decision is saved.',{exact:true})).toBeVisible();
    const appeal=checked(await db.from('provider_tracking_appeals').select('status,resolved_by,resolved_at,resolution_note').eq('id',item.appealId).single());expect(appeal).toMatchObject({status:item.decision,resolved_by:resolvingActor,resolution_note:'Synthetic investigation confirmed proof and customer contact.'});expect(appeal.resolved_at).toBeTruthy();expect(await auditCount(db,resolvingActor,item.shipmentId,'TRACKING_APPEAL_RESOLVED')).toBe(1);

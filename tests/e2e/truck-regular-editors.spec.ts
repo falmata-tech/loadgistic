@@ -4,6 +4,7 @@ import {auditFleetProvider,auditFleetDriver,auditLogin,auditDeleteVehicles,check
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {addProviderRegularCapacity,publishProviderCapacity,refreshProviderCapacityLocation} from '../../src/lib/provider-capacity.js';
+import {localFleetPublication} from './provider-publication-helper';
 import sharp from 'sharp';
 
 // Ordinary UI/Auth and the real local managed commands. Test-owned fixtures and
@@ -14,11 +15,13 @@ type PlaceRow={id:string;name:string;longitude:number;latitude:number};
 type Pair={vehicleId:string;driverId:string};
 async function fixture(prefix:string){
  const db=localAuditService(),owner=await auditFleetProvider(db,prefix),vehicles:string[]=[],drivers:string[]=[];
+ const publication=localFleetPublication(db,owner);
  const rows:PlaceRow[]=checked(await db.from('place_catalog').select('id,name,longitude,latitude').in('normalized_name',['addis ababa','adama','dire dawa']));
  const city=(name:string)=>{const row=rows.find(row=>row.name===name);if(!row)throw Error('LOCAL_REGULAR_PLACES_REQUIRED');return row;};
  const places=[city('Addis Ababa'),city('Adama'),city('Dire Dawa')],route=places.slice(0,2).map(row=>({placeRef:row.id,label:row.name}));
  let legacyId='';
  const cleanup=async()=>{
+  await publication.cleanup();
   const routeIds: {id:string}[]=checked(await db.from('profile_routes').select('id').eq('organization_id',owner.organization_id));
   const capacityIds:{id:string}[]=vehicles.length?checked(await db.from('capacities').select('id').in('vehicle_id',vehicles)):[];
   const entityIds=[...vehicles,...routeIds.map(row=>row.id),...capacityIds.map(row=>row.id)];
@@ -31,8 +34,8 @@ async function fixture(prefix:string){
  try{
   const pairs:Pair[]=[];
   for(const suffix of ['A','B']){
-   const truck=await createProviderVehicle(owner,{make:'Route fleet',model:`Truck ${suffix}`,plate:`REG-${owner.suffix}-${suffix}`,cargoConfiguration:'Cargo van',trailerInterchangeable:false});vehicles.push(truck.id);
-   const driver=await auditFleetDriver(db,owner,truck.id);drivers.push(driver.id);pairs.push({vehicleId:truck.id,driverId:driver.id});
+   const truck=await createProviderVehicle(owner,{useBasis:'OWNED',make:'Route fleet',model:`Truck ${suffix}`,plate:`REG-${owner.suffix}-${suffix}`,cargoConfiguration:'Cargo van',trailerInterchangeable:false});vehicles.push(truck.id);
+   const driver=await auditFleetDriver(db,owner,truck.id);drivers.push(driver.id);pairs.push({vehicleId:truck.id,driverId:driver.id});await publication.publish(truck.id);
    await refreshProviderCapacityLocation(driver,{vehicleId:truck.id,approximateLat:9.03,approximateLng:38.74,locationPrecisionKm:20});
    await publishProviderCapacity(owner,{vehicleId:truck.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:route});
   }

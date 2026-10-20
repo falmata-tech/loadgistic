@@ -102,7 +102,7 @@ function page(data){
   '@/components/lifecycle-controls':{TrackingRecoveryControls:'Recovery'},'@/components/tracking-location-map':{TrackingLocationMap:'TrackingMap'},
   '@/components/tracking-proof-link':{TrackingProofLink:'Proof'},'@/components/tracking-map-data':{trackingMapData:mapData},
   '@/components/admin-record-documents':{AdminRecordDocuments:'RecordDocuments'},'@/components/admin-account-overview':{AdminAccountOverviewView:'AccountOverview'},
-  '@/lib/platform-admin/account':{getAdminAccountOverview:async()=>null,getAdminRecordDocuments:async()=>null},'@/lib/admin-account-navigation.js':{adminAccountReturnPath:()=>null},
+  '@/lib/platform-admin/account':{getAdminAccountOverview:async()=>null,getAdminRecordDocuments:async()=>null},'@/lib/admin-account-navigation.js':{adminAccountReturnPath:()=>null,adminOperationReturnPath:()=>null,adminOperationListReturnPath:()=>null},
   '@/lib/auth':{requireUser:async()=>actor},'@/lib/ui':{displayStatus:statusLabel},
   '@/lib/platform-admin.js':{hasPlatformPermission:()=>true,PLATFORM_PERMISSIONS:{OPERATIONS:'OPERATIONS'},getAdminOperationRecord:async()=>record},
   '@/lib/lifecycle.js':{getTrackingRecovery:async()=>({actions:[]}),adminTrackingLocation:async()=>data},'@/lib/provider-tracking.js':{listProviderTrackingAppeals:async()=>[]}

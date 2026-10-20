@@ -42,27 +42,32 @@ test('featured management previews its canonical public programme',async({page}:
 test('administrator primary destinations resolve to working pages',async({page}:{page:any})=>{
   test.setTimeout(90_000); // Seven separately compiled dev-server destinations.
   await loginAsAdministrator(page);
-  for(const path of ['/admin','/admin/operations','/admin/featured','/admin/capacity-network','/admin/reviews','/admin/support','/app/menu']){
+  for(const path of ['/admin','/admin/operations','/admin/featured','/admin/devices','/admin/reviews','/admin/support','/app/menu']){
     const response=await page.goto(path);
     expect(response?.status(),`${path} returned an error status`).toBeLessThan(400);
     await expect(page.locator('.app-main')).toBeVisible();
     await expect(page.getByRole('heading',{name:'404',exact:true})).toHaveCount(0);
   }
+  await page.goto('/admin/capacity-network');
+  // Next can stream a 200 shell before rendering notFound; assert the final page.
+  await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();
+  await expect(page.locator('.app-main')).toHaveCount(0);
 });
 
 test('administrator Overview exposes every core record and management area',async({page}:{page:any})=>{
   await loginAsAdministrator(page);
   const overview=page.locator('.admin-overview-page');
   await expect(overview.getByRole('heading',{name:'Platform overview'})).toBeVisible();
-  for(const label of ['Clients','Users','Trucks','Drivers','Tracking','Capacity','Routes']){
-    await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toBeVisible();
-  }
-  for(const label of ['Review Center','Private capacity','Featured & sponsors','Support & team']){
-    await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toBeVisible();
-  }
+  await expect(overview.getByRole('link',{name:/^People and provider accounts/})).toHaveAttribute('href','/admin/operations');
+  for(const [label,view] of [['Vehicles','TRUCKS'],['Drivers','DRIVERS'],['Tracking','TRACKING'],['Capacity','CAPACITY'],['Routes','ROUTES']])
+    await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toHaveAttribute('href',`/admin/operations?view=${view}`);
+  for(const [label,path] of [['Review Center','/admin/reviews'],['Featured & sponsors','/admin/featured'],['Team','/admin/support?tab=team'],['GPS devices','/admin/devices']])
+    await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toHaveAttribute('href',path);
+  await expect(overview.getByRole('link',{name:/^Open inbox/})).toHaveAttribute('href','/admin/support');
+  await expect(overview.getByRole('link',{name:/^Private capacity/})).toHaveCount(0);
   const navigation=page.getByRole('navigation',{name:(page.viewportSize()?.width||0)<=760?'Mobile navigation':'Workspace navigation'});
   await expect(navigation.getByRole('link',{name:'Overview',exact:true})).toHaveClass(/active/);
-  await expect(navigation.getByRole('link',{name:'Records',exact:true})).toHaveAttribute('href','/admin/operations');
+  await expect(navigation.getByRole('link',{name:'Accounts',exact:true})).toHaveAttribute('href','/admin/operations');
 });
 
 test('every current Operations inventory opens a real bounded record detail',async({page}:{page:any})=>{

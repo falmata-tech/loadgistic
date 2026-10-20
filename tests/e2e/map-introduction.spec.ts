@@ -1,7 +1,7 @@
 import {test,expect} from './browser-test';
 import type {Browser,Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
-import {openCapacityFilters,closeCapacityFilters} from './capacity-drawer-helper';
+import {openCapacityFilterDialog} from './capacity-drawer-helper';
 const heading='Find space for your next load';
 
 test('introduction stays above a usable map across screen sizes and languages',async({page}:{page:Page},info:{project:{name:string};outputPath:(name:string)=>string})=>{
@@ -20,11 +20,11 @@ test('introduction stays above a usable map across screen sizes and languages',a
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath(`introduction-${width}.png`)});
   await page.locator('main').evaluate(el=>el.scrollTop=el.scrollHeight);
-  const drawer=await openCapacityFilters(page);
-  await expect(drawer.getByRole('button',{name:'Filters',exact:true})).toBeInViewport();
-  await drawer.getByRole('button',{name:'Filters',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Filters',exact:true});await expect(dialog).toBeVisible();
-  await dialog.getByRole('button',{name:'Close filters'}).click();await closeCapacityFilters(page);
+  const trigger=page.locator('.capacity-map-controls .capacity-filter-trigger');
+  await expect(trigger).toBeInViewport();
+  const dialog=await openCapacityFilterDialog(page);
+  await expect(dialog).toHaveAccessibleName('Vehicle filters');
+  await dialog.getByRole('button',{name:'Close filters'}).click();await expect(dialog).toBeHidden();
   await expect(page.locator('.leaflet-control-zoom-in')).toBeInViewport();
   await page.screenshot({path:info.outputPath(`map-controls-${width}.png`)});
  }
@@ -50,7 +50,7 @@ test('server response contains the introduction and search metadata before JavaS
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('.market-introduction h1')).toHaveText(heading);
   await expect(page.locator('.market-introduction p')).toContainText('your transporters');
-  await expect(page).toHaveTitle('Truck Capacity & Transporter Networks | Loadgistic');
-  await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/See truck capacity and routes/);
+  await expect(page).toHaveTitle('Vehicle Capacity & Transporter Networks | Loadgistic');
+  await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/Find vehicle space and routes/);
  }finally{await context.close();}
 });

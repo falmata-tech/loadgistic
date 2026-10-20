@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {localAuditService,auditProvider,auditFleetProvider,auditLogin,auditProof,auditTrackingOwnerLogin,checked} from './audit-helpers';
 import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
+import {updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {localSupportLogin} from './provider-support-helper';
 import type {Page,BrowserContext} from 'playwright-core';
 
@@ -151,6 +152,8 @@ test('rating decisions preserve publication rules, require authority and retain 
   test.setTimeout(120000);const service=localAuditService();const actor=await auditProvider(service,'review-rating');const ids:string[]=[],proofs:Array<{shipmentId:string;path:string}>=[];let admin:any;
   try{
     const vehicle=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Rating review',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
+    expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+    await updateFleetDriverAccess(actor,actor.id,{vehicleId:vehicle.id,canManageCapacity:true,canManageTracking:true});
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
     await auditLogin(page,actor.email);admin=await adminBrowser(browser,page,info);
     for(const resolution of ['UPHELD','REMOVED']){

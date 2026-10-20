@@ -14,39 +14,48 @@ test('retired account billing controls cannot be enabled by an administrator',as
   await page.screenshot({path:info.outputPath('billing-controls-retired.png')});
 });
 
-test('Featured automatic selection can be switched off and prepared without losing manual controls',async({page}:{page:any},info:any)=>{
+test('Featured automatic selection can be switched off and prepared without losing manual controls @featured-prepare',async({page}:{page:any},info:any)=>{
   test.setTimeout(60000);await login(page,'admin@loadgistic.local');await page.goto('/admin/featured');
   await page.getByRole('button',{name:'Selection settings',exact:true}).click();
   const controls=page.getByRole('region',{name:'Featured selection settings'});
+  const originalMode=await controls.getByLabel('Selection',{exact:true}).inputValue();
   const originalCount=await controls.getByLabel('Maximum Drivers per day').inputValue();
   try{
     await controls.getByLabel('Selection',{exact:true}).selectOption('MANUAL');
     await controls.getByRole('button',{name:'Save selection settings'}).click();
     await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
     await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toHaveCount(0);
-  }finally{
     if(!await page.getByRole('dialog',{name:'Selection settings',exact:true}).count())await page.getByRole('button',{name:'Selection settings',exact:true}).click();
     await controls.getByLabel('Selection',{exact:true}).selectOption('AUTO');
     await controls.getByLabel('Maximum Drivers per day').fill(originalCount);
     await controls.getByRole('button',{name:'Save selection settings'}).click();
+    await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
+    await page.getByRole('button',{name:'Prepare upcoming days'}).click();
+    await expect(page.getByText(/days prepared\./)).toBeVisible();
+    await page.getByRole('link',{name:'Edit programme',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Save draft',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Publish this day',exact:true})).toBeVisible();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.getByRole('link',{name:'Cancel editing',exact:true}).click();
+    if(!await page.getByRole('dialog',{name:'Selection settings',exact:true}).count())await page.getByRole('button',{name:'Selection settings',exact:true}).click();
+    await controls.screenshot({path:info.outputPath('featured-selection.png')});
+    await page.goto('/featured');
+    const trucks=page.locator('.featured-truck-tile');
+    await expect(trucks.first()).toBeVisible();
+    expect(await trucks.count()).toBeLessThanOrEqual(8);
+    await expect(trucks.first().locator('.featured-card-details > small').first()).toHaveText('Driver');
+    await trucks.first().click();
+    await expect(page.locator('.featured-truck-dialog')).toBeVisible();
+    await expect(page.locator('.featured-truck-dialog').getByRole('link',{name:'Transporter profile'})).toBeVisible();
+  }finally{
+    await page.goto('/admin/featured');
+    await page.getByRole('button',{name:'Selection settings',exact:true}).click();
+    const restore=page.getByRole('region',{name:'Featured selection settings'});
+    await restore.getByLabel('Selection',{exact:true}).selectOption(originalMode);
+    await restore.getByLabel('Maximum Drivers per day').fill(originalCount);
+    await restore.getByRole('button',{name:'Save selection settings'}).click();
+    await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
   }
-  await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
-  await page.getByRole('button',{name:'Prepare upcoming days'}).click();
-  await expect(page.getByText(/days prepared\./)).toBeVisible();
-  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Save draft',exact:true})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Publish this day',exact:true})).toBeVisible();
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.getByRole('link',{name:'Cancel editing',exact:true}).click();if(!await page.getByRole('dialog',{name:'Selection settings',exact:true}).count())await page.getByRole('button',{name:'Selection settings',exact:true}).click();
-  await controls.screenshot({path:info.outputPath('featured-selection.png')});
-  await page.goto('/featured');
-  const trucks=page.locator('.featured-truck-tile');
-  await expect(trucks.first()).toBeVisible();
-  expect(await trucks.count()).toBeLessThanOrEqual(8);
-  await expect(trucks.first()).toContainText(/Company driver|Independent driver/);
-  await trucks.first().click();
-  await expect(page.locator('.featured-truck-dialog')).toBeVisible();
-  await expect(page.locator('.featured-truck-dialog').getByRole('link',{name:'Transporter profile'})).toBeVisible();
 });
 
 test('provider free access has no payment form or countdown and cannot change platform settings',async({page,request}:{page:any;request:any})=>{

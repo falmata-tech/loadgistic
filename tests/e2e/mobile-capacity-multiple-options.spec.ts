@@ -1,7 +1,7 @@
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {randomUUID} from 'node:crypto';
-import {localAuditService,auditProvider,auditDeleteVehicles,checked} from './audit-helpers';
+import {localAuditService,auditProvider,auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,checked} from './audit-helpers';
 import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 import {grantPrivateCapacityAccess} from '../../src/lib/private-capacity.js';
 import {localMailpitNumericCode} from './mailpit-helper';
@@ -83,8 +83,9 @@ test('Expo multi configurations retain exact recipient pairs after real private 
   for(const configuration of ['Cargo van','Mini Box Truck']){
    const actor=await auditProvider(db,'native-multi');actors.push(actor);checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
    const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Multi filters',plate:`MOPT-${actor.suffix}`,cargo_configuration:configuration}}));vehicles.push(vehicle.id);
+   await auditAssignAndPublishSelfDrivenVehicle(db,actor,vehicle.id);
    await publishProviderCapacity(actor,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.74,locationPrecisionKm:20,currentRoutePlaces:[{placeRef:origin.id,label:origin.name},{placeRef:destination.id,label:destination.name}]});
-   capacityIds.push(checked(await db.from('capacities').select('id').eq('vehicle_id',vehicle.id).single()).id);
+   capacityIds.push(checked(await db.from('capacities').select('id').eq('vehicle_id',vehicle.id).eq('market_status','EMPTY').single()).id);
    await grantPrivateCapacityAccess(actor,{name:'Synthetic multi-filter recipient',vehicleId:vehicle.id,email});
   }
   expect((await page.request.get(`/api/mobile/visitor/capacity/signals?vehicleCategory=${encodeURIComponent(csv)}`)).status()).toBe(401);

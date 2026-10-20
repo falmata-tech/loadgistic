@@ -3,10 +3,10 @@ id: FEAT-GST-001
 title: Retained guest support history
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SUP-001, FEAT-ADM-001, FEAT-IAM-001]
 problem: Public live support is retired; previous participants still need secure access to retained transcripts and attachments.
-behavior: Platform transport-arrangement chat is retired under FEAT-ENT/TRQ-001, alongside the earlier retired general public Help. No new general guest-support conversations or guest replies/uploads are accepted. Previous guests may recover read-only transcripts using their original email and recovery code. Staff with existing authorization may finish and close retained records; assignment, private history and attachment authorization remain intact. Dashboard live support for transport providers is governed by FEAT-SUP-001.
+behavior: Platform transport-arrangement chat is retired under FEAT-ENT/TRQ-001, alongside the earlier retired general public Help. No new general guest-support conversations or guest replies/uploads are accepted. Previous guests may recover read-only transcripts using their original email and recovery code. Retired guest-support staff pages return 404; existing records and assignment-scoped private-file authorization remain intact without a staff archive UI. Dashboard live support for transport providers is governed by FEAT-SUP-001.
 contracts: [GuestSupportIdentity, GuestConversationAccess, AssistedMatchingConversation, GuestSupportMessage, GuestSupportAttachment, GuestSupportProjection]
 observability: [guest_conversation_access_denied, guest_conversation_closed]
-rollout: Apply migration 108 after local rehearsal; verify HTTP and database denial, preservation of historical records and authorized downloads. Keep database policy during app rollback so old public clients still fail closed. Restoring public live support requires a new owner decision and reviewed function rollback. No history deletion or mass closure is authorized.
+rollout: Migration 108 retired new public chat; migration 152 retires its remaining staff workload by closing only old Waiting/Open guest records with audit. Verify HTTP and database denial, preserved history, authorized downloads, and no staff archive UI. Keep database policy during app rollback so old public clients still fail closed. Restoring public live support requires a new owner decision and reviewed function rollback. No history deletion is authorized.
 ---
 
 ## October18 planned supersession — retire platform Brokerage
@@ -50,9 +50,8 @@ records and records an administrative retirement audit. Provider Support and
 Brokerage conversations, messages, assignments and limits remain unchanged.
 Do not merely hide the workload count or leave inaccessible old records consuming
 slots. Private records/files need not be destructively erased to retire this work;
-no old third-service UI is retained on their behalf. The previous recovery and
-staff-completion scenarios below document the earlier contract, superseded for
-staff UI by this owner decision.
+no old third-service UI is retained on their behalf. Guest recovery remains
+current; the earlier staff-completion scenario was superseded by this decision.
 
 Given old general guest-support conversations are Waiting or Open\
 When the reviewed retirement migration runs\
@@ -66,10 +65,9 @@ Tests: planned `tests/sql/retired-guest-workload.sql`; run an isolated rollback
 rehearsal before installation. Hosted application remains separately reviewed.
 
 Current policy: transport-provider users retain live support in their dashboards
-under FEAT-SUP-001. Public transport-arrangement conversations are live Brokerage
-work under FEAT-TRQ-001, which supersedes the September24 asynchronous intake.
-General public help remains retired. These retained transcripts are not a third
-current service; staff completion and authorized guest read-only recovery remain.
+under FEAT-SUP-001. Public transport-arrangement chat and general public help
+are retired. These retained transcripts are not a third current service;
+authorized guest read-only recovery remains, but the staff completion UI does not.
 Earlier contracts remain in Git history. October15 source review confirms retired
 creation/current endpoints return410; this correction changes documentation only.
 
@@ -92,20 +90,20 @@ And no new recovery email or public contact record is created.
 
 ### Scenario: retained messages and files remain reachable
 
-Given an authorized guest or assigned staff member opens a retained conversation
+Given an authorized guest opens a retained conversation
 When they page older messages
 Then bounded windows preserve chronological order and offer Latest messages
 And incoming staff messages do not shift the historical window
-And every attachment download checks current conversation authorization
-And loss of staff assignment immediately revokes transcript and file access.
+And every attachment download checks current conversation authorization.
 
-### Scenario: staff finish retained work
+### Scenario: retired staff archive stays unavailable without exposing files
 
-Given a staff member has Support permission and the required assignment
-When they reply to or close an old record
-Then existing message, workload and terminal-state rules apply
-And an administrator retains existing assignment oversight
-And no records are deleted, closed in bulk or reassigned by migration 108.
+Given an old guest conversation has an assigned Support agent
+When the agent opens its former staff archive URL
+Then the route returns 404 without showing the retained transcript
+And an attachment request still requires the agent's current assignment
+And removing that assignment immediately revokes the agent's file access
+And the recovered guest's own read-only transcript and attachment access remain.
 
 Tests: `tests/provider-support-policy.test.mjs`,
 `tests/sql/provider-only-support.sql`, `tests/sql/support-history.sql`,

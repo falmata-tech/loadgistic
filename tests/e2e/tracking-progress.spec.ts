@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {translateMessage} from '../../src/lib/i18n/core.js';
 import {localAuditService,checked,auditProvider,auditTrackingOwnerLogin} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
-import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 
 test('Tracking shows saved progress, explicit pending choice and problem recovery on desktop and phone',async({page,browser}:{page:any;browser:any},info:any)=>{
@@ -14,6 +14,8 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
   try{
     actor=await auditProvider(service,'progress-audit');
     vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Progress test',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+    expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+    await updateFleetDriverAccess(actor,actor.id,{vehicleId,canManageCapacity:true,canManageTracking:true});
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
     const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
     shipmentId=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Tracking progress review',customerEmail:`progress-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'})).id;
@@ -40,7 +42,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
       await expect(language).toBeEnabled();await language.selectOption(locale);
       await expect(page.locator('html')).toHaveAttribute('lang',locale);
       await expect(steps.nth(0)).toContainText(t('Going to pickup'));
-      await expect(page.locator('.workspace-title .meta')).toHaveText(t('Independent driver'));
+      await expect(page.locator('.workspace-title .meta')).toHaveText(t('Transport Provider'));
       await expect(panel.locator('textarea[name=note]')).toHaveValue('Home <b>Account</b>');
       await page.locator('input[name=nextStatus][value=ISSUE]').check();
       const note=panel.locator('textarea[name=note]');await note.fill('Home <b>Account</b>');
@@ -75,7 +77,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     }
     await expect(panel.locator('input[name=nextStatus][value=COMPLETED]')).toHaveCount(0);
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const owner=await guest.newPage();await auditTrackingOwnerLogin(owner,`progress-${actor.suffix}@example.test`);
-    await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();await page.reload();
+    await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();await page.reload();await auditOpenTrackingProgress(page);
     await expect(panel.getByRole('heading',{name:'Tracking complete'})).toBeVisible();await expect(panel.locator('input')).toHaveCount(0);await expect(steps.nth(0)).toContainText('Not recorded');await expect(steps.nth(1)).toContainText('Completed');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await panel.screenshot({path:info.outputPath('tracking-complete.png')});

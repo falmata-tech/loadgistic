@@ -5,7 +5,6 @@ import {localAuditService,auditFleetProvider,checked} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
-import {openCapacityFilters,chooseCapacityOptions} from './capacity-drawer-helper';
 // These assertions wait for streamed authorized/denied pages. Dedicated
 // performance gates retain their own bounds; the total case bound stays120s.
 const expect=baseExpect.configure({timeout:20000});
@@ -34,30 +33,27 @@ async function cleanIdentities(db:SupabaseClient,ids:string[]){
  }
 }
 
-test('Private capacity keeps invalid staff deep links denied until the filters are corrected',async({page},info)=>{
+test('retired staff capacity feed cannot expose records and the public map remains available',async({page},info)=>{
  test.setTimeout(120000);const db=localAuditService(),ids:string[]=[];let stage='SETUP';let logout:(()=>Promise<unknown>)|undefined;
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
  try{
   const admin=await identity(db,ids,'ADMIN');logout=await localSupportLogin(page,admin);
-  stage='INVALID_SSR';await page.goto('/admin/capacity-network?status=EMPTY&status=PARTIAL&q=Synthetic%20transporter');
-  await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
-  await expect(page.getByRole('button',{name:'Review filters',exact:true})).toBeVisible();
-  expect((await page.request.get('/api/admin/capacity-network?status=EMPTY&status=PARTIAL')).status()).toBe(400);
-  // The same URL stays denied after reload; hydration cannot broaden the map.
-  await page.reload();await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
-  stage='EXPLICIT_CORRECTION';await page.getByRole('button',{name:'Review filters',exact:true}).click();
-  const dialog=page.locator('.capacity-filter-dialog');await expect(dialog).toBeVisible();
-  await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);
-  await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
-  await expect(page).toHaveURL(url=>url.pathname==='/admin/capacity-network'&&url.searchParams.getAll('status').length===1&&url.searchParams.get('status')==='EMPTY,PARTIAL');
-  await expect(page.locator('.public-feed-overlay.error')).toHaveCount(0);
-  await expect(page.locator('.public-feed-overlay.loading')).not.toBeVisible({timeout:30000});
-  stage='INDEPENDENT_SEARCH';const drawer=await openCapacityFilters(page);
-  await expect(drawer.getByRole('searchbox',{name:'Search transporters',exact:true})).toHaveValue('Synthetic transporter');
-  const response=await page.request.get('/api/admin/capacity-network?status=EMPTY%2CPARTIAL');expect(response.status()).toBe(200);
-  await drawer.screenshot({path:info.outputPath('admin-capacity-filter-correction.png')});
+  stage='RETIRED_PAGE';await page.goto('/admin/capacity-network?status=EMPTY&status=PARTIAL&q=Synthetic%20transporter');
+  // A streamed Next.js notFound can return the shell with HTTP 200 while
+  // rendering the 404 state. Assert the actual page and the 410 API below.
+  await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0);
+  stage='RETIRED_API';const retiredApi=await page.request.get('/api/admin/capacity-network?status=EMPTY&status=PARTIAL');
+  expect(retiredApi.status()).toBe(410);
+  expect((await retiredApi.json()).error.code).toBe('PLATFORM_CAPACITY_RETIRED');
+  expect(retiredApi.headers()['cache-control']).toContain('no-store');
+  // Reload cannot revive the old privileged feed or silently broaden access.
+  stage='RELOAD_DENIAL';await page.reload();await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();
+  stage='PUBLIC_MAP';await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible();
+  const invalid=await page.request.get('/api/public/capacity?status=EMPTY&status=PARTIAL');expect(invalid.status()).toBe(400);
+  await page.screenshot({path:info.outputPath('retired-admin-feed-public-map.png'),scale:'css'});
   expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw Error('ADMIN_CAPACITY_SSR_WORKFLOW_FAILED: '+stage);}
+ }catch(error){await failureEvidence(page,info,stage,error);throw Error('RETIRED_CAPACITY_ROUTE_WORKFLOW_FAILED: '+stage);}
  finally{await logout?.();await cleanIdentities(db,ids);}
 });
 

@@ -1,6 +1,6 @@
 import {test,expect} from './browser-test';
 import {closeCapacityFilters} from './capacity-drawer-helper';
-import {auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
+import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {addProviderRegularCapacity,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
@@ -13,6 +13,7 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
   const city=[place('Dire Dawa'),place('Shinile'),place('Melka Jebdu'),place('Dengego')];
   checked(await service.from('company_pages').update({published:true,headline:'Regional freight from Dire Dawa',about:'Independent driver serving Dire Dawa, Shinile, Melka Jebdu and Dengego.'}).eq('provider_profile_id',actor.provider_profile_id));
   vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'JAC',model:'X200',plate:`SHARED-${actor.suffix}`,cargoConfiguration:'Mini Box Truck',trailerInterchangeable:false})).id;
+  await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicleId);
   await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:city[0].latitude+.005,approximateLng:city[0].longitude+.005,locationPrecisionKm:3,currentRoutePlaces:city.slice(0,2).map(row=>({placeRef:row.id}))});
   const regularId=await addProviderRegularCapacity(actor,{vehicleId,expectedDriverId:actor.id,geometry:'ROUTE',routePlaces:city.map(row=>({placeRef:row.id})),areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
   const response=await page.request.get(`/api/public/capacity?provider=${encodeURIComponent(`shared-route-${actor.suffix}`)}&status=PARTIAL`);expect(response.ok()).toBe(true);const data=await response.json();

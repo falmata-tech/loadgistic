@@ -9,7 +9,7 @@ test('language changes preserve form content and persist across public navigatio
  const email=page.getByTestId('email-code-request-form').locator('input[name=email]');await email.fill('Home+Account@example.test');
  for(const [locale] of languages){await picker.selectOption(locale);await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(email).toHaveValue('Home+Account@example.test');await expect(email).toHaveAttribute('name','email');await expect(page.getByTestId('email-code-request-form')).toHaveAttribute('action','/api/applications/email-otp/request');}
  for(const [locale,about] of languages){
-  await picker.selectOption(locale);await expect(page.locator('html')).toHaveAttribute('lang',locale);await page.goto('/about');await expect(page.locator('.public-information-heading')).toContainText(about);
+  await picker.selectOption(locale);await expect(page.locator('html')).toHaveAttribute('lang',locale);await page.goto('/about');await expect(page.getByRole('tablist',{name:about})).toBeVisible();
   await page.reload();await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled();await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(picker).toHaveValue(locale);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath(`about-${locale}.png`),fullPage:true});
@@ -17,14 +17,14 @@ test('language changes preserve form content and persist across public navigatio
  expect(errors).toEqual([]);
 });
 
-test('language control remains separate from phone map support and account actions',async({page}:{page:import('playwright-core').Page},info:{outputPath:(name:string)=>string})=>{
+test('language control remains separate from phone map filters and account actions',async({page}:{page:import('playwright-core').Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);await page.goto('/');
  for(const width of [320,390,760]){
   await page.setViewportSize({width,height:844});
   for(const [locale] of languages){
    const picker=page.locator('.public-header-language select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled();await picker.selectOption(locale);
    await expect(page.locator('html')).toHaveAttribute('lang',locale);
-   const bounds=await Promise.all([picker,page.locator('.public-assistance-dock'),page.getByTestId('public-session-action')].map(element=>element.boundingBox()));
+   const bounds=await Promise.all([picker,page.locator('.capacity-filter-trigger'),page.getByTestId('public-session-action')].map(element=>element.boundingBox()));
    expect(bounds.every(Boolean)).toBe(true);
    for(let i=0;i<bounds.length;i++){const a=bounds[i]!;expect(a.x).toBeGreaterThanOrEqual(0);expect(a.x+a.width).toBeLessThanOrEqual(width+1);
     for(let j=i+1;j<bounds.length;j++){const b=bounds[j]!;expect(a.x+a.width<=b.x+1||b.x+b.width<=a.x+1||a.y+a.height<=b.y+1||b.y+b.height<=a.y+1,JSON.stringify({width,locale,i,j,bounds})).toBe(true);}
@@ -46,7 +46,7 @@ test('profile headings and filter distances translate without rewriting transpor
   await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled();await picker.selectOption(locale);
   await expect(page.locator('html')).toHaveAttribute('lang',locale);
   await expect(page.locator('.provider-site-identity h1')).toHaveText(name);
-  await expect(page.locator('.provider-handle')).toContainText(t('Fleet transporter'));
+  await expect(page.locator('.provider-handle')).toHaveText(t('Transport Provider'));
   await expect(page.locator('.provider-hero-facts')).toContainText(t('New to Loadgistic'));
   await expect(page.locator('.provider-about-card .lede')).toHaveText(about);
   await expect(page.locator('.provider-services,.provider-corridor-list,.provider-microsite-safety')).toHaveCount(0);

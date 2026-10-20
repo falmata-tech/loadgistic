@@ -8,7 +8,7 @@ import {localAuditService,checked} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {getDailyFeaturedProviders} from '../../src/lib/public-featured.js';
 
-test('admin grants Featured alone; staff sign in, publish and lose access when revoked',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
+test('admin grants Featured alone; staff sign in, publish and lose access when revoked @featured-prepare',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(360000);page.setDefaultTimeout(20000);page.setDefaultNavigationTimeout(60000);const service=localAuditService(),suffix=randomUUID().slice(0,8),email=`featured-${suffix}@example.test`;
  const date=new Date(Date.UTC(2095,0,1)+randomInt(0,3650)*86400000).toISOString().slice(0,10);
  let staffId='',staffContext:BrowserContext|undefined,stage='SETUP',flowError:unknown;const sessions:Array<ReturnType<typeof createClient>>=[];

@@ -24,6 +24,6 @@ export function SponsorAdminForm({featureDate,candidates}:{featureDate:string;ca
     <div className="form-group"><label htmlFor="sponsor-position"><Text message="Position"/></label><select id="sponsor-position" name="position" required defaultValue="1">{Array.from({length:5},(_,index)=><option key={index+1} value={index+1}>{index+1}</option>)}</select></div>
     <div className="form-group"><label htmlFor="sponsor-start"><Text message="Starts"/></label><DatePicker id="sponsor-start" name="startsOn"  defaultValue={featureDate} required/></div>
     <div className="form-group"><label htmlFor="sponsor-end"><Text message="Ends"/></label><DatePicker id="sponsor-end" name="endsOn"  defaultValue={featureDate} required/></div>
-    <button className="button" name="command" value="SAVE_SPONSOR"><BadgeDollarSign aria-hidden="true"/><Text message="Schedule sponsor"/></button>
+    <button className="button" name="command" value="SAVE_SPONSOR"><BadgeDollarSign aria-hidden="true"/><Text message="Save"/></button>
   </form>;
 }

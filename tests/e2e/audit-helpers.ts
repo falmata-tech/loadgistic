@@ -53,6 +53,18 @@ export async function auditProvider(service:any,prefix:string,{contentPolicyAcce
  }catch(error){checked(await service.auth.admin.deleteUser(id));throw error;}
 }
 
+// New personal-provider vehicles are Draft and have no implicit driver. Set up
+// the exact owner/driver pair through the same guarded commands as the app.
+export async function auditAssignAndPublishSelfDrivenVehicle(service:any,actor:{id:string},vehicleId:string){
+ expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+ const {updateFleetDriverAccess}=await import('../../src/lib/fleet.js');
+ await updateFleetDriverAccess(actor,actor.id,{vehicleId,canManageCapacity:true,canManageTracking:true});
+ expect(checked(await service.rpc('capacity_active_driver_id',{target_vehicle_id:vehicleId}))).toBe(actor.id);
+ expect(checked(await service.rpc('set_provider_vehicle_publication',{
+  actor_user_id:actor.id,target_vehicle_id:vehicleId,requested_state:'LIVE'
+ }))).toMatchObject({vehicleId,state:'LIVE'});
+}
+
 export async function auditFleetProvider(service:any,prefix:string){
  const suffix=randomUUID().slice(0,8),email=`${prefix}-${suffix}@loadgistic.local`;
  const id=checked(await service.auth.admin.createUser({email,email_confirm:true})).user.id;

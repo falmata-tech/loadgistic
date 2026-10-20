@@ -3,6 +3,7 @@ import {chooseDate} from './date-picker-helper';
 import {openCapacityFilters,openCapacityFilterDialog} from './capacity-drawer-helper';
 import { test, expect } from './browser-test';
 import {mkdirSync} from 'node:fs';
+import {randomInt,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditDeleteVehicles} from './audit-helpers';
@@ -311,6 +312,20 @@ test('route filters accept either endpoint without requiring the other',async({p
 });
 
 test('administrator can review and publish an ordered daily truck-and-Driver roster',async({page}:{page:any})=>{
+  test.setTimeout(90000);
+  const service=localAuditService();
+  const suffix=randomUUID().slice(0,8),headline=`Featured roster test ${suffix}`;
+  const firstWeek=randomInt(0,4);
+  let featureDate='';
+  // Keep the weekday's vehicle theme while staying outside automatic selection's
+  // seven-day window. Never edit an existing administrator's programme.
+  for(let offset=0;offset<4;offset++){
+    const candidate=new Date();candidate.setUTCDate(candidate.getUTCDate()+7*(2+(firstWeek+offset)%4));
+    const iso=candidate.toISOString().slice(0,10);
+    if(checked(await service.from('featured_provider_days').select('id').eq('feature_date',iso)).length===0){featureDate=iso;break;}
+  }
+  expect(featureDate,'No unused Featured test date exists within the calendar range.').not.toBe('');
+  try{
   await login(page,'admin@loadgistic.local');
   await page.goto('/admin/featured');
   await expect(page.getByRole('heading',{name:'Daily Featured Vehicles'})).toBeVisible();
@@ -321,11 +336,14 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
   await expect(page.getByRole('button',{name:'Automatic'})).toHaveClass(/active/);
   await page.getByRole('link',{name:'Cancel editing',exact:true}).click();await page.getByRole('button',{name:'Schedule sponsor',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Sponsors'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Schedule sponsor'})).toBeVisible();
-  const date=new Date();date.setUTCDate(date.getUTCDate()+7);
-  await chooseDate(page,'Feature date',date.toISOString().slice(0,10));
+  const sponsorDialog=page.getByRole('dialog',{name:'Schedule sponsor'});
+  await expect(sponsorDialog.getByRole('button',{name:'Save',exact:true})).toBeVisible();
+  await sponsorDialog.getByRole('button',{name:'Cancel',exact:true}).click();
+  await chooseDate(page,'Feature date',featureDate);
   await page.getByRole('button',{name:'Load day'}).click();
-  await expect(page).toHaveURL(new RegExp(`date=${date.toISOString().slice(0,10)}`));
+  await expect(page).toHaveURL(new RegExp(`date=${featureDate}`));
+  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
+  await expect(page).toHaveURL(/edit=day/);
   await expect(page.getByLabel('Add vehicle and Driver')).toBeEnabled();
   await expect.poll(()=>page.getByLabel('Add vehicle and Driver').locator('option').count()).toBeGreaterThan(1);
   // A streamed URL can arrive before the saved roster. Wait for the hydrated
@@ -338,14 +356,24 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
     await page.getByRole('button',{name:'Add',exact:true}).click();
     await expect(page.locator('.featured-roster-list>li')).toHaveCount(count);
   }
-  await page.getByLabel('Featured trucks').selectOption('3');
+  await page.getByLabel('Featured vehicles').selectOption('3');
   await page.getByLabel('Sponsor mentions').selectOption('2');
   await expect(page.locator('.featured-schedule-timeline .programme-break').first()).toBeVisible();
-  await page.getByLabel('Headline').fill('Today’s featured trucks');
+  await page.getByLabel('Headline').fill(headline);
   await page.getByLabel('Short introduction').fill('Meet today’s featured trucks and the Drivers operating them.');
+  expect(checked(await service.from('featured_provider_days').select('id').eq('feature_date',featureDate))).toHaveLength(0);
   await page.getByRole('button',{name:'Publish this day'}).click();
   await expect(page.getByText('Daily feature published.')).toBeVisible();
   await expect(page.locator('.featured-admin-status').getByText('Published',{exact:true})).toBeVisible();
+  }finally{
+    // Manual publication creates no rotation history. Remove only this test's
+    // uniquely titled row and its audit events; slots cascade with the day.
+    const owned=checked(await service.from('featured_provider_days').select('id').eq('feature_date',featureDate).eq('public_headline',headline));
+    for(const row of owned){
+      checked(await service.from('audit_logs').delete().eq('entity_id',row.id));
+      checked(await service.from('featured_provider_days').delete().eq('id',row.id).eq('public_headline',headline));
+    }
+  }
 });
 
 test('capacity Market keeps truck markers and bounded map batches alongside search results',async({page}:{page:any})=>{
@@ -631,7 +659,8 @@ test('provider-name search filters the one Truck Market and truck details reach 
   expect(blueLineTrucks.length).toBeGreaterThan(0);
   expect(blueLineTrucks.every((item:any)=>item.provider_name==='BlueLine Transport PLC')).toBe(true);
   await page.goto(`/@${blueLineTrucks[0].provider_handle}`);
-  await expect(page.locator('.provider-handle')).toContainText('/@');
+  await expect(page.locator('.provider-handle')).toHaveText('Transport Provider');
+  await expect(page.locator('.provider-site-identity > p').first()).toHaveText(`@${blueLineTrucks[0].provider_handle}`);
   await expect(page.getByRole('heading',{name:'Reviewed documents'})).toBeVisible();
   const fleetToggle=page.locator('.provider-fleet-disclosure>summary');
   if(await fleetToggle.count())await fleetToggle.click();

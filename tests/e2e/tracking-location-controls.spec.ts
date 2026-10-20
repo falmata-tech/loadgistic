@@ -1,5 +1,5 @@
 import {test,expect} from './browser-test';
-import {auditIdentity,auditLogin} from './audit-helpers';
+import {auditIdentity,auditLogin,auditOpenTrackingProgress} from './audit-helpers';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';
@@ -35,16 +35,16 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     await auditLogin(page,'driver@loadgistic.local');
     await page.goto(`/app/provider-shipments/${shipment.id}`);
     const controls=page.locator('.tracking-control-panel'),radius=controls.getByLabel('Location privacy radius');
-    await expect(radius.locator('option')).toHaveText(['1 km','3 km','5 km','10 km','20 km']);
+    await expect(radius.locator('option')).toHaveText(['1 km','3 km','5 km','10 km']);
     await expect(controls).toContainText('updates pause when the phone locks');
     await expect.poll(async()=>checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED')).length).toBe(1);
     let events=checked(await service.from('provider_shipment_events').select('id,location_lat,location_lng,location_precision_km').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'));
-    expect(events[0].location_precision_km).toBe(20);expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);
+    expect(events[0].location_precision_km).toBe(10);expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);
     // Reload starts the automatic reporter, and a recent fix produces a truthful cooldown.
-    await page.reload();await expect(controls.getByRole('status')).toContainText('Waiting for the next location update');
+    await page.reload();await auditOpenTrackingProgress(page);await expect(controls.getByRole('status')).toContainText('Waiting for the next location update');
     const radiusReply=page.waitForResponse((response:any)=>response.url().endsWith(`/api/provider-shipments/${shipment.id}/location`));
     await radius.selectOption('5');expect(await (await radiusReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});
-    await expect(controls).toContainText('Last saved radius: 20 km.');
+    await expect(controls).toContainText('Last saved radius: 10 km.');
     expect(checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'))).toHaveLength(1);
     // Age only this synthetic shipment's event rather than sleeping ten minutes.
     checked(await service.from('provider_shipment_events').update({created_at:new Date(Date.now()-11*60000).toISOString()}).eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'));
@@ -55,7 +55,7 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     expect(events).toHaveLength(2);expect(events[0].location_precision_km).toBe(5);expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);
     const before=posts;await controls.getByRole('button',{name:'Update location',exact:true}).click();await expect(controls.getByRole('status')).toContainText('Waiting');expect(posts).toBe(before);
     await page.screenshot({path:path.join(captures,`${info.project.name}-driver-radius.png`),scale:'css'});
-    await page.evaluate(()=>localStorage.setItem('test-tracking-gps','defer'));await page.reload();
+    await page.evaluate(()=>localStorage.setItem('test-tracking-gps','defer'));await page.reload();await auditOpenTrackingProgress(page);
     await expect(controls.getByRole('status')).toContainText('Finding Driver location');await expect.poll(()=>page.evaluate(()=>(window as any).testGps.length)).toBe(1);
     const hiddenPosts=posts;
     await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,value:'hidden'});document.dispatchEvent(new Event('visibilitychange'));(window as any).testGps.shift().success({coords:{latitude:9.031234,longitude:38.741234}});});

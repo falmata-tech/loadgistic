@@ -2,7 +2,7 @@ import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {auditProvider,auditProof,auditDeleteVehicles,checked,localAuditService} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
-import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 
 // Actual Expo browser UI + local API/Auth/Storage; not installed Android evidence.
@@ -24,6 +24,8 @@ async function fixture(prefix:string,mode='STATUS_ONLY'){
  try{
   checked(await service.from('company_pages').update({published:true,contact_phone:'+251900000000',show_contact_phone:true}).eq('provider_profile_id',actor.provider_profile_id));
   vehicle=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Native map',model:'Synthetic truck',plate:`NMAP-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+  await updateFleetDriverAccess(actor,actor.id,{vehicleId:vehicle,canManageCapacity:true,canManageTracking:true});
   const city=async(name:string)=>checked(await service.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id;
   const routeRefs={originPlaceRef:await city('addis ababa'),passingPlaceRef:await city('adama'),destinationPlaceRef:await city('dire dawa')};
   shipment=(await createProviderShipment(actor,{vehicleId:vehicle,...routeRefs,expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),cargoSummary:'Synthetic native Tracking map',customerEmail:email,trackingMode:mode})).id;

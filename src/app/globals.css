@@ -2376,6 +2376,8 @@ body,.public-capacity-page,.home-capacity-market,.public-provider-directory,.pro
   .public-header .public-nav{width:min(1482px,calc(100% - 28px))}
   .public-workspace-nav{position:fixed;z-index:1200;top:92px;left:var(--public-rail-left);width:var(--public-rail-width)}
   body:has(>.public-workspace-nav)>main,body:has(>.public-workspace-nav)>footer{padding-left:calc(var(--public-rail-left) + var(--public-rail-width) + var(--public-rail-gap))}
+  /* The report/block actions follow <main> as a sibling, so they need the same rail clearance. */
+  body:has(>.public-workspace-nav)>.content-safety-actions{width:auto;margin-left:calc(var(--public-rail-left) + var(--public-rail-width) + var(--public-rail-gap));margin-right:0;padding-left:max(16px,calc((100vw - var(--public-rail-left) - var(--public-rail-width) - var(--public-rail-gap) - 1160px)/2));padding-right:16px}
   .public-header .public-session-compact{display:none}
 }
 
@@ -2958,7 +2960,7 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
 .public-map-legend>.public-map-legend-items{position:absolute;bottom:calc(100% + 5px);left:0;display:grid;width:max-content;max-width:calc(100vw - 40px);grid-template-columns:repeat(3,max-content);gap:2px 4px;padding:6px;border:1px solid #b8ccce;border-radius:10px;background:rgba(255,255,255,.98);box-shadow:0 8px 24px rgba(10,44,53,.26)}
 .public-map-legend:not([open])>.public-map-legend-items{display:none}
 
-.shared-capacity-session-workspace{height:100%;grid-template-rows:auto minmax(300px,1fr)}
+.shared-capacity-session-workspace{height:100%;grid-template-rows:auto minmax(302px,1fr)}
 .shared-capacity-session-bar{min-height:44px;margin-block:4px;padding:4px 7px;border-radius:10px}
 .shared-capacity-session-bar>span>span{display:grid;gap:0}.shared-capacity-session-bar>span strong{color:#0b1d3a;font-size:.7rem;line-height:1.15}.shared-capacity-session-bar>span small{font-size:.6rem;line-height:1.15}
 .shared-capacity-session-bar .button{min-height:44px}

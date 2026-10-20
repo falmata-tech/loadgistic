@@ -39,9 +39,24 @@ export function adminOperationReturnPath(value){
   for(const [key,current] of url.searchParams){
    if(url.searchParams.getAll(key).length!==1)return null;
    if(key==='kind'&&['ORGANIZATION','PROVIDER_PROFILE','CAPACITY_ROUTE','REGULAR_ROUTE'].includes(current))params.set(key,current);
-   else if(key==='returnTo'){const account=adminAccountReturnPath(current);if(!account)return null;params.set(key,account);}
+   else if(key==='returnTo'){
+    const context=adminAccountReturnPath(current)||adminOperationListReturnPath(current,match[1].toUpperCase());
+    if(!context)return null;
+    params.set(key,context);
+   }
    else return null;
   }
   return url.pathname+(params.size?'?'+params:'');
+ }catch{return null;}
+}
+
+/** A record may return to its own searched inventory, never another view. */
+export function adminOperationListReturnPath(value,view){
+ if(typeof value!=='string'||typeof view!=='string')return null;
+ const normalized=adminOperationReturnPath(value);
+ if(!normalized)return null;
+ try{
+  const url=new URL(normalized,'https://account.invalid');
+  return url.pathname==='/admin/operations'&&url.searchParams.get('view')===view?normalized:null;
  }catch{return null;}
 }

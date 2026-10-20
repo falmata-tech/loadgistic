@@ -23,15 +23,15 @@ async function login(page:any,email:string){
   await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
 }
 async function openPortrait(page:any){
- const section=page.locator('details.workspace-related-section').filter({has:page.locator('.driver-portrait-editor')});
- await expect(section).toHaveCount(1);
- if(await section.getAttribute('open')===null)await section.locator(':scope > summary').click();
- await expect(section.getByRole('region',{name:'Public Driver photo'})).toBeVisible();
+ await page.getByRole('button',{name:'Change photo',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'Driver photo',exact:true}).getByRole('region',{name:'Public Driver photo'})).toBeVisible();
 }
 async function openBusiness(page:any){
- const section=page.locator('#business');await expect(section).toHaveCount(1);
- if(await section.getAttribute('open')===null)await section.locator(':scope > summary').click({timeout:10000});
- await expect(section.locator('.provider-image-editor')).toBeVisible();return section;
+ if(new URL(page.url()).searchParams.get('tab')!=='profile')await page.goto('/app/more?tab=profile');
+ const section=page.locator('#business');await expect(section).toBeVisible();
+ await section.getByRole('button',{name:'Change photo',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Transporter image',exact:true});
+ await expect(dialog.locator('.provider-image-editor')).toBeVisible();return dialog;
 }
 async function post(page:any,values:Record<string,string>){
   return page.evaluate(async(input:Record<string,string>)=>{
@@ -96,15 +96,21 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
       expect((await visitor.request.get(`/api/public/providers/portrait-${suffix}/image`)).status()).toBe(404);
       await business.locator('.provider-image-editor').screenshot({path:info.outputPath('unpublished-transporter-image.png'),scale:'css'});
       providerImagePath=checked(await service.from('company_pages').select('profile_image_path').eq('id',companyPageId).single()).profile_image_path;
-      await business.locator('label.rich-toggle:has(input[name="published"])').click({timeout:10000});
-      await expect(business.locator('input[name="published"]')).toBeChecked();
-      await business.getByRole('button',{name:'Save transporter information',exact:true}).click({timeout:10000});
+      await business.getByRole('button',{name:'Cancel',exact:true}).click();
+      await page.locator('#business').getByRole('button',{name:'Edit profile',exact:true}).click();
+      const profile=page.getByRole('dialog',{name:'Transporter profile',exact:true});
+      await profile.locator('label.rich-toggle:has(input[name="published"])').click({timeout:10000});
+      await expect(profile.locator('input[name="published"]')).toBeChecked();
+      await profile.getByRole('button',{name:'Save transporter information',exact:true}).click({timeout:10000});
       await expect(page.locator('.alert.success')).toBeVisible();
       expect((await visitor.request.get(`/api/public/providers/portrait-${suffix}/image`)).status()).toBe(200);
     }
     const theme=featuredTruckTypeForDate(date);
+    checked(await service.rpc('accept_content_policy',{actor_user_id:ownerId,policy_version:'2026-10-09'}));
+    if(!orgId)checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actorId,requested_drives_truck:true}));
     vehicleId=checked(await service.from('vehicles').insert({...scope,label:`Portrait test ${suffix}`,category:'TRUCK',make:'Test',model:'Portrait',cargo_configuration:theme.configurations[0],plate:`PHOTO-${suffix}`,active:true}).select('id').single()).id;
-    if(orgId)checked(await service.from('driver_vehicle_assignments').insert({vehicle_id:vehicleId,driver_user_id:actorId,assigned_by:ownerId}));
+    checked(await service.rpc('update_fleet_driver_access',{actor_user_id:ownerId,command:{driver_user_id:actorId,vehicle_id:vehicleId,can_manage_capacity:true,can_manage_tracking:true}}));
+    checked(await service.rpc('set_provider_vehicle_publication',{actor_user_id:ownerId,target_vehicle_id:vehicleId,requested_state:'LIVE'}));
     // Explicit synthetic eligibility evidence for this test provider only; no real proof is implied.
     const evidence=orgId?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']:['IDENTITY','DRIVER_IDENTITY','VEHICLE_OWNERSHIP'];
     checked(await service.from('verification_requests').insert(evidence.map(verification_type=>({
@@ -123,7 +129,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
 
     await login(page,driver.email);await page.goto('/app/more');await openPortrait(page);
     if(kind==='company')expect((await page.context().request.get(providerPreviewUrl)).status()).toBe(403);
-    const card=page.getByRole('region',{name:'Public Driver photo'});await expect(card).toBeVisible();
+    const card=page.getByRole('dialog',{name:'Driver photo',exact:true}).getByRole('region',{name:'Public Driver photo'});await expect(card).toBeVisible();
     await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
     const imageBytes=await sharp({create:{width:720,height:480,channels:3,background:'#06787c'}}).jpeg().withExif({IFD0:{Artist:'Synthetic private author'}}).toBuffer();
     const input=card.getByLabel('Choose photo');const consent=card.getByLabel('I agree to make this photo public.');
@@ -206,7 +212,11 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
       checked(await service.from('driver_portrait_uploads').delete().eq('user_id',actorId));
       checked(await service.from('verification_requests').delete().eq('submitted_by',actorId));
     }
-    if(vehicleId)checked(await auditDeleteVehicles(service,'id',vehicleId));
+    if(vehicleId){
+      checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));
+      checked(await service.from('driver_vehicle_assignments').delete().eq('vehicle_id',vehicleId));
+      checked(await auditDeleteVehicles(service,'id',vehicleId));
+    }
     if(companyPageId){
       const pageImage=checked(await service.from('company_pages').select('profile_image_path').eq('id',companyPageId).maybeSingle());
       if(pageImage?.profile_image_path)await removePrivateUpload(pageImage.profile_image_path);

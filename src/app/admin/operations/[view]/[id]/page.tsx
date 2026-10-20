@@ -19,7 +19,7 @@ import {displayStatus} from '@/lib/ui';
 import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
 import {AdminRecordDocuments} from '@/components/admin-record-documents';
 import {getAdminAccountOverview,getAdminRecordDocuments} from '@/lib/platform-admin/account';
-import {adminAccountReturnPath} from '@/lib/admin-account-navigation.js';
+import {adminAccountReturnPath,adminOperationListReturnPath} from '@/lib/admin-account-navigation.js';
 import {AdminAccountOverviewView} from '@/components/admin-account-overview';
 
 const views:Record<string,{label:string;permission:keyof typeof PLATFORM_PERMISSIONS;icon:any}>={
@@ -82,15 +82,16 @@ export default async function AdminOperationRecordPage({params,searchParams}:{pa
   if(view==='USERS'){
     const account=await getAdminAccountOverview(user,id,{providerKey:query.provider,truckPage:query.truckPage,trackingPage:query.trackingPage,documentPage:query.documentPage,supportPage:query.supportPage,devicePage:query.devicePage}).catch((error:unknown)=>{if(error instanceof Error&&error.message==='ACCOUNT_PROVIDER_NOT_RELATED')notFound();throw error;});
     if(!account)notFound();
-    const returnTo=`/admin/operations/users/${account.account.id}`;
+    const listReturn=adminOperationListReturnPath(query.returnTo,'USERS');
+    const returnTo=listReturn||`/admin/operations/users/${account.account.id}`;
     const accountActions=RecordActions({record:{...account.account,view:'USERS'},returnTo,actorId:user.id,actorIsAdmin:account.actorIsAdmin});
-    return <div className={"page admin-operation-record-page "+styles.workspace}><Flash error={query.error} success={query.success}/><AdminAccountOverviewView data={account} actions={accountActions}/></div>;
+    return <div className={"page admin-operation-record-page "+styles.workspace}><Flash error={query.error} success={query.success}/><AdminAccountOverviewView data={account} actions={accountActions} backHref={listReturn||'/admin/operations?view=USERS'}/></div>;
   }
   const record:any=await getAdminOperationRecord(user,view,id,query.kind||'');
   if(!record)notFound();
-  const Icon=config.icon,accountReturn=adminAccountReturnPath(query.returnTo),listHref=accountReturn||`/admin/operations?view=${view}`;
+  const Icon=config.icon,accountReturn=adminAccountReturnPath(query.returnTo),inventoryReturn=adminOperationListReturnPath(query.returnTo,view),listHref=accountReturn||inventoryReturn||`/admin/operations?view=${view}`;
   const detailParams=new URLSearchParams();if(record.record_kind)detailParams.set('kind',record.record_kind);if(accountReturn)detailParams.set('returnTo',accountReturn);
-  const returnTo=`/admin/operations/${view.toLowerCase()}/${record.id}${detailParams.size?'?'+detailParams:''}`;
+  const returnTo=inventoryReturn||`/admin/operations/${view.toLowerCase()}/${record.id}${detailParams.size?'?'+detailParams:''}`;
   const relatedHref=(path:string)=>path+(accountReturn?(path.includes('?')?'&':'?')+new URLSearchParams({returnTo:accountReturn}):'');
   const events=Array.isArray(record.events)?record.events:[];
   // The bounded Driver projection joins exactly its employing organization.

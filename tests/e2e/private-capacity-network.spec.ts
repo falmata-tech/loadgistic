@@ -79,6 +79,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await page.setViewportSize({width:320,height:640});
   await expect.poll(()=>page.locator('.public-capacity-map').evaluate((element:any)=>element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(300);
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:test.info().outputPath('shared-capacity-320.png'),fullPage:true});
   if(initialViewport)await page.setViewportSize(initialViewport);
   if(process.env.CAPTURE_VISUAL_REVIEW==='1'){
     const output=path.resolve(process.cwd(),'artifacts/private-capacity-assisted-chat-v1');

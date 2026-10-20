@@ -8,13 +8,13 @@ import {WorkspaceTaskDialog} from './workspace-task-dialog';
 import {Pagination} from './pagination';
 import styles from './admin-account-overview.module.css';
 
-export function AdminAccountOverviewView({data,actions}:{data:AdminAccountOverview;actions:React.ReactNode}){
+export function AdminAccountOverviewView({data,actions,backHref='/admin/operations?view=USERS'}:{data:AdminAccountOverview;actions:React.ReactNode;backHref?:string}){
  const {account,selectedProvider:provider}=data,returnTo=`/admin/operations/users/${account.id}${provider?'?'+new URLSearchParams({provider:provider.key}):''}`,accountPath=`/admin/operations/users/${account.id}`;
  const childHref=(path:string)=>path+(path.includes('?')?'&':'?')+new URLSearchParams({returnTo});
  const query={provider:provider?.key||undefined,truckPage:data.fleet.page>1?String(data.fleet.page):undefined,trackingPage:data.tracking.page>1?String(data.tracking.page):undefined,documentPage:data.documents.page>1?String(data.documents.page):undefined,supportPage:data.support.page>1?String(data.support.page):undefined,devicePage:data.devices.page>1?String(data.devices.page):undefined};
  const employee=provider?.relationship==='DRIVER';
  return <div className={styles.accountView}>
-  <PageHeader icon={UserRound} title={account.name} subtitle={employee?<Text message="Company driver"/>:provider?<Text message={provider.isTransportProvider?'Transport Provider':'Business account'}/>:<Text message={account.role==='ADMIN'?'Administrator':account.role==='SUPPORT'?'Team member':'Account'}/>} action={<Link href="/admin/operations" className="button secondary small"><ArrowLeft aria-hidden="true"/><Text message="Accounts"/></Link>}/>
+  <PageHeader icon={UserRound} title={account.name} subtitle={employee?<Text message="Company driver"/>:provider?<Text message={provider.isTransportProvider?'Transport Provider':'Business account'}/>:<Text message={account.role==='ADMIN'?'Administrator':account.role==='SUPPORT'?'Team member':'Account'}/>} action={<Link href={backHref} className="button secondary small"><ArrowLeft aria-hidden="true"/><Text message="Accounts"/></Link>}/>
   <section className={styles.identity} aria-label="Account details">
    <header><h2><Text message="Account"/></h2><StatusPill status={account.active?'ACTIVE':'SUSPENDED'}/>{actions}</header>
    <dl><div><dt><Text message="Sign-in email"/><span><Text message="Read-only"/></span></dt><dd>{account.email}</dd></div><div><dt><Text message="Phone"/><span><Text message="Read-only"/></span></dt><dd>{account.phone||<Text message="Not recorded"/>}</dd></div><div><dt><Text message="Created"/></dt><dd>{new Date(account.created_at).toLocaleDateString()}</dd></div></dl>

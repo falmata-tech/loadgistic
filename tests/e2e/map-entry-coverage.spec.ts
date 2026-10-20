@@ -43,10 +43,9 @@ test('Capacity basemap extends to application navigation without retired transpo
     await expect(page.getByLabel('Search transporters')).toBeVisible();
     await clearTouchTargets(page,'.capacity-people-drawer .capacity-drawer-actions button,.capacity-people-drawer .capacity-drawer-actions a');
     await page.getByRole('button',{name:'Close transporter search',exact:true}).click();
-    const chat=page.getByRole('button',{name:'Need help with transport?',exact:true});await chat.click();
-    await expect(page.getByRole('dialog',{name:'Need help with transport?',exact:true})).toBeVisible();
-    await page.getByRole('button',{name:'Close',exact:true}).click();
-    await page.screenshot({path:info.outputPath(`capacity-floating-chat-${width}.png`),scale:'css'});
+    await expect(page.getByRole('button',{name:'Need help with transport?',exact:true})).toHaveCount(0);
+    await expect(page.locator('.public-assistance-dock,.public-chat-dialog')).toHaveCount(0);
+    await page.screenshot({path:info.outputPath(`capacity-full-map-${width}.png`),scale:'css'});
   }
 });
 

@@ -23,7 +23,7 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   const email=`lifecycle-guest-${randomUUID()}@example.test`;
   const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicles[0],originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Original audit cargo',customerEmail:email,trackingMode:'LOCATION_AND_STATUS'});shipmentId=shipment.id;
-  await updateProviderShipmentStatus(drivers[0],shipment.id,'TO_PICKUP','Travelling to pickup',null,{locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.7',locationPrecisionKm:'20',locationSource:'DEVICE_OBSCURED'});
+  await updateProviderShipmentStatus(drivers[0],shipment.id,'TO_PICKUP','Travelling to pickup',null,{locationArea:'Around Addis Ababa',approximateLat:'9',approximateLng:'38.7',locationPrecisionKm:'10',locationSource:'DEVICE_OBSCURED'});
   phase('PROVIDER_CORRECTION');await auditLogin(page,actor.email);await page.goto(`/app/provider-shipments/${shipment.id}`);
   await page.getByRole('button',{name:'Edit details',exact:true}).click();const correction=page.getByRole('dialog',{name:'Correct Tracking details',exact:true});
   await correction.getByRole('textbox',{name:'Cargo summary',exact:true}).fill('Corrected audit cargo');await correction.getByLabel('Reason',{exact:true}).fill('Correct the agreed cargo description');
@@ -48,7 +48,7 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   phase('GUEST_CODE_VERIFY');await guestPage.getByRole('button',{name:'Open tracking',exact:true}).click();await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible({timeout:30000});
   const guestUrl=guestPage.url();
   phase('OPERATIONS_MAP');await auditLogin(page,'admin@loadgistic.local');await page.goto(`/admin/operations/tracking/${shipment.id}`);
-  await expect(page.locator('.tracking-reported-area')).toContainText('Around Addis Ababa');await expect(page.locator('.tracking-reported-area')).toHaveAttribute('data-location-radius-km','20');await expect(page.locator('.leaflet-container')).toBeVisible();await expect(page.locator('.tracking-approximate-circle')).toHaveCount(1);await expect(page.locator('[data-route-stop]')).toHaveCount(3);
+  await expect(page.locator('.tracking-reported-area')).toContainText('Around Addis Ababa');await expect(page.locator('.tracking-reported-area')).toHaveAttribute('data-location-radius-km','10');await expect(page.locator('.leaflet-container')).toBeVisible();await expect(page.locator('.tracking-approximate-circle')).toHaveCount(1);await expect(page.locator('[data-route-stop]')).toHaveCount(3);
   await page.screenshot({path:path.join(snapshots,`${info.project.name}-admin-map.png`),fullPage:true,scale:'css'});
   const replacement=checked(await service.from('vehicles').select('platform_number').eq('id',vehicles[1]).single());
   phase('OPERATIONS_REASSIGN');await page.getByRole('button',{name:'Change vehicle',exact:true}).click();const reassign=page.getByRole('dialog',{name:'Reassign Tracking',exact:true});

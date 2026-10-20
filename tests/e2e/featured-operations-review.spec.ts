@@ -6,7 +6,7 @@ import {randomUUID,randomInt} from 'node:crypto';
 import {localAuditService,checked} from './audit-helpers';
 import {getDailyFeaturedProviders} from '../../src/lib/public-featured.js';
 
-test('Featured explains automatic operation and persists a manual draft and published day',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('Featured explains automatic operation and persists a manual draft and published day @featured-prepare',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(120000);page.setDefaultTimeout(15000);const service=localAuditService(),suffix=randomUUID().slice(0,8);
  const date=new Date(Date.UTC(2085,0,1)+randomInt(0,3650)*86400000).toISOString().slice(0,10);let dayId='',client:ReturnType<typeof createClient>|undefined;
  expect((await service.from('featured_provider_days').select('id',{count:'exact',head:true}).eq('feature_date',date)).count).toBe(0);
@@ -67,8 +67,8 @@ test('copy polish keeps admin, member and transporter profile controls usable',a
  try{
   await login('ADMIN');await page.goto('/admin');await expect(page.getByRole('heading',{name:'Platform overview',exact:true})).toBeVisible();await expect(page.getByText('Platform data',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('admin-overview.png'),fullPage:true});
   await page.goto('/admin/operations');await expect(page.getByText(/Credentials, sessions, tracking secrets/)).toHaveCount(0);await page.screenshot({path:info.outputPath('admin-records.png'),fullPage:true});
-  await page.goto('/admin/capacity-network');await expect(page.getByRole('heading',{name:'Private capacity',exact:true})).toBeVisible();await expect(page.getByText('Assisted matching capacity',{exact:true})).toHaveCount(0);
-  await login('TRANSPORTER');await page.goto('/app/home');await expect(page.locator('.fleet-truck-row').first()).toBeVisible();await expect(page.getByText('Operating priorities',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
+  await page.goto('/admin/support');await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible();await expect(page.getByText('Assisted matching capacity',{exact:true})).toHaveCount(0);
+  await login('TRANSPORTER');await page.goto('/app/home');await expect(page.getByRole('heading',{name:'My Fleet',exact:true})).toBeVisible();await expect(page.getByRole('region',{name:'Vehicles'}).getByRole('link',{name:'View vehicle'}).first()).toBeVisible();await expect(page.getByText('Operating priorities',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
   await page.goto('/app/network');await expect(page.getByText('Lets our Assisted matching team consider this truck when a visitor asks for help.',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-network.png'),fullPage:true});
   // Use the managed seed, not an arbitrary published synthetic profile left by a manual preview.
   const org=checked(await service.from('organizations').select('id,handle').eq('handle','blueline-transport').single());

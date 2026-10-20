@@ -1,6 +1,6 @@
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
-import {localAuditService,checked,auditProvider,auditDeleteVehicles} from './audit-helpers';
+import {localAuditService,checked,auditProvider,auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
@@ -70,6 +70,7 @@ test('mobile real email access restores Tracking, opens updates, recovers bad da
   const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   vehicle=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Demo',model:'Tracking test',plate:`NTRK-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicle);
   shipment=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicle,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Synthetic shipment runtime check',customerEmail:email,trackingMode:'STATUS_ONLY'})).id;
   await page.goto(preview+'/about');await page.getByRole('tab',{name:'Track',exact:true}).click();
   await page.getByLabel('Your email',{exact:true}).fill(email);const since=Date.now();

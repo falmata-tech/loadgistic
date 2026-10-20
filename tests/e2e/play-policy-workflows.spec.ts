@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import sharp from 'sharp';
 import {localAuditService,checked,auditProvider,auditDeleteVehicles} from './audit-helpers';
+import {updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {localSupportLogin} from './provider-support-helper';
 import {localMailpitNumericCode} from './mailpit-helper';
 
@@ -36,11 +37,15 @@ test('Play deletion verifies the inbox, persists its receipt, erases real storag
   const bytes=await sharp(readFileSync('public/icon-192.png')).jpeg().toBuffer();
   checked(await service.storage.from('provider-profile').upload(file,bytes,{contentType:'image/jpeg'}));
   checked(await service.from('driver_portrait_uploads').insert({user_id:subject.id,file_path:`supabase://provider-profile/${file}`,size_bytes:bytes.length,state:'ACTIVE',upload_finished:true}));
-  stage='INBOX_VERIFICATION';
+  stage='INBOX_PAGE';
   await page.goto('/delete-account');await page.getByLabel('Account email',{exact:true}).fill(subject.email);
+  stage='INBOX_REQUEST';
   const started=Date.now();await page.getByRole('button',{name:'Verify email to request deletion',exact:true}).click();
+  stage='INBOX_CODE_FIELD';
   await expect(page.getByLabel('Email verification code',{exact:true})).toBeVisible();
+  stage='INBOX_CODE_DELIVERY';
   const code=await localMailpitNumericCode(subject.email,started,['Your Loadgistic sign-in code','Your Loadgistic login code','Confirm Your Signup','Magic Link']);
+  stage='INBOX_CODE_ENTRY';
   await page.getByLabel('Email verification code',{exact:true}).fill(code);
   stage='PERSISTED_DELETION_RECEIPT';
   await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Submit deletion request',exact:true}).click();
@@ -93,20 +98,41 @@ test('Play deletion verifies the inbox, persists its receipt, erases real storag
 
 test('Play public reporting reaches moderation, hide and restore are effective, and viewer block is reversible',async({page,browser}:{page:any;browser:any},info:any)=>{
  test.setTimeout(150000);const service=localAuditService(),subject=await auditProvider(service,'play-content'),staff=await admin(service);let adminContext:any;
+ const phase=(value:string)=>console.log('PLAY_PUBLIC_REPORT_STAGE '+value);
  const handle=`play-content-${subject.suffix}`;
  try{
+  phase('PUBLISH_PROFILE');
   checked(await service.from('company_pages').update({published:true,about:'Synthetic road-freight profile for the policy workflow.'}).eq('provider_profile_id',subject.provider_profile_id));
-  await page.goto('/providers/'+handle);await page.getByRole('button',{name:'Report content',exact:true}).click();
+  phase('NAVIGATE_PROFILE');
+  await page.goto('/providers/'+handle,{waitUntil:'domcontentloaded'});
+  phase('OPEN_REPORT');
+  const reportButton=page.getByRole('button',{name:'Report content',exact:true});
+  const originalViewport=page.viewportSize();
+  if(info.project.name==='desktop-chromium'&&originalViewport){
+   await page.setViewportSize({width:1920,height:900});
+   await reportButton.scrollIntoViewIfNeeded();
+   await page.screenshot({path:'.local/ci-ui-20261019/report-actions-wide-desktop.png'});
+   await page.setViewportSize(originalViewport);
+  }
+  await reportButton.scrollIntoViewIfNeeded();
+  await page.screenshot({path:`.local/ci-ui-20261019/report-actions-${info.project.name}.png`});
+  await reportButton.click({timeout:15000});
+  phase('SEND_REPORT');
   await page.getByLabel('Tell us what needs attention',{exact:true}).fill('Synthetic report to verify the moderation workflow.');await Promise.all([page.waitForResponse((r:any)=>r.url().endsWith('/api/mobile/public/content-report'),{timeout:25000}),page.getByRole('button',{name:'Send report',exact:true}).click()]);
   await expect(page.getByText('Report received. Our team will review the content.',{exact:true})).toBeVisible();await page.screenshot({path:'.local/play-policy-report-phone.png'});await page.getByRole('button',{name:'Close',exact:true}).click();
+  phase('ADMIN_HIDE');
   const report=checked(await service.from('content_reports').select('id,status').eq('provider_profile_id',subject.provider_profile_id).single());expect(report.status).toBe('PENDING');
   adminContext=await browser.newContext({baseURL:info.project.use.baseURL});const control=await adminContext.newPage();await localSupportLogin(control,staff.id);await control.goto('/admin/reviews/content');
   const response=await control.request.post('/api/admin/content/'+report.id,{form:{decision:'HIDE',note:'Synthetic content investigation completed.'},maxRedirects:0});expect(new URL(response.headers().location).searchParams.has('success')).toBe(true);
   expect((await page.request.get('/api/mobile/public/providers/'+handle)).status()).toBe(404);
   expect(checked(await service.from('provider_profiles').select('content_hidden,public_visibility').eq('id',subject.provider_profile_id).single()).public_visibility).toBe('PRIVATE');
+  phase('ADMIN_RESTORE');
   const restore=await control.request.post('/api/admin/content/'+report.id,{form:{decision:'RESTORE',note:'Synthetic replacement content checked.'},maxRedirects:0});expect(new URL(restore.headers().location).searchParams.has('success')).toBe(true);
+  phase('BLOCK');
   await page.goto('/providers/'+handle);await page.getByRole('button',{name:'Block transporter',exact:true}).click();await expect(page.getByRole('heading',{name:'Transporter blocked',exact:true})).toBeVisible();await page.reload();await expect(page.getByRole('heading',{name:'Transporter blocked',exact:true})).toBeVisible();
-  await page.goto('/privacy');await page.getByRole('button',{name:'Unblock transporter',exact:true}).click();await expect(page.getByText('No blocked transporters.',{exact:true})).toBeVisible();await page.goto('/providers/'+handle);await expect(page.getByRole('heading',{name:'About this transporter',exact:true})).toBeVisible();
+  phase('UNBLOCK');
+  await page.goto('/privacy');await page.getByRole('button',{name:'Unblock transporter',exact:true}).click();await expect(page.getByText('No blocked transporters.',{exact:true})).toBeVisible();await page.goto('/providers/'+handle);await expect(page.getByRole('heading',{name:'Transporter blocked',exact:true})).not.toBeVisible();await expect(page.getByRole('button',{name:'Report content',exact:true})).toBeVisible();
+  phase('COMPLETE');
  }finally{await adminContext?.close();await remove(service,subject);await remove(service,staff);}
 });
 
@@ -123,11 +149,15 @@ test('Play native reviewer uses normal login and accepted terms; private guest s
   await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Accept and continue',exact:true}).click();await expect(page.getByText('Before you share',{exact:true})).not.toBeVisible();expect(checked(await service.from('user_policy_acceptances').select('user_id').eq('user_id',actor.id))).toHaveLength(1);
   checked(await service.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
   const truck=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{make:'Review',model:'Synthetic truck',plate:'PLAY-'+actor.suffix,cargo_configuration:'Mini Box Truck',use_basis:'OWNED'}})).id;
-  const points=checked(await service.from('capacities').select('current_route_points_json').eq('availability_geometry','ROUTE').limit(1).single()).current_route_points_json;
+  expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+  await updateFleetDriverAccess(actor,actor.id,{vehicleId:truck,canManageCapacity:true,canManageTracking:true});
+  expect(checked(await service.rpc('set_provider_vehicle_publication',{actor_user_id:actor.id,target_vehicle_id:truck,requested_state:'LIVE'}))).toMatchObject({vehicleId:truck,state:'LIVE'});
+  const placeId=async(name:string)=>checked(await service.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id;
+  const points=[{place_ref:await placeId('addis ababa')},{place_ref:await placeId('adama')},{place_ref:await placeId('dire dawa')}];
   checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:truck,approximate_lat:41.8,approximate_lng:-87.6,location_precision_km:20}}));
   checked(await service.rpc('publish_provider_capacity',{actor_user_id:actor.id,command:{vehicle_id:truck,status:'EMPTY',accepted_loads:'BOTH',availability_geometry:'ROUTE',location_source:'PRESERVE_DRIVER',current_route_places:points,sharing_mode:'PRIVATE'}}));
   checked(await service.rpc('grant_private_capacity_access',{actor_user_id:actor.id,target_vehicle_id:truck,normalized_recipient_email:'synthetic@review.invalid',recipient_digest:capacityDigest}));
-  const shipment=randomUUID();checked(await service.rpc('create_provider_tracking_with_recipients',{actor_user_id:actor.id,command:{id:shipment,code:'LGX-'+shipment.replaceAll('-','').slice(0,8).toUpperCase(),vehicle_id:truck,origin_place_ref:points[0].place_ref,destination_place_ref:points[1].place_ref,passing_place_ref:checked(await service.from('place_catalog').select('id').not('id','in',`(${points[0].place_ref},${points[1].place_ref})`).order('id').limit(1).single()).id,cargo_summary:'Synthetic reviewer shipment',customer_email:'synthetic@review.invalid',customer_email_digest:trackingDigest,expected_delivery_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),tracking_mode:'LOCATION_AND_STATUS',tracking_code_hash:(randomUUID()+randomUUID()).replaceAll('-',''),review_code_hash:(randomUUID()+randomUUID()).replaceAll('-','')}}));
+  const shipment=randomUUID();checked(await service.rpc('create_provider_tracking_with_recipients',{actor_user_id:actor.id,command:{id:shipment,code:'LGX-'+shipment.replaceAll('-','').slice(0,8).toUpperCase(),vehicle_id:truck,origin_place_ref:points[0].place_ref,passing_place_ref:points[1].place_ref,destination_place_ref:points[2].place_ref,cargo_summary:'Synthetic reviewer shipment',customer_email:'synthetic@review.invalid',customer_email_digest:trackingDigest,expected_delivery_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),tracking_mode:'LOCATION_AND_STATUS',tracking_code_hash:(randomUUID()+randomUUID()).replaceAll('-',''),review_code_hash:(randomUUID()+randomUUID()).replaceAll('-','')}}));
   await page.goto('http://localhost:8084/visitor-tracking');await page.getByRole('button',{name:'Open demo shipment tracking',exact:true}).click();await expect(page.getByText('Your shipments',{exact:true})).toBeVisible({timeout:20000});await expect(page.getByRole('link',{name:'View updates',exact:true})).toBeVisible({timeout:20000});await page.screenshot({path:'.local/play-policy-native-review-tracking.png'});
   await page.goto('http://localhost:8084/privacy');await page.getByRole('button',{name:'How location sharing works',exact:true}).click();await expect(page.getByText('Location during your shipment',{exact:true})).toBeVisible();await page.screenshot({path:'.local/play-policy-location-disclosure-phone.png'});await page.getByRole('button',{name:'Close',exact:true}).click();
   const login=await page.request.post('http://127.0.0.1:3100/api/mobile/review-access',{data:{email:actor.email,password}});expect(login.status()).toBe(200);const session=await login.json();
@@ -138,7 +168,7 @@ test('Play native reviewer uses normal login and accepted terms; private guest s
  }finally{await page.goto('about:blank');await remove(service,actor);await remove(service,ordinary);}
 });
 
-test('Play normal mobile signup requires account-bound consent and preserves the one-truck location/capacity workflow',async({page}:{page:any})=>{
+test('Play normal mobile signup requires account-bound consent and explicitly publishes one of two Draft vehicles',async({page}:{page:any})=>{
  test.setTimeout(150000);const service=localAuditService(),email=`play-mobile-signup-${randomUUID()}@loadgistic.local`;let actor:any,session:any;
  // This synthetic workflow owns its local IP bucket; it must not inherit the
  // preceding shard's unrelated sign-in attempts or weaken production limits.
@@ -155,11 +185,23 @@ test('Play normal mobile signup requires account-bound consent and preserves the
   expect((await call('onboarding',signup,session.accessToken)).status()).toBe(200);const refreshed=await call('auth/refresh',{refreshToken:session.refreshToken});expect(refreshed.status()).toBe(200);session=await refreshed.json();expect(session.state).toBe('ACTIVE');actor.provider_profile_id=checked(await service.from('provider_profiles').select('id').eq('user_id',actor.id).single()).id;
   const input={action:'ADD_TRUCK',make:'Synthetic',model:'Mobile driver',plate:'PLAY-'+randomUUID().slice(0,8),cargoConfiguration:'Pickup truck',useBasis:'PERMISSION'};
   const truck=await call('fleet',input,session.accessToken);expect(truck.status()).toBe(200);const vehicleId=(await truck.json()).id;
-  expect((await call('fleet',{...input,plate:'PLAY-'+randomUUID().slice(0,8)},session.accessToken)).status()).toBe(409);
-  expect((await call('fleet',{action:'ADD_DRIVER',name:'Synthetic other driver',email:'synthetic-other@example.test',phone:'+12025550102'},session.accessToken)).status()).toBe(403);
+  const second=await call('fleet',{...input,plate:'PLAY-'+randomUUID().slice(0,8),useBasis:'OWNED'},session.accessToken);expect(second.status()).toBe(200);const secondId=(await second.json()).id;
+  expect(checked(await service.from('vehicles').select('id,publication_status').in('id',[vehicleId,secondId]).order('id'))).toEqual([
+    {id:[vehicleId,secondId].sort()[0],publication_status:'DRAFT'},
+    {id:[vehicleId,secondId].sort()[1],publication_status:'DRAFT'}
+  ]);
+  expect((await call('account/driving-mode',{drivesTruck:true},session.accessToken)).status()).toBe(200);
+  expect((await call('fleet',{action:'ASSIGN_DRIVER',driverId:actor.id,vehicleId,canManageCapacity:true,canManageTracking:true},session.accessToken)).status()).toBe(200);
+  expect((await call('fleet/publication',{vehicleId,state:'LIVE'},session.accessToken)).status()).toBe(200);
+  const deniedSecond=await call('fleet/publication',{vehicleId:secondId,state:'LIVE'},session.accessToken);expect(deniedSecond.status()).toBe(409);expect((await deniedSecond.json()).error.code).toBe('PROVIDER_VERIFICATION_REQUIRED');
+  expect(checked(await service.from('vehicles').select('publication_status').eq('id',secondId).single()).publication_status).toBe('DRAFT');
   expect((await call('capacity',{action:'LOCATION',vehicleId,approximateLat:41.8,approximateLng:-87.6,locationPrecisionKm:20},session.accessToken)).status()).toBe(200);
   expect((await call('capacity',{action:'PUBLISH',vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',currentRoutePlaces:[{placeRef:'builtin:addis ababa'},{placeRef:'builtin:adama'}],capacityAreaCenterPlaceRef:'',capacityAreaBoundaryPlaces:[],acceptsMultiPick:false,acceptsMultiDrop:false},session.accessToken)).status()).toBe(200);
   const result=await call('capacity',undefined,session.accessToken);expect(result.status()).toBe(200);const saved=(await result.json()).vehicles.find((v:any)=>v.id===vehicleId);expect(saved.canLocate).toBe(true);expect(saved.current).toMatchObject({status:'EMPTY',acceptedLoads:'BOTH',visibility:'PRIVATE'});expect(saved.location.coordinate[1]).toBeGreaterThan(40);
-  const fleet=await call('fleet',undefined,session.accessToken);expect(fleet.status()).toBe(200);expect(await fleet.json()).toMatchObject({singleTruck:true,canAddTruck:false,canManageDrivers:false});
+  const fleet=await call('fleet',undefined,session.accessToken);expect(fleet.status()).toBe(200);const savedFleet=await fleet.json();expect(savedFleet).toMatchObject({singleTruck:false,canAddTruck:true,canManageDrivers:true});
+  expect(savedFleet.vehicles).toEqual(expect.arrayContaining([
+    expect.objectContaining({id:vehicleId,publicationState:'LIVE'}),
+    expect.objectContaining({id:secondId,publicationState:'DRAFT'})
+  ]));
  }finally{if(session)await call('auth/logout',{accessToken:session.accessToken,refreshToken:session.refreshToken});if(!actor){const row=checked(await service.from('profiles').select('id').eq('email',email).maybeSingle());if(row)actor={id:row.id,provider_profile_id:null};}if(actor)await remove(service,actor);}
 });

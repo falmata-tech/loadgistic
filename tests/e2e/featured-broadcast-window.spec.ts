@@ -19,7 +19,7 @@ test('eight showcases reserve four mentions and manual times persist through pub
   if(!candidate.day&&new Set(candidate.candidates.filter((c:any)=>c.eligible).map((c:any)=>c.driver_user_id)).size>=8){date=candidateDate;break;}
  }
  expect(date).not.toBe('');
- async function save(button:string,message:string){const response=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:button,exact:true}).click();const result=await response;expect(result.status()).toBe(303);expect(new URL(result.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBeNull();await expect(page.getByText(message,{exact:true})).toBeVisible();if(button!=='Schedule sponsor')await page.getByRole('link',{name:'Edit programme',exact:true}).click();}
+ async function save(button:string,message:string){const response=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:button,exact:true}).click();const result=await response;expect(result.status()).toBe(303);expect(new URL(result.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBeNull();await expect(page.getByText(message,{exact:true})).toBeVisible();if(button!=='Save')await page.getByRole('link',{name:'Edit programme',exact:true}).click();}
  try{
   const identity=checked(await service.auth.admin.getUserById(admin.id)).user,link=checked(await service.auth.admin.generateLink({type:'magiclink',email:identity.email!})),url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
   client=createClient(url,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -64,9 +64,11 @@ test('eight showcases reserve four mentions and manual times persist through pub
   await page.getByLabel('Business name',{exact:true}).fill(`Broadcast sponsor ${suffix}`);
   await page.getByLabel('Short description',{exact:true}).fill('Synthetic local sponsor for timetable verification.');
   await page.getByLabel('Website (optional)',{exact:true}).fill('https://example.test');
-  await save('Schedule sponsor','Sponsored placement saved.');
+  await page.locator('.featured-sponsor-form').screenshot({path:info.outputPath('sponsor-save-form.png')});
+  await save('Save','Sponsored placement saved.');
   const sponsored=await getDailyFeaturedProviders(date);
   expect(sponsored.schedule.entries.filter((e:any)=>e.type==='PROGRAMME_BREAK').every((e:any)=>e.label===`Sponsor · Broadcast sponsor ${suffix}`)).toBe(true);
+  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
   await expect(editor.locator('.featured-schedule-timeline>li.programme-break')).toHaveCount(4);
   await expect(editor.locator('.featured-schedule-timeline>li.programme-break').last()).toContainText(`Broadcast sponsor ${suffix}`);
   await editor.locator('.featured-broadcast-editor').screenshot({path:info.outputPath('broadcast-sponsored-timetable.png')});

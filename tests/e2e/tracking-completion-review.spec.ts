@@ -3,7 +3,7 @@ import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
 import {localAuditService,checked,auditLogin,auditProvider,auditTrackingOwnerLogin} from './audit-helpers';
-import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
 
@@ -31,6 +31,8 @@ test('completed delivery emails its customer and accepts exactly one visible cus
     actor=await auditProvider(service,'demo-review');
     const vehicle=await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Review audit',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});
     vehicleId=vehicle.id;
+    expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+    await updateFleetDriverAccess(actor,actor.id,{vehicleId,canManageCapacity:true,canManageTracking:true});
     const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
     const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
     const email=`completion-${randomUUID()}@example.test`;

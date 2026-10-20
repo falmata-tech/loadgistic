@@ -19,8 +19,11 @@ const sessions:(()=>Promise<unknown>)[]=[];
 test.afterEach(async()=>{for(const close of sessions.splice(0))await close();});
 async function login(page:any,email:string){
  const role=email.startsWith('support@')?'SUPPORT':email.startsWith('driver@')?'DRIVER':email.startsWith('admin@')?'ADMIN':'TRANSPORTER';
- const {data,error}=await localService().from('profiles').select('id').eq('role',role).eq('active',true).limit(1).single();expect(error).toBeNull();
+ const {data,error}=await localService().from('profiles').select('id').eq('role',role).eq('active',true).like('email','%@loadgistic.local').limit(1).single();expect(error).toBeNull();
  sessions.push(await localSupportLogin(page,data.id));
+}
+async function loginAs(page:any,userId:string){
+ sessions.push(await localSupportLogin(page,userId));
 }
 async function capture(page:any,info:any,label:string){
   const dir=path.resolve('artifacts/support-history-2026-09-14');mkdirSync(dir,{recursive:true});
@@ -32,8 +35,10 @@ async function capture(page:any,info:any,label:string){
 }
 async function profiles(service:any){
  const member=await service.from('profiles').select('id').eq('role','DRIVER').eq('active',true).limit(1).single();
- const agent=await service.from('profiles').select('id').eq('role','SUPPORT').eq('active',true).limit(1).single();
- expect(member.error).toBeNull();expect(agent.error).toBeNull();return {member:member.data.id,agent:agent.data.id};
+ const agents=await service.from('support_agent_profiles').select('user_id').eq('active',true).eq('can_manage_support',true);
+ expect(member.error).toBeNull();expect(agents.error).toBeNull();
+ const eligible=await service.from('profiles').select('id').eq('role','SUPPORT').eq('active',true).in('id',(agents.data||[]).map((row:any)=>row.user_id)).limit(1).single();
+ expect(eligible.error).toBeNull();return {member:member.data.id,agent:eligible.data.id};
 }
 const timestamp=(i:number)=>new Date(Date.UTC(2026,0,1,0,0,i)).toISOString();
 
@@ -50,7 +55,7 @@ test('member and assigned staff can page every retained message without shifting
   expect((await service.from('support_conversations').insert({id,customer_user_id:member,assigned_agent_user_id:agent,category:'ACCOUNT',status:'CLOSED'})).error).toBeNull();
   try{
     expect((await service.from('support_messages').insert(Array.from({length:121},(_,i)=>({id:randomUUID(),conversation_id:id,sender_user_id:member,body:`History message ${i+1}`,created_at:timestamp(i)})))).error).toBeNull();
-    await login(page,'driver@loadgistic.local');await page.goto(`/app/support?conversation=${id}`);
+    await loginAs(page,member);await page.goto(`/app/support?conversation=${id}`);
     const messages=page.locator('.support-message');await expect(messages).toHaveCount(50);
     await expect(messages.first()).toContainText('History message 72');
     await page.getByRole('link',{name:'Older messages',exact:true}).click();
@@ -62,8 +67,8 @@ test('member and assigned staff can page every retained message without shifting
     await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(messages).toHaveCount(21);
     await expect(page.getByText('Beginning of conversation')).toBeVisible();await expect(messages.first()).toContainText('History message 1');
     await page.getByRole('link',{name:'Latest messages',exact:true}).click();await expect(messages.last()).toContainText('New historical import');
-    await login(page,'support@loadgistic.local');await page.goto(`/support/${id}`);
-    await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(messages).toHaveCount(50);
+    await loginAs(page,agent);await page.goto(`/support/${id}`);
+    await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(messages.first()).toContainText('History message 23');await expect(messages).toHaveCount(50);
     await capture(page,info,'staff-history');
     const staffHistory=page.url();
     expect((await service.from('support_conversations').update({assigned_agent_user_id:null}).eq('id',id)).error).toBeNull();
@@ -94,6 +99,8 @@ test('guest archive is read-only, pages retained history and protects old attach
     await expect(page.locator('.support-composer,.public-chat-composer')).toHaveCount(0);await expect(page.getByText('This conversation is read-only.').first()).toBeVisible();
     const requests:string[]=[];page.on('request',(r:Request)=>{if(r.url().includes('/api/support/updates')||r.url().includes('/api/guest-support/current'))requests.push(r.url());});
     await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(page.locator('.support-message')).toHaveCount(50);
+    await expect(page.getByText('Guest history 71',{exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(page.locator('.support-message')).toHaveCount(50);
     await expect(page.getByText('Guest history 21',{exact:true})).toBeVisible();
     const attachmentUrl=await page.getByRole('link',{name:'history.png'}).getAttribute('href');
     const downloaded=await page.request.get(attachmentUrl!);expect(downloaded.ok()).toBe(true);expect(Buffer.compare(await downloaded.body(),bytes)).toBe(0);
@@ -104,13 +111,17 @@ test('guest archive is read-only, pages retained history and protects old attach
     await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(page.getByText('Beginning of conversation')).toBeVisible();
     await page.getByRole('link',{name:'Latest messages',exact:true}).click();await expect(page.getByText('A newer team reply',{exact:true})).toBeVisible();
     staff=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.245'}});const staffPage=await staff.newPage();
-    await login(staffPage,'support@loadgistic.local');await staffPage.goto(`/support/assisted/${id}`);
-    await staffPage.getByRole('link',{name:'Older messages',exact:true}).click();await expect(staffPage.locator('.support-message')).toHaveCount(50);
+    await loginAs(staffPage,agent);await staffPage.goto(`/support/assisted/${id}`);
+    await expect(staffPage.getByRole('heading',{name:'404',exact:true})).toBeVisible();
+    await expect(staffPage.locator('.guest-support-thread,.support-message')).toHaveCount(0);
+    // The retired staff page does not revoke an assigned agent's existing
+    // private-file authorization; losing the assignment still must revoke it.
     expect((await staffPage.request.get(attachmentUrl)).ok()).toBe(true);
     expect((await service.from('guest_support_conversations').update({assigned_agent_user_id:null,status:'WAITING'}).eq('id',id)).error).toBeNull();
     expect((await staffPage.request.get(attachmentUrl)).ok()).toBe(false);
+    expect((await page.request.get(attachmentUrl)).ok()).toBe(true);
     await staffPage.goto(`/support/assisted/${id}`);await expect(staffPage.getByRole('heading',{name:'404',exact:true})).toBeVisible();
-    await expect(staffPage.locator('.support-message')).toHaveCount(0);
+    await expect(staffPage.locator('.guest-support-thread,.support-message')).toHaveCount(0);
     await page.context().clearCookies();expect((await page.request.get(attachmentUrl)).ok()).toBe(false);
   }finally{
     if(staff)await staff.close();if(stored)await removePrivateUpload(stored.path);

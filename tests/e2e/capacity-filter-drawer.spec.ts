@@ -2,7 +2,7 @@ import {auditDeleteVehicles} from './audit-helpers';
 import {chooseTruckConfiguration,chooseCapacityOptions} from './capacity-drawer-helper';
 import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
-import {localAuditService,auditProvider,checked} from './audit-helpers';
+import {localAuditService,auditProvider,auditAssignAndPublishSelfDrivenVehicle,checked} from './audit-helpers';
 import {grantPrivateCapacityAccess} from '../../src/lib/private-capacity.js';
 import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 import {openCapacityFilters as openDrawer,openCapacityFilterDialog,closeCapacityFilters} from './capacity-drawer-helper';
@@ -128,6 +128,7 @@ test('Private capacity uses the same drawer with real local OTP and scoped resul
   try{
     checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id).select('id').single());
     const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Drawer',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
+    await auditAssignAndPublishSelfDrivenVehicle(db,actor,vehicle.id);
     const places=checked(await db.from('place_catalog').select('id,name').in('normalized_name',['addis ababa','adama']));
     const from=places.find((p:any)=>p.name==='Addis Ababa'),to=places.find((p:any)=>p.name==='Adama');expect(from&&to).toBeTruthy();
     const signal=await publishProviderCapacity(actor,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.74,locationPrecisionKm:20,currentRoutePlaces:[{placeRef:from.id,label:from.name},{placeRef:to.id,label:to.name}]});
@@ -221,7 +222,8 @@ test('Clear all removes applied filters and the selected truck before loading th
   await expect(page.locator('.map-capacity-sheet')).toHaveCount(0);
   await openDrawer(page);
   await expect(dialog.locator('input[type="hidden"][name="status"]')).toHaveValue('');
-  await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toHaveValue('');
+  // Clearing vehicle filters leaves the independent transporter search draft intact.
+  await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toHaveValue(sample.provider_name);
   // The modal's Clear action must also discard edits on this same unfiltered URL.
   await openCapacityFilterDialog(page);
   await chooseCapacityOptions(dialog,'status',['PARTIAL']);

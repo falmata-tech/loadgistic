@@ -1403,20 +1403,39 @@ distinct from browser and emulator evidence.
 photo proofs and recipient approval changed while older browser fixtures still
 created incomplete records or asserted retired plan controls. An arbitrary
 published local profile also selected leftover preview data instead of the seed.
+The October20 release candidate repeated this failure after the provider-owner
+rule changed: new vehicles now start Draft with no assigned driver, yet several
+browser fixtures still expected an implicit driver or immediate Live publication.
+Other cases retained a retired admin route, a fixed administrator identity, an
+old Tracking radius or a one-row Capacity assumption. Unit, type, build and
+5,000-vehicle scale checks passed while the first browser matrix timed out;
+those checks did not establish workflow readiness.
 
 **Control:** Update every affected fixture creator and visible workflow assertion
-with its controlling contract. Keep single-truck providers separate from fleet
-fixtures. Exercise real calendar controls, proofs, email verification and owner
-approval. Pin known seeds or create scoped fixtures; do not rely on an unordered
-first user or profile. Classify timeouts from the actual page/response before
-changing a bounded wait. Keep required CI failing until the complete workflow
-passes; never restore obsolete product behavior or waive a permission check.
+with its controlling contract. Provider owners may create multiple Draft vehicles;
+one may go Live unreviewed, while a second Live vehicle needs exact qualifying
+review. Tracking creation needs an assigned driver, but not Live publication;
+public Capacity needs an eligible Live vehicle. Exercise real calendar controls,
+proofs, email verification and owner approval. Pin known seeds or create scoped
+fixtures; do not rely on an unordered first user or profile. Inventory affected
+browser setup whenever a role or state transition changes, and run the early
+synthetic fixture preflight before the long matrix. Classify timeouts from the
+actual page/response before changing a bounded wait. Keep required CI failing
+until every browser shard on the same source commit completes; never restore
+obsolete product behavior or waive a permission check.
 
-**Evidence:** The current browser follow-up supplies valid inputs and preserves
-denial, privacy, history and completion assertions. The SQL, domain, scale and
-native boundaries remain required alongside full desktop/phone CI.
-**Owner:** workflow author and release owner. **Next:** retain exact-candidate
-browser results and update fixtures together with future contract changes.
+**Evidence:** The earlier browser follow-up supplies valid inputs and preserves
+denial, privacy, history and completion assertions. The October20 local
+`fixture-contract-preflight.spec.ts` passed with disposable data and saved-state
+readback; `BASE-DEP-001` and `.github/workflows/ci.yml` now require it before
+the browser matrix. The full same-commit CI has not passed, so the candidate is
+not deployable. The SQL, domain, scale and native boundaries remain required
+alongside full desktop/phone CI. This recurrence is a release-process failure;
+it is not a newly confirmed security exposure.
+**Owner:** workflow author and release owner. **Next:** finish affected focused
+browser cases, obtain required visual review, and retain exact-candidate results
+from all browser shards before any rollout. Update fixtures in the same change
+as future contract changes.
 
 ## NR-22 — A non-map driver panel inherits a fixed map viewport
 

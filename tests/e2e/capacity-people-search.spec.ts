@@ -2,7 +2,7 @@ import {test,expect} from './browser-test';
 import sharp from 'sharp';
 
 async function waitForNativeMapPaint(page:any){
-  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:20_000});
   await expect.poll(async()=>{
     const box=await page.locator('.maplibregl-canvas').first().boundingBox();if(!box||box.width<100||box.height<100)return false;
     const bytes=await page.screenshot({clip:{x:box.x+box.width*.2,y:box.y+box.height*.35,width:box.width*.6,height:box.height*.3}});

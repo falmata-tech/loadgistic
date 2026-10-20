@@ -123,7 +123,9 @@ test('local Google OAuth uses an ignored environment boundary and a dedicated ca
   assert.match(starter,/stdio:\['ignore','ignore','inherit'\]/);
   assert.match(starter,/local-google-not-configured\.apps\.googleusercontent\.com/);
   assert.doesNotMatch(starter,/console\.log\([^)]*clientSecret/);
-  assert.equal((workflow.match(/npm run supabase:start/g)||[]).length,2);
+  // Validation, ordinary browser shards and isolated Featured rotation cases
+  // each start their own Supabase instance through the guarded local wrapper.
+  assert.equal((workflow.match(/node scripts\/ci-start-local-supabase\.mjs/g)||[]).length,3);
 });
 
 test('local unified account access explains the isolated inbox before and after an OTP request',()=>{

@@ -107,6 +107,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     requestAnimationFrame(()=>{if(resultsScroll.current)resultsScroll.current.scrollTop=savedResultsScroll.current;drawer.current?.focus();});
   }
   const swipeStart=React.useRef(null as {x:number;y:number}|null);
+  const swipeOpened=React.useRef(false);
   React.useEffect(()=>{setControlsReady(true);},[]);
   function closeDrawer(){search.pause();requestAnimationFrame(()=>drawerTrigger.current?.focus());}
   function openDrawer(){setDrawerOpen(true);requestAnimationFrame(()=>drawer.current?.focus());}
@@ -119,7 +120,16 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     const start=swipeStart.current;swipeStart.current=null;
     if(!start)return;
     const dx=event.clientX-start.x,dy=event.clientY-start.y;
-    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.5){if(open&&dx<0)closeDrawer();if(!open&&dx>0)openDrawer();}
+    if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.5){
+      if(open&&dx<0)closeDrawer();
+      if(!open&&dx>0){
+        swipeOpened.current=true;
+        openDrawer();
+        // A pointer swipe may synthesize a click on this same button. Consume
+        // that click without swallowing a later deliberate tap.
+        window.setTimeout(()=>{swipeOpened.current=false;},500);
+      }
+    }
   }
   const [statusFilter,setStatusFilter]=React.useState(query.status||'');
   const [vehicleFilter,setVehicleFilter]=React.useState(query.vehicleCategory||'');
@@ -313,7 +323,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
 
     </Localized>
     <div className="capacity-drawer-handle capacity-map-controls">
-      <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={()=>{if(drawerOpen)closeDrawer();else if(selected)closeTruck();else openDrawer();}}><Search aria-hidden="true"/><Text message="Transporter search"/></button>
+      <button ref={drawerTrigger} onPointerDown={event=>{swipeStart.current={x:event.clientX,y:event.clientY};swipeOpened.current=false;event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={event=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;swipeOpened.current=false;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" onClick={()=>{if(swipeOpened.current){swipeOpened.current=false;return;}if(drawerOpen)closeDrawer();else if(selected)closeTruck();else openDrawer();}}><Search aria-hidden="true"/><Text message="Transporter search"/></button>
       <button type="button" className="capacity-filter-trigger" disabled={!controlsReady} aria-haspopup="dialog" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Vehicle filters"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</button>
     </div>
       <section id="capacity-map-view" className="public-map-shell">

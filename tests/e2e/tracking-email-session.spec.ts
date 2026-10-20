@@ -2,7 +2,7 @@ import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect as baseExpect} from './browser-test';
 const expect=baseExpect.configure({timeout:15000});
 import {localAuditService,checked,auditProvider} from './audit-helpers';
-import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createSessionToken} from '../../src/lib/security.js';
@@ -19,6 +19,8 @@ test('one email code opens shared shipments; activity, expiry and revocation sta
   for(let index=0;index<3;index++){
    const provider=index===0?actor:await auditProvider(service,'tracking-email');if(index>0)actors.push(provider);
    const truck=await createProviderVehicle(provider,{useBasis:'OWNED',make:'Toyota',model:'Session test',plate:`SESS-${actor.suffix}-${index}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicles.push(truck.id);
+   expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:provider.id,requested_drives_truck:true}))).toBe(true);
+   await updateFleetDriverAccess(provider,provider.id,{vehicleId:truck.id,canManageCapacity:true,canManageTracking:true});
    const shipment=await createProviderShipment(provider,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:truck.id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:`Session cargo ${index}`,customerEmail:index<2?email:`other-${actor.suffix}@example.test`,trackingMode:'STATUS_ONLY'});shipments.push(shipment.id);
   }
   await page.clock.install();

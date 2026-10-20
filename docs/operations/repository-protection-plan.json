@@ -11,9 +11,7 @@
     "required_status_checks": {
       "strict": true,
       "contexts": [
-        "validate",
-        "e2e",
-        "container"
+        "release-ready"
       ]
     },
     "enforce_admins": true,

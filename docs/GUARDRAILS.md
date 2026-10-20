@@ -63,6 +63,113 @@ checks and a fashionable component style do not prove usable workflows.
 
 # Engineering guardrails
 
+## Browser fixture drift and release evidence (October20)
+
+The October19 release candidate passed 988 unit tests, type checks and the
+5,000-vehicle search gate, but those checks did not exercise the 516 desktop and
+phone browser workflows. The first four browser shards hit their time limit;
+eight smaller shards then exposed stale setup assumptions. Some synthetic
+providers were treated as automatically assigned drivers with Live vehicles,
+although the current contract creates Draft vehicles without an implicit
+driver. Other cases assumed a retired admin page or a fixed admin identity.
+Passing source checks and a passing browser-test list did not validate those
+fixtures. This is a release-process failure, not evidence that production
+workflows passed. No release may be inferred from a timeout or from partial
+shard success.
+
+For every change to onboarding, roles, driver assignment, publication, status,
+permissions, route ownership, or another browser-visible workflow:
+
+1. Inventory every affected browser fixture and helper, including seeded actors
+   and admin/staff identities. Name the actor's role, initial state, required
+   transition, authorized command, saved readback, and cleanup. Avoid a fixed
+   person's email or a retired route as a generic test precondition.
+2. Run the small `fixture-contract-preflight.spec.ts` against an isolated local
+   Supabase and actual web server **before** the full browser matrix. It must
+   prove Draft/no-driver starting state, explicit assignment and publication,
+   current Capacity save, and public readback with disposable synthetic data.
+   This preflight is a tripwire for the shared fixture contract, not a substitute
+   for the affected desktop/phone workflows or their denial cases.
+3. Run focused browser tests for every changed workflow on both configured
+   browser projects, including real saves and persisted state. Fix the product
+   only for an observed product defect; fix obsolete test setup when the current
+   accepted contract is working. Do not weaken expected authorization or skip
+   failures to make CI green.
+4. Require every browser shard, validation, mobile and container job to finish
+   successfully on the **same commit** before claiming a deployable artifact.
+   A timeout, cancelled shard, skipped fixture preflight, or green unit/search
+   suite leaves browser coverage unknown. Record the failing stage and outcome;
+   rerun the repaired exact source rather than promoting an earlier binary.
+
+Treat the affected browser test and its fixture as part of the behavior change,
+not as release cleanup. Before editing, search for the changed route, control,
+label and state in tests and shared helpers; update those assertions in the
+same change and run the narrow desktop/phone case immediately. Prefer short,
+independent scenarios with disposable setup over one long test that must replay
+signup, fleet setup and document review for every assertion. A long end-to-end
+journey may remain as a final cross-workflow check, but its component workflows
+need smaller tests so a late failure does not require replaying the whole path
+to diagnose it. When a browser visit waits on unrelated assets, wait for the
+usable page and assert the intended control and saved outcome; do not raise
+timeouts to conceal a slow or broken workflow. The complete same-commit CI gate
+is still mandatory after focused tests pass.
+
+The dedicated fixture-preflight runner must report exactly one passed test and
+zero skipped, flaky or failed tests. A Playwright exit code of zero after a skip
+does not count. The `release-ready` CI job must see validation, every browser
+shard through `e2e`, mobile and container jobs all succeed on the same commit;
+none of its component jobs alone is a release verdict. Pushes to `main`, the
+current `feat/mobile-app` branch and `release/**` start CI automatically. Work
+on another feature branch needs a pull request or explicit workflow dispatch
+for its exact commit before any release claim.
+
+The fixture preflight belongs at the start of the isolated browser CI gate,
+after Supabase/fixtures are ready and before the long desktop/phone matrix.
+Its one-run result is not sufficient until CI actually invokes it and all
+required browser shards pass. See the active October20 checkpoint in
+`docs/PROGRESS.md`, `BASE-DEP-001` and the updated NR-21 lesson in
+`docs/SECURITY_REGRESSION_REGISTER.md`.
+
+Each ordinary browser shard now compares Playwright's selected test identities
+with its completed JSON report and requires at least one pass, no failure or
+retry, and only the exact intentional skips in
+`tests/e2e/ci-allowed-skips.json`. The report is parsed in memory; raw browser
+logs and request context are not printed. A new `test.skip`, changed test title,
+missing result, flaky retry or all-skipped shard requires an explicit inventory
+review and a new same-commit CI pass. This complements the fixture preflight;
+it does not turn opt-in visual/demo cases into release coverage.
+
+Featured Prepare writes persistent rotation history. Keep its three tagged,
+always-on browser workflows out of the ordinary E2E shards only while the
+separate required `featured-prepare` matrix runs each one on its own freshly
+imported Supabase database. Each matrix entry must run desktop and phone
+sequentially and report exactly two passes, no skips or retries. Both the
+aggregate `e2e` gate and `release-ready` must fail if either entry fails or is
+absent. Do not solve this cross-test contamination by deleting rotation history
+from production code or by removing a required browser assertion.
+
+Before changing a workflow or reporting browser coverage, inventory the
+environment-gated skips in `tests/e2e/` as well as the always-on cases. The
+ordinary CI shards skip these cases unless their flags and guarded fixtures
+are supplied:
+
+- `CAPTURE_VISUAL_REVIEW=1`: screenshot-only reviews in
+  `public-app-shell-review`, `workspace-shell-review`,
+  `featured-schedule-review` and `private-capacity-network`. These support
+  owner visual review; they do not prove a saved workflow.
+- `LOADGISTIC_TASK_FLEET_REVIEW=1`, `LOADGISTIC_OFF_PAGE_FLEET_REVIEW=1`,
+  `LOADGISTIC_MOBILE_STRUCTURE=1` and `LOADGISTIC_TELEMATICS_DEMO=1`:
+  guarded local-demo cases in `fleet-task-workspace`, `fleet-driver-off-page`,
+  `mobile-workspace-structure` and `telematics-fleet`, respectively.
+- `CHECK_EXISTING_NULL_FLEET=1`: the read-only legacy-record check in
+  `public-fleet-null-number`.
+
+For each affected behavior, record an always-on desktop/phone assertion or a
+separately executed guarded run with its fixture and result. If neither exists,
+leave that coverage open. Do not count skipped tests in a CI total, enable
+production-unsafe demo fixtures just to turn skips green, or treat visual
+approval as a CI pass.
+
 ## Isolate fleet and Tracking test actors
 
 When a fixture exercises reassignment, create its own confirmed synthetic driver

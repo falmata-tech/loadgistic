@@ -12,8 +12,8 @@ import type {Page,Browser,BrowserContext} from 'playwright-core';
 test.use({trace:'off',video:'off',screenshot:'off'});
 
 // Plain Playwright test: this diagnostic uses API contexts, never a browser.
-apiTest('valid existing staff web bearers retain positive Auth and receive mobile WEB_ONLY',async({playwright},info)=>{
- apiTest.setTimeout(120000);const db=localAuditService(),clients:ReturnType<typeof createClient>[]=[],diagnostics:{stage:string;failureStage:string;cleanupFailed:boolean;actors:Record<string,unknown>[]}={stage:'LOCAL_PREFLIGHT',failureStage:'',cleanupFailed:false,actors:[]};
+apiTest('valid local staff web bearers retain positive Auth and receive mobile WEB_ONLY',async({playwright},info)=>{
+ apiTest.setTimeout(120000);const db=localAuditService(),clients:ReturnType<typeof createClient>[]=[],ids:string[]=[],diagnostics:{stage:string;failureStage:string;cleanupFailed:boolean;actors:Record<string,unknown>[]}={stage:'LOCAL_PREFLIGHT',failureStage:'',cleanupFailed:false,actors:[]};
  let context:Awaited<ReturnType<typeof playwright.request.newContext>>|undefined;
  const code=(value:unknown)=>['WEB_ONLY','SIGN_IN_REQUIRED','UNAVAILABLE','INVALID_ORIGIN'].includes(String(value))?String(value):'UNCLASSIFIED';
  try{
@@ -22,10 +22,12 @@ apiTest('valid existing staff web bearers retain positive Auth and receive mobil
   context=await playwright.request.newContext({baseURL:'http://127.0.0.1:3100'});
   const wrapped=scopeLocalRequest(context,()=> '127.0.0.240','http://127.0.0.1:3100');
   for(const role of ['ADMIN','SUPPORT']){
-   diagnostics.stage='EXISTING_'+role;
-   let query=db.from('profiles').select('id,email,role,active').eq('active',true).eq('role',role);
-   if(role==='ADMIN')query=query.eq('email','falmata.dawano@gmail.com');
-   const actor=checked(await query.order('id').limit(1).single());
+   diagnostics.stage='CREATE_'+role;
+   const email=`staff-web-only-${randomUUID()}@example.test`;
+   const id=checked(await db.auth.admin.createUser({email,email_confirm:true})).user.id;ids.push(id);
+   checked(await db.from('profiles').update({role,active:true,full_name:`Synthetic ${role.toLowerCase()} reviewer`}).eq('id',id));
+   if(role==='SUPPORT')checked(await db.from('support_agent_profiles').insert({user_id:id,active:true,available:false,can_manage_support:true}));
+   const actor=checked(await db.from('profiles').select('id,email,role,active').eq('id',id).single());
    const evidence:Record<string,unknown>={role,authSubjectMatch:false,globalAuthSubjectMatch:false,projectionSubjectMatch:false,projectionRoleMatch:false,projectionShapeValid:false,reads:[]};diagnostics.actors.push(evidence);
    diagnostics.stage='ISSUE_'+role;
    const link=checked(await db.auth.admin.generateLink({type:'magiclink',email:actor.email}));
@@ -53,6 +55,7 @@ apiTest('valid existing staff web bearers retain positive Auth and receive mobil
  finally{
   for(const client of clients)try{const result=await client.auth.signOut({scope:'local'});if(result.error)diagnostics.cleanupFailed=true;}catch{diagnostics.cleanupFailed=true;}
   try{await context?.dispose();}catch{diagnostics.cleanupFailed=true;}
+  for(const id of ids)try{checked(await db.from('audit_logs').delete().eq('actor_user_id',id));checked(await db.from('audit_logs').delete().eq('entity_id',id));checked(await db.auth.admin.deleteUser(id));}catch{diagnostics.cleanupFailed=true;}
   const file=info.outputPath('bearer-diagnostics.json');mkdirSync(path.dirname(file),{recursive:true});writeFileSync(file,JSON.stringify(diagnostics,null,2)+'\n');
   if(diagnostics.cleanupFailed)throw Error('Local staff bearer cleanup could not be confirmed.');
  }
@@ -61,7 +64,7 @@ apiTest('valid existing staff web bearers retain positive Auth and receive mobil
 function staffHarness(page:Page,browser:Browser,info:{outputPath:(name:string)=>string}){
  const db=localAuditService(),ids:string[]=[],contexts:BrowserContext[]=[];let stage='LOCAL_PREFLIGHT';
  const diagnostics={createdStaffIds:ids,failureStage:'',failureClass:'',cleanupFailure:'',cleanupCode:'',suspension:null as null|{status:number;restoreButtons:number;suspendButtons:number;userActive:boolean;staffActive:boolean;flagsPreserved:boolean},reads:[] as {stage:string;status:number;expected:number}[]};
- const ownerEmail='falmata.dawano@gmail.com';let owner:{id:string;role:string;active:boolean}|null=null;
+ let ownerEmail='';let owner:{id:string;role:string;active:boolean}|null=null;
  async function status(p:Page,url:string,expected:number){const response=await p.request.get(url,{maxRedirects:0});diagnostics.reads.push({stage,status:response.status(),expected});expect(response.status()).toBe(expected);}
  async function preflight(){
   for(const table of ['support_conversations']){
@@ -70,8 +73,11 @@ function staffHarness(page:Page,browser:Browser,info:{outputPath:(name:string)=>
   }
  }
  async function ownerLogin(){
-  stage='OWNER_SETUP';owner=checked(await db.from('profiles').select('id,role,active').eq('email',ownerEmail).single());
-  if(!owner||owner.role!=='ADMIN'||owner.active!==true)throw Error('EXISTING_LOCAL_OWNER_REQUIRED');
+  stage='OWNER_SETUP';ownerEmail=`staff-maintenance-owner-${randomUUID()}@example.test`;
+  const id=checked(await db.auth.admin.createUser({email:ownerEmail,email_confirm:true})).user.id;ids.push(id);
+  checked(await db.from('profiles').update({role:'ADMIN',active:true,full_name:'Synthetic platform administrator'}).eq('id',id));
+  owner=checked(await db.from('profiles').select('id,role,active').eq('id',id).single());
+  if(!owner||owner.role!=='ADMIN'||owner.active!==true)throw Error('LOCAL_ADMIN_FIXTURE_REQUIRED');
   await webLogin(page,ownerEmail,/\/admin$/);await page.goto('/admin/support?tab=team');await expect(page.getByRole('heading',{name:'Platform team',exact:true})).toBeVisible();
  }
  async function webLogin(p:Page,email:string,destination:RegExp){
@@ -166,7 +172,7 @@ function staffHarness(page:Page,browser:Browser,info:{outputPath:(name:string)=>
    await assertMobileBlocked(staff,email,user.id);
  }
  async function ownerOnly(){
-  if(!owner)throw Error('EXISTING_LOCAL_OWNER_REQUIRED');await assertMobileBlocked(page,ownerEmail,owner.id);
+  if(!owner)throw Error('LOCAL_ADMIN_FIXTURE_REQUIRED');await assertMobileBlocked(page,ownerEmail,owner.id);
   stage='STAFF_RESPONSIVE';
   for(const width of [412,1440]){await page.setViewportSize({width,height:915});await page.goto('/admin/support?tab=team');await page.screenshot({path:info.outputPath(`owner-admin-${width}.png`),fullPage:true,mask:[page.locator('.admin-support-queue'),page.locator('.support-agent-list')]});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  }
@@ -193,7 +199,7 @@ test('Support staff permissions survive activation and explicit revocation; mobi
  await harness.run(async()=>{await harness.preflight();await harness.ownerLogin();await harness.responsibility();});
 });
 
-test('existing owner administrator remains web-only and retains responsive web access',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
+test('local administrator remains web-only and retains responsive web access',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(240000);const harness=staffHarness(page,browser,info);
  await harness.run(async()=>{await harness.ownerLogin();await harness.ownerOnly();});
 });

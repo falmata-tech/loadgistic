@@ -1,24 +1,9 @@
-import {auditDeleteVehicles} from './audit-helpers';
+import {auditDeleteVehicles,auditIdentity,auditLogin,auditProvider,checked,localAuditService} from './audit-helpers';
 import {expect,test} from './browser-test';
 import {randomUUID} from 'node:crypto';
-import nextEnv from '@next/env';
-import {createClient} from '@supabase/supabase-js';
 
 async function login(page:any,role='admin'){
-  await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  const form=page.getByTestId('login-form');
-  await form.getByLabel('Email',{exact:true}).fill(`${role}@loadgistic.local`);
-  await form.getByLabel('Password').fill('Loadgistic123!');
-  await form.getByRole('button',{name:'Log in',exact:true}).click();
-  await expect(page).toHaveURL(role==='admin'?/\/admin$/:/\/app\/home$/);
-  await expect(page.locator('h1').first()).toBeAttached();
-}
-function localClient(){
-  nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
-  const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
-  if(!['localhost','127.0.0.1'].includes(new URL(endpoint).hostname))throw new Error('REMOTE_AUDIT_REFUSED');
-  return createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
+  await auditLogin(page,`${role}@loadgistic.local`);
 }
 
 test('admin capacity wording and platform access match their actual state',async({page}:{page:any},info:any)=>{
@@ -41,33 +26,45 @@ test('admin capacity wording and platform access match their actual state',async
   await page.screenshot({path:info.outputPath('admin-account.png'),fullPage:true});
 });
 
-test('admin truck save persists and returns to the same searched inventory',async({page}:{page:any},info:any)=>{
-  test.setTimeout(60_000);
-  const client=localClient();const suffix=randomUUID().slice(0,8);let id='';
+test('admin vehicle save and denied account action return to their searched inventories',async({page}:{page:any},info:any)=>{
+  test.setTimeout(120_000);
+  const client=localAuditService();const actor=await auditProvider(client,'admin-context');const suffix=randomUUID().slice(0,8);let id='';
   try{
-    const owner=await client.from('profiles').select('id').eq('email','transporter@loadgistic.local').single();expect(owner.error).toBeNull();
-    const created=await client.rpc('create_provider_vehicle',{actor_user_id:owner.data!.id,command:{use_basis:'OWNED',make:'Audit',model:suffix,plate:`TEST-${suffix}`,cargo_configuration:'Mini Box Truck'}});expect(created.error).toBeNull();id=created.data.id;
+    const created=await client.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:suffix,plate:`TEST-${suffix}`,cargo_configuration:'Mini Box Truck'}});expect(created.error).toBeNull();id=created.data.id;
     await login(page);
-    await page.goto(`/admin/operations?view=TRUCKS&q=${suffix}&page=1`);
+    const vehicleList=`/admin/operations?view=TRUCKS&q=${suffix}&page=1`;
+    await page.goto(vehicleList);
     const row=page.locator('.admin-record-list article').filter({hasText:suffix});
     await expect(row).toHaveCount(1);
-    await row.getByRole('button',{name:'Deactivate',exact:true}).click();
+    await row.getByRole('link',{name:'Open',exact:true}).click();
+    await expect(page.getByRole('link',{name:'Vehicle list',exact:true})).toHaveAttribute('href',vehicleList,{timeout:20000});
+    await page.screenshot({path:info.outputPath('admin-vehicle-detail-return.png'),fullPage:true});
+    await page.getByRole('button',{name:'Deactivate vehicle',exact:true}).click();
+    await page.getByRole('dialog',{name:'Deactivate vehicle',exact:true}).getByRole('button',{name:'Deactivate vehicle',exact:true}).click();
     await expect(page).toHaveURL(new RegExp(`view=TRUCKS&q=${suffix}&page=1&success=`));
     await expect(page.locator('.alert.success')).toBeVisible();
-    await expect(row.getByRole('button',{name:'Reactivate',exact:true})).toBeVisible();
     const persisted=await client.from('vehicles').select('active').eq('id',id).single();expect(persisted.error).toBeNull();expect(persisted.data?.active).toBe(false);
+    await row.getByRole('link',{name:'Open',exact:true}).click();
+    await expect(page).toHaveURL(/\/admin\/operations\/trucks\/[a-f0-9-]+/,{timeout:20000});
+    await expect(page.getByRole('button',{name:'Reactivate vehicle',exact:true})).toBeVisible({timeout:20000});
+    await page.getByRole('link',{name:'Vehicle list',exact:true}).click();
+    await expect(page).toHaveURL(new RegExp(`view=TRUCKS&q=${suffix}&page=1`));
     await page.screenshot({path:info.outputPath('admin-truck-save-context.png'),fullPage:true});
-    await page.goto(`/admin/operations?view=CAPACITY&q=${suffix}`);
-    await expect(page.locator('.admin-record-list article small')).toContainText('Off Duty');
-    await expect(page.locator('.admin-record-list article small')).not.toContainText('Empty vehicle');
-    // A second-page form retains its selected inventory even when the server denies a missing record.
-    await page.goto('/admin/operations?view=USERS&page=2');
-    const form=page.locator('.admin-record-list form').first();
-    await expect(form).toBeVisible();
-    await expect(form.locator('input[name="returnTo"]')).toHaveValue('/admin/operations?view=USERS&page=2');
+    // A denied record action retains the list search even though editing lives on the detail page.
+    const accountList=`/admin/operations?${new URLSearchParams({view:'USERS',q:actor.email,page:'1'})}`;
+    await page.goto(accountList);
+    const accountRow=page.locator('.admin-record-list article').filter({hasText:actor.email});
+    await accountRow.getByRole('link',{name:'Open',exact:true}).click();
+    await expect(page).toHaveURL(/\/admin\/operations\/users\/[a-f0-9-]+/);
+    await expect(page.locator('.admin-operation-record-page').getByRole('link',{name:'Accounts',exact:true})).toHaveAttribute('href',accountList);
+    await page.screenshot({path:info.outputPath('admin-account-detail-return.png'),fullPage:true});
+    await page.getByRole('button',{name:'Suspend account',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Suspend account',exact:true});
+    const form=dialog.locator('form');
+    await expect(form.locator('input[name="returnTo"]')).toHaveValue(accountList);
     await form.evaluate((element:HTMLFormElement,missing:string)=>{element.setAttribute('action',`/api/admin/records/user/${missing}`);},randomUUID());
-    await form.getByRole('button').click();
-    await expect(page).toHaveURL(/view=USERS&page=2&error=/);
+    await dialog.getByRole('button',{name:'Suspend account',exact:true}).click();
+    await expect(page).toHaveURL((url:URL)=>url.pathname==='/admin/operations'&&url.searchParams.get('view')==='USERS'&&url.searchParams.get('q')===actor.email&&url.searchParams.get('page')==='1'&&url.searchParams.has('error'));
     await expect(page.locator('.alert.error')).toBeVisible();
   }finally{
     if(id){
@@ -75,13 +72,15 @@ test('admin truck save persists and returns to the same searched inventory',asyn
         const removed=table==='vehicles'?await auditDeleteVehicles(client,'id',id):await client.from(table).delete().eq(key,id);expect(removed.error).toBeNull();
       }
     }
+    checked(await client.from('audit_logs').delete().eq('actor_user_id',actor.id));
+    checked(await client.auth.admin.deleteUser(actor.id));
   }
 });
 
 test('provider home displays authoritative counts and latest activity',async({page}:{page:any},info:any)=>{
-  const client=localClient();
-  const owner=await client.from('profiles').select('id').eq('email','transporter@loadgistic.local').single();expect(owner.error).toBeNull();
-  const projection=await client.rpc('workspace_dashboard',{actor_user_id:owner.data!.id});expect(projection.error).toBeNull();
+  const client=localAuditService();
+  const owner=await auditIdentity(client,'transporter@loadgistic.local');
+  const projection=await client.rpc('workspace_dashboard',{actor_user_id:owner.id});expect(projection.error).toBeNull();
   await login(page,'transporter');
   for(const [label,value] of Object.entries(projection.data.counts)){
     await expect(page.locator('.stat').filter({has:page.getByText(label,{exact:true})}).locator('strong')).toHaveText(String(value));
@@ -93,7 +92,7 @@ test('provider home displays authoritative counts and latest activity',async({pa
 
 test('admin stale pagination recovers and regular service areas remain areas',async({page}:{page:any},info:any)=>{
   test.setTimeout(60_000);
-  const client=localClient();
+  const client=localAuditService();
   const area=await client.from('profile_routes').select('id,origin').eq('geometry','RADIUS').limit(1).single();expect(area.error).toBeNull();
   await login(page);
   await page.goto('/admin/operations?view=USERS&q=a&page=999999');

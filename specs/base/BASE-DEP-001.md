@@ -282,11 +282,64 @@ not installed provider-level enforcement.
 Given the complete desktop and phone Playwright suite runs across eight isolated CI runners\
 When any shard fails, is cancelled or is skipped\
 Then the aggregate `e2e` release gate fails\
-And each shard owns its Supabase fixtures and runs one worker without sharing mutable test data.
+And each shard owns its Supabase fixtures and runs one worker without sharing mutable test data\
+And the selected desktop/phone test identities match the completed JSON report\
+And a shard with no passing tests, a retry/flaky result, or a skip outside the exact reviewed inventory fails.
 
-Evidence: `.github/workflows/ci.yml`, `tests/ci-browser-gate.test.mjs`, and the
+Evidence: `.github/workflows/ci.yml`, `scripts/ci-browser-shard.mjs`,
+`tests/e2e/ci-allowed-skips.json`, `tests/ci-browser-gate.test.mjs`, and the
 exact-candidate CI run recorded in the release handoff. Sharding changes scheduling,
 not test selection or the required all-tests-pass release outcome.
+
+### Scenario: Featured Prepare browser writes are isolated and required
+
+Given the three always-on browser workflows that can call Prepare upcoming days persist Featured rotation history\
+When CI runs the desktop and phone suite\
+Then ordinary browser shards exclude only those three tagged workflows\
+And each tagged workflow runs on its own CI runner with freshly imported Supabase fixtures and one browser worker\
+And each isolated run requires exactly one desktop and one phone pass, with no skip, flaky result, or failed result\
+And failure, cancellation, or omission of any isolated run blocks both `e2e` and `release-ready`.
+
+Evidence: `.github/workflows/ci.yml`, `scripts/ci-featured-prepare.mjs`,
+`tests/ci-browser-gate.test.mjs`, and the exact-candidate CI run recorded in
+the release handoff. This isolates persistent rotation history; it does not
+remove either workflow from required browser coverage.
+
+### Scenario: the release gate combines every required CI boundary
+
+Given the same source commit starts Loadgistic validation, browser, mobile and container jobs\
+When any one job fails, is cancelled or is skipped\
+Then `release-ready` fails even if the remaining jobs pass\
+And a deployable artifact is never inferred from one successful job or an earlier commit.
+
+The current `feat/mobile-app` and `release/**` branches start CI on push;
+other feature branches require a pull request or an explicit dispatch of their
+exact source commit. Evidence: `.github/workflows/ci.yml` and
+`tests/ci-browser-gate.test.mjs`.
+
+### Scenario: fixture drift fails before the long browser matrix
+
+Given an isolated browser runner has imported the managed local fixtures\
+When it starts the browser gate\
+Then a short preflight first proves that a new provider vehicle is Draft with no assigned Driver, requires explicit assignment and publication, and exposes only its saved eligible capacity\
+And its dedicated CI invocation reports exactly one passed test, zero skipped, zero flaky and zero failed tests, even if Playwright itself exits successfully after a skip\
+And a failing preflight stops that shard before the long desktop and phone workflows\
+And a passing preflight never substitutes for those workflows or the all-shards-pass gate.
+
+Evidence: `tests/e2e/fixture-contract-preflight.spec.ts`,
+`scripts/ci-fixture-preflight.mjs`, `tests/ci-browser-gate.test.mjs`,
+`.github/workflows/ci.yml`, and NR-21 in
+`docs/SECURITY_REGRESSION_REGISTER.md`.
+
+### Scenario: isolated CI Supabase startup recovers from known runner failures
+
+Given a CI runner is starting the dedicated `loadgistic-local` Supabase stack before fixture import\
+When Docker Hub temporarily rejects an image pull or the fixed local mail port conflicts during startup\
+Then CI stops only that local stack and retries startup once after a short delay\
+And a failed cleanup, an unrelated startup error, or a second startup failure fails the job without further retries\
+And no database fixture import, hosted project or other project's containers are part of this recovery.
+
+Evidence: `.github/workflows/ci.yml` and `tests/ci-supabase-start.test.mjs`.
 
 
 ### Scenario: cold local schema reads recover without repeating imports

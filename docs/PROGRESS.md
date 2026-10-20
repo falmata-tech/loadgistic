@@ -1,3 +1,83 @@
+## October20 release-test failure and correction
+
+This release is **not ready to deploy**. The 988 passing unit tests, source and
+type checks, successful build, and 5,000-vehicle search timing check were real
+but did not exercise the complete desktop/phone browser suite. The first CI
+matrix used four large browser shards; all four exceeded the 60-minute job
+limit, so their coverage was unknown. The eight-shard run on `6199c3c` got
+farther and exposed stale synthetic browser setup: newly created vehicles were
+assumed to have an active driver and to be Live, old staff/admin actors and a
+retired admin route remained in cases, new Tracking events still used the old
+20 km radius, some capacity cases assumed only one row per vehicle, and several
+visible UI assertions no longer matched current screens. One shard also could
+not start isolated Supabase because of a local port/image-fetch failure. The
+`validate` job, including the search scale gate, passed; the required browser
+gate did not.
+No hosted database, web deploy, Android signing, or Play update follows from
+this partial result.
+
+The engineering owner is correcting fixtures and actual UI defects separately,
+then will run focused desktop/phone workflows, the fixture preflight, all
+required same-commit CI jobs, and only then resume the approved rollout checks.
+The new preflight is `tests/e2e/fixture-contract-preflight.spec.ts`; it must be
+run as an early isolated browser gate before being credited as prevention.
+`docs/GUARDRAILS.md` now requires an affected-fixture inventory and saved-state
+readback whenever the role/driver/publication contract changes. Neither the
+full CI nor the release is marked passed here. The local Playwright fixture/API
+preflight passed with synthetic cleanup on October20; it does not exercise UI
+clicks. The strict local runner also passed with exactly one test and zero
+skips; its new early CI step still needs a same-commit run. This repeats the
+established NR-21 fixture-drift lesson, now updated with the current provider
+and Tracking rules. It is a
+test/release-process regression, not a newly confirmed security exposure.
+The owner approved the small sponsor, private Capacity, mobile search and public
+map layout fixes for continued release checks. A focused public-reporting
+workflow then found that the desktop public navigation overlaps the Report
+button. The placement was corrected and the complete local report, moderation,
+block and unblock browser flow passed on desktop and phone (2/2). Its changed
+placement has targeted screenshots and the owner approved the final desktop/phone
+placement on October20. A later admin record-navigation correction also needs
+focused visual review before the full release gate; the owner approved the
+desktop/phone account and vehicle Back-link placement on October20. Its synthetic
+save, denial and return-to-search browser workflow passed on both sizes (2/2).
+The public map/Tracking entry and selected public vehicle/driver document checks
+passed on desktop and phone (8/10 in the combined focused run, then the remaining
+driver-management cases passed 2/2 after a bounded navigation wait). Tracking
+radius/foreground-report behavior passed (2/2).
+The regular-route and location editor passed its real save and database readback
+on desktop and phone after replacing the retired radius label in the old test;
+the fleet-owner location permission check also passed (4/4 focused). These
+focused successes do not replace the full release gate or same-source CI.
+Retained support history now passes its three focused browser cases on desktop
+and phone (4/6 in the first full run, then the two corrected member/staff cases
+passed 2/2). The old fixture selected the first Support or Transporter profile,
+which could lack Support permission or refer to a real account. The corrected
+test selects a Support-permitted assigned agent and a synthetic unrelated
+transporter, waits for completed pagination, and still checks archive denial,
+assignment revocation and private-file access. The provider-fleet
+cross-workflow journey passed desktop Chrome (1/1, 5.3m) after updating its
+consent/workspace signup, required account identity fields, explicit Fleet
+editors and bounded navigation waits. It verified one unreviewed Live vehicle,
+an assigned employee, rejected/replaced documents, generic approval not granting
+ownership, an exact Trust relationship, additional publication, revocation and
+replacement, with synthetic cleanup. The same phone Chrome and Expo-web journey
+then passed (1/1, 5.8m) with isolated synthetic cleanup. The Expo Fleet test now
+opens each vehicle's Details tab, where publication actions and reviewed
+authority live; it verifies both Live rows, distinct reviewed/unreviewed states,
+a new Draft vehicle, and the driver map Home after switching areas. The local
+quality gate passed 999 tests, source/spec checks and typecheck; the web
+production build passed. The complete same-commit CI gate remains pending.
+Ordinary CI skips screenshot-only captures and guarded local-demo cases unless
+their opt-in flags and prerequisites are supplied. Their inventory and evidence
+rule are in `docs/GUARDRAILS.md`; a green default CI run must not be described
+as running them. Three ordinary Featured Prepare tests also write lasting rotation
+history; the new CI configuration excludes them from shared browser shards and
+requires a separate fresh-database job for each, with desktop and phone passes.
+Those jobs have not yet run remotely. Ordinary browser shards now require an
+exact selected/result identity match, at least one pass, no retries or flaky
+result, and only 55 explicitly inventoried intentional skips; the strict runner
+has unit tests but has not yet run in CI. Full release checks remain pending.
+
 ## Active release completion — October19
 
 The owner requested shipping the accumulated Loadgistic web/mobile work, an
@@ -25,7 +105,7 @@ reviewed release rather than rewriting previously published commits.
   continuation of release checks on October19. Prior Manual/Phone layout
   approval remains recorded.
 - [ ] Run full source/spec/unit/type/security/workflow/build gates once focused
-  failures are resolved and visual approval is received.
+  failures are resolved. The owner approved the changed screens on October20.
 - [ ] Create explicit-path reviewed commits, push the authorized branch and wait
   for required CI. No force-push or destructive history cleanup is planned.
 - [ ] Prepare exact hosted migration/artifact/backup/rollback review and signed
