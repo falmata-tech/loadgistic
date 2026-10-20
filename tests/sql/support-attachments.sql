@@ -10,8 +10,11 @@ create function pg_temp.attachment_command() returns jsonb language sql as $$
 $$;
 do $test$
 declare member uuid; agent uuid; outsider uuid; admin_id uuid; chat uuid:=gen_random_uuid(); other_chat uuid:=gen_random_uuid();
- upload uuid; abandoned uuid; pending uuid; message uuid; retry uuid; result jsonb; signature text; role_name text; n integer;
+ upload uuid; abandoned uuid; pending uuid; message uuid; retry uuid; result jsonb; signature text; role_name text; n integer; due_before timestamptz;
 begin
+ -- Only age this test's own cleanup work; pre-existing due jobs must not
+ -- consume its bounded worker claim ahead of the exact upload under test.
+ select least(now()-interval '2 hours',coalesce(min(updated_at),now()))-interval '1 day' into due_before from support_attachments;
  select id into strict member from profiles where active and role='DRIVER' order by created_at,id limit 1;
  select id into strict agent from profiles where active and role='SUPPORT' order by created_at,id limit 1;
  select id into strict outsider from profiles where active and role='TRANSPORTER' order by created_at,id limit 1;
@@ -45,15 +48,16 @@ begin
  perform pg_temp.expect_attachment_denied(format('select reserve_support_attachment(%L,%L,pg_temp.attachment_command())',agent,chat));
  if support_attachment_file(agent,chat,upload) is not null then raise exception 'REASSIGNED_AGENT_FILE_VISIBLE';end if;
  perform discard_support_attachment(agent,abandoned,true);
+ update support_attachments set updated_at=due_before where id=abandoned;
  if not exists(select 1 from claim_support_attachment_cleanup(1) where id=abandoned) then raise exception 'FAILED_UPLOAD_NOT_CLAIMED';end if;
  if exists(select 1 from claim_support_attachment_cleanup(20) where id=abandoned) then raise exception 'CLEANUP_DOUBLE_CLAIM';end if;
- update support_attachments set updated_at=now()-interval '6 minutes' where id=abandoned;
+ update support_attachments set updated_at=due_before where id=abandoned;
  if not exists(select 1 from claim_support_attachment_cleanup(20) where id=abandoned) then raise exception 'CLEANUP_RETRY_MISSING';end if;
  -- An unacknowledged Storage write must survive immediate cleanup to allow late arrival.
  pending:=reserve_support_attachment(member,chat,pg_temp.attachment_command());
  perform discard_support_attachment(member,pending);
  if exists(select 1 from claim_support_attachment_cleanup(20) where id=pending) then raise exception 'AMBIGUOUS_UPLOAD_CLEANED_TOO_EARLY';end if;
- update support_attachments set updated_at=now()-interval '2 hours' where id=pending;
+ update support_attachments set updated_at=due_before where id=pending;
  if not exists(select 1 from claim_support_attachment_cleanup(20) where id=pending) then raise exception 'RETIRED_GRACE_CLEANUP_MISSING';end if;
  pending:=reserve_support_attachment(member,chat,pg_temp.attachment_command());
  update profiles set active=false where id=member;
@@ -63,7 +67,7 @@ begin
  update support_conversations set status='CLOSED',assigned_agent_user_id=agent where id=chat;
  perform pg_temp.expect_attachment_denied(format('select send_support_attachment_message(%L,%L,%L,%L)',member,chat,pending,'Closed'),'SUPPORT_CONVERSATION_CLOSED');
  if support_attachment_file(member,chat,upload) is null or support_attachment_file(agent,chat,upload) is null then raise exception 'CLOSED_ATTACHMENT_LOST';end if;
- update support_attachments set updated_at=now()-interval '2 hours' where id=pending;
+ update support_attachments set updated_at=due_before where id=pending;
  if not exists(select 1 from claim_support_attachment_cleanup(999) where id=pending) then raise exception 'STALE_UPLOAD_NOT_CLAIMED';end if;
  if (select state from support_attachments where id=upload)<>'ATTACHED' then raise exception 'ATTACHED_CLEANED';end if;
  insert into support_messages(conversation_id,sender_user_id,body,created_at) select chat,member,'Later history '||i,now()+i*interval '1 second' from generate_series(1,55)i;

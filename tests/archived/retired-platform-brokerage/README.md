@@ -15,3 +15,14 @@ their old positive expectations to CI.
 The snapshots use `.txt` extensions so TypeScript and Playwright do not import
 retired API calls. FEAT-ENT-001 also describes the active customer business
 workspace that replaces any special platform brokerage privileges.
+
+## Historical SQL snapshots
+
+`brokerage-assignment.sql.txt`, `brokerage-conversations.sql.txt`,
+`transport-chat-follow-up.sql.txt` and `transport-requests.sql.txt` preserve the
+old positive intake/assignment/conversation tests unchanged. They require the
+pre-retirement schema and are not current executable acceptance suites. Current
+CI already excluded them; their relocation does not remove a required gate.
+Dated specifications/evidence may name their former `tests/sql/` paths; use these
+snapshots when examining that historical result. Current database coverage remains
+`tests/sql/platform-brokerage-retirement.sql`, plus the active Support suites.

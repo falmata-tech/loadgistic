@@ -16,7 +16,7 @@ test('capacity rules are simple and strict',()=>{
  assert.throws(()=>validateCapacity('FULL'),/INVALID_CAPACITY_STATUS/);
 });
 
-test('direct requests accept both current and legacy pending operational states',()=>{
+test('retained direct-demand helper accepts its historical pending states',()=>{
  const pending={distributionMode:'DIRECT_TO_PROVIDER',commercialStatus:'SENT'};
  assert.equal(isPendingDirectRequest({...pending,operationalStatus:'POSTED'}),true);
  assert.equal(isPendingDirectRequest({...pending,operationalStatus:'SENT'}),true);
@@ -38,7 +38,7 @@ test('capacity load acceptance distinguishes FTL, PTL, and both',()=>{
  assert.throws(()=>validateCapacityServiceRadius('60'),/INVALID_CAPACITY_RADIUS/);
 });
 
-test('PSTL pooling is deterministic and distance bounded',()=>{
+test('retained PSTL helper pooling is deterministic and distance bounded',()=>{
  const base={load_type:'PTL',operational_status:'POSTED',movement_scope:'INTERCITY',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
  const loads=[
   {...base,id:'a',origin:'Addis Ababa',destination:'Adama',origin_coordinate:{lat:9.03,lng:38.74},destination_coordinate:{lat:8.54,lng:39.27}},
@@ -52,7 +52,7 @@ test('PSTL pooling is deterministic and distance bounded',()=>{
  assert.equal(poolCompatibleLoads(loads.reverse())[0].id,pools[0].id);
 });
 
-test('PSTL requires complete pair compatibility and close deadlines',()=>{
+test('retained PSTL helper requires complete pair compatibility and close deadlines',()=>{
  const base={load_type:'PTL',operational_status:'POSTED',movement_scope:'INTERCITY',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
  const loads=[
   {...base,id:'a',origin:'A',destination:'D',origin_coordinate:{lat:9,lng:38},destination_coordinate:{lat:7,lng:38}},
@@ -67,7 +67,7 @@ test('PSTL requires complete pair compatibility and close deadlines',()=>{
  assert.equal(pools[0].members.some(load=>load.id==='late'),false);
 });
 
-test('along-route candidates chain nearby forward legs in deadline order',()=>{
+test('retained demand helper chains nearby forward legs in deadline order',()=>{
  const base={operational_status:'POSTED',movement_scope:'INTERCITY',pickup_date:'2026-08-01',delivery_date:'2026-08-02'};
  const loads=[
   {...base,id:'addis-adama',load_type:'FTL',origin:'Addis Ababa',destination:'Adama',origin_coordinate:{lat:9.03,lng:38.74},destination_coordinate:{lat:8.54,lng:39.27}},
@@ -151,7 +151,7 @@ test('freight status transitions preserve agreement before movement',()=>{
  assert.equal(canTransition('FREIGHT','DELIVERED','ISSUE'),false);
 });
 
-test('only business workspace roles can originate shipment demand',()=>{
+test('retained demand-role helper permits its historical business roles',()=>{
  assert.equal(roleCanCreateShipment('SHIPPER'),true);
  assert.equal(roleCanCreateShipment('RECEIVER'),true);
  assert.equal(roleCanCreateShipment('ADMIN'),false);
@@ -197,7 +197,7 @@ test('legacy capacity expiry utility remains deterministic for historical record
  assert.equal(capacityExpiryState('2026-07-30T09:00:00.000Z',now),'EXPIRED');
 });
 
-test('load Board keeps two full grace days after its delivery deadline',()=>{
+test('retained load-board helper keeps its historical two-day deadline grace',()=>{
  assert.equal(loadBoardDeadlineState(null,'2026-07-30'),'CURRENT');
  assert.equal(loadBoardDeadlineState('2026-07-30','2026-07-30'),'CURRENT');
  assert.equal(loadBoardDeadlineState('2026-07-29','2026-07-30'),'PAST_DUE');
@@ -205,7 +205,7 @@ test('load Board keeps two full grace days after its delivery deadline',()=>{
  assert.equal(loadBoardDeadlineState('2026-07-27','2026-07-30'),'EXPIRED');
 });
 
-test('workspace access periods distinguish trial, paid, sponsored, and expired states',()=>{
+test('historical subscription helper distinguishes trial, paid, sponsored and expired periods',()=>{
  const now=new Date('2026-07-29T09:00:00.000Z');
  assert.equal(accessPeriodEnd(now,7),'2026-08-05T09:00:00.000Z');
  assert.equal(accessPeriodEnd(now,30),'2026-08-28T09:00:00.000Z');

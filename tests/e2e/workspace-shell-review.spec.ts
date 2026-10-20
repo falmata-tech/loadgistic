@@ -2,20 +2,21 @@ import {expect,test} from './browser-test';
 import fs from 'node:fs';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
-import {auditIdentity,localAuditService} from './audit-helpers';
+import {auditDeleteVehicles,auditIdentity,auditLogin,auditOpenTrackingProgress,auditProvider,checked,localAuditService} from './audit-helpers';
 import {getProviderCapacityWorkspace} from '../../src/lib/provider-capacity.js';
+import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
+import {chooseDate} from './date-picker-helper';
 
 async function login(page:any,email:string){
-  await page.goto('/login');
-  await page.locator('details.auth-fixture-login>summary').click();
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill('Loadgistic123!');
-  await page.getByRole('button',{name:'Log in'}).click();
-  await expect(page).toHaveURL(/\/app\/home/);
+  await auditLogin(page,email);
 }
 
 async function choosePlace(page:any,label:string,query:string,option:RegExp){
+  const lookup=page.waitForResponse((response:any)=>{
+    const url=new URL(response.url());return url.pathname==='/api/places'&&url.searchParams.get('q')===query;
+  });
   await page.getByLabel(label).fill(query);
+  const response=await lookup;expect(response.status()).toBe(200);expect(await response.finished()).toBeNull();
   await expect(page.getByRole('option',{name:option}).first()).toBeVisible();
   await page.getByRole('option',{name:option}).first().click();
 }
@@ -62,6 +63,8 @@ test('capture focused responsive shell and Tracking review',async({page,context}
     await capture(page,path.join(output,`${project}-${route.name}.png`));
   }
 
+  const service=localAuditService();let actor:Awaited<ReturnType<typeof auditProvider>>|undefined,vehicleId='',shipmentId='',ownerEmail='';
+  try{
   await login(page,'driver@loadgistic.local');
   await expect(page.getByTestId('capacity-summary')).toBeVisible();
   await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
@@ -88,19 +91,37 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await settleDevelopmentOverlay(page);
   await capture(page,path.join(output,`${project}-account.png`));
 
+  // This capture creates its own pair and Tracking record; shared demo history stays unchanged.
+  actor=await auditProvider(service,'shell-review');
+  const vehicle=await createProviderVehicle(actor,{useBasis:'OWNED',make:'Synthetic',model:'Shell review',plate:`SHELL-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicleId=vehicle.id;
+  expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
+  await updateFleetDriverAccess(actor,actor.id,{vehicleId,canManageCapacity:true,canManageTracking:true});
+  await login(page,actor.email);
   await page.goto('/app/provider-shipments/new');
-  await page.getByLabel('Truck').selectOption({index:1});
+  await page.getByLabel('Vehicle',{exact:true}).selectOption(vehicleId);
   await page.getByLabel('Cargo summary').fill('Workshop steel inputs');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
-  await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
-  const ownerEmail=`${project}@shell-review.test`;
-  await page.getByLabel('Main customer email').fill(ownerEmail);
+  await choosePlace(page,'Passing through city','Adama',/Adama, Ethiopia/i);
+  await choosePlace(page,'Destination','Dire Dawa',/Dire Dawa, Ethiopia/i);
+  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
+  ownerEmail=`shell-review-${actor.suffix}@example.test`;
+  await page.getByLabel('Shipment owner email',{exact:true}).fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   await page.getByRole('button',{name:'Start Tracking'}).click();
   await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
-  await page.getByRole('link',{name:'Open Tracking'}).click();
+  const tracking=page.getByRole('link',{name:'Open Tracking'}),trackingPath=await tracking.getAttribute('href');
+  expect(trackingPath).toMatch(/^\/app\/provider-shipments\/[a-f0-9-]{36}$/);
+  shipmentId=trackingPath!.split('/').at(-1)!;
+  await tracking.click();await page.waitForURL((url:URL)=>url.pathname===trackingPath);
+  await auditOpenTrackingProgress(page);
+  await page.locator('input[name=nextStatus][value=TO_PICKUP]').check();
+  const savedNavigation=page.waitForResponse((response:any)=>{
+    const url=new URL(response.url());return response.request().isNavigationRequest()&&url.pathname===trackingPath&&url.searchParams.has('success');
+  });
   await page.getByRole('button',{name:'Save Going to pickup'}).click();
+  const saved=await savedNavigation;expect(saved.status()).toBe(200);expect(await saved.finished()).toBeNull();
   await expect(page.getByText('Tracking status updated.')).toBeVisible();
+  expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).eq('provider_profile_id',actor.provider_profile_id).single()).operational_status).toBe('TO_PICKUP');
   await page.goto('/track');
   await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
 
@@ -112,4 +133,14 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await waitForMapTiles(page,'.tracking-location-map');
   await settleDevelopmentOverlay(page);
   await capture(page,path.join(output,`${project}-tracking-map.png`));
+  }finally{
+    if(actor){
+      const shipments=checked(await service.from('provider_shipments').select('id,cargo_summary').eq('provider_profile_id',actor.provider_profile_id));
+      expect(shipments.every((row:{cargo_summary:string})=>row.cargo_summary==='Workshop steel inputs')).toBe(true);
+      for(const row of shipments){checked(await service.from('access_email_deliveries').delete().eq('entity_id',row.id));checked(await service.from('audit_logs').delete().eq('entity_id',row.id));checked(await service.from('provider_shipments').delete().eq('id',row.id).eq('provider_profile_id',actor.provider_profile_id));}
+      if(ownerEmail)checked(await service.from('access_email_deliveries').delete().eq('recipient_email',ownerEmail).eq('delivery_kind','TRACKING_OTP'));
+      if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
+      checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
+    }
+  }
 });

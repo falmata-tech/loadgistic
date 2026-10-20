@@ -1,3 +1,5 @@
+// Migration043 snapshots are historical. Current no-plan access is exercised in
+// provider-access-without-plans.test.mjs and current SQL/owner workflow suites.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -94,7 +96,7 @@ test('provider workspace returns each authorized current pair without inheriting
  assert.deepEqual(workspace.corridors.map(signal=>signal.id),['first','second']);
 });
 
-test('provider Capacity runtime repeats scope, assignment, subscription, and permission authorization',()=>{
+test('historical migration043 repeats its original scope, subscription and permission checks',()=>{
   const migration=fs.readFileSync(path.join(root,'supabase','migrations','043_provider_capacity_runtime.sql'),'utf8');
   assert.match(migration,/profile\.active[\s\S]*profile\.role in \('TRANSPORTER','DRIVER'\)/i);
   assert.match(migration,/subscription\.status='SPONSORED'[\s\S]*subscription\.status in \('TRIAL','ACTIVE'\)/i);

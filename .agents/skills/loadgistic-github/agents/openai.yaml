@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loadgistic GitHub"
+  short_description: "Branches, PRs and authorized merge preparation"
+  default_prompt: "Use $loadgistic-github to inspect the current branch and prepare its GitHub review or authorized merge."

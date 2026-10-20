@@ -6,9 +6,9 @@ import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {randomInt,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
-import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditFleetProvider,auditDeleteVehicles} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditFleetProvider,auditDeleteVehicles,auditAssignAndPublishSelfDrivenVehicle} from './audit-helpers';
 import {addLocalSmokeSponsor,temporarilyHideLocalSponsors} from './sponsor-fixture-helper';
-import {getProviderCapacityWorkspace,addProviderRegularCapacity,removeProviderRegularCapacity} from '../../src/lib/provider-capacity.js';
+import {getProviderCapacityWorkspace,addProviderRegularCapacity,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
 import {removePrivateUpload} from '../../src/lib/private-storage.js';
@@ -445,7 +445,7 @@ test('heavy rigid trailer trucks keep their own recognizable map artwork',async(
   await expect(page.locator('.map-capacity-sheet')).toContainText('Trailer');
 });
 
-test('map clusters dense capacity and keeps truck and overlapping signal details inside the map',async({page}:{page:any},info:any)=>{
+test('map clusters dense capacity and keeps truck and overlapping signal dialogs within the viewport',async({page}:{page:any},info:any)=>{
   test.setTimeout(90000);
   await page.goto('/capacity');
   await expect(page.locator('.public-capacity-map')).toBeVisible({timeout:20000});
@@ -517,12 +517,12 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(page.locator('.public-capacity-map .leaflet-container')).toBeVisible();
   const selectedMapCanvas=page.locator('.public-map-canvas');
   const selectedSheet=page.locator('.map-capacity-sheet');
-  const selectedLayout=await page.locator('.public-map-shell').evaluate((shell:any)=>{const map=shell.querySelector('.public-map-canvas').getBoundingClientRect();const leaflet=shell.querySelector('.leaflet-container').getBoundingClientRect();const sheet=document.querySelector('.capacity-info-content')!.getBoundingClientRect();const outer=shell.getBoundingClientRect();return {map:{left:map.left,right:map.right,top:map.top,bottom:map.bottom,width:map.width},leaflet:{width:leaflet.width,height:leaflet.height},sheet:{left:sheet.left,right:sheet.right,top:sheet.top,bottom:sheet.bottom,width:sheet.width},outer:{left:outer.left,right:outer.right,width:outer.width}};});
+  const selectedLayout=await page.locator('.public-map-shell').evaluate((shell:any)=>{const map=shell.querySelector('.public-map-canvas').getBoundingClientRect();const leaflet=shell.querySelector('.leaflet-container').getBoundingClientRect();const dialog=document.querySelector('.capacity-info-card')!.getBoundingClientRect();const outer=shell.getBoundingClientRect();return {map:{left:map.left,right:map.right,top:map.top,bottom:map.bottom,width:map.width},leaflet:{width:leaflet.width,height:leaflet.height},dialog:{left:dialog.left,right:dialog.right,top:dialog.top,bottom:dialog.bottom,width:dialog.width},viewport:{width:innerWidth,height:innerHeight},outer:{left:outer.left,right:outer.right,width:outer.width}};});
   expect(Math.abs(selectedLayout.leaflet.width-selectedLayout.map.width)).toBeLessThanOrEqual(2);
-  expect(selectedLayout.sheet.left).toBeGreaterThanOrEqual(selectedLayout.map.left);
-  expect(selectedLayout.sheet.right).toBeLessThanOrEqual(selectedLayout.map.right+1);
-  expect(selectedLayout.sheet.top).toBeGreaterThanOrEqual(selectedLayout.map.top);
-  expect(selectedLayout.sheet.bottom).toBeLessThanOrEqual(selectedLayout.map.bottom+1);
+  expect(selectedLayout.dialog.left).toBeGreaterThanOrEqual(15);
+  expect(selectedLayout.dialog.right).toBeLessThanOrEqual(selectedLayout.viewport.width-15);
+  expect(selectedLayout.dialog.top).toBeGreaterThanOrEqual(15);
+  expect(selectedLayout.dialog.bottom).toBeLessThanOrEqual(selectedLayout.viewport.height-15);
   expect(Math.abs(selectedLayout.map.width-initialMapCanvasBox!.width)).toBeLessThanOrEqual(2);
   await expect(selectedMapCanvas).toBeVisible();
   await expect(selectedSheet).toBeVisible();
@@ -580,10 +580,10 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   const publicMapBox=await page.locator('.public-capacity-map').boundingBox();
   expect(inspectorBox&&publicMapBox).toBeTruthy();
   const signalInspectorBounds={inspectorLeft:inspectorBox!.x,inspectorRight:inspectorBox!.x+inspectorBox!.width,inspectorTop:inspectorBox!.y,inspectorBottom:inspectorBox!.y+inspectorBox!.height,mapLeft:publicMapBox!.x,mapRight:publicMapBox!.x+publicMapBox!.width,mapTop:publicMapBox!.y,mapBottom:publicMapBox!.y+publicMapBox!.height};
-  expect(signalInspectorBounds.inspectorLeft).toBeGreaterThanOrEqual(signalInspectorBounds.mapLeft-1);
-  expect(signalInspectorBounds.inspectorRight).toBeLessThanOrEqual(signalInspectorBounds.mapRight+1);
-  expect(signalInspectorBounds.inspectorTop).toBeGreaterThanOrEqual(signalInspectorBounds.mapTop-1);
-  expect(signalInspectorBounds.inspectorBottom).toBeLessThanOrEqual(signalInspectorBounds.mapBottom+1);
+  expect(signalInspectorBounds.inspectorLeft).toBeGreaterThanOrEqual(15);
+  expect(signalInspectorBounds.inspectorRight).toBeLessThanOrEqual(page.viewportSize()!.width-15);
+  expect(signalInspectorBounds.inspectorTop).toBeGreaterThanOrEqual(15);
+  expect(signalInspectorBounds.inspectorBottom).toBeLessThanOrEqual(page.viewportSize()!.height-15);
   await interactiveSignal.dispatchEvent('click');
   await expect(signalInspector).toBeVisible();
   await expect(signalInspector.locator('article')).toHaveCount(1);
@@ -1055,21 +1055,21 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
 
 test('capacity summary keeps the map visible and Driver refresh persists location',async({page,context}:{page:any;context:any})=>{
   test.setTimeout(120_000);
-  const service=localAuditService(),actor=await auditIdentity(service,'driver@loadgistic.local');
+  const service=localAuditService(),actor=await auditProvider(service,'summary-location');let vehicleId='';
+  try{
+  vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Summary editor',model:'Assigned truck',plate:`CSUM-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicleId);
+  const places=checked(await service.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
+  const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
+  await publishProviderCapacity(actor,{vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:20,currentRoutePlaces:routePlaces});
   const workspace=await getProviderCapacityWorkspace(actor),vehicle=workspace.vehicles[0];
   expect(workspace.vehicles).toHaveLength(1);expect(vehicle.assigned_driver.id).toBe(actor.id);
   const scope={vehicleId:vehicle.id,expectedDriverId:actor.id};
-  let createdRoute:string|null=null;
-  if(!workspace.corridors.some((route:{vehicle_id:string;driver_user_id:string})=>route.vehicle_id===vehicle.id&&route.driver_user_id===actor.id)){
-    const places=checked(await service.from('place_catalog').select('id').in('normalized_name',['addis ababa','adama']).order('id').limit(2));
-    expect(places).toHaveLength(2);
-    createdRoute=await addProviderRegularCapacity(actor,{...scope,geometry:'ROUTE',routePlaces:places.map((place:{id:string})=>({placeRef:place.id})),areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
-  }
-  try{
+  await addProviderRegularCapacity(actor,{...scope,geometry:'ROUTE',routePlaces,areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:9.07,longitude:38.76});
   const automaticLocationSave=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location')&&response.request().method()==='POST');
-  await login(page,'driver@loadgistic.local');
+  await login(page,actor.email);
   expect((await automaticLocationSave).ok()).toBe(true);
   await expect(page.getByTestId('capacity-location-state')).toHaveCount(0);
   const summary=page.getByTestId('capacity-summary');
@@ -1165,7 +1165,13 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   }finally{
-    if(createdRoute){await removeProviderRegularCapacity(actor,createdRoute,scope);checked(await service.from('audit_logs').delete().eq('entity_id',createdRoute));}
+    const routeIds=checked(await service.from('profile_routes').select('id').eq('provider_profile_id',actor.provider_profile_id));
+    const capacityIds=vehicleId?checked(await service.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
+    const ids=[vehicleId,...routeIds.map((row:{id:string})=>row.id),...capacityIds.map((row:{id:string})=>row.id)].filter(Boolean);
+    if(ids.length)checked(await service.from('audit_logs').delete().in('entity_id',ids));
+    checked(await service.from('profile_routes').delete().eq('provider_profile_id',actor.provider_profile_id));
+    if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
+    checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
   }
 });
 

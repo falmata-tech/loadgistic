@@ -11,6 +11,91 @@ rollout: Promote immutable artifacts only after required checks; roll back appli
 
 # Deployment base specification
 
+## Delivery tooling quality
+
+### Scenario: broken delivery tooling fails before expensive setup
+
+Given the repository's pinned workflow linter has been explicitly installed\
+When `npm run check:workflow` runs locally or in CI validation\
+Then actionlint checks every GitHub Actions workflow for syntax and expression errors\
+And Node parses operational JavaScript under the root and mobile `scripts/` directories without importing or executing those scripts\
+And a missing linter, syntax error, failed check or timeout fails the command\
+And CI performs this check before starting Docker, importing fixtures or building the app.
+
+### Scenario: workflow tooling stays bounded and reproducible
+
+Given actionlint is absent from the project-local cache\
+When the operator explicitly runs the setup command\
+Then it downloads only the pinned release for a supported platform and verifies
+the archive's pinned SHA-256 before extracting its executable\
+And routine checks do not download software, install global packages, read
+application credentials or execute a deployment\
+And existing behavioral tests for runner failures, retries, safe diagnostics and
+release gates remain required by the root test suite.
+
+`check:workflow` is a static tripwire, not evidence that a browser workflow,
+remote service or production rollout works. ShellCheck integration is used when
+installed; its absence is reported explicitly and never represented as a pass
+for shell analysis. No new paid service or separate remote job is required.
+Local evidence: `scripts/check-workflow.mjs`, `tests/workflow-quality.test.mjs`,
+40 passing focused tooling/runner cases and a7.317-second workflow lint/script
+parse run with ShellCheck. The next exact-source CI remains pending. Rollback restores the
+previous npm check chain and removes the early static step; it never waives
+the existing required release jobs.
+
+### Scenario: project skills load only the relevant delivery procedure
+
+Given Codex is working inside the Loadgistic repository\
+When a request concerns stale tests/CI diagnosis or preparing a web/Android release\
+Then repo-scoped skills describe those triggers distinctly and remain available
+for implicit or explicit invocation\
+And their bodies point to the existing controlling specs, task checklist and
+operational authority rather than duplicating history or embedding credentials\
+And each task loads only its applicable procedure, preserving completed evidence,
+scope and existing authorization\
+And ordinary unrelated work does not require the complete release procedure.
+
+Validate skill metadata and references and review representative positive and
+negative task routing. Discovery depends on the running agent/client and project
+directory; a valid file alone does not prove it was selected. Skills are context
+and workflow guidance, not new permissions or a security sandbox. Actual token
+and time savings must be observed before reporting them.
+
+### Scenario: current engineering context is small and unambiguous
+
+Given dated task and verification records have accumulated in entry documents\
+When an agent resumes work or finds a feature's controlling contract\
+Then the product brief describes the current source and separates planned and
+hosted behavior, the task checklist names unfinished dependencies, and the
+traceability entry links the applicable specs and evidence\
+And older narrative remains linked as historical evidence rather than competing
+current instructions\
+And consolidation preserves the original text, unresolved gates and discoverable
+feature/spec references without requiring every task to load the archives.
+
+Documentation-only consolidation does not authorize a product change, declare
+old evidence current, or waive release checks. Validate archived content against
+its pre-move hash, local link targets and the size of the current entry documents.
+
+### Scenario: GitHub task isolation and merge readiness
+
+Given an agent is preparing a bounded Loadgistic change\
+When it selects a branch or prepares a pull request\
+Then it verifies the live default branch and exact head/base rather than relying
+on an old PR or branch name\
+And future independent tasks use short descriptive branches from the integrated
+baseline, with separate worktrees where parallel tasks would otherwise collide\
+And review evidence names the complete net change and the current tested revision\
+And merge, hosted branch protection and production publication remain separate
+operations under existing authorization, with no force push or bulk staging of
+unrelated work\
+And third-party skills are reviewed for provenance, included commands, access and
+compatibility before selection or installation; they cannot expand permissions.
+
+Existing long-lived release work is not silently rebased, squashed or replaced.
+Choose an integration method that preserves its verified commit/artifact history.
+Document planned provider enforcement separately from observed installed controls.
+
 ## Base scenarios
 
 ### Scenario: pull request validation

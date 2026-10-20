@@ -9,6 +9,8 @@
 - [ ] `npm run quality`
 - [ ] Relevant permission and failure tests
 - [ ] Playwright tests for changed user workflows, or not applicable with reason
+- Affected test inputs/fixtures reviewed against the current contract:
+- Tooling/workflow change: negative checks and measured timing, or not applicable:
 
 ## Operational review
 

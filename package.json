@@ -45,7 +45,9 @@
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "check:source": "node scripts/check-source.mjs",
     "check:specs": "node scripts/check-specs.mjs",
-    "check": "npm run check:specs && npm run check:source",
+    "tools:workflow:setup": "node scripts/check-workflow.mjs --setup",
+    "check:workflow": "node scripts/check-workflow.mjs",
+    "check": "npm run check:specs && npm run check:source && npm run check:workflow",
     "launch:check": "NODE_ENV=production node scripts/launch-check.mjs",
     "quality": "npm run check && npm test && npm run typecheck",
     "typecheck:offline": "tsc -p tsconfig.offline.json"

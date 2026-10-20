@@ -7,6 +7,7 @@ import {localAuditService,checked,auditProvider,auditTrackingOwnerLogin} from '.
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+import {cleanupFixtureProofs} from './tracking-proof-cleanup.mjs';
 
 test('Tracking shows saved progress, explicit pending choice and problem recovery on desktop and phone',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(150000);
@@ -83,7 +84,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     await panel.screenshot({path:info.outputPath('tracking-complete.png')});
   }finally{
     await guest?.close();
-    if(shipmentId){checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipmentId));checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));checked(await service.from('provider_shipments').delete().eq('id',shipmentId));}
+    if(shipmentId){await cleanupFixtureProofs(service,{actor,vehicleId,shipmentId});checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipmentId));checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));checked(await service.from('provider_shipments').delete().eq('id',shipmentId));}
     if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
     if(actor){checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));}
   }

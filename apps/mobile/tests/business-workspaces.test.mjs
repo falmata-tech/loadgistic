@@ -48,8 +48,9 @@ test('business Tracking refuses location/approval/proof escalation in normalized
 test('business capacity reads every authorized page, binds workspace/filter and discards aborted returns',async()=>{
  const calls=[],pages=[],row=id=>({id,status:'EMPTY',assigned_driver_first_name:'Synthetic',provider_name:'Synthetic provider',provider_handle:'synthetic',location_lat:9,location_lng:38,location_precision_km:10});
  let index=0;
- await loadBusinessCapacity(workspace,new AbortController().signal,items=>pages.push(items.map(item=>item.id)),async path=>{calls.push(path);return index++===0?{items:[row('a')],hasMore:true,nextCursor:'next'}:{items:[row('b')],hasMore:false,nextCursor:null};},{configurations:['Rigid flatbed','Box truck']});
- assert.deepEqual(pages,[['a'],['a','b']]);assert.ok(calls.every(path=>path.startsWith(`/api/business-workspaces/${workspace}/capacity?`)));assert.match(calls[1],/cursor=next/);
+ const vehicleCategory='Cargo van,Mini Box Truck';
+ await loadBusinessCapacity(workspace,new AbortController().signal,items=>pages.push(items.map(item=>item.id)),async path=>{calls.push(path);return index++===0?{items:[row('a')],hasMore:true,nextCursor:'next'}:{items:[row('b')],hasMore:false,nextCursor:null};},{vehicleCategory});
+ assert.deepEqual(pages,[['a'],['a','b']]);assert.ok(calls.every(path=>path.startsWith(`/api/business-workspaces/${workspace}/capacity?`)));assert.ok(calls.every(path=>new URL(path,'http://local.test').searchParams.get('vehicleCategory')===vehicleCategory));assert.match(calls[1],/cursor=next/);
  const controller=new AbortController();let published=false;
  await loadBusinessCapacity(workspace,controller.signal,()=>{published=true;},async()=>{controller.abort();return {items:[row('secret')],hasMore:false,nextCursor:null};});assert.equal(published,false);
 });

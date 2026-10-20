@@ -48,11 +48,12 @@ test('real upload adapters retain files on lost RPC responses and clean explicit
   process.env.NEXT_PUBLIC_SUPABASE_URL='http://127.0.0.1:1';
   process.env.SUPABASE_SERVICE_ROLE_KEY='isolated-test-placeholder';
   process.env.UPLOAD_SCANNER_BACKEND='local';
+  const actorId='e73ca320-bff2-4ee4-bd8f-cdd8a615a2ce',vehicleId='f0dd7c9f-21e3-4e38-9ca4-bc241553cd71';
   const file=new File([Buffer.from('89504e470d0a1a0a','hex')],'test.png',{type:'image/png'});
   try {
     for (const save of [
-      ()=>submitSupabaseVerification({id:'actor'},{subjectType:'TRUCK',subjectId:'truck',verificationType:'TRUCK_OWNERSHIP'},file),
-      ()=>updateSupabaseProviderProfileImage({id:'actor'},file)
+      ()=>submitSupabaseVerification({id:actorId},{subjectType:'VEHICLE',subjectId:vehicleId,verificationType:'VEHICLE_OWNERSHIP'},file),
+      ()=>updateSupabaseProviderProfileImage({id:actorId},file)
     ]) for (const outcome of ['lost','rejected','success']) {
       const objects=new Map();let referenced,commandCount=0;
       globalThis.fetch=async(input,init)=>{
@@ -66,6 +67,13 @@ test('real upload adapters retain files on lost RPC responses and clean explicit
         if(url.pathname.endsWith('/rpc/content_policy_accepted'))return json(true); // GIVEN this synthetic actor accepted terms.
         if(url.pathname.startsWith('/rest/v1/rpc/')) {
           commandCount++;const body=JSON.parse(init.body);
+          assert.equal(body.actor_user_id,actorId);
+          if(url.pathname.endsWith('/rpc/submit_managed_verification')){
+            assert.equal(body.command.subject_type,'VEHICLE');
+            assert.equal(body.command.subject_id,vehicleId);
+            assert.equal(body.command.verification_type,'VEHICLE_OWNERSHIP');
+            assert.match(body.command.storage_path,/^supabase:\/\/verification\//);
+          }
           if(outcome==='rejected')return new Response(JSON.stringify({code:'P0001',message:'FORBIDDEN'}),{status:400,headers:{'Content-Type':'application/json'}});
           referenced=(body.storage_reference||body.command.storage_path).replace('supabase://','');
           if(outcome==='lost')throw new TypeError('response lost after commit');

@@ -35,6 +35,18 @@ New work should preserve dependency direction toward domain/application contract
 8. Run `npm run quality`, followed by E2E tests for changed user workflows.
 9. Update architecture decisions and progress when boundaries or deployment change.
 
+Delivery tools are maintained code too. Script/CI changes need bounded failure
+behavior and meaningful negative tests, plus a measured run of the affected
+command. `npm run check:workflow` is part of `quality` and early CI validation;
+explicit setup is `npm run tools:workflow:setup` once per fresh environment.
+Keep application, database and native runtime evidence separate from this static
+check. Follow [working lessons](AGENT_LESSONS.md) for focused verification,
+resource limits, artifact reuse and proactive improvement of repeated work.
+
 ## Completion rule
 
 A specification is complete only when its scenarios are implemented, its named tests exist and pass, its observability is available, and its rollout controls are satisfied. A merged Markdown file alone is not completion.
+
+For branch naming, PR ownership, merge strategy, GitHub/Netlify integration and
+external-skill adoption, use [the GitHub workflow](operations/GITHUB_WORKFLOW.md).
+Its planned hosted protections are separate from installed local instructions.

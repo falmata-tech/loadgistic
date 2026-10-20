@@ -9,6 +9,22 @@ observability: [ui_audit_unlabeled_control_count, ui_audit_overflow_count, brows
 rollout: Apply shared primitives before page-specific simplification; retain privacy and verification explanations; validate public, provider, Driver, support, and admin views at desktop and mobile sizes.
 ---
 
+## Featured remaining-viewport correction — October20
+
+Given Featured opens on desktop or a phone with the public header and navigation\
+When the actual header/navigation heights differ from an old fixed subtraction\
+Then the existing shell fills only the remaining viewport\
+And its content and footer remain above fixed phone navigation, without outer
+page overflow\
+And the vehicle board can scroll internally without losing its existing controls,
+cards, programme or sponsor content.
+
+Use the same actual-height flex sizing already used by Capacity. This corrects
+a measured36px desktop/46px phone overflow; it does not change the Featured
+schedule, visual composition, content or permissions. Verification pending:
+`tests/e2e/public-app-shell-review.spec.ts`, focused desktop/phone geometry and
+owner visual approval. No release readiness is inferred from this plan.
+
 # Low-friction interface
 
 ## October20 vehicle-dialog height — locally verified and owner approved
@@ -697,3 +713,19 @@ And labels, inline errors, keyboard focus, 44px targets and public navigation re
 
 FEAT-IAM-001 preserves the real email-code identity contract. Capture request,
 code and invalid-code states locally; obtain owner visual review before release.
+
+### Scenario: workspace switching retains the selected location-source filter
+
+Given a visitor or provider has filtered a capacity map by one or more location
+sources alongside the current vehicle, load-status, document and route filters\
+When an authenticated provider switches to My workspace and returns to Marketplace\
+Then the saved return URL retains those applied filters, including `locationSource`\
+And an eligible business capacity return retains the same presentation query\
+And unknown query keys, credentials, external destinations and oversized values
+remain ineligible for saved navigation.
+
+Scope: the existing safe return-URL allowlist; no new interface, route or access
+permission. Verify `tests/workspace-area-navigation.test.mjs` and the existing
+web switch handler tests, plus the actual desktop/phone Chrome round trip in
+`tests/e2e/workspace-consolidation.spec.ts`. Rollback restores the previous allowlist without data
+changes; it would again lose location-source-filtered return positions.

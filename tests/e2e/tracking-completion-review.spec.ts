@@ -6,6 +6,7 @@ import {localAuditService,checked,auditLogin,auditProvider,auditTrackingOwnerLog
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
+import {cleanupFixtureProofs} from './tracking-proof-cleanup.mjs';
 
 // Read only this synthetic recipient's completion email; never log its code/body.
 async function completionCode(email:string,requestedAt:number){
@@ -81,6 +82,7 @@ test('completed delivery emails its customer and accepts exactly one visible cus
   }finally{
     if(guest)await guest.close();
     if(shipmentId){
+      await cleanupFixtureProofs(service,{actor,vehicleId,shipmentId});
       checked(await service.from('provider_reviews').delete().eq('shipment_id',shipmentId));
       checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipmentId));
       checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));

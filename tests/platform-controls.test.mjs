@@ -8,12 +8,12 @@ import {getPlatformControls,savePlatformControls} from '../src/lib/platform-cont
 const now=new Date('2026-09-13T09:00:00Z');
 const expired={status:'TRIAL',ends_at:'2026-08-10T09:00:00Z'};
 const policy={mode:'TRIAL_PAYMENT',activated_at:now.toISOString()};
-test('free access hides expiry but never supplies a missing workspace',()=>{
+test('retained subscription helper hides expiry in FREE mode without inventing a workspace',()=>{
   assert.deepEqual(subscriptionAccess(expired,now,{mode:'FREE'}),{granted:true,status:'FREE_ACCESS',ends_at:null,days_remaining:null});
   assert.equal(subscriptionAccess(null,now,{mode:'FREE'}).granted,false);
   assert.equal(subscriptionAccess(expired,now).granted,false);
 });
-test('commercial activation gives seven days without shortening active plans or new trials',()=>{
+test('historical commercial helper grants its original seven-day activation without shortening periods',()=>{
   const fresh=subscriptionAccess(expired,now,policy);
   assert.equal(fresh.status,'TRIAL');assert.equal(fresh.days_remaining,7);
   assert.equal(subscriptionAccess(expired,new Date('2026-09-20T09:00:00Z'),policy).granted,false);

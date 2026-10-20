@@ -47,7 +47,7 @@ test('managed admin migration grants only the service role and excludes private 
   }
 });
 
-test('featured truck migration saves exact truck and Driver selections through a service-role-only command',()=>{
+test('historical Featured migration069 stores exact selections with its original hours and service-only command',()=>{
   const source=fs.readFileSync(path.join(root,'supabase/migrations/069_daily_featured_trucks.sql'),'utf8');
   assert.match(source,/add column if not exists vehicle_id uuid references public\.vehicles/);
   assert.match(source,/add column if not exists driver_user_id uuid references public\.profiles/);
@@ -71,7 +71,7 @@ test('managed admin detail projection is bounded, permissioned, and secret-free'
   }
 });
 
-test('administration overview counts every records inventory without browser RPC access',()=>{
+test('historical admin migration067 inventories its original records without browser RPC access',()=>{
   const source=fs.readFileSync(path.join(root,'supabase/migrations/067_admin_overview_counts.sql'),'utf8');
   for(const count of ["'users'","'workspaces'","'trucks'","'drivers'","'tracking'","'board_capacity'","'routes'","'subscriptions'"]){
     assert.match(source,new RegExp(count));

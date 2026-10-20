@@ -109,9 +109,9 @@ test('workflow copy preserves record values and confirmation/date placeholders i
  }
 });
 
-// Cross-platform service copy must stay in the shared offline catalogs.
-test('transport-assistance and single-truck app copy has every local-language message',()=>{
- const keys=['Need help with transport?','Let us handle it','Live chat','Tell us what you need to move and where. Our team will help find a truck and arrange the trip.','Independent driver','How do you use this truck?','I own this truck',"I rent it or have the owner's permission",'Change truck','Keep my previous truck in history and use this truck instead.','Past records are kept. Only your current truck can share capacity.','Document review is shown separately.'];
+// Current provider, capacity-sharing and Tracking copy stays in the shared offline catalogs.
+test('current provider and Tracking app copy has every local-language message',()=>{
+ const keys=['Transport Provider','Fleet','Add vehicle','Go live','Private network','Public + private network','How do you use this vehicle?','I own this vehicle','I am buying this vehicle through financing','I rent it or have permission to use it','Share tracking','Document review is shown separately.'];
  for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
   for(const key of keys)assert.ok(messages[key]?.trim()&&messages[key]!==key,`${locale}: ${key}`);

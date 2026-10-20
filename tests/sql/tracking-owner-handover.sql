@@ -32,7 +32,7 @@ begin
   -- Mode is immutable even through direct owner/service update paths.
   begin update provider_shipments set tracking_mode='STATUS_ONLY' where id=shipment_id;raise exception 'TRACKING_MODE_MUTABLE';exception when raise_exception then if sqlerrm<>'TRACKING_MODE_LOCKED' then raise;end if;end;
   data:=update_provider_tracking_location(driver_id,shipment_id,'{"area":"Around current device area","lat":41,"lng":-87,"precision_km":10,"source":"DEVICE_OBSCURED"}');
-  if data->>'recorded'<>'true' then raise exception 'INITIAL_AUTO_LOCATION_MISSING';end if;
+  if data->>'recorded' is distinct from 'true' then raise exception 'INITIAL_AUTO_LOCATION_MISSING';end if;
   begin perform update_provider_tracking_location(driver_id,shipment_id,'{"area":"Around current device area","lat":41,"lng":-87,"precision_km":40,"source":"DEVICE_OBSCURED"}');raise exception 'WIDE_TRACKING_RADIUS_ALLOWED';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_LOCATION_REQUIRED' then raise;end if;end;
   begin perform update_provider_tracking_location(driver_id,shipment_id,'{"area":"Around current device area","lat":null,"lng":-87,"precision_km":10,"source":"DEVICE_OBSCURED"}');raise exception 'NULL_TRACKING_FIX_ALLOWED';exception when raise_exception then if sqlerrm<>'TRACKING_DEVICE_LOCATION_REQUIRED' then raise;end if;end;
   begin perform update_provider_tracking_status(driver_id,shipment_id,'{"next_status":"LOADING"}');raise exception 'LOADING_WITHOUT_PROOF';exception when raise_exception then if sqlerrm<>'TRACKING_HANDOVER_PROOF_REQUIRED' then raise;end if;end;
@@ -42,9 +42,9 @@ begin
   perform update_provider_tracking_status(driver_id,shipment_id,jsonb_build_object('next_status','UNLOADING','proof',proof));
   begin perform update_provider_tracking_status(driver_id,shipment_id,'{"next_status":"COMPLETED"}');raise exception 'DRIVER_SELF_COMPLETED';exception when raise_exception then if sqlerrm<>'TRACKING_OWNER_APPROVAL_REQUIRED' then raise;end if;end;
   data:=provider_guest_tracking_for_recipient(shipment_id,digest_owner);
-  if data->>'can_approve'<>'true' or data->'current_location'='null'::jsonb then raise exception 'OWNER_APPROVAL_OR_WAITING_LOCATION_MISSING';end if;
+  if data->>'can_approve' is distinct from 'true' or jsonb_typeof(data->'current_location') is distinct from 'object' then raise exception 'OWNER_APPROVAL_OR_WAITING_LOCATION_MISSING';end if;
   data:=provider_guest_tracking_for_recipient(shipment_id,digest_viewer);
-  if data->>'can_approve'<>'false' or data->'current_location'<>'null'::jsonb then raise exception 'VIEWER_APPROVAL_OR_LOCATION_EXPOSED';end if;
+  if data->>'can_approve' is distinct from 'false' or data->'current_location' is distinct from 'null'::jsonb then raise exception 'VIEWER_APPROVAL_OR_LOCATION_EXPOSED';end if;
   begin perform approve_provider_handover(shipment_id,digest_viewer,clock_timestamp());raise exception 'VIEWER_APPROVED';exception when raise_exception then if sqlerrm<>'TRACKING_APPROVAL_FORBIDDEN' then raise;end if;end;
   begin perform approve_provider_handover(shipment_id,digest_owner,clock_timestamp()-interval '5 minutes');raise exception 'EXPIRED_OWNER_APPROVED';exception when raise_exception then if sqlerrm<>'TRACKING_SESSION_EXPIRED' then raise;end if;end;
   begin perform approve_provider_handover(shipment_id,digest_owner,null);raise exception 'MISSING_SESSION_APPROVED';exception when raise_exception then if sqlerrm<>'TRACKING_SESSION_EXPIRED' then raise;end if;end;
@@ -55,10 +55,10 @@ begin
   begin perform resolve_provider_tracking_appeal(owner_id,appeal_id,'APPROVED','Owner acting as staff');raise exception 'PROVIDER_STAFF_RESOLUTION';exception when raise_exception then if sqlerrm<>'FORBIDDEN' then raise;end if;end;
   begin perform resolve_provider_tracking_appeal(admin_id,appeal_id,'APPROVED','');raise exception 'STAFF_UNEXPLAINED_RELEASE';exception when raise_exception then if sqlerrm<>'TRACKING_INVESTIGATION_REQUIRED' then raise;end if;end;
   if mode_value='OWNER' then
-   data:=approve_provider_handover(shipment_id,digest_owner,clock_timestamp());if data->>'approved'<>'true' then raise exception 'OWNER_APPROVAL_FAILED';end if;
+   data:=approve_provider_handover(shipment_id,digest_owner,clock_timestamp());if data->>'approved' is distinct from 'true' then raise exception 'OWNER_APPROVAL_FAILED';end if;
    select count(*) into before_count from provider_shipment_events where provider_shipment_events.shipment_id=fixture.shipment_id;
    data:=approve_provider_handover(shipment_id,digest_owner,clock_timestamp());
-   if data->>'alreadyApproved'<>'true' or (select count(*) from provider_shipment_events where provider_shipment_events.shipment_id=fixture.shipment_id)<>before_count then raise exception 'APPROVAL_REPLAY_NOT_IDEMPOTENT';end if;
+   if data->>'alreadyApproved' is distinct from 'true' or (select count(*) from provider_shipment_events where provider_shipment_events.shipment_id=fixture.shipment_id)<>before_count then raise exception 'APPROVAL_REPLAY_NOT_IDEMPOTENT';end if;
   else perform resolve_provider_tracking_appeal(admin_id,appeal_id,case mode_value when 'STAFF' then 'APPROVED' else mode_value end,'Investigated phone confirmation and retained shipment proof');end if;
   if mode_value in ('OWNER','STAFF') then
    if not exists(select 1 from provider_shipments where id=shipment_id and operational_status='COMPLETED' and handover_approved_at is not null and handover_approval_kind=mode_value) then raise exception 'HANDOVER_RESULT_NOT_SAVED';end if;

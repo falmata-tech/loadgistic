@@ -2408,9 +2408,9 @@ body,.public-capacity-page,.home-capacity-market,.public-provider-directory,.pro
 /* FEAT-MKT-001 / FEAT-FTR-001: remaining-viewport public workspaces. */
 body:has(.public-market-workspace),body:has(.featured-workspace-page){overflow:hidden}
 /* Reserve actual header/tablet-nav height, including borders and safe areas. */
-body:has(>main.public-market-workspace){display:flex;flex-direction:column;height:100dvh;min-height:0}
-body:has(>main.public-market-workspace)>.public-header,body:has(>main.public-market-workspace)>.public-workspace-nav{flex-shrink:0}
-body>main.public-market-workspace{flex:1;min-width:0;height:auto}
+body:has(>main.public-market-workspace),body:has(>main.featured-workspace-page){display:flex;flex-direction:column;height:100dvh;min-height:0}
+body:has(>main.public-market-workspace)>.public-header,body:has(>main.public-market-workspace)>.public-workspace-nav,body:has(>main.featured-workspace-page)>.public-header,body:has(>main.featured-workspace-page)>.public-workspace-nav{flex-shrink:0}
+body>main.public-market-workspace,body>main.featured-workspace-page{flex:1;min-width:0;height:auto}
 .public-market-workspace{display:grid;height:calc(100dvh - 76px);min-height:0;grid-template-rows:minmax(0,1fr);box-sizing:border-box;overflow:hidden;padding:0}
 .public-market-workspace .home-market-shell{width:calc(100% - 16px);height:100%;min-height:0;margin:0 auto}
 .public-market-console .public-capacity-body,.public-market-console .market-workbench{height:100%;min-height:0}

@@ -1,3 +1,5 @@
+// Immutable044/046 snapshots protect historical migrations only. Current Tracking
+// source selection, recipient authority and owner completion have separate suites.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,7 +18,7 @@ function section(start,end){
   return migration.slice(from,to<0?migration.length:to);
 }
 
-test('managed Tracking RPCs remain server-only behind default-deny private tables',()=>{
+test('historical Tracking migration044 keeps its RPCs server-only',()=>{
   for(const signature of [
     'create_provider_tracking(uuid,jsonb)',
     'provider_tracking_detail(uuid,text)',
@@ -32,7 +34,7 @@ test('managed Tracking RPCs remain server-only behind default-deny private table
   assert.doesNotMatch(migration,/grant execute on function public\.(?:create_provider_tracking|provider_guest_tracking).*\b(?:anon|authenticated)\b/i);
 });
 
-test('managed commands repeat owner, Driver permission, assignment, and transition checks',()=>{
+test('historical Tracking migration044 preserves its original actor and transition checks',()=>{
   const actor=section('create or replace function public.provider_tracking_actor_scope','create or replace function public.provider_tracking_actor_owns_shipment');
   assert.match(actor,/can_manage_tracking/i);
   assert.match(actor,/workspace_access/i);
@@ -49,7 +51,7 @@ test('managed commands repeat owner, Driver permission, assignment, and transiti
   assert.match(transition,/on conflict\(idempotency_key\) do nothing/i);
 });
 
-test('guest projection excludes customer contacts, digests, proofs, and delivery internals',()=>{
+test('historical Tracking migration044 excludes private fields from its guest projection',()=>{
   const guest=section('create or replace function public.provider_guest_tracking','create or replace function public.unlock_provider_review');
   assert.match(guest,/shipment_party_grants/i);
   assert.match(guest,/grant_record\.revoked_at is null/i);
@@ -58,7 +60,7 @@ test('guest projection excludes customer contacts, digests, proofs, and delivery
   assert.match(guest,/operational_status in \('TO_PICKUP','IN_TRANSIT'\)/i);
 });
 
-test('cleanup removes only temporary guest data and redacts contacts',()=>{
+test('historical Tracking migration044 cleanup retains shipment and event history',()=>{
   const cleanup=section('create or replace function public.provider_tracking_guest_cleanup','create or replace function public.unlock_provider_tracking');
   assert.match(cleanup,/delete from public\.shipment_party_grants/i);
   assert.match(cleanup,/delete from public\.email_deliveries/i);
@@ -67,7 +69,7 @@ test('cleanup removes only temporary guest data and redacts contacts',()=>{
   assert.doesNotMatch(cleanup,/delete from public\.provider_shipments|delete from public\.provider_shipment_events|delete from public\.provider_reviews/i);
 });
 
-test('email workers lease rows and cannot downgrade a completed delivery',()=>{
+test('historical email migrations044/046 preserve leases and terminal delivery acknowledgement',()=>{
   assert.match(operationsMigration,/for update skip locked/i);
   assert.match(operationsMigration,/next_attempt_at=now\(\)\+interval '10 minutes'/i);
   assert.match(operationsMigration,/jsonb_agg\(jsonb_build_object\([\s\S]*'status',event\.status,[\s\S]*'note',event\.note,[\s\S]*'created_at',event\.created_at/i);

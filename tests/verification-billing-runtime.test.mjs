@@ -6,7 +6,7 @@ import test from 'node:test';
 const root=process.cwd();
 const read=relative=>fs.readFileSync(path.join(root,relative),'utf8');
 
-test('active Verification and Billing routes use managed application ports',()=>{
+test('Verification and retained Billing adapters exclude the retired repository',()=>{
   for(const relative of [
     'src/app/app/verification/page.tsx','src/app/api/verifications/route.ts',
     'src/app/api/files/verification/[id]/route.ts','src/app/api/admin/verifications/[id]/route.ts',

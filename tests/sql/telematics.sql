@@ -77,25 +77,25 @@ begin
  stamp:=clock_timestamp();fix:=jsonb_build_object('eventKey','test:first','gatewayDeviceId',151,'protocol','gt06','protocolDeviceId','990000000000151',
   'observedAt',stamp,'receivedAt',stamp,'valid',true,'latitude',9.031,'longitude',38.748,'speedKph',0,'course',0,'attributes',jsonb_build_object('ignition',false,'battery',80,'alarm','vibration'));
  result:=ingest_telematics_position(digest,fix);
- if result->>'outcome'<>'ACCEPTED' then raise exception 'GPS_FIX_NOT_APPLIED';end if;
- if ingest_telematics_position(digest,fix)->>'outcome'<>'DUPLICATE' then raise exception 'GPS_REPLAY_NOT_IDEMPOTENT';end if;
+ if result->>'outcome' is distinct from 'ACCEPTED' then raise exception 'GPS_FIX_NOT_APPLIED';end if;
+ if ingest_telematics_position(digest,fix)->>'outcome' is distinct from 'DUPLICATE' then raise exception 'GPS_REPLAY_NOT_IDEMPOTENT';end if;
  perform pg_temp.gps_denied(format('select ingest_telematics_position(%L,%L::jsonb)',digest,fix||'{"latitude":9.1}'),'TELEMETRY_EVENT_CONFLICT');
  perform pg_temp.gps_denied(format('select ingest_telematics_position(%L,%L::jsonb)',digest,fix||'{"gatewayDeviceId":999}'),'TELEMETRY_BINDING_DENIED');
  perform pg_temp.gps_denied(format('select ingest_telematics_position(%L,%L::jsonb)',digest,fix||jsonb_build_object('observedAt',stamp+interval '3 minutes')),'TELEMETRY_TIME_INVALID');
  result:=ingest_telematics_position(digest,fix||jsonb_build_object('eventKey','test:late','observedAt',stamp-interval '1 minute'));
- if result->>'outcome'<>'HISTORICAL' then raise exception 'LATE_FIX_APPLIED';end if;
+ if result->>'outcome' is distinct from 'HISTORICAL' then raise exception 'LATE_FIX_APPLIED';end if;
  select payload into published from public_capacity_page(jsonb_build_object('capacity_id',capacity_id));
- if published->>'location_source'<>'TELEMATICS' or published::text like '%990000000000151%' or published ? 'speedKph' or published ? 'attributes'
+ if published->>'location_source' is distinct from 'TELEMATICS' or published::text like '%990000000000151%' or published ? 'speedKph' or published ? 'attributes'
   or exists(select 1 from capacities where id=capacity_id and location_lat=9.031 and location_lng=38.748) then raise exception 'PUBLIC_GPS_PRIVACY_BROKEN';end if;
  rows:=telematics_workspace(owner_id,1);
- if rows->'devices'->0->'position'->>'alarm'<>'vibration' then raise exception 'PRIVATE_ALARM_MISSING';end if;
+ if rows->'devices'->0->'position'->>'alarm' is distinct from 'vibration' then raise exception 'PRIVATE_ALARM_MISSING';end if;
  perform grant_private_capacity_access(owner_id,truck,'gps-recipient@example.invalid',repeat('d',64));
  select payload into rows from private_capacity_filtered_page('EMAIL',repeat('d',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text;
- if rows is null or rows->>'location_source'<>'TELEMATICS' or rows::text like '%990000000000151%'
+ if rows is null or rows->>'location_source' is distinct from 'TELEMATICS' or rows::text like '%990000000000151%'
   or rows ? 'manualPoint' or rows ? 'speedKph' or rows ? 'attributes'
   or(rows->>'location_lat'='9.031' and rows->>'location_lng'='38.748') then raise exception 'RECIPIENT_GPS_PROVENANCE_OR_PRIVACY';end if;
  select payload into rows from capacity_search_private_rows('EMAIL',repeat('d',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text;
- if rows is null or rows->>'location_source'<>'TELEMATICS' then raise exception 'RECIPIENT_SEARCH_GPS_SOURCE_MISSING';end if;
+ if rows is null or rows->>'location_source' is distinct from 'TELEMATICS' then raise exception 'RECIPIENT_SEARCH_GPS_SOURCE_MISSING';end if;
  if exists(select 1 from private_capacity_filtered_page('EMAIL',repeat('e',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text)
   then raise exception 'UNAUTHORIZED_GPS_RECIPIENT_VISIBLE';end if;
  perform pg_temp.gps_denied(format('select telematics_workspace(%L,1)',employee),'FORBIDDEN');
@@ -105,13 +105,13 @@ begin
  perform pg_temp.gps_denied(format('select request_telematics_command(%L,%L::jsonb)',owner_id,command||'{"command":"ENGINE_CUT"}'),'ENGINE_CONTROL_UNAVAILABLE');
  command:=jsonb_build_object('deviceId',device,'command','LOCATE','idempotencyKey',gen_random_uuid());
  result:=request_telematics_command(owner_id,command);
- if request_telematics_command(owner_id,command)->>'id'<>result->>'id' then raise exception 'COMMAND_REPLAY_DUPLICATED';end if;
+ if request_telematics_command(owner_id,command)->>'id' is distinct from result->>'id' then raise exception 'COMMAND_REPLAY_DUPLICATED';end if;
  perform pg_temp.gps_denied(format('select request_telematics_command(%L,%L::jsonb)',owner_id,command||'{"command":"REBOOT"}'),'COMMAND_CHANGED');
  rows:=claim_telematics_commands(digest);if jsonb_array_length(rows)<>1 then raise exception 'COMMAND_NOT_CLAIMED';end if;job:=rows->0;
  result:=record_telematics_command_result(digest,jsonb_build_object('commandId',job->>'id','leaseId',job->>'leaseId','state','DISPATCHED'));
- if result->>'state'<>'DISPATCHED' then raise exception 'HTTP_DISPATCH_CALLED_ACK';end if;
+ if result->>'state' is distinct from 'DISPATCHED' then raise exception 'HTTP_DISPATCH_CALLED_ACK';end if;
  result:=record_telematics_command_result(digest,jsonb_build_object('commandId',job->>'id','leaseId',job->>'leaseId','state','ACKNOWLEDGED','correlated',true,'eventKey','test:ack'));
- if result->>'state'<>'ACKNOWLEDGED' then raise exception 'CORRELATED_ACK_MISSING';end if;
+ if result->>'state' is distinct from 'ACKNOWLEDGED' then raise exception 'CORRELATED_ACK_MISSING';end if;
  step:=authorize_synthetic_engine_command(owner_id,jsonb_build_object('deviceId',device,'vehicleId',truck,'command','ENGINE_CUT'));
  engine_command:=jsonb_build_object('deviceId',device,'command','ENGINE_CUT','confirmed',true,'stepUpId',step->>'id','idempotencyKey',gen_random_uuid());
  perform request_telematics_command(owner_id,engine_command);

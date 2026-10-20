@@ -1,3 +1,5 @@
+// Migration071 is immutable history, not the current plan/courier/publication rule.
+// Current source/SQL owner-fleet, no-plan and catalogue suites cover its replacements.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,7 +18,7 @@ test('only provider owners receive the truck-registration affordance',()=>{
   assert.equal(canManageProviderVehicles({role:'SHIPPER'}),false);
 });
 
-test('truck registration is one owner-scoped managed command without inferred operational state',()=>{
+test('historical migration071 registration preserves its original owner, plan and configuration checks',()=>{
   const migration=fs.readFileSync(path.join(root,'supabase/migrations/071_interchangeable_tractor_trailers.sql'),'utf8');
   const create=migration.slice(migration.indexOf('create or replace function public.create_provider_vehicle'));
   assert.match(create,/membership_role='OWNER'/);

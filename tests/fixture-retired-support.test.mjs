@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {excludeRetiredGuestFixtureTables} from '../scripts/fixture-market-policy.mjs';
 
-test('retired Guest fixture data is excluded without changing Provider or Brokerage work or the source export',()=>{
+test('the retired Guest table filter preserves unrelated input tables and the source export',()=>{
  const tables={
   guest_support_conversations:[{id:'retired-open',status:'OPEN'},{id:'retired-waiting',status:'WAITING'},{id:'retired-closed',status:'CLOSED'}],
   guest_support_messages:[{conversation_id:'retired-open',body:'Synthetic old transcript'}],

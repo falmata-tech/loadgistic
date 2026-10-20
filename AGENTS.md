@@ -32,6 +32,31 @@ Before major authentication, authorization, workflow, public-data, file, schema,
    owner and a next action; do not equate a documented control with installed
    provider enforcement or claim completion by suppressing a finding.
 
+## Test maintenance and efficient daily work
+
+- Repo-scoped skills in `.agents/skills` keep detailed procedures task-specific:
+  `loadgistic-engineering` for everyday changes/setup housekeeping,
+  `loadgistic-test-repair` for failed gates or stale-fixture audits, and
+  `loadgistic-release` for preparing/resuming an authorized rollout.
+  `loadgistic-github` handles branch/PR/review and authorized merge work, following
+  `docs/operations/GITHUB_WORKFLOW.md`. Use the
+  applicable skill; do not load all three by default. They supplement these
+  instructions and never grant additional permissions.
+- Use `docs/AGENT_LESSONS.md` for the applicable failure category and practical
+  stack-specific loop. Update affected tests/fixtures with behavior changes,
+  including gated cases; resolve known findings together before another full CI.
+  Preserve real denial, persistence and recovery checks.
+- After one controlled retry, diagnose the observed cause before repeating slow
+  or failed work. Improve recurring friction proactively and record its measured
+  result, evidence and remaining action in the existing register/checklist.
+  Separate hypotheses, manual rules and installed automated enforcement.
+- Treat scripts/CI as maintained code: bounded failure, negative tests, safe
+  diagnosis and useful timings. Run `npm run check:workflow` before expensive
+  setup; install its pinned linter once with `npm run tools:workflow:setup`.
+- Keep detailed release reuse/freshness procedures in the release skill and
+  working lessons. Existing production/visual authority below remains mandatory;
+  skills do not authorize additional work or replace its evidence.
+
 ## Architecture
 
 - `src/app`: Next.js App Router pages and route handlers

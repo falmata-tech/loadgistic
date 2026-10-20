@@ -273,6 +273,13 @@ These controls apply to every major action: authentication or authorization chan
 
 ## Known failures we must not repeat
 
+Use [AGENT_LESSONS.md](AGENT_LESSONS.md) as the concise entry point. Maintain
+tests as each workflow changes, and review repeated/slow operations proactively
+using their actual outcomes and timings. Preserve useful evidence, consolidate
+known findings before another complete gate, and distinguish enforced checks
+from manual process requirements. NR-61–63 record the recent release-efficiency,
+diagnosis and browser-control mistakes.
+
 Read [SECURITY_REGRESSION_REGISTER.md](SECURITY_REGRESSION_REGISTER.md) before
 schema, extension, authentication, public-data, file or remote-setting changes.
 Reference applicable lesson IDs in the PR and run their negative checks. When a
@@ -304,9 +311,12 @@ its own access-path review; PostgREST-only evidence does not cover either.
   unfinished-Tracking safety. No production rollout without legacy-impact review,
   backup/rehearsal, compatible clients and exact owner authorization.
 
-- Owner's October 7 commercial rule: provider accounts have no plans,
-  subscriptions, trials or platform-payment requirement. Revenue is transport
-  arrangement. Do not restore paid-mode controls, automatic trial rows or
+- Current implemented commercial/access rule: provider accounts have no plans,
+  subscriptions, trials or platform-payment requirement. The later brokerage
+  retirement removes Loadgistic transport arrangement from this application;
+  the October7 revenue description is historical. Future paid enterprise/provider
+  access remains planned until separately implemented and verified. Do not
+  restore paid-mode controls, automatic trial rows or
   subscription-based access as an implementation shortcut. FEAT-BIL-001 requires
   active identity, tenant links and driver permissions without a plan, and
   protection/retention of historical billing data.

@@ -29,24 +29,24 @@ begin
  begin perform create_provider_tracking_with_recipients(other_id,command);raise exception 'FOREIGN_PROVIDER_CREATE_ALLOWED';exception when raise_exception then if sqlerrm not in ('FORBIDDEN','INVALID_VEHICLE') then raise;end if;end;
  perform create_provider_tracking_with_recipients(owner_id,command);
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if jsonb_array_length(result->'route')<>3 or result->'route'->1->>'placeRef'<>cities[2] then raise exception 'ORDERED_ROUTE_PROJECTION_MISSING';end if;
+ if jsonb_array_length(result->'route')<>3 or result->'route'->1->>'placeRef' is distinct from cities[2] then raise exception 'ORDERED_ROUTE_PROJECTION_MISSING';end if;
  if result::text like '%ROUTE-MAP-AUDIT%' or result::text like '%route-owner@example.invalid%' or result::text like '%proof_storage_path%' then raise exception 'PRIVATE_MAP_PROJECTION_LEAK';end if;
- if result->'public_truck_summary'->>'make'<>'Tracking route audit' then raise exception 'PUBLIC_TRUCK_IDENTITY_MISSING';end if;
- if result->'public_truck_summary'->>'driverName'<>'Synthetic' or result->'public_truck_summary'->>'driverPhone' is not null or result->'public_truck_summary'->>'contactPhone' is not null then raise exception 'HIDDEN_CONTACT_OR_FULL_NAME_LEAK';end if;
+ if result->'public_truck_summary'->>'make' is distinct from 'Tracking route audit' then raise exception 'PUBLIC_TRUCK_IDENTITY_MISSING';end if;
+ if result->'public_truck_summary'->>'driverName' is distinct from 'Synthetic' or result->'public_truck_summary'->>'driverPhone' is not null or result->'public_truck_summary'->>'contactPhone' is not null then raise exception 'HIDDEN_CONTACT_OR_FULL_NAME_LEAK';end if;
  foreach private_name in array array[E'Synthetic\tPrivateSurname',E'  Synthetic\nPrivateSurname  '] loop
   update profiles set full_name=private_name where id=driver_id;
   result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
-  if result->'public_truck_summary'->>'driverName'<>'Synthetic' then raise exception 'WHITESPACE_SURNAME_LEAK';end if;
+  if result->'public_truck_summary'->>'driverName' is distinct from 'Synthetic' then raise exception 'WHITESPACE_SURNAME_LEAK';end if;
  end loop;
  update company_pages set show_contact_phone=true where provider_profile_id=provider_id;
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if result->'public_truck_summary'->>'contactPhone'<>'+251900000000' then raise exception 'PUBLISHED_CONTACT_MISSING';end if;
+ if result->'public_truck_summary'->>'contactPhone' is distinct from '+251900000000' then raise exception 'PUBLISHED_CONTACT_MISSING';end if;
  update provider_profiles set content_hidden=true where id=provider_id;
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if result->'public_truck_summary'<>'null'::jsonb then raise exception 'MODERATED_PUBLIC_IDENTITY_LEAK';end if;
+ if result->'public_truck_summary' is distinct from 'null'::jsonb then raise exception 'MODERATED_PUBLIC_IDENTITY_LEAK';end if;
  update provider_profiles set content_hidden=false,review_workspace=true where id=provider_id;
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if result->'public_truck_summary'<>'null'::jsonb then raise exception 'REVIEW_PUBLIC_IDENTITY_LEAK';end if;
+ if result->'public_truck_summary' is distinct from 'null'::jsonb then raise exception 'REVIEW_PUBLIC_IDENTITY_LEAK';end if;
  update provider_profiles set review_workspace=false where id=provider_id;
  -- Exercise current normal phone reporting through an assigned registered installation.
  insert into auth.sessions(id,user_id,created_at,updated_at) values(session_id,driver_id,clock_timestamp(),clock_timestamp());
@@ -54,14 +54,14 @@ begin
  perform issue_registered_tracking_device_lease(driver_id,s_id,installation_id,installation_secret,lease_digest,10);
  perform report_tracking_device_location(lease_digest,jsonb_build_object('area','Synthetic approximate area','lat',41,'lng',-87,'precision_km',10,'source','DEVICE_OBSCURED','observed_at',clock_timestamp(),'report_id',gen_random_uuid()));
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if result->'current_location'->>'location_precision_km'<>'10' then raise exception 'APPROXIMATE_FIX_MISSING';end if;
+ if result->'current_location'->>'location_precision_km' is distinct from '10' then raise exception 'APPROXIMATE_FIX_MISSING';end if;
  if provider_tracking_detail(other_id,s_id::text) is not null or provider_guest_tracking_for_recipient(s_id,repeat('9',64)) is not null then raise exception 'UNAUTHORIZED_ROUTE_READ';end if;
  revision:=(select updated_at::text from provider_shipments where id=s_id);
  begin perform recover_provider_tracking(owner_id,s_id,jsonb_build_object('action','CORRECT','reason','Synthetic invalid endpoint correction','revision',revision,'cargo_summary','Synthetic route cargo','origin_place_ref',invalid_city,'passing_place_ref',cities[2],'destination_place_ref',cities[3],'expected_pickup_date','','expected_delivery_date',(current_date+2)::text));raise exception 'INVALID_ENDPOINT_CORRECTION_ALLOWED';exception when raise_exception then if sqlerrm<>'LOCALITY_REQUIRED' then raise;end if;end;
  begin perform recover_provider_tracking(owner_id,s_id,jsonb_build_object('action','CORRECT','reason','Synthetic route audit correction','revision',revision,'cargo_summary','Synthetic route cargo','origin_place_ref',cities[1],'passing_place_ref',cities[1],'destination_place_ref',cities[3],'expected_pickup_date','','expected_delivery_date',(current_date+2)::text));raise exception 'REPEATED_CORRECTION_ALLOWED';exception when raise_exception then if sqlerrm<>'ROUTE_LOCATIONS_MUST_DIFFER' then raise;end if;end;
  perform recover_provider_tracking(owner_id,s_id,jsonb_build_object('action','CORRECT','reason','Synthetic ordered route correction','revision',revision,'cargo_summary','Synthetic route cargo','origin_place_ref',cities[2],'passing_place_ref',cities[1],'destination_place_ref',cities[3],'expected_pickup_date','','expected_delivery_date',(current_date+2)::text));
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if result->'route'->0->>'placeRef'<>cities[2] or result->'route'->1->>'placeRef'<>cities[1] then raise exception 'ROUTE_CORRECTION_NOT_ATOMIC';end if;
+ if result->'route'->0->>'placeRef' is distinct from cities[2] or result->'route'->1->>'placeRef' is distinct from cities[1] then raise exception 'ROUTE_CORRECTION_NOT_ATOMIC';end if;
  if not exists(select 1 from provider_tracking_recoveries r where r.shipment_id=s_id and r.before_state->>'passing_place_ref'=cities[2] and r.after_state->>'passing_place_ref'=cities[1]) then raise exception 'PASSING_CORRECTION_AUDIT_MISSING';end if;
  begin perform recover_provider_tracking(owner_id,s_id,jsonb_build_object('action','CORRECT','reason','Synthetic stale route correction','revision',revision,'cargo_summary','Synthetic route cargo','origin_place_ref',cities[2],'passing_place_ref',cities[1],'destination_place_ref',cities[3],'expected_pickup_date','','expected_delivery_date',(current_date+2)::text));raise exception 'STALE_ROUTE_CORRECTION_ALLOWED';exception when raise_exception then if sqlerrm<>'TRACKING_CHANGED' then raise;end if;end;
  -- Historical rows can remain two-city records; do not synthesize a middle stop.
@@ -78,7 +78,7 @@ begin
  perform update_provider_tracking_status(driver_id,s_id,'{"next_status":"UNLOADING","proof":{"path":"supabase://shipment-proof/synthetic-route-unloading.jpg","original_name":"unloading.jpg","mime_type":"image/jpeg"}}');
  perform approve_provider_handover(s_id,recipient_digest,clock_timestamp());
  result:=provider_guest_tracking_for_recipient(s_id,recipient_digest);
- if result->'current_location'<>'null'::jsonb or jsonb_array_length(result->'route')<>2 then raise exception 'TERMINAL_MAP_LOCATION_OR_ROUTE';end if;
+ if result->'current_location' is distinct from 'null'::jsonb or jsonb_array_length(result->'route')<>2 then raise exception 'TERMINAL_MAP_LOCATION_OR_ROUTE';end if;
  update provider_tracking_recipients set revoked_at=clock_timestamp() where shipment_id=s_id;
  if provider_guest_tracking_for_recipient(s_id,recipient_digest) is not null then raise exception 'REVOKED_ROUTE_READ';end if;
  if has_function_privilege('anon','public.tracking_route_projection(uuid)','execute') or has_function_privilege('authenticated','public.tracking_public_truck_summary(uuid)','execute') then raise exception 'DIRECT_MAP_RPC_EXPOSURE';end if;

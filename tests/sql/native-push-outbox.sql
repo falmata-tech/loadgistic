@@ -1,7 +1,11 @@
+-- Rollback-only local worker test. Requires no pre-existing active push jobs;
+-- fail explicitly on a busy restored queue rather than claiming unrelated jobs.
 begin;
 create function pg_temp.push_denial(command text,expected text default 'FORBIDDEN') returns void language plpgsql as $$
 begin begin execute command;exception when others then if sqlerrm=expected then return;end if;raise;end;raise exception 'EXPECTED_PUSH_DENIAL';end $$;
-create function pg_temp.push_due_work() returns void language sql as $$ update public.native_push_outbox set next_attempt_at=now()-interval '1 second' where state='PENDING' $$;
+create function pg_temp.push_due_work(target_source uuid) returns void language sql as $$
+ update public.native_push_outbox set next_attempt_at=now()-interval '1 second'
+ where source_id=target_source and state='PENDING' $$;
 -- Synthetic due-time advancement: this rollback-only DO block has a fixed now().
 do $test$
 <<fixture>>
@@ -9,6 +13,9 @@ declare customer uuid:=gen_random_uuid();agent uuid:=gen_random_uuid();other uui
  session uuid:=gen_random_uuid();installation uuid:=gen_random_uuid();visitor_installation uuid:=gen_random_uuid();guest_request uuid:=gen_random_uuid();chat uuid:=gen_random_uuid();
  worker uuid:=gen_random_uuid();worker_two uuid:=gen_random_uuid();delivery uuid;old_delivery uuid;items jsonb;value jsonb;seq bigint;version bigint;initial_count bigint;read_before jsonb;role_name text;row_name text;attempt integer;
 begin
+ if exists(select 1 from public.native_push_outbox where state in('PENDING','SENDING','SUBMITTED','CHECKING')) then
+  raise exception 'PUSH_TEST_REQUIRES_ISOLATED_IDLE_QUEUE';
+ end if;
  foreach uid in array array[customer,agent,other] loop
   insert into auth.users(id,email,email_confirmed_at) values(uid,uid||'@example.test',now());
   update profiles set role=case when uid in (customer,other) then 'DRIVER'::user_role else 'SUPPORT'::user_role end,active=true where id=uid;
@@ -19,17 +26,17 @@ begin
  insert into support_conversations(id,customer_user_id,assigned_agent_user_id,category,status,assigned_at) values(chat,customer,agent,'ACCOUNT','OPEN',now());
  perform send_managed_support_message(agent,chat,'Synthetic old unread reply');
  perform register_native_push_binding(installation,repeat('a',64),'ExpoPushToken[synthetic-member-token]','en',customer,session,null,null);
- if exists(select 1 from native_push_outbox) then raise exception 'REGISTRATION_REPLAYED_HISTORY';end if;
+ if exists(select 1 from native_push_outbox where source_id=chat) then raise exception 'REGISTRATION_REPLAYED_HISTORY';end if;
  perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''en'',%L,%L,null,null)',gen_random_uuid(),repeat('a',64),'ExpoPushToken[synthetic-staff-token]',agent,session));
  perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''en'',%L,%L,null,null)',gen_random_uuid(),repeat('a',64),'ExpoPushToken[synthetic-foreign-session]',other,session));
  perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''en'',%L,%L,null,null)',installation,repeat('b',64),'ExpoPushToken[synthetic-stolen-install]',customer,session));
  perform send_managed_support_message(customer,chat,'Synthetic own message');
- if exists(select 1 from native_push_outbox) then raise exception 'OWN_MESSAGE_NOTIFIED';end if;
+ if exists(select 1 from native_push_outbox where source_id=chat) then raise exception 'OWN_MESSAGE_NOTIFIED';end if;
  perform send_managed_support_message(agent,chat,'Synthetic new reply');
  select max(sequence) into seq from support_messages where conversation_id=chat;
  select id into strict delivery from native_push_outbox where source_id=chat and event='MESSAGE';
  read_before:=chat_read_state('SUPPORT',chat,customer);
- perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);if jsonb_array_length(items)<>1 then raise exception 'CLAIM_NOT_BOUNDED';end if;
+ perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker,40);if jsonb_array_length(items)<>1 then raise exception 'CLAIM_NOT_BOUNDED';end if;
  if jsonb_array_length(claim_native_push_batch(worker_two,40))<>0 then raise exception 'LIVE_LEASE_RECLAIMED';end if;
  if finish_native_push_delivery(delivery,worker_two,'{"code":"DELIVERED"}') then raise exception 'FOREIGN_LEASE_FINISHED';end if;
  value:=native_push_delivery_context(delivery,worker);if value->>'event'<>'MESSAGE' or value::text like '%Synthetic%' or value::text like '%@example%' then raise exception 'PUSH_CONTEXT_PRIVATE_LEAK';end if;
@@ -37,16 +44,16 @@ begin
  perform acknowledge_visible_chat_read('SUPPORT',chat,customer,null,seq,(read_before->>'assignmentVersion')::bigint);
  if native_push_delivery_context(delivery,worker) is not null then raise exception 'ALREADY_READ_PUSH_SENT';end if;
  -- Explicit real team opening creates join once; ordinary fetch does not.
- initial_count:=(select count(*) from native_push_outbox);perform managed_support_conversation(agent,chat,50,true);
- if initial_count<>(select count(*) from native_push_outbox) then raise exception 'FETCH_CREATED_JOIN_PUSH';end if;
+ initial_count:=(select count(*) from native_push_outbox where source_id=chat);perform managed_support_conversation(agent,chat,50,true);
+ if initial_count<>(select count(*) from native_push_outbox where source_id=chat) then raise exception 'FETCH_CREATED_JOIN_PUSH';end if;
  version:=(chat_read_state('SUPPORT',chat,agent)->>'assignmentVersion')::bigint;
  perform acknowledge_visible_chat_read('SUPPORT',chat,agent,null,0,version);
  if not exists(select 1 from native_push_outbox where source_id=chat and event='JOINED') then raise exception 'REAL_JOIN_NOT_NOTIFIED';end if;
- initial_count:=(select count(*) from native_push_outbox);perform acknowledge_visible_chat_read('SUPPORT',chat,agent,null,0,version);
- if initial_count<>(select count(*) from native_push_outbox) then raise exception 'JOIN_REPLAY_DUPLICATED';end if;
+ initial_count:=(select count(*) from native_push_outbox where source_id=chat);perform acknowledge_visible_chat_read('SUPPORT',chat,agent,null,0,version);
+ if initial_count<>(select count(*) from native_push_outbox where source_id=chat) then raise exception 'JOIN_REPLAY_DUPLICATED';end if;
  -- Current authority is checked again after the lease is acquired.
  perform send_managed_support_message(agent,chat,'Synthetic before disabling');
- perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);update profiles set active=false where id=customer;
+ perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker,40);update profiles set active=false where id=customer;
  for delivery in select id from native_push_outbox where lease_id=worker loop if native_push_delivery_context(delivery,worker) is not null then raise exception 'DISABLED_ACTOR_PUSH';end if;end loop;
  update profiles set active=true where id=customer;
  -- Outage and crashed-worker retries are bounded, without changing source Seen.
@@ -59,7 +66,7 @@ begin
   if (select attempts from native_push_outbox where id=delivery)<>attempt then raise exception 'SEND_RETRY_COUNT';end if;
  end loop;
  if (select state from native_push_outbox where id=delivery)<>'FAILED' then raise exception 'UNBOUNDED_SEND_RETRY';end if;
- perform send_managed_support_message(agent,chat,'Synthetic abandoned lease');perform pg_temp.push_due_work();perform claim_native_push_batch(worker,40);
+ perform send_managed_support_message(agent,chat,'Synthetic abandoned lease');perform pg_temp.push_due_work(chat);perform claim_native_push_batch(worker,40);
  select id into strict delivery from native_push_outbox where source_id=chat and event='MESSAGE' and lease_id=worker order by sequence desc limit 1;
  update native_push_outbox set leased_until=now()-interval '1 second',attempts=5 where id=delivery;
  if finish_native_push_delivery(delivery,worker,'{"code":"ACCEPTED","ticketId":"late-ticket"}') then raise exception 'STALE_LEASE_FINISHED';end if;
@@ -78,7 +85,7 @@ begin
  perform pg_temp.push_denial(format('select register_native_push_binding(%L,%L,%L,''en'',%L,%L,null,null)',visitor_installation,
   repeat('e',64),'ExpoPushToken[synthetic-wrong-device]',customer,session));
  perform send_managed_support_message(agent,chat,'Synthetic second-device reply');
- perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
+ perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker,40);
  select q.id into strict delivery from native_push_outbox q join native_push_bindings b on b.id=q.binding_id
   where b.installation_id=visitor_installation and q.source_id=chat and q.event='MESSAGE' and q.lease_id=worker
   order by q.created_at desc limit 1;
@@ -89,23 +96,23 @@ begin
  -- Old invalid-token receipt cannot disable a rotated token.
  perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-rotated-token]','am',customer,session,null,null);
  update native_push_outbox set next_attempt_at=now()-interval '1 second' where id=delivery;
- perform pg_temp.push_due_work();items:=claim_native_push_batch(worker_two,40);perform native_push_delivery_context(delivery,worker_two);
+ perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker_two,40);perform native_push_delivery_context(delivery,worker_two);
  perform finish_native_push_delivery(delivery,worker_two,'{"code":"DeviceNotRegistered"}');
  if not (select enabled from native_push_installations where id=visitor_installation) then raise exception 'OLD_RECEIPT_DISABLED_NEW_TOKEN';end if;
  -- Current invalid token disables that device, not another installation.
- perform send_managed_support_message(agent,chat,'Synthetic current token reply');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
+ perform send_managed_support_message(agent,chat,'Synthetic current token reply');perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker,40);
  select q.id into strict delivery from native_push_outbox q join native_push_bindings b on b.id=q.binding_id
   where b.installation_id=visitor_installation and q.source_id=chat and q.event='MESSAGE' and q.lease_id=worker
   order by q.created_at desc limit 1;
  perform native_push_delivery_context(delivery,worker);perform finish_native_push_delivery(delivery,worker,'{"code":"DeviceNotRegistered"}');
  if (select enabled from native_push_installations where id=visitor_installation) or not (select enabled from native_push_installations where id=installation) then raise exception 'TOKEN_REJECTION_SCOPE_WRONG';end if;
  perform register_native_push_binding(visitor_installation,repeat('d',64),'ExpoPushToken[synthetic-new-device-token]','am',customer,session,null,null);
- perform send_managed_support_message(agent,chat,'Synthetic before expiry');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
+ perform send_managed_support_message(agent,chat,'Synthetic before expiry');perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker,40);
  update native_push_bindings set expires_at=now()-interval '1 second' where installation_id=visitor_installation;
  for delivery in select q.id from native_push_outbox q join native_push_bindings b on b.id=q.binding_id
   where b.installation_id=visitor_installation and q.lease_id=worker loop
   if native_push_delivery_context(delivery,worker) is not null then raise exception 'EXPIRED_MEMBER_PUSH';end if;end loop;
- perform send_managed_support_message(agent,chat,'Synthetic before logout');perform pg_temp.push_due_work();items:=claim_native_push_batch(worker,40);
+ perform send_managed_support_message(agent,chat,'Synthetic before logout');perform pg_temp.push_due_work(chat);items:=claim_native_push_batch(worker,40);
  delete from auth.sessions where id=session;
  for delivery in select id from native_push_outbox where source_id=chat and lease_id=worker loop if native_push_delivery_context(delivery,worker) is not null then raise exception 'LOGGED_OUT_SESSION_PUSH';end if;end loop;
  perform pg_temp.push_denial(format('select remove_native_push_binding(%L,%L,''ALL'')',installation,repeat('f',64)));

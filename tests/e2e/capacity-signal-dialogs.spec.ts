@@ -18,10 +18,17 @@ async function save(page:any,dialog:any,button='Save',endpoint='/api/capacity'){
 
 test('focused capacity dialogs keep map, discard drafts, save preferences and recover from errors',async({page,context}:{page:any;context:any},testInfo:any)=>{
   test.setTimeout(90_000);
+  const service=localAuditService(),actor=await auditProvider(service,'capacity-dialogs');let vehicleId='';
+  try{
+  vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Dialog editor',model:'Assigned truck',plate:`CDLG-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicleId);
+  const places=checked(await service.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
+  const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
+  await publishProviderCapacity(actor,{vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:20,currentRoutePlaces:routePlaces});
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:9.03,longitude:38.76});
   const automatic=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity/location'));
-  await login(page);
+  await login(page,actor.email);
   expect((await automatic).ok()).toBe(true);
   const map=page.getByTestId('capacity-summary').locator('.leaflet-container');
   await expect(map).toBeVisible();
@@ -110,6 +117,13 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await save(page,dialog);
   await expect(capacity).toBeEnabled({timeout:15000});
   await expect(capacity).toHaveAttribute('aria-label',`Edit current capacity: ${originalStatus==='PARTIAL'?'Partial':'Empty'}`);
+  }finally{
+    const capacityIds=vehicleId?checked(await service.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
+    const ids=[vehicleId,...capacityIds.map((row:{id:string})=>row.id)].filter(Boolean);
+    if(ids.length)checked(await service.from('audit_logs').delete().in('entity_id',ids));
+    if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
+    checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
+  }
 });
 
 test('regular service and location edit in bounded dialogs with real saves',async({page,context}:{page:any;context:any},testInfo:any)=>{

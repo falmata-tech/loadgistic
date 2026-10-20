@@ -1,5 +1,61 @@
 # Security failures we must not repeat
 
+## NR-63 — Browser control failure mistaken for the owner's missing session
+
+**Observed:** Name-based Chrome automation inspected a different Chrome instance
+from the owner's selected Loadgistic Play tab. Repeated selection/sign-in
+requests did not fix that connection mismatch. A process-bound ScriptingBridge
+read subsequently found the exact existing app tab; no new login was needed.
+**Control:** Verify which process/window/tab the tool can actually control and
+bind the exact app URL before inferring missing account state. Report a tool
+limitation accurately. Never read browser profiles, passwords, debug pipes or
+another application's pages as a workaround.
+**Evidence:** The protected October20 Play read-only receipt records the exact
+app target and visible publishing/declaration state; no Console write occurred.
+**Owner:** browser operator. **Next:** retain the process/target check whenever
+multiple browser instances are present. This is an operating check, not a
+claim that browser permissions are automatically enforced.
+
+## NR-62 — Source inference promoted to a confirmed failure
+
+**Observed:** An internal audit initially proposed blocking Android signing
+because Expo can refresh a token after notification delivery is turned off.
+Inspection of the exact UI/disclosure showed an alerts-off promise, not a
+promise that every SDK token check stops. No post-toggle traffic was observed.
+The claimed contract violation and proposed declaration changes were retracted
+before any code, Console, key or device change.
+**Control:** Establish the literal promise, current spec, exact execution path
+and observed outcome before classifying a defect or adding a release block.
+Label source-only behavior and uncertain external-policy classification as
+such; do not turn a hypothesis into an owner decision or production mutation.
+**Evidence:** Protected `play-code9-sdk-collection-source-facts-20261020.json`;
+`native-push.ts`, `chat-alert-provider.tsx` and the actual privacy copy.
+**Owner:** investigating agent/reviewer. **Next:** retain the facts and limits
+without claiming a runtime experiment or a policy determination.
+
+## NR-61 — Repeated release preparation wastes unchanged evidence
+
+**Observed:** Focused repairs missed related stale tests, so later complete CI
+runs failed after packaging and fresh backup/rehearsal work had completed.
+Time-limited backups then became unusable before any hosted rollout. Source
+changes confined to tests/docs also caused preparation to restart despite
+unchanged Android files and executable web inputs. Repeated interrupted
+credential processes caused additional Keychain requests.
+**Control:** Consolidate test findings before CI. Complete stable gates and
+immutable packaging before final short-lived backup/security checks. Reuse
+verified bytes with explicit executable-source equality and unchanged artifact
+provenance; keep current CI separate. Preserve approvals instead of relabeling
+old receipts or repeatedly asking for unchanged actions. Hold credentials only
+in the approved bounded process and close it when finished. Never extend backup
+age, waive a failed check or broaden authorization to save time.
+**Evidence:** October20 e65CI39491588105, completed package/runtime and isolated
+V8/V9 rehearsals; no associated hosted rollout or signing.8dfCI39497266765 was
+cancelled when the owner required the full test audit.
+**Owner:** release operator. **Next:** finish the full audit and exact-source CI
+before the next final backup; verify artifact reuse and actual rollout outcomes.
+These controls are workflow requirements, not a substitute for provider-side
+enforcement or permission to reuse expired evidence.
+
 ## NR-60 — Personal-fleet employee omitted from sharing authority
 
 The deep onboarding browser journey reached a real capacity-save denial: an

@@ -1,8 +1,6 @@
 import {auditOpenTrackingProgress} from './audit-helpers';
-import {auditIdentity,auditLogin,checked} from './audit-helpers';
+import {auditIdentity,auditLogin,checked,localAuditService} from './audit-helpers';
 import {test,expect} from './browser-test';
-import nextEnv from '@next/env';
-import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
@@ -14,10 +12,7 @@ async function login(page:any,email:string){
 
 test('uploaded Tracking proof opens for provider, admin and email-verified guest only',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(180000);
-  nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
-  const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
-  if(!['127.0.0.1','localhost'].includes(new URL(endpoint).hostname))throw new Error('REMOTE_PROOF_TEST_REFUSED');
-  const service=createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
+  const service=localAuditService();
   const actor=await auditIdentity(service,'driver@loadgistic.local');
   const workspace=await getProviderTrackingWorkspace(actor);
   const origin=await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single();

@@ -1,8 +1,10 @@
 import {expect,test} from './browser-test';
 import fs from 'node:fs';
 import path from 'node:path';
+import {randomUUID} from 'node:crypto';
 
-import {auditLogin as login} from './audit-helpers';
+import {auditIdentity,auditLogin as login,checked,localAuditService} from './audit-helpers';
+import {revokePrivateCapacityAccess} from '../../src/lib/private-capacity.js';
 
 async function localMailpitCode(email:string,requestedAt:number){
   for(let attempt=0;attempt<40;attempt+=1){
@@ -36,7 +38,11 @@ test('public route changes never restore retired transport chat',async({page}:{p
 
 test('provider Network and public Shared capacity remain distinct',async({page}:{page:any})=>{
   test.setTimeout(60_000);
-  const sharedEmail=`shared-${Date.now()}-${test.info().project.name}@example.test`;
+  const sharedEmail=`shared-${randomUUID()}@example.test`;
+  const service=localAuditService(),actor=await auditIdentity(service,'transporter@loadgistic.local');
+  let vehicleId='';let originalGrantIds:Set<string>|null=null;
+  const matchingGrants=async()=>checked(await service.from('capacity_access_grants').select('id,created_by,revoked_at').eq('vehicle_id',vehicleId).eq('audience_type','EMAIL').eq('recipient_email',sharedEmail));
+  try{
   await page.goto('/shared-capacity');
   await expect(page.getByRole('heading',{name:'Find space for your next load',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
@@ -59,6 +65,10 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await page.getByRole('button',{name:'Add access',exact:true}).first().click();
   const access=page.getByRole('dialog',{name:'Add access',exact:true});
   const shareEmail=access.getByLabel('Share with an email',{exact:true});
+  vehicleId=await access.locator('input[name="vehicleId"]').inputValue();
+  const originalGrants=await matchingGrants();
+  originalGrantIds=new Set(originalGrants.map((grant:{id:string})=>grant.id));
+  expect(originalGrants,'The generated synthetic recipient must not reuse an existing grant.').toHaveLength(0);
   await shareEmail.fill(sharedEmail);
   await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Person or company name',{exact:true}).fill('Synthetic partner');
   await shareEmail.locator('xpath=ancestor::form[1]').getByRole('button',{name:'Add access'}).click();
@@ -108,6 +118,17 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible();
   expect((await page.context().cookies()).some((cookie:any)=>cookie.name==='lg_shared_capacity')).toBe(false);
   expect((await page.request.post('/api/shared-capacity/session')).status()).toBe(401);
+  }finally{
+    if(originalGrantIds){
+      const createdGrants=(await matchingGrants()).filter((grant:{id:string;created_by:string})=>!originalGrantIds!.has(grant.id)&&grant.created_by===actor.id);
+      expect(createdGrants.length,'Only this test\'s exact synthetic grant may be cleaned up.').toBeLessThanOrEqual(1);
+      if(createdGrants.length){
+        const grantId=createdGrants[0].id;
+        if(!createdGrants[0].revoked_at)await revokePrivateCapacityAccess(actor,grantId);
+        expect(checked(await service.from('capacity_access_grants').select('revoked_at').eq('id',grantId).eq('vehicle_id',vehicleId).eq('created_by',actor.id).eq('recipient_email',sharedEmail).single()).revoked_at).not.toBeNull();
+      }
+    }
+  }
 });
 
 test('public Market returns only trucks that expose their current signal',async({request}:{request:any})=>{

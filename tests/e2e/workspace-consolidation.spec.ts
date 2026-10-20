@@ -134,3 +134,30 @@ async function expectHeaderControlsFit(page:Page){
   for(let index=1;index<boxes.length;index++)expect(boxes[index].x).toBeGreaterThanOrEqual(boxes[index-1].x+boxes[index-1].width);
  }
 }
+
+
+test('Marketplace return keeps the selected location-source filters after visiting My workspace',async({page}:{page:Page})=>{
+ test.setTimeout(90000);
+ const service=localAuditService(),actor=await auditProvider(service,'area-source-return');
+ let signOut:(()=>Promise<unknown>)|undefined;
+ try{
+  signOut=await localSupportLogin(page,actor.id);
+  await page.goto('/?status=EMPTY%2CPARTIAL&locationSource=GPS%2CMOBILE');
+  await expect(page.locator('.public-capacity-map')).toBeVisible();
+  const switcher=page.getByRole('navigation',{name:'Switch view',exact:true});
+  await expect(page.getByRole('combobox',{name:'Language',exact:true})).toBeEnabled();
+  await Promise.all([page.waitForURL(/\/app\//,{timeout:30000}),switcher.getByRole('link',{name:'My workspace',exact:true}).click()]);
+  const back=page.getByRole('navigation',{name:'Switch view',exact:true}).getByRole('link',{name:'Marketplace',exact:true});
+  await expect(back).toHaveAttribute('href',/locationSource=GPS%2CMOBILE/);
+  await back.click();
+  await expect(page.locator('.public-capacity-map')).toBeVisible();
+  const url=new URL(page.url());
+  expect(url.pathname).toBe('/');
+  expect(url.searchParams.get('locationSource')).toBe('GPS,MOBILE');
+  expect(url.searchParams.get('status')).toBe('EMPTY,PARTIAL');
+ }finally{
+  await signOut?.();
+  checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));
+  checked(await service.auth.admin.deleteUser(actor.id));
+ }
+});

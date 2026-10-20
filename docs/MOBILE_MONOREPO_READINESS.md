@@ -1,5 +1,14 @@
 # Loadgistic mobile and monorepo readiness
 
+Historical architecture plan. Its inventory and migration checklist below
+describe the September27/October7 planning checkpoint, not the current mobile
+feature inventory or an instruction to recreate the app. Use the active
+`docs/PROGRESS.md`, `docs/MOBILE_IMPLEMENTATION.md`, actual package scripts and
+README's local-preview commands for current work. In particular, the older
+Brokerage and no-push descriptions below are historical; current specs control.
+The full physical monorepo move remains planned and is not required to ship the
+existing root web app plus `apps/mobile`.
+
 Prepared 2026-09-27; implementation status updated 2026-10-07. The native Expo
 application under `apps/mobile` now has a signed standalone Android internal-test
 APK using the deployed production API. Installation and cold start passed on the

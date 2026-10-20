@@ -1,3 +1,7 @@
+// Injected GUEST_SUPPORT/assisted-template examples exercise retained adapter
+// compatibility, queue order and failure handling only. They do not prove a live
+// Guest intake; retirement denial and current Tracking/Capacity delivery have
+// separate tests below and in the retired-platform suites.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -369,7 +373,7 @@ test('targeted Tracking OTP delivery uses the live challenge lease and Tracking 
   assert.deepEqual(recorded,[{id:'tracking-delivery',attempt:{leaseToken:'tracking-lease',sent:true}}]);
 });
 
-test('Guest access delivery uses the same live-lease fence before provider submission',async()=>{
+test('retained Guest delivery adapter fences an injected historical job before submission',async()=>{
   const sent=[];
   const recorded=[];
   const result=await deliverTargetedAccessEmail('GUEST_SUPPORT','conversation',{

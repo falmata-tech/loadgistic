@@ -58,7 +58,7 @@ test('provider creation and recipient commands cannot expand the one-owner audie
  assert.equal(tracking.trackingDetail({guest_access_active:true,operational_status:'CREATED'},{id,role:'DRIVER'},[]).canManageRecipients,false);
 });
 
-test('sharing failures have four native-language messages, including stale permissions and revocation',async()=>{
+test('sharing failures have both supported translations, including stale permissions and revocation',async()=>{
  const {trackingSharingMessages}=compile('src/lib/i18n/tracking-sharing-messages.ts',{});
  const {trackingSharingFailure}=compile('src/lib/tracking-sharing/http.ts',{z,TrackingSharingError:domain.TrackingSharingError,MobileError:class extends Error{},businessJson:(body,status)=>Response.json(body,{status})});
  for(const code of ['TRACKING_SESSION_EXPIRED','TRACKING_APPROVAL_FORBIDDEN','TRACKING_SHARING_CHANGED','TRACKING_RECIPIENT_EXISTS','TRACKING_RECIPIENT_LIMIT','TRACKING_RECIPIENTS_CLOSED','INVALID_TRACKING_RECIPIENTS','BUSINESS_FORBIDDEN','NOT_FOUND']){const response=trackingSharingFailure(new domain.TrackingSharingError(code)),message=(await response.json()).error.message;for(const locale of ['am','om'])assert.ok(trackingSharingMessages[locale][message]&&trackingSharingMessages[locale][message]!==message,`${locale}: ${code}`);}

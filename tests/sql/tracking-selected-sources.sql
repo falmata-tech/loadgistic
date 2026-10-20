@@ -36,12 +36,12 @@ begin
   values(shipment,'CREATED','LOCATION','Synthetic phone area',41,-87,10,'DEVICE_OBSCURED',owner_id,stamp);
  owner_view:=provider_guest_tracking_for_recipient(shipment,owner_digest);
  if owner_view->'current_location'->>'location_source' is distinct from 'DEVICE_OBSCURED'
-  or owner_view->'current_location'->>'location_precision_km'<>'10' then raise exception 'PHONE_RADIUS_OR_SOURCE_RELABELLED';end if;
+  or owner_view->'current_location'->>'location_precision_km' is distinct from '10' then raise exception 'PHONE_RADIUS_OR_SOURCE_RELABELLED';end if;
  viewer_view:=provider_guest_tracking_for_recipient(shipment,viewer_digest);
- if viewer_view->'current_location'<>'null'::jsonb or viewer_view->>'can_view_location'<>'false'
+ if viewer_view->'current_location' is distinct from 'null'::jsonb or viewer_view->>'can_view_location' is distinct from 'false'
   or jsonb_array_length(viewer_view->'route')<>3 then raise exception 'VIEWER_LOCATION_OR_ROUTE_BOUNDARY';end if;
  if provider_guest_tracking_for_recipient(shipment,repeat('f',64)) is not null then raise exception 'UNVERIFIED_SOURCE_READ';end if;
- if provider_guest_tracking(shipment,'SHIPPER')->'current_location'<>'null'::jsonb then raise exception 'PARTY_ROLE_BYPASSES_RECIPIENT_AUTHORITY';end if;
+ if provider_guest_tracking(shipment,'SHIPPER')->'current_location' is distinct from 'null'::jsonb then raise exception 'PARTY_ROLE_BYPASSES_RECIPIENT_AUTHORITY';end if;
  perform update_provider_tracking_status(owner_id,shipment,'{"next_status":"LOADING","proof":{"path":"supabase://shipment-proof/source-158-loading.jpg","original_name":"loading.jpg","mime_type":"image/jpeg"}}');
  select id into event_id from provider_shipment_events where shipment_id=shipment and status='LOADING' and proof_storage_path is not null;
  if provider_tracking_proof_file(null,shipment,event_id,owner_digest) is null then raise exception 'OWNER_PROOF_BLOCKED';end if;
@@ -52,7 +52,7 @@ begin
  result:=select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',20,'expectedRevision',revision,'manualLatitude',9.03,'manualLongitude',38.74));
  revision:=result->>'revision';owner_view:=provider_guest_tracking_for_recipient(shipment,owner_digest);
  if owner_view->'current_location'->>'location_source' is distinct from 'DEVICE_OBSCURED'
-  or owner_view->'current_location'->>'location_precision_km'<>'10' then raise exception 'MANUAL_CAPACITY_REPLACED_AGREED_PHONE_TRACKING';end if;
+  or owner_view->'current_location'->>'location_precision_km' is distinct from '10' then raise exception 'MANUAL_CAPACITY_REPLACED_AGREED_PHONE_TRACKING';end if;
  if owner_view->'current_location'->>'location_lat'='9.03' or owner_view->'current_location'->>'location_lng'='38.74' then raise exception 'RAW_MANUAL_POINT_LEAK';end if;
 
  perform register_telematics_gateway(admin_id,gateway,'Source test gateway',gateway_digest,false);
@@ -62,7 +62,7 @@ begin
  perform assign_telematics_device(owner_id,jsonb_build_object('deviceId',device,'vehicleId',truck,'expectedRevision',result->>'revision'));
  result:=select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','GPS','precisionKm',20,'expectedRevision',revision));
  revision:=result->>'revision';
- if provider_guest_tracking_for_recipient(shipment,owner_digest)->'current_location'->>'location_source'<>'DEVICE_OBSCURED' then raise exception 'GPS_CAPACITY_REPLACED_AGREED_PHONE_TRACKING';end if;
+ if provider_guest_tracking_for_recipient(shipment,owner_digest)->'current_location'->>'location_source' is distinct from 'DEVICE_OBSCURED' then raise exception 'GPS_CAPACITY_REPLACED_AGREED_PHONE_TRACKING';end if;
  -- Adding a truck creates its operational Capacity stub. Keep that truck Off
  -- duty through the normal command: Tracking must not depend on a discoverable
  -- capacity signal, but the fixture must preserve its retained stub/history.
@@ -82,29 +82,29 @@ begin
   'cargo_summary','Synthetic GPS agreement','customer_email','gps-owner@example.invalid','customer_email_digest',owner_digest,
   'tracking_mode','LOCATION_AND_STATUS','expected_delivery_date',(current_date+2)::text,
   'tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
- if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'<>'null'::jsonb then raise exception 'OLD_GPS_FIX_REUSED_AT_AGREEMENT';end if;
+ if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location' is distinct from 'null'::jsonb then raise exception 'OLD_GPS_FIX_REUSED_AT_AGREEMENT';end if;
  stamp:=clock_timestamp();
  perform ingest_telematics_position(gateway_digest,jsonb_build_object('eventKey','source:158:agreement','gatewayDeviceId',158,'protocol','gt06','protocolDeviceId',imei,
   'observedAt',stamp,'receivedAt',stamp,'valid',true,'latitude',9.04,'longitude',38.75,'speedKph',20,'course',90,'attributes',jsonb_build_object('ignition',true,'battery',80)));
  owner_view:=provider_guest_tracking_for_recipient(gps_shipment,owner_digest);
  if owner_view->'current_location'->>'location_source' is distinct from 'TELEMATICS'
-  or owner_view->'current_location'->>'location_precision_km'<>'10' then raise exception 'GPS_TRACKING_NOT_CONNECTED';end if;
+  or owner_view->'current_location'->>'location_precision_km' is distinct from '10' then raise exception 'GPS_TRACKING_NOT_CONNECTED';end if;
  if owner_view::text like '%'||imei||'%' or owner_view::text like '%speedKph%' or owner_view::text like '%phone_binding_id%'
   or owner_view::text like '%gateway_device_id%' then raise exception 'PRIVATE_TELEMETRY_LEAK';end if;
  result:=provider_tracking_detail(owner_id,gps_shipment::text);
- if result->'latest_location'->>'location_source'<>'TELEMATICS' then raise exception 'PROVIDER_TRACKING_SOURCE_MISSING';end if;
+ if result->'latest_location'->>'location_source' is distinct from 'TELEMATICS' then raise exception 'PROVIDER_TRACKING_SOURCE_MISSING';end if;
  viewer_view:=provider_guest_tracking_for_recipient(shipment,viewer_digest);
- if viewer_view->'current_location'<>'null'::jsonb or viewer_view::text like '%location_source%' then raise exception 'GPS_VIEWER_LOCATION_LEAK';end if;
+ if viewer_view->'current_location' is distinct from 'null'::jsonb or viewer_view::text like '%location_source%' then raise exception 'GPS_VIEWER_LOCATION_LEAK';end if;
  -- Re-selecting the Capacity source cannot reset an active GPS agreement.
  result:=select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','GPS','precisionKm',10,'expectedRevision',revision));
- if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'->>'location_source'<>'TELEMATICS' then raise exception 'CAPACITY_SOURCE_RESET_ACTIVE_GPS_AGREEMENT';end if;
+ if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'->>'location_source' is distinct from 'TELEMATICS' then raise exception 'CAPACITY_SOURCE_RESET_ACTIVE_GPS_AGREEMENT';end if;
  revision:=result->>'revision';
  perform select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',10,
   'manualLatitude',9.07,'manualLongitude',38.79,'expectedRevision',revision));
- if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'->>'location_source'<>'TELEMATICS'
+ if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'->>'location_source' is distinct from 'TELEMATICS'
   then raise exception 'MANUAL_CAPACITY_REPLACED_ACTIVE_GPS_AGREEMENT';end if;
  update provider_shipments set operational_status='CANCELLED' where id=gps_shipment;
- if provider_tracking_detail(owner_id,gps_shipment::text)->'latest_location'<>'null'::jsonb then raise exception 'TERMINAL_GPS_LOCATION_LEAK';end if;
+ if provider_tracking_detail(owner_id,gps_shipment::text)->'latest_location' is distinct from 'null'::jsonb then raise exception 'TERMINAL_GPS_LOCATION_LEAK';end if;
  update provider_tracking_recipients set revoked_at=clock_timestamp() where shipment_id=gps_shipment;
  if provider_guest_tracking_for_recipient(gps_shipment,owner_digest) is not null then raise exception 'REVOKED_OWNER_SOURCE_READ';end if;
  if has_function_privilege('anon','tracking_selected_location(uuid)','EXECUTE')

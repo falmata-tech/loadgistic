@@ -86,6 +86,12 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Install checksum-pinned workflow linter
+        run: npm run tools:workflow:setup
+
+      - name: Validate specifications, source and delivery tooling before Docker
+        run: npm run check
+
       - name: Set up pinned Supabase CLI
         uses: supabase/setup-cli@v2
         with:
@@ -198,9 +204,6 @@ jobs:
 
       - name: Verify queued authorization and account closure races
         run: node scripts/verify-audit-concurrency.mjs
-
-      - name: Validate specifications and source
-        run: npm run check
 
       - name: Run domain and managed-contract tests
         run: npm test

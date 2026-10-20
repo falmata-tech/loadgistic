@@ -95,7 +95,7 @@ test('a selected truck without public geometry has the same independent exit',()
  assert.deepEqual(f.calls.jump.at(-1),{...f.previous,padding:{top:0,right:0,bottom:0,left:0}});
 });
 
-test('floating chat bounds move selected controls above the dock without shortening the map',()=>{
+test('a custom bottom inset moves selected controls without shortening the map',()=>{
  const f=fixture(true,124,112),all=nodes(f.tree);
  const controls=all.find(({node})=>node.type==='ScrollView').node;
  const style=node=>Object.assign({},...[node.props.style].flat());
