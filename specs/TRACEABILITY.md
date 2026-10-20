@@ -51,6 +51,17 @@ completeness checks. Those larger timing calls are not credited until executed.
 The subsequent local quality run passes1007 tests, all source/spec checks and
 TypeScript; the expanded SQL/scale checks still need execution.
 
+October20 focused follow-up: `tests/e2e/public-map-shell-layout.spec.ts`
+passes4 desktop/phone cases across20 viewport/surface combinations, including
+private-map parent containment at320×640; the owner approved the corrected view.
+`tests/e2e/transporter-search.spec.ts` preserves its exact debounce/composition/
+cancellation/map assertions with an explicitly paused clock (2/2 desktop/phone,
+1/1 additional four-times-slow phone check). `tests/ci-browser-gate.test.mjs`
+passes22 checks; typed map-shell/modal geometry diagnostics remain allowlisted
+and bounded without raw assertion text. Exact-source release CI remains pending.
+The normal/long vehicle-modal desktop/phone matrix also passes4/4 with bounded
+layout synchronization and all original geometry/contact/document assertions.
+
 BASE-DEP-001 / NR-21: `tests/e2e/fixture-contract-preflight.spec.ts` owns a
 disposable provider and verifies Draft/no-driver creation, explicit assignment
 and Live publication, Capacity save, and public API readback. The real local

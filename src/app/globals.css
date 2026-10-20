@@ -3425,6 +3425,8 @@ html:not(:lang(en)) :is(.button,.nav-link,.mobile-nav a,.public-mobile-nav a){wh
 .capacity-view-body{display:flex;flex-direction:column;min-height:0;gap:0}
 .capacity-view-body>.alert{width:calc(100% - 16px);margin:0 auto 8px;flex:none}
 .capacity-view-body>.home-market-shell,.capacity-view-body>.shared-capacity-session-workspace{flex:1;min-height:0;height:auto}
+/* Include the actual private-session bar above the existing minimum map row. */
+.unified-capacity-workspace.public-market-introduced:has(.shared-capacity-session-workspace){grid-template-rows:auto minmax(min-content,1fr)}
 .unified-capacity-workspace.is-private{grid-template-rows:auto minmax(530px,1fr)}
 .locked-capacity-map{position:relative;overflow:hidden;border:1px solid #cbded9;border-radius:14px}
 .locked-capacity-basemap,.locked-capacity-basemap .public-capacity-map,.locked-capacity-basemap .leaflet-container{height:100%;min-height:0}

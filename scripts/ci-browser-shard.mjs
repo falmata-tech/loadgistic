@@ -69,6 +69,29 @@ function failureLine(result,file){
  return null;
 }
 
+const layoutKeys={
+ 'truck-profile-layout.spec.ts':{booleans:['peopleSideBySide','peopleStacked','docsSideBySide'],pixels:['horizontalOverflow','verticalOverflow']},
+ 'public-map-shell-layout.spec.ts':{booleans:['navigationClear','headerClear','withinViewport','toolsContained','sessionClear','sessionMapContained','usableMap','noDocumentOverflow'],pixels:[]}
+};
+function layoutMeasurements(result,file){
+ const keys=layoutKeys[file];if(!keys)return [];
+ const rows=[],seen=new Set();
+ for(const error of [result?.error,...(Array.isArray(result?.errors)?result.errors:[])]){
+  if(typeof error?.message!=='string'||error.message.length>100_000)continue;
+  for(const line of error.message.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/)){
+   const match=/^\s*([+-]?)\s*"([A-Za-z]+)":\s*(true|false|(?:0|[1-9][0-9]*)(?:\.[0-9]+)?),?\s*$/.exec(line);
+   if(!match)continue;
+   const [,sign,field,literal]=match,isBoolean=literal==='true'||literal==='false';
+   if(!(isBoolean?keys.booleans:keys.pixels).includes(field))continue;
+   const value=isBoolean?literal==='true':Number(literal);if(typeof value==='number'&&(!Number.isFinite(value)||value>1_000_000))continue;
+   const side=sign==='-'?'expected':sign==='+'?'received':'context',key=`${side}:${field}:${value}`;
+   if(!seen.has(key)){seen.add(key);rows.push({field,side,value});}
+   if(rows.length===24)return rows;
+  }
+ }
+ return rows;
+}
+
 export function failedBrowserCaseDiagnostics(report){
  const diagnostics=[];
  for(const test of cases(report)){
@@ -77,9 +100,10 @@ export function failedBrowserCaseDiagnostics(report){
   if(!file)continue;
   const results=Array.isArray(test.results)?test.results.filter(result=>result&&typeof result==='object'):[];
   const result=results.find(result=>result.status==='failed'||result.status==='timedOut'||result.status==='interrupted')||results.at(-1);
+  const layout=layoutMeasurements(result,file);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine)});
+   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -88,9 +112,10 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
+  if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
  }
 }
 

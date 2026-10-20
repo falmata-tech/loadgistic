@@ -1,3 +1,82 @@
+## October20 latest release checkpoint
+
+Exact-source CI39472158885 on `d5aadaf9ba58a6f71dfedb63be786d049d2b1a62`
+is terminal: validation (1014 unit tests, SQL, search-cost gate and web build),
+mobile boundaries, container, all three isolated Featured groups and browser
+groups1–6/8 pass. Browser group7 has59 passes, one reviewed skip and three
+phone failures: private map containment, transporter-search close and vehicle
+modal composition. The aggregate and release-ready checks correctly fail.
+Do not treat this as deployable or rerun the full matrix before classifying and
+checking the affected desktop and phone cases together.
+
+The local three-case reproduction passes search and vehicle composition and
+reproduces the private320×640 map clipping. Numeric inspection proves that the
+outer grid reserves322px for a50px session bar plus a302px minimum map; its
+overflow-hidden parent clips the map. The intrinsic-height repair and direct
+parent-containment regression pass all four focused Chrome cases across20
+viewport/surface combinations. The owner explicitly approved that map fix and
+bounded in-memory diagnosis of CI39472158885/job118803117122. Protected approval
+receipt: `.local/browser-repair-20261020/owner-approvals-map-ci-20261020.json`.
+
+Search's fake clock was installed but still running while the test asserted
+the499/500ms boundary. A four-times-slower CPU reproduction failed that boundary.
+The test now explicitly pauses its clock and advances it for the close check;
+all original request counts, cancellation, composition and map assertions remain.
+Desktop/phone pass2/2, the same slow-phone check passes1/1 and17 search unit checks
+pass. Receipts: `.local/browser-repair-20261020/search-paused-clock-{matrix,
+slow-phone}-summary.json`. The vehicle modal now waits for its original exact
+geometry after asynchronous styling instead of reading layout once. All four
+normal/long desktop/phone cases pass in the idle matrix; every fit, document,
+contact and44px-target assertion remains intact. Receipt:
+`.local/browser-repair-20261020/modal-layout-idle-matrix-summary.json`.
+The attempted Linux-font probe timed out before capturing geometry and is not
+evidence of a font defect or a reason to change the interface. The original CI
+comparison cannot be recovered; exact-source CI remains the final confirmation.
+
+The approved job-log fetch failed twice without retaining raw content. Inspection
+of the existing runner confirms its detailed JSON comparison values were discarded
+after the source-line annotations, so those values cannot be recovered from its
+normal output. The runner now retains only fixed layout boolean keys and bounded
+pixel values for the two existing layout specs; no arbitrary assertion text,
+contact or credential fields are published. All22 browser-gate unit checks pass,
+including malformed-value, privacy and bounding negatives. The Linux/Mac font
+metric hypothesis did not produce usable evidence, so no font or layout change
+was made to the vehicle card.
+
+The first full local quality attempt overlapped two Chrome probes and failed
+only the unchanged SMTP parser's five-second subprocess budget; its exact
+isolated check then passed in2.43 seconds. The browser retry also saw transient
+preview timeouts during that load. No parser budget or assertion was increased.
+The root unit command now caps file workers at two and local browser/unit gates
+run sequentially. Earlier failed receipts remain; a fresh complete gate is
+required after the focused browser checks finish.
+
+That final `npm run quality` now passes:1017 tests, zero skipped/failed,
+source/spec checks and typecheck (46.27 seconds, two unit workers). Receipt:
+`.local/browser-repair-20261020/quality-two-workers-final.json`. All10 affected
+desktop/phone browser cases pass, plus the additional slow-phone search check.
+Next: commit and push this coherent phone/test repair for one exact-source CI
+run, then continue immutable web packaging and the bounded database rollout.
+Do not sign or promote before every required job is green.
+
+The exact final web artifact and its schema180 compiled-runtime checks pass.
+The owner approved one-time signing of the exact fresh code9 APK/bundle,
+conditional on passing CI; the protected receipt is
+`.local/release-20261020-android-code9-fresh-candidate/owner-signing-approval.json`.
+No key has been retrieved or used. No hosted SQL, web promotion, signing,
+installation or Play update has occurred at this checkpoint.
+
+The fresh read-only hosted137 archive was captured at18:32:22UTC (SHA256
+`2986fca5e2e0455c4565f5fa3999761591562d8933c2383eb8183ebd42e430a9`).
+Its isolated original-role restore passed all pre-data and data phases, then
+stopped installing the Auth triggers: their original Auth-table owner lacks
+EXECUTE on the two postgres-owned trigger functions during installation.
+The exact failed clone and catalog proof are preserved. A temporary, clone-only
+ordinary-function-owner grant/install/revoke prerequisite is prepared for review;
+no grant has been applied and full restore/rehearsal success is not claimed.
+The original backup age remains unchanged. Evidence and the review-only proposal
+are under `.local/release-20261020/`; hosted and primary writes remain zero.
+
 ## October20 release-only work resumed
 
 The owner explicitly renewed the request: deploy working web and build working

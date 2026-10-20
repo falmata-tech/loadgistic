@@ -29,6 +29,7 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       const tools=box('.market-command-column');
       const map=box('.public-map-shell');
       const sessionBar=document.querySelector('.shared-capacity-session-bar')?.getBoundingClientRect();
+      const sessionWorkspace=document.querySelector('.shared-capacity-session-workspace')?.getBoundingClientRect();
       // scrollTop rounds to whole CSS pixels; measured edges retain fractions.
       // Diagnostics: tablet bottom 768.03125 / viewport 768; phone top 58.15625 / header 59.
       const rounding=1;
@@ -39,13 +40,14 @@ async function verifyShell(page:any,testInfo:any,surface:string){
         withinViewport:workspace.right<=innerWidth+rounding&&workspace.bottom<=innerHeight+rounding,
         toolsContained:tools.left>=workspace.left&&tools.right<=workspace.right,
         sessionClear:!sessionBar||(sessionBar.bottom<=workspace.top&&sessionBar.left>=workspace.left&&sessionBar.right<=workspace.right),
+        sessionMapContained:!sessionWorkspace||workspace.bottom<=sessionWorkspace.bottom+rounding,
         usableMap:map.width>=Math.min(280,innerWidth-10)&&map.height>=(innerHeight<=640?300:400),
         noDocumentOverflow:document.documentElement.scrollWidth<=innerWidth&&
           document.documentElement.scrollHeight<=innerHeight,
       };
     }),{message:`Navigation and map bounds at ${width}px`}).toEqual({
       navigationClear:true,headerClear:true,withinViewport:true,
-      toolsContained:true,sessionClear:true,usableMap:true,noDocumentOverflow:true,
+      toolsContained:true,sessionClear:true,sessionMapContained:true,usableMap:true,noDocumentOverflow:true,
     });
     await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();
     const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});

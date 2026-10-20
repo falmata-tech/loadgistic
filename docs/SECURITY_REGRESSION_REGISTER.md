@@ -1450,6 +1450,17 @@ actual page/response before changing a bounded wait. Keep required CI failing
 until every browser shard on the same source commit completes; never restore
 obsolete product behavior or waive a permission check.
 
+The next October20 run improved to seven passing browser groups but still found
+three phone failures. A desktop-only focused matrix did not close phone coverage.
+Record both project results for each affected case before another full run.
+Search's exact499/500ms check also installed a fake clock without pausing it;
+slow browser work spent the remaining millisecond and invalidated its request
+count assertion. Pause the clock explicitly and retain the original counts and
+cancellation checks. The corrected desktop/phone pair and four-times-slower
+phone reproduction pass. Private map bounds now test parent containment directly
+and pass20 viewport/surface combinations. The vehicle-modal CI discrepancy and
+full release gate remain open; these focused passes do not close them.
+
 **Evidence:** The earlier browser follow-up supplies valid inputs and preserves
 denial, privacy, history and completion assertions. The October20 local
 `fixture-contract-preflight.spec.ts` passed with disposable data and saved-state

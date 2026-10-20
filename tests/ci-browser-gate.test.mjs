@@ -143,6 +143,34 @@ function diagnosticReport({file=diagnosticFile,line=12,project='mobile-chromium'
   tests:[{projectName:project,status,results}]}]}],errors:[],stats:{expected:0,skipped:0,unexpected:1,flaky:0}};
 }
 
+test('known layout failures retain only typed geometry differences without assertion text',()=>{
+ const report=diagnosticReport({file:'truck-profile-layout.spec.ts',results:[{status:'failed',error:{message:
+  'PRIVATE_ASSERTION contact@example.test\n\u001b[32m-   "verticalOverflow": 0,\u001b[39m\n\u001b[31m+   "verticalOverflow": 8.5,\u001b[39m\n    "peopleStacked": true,\n    "contact": "PRIVATE_PHONE",\n    "horizontalOverflow": "PRIVATE_TOKEN",'
+ }}]});
+ const expected=[{field:'verticalOverflow',side:'expected',value:0},{field:'verticalOverflow',side:'received',value:8.5},{field:'peopleStacked',side:'context',value:true}];
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].layout,expected);
+ const output=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',7,report,value=>output.push(value));
+ assert.match(output[2],/^::error file=tests\/e2e\/truck-profile-layout.spec.ts::CI_BROWSER_LAYOUT /);
+ assert.doesNotMatch(output.join(''),/PRIVATE|contact@example|contact|Authorization/);
+});
+
+test('layout measurements reject wrong files, keys, types and malformed numeric values',()=>{
+ const message=['"verticalOverflow": -1,','"verticalOverflow": 1000001,','"verticalOverflow": Infinity,','"verticalOverflow": 1e3,','"verticalOverflow": "42",','"verticalOverflow": true,','"peopleStacked": 1,','"unknown": 12,','prefix "verticalOverflow": 5,','"verticalOverflow": 5, PRIVATE'].join('\n');
+ for(const file of ['truck-profile-layout.spec.ts','public-map-shell-layout.spec.ts',diagnosticFile]){
+  assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({file,results:[{status:'failed',error:{message}}]}))[0].layout,undefined);
+ }
+ for(const message of [null,{},Array(1),'x'.repeat(100001),{toString(){throw Error('DO_NOT_STRINGIFY');}}]){
+  assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({file:'truck-profile-layout.spec.ts',results:[{status:'failed',error:{message}}]}))[0].layout,undefined);
+ }
+});
+
+test('map-shell layout booleans are allowlisted and repeated measurements remain bounded',()=>{
+ const report=diagnosticReport({file:'public-map-shell-layout.spec.ts',results:[{status:'failed',errors:[{message:'- "navigationClear": true,\n+ "navigationClear": false,\n"verticalOverflow": 9,\n"navigationClear": "PRIVATE"'},{message:'- "navigationClear": true,'}]}]});
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].layout,[{field:'navigationClear',side:'expected',value:true},{field:'navigationClear',side:'received',value:false}]);
+ const message=Array.from({length:100},(_,n)=>`+ "verticalOverflow": ${n},`).join('\n');
+ assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({file:'truck-profile-layout.spec.ts',results:[{status:'failed',error:{message}}]}))[0].layout.length,24);
+});
+
 test('case annotation prefers the failing spec stack frame and keeps the shard summary unchanged',()=>{
  const report=diagnosticReport({results:[{status:'failed',errorLocation:{file:diagnosticFile,line:30},error:{
   message:'PRIVATE_ASSERTION Authorization: Bearer PRIVATE_TOKEN',

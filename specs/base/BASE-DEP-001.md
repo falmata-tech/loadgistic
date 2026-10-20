@@ -306,6 +306,18 @@ Evidence: `.github/workflows/ci.yml`, `scripts/ci-browser-shard.mjs`,
 exact-candidate CI run recorded in the release handoff. Sharding changes scheduling,
 not test selection or the required all-tests-pass release outcome.
 
+### Scenario: unit scheduling preserves timeout evidence
+
+Given the complete root unit suite is selected\
+When it runs locally or in CI\
+Then at most two test-file workers execute at once\
+And the selected tests and existing per-test budgets remain unchanged\
+And the SMTP parser subprocess keeps its five-second containment budget.
+
+Run local browser and unit gates sequentially rather than competing for that
+same budget. CI's separate isolated job boundaries remain unchanged. Evidence:
+`package.json`, `tests/nodemailer-security.test.mjs` and the complete unit result.
+
 ### Scenario: failed browser shards expose bounded safe diagnosis
 
 Given a browser shard cannot list its selected tests or fails its existing completed-report checks\
@@ -316,6 +328,7 @@ And unavailable or malformed count fields are replaced by `?` without stringifyi
 And up to twenty additional failed/flaky case annotations contain only a validated existing repository spec basename, an allowlisted desktop/phone project or `unknown`, a fixed result category, and validated source error/declaration line numbers or explicit `unknown`\
 And a source error line prefers a stack frame matching that failing spec over structured error locations; unrelated helper frames, missing results and absent locations never become invented source error lines\
 And annotation line numbers are positive safe integers no greater than one million; malformed field values are never stringified and unsafe/unknown filenames produce no case annotation\
+And only the two existing map-shell and vehicle-modal layout specs may additionally report allowlisted layout booleans and bounded nonnegative pixel measurements parsed from complete standalone comparison lines; unknown keys, strings, arbitrary message text and malformed values are discarded\
 And no test title, assertion body, contact, header, payload or raw report enters the annotation\
 And the existing selection, retry, skip and pass/fail requirements remain authoritative.
 

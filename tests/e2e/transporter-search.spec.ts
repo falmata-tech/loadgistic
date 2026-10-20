@@ -15,8 +15,11 @@ test('web transporter search coalesces issued work, composes text safely and cle
  await page.setViewportSize({width:info.project.name==='mobile-chromium'?320:1440,height:900});
  await page.goto(`/?${new URLSearchParams({status:'EMPTY',provider:signal.provider_handle})}`);const map=page.locator('.leaflet-container');await expect(map).toBeVisible();
  await expect.poll(()=>map.locator('.leaflet-tile-loaded').count()).toBeGreaterThan(0);await expect(page.locator('.public-feed-overlay.loading')).toHaveCount(0,{timeout:30000});
+ // install() keeps time running. Pause it before asserting the 499/500ms
+ // boundary so browser work cannot spend the final millisecond on slower CPUs.
+ await page.clock.install();await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
  const element=await map.elementHandle(),camera=await map.locator('.leaflet-map-pane').evaluate(node=>(node as HTMLElement).style.transform);
- await page.clock.install();await page.getByRole('button',{name:'Transporter search',exact:true}).click();
+ await page.getByRole('button',{name:'Transporter search',exact:true}).click();
  const drawer=page.getByRole('complementary',{name:'Transporter search',exact:true}),input=drawer.getByRole('searchbox',{name:'Search transporters',exact:true}),clear=drawer.locator('form').getByRole('button',{name:'Clear search',exact:true});
  await input.fill('😀');await page.clock.runFor(500);expect(seen).toEqual([]);await expect(drawer.getByText('Enter at least two characters.',{exact:true})).toBeVisible();
  await input.fill('Older');await page.clock.runFor(499);expect(seen).toEqual([]);await page.clock.runFor(1);await expect.poll(()=>seen.length).toBe(1);
@@ -31,7 +34,8 @@ test('web transporter search coalesces issued work, composes text safely and cle
  expect(new URL(page.url()).searchParams.get('status')).toBe('EMPTY');expect(new URL(page.url()).searchParams.get('provider')).toBe(signal.provider_handle);expect(await map.evaluate((node,previous)=>node===previous,element)).toBe(true);expect(await map.locator('.leaflet-map-pane').evaluate(node=>(node as HTMLElement).style.transform)).toBe(camera);
  await input.dispatchEvent('compositionstart');await input.fill('አዲ');await page.clock.runFor(500);await input.press('Enter');expect(seen.length).toBe(count);
  await input.dispatchEvent('compositionend');await page.clock.runFor(499);expect(seen.length).toBe(count);await input.press('Enter');await expect.poll(()=>seen.at(-1)?.q).toBe('አዲ');const entered=seen.length;await page.clock.runFor(500);expect(seen.length).toBe(entered);
- await page.getByRole('button',{name:'Close transporter search',exact:true}).click();await expect(drawer).toBeHidden();await page.clock.runFor(500);expect(seen.length).toBe(entered);
+ await page.getByRole('button',{name:'Close transporter search',exact:true}).click();
+ await page.clock.runFor(500);await expect(drawer).toBeHidden();expect(seen.length).toBe(entered);
  expect(errors).toEqual([]);
 });
 

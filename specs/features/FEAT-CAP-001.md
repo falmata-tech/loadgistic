@@ -11,6 +11,25 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## October20 private map height — locally verified and owner approved
+
+Given an email viewer has unlocked private Capacity on a short phone viewport\
+When the introduction scrolls away above the map\
+Then the workspace reserves the session bar's intrinsic height plus the existing
+minimum map height\
+And the complete map stays inside its parent and above the fixed navigation,
+without clipping its bottom or hiding Log out\
+And session text wrapping does not depend on a fixed English-language bar height.
+
+Verification: `tests/e2e/public-map-shell-layout.spec.ts` covers public and
+email-unlocked private bounds on desktop and phone, including 320×640 and 390×844.
+All four focused Chrome cases pass across 20 viewport/surface combinations,
+along with typecheck and source/spec validation. Before/after phone and desktop
+captures are retained under
+`.local/browser-repair-20261020/private-shell-fixed/`. The owner explicitly
+approved the corrected view; the remaining release gates are required before
+rollout.
+
 ## October20 public map failure boundary — implemented locally
 
 Given valid public Capacity filters reach the repository\

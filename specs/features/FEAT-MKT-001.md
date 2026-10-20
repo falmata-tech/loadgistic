@@ -54,6 +54,10 @@ already-issued HTTP request may finish without updating the interface; the
 latest interested query runs only after it settles. Unmount/access-scope cleanup
 and the existing request timeout abort transport. Browser cancellation is not
 treated as proof that a database query was cancelled.
+The browser regression must explicitly pause its fake clock before checking the
+499/500ms typing boundary; installing the clock alone still advances time during
+browser work. Keep cancellation, composition, request counts and map-preservation
+assertions unchanged. This corrects test timing, not application behavior.
 Typing does not query or filter the truck map. Show trucks remains the explicit
 profile-to-map action. Verify request coalescing, cancellation, clearing,
 pagination, private authorization and existing server cost before claiming live

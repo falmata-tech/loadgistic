@@ -144,6 +144,12 @@ usable page and assert the intended control and saved outcome; do not raise
 timeouts to conceal a slow or broken workflow. The complete same-commit CI gate
 is still mandatory after focused tests pass.
 
+Keep local browser verification and the root unit suite sequential. The root
+unit command caps test-file concurrency at two, preserving every selected test
+and timeout. A timeout under competing CPU/memory load must be classified with
+the same isolated case before changing code or a budget; do not raise the SMTP
+parser's five-second process limit to accommodate overloaded test scheduling.
+
 The dedicated fixture-preflight runner must report exactly one passed test and
 zero skipped, flaky or failed tests. A Playwright exit code of zero after a skip
 does not count. The `release-ready` CI job must see validation, every browser
@@ -171,6 +177,11 @@ it does not turn opt-in visual/demo cases into release coverage.
 On failure, print only bounded repository test filenames from the parsed
 report. Do not print assertion bodies, raw logs, requests, contact details or
 test-account data merely to shorten diagnosis.
+The existing map-shell and vehicle-modal specs may also emit their fixed layout
+boolean keys and bounded pixel values from standalone comparison lines. Keep
+that parser restricted to those files and typed keys; never publish arbitrary
+matcher values or error text. This retains useful geometry evidence while the
+raw JSON remains private and is discarded after the run.
 
 Featured Prepare writes persistent rotation history. Keep its three tagged,
 always-on browser workflows out of the ordinary E2E shards only while the

@@ -25,14 +25,15 @@ test('truck modal groups identity, contacts, updates and entity documents withou
  const phone=truck.assigned_driver_phone||truck.contact_phone;
  if(phone)await expect(sheet.locator('a[href^="tel:"]')).toHaveAttribute('href',`tel:${phone}`);
  await page.evaluate(()=>document.fonts.ready);
- const composition=await sheet.evaluate((el:HTMLElement)=>{
+ const narrow=(page.viewportSize()?.width||1280)<=480;
+ // Font readiness does not guarantee the asynchronously loaded stylesheet has
+ // completed layout. Keep the exact geometry contract and wait for that state.
+ await expect.poll(()=>sheet.evaluate((el:HTMLElement)=>{
   const people=[...el.querySelectorAll('.truck-inspection-person')].map(el=>el.getBoundingClientRect());
   const docs=[...el.querySelectorAll('.truck-document-summary')].map(el=>el.getBoundingClientRect());
   const content=el.closest('.capacity-info-content')!;
   return {peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,peopleStacked:people[0].bottom<=people[1].top&&Math.abs(people[0].left-people[1].left)<1,docsSideBySide:docs.every(rect=>Math.abs(rect.top-docs[0].top)<1),horizontalOverflow:content.scrollWidth-content.clientWidth,verticalOverflow:content.scrollHeight-content.clientHeight};
- });
- const narrow=(page.viewportSize()?.width||1280)<=480;
- expect(composition).toEqual({peopleSideBySide:!narrow,peopleStacked:narrow,docsSideBySide:true,horizontalOverflow:0,verticalOverflow:0});
+ })).toEqual({peopleSideBySide:!narrow,peopleStacked:narrow,docsSideBySide:true,horizontalOverflow:0,verticalOverflow:0});
  for(const link of await sheet.locator('a').all()){const box=await link.boundingBox();expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);}
  await page.screenshot({path:info.outputPath('truck-profile.png')});
  const documents=sheet.locator('.truck-document-summary').first();await documents.locator(':scope>summary').click();
