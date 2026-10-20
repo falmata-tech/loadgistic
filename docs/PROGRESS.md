@@ -14,9 +14,11 @@ resolved. Broader engineering housekeeping is ongoing: improve recurring cost
 and friction across code, tests, scripts, tooling, agents and shipping, rather
 than addressing today's incident alone.
 
-- Last pushed source: `8df190de2ad83f5c473bf09b9b360410b3896ec2`,
+- Audit baseline: `8df190de2ad83f5c473bf09b9b360410b3896ec2`,
   branch `feat/mobile-app`; CI39497266765 was cancelled for this audit.
-- Local audit/tooling/docs changes are uncommitted. Preserve unrelated
+  Audit/housekeeping implementation is committed as `0479833`; use Git for the
+  current head and protected receipts for subsequent exact-source CI status.
+- Preserve unrelated
   `next-env.d.ts` and `apps/mobile/.claude/` changes. Do not rewrite Git history.
 - No hosted database writes, signing, web publication or Play upload occurred
   during this audit. The release is not yet complete.
@@ -36,7 +38,8 @@ than addressing today's incident alone.
   30 older synthetic cleanup jobs; public/Auth row fingerprints are preserved.
 - [x] Complete one full local quality gate:1028 tests pass, zero failure/skip;
   source/spec/workflow checks and typecheck pass.
-- [ ] Current: review/commit the owned audit and housekeeping files for exact-source CI. Historical positive Brokerage SQL is archived unchanged;
+- [x] Review and commit only owned audit/housekeeping paths (`0479833`).
+- [ ] Current: push the reviewed task source for one exact-source CI. Historical positive Brokerage SQL is archived unchanged;
   valid retirement/denial and retained-history tests remain executable.
 - [x] Repair the actual Featured page-height bug without changing its contents.
   Both original desktop/phone captures pass; owner explicitly approved the fix.
@@ -44,7 +47,7 @@ than addressing today's incident alone.
   navigation:2/2 pass in35.6s. Keep security, denial, persistence and recovery.
 - [x] Complete local quality; preserve the existing scale/CI gates as subsequent
   independent requirements.
-- [ ] Review and commit only task files; push once and run one exact-source CI.
+- [ ] Push once and run one exact-source CI.
   No new CI while another known finding remains unresolved.
 - [ ] Prepare one matching web package: the changed stylesheet invalidates the
   frozen web package's executable equality. Android runtime is unchanged by
