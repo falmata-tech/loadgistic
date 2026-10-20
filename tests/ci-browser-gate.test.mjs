@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {inspectFixturePreflightResult} from '../scripts/ci-fixture-preflight.mjs';
 import {inspectFeaturedPrepareResult} from '../scripts/ci-featured-prepare.mjs';
-import {inspectBrowserShard} from '../scripts/ci-browser-shard.mjs';
+import {inspectBrowserShard,failedBrowserFiles} from '../scripts/ci-browser-shard.mjs';
 const reviewedSkips=JSON.parse(readFileSync('tests/e2e/ci-allowed-skips.json','utf8')).allowed;
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const preflightRunner=readFileSync('scripts/ci-fixture-preflight.mjs','utf8');
@@ -90,6 +90,16 @@ test('ordinary browser shard rejects missing tests, unreviewed skips, retries an
  assert.equal(inspectBrowserShard(ok,list,{status:1,signal:null},run,allowed),'PLAYWRIGHT_FAILED');
  assert.equal(inspectBrowserShard(ok,list,ok,null,allowed),'REPORT_UNAVAILABLE');
  assert.ok(reviewedSkips.length>0);
+});
+
+test('failed browser report names only bounded source test files for diagnosis',()=>{
+ const report={suites:[
+  {file:'tests/e2e/featured-operations-review.spec.ts',specs:[{tests:[{projectName:'desktop-chromium',status:'unexpected'},{projectName:'mobile-chromium',status:'unexpected'}]}]},
+  {file:'tests/e2e/ordinary.spec.ts',specs:[{tests:[{projectName:'desktop-chromium',status:'expected'}]}]},
+  {file:'tests/e2e/unsafe name.spec.ts',specs:[{tests:[{projectName:'desktop-chromium',status:'unexpected'}]}]}
+ ]};
+ assert.deepEqual(failedBrowserFiles(report),['featured-operations-review.spec.ts']);
+ assert.deepEqual(failedBrowserFiles(null),[]);
 });
 
 test('fixture preflight rejects skipped, absent, flaky and failed browser evidence',()=>{

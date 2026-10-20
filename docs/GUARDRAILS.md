@@ -138,6 +138,9 @@ logs and request context are not printed. A new `test.skip`, changed test title,
 missing result, flaky retry or all-skipped shard requires an explicit inventory
 review and a new same-commit CI pass. This complements the fixture preflight;
 it does not turn opt-in visual/demo cases into release coverage.
+On failure, print only bounded repository test filenames from the parsed
+report. Do not print assertion bodies, raw logs, requests, contact details or
+test-account data merely to shorten diagnosis.
 
 Featured Prepare writes persistent rotation history. Keep its three tagged,
 always-on browser workflows out of the ordinary E2E shards only while the

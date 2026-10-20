@@ -19,6 +19,11 @@ function cases(report){
  return rows;
 }
 
+export function failedBrowserFiles(report){
+ return [...new Set(cases(report).filter(test=>test.status==='unexpected'||test.status==='flaky')
+  .map(test=>test.file).filter(file=>/^[A-Za-z0-9._-]+\.spec\.ts$/.test(file)))].sort().slice(0,10);
+}
+
 export function inspectBrowserShard(listResult,listReport,runResult,runReport,allowed=manifest.allowed){
  if(listResult.error||listResult.signal||listResult.status!==0||!listReport||!Array.isArray(listReport.suites))return 'TEST_LIST_UNAVAILABLE';
  if(runResult.error||runResult.signal||runResult.status!==0)return 'PLAYWRIGHT_FAILED';
@@ -60,7 +65,8 @@ function main(){
  const failure=inspectBrowserShard(listed.result,listed.report,executed.result,executed.report);
  if(failure){
   const stats=executed.report?.stats||{};
-  process.stderr.write(`CI_BROWSER_SHARD_${failure} shard=${shard} passed=${stats.expected??'?'} skipped=${stats.skipped??'?'} failed=${stats.unexpected??'?'} flaky=${stats.flaky??'?'}\n`);
+  const failedFiles=failedBrowserFiles(executed.report).join(',')||'unknown';
+  process.stderr.write(`CI_BROWSER_SHARD_${failure} shard=${shard} passed=${stats.expected??'?'} skipped=${stats.skipped??'?'} failed=${stats.unexpected??'?'} flaky=${stats.flaky??'?'} failed_files=${failedFiles}\n`);
   process.exitCode=1;
   return;
  }

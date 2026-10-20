@@ -1,5 +1,21 @@
 ## October20 release-test failure and correction
 
+CI run `39412965593` on commit `8da376b` passed validation, mobile and
+container, but failed the isolated Featured operations browser case and browser
+shards 1, 2, 4, 5, 7 and 8; shard 3 stopped during its isolated database startup.
+The run was cancelled after those failures to avoid spending more CI time on a
+candidate that could not pass. It is **not** release evidence. Local reproduction
+found the Featured case asserted the retired “truck type” copy and expected its
+editor to stay open after Publish. Both desktop and phone pass after checking
+the current “vehicle type” copy and deliberately reopening Edit (2/2). Local
+Account-to-Network now passes after changing its old “Add contact” assertion to
+the actual “Add access” flow (1/1); account security passes with retirement
+redirect and saved inactive-vehicle readback (1/1). Admin Featured/GPS view-mode
+passed alone (1/1), so its shard failure remains unclassified rather than
+being papered over. The CI runner now reports only bounded failing test
+filenames, with a unit test, to make the next run diagnosable without raw logs.
+The complete same-commit CI gate and deployment remain blocked.
+
 This release is **not ready to deploy**. The 988 passing unit tests, source and
 type checks, successful build, and 5,000-vehicle search timing check were real
 but did not exercise the complete desktop/phone browser suite. The first CI
