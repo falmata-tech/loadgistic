@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {inspectFixturePreflightResult} from '../scripts/ci-fixture-preflight.mjs';
 import {inspectFeaturedPrepareResult} from '../scripts/ci-featured-prepare.mjs';
-import {inspectBrowserShard,failedBrowserFiles,browserShardFailureSummary,reportBrowserShardFailure} from '../scripts/ci-browser-shard.mjs';
+import {inspectBrowserShard,failedBrowserFiles,browserShardFailureSummary,failedBrowserCaseDiagnostics,reportBrowserShardFailure} from '../scripts/ci-browser-shard.mjs';
 const reviewedSkips=JSON.parse(readFileSync('tests/e2e/ci-allowed-skips.json','utf8')).allowed;
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const preflightRunner=readFileSync('scripts/ci-fixture-preflight.mjs','utf8');
@@ -135,6 +135,132 @@ test('browser shard failures emit one GitHub error annotation matching the sanit
   assert.equal(chunks.join('').split('\n').filter(line=>line.startsWith('::error::')).length,1);
   assert.doesNotMatch(chunks.join(''),/PRIVATE|INJECTED/);
  }
+});
+
+const diagnosticFile='driver-manual-mobile-preview.spec.ts';
+function diagnosticReport({file=diagnosticFile,line=12,project='mobile-chromium',status='unexpected',results=[]}={}){
+ return {suites:[{file:`tests/e2e/${file}`,specs:[{file,line,title:'PRIVATE_TITLE contact@example.test',
+  tests:[{projectName:project,status,results}]}]}],errors:[],stats:{expected:0,skipped:0,unexpected:1,flaky:0}};
+}
+
+test('case annotation prefers the failing spec stack frame and keeps the shard summary unchanged',()=>{
+ const report=diagnosticReport({results:[{status:'failed',errorLocation:{file:diagnosticFile,line:30},error:{
+  message:'PRIVATE_ASSERTION Authorization: Bearer PRIVATE_TOKEN',
+  stack:`Error: PRIVATE_STACK\n    at helper (/repo/tests/e2e/fixture-helper.ts:900:1)\n    at unrelated (/repo/tests/e2e/play-policy-workflows.spec.ts:88:4)\n    at source (/repo/tests/e2e/${diagnosticFile}:123:7)`,
+  location:{file:diagnosticFile,line:31}
+ }}]});
+ assert.deepEqual(failedBrowserCaseDiagnostics(report),[{
+  file:diagnosticFile,project:'mobile-chromium',category:'FAILED',line:123,declarationLine:12
+ }]);
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ const summary=browserShardFailureSummary('PLAYWRIGHT_FAILED',4,report);
+ assert.deepEqual(chunks,[`${summary}\n::error::${summary}\n`,
+  `::error file=tests/e2e/${diagnosticFile},line=123::CI_BROWSER_CASE file=${diagnosticFile} line=123 project=mobile-chromium category=FAILED declaration_line=12\n`]);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|contact@example|fixture-helper|unrelated|Authorization/);
+});
+
+test('case source extraction accepts standard stack frame paths without printing their directories or function names',()=>{
+ const frames=[
+  `    at source (/repo/tests/e2e/${diagnosticFile}:45:7)`,
+  `    at file:///repo/tests/e2e/${diagnosticFile}:45:7`,
+  `    at ${diagnosticFile}:45:7`,
+  `    at PRIVATE_FUNCTION (C:\\repo\\tests\\e2e\\${diagnosticFile}:45:7)`
+ ];
+ for(const frame of frames){
+  const report=diagnosticReport({results:[{status:'failed',error:{stack:`Error: PRIVATE_MESSAGE\n${frame}`}}]});
+  assert.equal(failedBrowserCaseDiagnostics(report)[0].line,45);
+ }
+});
+
+test('case source extraction falls back only to matching structured error locations',()=>{
+ const location={file:`/repo/tests/e2e/${diagnosticFile}`,line:62};
+ for(const fields of [{errorLocation:location},{error:{location}},{errors:[{location}]}]){
+  assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({results:[{status:'timedOut',...fields}]}))[0].line,62);
+ }
+ const result={status:'timedOut',errorLocation:{file:'/repo/tests/e2e/helper.ts',line:99},error:{
+  message:`PRIVATE_MESSAGE\n    at /repo/tests/e2e/${diagnosticFile}:777:1`,
+  snippet:`PRIVATE_SNIPPET ${diagnosticFile}:888`,
+  stack:`Error: PRIVATE_STACK\n    at /repo/helpers/${diagnosticFile}:456:2\n    at /repo/tests/e2e/helper.ts:457:2`
+ }};
+ const report=diagnosticReport({results:[result]});
+ assert.deepEqual(failedBrowserCaseDiagnostics(report),[{
+  file:diagnosticFile,project:'mobile-chromium',category:'TIMED_OUT',line:null,declarationLine:12
+ }]);
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks[1],/ line=unknown project=mobile-chromium category=TIMED_OUT declaration_line=12\n$/);
+ assert.doesNotMatch(chunks[1],/,line=|PRIVATE|456|457|777|888/);
+});
+
+test('case annotations retain failed attempts for flaky tests and explicitly handle absent or unknown results',()=>{
+ const failed={status:'failed',error:{stack:`Error\n    at /repo/tests/e2e/${diagnosticFile}:72:3`}};
+ assert.deepEqual(failedBrowserCaseDiagnostics(diagnosticReport({status:'flaky',results:[failed,{status:'passed'}]})),[{
+  file:diagnosticFile,project:'mobile-chromium',category:'FLAKY',line:72,declarationLine:12
+ }]);
+ for(const results of [undefined,null,[],[null],{},'PRIVATE_RESULT']){
+  assert.deepEqual(failedBrowserCaseDiagnostics(diagnosticReport({results})),[{
+   file:diagnosticFile,project:'mobile-chromium',category:'RESULT_UNAVAILABLE',line:null,declarationLine:12
+  }]);
+ }
+ for(const [status,category] of [['interrupted','INTERRUPTED'],['passed','UNEXPECTED_PASS'],['PRIVATE_RESULT','UNKNOWN_RESULT']]){
+  assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({results:[{status}]}))[0].category,category);
+ }
+ for(const status of ['expected','skipped','PRIVATE_STATUS'])assert.deepEqual(failedBrowserCaseDiagnostics(diagnosticReport({status,results:[failed]})),[]);
+ assert.deepEqual(failedBrowserCaseDiagnostics(null),[]);
+});
+
+test('case annotations validate filenames, project names and numeric lines without stringifying runtime fields',()=>{
+ const notStringifiable={toString(){throw Error('RUNTIME_FIELDS_MUST_NOT_BE_STRINGIFIED');}};
+ const unsafeLines=[undefined,null,0,-1,.5,'42','PRIVATE_LINE\n::error::INJECTED',NaN,Infinity,1_000_001,Number.MAX_SAFE_INTEGER+1,notStringifiable];
+ for(const line of unsafeLines){
+  const report=diagnosticReport({line,project:'PRIVATE_PROJECT\n::error::INJECTED',results:[{
+   status:'PRIVATE_RESULT\n::error::INJECTED',errorLocation:{file:diagnosticFile,line},error:{stack:notStringifiable}
+  }]});
+  report.suites[0].specs[0].line=line;
+  const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+  assert.equal(chunks[1],`::error file=tests/e2e/${diagnosticFile}::CI_BROWSER_CASE file=${diagnosticFile} line=unknown project=unknown category=UNKNOWN_RESULT declaration_line=unknown\n`);
+  assert.doesNotMatch(chunks.join(''),/PRIVATE|INJECTED/);
+ }
+ for(const project of ['desktop-chromium','mobile-chromium',notStringifiable]){
+  assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({project}))[0].project,
+   typeof project==='string'?project:'unknown');
+ }
+ for(const file of ['not-a-repository-test.spec.ts','unsafe name.spec.ts','bad,prop.spec.ts','bad%0A.spec.ts',`unsafe\n${diagnosticFile}`,`/helpers/${diagnosticFile}`,notStringifiable]){
+  const report=diagnosticReport();report.suites[0].specs[0].file=file;
+  assert.deepEqual(failedBrowserCaseDiagnostics(report),[]);
+ }
+ for(const line of [1,1_000_000]){
+  assert.equal(failedBrowserCaseDiagnostics(diagnosticReport({line,results:[{status:'failed',errorLocation:{file:diagnosticFile,line}}]}))[0].line,line);
+ }
+});
+
+test('case annotations discard sentinel contact, credential and request context from every error surface',()=>{
+ const sentinels=['SENTINEL_COOKIE','SENTINEL_TOKEN','SENTINEL_PASSWORD','sentinel@example.test','+251911234567'];
+ const privateContext=sentinels.join(' ');
+ const report=diagnosticReport({project:'desktop-chromium',results:[{status:'failed',error:{
+  message:privateContext,stack:`Error: ${privateContext}\n    at ${privateContext} (/private/${privateContext}/tests/e2e/${diagnosticFile}:84:5)`,
+  snippet:privateContext,cause:{message:privateContext},headers:{Cookie:sentinels[0],Authorization:sentinels[1]},
+  request:{body:privateContext},response:{body:privateContext}
+ },errors:[{message:privateContext}],stdout:[{text:privateContext}],stderr:[{text:privateContext}],attachments:[{body:privateContext}]}]});
+ report.suites[0].specs[0].title=privateContext;
+ report.errors=[{message:privateContext}];
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks[1],/line=84 project=desktop-chromium category=FAILED declaration_line=12/);
+ for(const sentinel of sentinels)assert.equal(chunks.join('').includes(sentinel),false);
+ assert.equal(chunks.join('').split('\n').filter(line=>line.startsWith('::error')).length,2);
+});
+
+test('case diagnostics are bounded per failed case without changing completed-report gate decisions',()=>{
+ const report=diagnosticReport();
+ const spec=report.suites[0].specs[0];
+ report.suites[0].specs=Array.from({length:24},(_,index)=>({...spec,line:index+1}));
+ const diagnostics=failedBrowserCaseDiagnostics(report);
+ assert.equal(diagnostics.length,20);
+ assert.deepEqual(diagnostics.map(row=>row.declarationLine),Array.from({length:20},(_,index)=>index+1));
+ const selected=structuredClone(report);
+ const ok={status:0,signal:null};
+ assert.equal(inspectBrowserShard(ok,selected,{status:1,signal:null},report,[]),'PLAYWRIGHT_FAILED');
+ report.suites[0].specs=report.suites[0].specs.slice(0,1);
+ assert.equal(inspectBrowserShard(ok,selected,ok,report,[]),'TEST_SELECTION_CHANGED');
 });
 
 test('fixture preflight rejects skipped, absent, flaky and failed browser evidence',()=>{

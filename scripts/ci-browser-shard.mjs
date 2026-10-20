@@ -1,5 +1,5 @@
 import {spawnSync} from 'node:child_process';
-import {readFileSync} from 'node:fs';
+import {readFileSync,readdirSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -8,12 +8,19 @@ const manifest=JSON.parse(readFileSync(path.join(root,'tests/e2e/ci-allowed-skip
 const identity=({file,title,project})=>`${file}\u0000${title}\u0000${project}`;
 const failureReasons=new Set(['TEST_LIST_UNAVAILABLE','PLAYWRIGHT_FAILED','REPORT_UNAVAILABLE','NO_SELECTED_TESTS',
  'TEST_SELECTION_CHANGED','FAILED_OR_FLAKY_TESTS','SKIP_COUNT_MISMATCH','UNREVIEWED_OR_MISSING_SKIP','RESULT_COUNT_MISMATCH']);
+const sourceFiles=new Set(readdirSync(path.join(root,'tests/e2e'))
+ .filter(file=>file.length<=128&&/^[A-Za-z0-9._-]+\.spec\.ts$/.test(file)));
+const projects=new Set(['desktop-chromium','mobile-chromium']);
+const resultCategories=new Map([['failed','FAILED'],['timedOut','TIMED_OUT'],['interrupted','INTERRUPTED'],['passed','UNEXPECTED_PASS']]);
+const sourceLine=value=>Number.isSafeInteger(value)&&value>0&&value<=1_000_000?value:null;
 
 function cases(report){
  const rows=[];
  function visit(suite){
   for(const spec of suite.specs||[]){
-   for(const test of spec.tests||[])rows.push({file:path.basename(String(spec.file||suite.file||'')),title:spec.title,project:test.projectName,status:test.status});
+   const file=spec.file||suite.file;
+   for(const test of spec.tests||[])rows.push({file:typeof file==='string'?path.basename(file):'',title:spec.title,project:test.projectName,status:test.status,
+    sourceFile:file,declarationLine:spec.line,results:test.results});
   }
   for(const child of suite.suites||[])visit(child);
  }
@@ -35,9 +42,56 @@ export function browserShardFailureSummary(failure,shard,report){
  return `CI_BROWSER_SHARD_${reason} shard=${shardNumber} passed=${count(stats.expected)} skipped=${count(stats.skipped)} failed=${count(stats.unexpected)} flaky=${count(stats.flaky)} failed_files=${files}`;
 }
 
+function sourceFile(value){
+ if(typeof value!=='string'||value.length>4096||/[\r\n\0]/.test(value))return null;
+ const normalized=value.replaceAll('\\','/');
+ const file=path.posix.basename(normalized);
+ return sourceFiles.has(file)&&(normalized===file||normalized===`tests/e2e/${file}`||normalized.endsWith(`/tests/e2e/${file}`))?file:null;
+}
+
+function failureLine(result,file){
+ const errors=[result?.error,...(Array.isArray(result?.errors)?result.errors:[])];
+ // Read only real stack-frame lines, never formatted messages or snippets. A
+ // helper's location cannot identify the failing assertion in the source spec.
+ for(const error of errors){
+  if(typeof error?.stack!=='string')continue;
+  for(const frame of error.stack.split(/\r?\n/)){
+   const match=/^\s+at (?:.* \()?([^()\r\n]+):([1-9][0-9]{0,6}):[0-9]+\)?$/.exec(frame);
+   if(match&&sourceFile(match[1])===file){
+    const line=sourceLine(Number(match[2]));
+    if(line!==null)return line;
+   }
+  }
+ }
+ for(const location of [result?.errorLocation,...errors.map(error=>error?.location)]){
+  if(sourceFile(location?.file)===file&&sourceLine(location?.line)!==null)return location.line;
+ }
+ return null;
+}
+
+export function failedBrowserCaseDiagnostics(report){
+ const diagnostics=[];
+ for(const test of cases(report)){
+  if(test.status!=='unexpected'&&test.status!=='flaky')continue;
+  const file=sourceFile(test.sourceFile);
+  if(!file)continue;
+  const results=Array.isArray(test.results)?test.results.filter(result=>result&&typeof result==='object'):[];
+  const result=results.find(result=>result.status==='failed'||result.status==='timedOut'||result.status==='interrupted')||results.at(-1);
+  diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
+   category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
+   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine)});
+  if(diagnostics.length===20)break;
+ }
+ return diagnostics;
+}
+
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
+ for(const {file,project,category,line,declarationLine} of failedBrowserCaseDiagnostics(report)){
+  const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
+  write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
+ }
 }
 
 export function inspectBrowserShard(listResult,listReport,runResult,runReport,allowed=manifest.allowed){
@@ -62,7 +116,7 @@ export function inspectBrowserShard(listResult,listReport,runResult,runReport,al
 function runJson(args){
  const cli=path.join(root,'node_modules/playwright/cli.js');
  // Reports may contain request and assertion context. Keep both streams in
- // memory and print only bounded status/count evidence.
+ // memory and print only bounded status/count and validated source locations.
  const result=spawnSync(process.execPath,[cli,'test',...args,'--reporter=json'],{
   cwd:root,env:process.env,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:64*1024*1024
  });

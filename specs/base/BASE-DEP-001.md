@@ -313,11 +313,14 @@ When the runner reports the failed gate\
 Then it emits the same sanitized summary in its log and a GitHub Actions error annotation\
 And the summary contains only an existing static failure reason, the shard number, nonnegative safe-integer result counts, and at most ten source test filenames of at most 128 characters each using only letters, numbers, dots, underscores and hyphens\
 And unavailable or malformed count fields are replaced by `?` without stringifying their values\
+And up to twenty additional failed/flaky case annotations contain only a validated existing repository spec basename, an allowlisted desktop/phone project or `unknown`, a fixed result category, and validated source error/declaration line numbers or explicit `unknown`\
+And a source error line prefers a stack frame matching that failing spec over structured error locations; unrelated helper frames, missing results and absent locations never become invented source error lines\
+And annotation line numbers are positive safe integers no greater than one million; malformed field values are never stringified and unsafe/unknown filenames produce no case annotation\
 And no test title, assertion body, contact, header, payload or raw report enters the annotation\
 And the existing selection, retry, skip and pass/fail requirements remain authoritative.
 
 Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.
-This changes failure diagnosis only; rollback removes the annotation without
+This changes failure diagnosis only; rollback removes the annotations without
 relaxing the browser gate or exposing the raw report.
 
 ### Scenario: Featured Prepare browser writes are isolated and required
