@@ -1,6 +1,7 @@
 import {test,expect} from './browser-test';
 import {chooseCapacityOptions,chooseTruckConfiguration,openCapacityFilterDialog} from './capacity-drawer-helper';
 import type {Page} from 'playwright-core';
+import {writeFileSync} from 'node:fs';
 
 const configurations=['Cargo van','Mini Box Truck'];
 const selection=(page:Page,key:string)=>page.locator(`.capacity-filter-dialog input[type="hidden"][name="${key}"]`);
@@ -65,12 +66,21 @@ test('multiple configurations form a union while other option groups intersect u
  const unsupported=await page.request.get('/api/public/capacity?vehicleCategory=Cargo%20van,unsupported');expect(unsupported.status()).toBe(400);
 });
 
-test('invalid multi-option deep links stay denied until an explicit filter correction',async({page})=>{
+test('invalid multi-option deep links stay denied until an explicit filter correction',async({page},info)=>{
  test.setTimeout(60_000);await page.goto('/?vehicleCategory=Cargo%20van,unsupported');
  await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');await page.getByRole('button',{name:'Review filters',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
- await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
- await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
+ const invalidBeforeApply=page.url();
+ const previousDialog=await dialog.elementHandle();expect(previousDialog).toBeTruthy();
+ await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click()]);
+ // Next Form changes the URL before its new query-keyed client tree commits.
+ // Reopen the returned error state, rather than editing the outgoing form.
+ await expect.poll(()=>previousDialog!.evaluate(element=>element.isConnected)).toBe(false);
+ await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
+ await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await expect(selection(page,'vehicleCategory')).toHaveValue('Mini Box Truck');
+ const correctedAt=Date.now();
+ await Promise.all([page.waitForURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck',{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click()]);
+ writeFileSync(info.outputPath('filter-correction-navigation.json'),JSON.stringify({scope:'LOCAL_BROWSER',elapsedMs:Date.now()-correctedAt,correctedCategory:true}),{mode:0o600});
  await expect(page).toHaveURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30_000});
  await page.goto('/?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
  expect((await page.request.get('/api/public/capacity?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck')).status()).toBe(400);

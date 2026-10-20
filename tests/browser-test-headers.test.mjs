@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {inspect} from 'node:util';
 import {defaultLocalTestIP,isLocalTestURL,localRequestHeaders,localTestIP,scopeLocalRequest,scopeLocalRoute,stripForwardedFor} from './e2e/browser-test-headers.mjs';
 
 test('test IP headers reach only exact local hosts and verified ports, for absolute and relative URLs',()=>{
@@ -38,6 +39,61 @@ test('request proxy preserves receiver, body/options, cookie ownership and the b
  const captured={url:()=> 'http://localhost:55321/storage/v1/object/synthetic'};
  await proxy.fetch(captured);assert.equal(calls.at(-1).url,captured);assert.equal(calls.at(-1).options.headers['x-forwarded-for'],ip);
  assert.equal(proxy.storageState(),request.cookies);
+});
+
+test('request transport failures reject once with only the wrapped method and a fixed reason',async()=>{
+ const secrets=['SENTINEL_COOKIE_VALUE','SENTINEL_BEARER_TOKEN','sentinel-contact@example.test','SENTINEL_BODY_VALUE','SENTINEL_CAUSE_VALUE'];
+ const url=`http://127.0.0.1:3100/api/private?token=${secrets[1]}`;
+ for(const method of ['get','post','put','patch','delete','head','fetch']){
+  const raw=new Error(`apiRequestContext.${method}: read ECONNRESET\nCall log:\nURL ${url}\nCookie ${secrets[0]}\nAuthorization Bearer ${secrets[1]}\nContact ${secrets[2]}\nBody ${secrets[3]}`,{cause:new Error(secrets[4])});
+  raw.requestHeaders={cookie:secrets[0],authorization:secrets[1]};raw.requestBody=secrets[3];raw.stack+=`\n${secrets.join(' ')}`;
+  let calls=0;const request={[method]:async function(actualURL,options){assert.equal(this,request);assert.equal(actualURL,url);assert.equal(options.headers.Cookie,secrets[0]);calls++;throw raw;}};
+  const wrapped=scopeLocalRequest(request,()=>defaultLocalTestIP,'http://127.0.0.1:3100');
+  const rejected=wrapped[method](url,{headers:{Cookie:secrets[0],Authorization:`Bearer ${secrets[1]}`},data:{contact:secrets[2],body:secrets[3]}});
+  assert.equal(rejected instanceof Promise,true);
+  await assert.rejects(rejected,error=>{
+   assert.equal(error instanceof Error,true);assert.notEqual(error,raw);
+   assert.equal(error.message,`BROWSER_API_REQUEST_${method.toUpperCase()}_FAILED_ECONNRESET`);
+   assert.equal(error.cause,undefined);assert.deepEqual(Object.keys(error),[]);
+   const exposed=inspect(error,{depth:6})+JSON.stringify(error)+error.stack;
+   for(const secret of [...secrets,url,'Call log:','requestHeaders','requestBody'])assert.equal(exposed.includes(secret),false);
+   return true;
+  });
+  assert.equal(calls,1);
+ }
+});
+
+test('request failure classification accepts only fixed codes, names and the diagnostic first line',async()=>{
+ const cases=[
+  ...['ECONNRESET','ECONNREFUSED','EPIPE','ENOTFOUND','EAI_AGAIN','ENETUNREACH','EHOSTUNREACH'].map(code=>({error:Object.assign(new Error('opaque'),{code}),reason:code})),
+  {error:Object.assign(new Error('opaque'),{code:'ETIMEDOUT'}),reason:'TIMEOUT'},
+  {error:Object.assign(new Error('opaque'),{name:'TimeoutError'}),reason:'TIMEOUT'},
+  {error:Object.assign(new Error('opaque'),{name:'AbortError'}),reason:'ABORTED'},
+  {error:Object.assign(new Error('opaque'),{code:'ABORT_ERR'}),reason:'ABORTED'},
+  {error:new Error('apiRequestContext.post: connect ECONNREFUSED\nCookie: SENTINEL_COOKIE_VALUE'),reason:'ECONNREFUSED'},
+  {error:new Error('apiRequestContext.post: Timeout 30000ms exceeded.\nAuthorization: SENTINEL_BEARER_TOKEN'),reason:'TIMEOUT'},
+  {error:new Error('unknown failure\nCookie: ECONNRESET'),reason:'UNKNOWN'},
+  {error:Object.assign(new Error('opaque'),{code:'ECONNRESET SENTINEL_COOKIE_VALUE',name:'TimeoutError SENTINEL_BEARER_TOKEN'}),reason:'UNKNOWN'},
+  {error:new Error('SENTINEL_CONTACT@example.test',{cause:Object.assign(new Error('private cause'),{code:'ECONNRESET'})}),reason:'UNKNOWN'},
+  {error:'SENTINEL_THROWN_VALUE',reason:'UNKNOWN'},
+  {error:undefined,reason:'UNKNOWN'},
+  {error:Object.defineProperty({},'message',{get(){throw new Error('SENTINEL_GETTER_VALUE');}}),reason:'UNKNOWN'}
+ ];
+ for(const {error,reason} of cases){
+  let calls=0;const request={post(){calls++;throw error;}};
+  const wrapped=scopeLocalRequest(request,()=>defaultLocalTestIP,'http://127.0.0.1:3100');
+  await assert.rejects(wrapped.post('/api/private'),{message:`BROWSER_API_REQUEST_POST_FAILED_${reason}`});
+  assert.equal(calls,1);
+ }
+});
+
+test('request proxy returns the original HTTP response even for denied or unsuccessful responses',async()=>{
+ for(const status of [200,403,503]){
+  const response={status:()=>status,ok:()=>status===200,body:()=>Buffer.from('synthetic response')};
+  let calls=0;const request={fetch:async()=>{calls++;return response;}};
+  const wrapped=scopeLocalRequest(request,()=>defaultLocalTestIP,'http://127.0.0.1:3100');
+  assert.equal(await wrapped.fetch('/api/private',{method:'POST'}),response);assert.equal(calls,1);
+ }
 });
 
 test('route adapter preserves receivers, cookies, mocks and options while applying the current IP to the effective URL',()=>{

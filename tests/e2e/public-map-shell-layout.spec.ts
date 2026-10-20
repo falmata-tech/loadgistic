@@ -47,8 +47,8 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       navigationClear:true,headerClear:true,withinViewport:true,
       toolsContained:true,sessionClear:true,usableMap:true,noDocumentOverflow:true,
     });
-    await page.getByRole('button',{name:'Filters',exact:true}).click();
-    const dialog=page.getByRole('dialog',{name:'Filters',exact:true});
+    await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});
     await expect(dialog).toBeVisible();
     const bounds=await dialog.boundingBox();
     expect(bounds).toBeTruthy();
@@ -65,7 +65,7 @@ async function verifyShell(page:any,testInfo:any,surface:string){
     }
   }
   const nav=page.getByRole('navigation',{name:phone?'Public mobile navigation':'Public workspace navigation',exact:true});
-  await nav.getByRole('link',{name:'About',exact:true}).click();
+  await Promise.all([page.waitForURL(/\/about$/,{waitUntil:'domcontentloaded'}),nav.getByRole('link',{name:'About',exact:true}).click()]);
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.locator('main.public-market-workspace')).toHaveCount(0);
 }

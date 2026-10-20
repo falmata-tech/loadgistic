@@ -22,7 +22,7 @@ test('uncertain Tracking creation preserves the draft and prevents another save'
  try{
   await page.goto('/app/provider-shipments/new');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
   await page.getByLabel('Vehicle',{exact:true}).selectOption({index:1});await page.getByLabel('Cargo summary').fill('Retain this cargo draft');
-  for(const [label,query] of [['Origin','Adama'],['Destination','Addis Ababa']]){await page.getByRole('combobox',{name:label,exact:true}).fill(query);await page.getByRole('option',{name:new RegExp(query)}).first().click();}
+  for(const [label,query] of [['Origin','Adama'],['Passing through city','Sebeta'],['Destination','Addis Ababa']]){await page.getByRole('combobox',{name:label,exact:true}).fill(query);await page.getByRole('option',{name:new RegExp(query)}).first().click();}
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));await page.getByLabel('Shipment owner email').fill('held@example.test');
   // Let date-field validation settle before replacing browser timers. Otherwise
   // the fake clock can freeze the prior required-date validity and prevent submit.

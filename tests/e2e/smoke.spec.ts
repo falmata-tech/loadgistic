@@ -2,15 +2,17 @@ import {auditOpenTrackingProgress} from './audit-helpers';
 import {chooseDate} from './date-picker-helper';
 import {openCapacityFilters,openCapacityFilterDialog} from './capacity-drawer-helper';
 import { test, expect } from './browser-test';
-import {mkdirSync} from 'node:fs';
+import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {randomInt,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
-import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditDeleteVehicles} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditFleetProvider,auditDeleteVehicles} from './audit-helpers';
 import {addLocalSmokeSponsor,temporarilyHideLocalSponsors} from './sponsor-fixture-helper';
 import {getProviderCapacityWorkspace,addProviderRegularCapacity,removeProviderRegularCapacity} from '../../src/lib/provider-capacity.js';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
+import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
 import {removePrivateUpload} from '../../src/lib/private-storage.js';
+import {removeProviderProfileImage} from '../../src/lib/provider-profile.js';
 
 let cleanupSmokeSponsor:(()=>Promise<void>)|undefined;
 test.beforeEach(async({},info:{title:string})=>{
@@ -37,6 +39,28 @@ async function login(page:any,email:string){
   // Fixture aliases can be migrated to the owner's deliverable +addresses.
   // Use the shared local-only identity resolver; OTP has its own visible tests.
   await auditLogin(page,email);
+}
+
+async function fixtureDrivingVehicle(email:string){
+  const service=localAuditService(),actor=await auditIdentity(service,email);
+  const assignment=checked(await service.from('driver_vehicle_assignments').select('vehicle_id').eq('driver_user_id',actor.id).eq('active',true).single());
+  const workspace=await getProviderTrackingWorkspace(actor,{limit:1});
+  expect(workspace.access?.can_manage_tracking).toBe(true);
+  expect(workspace.vehicles.filter((vehicle:{id:string})=>vehicle.id===assignment.vehicle_id)).toHaveLength(1);
+  return {service,actor,actorId:actor.id,vehicleId:assignment.vehicle_id};
+}
+
+async function selectFixtureDrivingVehicle(page:any,email:string){
+  const pair=await fixtureDrivingVehicle(email);
+  const vehicle=page.getByRole('combobox',{name:'Vehicle',exact:true});await expect(vehicle).toBeVisible();
+  await vehicle.selectOption(pair.vehicleId);await expect(vehicle).toHaveValue(pair.vehicleId);
+  return pair;
+}
+
+async function removeSmokeShipment(service:any,id:string){
+  checked(await service.from('access_email_deliveries').delete().eq('entity_id',id));
+  checked(await service.from('audit_logs').delete().eq('entity_id',id));
+  checked(await service.from('provider_shipments').delete().eq('id',id));
 }
 
 async function choosePlace(page:any,label:string,query:string,option:RegExp){
@@ -380,7 +404,7 @@ test('capacity Market keeps truck markers and bounded map batches alongside sear
   await page.goto('/capacity');
   const commandColumn=await openCapacityFilters(page);
   await expect(commandColumn.getByRole('searchbox',{name:'Search transporters'})).toBeVisible();
-  await expect(commandColumn.getByRole('button',{name:'Filters'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Vehicle filters',exact:true})).toBeVisible();
   await expect(commandColumn.getByRole('button',{name:/location/i})).toBeVisible();
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   await expect(page.locator('.public-capacity-grid')).toHaveCount(0);
@@ -389,7 +413,7 @@ test('capacity Market keeps truck markers and bounded map batches alongside sear
   await expect(page.getByRole('navigation',{name:'Truck list pagination'})).toHaveCount(0);
   await expect(commandColumn.getByRole('searchbox',{name:'Search transporters'})).toBeVisible();
   const filters=await openCapacityFilterDialog(page);
-  const configurations=filters.getByRole('group',{name:'Vehicle configuration',exact:true});await configurations.locator('summary').click();
+  const configurations=filters.getByRole('group',{name:'Vehicle type',exact:true});await configurations.locator('summary').click();
   await expect(configurations.getByRole('checkbox',{name:'Courier motorcycle',exact:true})).toHaveCount(1);
   await expect(configurations.getByRole('checkbox',{name:'Courier car',exact:true})).toHaveCount(1);
   await expect(configurations.getByRole('checkbox',{name:'Mini Open Body Truck',exact:true})).toHaveCount(1);
@@ -466,8 +490,8 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
     expect(hoverSummaryBox!.y+hoverSummaryBox!.height).toBeLessThanOrEqual(hoveredMarkerBox!.y+6);
     expect(await hoverSummary.evaluate((tooltip:any)=>getComputedStyle(tooltip,'::before').borderTopWidth)).not.toBe('0px');
   }
-  await expect(page.locator('.public-map-legend')).toContainText('Empty truck');
-  await expect(page.locator('.public-map-legend')).toContainText('Partial truck');
+  await expect(page.locator('.public-map-legend')).toContainText('Empty vehicle');
+  await expect(page.locator('.public-map-legend')).toContainText('Partial vehicle');
   await expect(page.locator('.public-map-legend')).toContainText('Empty capacity route');
   await expect(page.locator('.public-map-legend')).toContainText('Partial capacity route');
   await expect(page.locator('.public-map-legend')).toBeVisible();
@@ -516,7 +540,9 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(page.locator('.map-capacity-sheet').getByRole('link',{name:'Profile'})).toBeVisible();
   const publicCall=page.locator('.map-capacity-sheet').getByRole('link',{name:/^Call(?: driver)?$/});
   await expect(publicCall).toBeVisible();
-  await expect(publicCall).toHaveAttribute('href',/^tel:\+251/);
+  const publishedPhone=partialTruck.assigned_driver_phone||partialTruck.contact_phone;
+  expect(publishedPhone,'The selected public record must publish the displayed contact').toBeTruthy();
+  await expect(publicCall).toHaveAttribute('href',`tel:${publishedPhone}`);
   const sheetMetrics=await page.locator('.capacity-info-content').evaluate((element:any)=>({clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,height:element.getBoundingClientRect().height,viewport:window.innerHeight,overflow:getComputedStyle(element).overflowY}));
   expect(sheetMetrics.overflow).toBe('auto');
   // The drawer scrolls independently; it must not forward wheel input to the map.
@@ -586,7 +612,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal details
   await expect(emptyAvailabilitySignal).toHaveAttribute('stroke','#16a34a');
   await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveClass(/\bempty\b/);
   await expect(page.locator('.capacity-truck-map-marker.selected strong')).toHaveCount(0);
-  await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',/Empty truck/);
+  await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',/Empty vehicle/);
   await expect(page.locator('.capacity-truck-map-marker.selected .vehicle-marker-image')).toHaveCSS('background-color','rgb(12, 114, 117)');
 });
 
@@ -705,18 +731,51 @@ test('transporter map action keeps its trucks visible after visitor location ref
   await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible({timeout:30_000});
 });
 
-test('provider edits business facts without designing the Loadgistic microsite',async({page}:{page:any})=>{
-  await login(page,'transporter@loadgistic.local');
-  await page.goto('/app/company-page');
+test('provider edits business facts without designing the Loadgistic microsite',async({page}:{page:any},info:any)=>{
+  test.setTimeout(90_000);
+  const service=localAuditService(),actor=await auditFleetProvider(service,'smoke-profile'),accountName=`Synthetic smoke provider ${actor.suffix}`;
+  writeFileSync(info.outputPath('profile-owned-fixture.json'),JSON.stringify({userId:actor.id,organizationId:actor.organization_id})+'\n',{mode:0o600});
+  try{
+  await login(page,actor.email);
+  await page.goto('/app/company-page',{waitUntil:'domcontentloaded'});
+  await expect(page.getByRole('button',{name:'Save transporter information'})).toHaveCount(0);
+  await page.getByRole('button',{name:'Edit profile',exact:true}).click();
+  const editor=page.getByRole('dialog',{name:'Transporter profile',exact:true});
   await expect(page.getByText('Describe your transport business clearly so customers can assess your services.')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Page colors'})).toHaveCount(0);
   await expect(page.getByLabel('YouTube video ID')).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Save transporter information'})).toBeVisible();
-  await page.getByLabel('Choose image').setInputFiles({name:'provider.png',mimeType:'image/png',buffer:Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360f8cfc0000004010100f689891d0000000049454e44ae426082','hex')});
-  await page.getByRole('button',{name:/^(Upload|Replace) image$/}).click();
+  await editor.getByLabel('Account name',{exact:true}).fill(accountName);
+  await editor.getByLabel('About the business',{exact:true}).fill('Regional freight with owner-led dispatch.');
+  await editor.getByLabel('Region or city administration',{exact:true}).selectOption('ADDIS_ABABA');
+  await choosePlace(editor,'Base city or town','Addis',/Addis Ababa, Ethiopia/i);
+  await editor.getByText('Publish transporter profile',{exact:true}).click();
+  await expect(editor.getByRole('checkbox',{name:/^Publish transporter profile/})).toBeChecked();
+  const saved=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/company-page'&&response.request().method()==='POST');
+  await editor.getByRole('button',{name:'Save transporter information'}).click();expect((await saved).status()).toBe(303);
+  await expect(editor).toHaveCount(0);
+  expect(checked(await service.from('company_pages').select('about,published').eq('organization_id',actor.organization_id).single())).toMatchObject({about:'Regional freight with owner-led dispatch.',published:true});
+  await page.getByRole('button',{name:'Change photo',exact:true}).click();
+  const imageEditor=page.getByRole('dialog',{name:'Transporter image',exact:true});
+  await imageEditor.getByLabel('Choose image').setInputFiles({name:'provider.png',mimeType:'image/png',buffer:readFileSync('public/icon-192.png')});
+  const imageSaved=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/company-page/image'&&response.request().method()==='POST');
+  await imageEditor.getByRole('button',{name:/^(Upload|Replace) image$/}).click();const imageResponse=await imageSaved;expect(imageResponse.status()).toBe(303);
+  const imageDestination=new URL(imageResponse.headers().location,page.url());expect(imageDestination.searchParams.get('success')).toBe('Provider image updated.');
+  await page.waitForURL(imageDestination.href,{waitUntil:'domcontentloaded'});
   await expect(page.getByText('Provider image updated.')).toBeVisible();
-  await page.getByRole('link',{name:'Open public page'}).click();
-  await expect(page.getByRole('img',{name:'BlueLine Transport PLC transporter profile'})).toBeVisible();
+  const publicImageLoaded=page.waitForResponse((response:any)=>new URL(response.url()).pathname===`/api/public/providers/smoke-profile-${actor.suffix}/image`&&response.request().method()==='GET');
+  await Promise.all([page.waitForURL(new RegExp(`/@smoke-profile-${actor.suffix}$`),{waitUntil:'domcontentloaded'}),page.getByRole('link',{name:'Open public page'}).click()]);
+  await expect(page.getByRole('heading',{name:accountName,exact:true,level:1})).toBeVisible();
+  const publicImage=await publicImageLoaded;expect(publicImage.status()).toBe(200);await publicImage.finished();
+  const photo=page.getByRole('img',{name:`${accountName} transporter profile`,exact:true});await expect(photo).toBeVisible();
+  await expect.poll(()=>photo.evaluate((image:HTMLImageElement)=>image.complete&&image.naturalWidth>0)).toBe(true);
+  await expect(page.getByText(actor.email,{exact:true})).toHaveCount(0);
+  }finally{
+    test.setTimeout(info.timeout+30_000);
+    const image=checked(await service.from('company_pages').select('profile_image_path').eq('organization_id',actor.organization_id).single());
+    if(image.profile_image_path)await removeProviderProfileImage(actor);
+    checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));
+    checked(await service.auth.admin.deleteUser(actor.id));checked(await service.from('organizations').delete().eq('id',actor.organization_id));
+  }
 });
 
 test('fleet Driver access shows only current capacity and Tracking permissions',async({page}:{page:any})=>{
@@ -732,9 +791,20 @@ test('fleet Driver access shows only current capacity and Tracking permissions',
 
 test('administrator Operations shows provider-owned Tracking and no retired Network view',async({page}:{page:any})=>{
   await login(page,'admin@loadgistic.local');
-  await page.goto('/admin/operations?view=TRACKING');
-  await expect(page.getByLabel('Management area')).toHaveValue('TRACKING');
-  await expect(page.getByLabel('Management area').locator('option',{hasText:'Network'})).toHaveCount(0);
+  if((page.viewportSize()?.width||0)<=700){
+    // Phone navigation enters records through the visible Overview cards;
+    // desktop record tabs are intentionally hidden at this breakpoint.
+    const overview=page.locator('.admin-overview-page'),tracking=overview.getByRole('link',{name:/^Tracking\b/});
+    await expect(tracking).toHaveAttribute('href','/admin/operations?view=TRACKING');
+    await expect(overview.getByRole('link',{name:/^Network\b/})).toHaveCount(0);
+    await Promise.all([page.waitForURL(/\/admin\/operations\?view=TRACKING$/,{waitUntil:'domcontentloaded'}),tracking.click()]);
+    await expect(page.getByRole('textbox',{name:'Search Tracking',exact:true})).toBeVisible();
+  }else{
+    await page.goto('/admin/operations?view=TRACKING');
+    const inventory=page.getByRole('navigation',{name:'Platform record type',exact:true});
+    await expect(inventory.getByRole('link',{name:'Tracking',exact:true})).toHaveAttribute('href','/admin/operations?view=TRACKING');await expect(inventory.getByRole('link',{name:'Tracking',exact:true})).toHaveClass(/active/);
+    await expect(inventory.getByRole('link',{name:'Network',exact:true})).toHaveCount(0);
+  }
   await expect(page.getByText('Tracking',{exact:true}).first()).toBeVisible();
   await expect(page.getByText(/customer owner email/i)).toHaveCount(0);
 });
@@ -883,7 +953,7 @@ test('assigned Driver shares only an approximate location during travel',async({
   await context.setGeolocation({latitude:9.03,longitude:38.76});
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/provider-shipments/new');
-  await expect(page.locator('form.form-card').getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
+  const pair=await selectFixtureDrivingVehicle(page,'driver@loadgistic.local');
   await page.getByLabel('Cargo summary').fill('Workshop steel inputs');
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Passing through city','Dire',/Dire Dawa, Ethiopia/i);
@@ -892,15 +962,26 @@ test('assigned Driver shares only an approximate location during travel',async({
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
   await page.getByLabel('Shipment owner email').fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
+  const started=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/provider-shipments'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Start Tracking'}).click();
+  const startResponse=await started;expect(startResponse.status()).toBe(201);
+  const shipmentId=(await startResponse.json()).id;expect(shipmentId).toMatch(/^[0-9a-f-]{36}$/);
+  try{
   await expect(page.getByText('Tracking started')).toBeVisible();
   await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
-  await page.getByRole('link',{name:'Open Tracking'}).click();
+  expect(new URL((await page.getByRole('link',{name:'Open Tracking',exact:true}).getAttribute('href'))!,page.url()).pathname.split('/').at(-1)).toBe(shipmentId);
+  expect(checked(await pair.service.from('provider_shipments').select('assigned_vehicle_id,assigned_driver_user_id,tracking_mode').eq('id',shipmentId).single())).toEqual({assigned_vehicle_id:pair.vehicleId,assigned_driver_user_id:pair.actorId,tracking_mode:'LOCATION_AND_STATUS'});
+  await Promise.all([
+    page.waitForURL(new RegExp(`/app/provider-shipments/${shipmentId}$`),{waitUntil:'domcontentloaded'}),
+    page.getByRole('link',{name:'Open Tracking'}).click()
+  ]);
   await auditOpenTrackingProgress(page);await expect(page.getByLabel('Going to pickup')).toBeChecked();
   const statusUpdate=page.waitForResponse((response:any)=>response.url().includes('/status')&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Save Going to pickup'}).click();
   expect((await statusUpdate).status()).toBe(303);
   await expect(page.getByText('Tracking status updated.')).toBeVisible({timeout:30_000});
+  const location=checked(await pair.service.from('provider_shipment_events').select('location_lat,location_lng,location_precision_km').eq('shipment_id',shipmentId).eq('location_source','DEVICE_OBSCURED').order('created_at',{ascending:false}).limit(1).single());
+  expect([1,3,5,10,20]).toContain(location.location_precision_km);expect(location.location_lat).not.toBe(9.03);expect(location.location_lng).not.toBe(38.76);
   await page.goto('/track');
   await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
 
@@ -908,28 +989,26 @@ test('assigned Driver shares only an approximate location during travel',async({
   await page.getByRole('button',{name:'Email me a code'}).click();
   await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
   await page.getByRole('button',{name:'Open tracking'}).click();
-  await expect(page.getByText('Approximate Driver location',{exact:true})).toBeVisible();
+  const reportedArea=page.locator('.tracking-reported-area');await expect(reportedArea).toContainText('Reported approximate area');await expect(reportedArea).toHaveAttribute('data-location-radius-km',String(location.location_precision_km));
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible();
-  await expect(page.getByText(/not an exact truck position/i)).toBeVisible();
+  await expect(page.getByText(/reported approximate area, not exact GPS or road navigation/i)).toBeVisible();
   await expect(page.locator('.timeline')).toContainText('Going to pickup');
+  }finally{await removeSmokeShipment(pair.service,shipmentId);}
 });
 
 test('Driver Home stays focused on capacity and keeps Tracking in navigation',async({page,context}:{page:any;context:any})=>{
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({latitude:9.07,longitude:38.76});
+  // Shipment creation has its own visible workflow above. This case starts
+  // with an assigned shipment and exercises Home/Account/Tracking navigation.
+  const pair=await fixtureDrivingVehicle('driver@loadgistic.local');
+  const place=async(name:string)=>checked(await pair.service.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id;
+  const created=await createProviderShipment(pair.actor,{vehicleId:pair.vehicleId,originPlaceRef:await place('addis ababa'),passingPlaceRef:await place('dire dawa'),destinationPlaceRef:await place('bishoftu'),cargoSummary:'Fabricated window frames',customerEmail:`home-${randomUUID()}@example.test`,expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),trackingMode:'STATUS_ONLY'});
+  const shipmentId=created.id;
+  try{
+  expect(checked(await pair.service.from('provider_shipments').select('assigned_vehicle_id,assigned_driver_user_id,tracking_mode').eq('id',shipmentId).single())).toEqual({assigned_vehicle_id:pair.vehicleId,assigned_driver_user_id:pair.actorId,tracking_mode:'STATUS_ONLY'});
+  const trackingCode=created.code;
   await login(page,'driver@loadgistic.local');
-  await page.goto('/app/provider-shipments/new');
-  await expect(page.locator('form.form-card').getByText('My truck',{exact:true})).toBeVisible();await expect(page.locator('input[name=vehicleId]')).not.toHaveValue('');
-  await page.getByLabel('Cargo summary').fill('Fabricated window frames');
-  await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
-  await choosePlace(page,'Passing through city','Dire',/Dire Dawa, Ethiopia/i);
-  await choosePlace(page,'Destination','Bishoftu',/Bishoftu, Ethiopia/i);
-  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
-  await page.getByLabel('Shipment owner email').fill('driver.owner.e2e@example.test');
-  await page.getByRole('button',{name:'Start Tracking'}).click();
-  await expect(page.getByText('Tracking started')).toBeVisible();
-  const trackingCode=(await page.locator('.tracking-code-reveal-heading h1').textContent())!;
-  await page.goto('/app/home');
   await expect(page.getByRole('heading',{name:'Capacity management',exact:true})).toHaveCount(1);
   await expect(page.getByRole('heading',{name:'Capacity',exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Truck availability'})).toHaveCount(0);
@@ -940,28 +1019,32 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
   if((page.viewportSize()?.width||0)<=760){
     const mobileNav=page.getByRole('navigation',{name:'Mobile navigation'});
     await expect(mobileNav.getByRole('link')).toHaveCount(5);
-    for(const label of ['Home','My truck','Tracking','Network','Account'])await expect(mobileNav.getByRole('link',{name:label,exact:true})).toBeVisible();
+    for(const label of ['Home','Fleet','Tracking','Network','Account'])await expect(mobileNav.getByRole('link',{name:label,exact:true})).toBeVisible();
     await expect(mobileNav.getByRole('link',{name:'Capacity',exact:true})).toHaveCount(0);
     await Promise.all([
-      page.waitForURL(/\/app\/more$/),
+      page.waitForURL(/\/app\/more$/,{waitUntil:'domcontentloaded'}),
       mobileNav.getByRole('link',{name:'Account',exact:true}).click()
     ]);
     await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible({timeout:30_000});
-    await expect(page.getByRole('form',{name:'Account details'})).toBeVisible();
-    await expect(page.locator('#business>summary')).toHaveText('Transporter profile');
+    await expect(page.getByRole('form',{name:'Account details'})).toHaveCount(0);
+    await expect(page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Transporter profile',exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Edit details',exact:true}).click();
+    const accountTask=page.getByRole('dialog',{name:'Account details',exact:true});await expect(accountTask.getByRole('form',{name:'Account details'})).toBeVisible();
+    await accountTask.getByRole('button',{name:'Close editor',exact:true}).click();
     await expect(page.getByRole('link',{name:'Support',exact:true})).toBeVisible();
     await expect(page.locator('.workspace-menu-grid')).toHaveCount(0);
     await expect(page.getByRole('button',{name:'Log out'})).toBeVisible();
-    await page.goto('/app/home');
+    await page.goto('/app/home',{waitUntil:'domcontentloaded'});
   }
   const primaryNavigation=(page.viewportSize()?.width||0)<=760
     ?page.getByRole('navigation',{name:'Mobile navigation'})
     :page.getByRole('navigation',{name:'Workspace navigation'});
   await Promise.all([
-    page.waitForURL(/\/app\/provider-shipments$/),
+    page.waitForURL(/\/app\/provider-shipments$/,{waitUntil:'domcontentloaded'}),
     primaryNavigation.getByRole('link',{name:'Tracking',exact:true}).click()
   ]);
   await expect(page.getByText('Keep brokers and customers informed with private shipment updates.')).toBeVisible();
+  }finally{await removeSmokeShipment(pair.service,shipmentId);}
 });
 
 test('capacity summary keeps the map visible and Driver refresh persists location',async({page,context}:{page:any;context:any})=>{

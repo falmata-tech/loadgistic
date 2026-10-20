@@ -176,7 +176,7 @@ test('Play normal mobile signup requires account-bound consent and explicitly pu
  try{
   const requestedAt=Date.now(),request=await call('auth/request',{email});expect(request.status()).toBe(200);const handoff=(await request.json()).handoff;
   const code=await localMailpitNumericCode(email,requestedAt,['Your Loadgistic sign-in code','Your Loadgistic signup code']);const verified=await call('auth/verify',{handoff,code});expect(verified.status()).toBe(200);session=await verified.json();expect(session.state).toBe('ONBOARDING');actor={id:session.user.id,provider_profile_id:null};
-  const signup={name:'Synthetic mobile driver',businessName:'Synthetic mobile transport',phone:'+12025550101',applicationType:'SELF_MANAGED_DRIVER'};
+  const signup={firstName:'Synthetic mobile',lastName:'Private driver',accountName:'Synthetic mobile transport',handle:`play-mobile-${session.user.id}`,phone:'+12025550101',applicationType:'TRANSPORT_PROVIDER',drivesTruck:false};
   const blocked=await call('onboarding',signup,session.accessToken);expect(blocked.status()).toBe(403);expect((await blocked.json()).error.code).toBe('POLICY_REQUIRED');
   const policy=await call('account/policy',undefined,session.accessToken);expect(policy.status()).toBe(200);expect((await policy.json()).accepted).toBe(false);
   expect((await call('account/policy',{version:'2026-10-09',accepted:true,actorId:randomUUID()},session.accessToken)).status()).toBe(400);

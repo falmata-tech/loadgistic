@@ -2,7 +2,7 @@ import {auditDeleteVehicles} from './audit-helpers';
 import {chooseDate} from './date-picker-helper';
 import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {localAuditService,auditProvider,auditFleetProvider,auditLogin,auditProof,auditTrackingOwnerLogin,checked} from './audit-helpers';
 import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 import {updateFleetDriverAccess} from '../../src/lib/fleet.js';
@@ -47,7 +47,8 @@ async function cleanProvider(service:any,actor:any,extraIds:string[]=[],proofs:A
 async function openReview(page:any,tab:string,id:string,filter:string,status='PENDING'){
   let stage='QUEUE_NAVIGATION';
   try{
-    await page.goto(`/admin/reviews?tab=${tab}&status=${status}${filter?`&q=${encodeURIComponent(filter)}`:''}&page=999999`);
+    await page.goto(`/admin/reviews?tab=${tab}&status=${status}${filter?`&q=${encodeURIComponent(filter)}`:''}&page=999999`,{waitUntil:'domcontentloaded'});
+    await expect(page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();
     const route=tab==='documents'?'verifications':tab==='payments'?'payment-proofs':'ratings';
     const form=page.locator(`form[action="/api/admin/${route}/${id}"]`);
     let row;
@@ -112,10 +113,13 @@ test('document reviews persist notes and context; each truck excludes its pendin
       await expect(page.getByLabel('Verification type',{exact:true}).locator('option[value=VEHICLE_OWNERSHIP]')).toHaveCount(1);
       await page.screenshot({path:info.outputPath(`pending-document-${index}.png`),fullPage:true});
       let review=await openReview(admin.page,'documents',stored.id,marker);
+      const reviewDialog=admin.page.getByRole('dialog',{name:'Review document',exact:true});
+      await reviewDialog.getByRole('button',{name:'Close editor',exact:true}).click();await expect(reviewDialog).toHaveCount(0);
       const file=review.row.getByRole('link',{name:'Open private document'});const href=await file.getAttribute('href');
       const popupPromise=admin.page.waitForEvent('popup');await file.click();const popup=await popupPromise;await popup.waitForLoadState();await popup.close();
       const response=await admin.page.request.get(href);expect(response.status()).toBe(200);expect((await response.body()).equals(bytes)).toBe(true);
       expect((await guest.request.get(href)).status()).toBe(401);
+      await review.row.getByRole('button',{name:'Review document',exact:true}).click();await expect(reviewDialog).toBeVisible();await expect(review.form).toBeVisible();
       if(index===1){
         await review.form.getByLabel('Review note').fill('Please confirm the truck details.');await review.form.getByRole('button',{name:'More info',exact:true}).click();
         expectContext(admin.page,'documents',marker,'PENDING');
@@ -128,28 +132,31 @@ test('document reviews persist notes and context; each truck excludes its pendin
       await deniedReview(admin.page,`/api/admin/verifications/${stored.id}`,{status:'REJECTED',returnTo:`/admin/reviews?tab=documents&status=APPROVED&q=${marker}&page=1`});
       expect(checked(await service.from('verification_requests').select('status').eq('id',stored.id).single()).status).toBe('APPROVED');
     }
-    await admin.page.goto(`/admin/reviews?tab=documents&status=APPROVED&q=${marker}`);await expect(admin.page.locator('.admin-review-row')).toHaveCount(2);
+    await admin.page.goto(`/admin/reviews?tab=documents&status=APPROVED&q=${marker}`,{waitUntil:'domcontentloaded'});await expect(admin.page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();await expect(admin.page.locator('.admin-review-row')).toHaveCount(2);
     await expect(admin.page.locator('.admin-review-row .verification-review-actions')).toHaveCount(0);await admin.page.screenshot({path:info.outputPath('reviewed-documents.png'),fullPage:true});
   }finally{await admin?.context.close().catch(()=>{});await guest?.close().catch(()=>{});await cleanProvider(service,actor,vehicles);}
 });
 
 test('retired payment review cannot mutate retained proof or subscription history',async({page,browser}:{page:any;browser:any},info:any)=>{
- const service=localAuditService(),actor=await auditProvider(service,'review-payment'),proofId=randomUUID();let admin:any;
+ const service=localAuditService(),actor=await auditProvider(service,'review-payment'),proofId=randomUUID(),planId=randomUUID();let admin:any;
  try{
-  const subscription=checked(await service.from('subscriptions').select('*').eq('provider_profile_id',actor.provider_profile_id).single());
+  // New providers have no billing rows. Deliberately retain an expired synthetic
+  // subscription to test the retired review endpoint's history boundary.
+  checked(await service.from('plans').insert({id:planId,code:`history-${actor.suffix}`,name:'Synthetic historical plan',audience:'DRIVER',active:false}));
+  const subscription=checked(await service.from('subscriptions').insert({provider_profile_id:actor.provider_profile_id,plan_id:planId,status:'PAYMENT_UNDER_REVIEW',billing_model:'FLAT_MONTHLY',starts_at:'2025-01-01T00:00:00Z',ends_at:'2025-02-01T00:00:00Z'}).select('*').single());
   checked(await service.from('payment_proofs').insert({id:proofId,subscription_id:subscription.id,amount_minor:125050,reference:`review-payment-${actor.suffix}`,status:'PENDING'}));
   await auditLogin(page,actor.email);expect((await page.request.post(`/api/admin/payment-proofs/${proofId}`,{form:{status:'APPROVED'}})).status()).toBe(403);
   admin=await adminBrowser(browser,page,info);const denied=await admin.page.request.post(`/api/admin/payment-proofs/${proofId}`,{form:{status:'APPROVED'}});
   expect(denied.status()).toBe(410);expect((await denied.json()).error).toBe('Platform payment plans are not offered.');
   expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe('PENDING');
   expect(checked(await service.from('subscriptions').select('*').eq('id',subscription.id).single())).toEqual(subscription);
-  await admin.page.goto('/admin/reviews');await expect(admin.page.getByRole('link',{name:'Payments',exact:true})).toHaveCount(0);
+  await admin.page.goto('/admin/reviews',{waitUntil:'domcontentloaded'});await expect(admin.page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();await expect(admin.page.getByRole('link',{name:'Payments',exact:true})).toHaveCount(0);
   await admin.page.screenshot({path:info.outputPath('payment-review-retired.png')});
- }finally{await admin?.context.close().catch(()=>{});checked(await service.from('payment_proofs').delete().eq('id',proofId));await cleanProvider(service,actor,[proofId]);}
+ }finally{await admin?.context.close().catch(()=>{});checked(await service.from('payment_proofs').delete().eq('id',proofId));await cleanProvider(service,actor,[proofId]);checked(await service.from('plans').delete().eq('id',planId));}
 });
 
 test('rating decisions preserve publication rules, require authority and retain their queue',async({page,browser}:{page:any;browser:any},info:any)=>{
-  test.setTimeout(120000);const service=localAuditService();const actor=await auditProvider(service,'review-rating');const ids:string[]=[],proofs:Array<{shipmentId:string;path:string}>=[];let admin:any;
+  test.setTimeout(120000);const service=localAuditService();const actor=await auditProvider(service,'review-rating');const ids:string[]=[],proofs:Array<{shipmentId:string;path:string}>=[];let admin:any,removedShipmentCode='';
   try{
     const vehicle=checked(await service.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Rating review',plate:`TEST-${actor.suffix}`,cargo_configuration:'Mini Box Truck'}}));ids.push(vehicle.id);
     expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
@@ -159,6 +166,7 @@ test('rating decisions preserve publication rules, require authority and retain 
     for(const resolution of ['UPHELD','REMOVED']){
       const ownerEmail=`rating-${randomUUID()}@example.test`;
       const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicle.id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:`Synthetic review ${actor.suffix}`,customerEmail:ownerEmail,trackingMode:'STATUS_ONLY'});ids.push(shipment.id);
+      if(resolution==='REMOVED')removedShipmentCode=shipment.code;
       const proof=await auditProof(service,shipment.id);
       proofs.push({shipmentId:shipment.id,path:proof.path});
       await updateProviderShipmentStatus(actor,shipment.id,'LOADING','Synthetic loading',proof);
@@ -175,7 +183,9 @@ test('rating decisions preserve publication rules, require authority and retain 
       await deniedReview(admin.page,`/api/admin/ratings/${reviewId}`,{status:resolution==='UPHELD'?'REMOVED':'UPHELD',reviewNote:'Cannot replay terminal decision.'});
       expect(checked(await service.from('provider_reviews').select('status,dispute_status,review_note').eq('id',reviewId).single())).toEqual(reviewed);
     }
-    await admin.page.goto('/admin/reviews?tab=ratings&status=REMOVED');await admin.page.screenshot({path:info.outputPath('reviewed-rating.png'),fullPage:true});
+    await admin.page.goto('/admin/reviews?tab=ratings&status=REMOVED',{waitUntil:'domcontentloaded'});await expect(admin.page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();await expect(admin.page.getByLabel('Status',{exact:true})).toHaveValue('REMOVED');
+    expect(removedShipmentCode).toBeTruthy();const retained=admin.page.locator('.admin-review-row').filter({has:admin.page.locator(`a[href="/admin/operations?view=TRACKING&q=${encodeURIComponent(removedShipmentCode)}"]`)});await expect(retained).toHaveCount(1);await expect(retained.getByRole('button',{name:'Review rating',exact:true})).toHaveCount(0);
+    await admin.page.screenshot({path:info.outputPath('reviewed-rating.png'),fullPage:true});
   }finally{await admin?.context.close().catch(()=>{});await cleanProvider(service,actor,ids,proofs);}
 });
 
@@ -184,46 +194,67 @@ test('rating decisions preserve publication rules, require authority and retain 
 // this case does not claim to exercise Tracking creation, proof or OTP flows.
 test('independent content holds survive rating decisions and revoked Trust cannot restore them',async({page,browser},info)=>{
   test.setTimeout(180000);
+  const startedAt=Date.now(),budgetMs=info.timeout,elapsed=()=>Math.max(0,Date.now()-startedAt);
+  type ContentReceipt={status:number|null;elapsedMs:number|null;category:'NOT_RECEIVED'|'SUCCESS'|'ERROR'|'BOTH'|'NONE'|'MALFORMED';reason:'NONE'|'REVIEWED'|'FORBIDDEN'|'RATE_LIMITED'|'INVALID_INPUT'|'COMMAND_REJECTED'|'UNKNOWN'};
+  let lastContent:ContentReceipt={status:null,elapsedMs:null,category:'NOT_RECEIVED',reason:'NONE'};
+  function contentReceipt(response:{status():number;headers():Record<string,string>}){
+    let category:ContentReceipt['category']='MALFORMED',reason:ContentReceipt['reason']='UNKNOWN';
+    try{
+      const query=new URL(response.headers().location).searchParams,success=query.has('success'),error=query.has('error');
+      category=success&&error?'BOTH':success?'SUCCESS':error?'ERROR':'NONE';
+      const reasons=new Map<string,ContentReceipt['reason']>([['You do not have access to that report.','FORBIDDEN'],['Please wait before trying again.','RATE_LIMITED'],['Choose a decision and enter a review note.','INVALID_INPUT'],['The report could not be changed. Refresh its current state.','COMMAND_REJECTED']]);
+      reason=error?reasons.get(query.get('error')||'')||'UNKNOWN':success&&query.get('success')==='Content report reviewed.'?'REVIEWED':'UNKNOWN';
+    }catch{}
+    lastContent={status:response.status(),elapsedMs:elapsed(),category,reason};
+  }
   const service=localAuditService(),suffix=randomUUID().slice(0,8),handle=`moderation-ui-${suffix}`;
   const contexts:BrowserContext[]=[],signouts:Array<()=>Promise<unknown>>=[],shipmentIds:string[]=[],reviewIds=[randomUUID(),randomUUID(),randomUUID()],reportIds:string[]=[];
-  let providerUserId='',providerId='',trustId='',truckId='',stage='FIXTURES';
+  let providerUserId='',providerId='',trustId='',truckId='',stage='FIXTURES',operation='FIXTURE_SETUP';
   const noteA=`Synthetic held review A ${suffix}`,noteB=`Synthetic held review B ${suffix}`,controlNote=`Synthetic unchanged control ${suffix}`;
   async function publicProjection(a:boolean,b:boolean,count:number,average:number){
+    operation='PUBLIC_API_PROJECTION';
     const response=await page.request.get(`/api/mobile/public/providers/${handle}`);expect(response.status()).toBe(200);
     const data=await response.json();expect(data.reviewCount).toBe(count);expect(data.averageRating).toBe(average);
     expect(data.reviews.some((review:{id:string})=>review.id===reviewIds[0])).toBe(a);
     expect(data.reviews.some((review:{id:string})=>review.id===reviewIds[1])).toBe(b);
     expect(data.reviews.some((review:{id:string})=>review.id===reviewIds[2])).toBe(true);
-    const document=await page.goto(`/providers/${handle}`,{waitUntil:'domcontentloaded'});expect(document?.status()).toBe(200);
+    operation='PUBLIC_PAGE_NAVIGATION';const document=await page.goto(`/providers/${handle}`,{waitUntil:'domcontentloaded'});expect(document?.status()).toBe(200);
+    operation='PUBLIC_VISIBLE_REVIEWS';
     await expect(page.locator('.provider-review-list').getByText(noteA,{exact:true})).toHaveCount(a?1:0);
     await expect(page.locator('.provider-review-list').getByText(noteB,{exact:true})).toHaveCount(b?1:0);
     await expect(page.locator('.provider-review-list').getByText(controlNote,{exact:true})).toHaveCount(1);
     await expect(page.locator('.provider-hero-facts')).toContainText(`${average} · ${count} verified shipment reviews`);
   }
   async function contentForm(control:Page,id:string){
-    await control.goto('/admin/reviews/content?page=999999');
+    operation='CONTENT_QUEUE_NAVIGATION';await control.goto('/admin/reviews/content?page=999999',{waitUntil:'domcontentloaded'});await expect(control.getByRole('heading',{name:'Content reports',exact:true})).toBeVisible();
     const form=control.locator(`form[action="/api/admin/content/${id}"]`),record=checked(await service.from('content_reports').select('detail').eq('id',id).single()),row=control.locator('section').filter({has:control.getByText(record.detail,{exact:true})});
     // Keep the test bounded without assuming the exact report is on page one.
     for(let n=0;n<10&&!await row.count();n++){
       const next=control.getByRole('link',{name:'Next',exact:true});if(!await next.count())break;await next.click();
     }
-    await expect(row).toHaveCount(1);await row.getByRole('button',{name:'Review report',exact:true}).click();await expect(form).toHaveCount(1);return form;
+    operation='EXACT_CONTENT_ROW';await expect(row).toHaveCount(1);operation='OPEN_CONTENT_REVIEW';await row.getByRole('button',{name:'Review report',exact:true}).click();await expect(control.getByRole('dialog',{name:'Review content report',exact:true})).toBeVisible();await expect(form).toBeVisible();return form;
   }
   async function contentDecision(control:Page,id:string,decision:'HIDE'|'RESTORE'){
     const form=await contentForm(control,id);await form.getByLabel('Decision note',{exact:true}).fill('Synthetic content decision for the moderation workflow.');
     const saved=control.waitForResponse(response=>new URL(response.url()).pathname===`/api/admin/content/${id}`&&response.request().method()==='POST');
-    await form.getByRole('button',{name:decision==='HIDE'?'Hide reported content':'Restore reviewed content',exact:true}).click();
-    expect((await saved).status()).toBe(303);await expect(control.locator('.alert.success')).toBeVisible();
+    lastContent={status:null,elapsedMs:null,category:'NOT_RECEIVED',reason:'NONE'};
+    operation='SUBMIT_CONTENT_'+decision;await form.getByRole('button',{name:decision==='HIDE'?'Hide reported content':'Restore reviewed content',exact:true}).click();
+    operation='CONTENT_DECISION_REDIRECT';contentReceipt(await saved);expect(lastContent.status).toBe(303);expect(lastContent.category).toBe('SUCCESS');expect(lastContent.reason).toBe('REVIEWED');
+    operation='CONTENT_DECISION_FEEDBACK';await expect(control.locator('.alert.success')).toBeVisible();
+    operation='PERSISTED_CONTENT_DECISION';
     expect(checked(await service.from('content_reports').select('status').eq('id',id).single()).status).toBe(decision==='HIDE'?'HIDDEN':'RESTORED');
   }
   async function ratingDecision(control:Page,id:string,resolution:'UPHELD'|'REMOVED'){
+    operation='RATING_QUEUE_AND_FORM';
     const {form}=await openReview(control,'ratings',id,'');await form.getByLabel('Decision note',{exact:true}).fill('Synthetic rating decision retains its independent restrictions.');
-    await form.getByRole('button',{name:resolution==='UPHELD'?'Uphold review':'Remove review',exact:true}).click();
+    operation='SUBMIT_RATING_'+resolution;await form.getByRole('button',{name:resolution==='UPHELD'?'Uphold review':'Remove review',exact:true}).click();
     await expect(control.locator('.alert.success')).toBeVisible();
+    operation='PERSISTED_RATING_DECISION';
     expect(checked(await service.from('provider_reviews').select('dispute_status').eq('id',id).single()).dispute_status).toBe(resolution);
   }
   async function report(reviewId:string){
-    const id=checked(await service.rpc('submit_content_report',{provider_handle:handle,visitor_digest:(randomUUID()+randomUUID()).replaceAll('-',''),report_category:'REVIEW',report_detail:'Synthetic independent content restriction.',target_review_id:reviewId}));
+    operation='SUBMIT_SYNTHETIC_CONTENT_REPORT';
+    const id=checked(await service.rpc('submit_content_report',{provider_handle:handle,visitor_digest:(randomUUID()+randomUUID()).replaceAll('-',''),report_category:'REVIEW',report_detail:`Synthetic independent content restriction ${suffix}-${reportIds.length+1}.`,target_review_id:reviewId}));
     reportIds.push(id);return id;
   }
   try{
@@ -263,12 +294,30 @@ test('independent content holds survive rating decisions and revoked Trust canno
     stage='REVOKED_TRUST_STALE_FORM';const stale=await contentForm(control,third);await stale.getByLabel('Decision note',{exact:true}).fill('Synthetic stale Trust attempt must remain denied.');
     checked(await service.from('support_agent_profiles').update({can_manage_trust:false}).eq('user_id',trustId));
     const denied=control.waitForResponse(response=>new URL(response.url()).pathname===`/api/admin/content/${third}`&&response.request().method()==='POST');
-    await stale.getByRole('button',{name:'Restore reviewed content',exact:true}).click();const rejected=await denied;expect(rejected.status()).toBe(303);expect(new URL(rejected.headers().location).searchParams.has('error')).toBe(true);
+    lastContent={status:null,elapsedMs:null,category:'NOT_RECEIVED',reason:'NONE'};
+    operation='REVOKED_TRUST_SUBMIT';await stale.getByRole('button',{name:'Restore reviewed content',exact:true}).click();const rejected=await denied;contentReceipt(rejected);expect(rejected.status()).toBe(303);expect(new URL(rejected.headers().location).searchParams.has('error')).toBe(true);
     expect(checked(await service.from('content_reports').select('status').eq('id',third).single()).status).toBe('HIDDEN');await publicProjection(true,false,2,3.5);
     stage='OWNER_RESTORE_PRESERVES_RATING_REMOVAL';await contentDecision(owner,third,'RESTORE');await publicProjection(true,false,2,3.5);
     expect(checked(await service.from('provider_reviews').select('status,dispute_status').eq('id',reviewIds[1]).single())).toEqual({status:'REMOVED',dispute_status:'REMOVED'});
     expect(checked(await service.from('provider_reviews').select('*').eq('id',reviewIds[2]).single())).toEqual(controlBefore);
-  }catch{throw Error('REVIEW_MODERATION_CONFLICT_FAILED: '+stage);}
+  }catch(error){
+    let timeout=false,errorCode='UNKNOWN';
+    try{
+      if(error&&typeof error==='object'){
+        const value=error as {name?:unknown;code?:unknown;message?:unknown;matcherResult?:unknown};
+        const codes=new Set(['ECONNRESET','ECONNREFUSED','EPIPE','ENOTFOUND','EAI_AGAIN','ENETUNREACH','EHOSTUNREACH','TIMEOUT','ABORTED','UNKNOWN']);
+        const message=typeof value.message==='string'?value.message:'';
+        timeout=value.name==='TimeoutError'||/\b(?:Timeout:\s*\d+ms|Timeout\s+\d+ms\s+exceeded|Timed out\s+\d+ms|Test timeout of\s+\d+ms)\b/i.test(message);
+        const transport=message.match(/^BROWSER_API_REQUEST_(?:GET|POST|PUT|PATCH|DELETE|HEAD|FETCH)_FAILED_([A-Z_]+)$/)?.[1];
+        errorCode=transport&&codes.has(transport)?transport:typeof value.code==='string'&&codes.has(value.code)?value.code:timeout?'TIMEOUT':value.name==='AssertionError'||value.matcherResult?'ASSERTION':'UNKNOWN';
+        timeout=timeout||errorCode==='TIMEOUT';
+      }
+    }catch{errorCode='UNKNOWN';}
+    const elapsedMs=elapsed(),budgetExhausted=elapsedMs>=budgetMs;
+    try{writeFileSync(info.outputPath('review-moderation-conflict-checks.json'),JSON.stringify({stage,operation,elapsedMs,budgetMs,timeout:timeout||budgetExhausted,budgetExhausted,errorCode,lastContent},null,2),{mode:0o600});}
+    catch{throw Error('REVIEW_MODERATION_CONFLICT_FAILED: '+stage+' / '+operation+' / RECEIPT_UNAVAILABLE');}
+    throw Error('REVIEW_MODERATION_CONFLICT_FAILED: '+stage+' / '+operation+' / '+errorCode);
+  }
   finally{
     let cleanupFailures=0;
     async function clean(operation:()=>Promise<unknown>){try{await operation();}catch{cleanupFailures++;}}

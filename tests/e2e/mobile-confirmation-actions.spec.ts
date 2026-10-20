@@ -8,10 +8,14 @@ import {addFleetDriver,inviteFleetDriver} from '../../src/lib/fleet-driver-manag
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {setProviderVehiclePublication} from '../../src/lib/provider-authority.js';
 import {grantPrivateCapacityAccess} from '../../src/lib/private-capacity.js';
-import {addProviderTrackingRecipient,createProviderShipment} from '../../src/lib/provider-tracking.js';
+import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 
 test.use({trace:'off',screenshot:'off'});
 const preview='http://localhost:8084';
+async function openWorkspacePage(page:Page,path:string,apiPath:string){
+ const loaded=page.waitForResponse(response=>response.request().method()==='GET'&&new URL(response.url()).pathname===apiPath);
+ await page.goto(preview+path,{waitUntil:'domcontentloaded'});expect((await loaded).status()).toBe(200);
+}
 async function login(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);
  const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
@@ -24,7 +28,7 @@ test('Expo confirmations cancel safely and persist fleet, sharing and Tracking c
  test.skip(info.project.name!=='mobile-chromium','Actual Expo phone preview; installed Android remains separate.');
  test.setTimeout(180_000);await context.setExtraHTTPHeaders({'x-forwarded-for':'127.0.0.229'});
  const db=localAuditService(),nonce=randomUUID(),actor=await auditFleetProvider(db,'native-confirm');
- const owned={ownerId:actor.id,organizationId:actor.organization_id,driverId:'',vehicleId:'',invitationId:'',shipmentId:'',grantId:'',recipientId:''};
+ const owned={ownerId:actor.id,organizationId:actor.organization_id,driverId:'',vehicleId:'',invitationId:'',shipmentId:'',grantId:''};
  const mutations:string[]=[],errors:string[]=[],checks:Record<string,boolean>={};let stage='SETUP',cleanup=false;
  const evidence=()=>writeFileSync(info.outputPath('confirmation-evidence.json'),JSON.stringify({stage,checks,cleanup,pageErrors:errors.length,hostedChanges:false},null,2)+'\n',{mode:0o600});
  const manifest=()=>writeFileSync(info.outputPath('confirmation-owned-fixtures.json'),JSON.stringify(owned,null,2)+'\n',{mode:0o600});manifest();
@@ -74,24 +78,25 @@ test('Expo confirmations cancel safely and persist fleet, sharing and Tracking c
   owned.grantId=checked(await db.from('capacity_access_grants').select('id').eq('vehicle_id',owned.vehicleId).eq('recipient_email',sharedEmail).single()).id;manifest();
   const city=async(name:string)=>checked(await db.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id;
   stage='SETUP_SHIPMENT';evidence();owned.shipmentId=(await createProviderShipment(actor,{vehicleId:owned.vehicleId,originPlaceRef:await city('addis ababa'),passingPlaceRef:await city('adama'),destinationPlaceRef:await city('dire dawa'),expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),cargoSummary:'Synthetic confirmation workflow',customerEmail:`customer-${nonce}@example.test`,trackingMode:'STATUS_ONLY'})).id;manifest();
-  stage='SETUP_RECIPIENT';evidence();const recipientEmail=`recipient-${nonce}@example.test`;await addProviderTrackingRecipient(actor,owned.shipmentId,recipientEmail);
-  owned.recipientId=checked(await db.from('provider_tracking_recipients').select('id').eq('shipment_id',owned.shipmentId).eq('recipient_email',recipientEmail).single()).id;manifest();
   stage='LOGIN';evidence();await page.setViewportSize({width:390,height:844});await login(page,actor.email);
-  stage='INVITATION';evidence();await page.goto(preview+'/fleet');await expect(page.getByText('Synthetic invitation',{exact:true})).toBeVisible();
+  stage='INVITATION';evidence();
+  await openWorkspacePage(page,'/fleet','/api/mobile/fleet');
+  await page.getByRole('tab',{name:'Drivers',exact:true}).click();await expect(page.getByText('Synthetic invitation',{exact:true})).toBeVisible();
   await decide(()=>page.getByRole('button',{name:'Cancel invitation',exact:true}).click(),'Cancel invitation?','Keep invitation','Cancel invitation',async()=>!!checked(await db.from('fleet_driver_invitations').select('cancelled_at').eq('id',owned.invitationId).single()).cancelled_at,'INVITATION');
   stage='REMOVE_DRIVER';evidence();
-  await page.getByRole('button',{name:'Driver contact and access',exact:true}).click();
+  await page.getByRole('button',{name:'Manage driver: Synthetic removable driver',exact:true}).click();await page.getByRole('tab',{name:'Contact',exact:true}).click();
   await decide(()=>page.getByRole('button',{name:'Remove driver from fleet',exact:true}).click(),'Remove this driver?','Keep driver','Remove driver',async()=>checked(await db.from('drivers').select('active').eq('user_id',owned.driverId).single()).active===false,'REMOVE_DRIVER');
   expect(checked(await db.from('organization_members').select('id').eq('user_id',owned.driverId).eq('organization_id',actor.organization_id))).toHaveLength(0);
-  stage='CAPACITY_ACCESS';evidence();await page.goto(preview+'/network');
+  stage='CAPACITY_ACCESS';evidence();await openWorkspacePage(page,'/network','/api/mobile/network');
   const contact=page.getByTestId('capacity-contact-'+owned.grantId);await expect(contact.getByText('Synthetic shared contact',{exact:true})).toBeVisible();
   await decide(()=>contact.getByRole('button',{name:'Remove',exact:true}).click(),'Remove capacity access?','Keep access','Remove access',async()=>!!checked(await db.from('capacity_access_grants').select('revoked_at').eq('id',owned.grantId).single()).revoked_at,'REVOKE');
   await expect(contact).toHaveCount(0);
-  stage='TRACKING_RECIPIENT';evidence();await page.goto(preview+'/shipment-detail?id='+owned.shipmentId);await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
-  await decide(()=>page.getByRole('button',{name:`Remove access for ${recipientEmail}`,exact:true}).click(),'Remove tracking access?','Keep access','Remove access',async()=>!!checked(await db.from('provider_tracking_recipients').select('revoked_at').eq('id',owned.recipientId).single()).revoked_at,'REVOKE_RECIPIENT');
+  stage='TRACKING_RECIPIENT';evidence();await openWorkspacePage(page,'/shipment-detail?id='+owned.shipmentId,'/api/mobile/shipments/'+owned.shipmentId);await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
+  await expect(page.getByRole('button',{name:/^Remove access for /})).toHaveCount(0);
+  const recipients=checked(await db.from('provider_tracking_recipients').select('recipient_role,revoked_at').eq('shipment_id',owned.shipmentId));expect(recipients).toEqual([{recipient_role:'OWNER',revoked_at:null}]);checks.PROVIDER_RECIPIENT_REMOVAL_ABSENT=true;
   expect(checked(await db.from('provider_tracking_recipients').select('id').eq('shipment_id',owned.shipmentId).eq('recipient_role','OWNER').is('revoked_at',null))).toHaveLength(1);
-  stage='CANCEL_TRACKING';evidence();await page.goto(preview+'/shipment-manage?id='+owned.shipmentId);
-  await page.getByRole('radio',{name:'Cancel tracking',exact:true}).click();await page.getByLabel('Reason for this change',{exact:true}).fill('Synthetic cancellation after testing');
+  stage='CANCEL_TRACKING';evidence();await openWorkspacePage(page,'/shipment-manage?id='+owned.shipmentId,'/api/mobile/shipments/'+owned.shipmentId+'/recovery');
+  await page.getByRole('button',{name:'Cancel tracking',exact:true}).click();await page.getByLabel('Reason for this change',{exact:true}).fill('Synthetic cancellation after testing');
   await decide(()=>page.getByRole('button',{name:'Cancel tracking',exact:true}).click(),'Cancel this tracking?','Keep tracking','Cancel tracking',async()=>checked(await db.from('provider_shipments').select('operational_status').eq('id',owned.shipmentId).single()).operational_status==='CANCELLED','CANCEL');
   expect(checked(await db.from('provider_tracking_recoveries').select('id').eq('shipment_id',owned.shipmentId))).toHaveLength(1);
   expect(checked(await db.from('provider_shipment_events').select('id').eq('shipment_id',owned.shipmentId)).length).toBeGreaterThan(0);

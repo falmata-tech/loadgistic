@@ -35,11 +35,17 @@ test('retired guest staff pages expose no assignment before or after hydration',
   stage='LOGIN';logout=await localSupportLogin(page,admin.id);
   release=await holdScripts(page);
   stage='SERVER_READINESS';
-  await page.goto(`/support/assisted/${id}`,{waitUntil:'commit'});
-  await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();
+  const retired=await page.goto(`/support/assisted/${id}`,{waitUntil:'commit'});expect(retired).not.toBeNull();
+  // App Router may commit a streamed200 before its notFound boundary mounts.
+  // Inspect the complete server body with scripts held; no assignment control
+  // may be supplied before the client displays the final404.
+  expect([200,404]).toContain(retired!.status());
+  const serverBody=await retired!.text();
+  expect(/<form\b[^>]*\baction=["'][^"']*\/api\/(?:guest-support|support\/assisted)/i.test(serverBody)).toBe(false);
+  expect(/class=["'][^"']*\bguest-support-thread\b/i.test(serverBody)).toBe(false);
   await expect(page.getByRole('form',{name:'Support assignment',exact:true})).toHaveCount(0);
   await expect(page.locator('.guest-support-thread')).toHaveCount(0);
-  stage='HYDRATED_RETIREMENT';release();
+  stage='HYDRATED_RETIREMENT';release();await page.waitForLoadState('domcontentloaded');
   await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();
   await expect(page.getByRole('form',{name:'Support assignment',exact:true})).toHaveCount(0);
   stage='PRESERVED_PRIVATE_RECORD';

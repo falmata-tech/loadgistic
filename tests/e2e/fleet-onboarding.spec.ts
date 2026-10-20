@@ -435,6 +435,8 @@ for(const useBasis of ['OWNED','PERMISSION']){
    const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;
    const independentSubscriptions=await service.from('subscriptions').select('id',{count:'exact',head:true}).eq('provider_profile_id',providerId);
    expect(independentSubscriptions.error).toBeNull();expect(independentSubscriptions.count).toBe(0);
+   await page.locator('.driver-empty-fleet').getByRole('link',{name:'Fleet',exact:true}).click();
+   await page.getByRole('navigation',{name:'My Fleet',exact:true}).getByRole('link',{name:/^Vehicles/}).click();
    await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
    await page.getByRole('radio',{name:useBasis==='OWNED'?'I own this vehicle':'I rent it or have permission to use it',exact:true}).check();
    await page.getByLabel('Make',{exact:true}).fill('Isuzu');await page.getByLabel('Model',{exact:true}).fill('Independent mini');

@@ -202,6 +202,29 @@ search/document regressions and the unchanged five-second 5,000-truck scale gate
 
 ### Scenario: transporter search and vehicle map stay bounded at scale
 
+October20 unscoped regression requirement (pending): provider-selected timing
+does not establish the ordinary map's performance. Measure no-provider initial
+and combined occupancy/configuration reads as well, including continuation
+pages and multiple provider scopes. Preserve exact JSON results and ordering,
+current owner/publication qualification, driver assignment, sharing, document
+filters and every matching cursor page. Keep the existing five-second query gate
+and the mobile complete-map workflow; neither a503 recovery response nor a
+narrower test query constitutes a latency repair. Any new SQL optimization needs
+isolated parity/negative checks and separately reviewed local/hosted installation.
+
+The local installed-body plan attributes about96% of this filtered page's time
+to8,484 repeated assigned-driver lookups. Candidate179 may materialize the exact
+current Driver once per latest vehicle and reuse that ID within the installed
+map query. It must not change assignment authority, page size, visibility, filter
+predicates, public fields or cursor ordering. Retain a service-inaccessible old
+definition for exact parity and rollback.179 is installed on the backed-up local
+preview;23-provider exact JSON/order/denial SQL, existing query/security gates
+and the affected Expo profile/filter workflow pass. Expanded unscoped scale
+timing and complete CI remain pending; hosted installation remains pending.
+Verification: `tests/sql/public-map-assigned-driver-cost.sql`, required by the
+CI SQL loop, `tests/e2e/mobile-transporter-search.spec.ts`, and the additional
+unscoped initial/filter/continuation calls in `scripts/market-scale-audit.mjs`.
+
 Given at least 5,000 disposable, eligible vehicles with distinct assigned Drivers under
 one published provider\
 When the real Transporter search requests their shared first-name term\

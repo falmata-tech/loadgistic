@@ -11,6 +11,24 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## October20 public map failure boundary — implemented locally
+
+Given valid public Capacity filters reach the repository\
+When its read rejects, including a database timeout\
+Then the HTTP adapter returns503 with the existing localized message
+`Could not finish loading vehicles. Please try again.` and no-store browser/CDN
+headers\
+And it returns no successful empty result, repository message, cause, credentials
+or partial vehicle data\
+And malformed filters still return400 before persistence.
+
+This is error containment, not a latency fix or permission fallback. Preserve
+the selected filters, map, normal retry behavior and complete successful cursor
+pagination. The actual route's `tests/capacity-filter-http.test.mjs` regression
+passes5/5; existing browser refresh/retry checks remain required. The separate
+179 Driver-cache repair passes local query parity, security and affected Expo
+workflow checks (FEAT-MKT-001); full same-source CI/scale and rollout remain gated.
+
 ## October18 courier configurations — planned local restoration
 
 The owner restores `Courier car` and `Courier motorcycle` alongside the existing
@@ -557,6 +575,17 @@ Changing filters/private identity still discards the old query's records. Preser
 automatic full pagination and error/retry behavior; no new manual loading controls.
 Verify partial-page preservation, final pruning, stale-request cancellation and
 real desktop/phone idle/zoom behavior. Performance improvements must preserve NR-13.
+
+Phone refresh-error regression: GIVEN an already loaded map at a narrow phone
+width, WHEN a viewport refresh fails, THEN the retained selection, Retry action
+and both zoom controls remain independently reachable. Reserve the zoom-control
+rail when placing the error notice; do not remove the notice or weaken retry.
+Verification: `tests/e2e/map-feedback.spec.ts` at320px and the existing wider sizes.
+
+The ordinary vehicle-details summary fits a phone with its document groups closed,
+without a few clipped pixels forcing a scroll. Preserve text sizes and44px actions;
+long user-entered names and expanded documents may use the existing bounded scroll.
+Verification: `tests/e2e/truck-profile-layout.spec.ts`, including long content.
 
 ## On-demand selected-truck details — October 6 owner revision
 

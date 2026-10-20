@@ -16,7 +16,10 @@ test('personal Transport Provider owner can add trucks and drivers while new reg
   await page.goto('/app/fleet');
   await expect(page.getByRole('heading',{name:'My Fleet'})).toBeVisible();
   await expect(page.getByRole('link',{name:'Add vehicle',exact:true}).first()).toHaveAttribute('href','/app/fleet/new');
-  await expect(page.locator('.fleet-setup-actions').getByRole('link',{name:'Add driver',exact:true})).toHaveAttribute('href',/^\/app\/fleet\/drivers\/new(?:\?|$)/);
+  const fleetNavigation=page.getByRole('navigation',{name:'My Fleet',exact:true});
+  await fleetNavigation.getByRole('link',{name:/^Drivers/}).click();
+  await expect(page.getByRole('link',{name:'Add driver',exact:true})).toHaveAttribute('href',/^\/app\/fleet\/drivers\/new(?:\?|$)/);
+  await fleetNavigation.getByRole('link',{name:/^Vehicles/}).click();
   await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
   await expect(page).toHaveURL(/\/app\/fleet\/new$/);
   await expect(page.getByRole('heading',{name:'Add vehicle',exact:true})).toBeVisible();

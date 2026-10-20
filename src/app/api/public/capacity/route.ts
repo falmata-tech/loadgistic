@@ -4,6 +4,11 @@ import {capacityFilterParams} from '@/lib/capacity-filter-values.js';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
+const noStoreHeaders={
+  'Cache-Control':'private, no-store, max-age=0',
+  'CDN-Cache-Control':'no-store',
+  'Netlify-CDN-Cache-Control':'no-store'
+};
 
 export async function GET(request:NextRequest){
   const params=new URL(request.url).searchParams;
@@ -15,10 +20,10 @@ export async function GET(request:NextRequest){
     destinationPlaceRef:params.get('destinationPlaceRef')||'',destination:params.get('destination')||'',destinationRadiusKm:params.get('destinationRadiusKm')||'',directionMode:params.get('directionMode')||'',
     nearLat:params.get('nearLat')||'',nearLng:params.get('nearLng')||'',nearRadiusKm:params.get('nearRadiusKm')||'',...selections
   };
-  const result=await listPublicCapacityCursor(filters,{cursor:params.get('cursor')||'',pageSize:14});
-  return NextResponse.json(result,{headers:{
-    'Cache-Control':'private, no-store, max-age=0',
-    'CDN-Cache-Control':'no-store',
-    'Netlify-CDN-Cache-Control':'no-store'
-  }});
+  try{
+    const result=await listPublicCapacityCursor(filters,{cursor:params.get('cursor')||'',pageSize:14});
+    return NextResponse.json(result,{headers:noStoreHeaders});
+  }catch{
+    return NextResponse.json({error:'Could not finish loading vehicles. Please try again.'},{status:503,headers:noStoreHeaders});
+  }
 }

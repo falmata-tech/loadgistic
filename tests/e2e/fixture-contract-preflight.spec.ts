@@ -26,7 +26,7 @@ test('synthetic provider setup follows current driver and publication rules',asy
   const saved=checked(await db.from('capacities').select('market_status,vehicle_id').eq('vehicle_id',vehicleId).eq('market_status','EMPTY').single());
   expect(saved).toMatchObject({market_status:'EMPTY',vehicle_id:vehicleId});
   const response=await page.request.get(`/api/public/capacity?provider=${encodeURIComponent(`fixture-preflight-${actor.suffix}`)}&status=EMPTY`);
-  expect(response.ok()).toBe(true);
+  expect(response.status(),'Public Capacity must return the new provider through the real API').toBe(200);
   expect((await response.json()).items.some((item:{vehicle_id:string})=>item.vehicle_id===vehicleId)).toBe(true);
  }finally{
   if(vehicleId){

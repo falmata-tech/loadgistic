@@ -64,7 +64,8 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await expect(publishButton).toBeVisible();
   await expect.poll(async()=>{const action=await publishButton.boundingBox(),nav=await ownerPage.locator('.mobile-nav').boundingBox();return Boolean(action&&nav&&action.y+action.height<=nav.y);}).toBe(true);
   await ownerPage.screenshot({path:`${evidence}/owner-go-live-visible-phone.png`});
-  await ownerPage.getByRole('button',{name:'Go live',exact:true}).click();
+  const publicationSaved=ownerPage.waitForResponse(response=>new URL(response.url()).pathname===`/api/fleet/vehicles/${vehicle.id}/publication`&&response.request().method()==='POST');
+  await ownerPage.getByRole('button',{name:'Go live',exact:true}).click();expect((await publicationSaved).status()).toBe(303);await expect(ownerPage.getByRole('button',{name:'Move to draft',exact:true})).toBeVisible();
   expect(checked(await db.from('vehicles').select('publication_status').eq('id',vehicle.id).single()).publication_status).toBe('LIVE');
   checked(await db.from('company_pages').update({published:true}).eq('organization_id',owner.organization_id));
   await publishProviderCapacity(owner,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:places.map((place:{id:string;name:string})=>({placeRef:place.id,label:place.name}))});

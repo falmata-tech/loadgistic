@@ -89,7 +89,7 @@ test('a saved people-search draft in the URL leaves initial map discovery unfilt
   await page.getByRole('button',{name:'Transporter search',exact:true}).click();
   const people=page.getByRole('complementary',{name:'Transporter search'});
   await expect(people.getByRole('searchbox',{name:'Search transporters'})).toHaveValue(draft);
-  await expect(people.getByText('No transporters match this search. Try another name, city or service.',{exact:true})).toBeVisible();
+  await expect(people.getByText('No transporters match this search. Try an account name, manager name, handle or city.',{exact:true})).toBeVisible();
   expect(requests.every(query=>!new URLSearchParams(query).get('q'))).toBe(true);
   await page.screenshot({path:info.outputPath('capacity-search-draft-map.png')});
 });

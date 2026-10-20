@@ -3752,9 +3752,9 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 /* Keep the approved composition inside a phone map after adding sharing tags.
    Text sizes and the 44px action targets stay the same. */
 @media(max-width:760px){
- .capacity-info-card.truck .capacity-info-content{padding-top:6px;padding-bottom:6px}
- .capacity-info-content .truck-inspection{gap:4px}
- .truck-inspection-people{padding-top:2px;padding-bottom:2px}
+ .capacity-info-card.truck .capacity-info-content{padding-top:4px;padding-bottom:4px}
+ .capacity-info-content .truck-inspection{gap:3px}
+ .truck-inspection-people{padding-top:1px;padding-bottom:1px}
  .truck-inspection-identity h3{margin-top:3px;margin-bottom:1px}
 }
 
@@ -3812,7 +3812,7 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 
 .public-market-console .market-map-view>.capacity-people-drawer .capacity-map-search button{display:flex}
 
-@media(max-width:760px){.capacity-drawer-workbench .public-map-shell .leaflet-top.leaflet-left{top:64px}.capacity-drawer-workbench .map-info-controls{top:146px;max-height:calc(100% - 158px)}}
+@media(max-width:760px){.capacity-drawer-workbench .public-map-shell .leaflet-top.leaflet-left{top:64px}.capacity-drawer-workbench .map-info-controls{top:146px;max-height:calc(100% - 158px)}.capacity-drawer-workbench .public-map-shell>.public-feed-overlay.error{right:66px;left:8px}}
 
 /* FEAT-MKT-001 / FEAT-TRK-001: basemaps fill the workspace behind entry actions. */
 body:has(>main.tracking-entry-workspace){display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;box-sizing:border-box}

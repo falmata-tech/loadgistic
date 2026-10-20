@@ -1,11 +1,21 @@
 import {test,expect} from './browser-test';
-import {closeCapacityFilters} from './capacity-drawer-helper';
+
+async function currentProfileSignal(page:any,predicate:(item:any)=>boolean){
+ let cursor='';
+ for(let pageNumber=0;pageNumber<24;pageNumber++){
+  const params=new URLSearchParams({status:'PARTIAL'});if(cursor)params.set('cursor',cursor);
+  const response=await page.request.get(`/api/public/capacity?${params}`);expect(response.ok()).toBe(true);
+  const result=await response.json();expect(result.filterError||'').toBe('');
+  const match=result.items.find((item:any)=>item.current_signal_geometry_visible!==false&&item.location_lat!=null&&item.location_lng!=null&&predicate(item));if(match)return match;
+  if(!result.hasMore)break;expect(result.nextCursor).toBeTruthy();expect(result.nextCursor).not.toBe(cursor);cursor=result.nextCursor;
+ }
+ throw Error('CURRENT_TRUCK_PROFILE_FIXTURE_REQUIRED');
+}
 
 test('truck modal groups identity, contacts, updates and entity documents without a long stack',async({page}:{page:any},info:any)=>{
  test.setTimeout(90000);
- const response=await page.request.get('/api/public/capacity?q=Merkato&status=PARTIAL');expect(response.ok()).toBe(true);
- const truck=(await response.json()).items.find((item:{vehicle_model:string})=>item.vehicle_model==='X200');expect(truck).toBeTruthy();
- await page.goto(`/?q=Merkato&status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
+ const truck=await currentProfileSignal(page,item=>Boolean(item.assigned_driver_first_name)&&item.owner_verification_badges?.length>0);
+ await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
  await page.locator('.map-info-bubble.truck').click({timeout:30000});
  const modal=page.locator('dialog.capacity-info-card.truck'),sheet=modal.locator('.truck-inspection');
  await expect(sheet).toContainText(truck.provider_name);await expect(sheet).toContainText(truck.assigned_driver_first_name);
@@ -19,9 +29,10 @@ test('truck modal groups identity, contacts, updates and entity documents withou
   const people=[...el.querySelectorAll('.truck-inspection-person')].map(el=>el.getBoundingClientRect());
   const docs=[...el.querySelectorAll('.truck-document-summary')].map(el=>el.getBoundingClientRect());
   const content=el.closest('.capacity-info-content')!;
-  return {peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,docsSideBySide:docs.every(rect=>Math.abs(rect.top-docs[0].top)<1),horizontalOverflow:content.scrollWidth-content.clientWidth,verticalOverflow:content.scrollHeight-content.clientHeight};
+  return {peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,peopleStacked:people[0].bottom<=people[1].top&&Math.abs(people[0].left-people[1].left)<1,docsSideBySide:docs.every(rect=>Math.abs(rect.top-docs[0].top)<1),horizontalOverflow:content.scrollWidth-content.clientWidth,verticalOverflow:content.scrollHeight-content.clientHeight};
  });
- expect(composition).toEqual({peopleSideBySide:true,docsSideBySide:true,horizontalOverflow:0,verticalOverflow:0});
+ const narrow=(page.viewportSize()?.width||1280)<=480;
+ expect(composition).toEqual({peopleSideBySide:!narrow,peopleStacked:narrow,docsSideBySide:true,horizontalOverflow:0,verticalOverflow:0});
  for(const link of await sheet.locator('a').all()){const box=await link.boundingBox();expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);}
  await page.screenshot({path:info.outputPath('truck-profile.png')});
  const documents=sheet.locator('.truck-document-summary').first();await documents.locator(':scope>summary').click();
@@ -52,16 +63,20 @@ test('truck modal groups identity, contacts, updates and entity documents withou
 
 test('long truck profiles stay bounded and a fallback phone belongs to the transporter',async({page}:{page:any})=>{
  test.setTimeout(60000);
- const data=await(await page.request.get('/api/public/capacity?q=Merkato&status=PARTIAL')).json();
- const original=data.items.find((item:{vehicle_model:string})=>item.vehicle_model==='X200');expect(original).toBeTruthy();
+ const original=await currentProfileSignal(page,item=>Boolean(item.contact_phone||item.assigned_driver_phone));
  const companyPhone=original.contact_phone||original.assigned_driver_phone;expect(companyPhone).toBeTruthy();
  const truck={...original,provider_name:'Long transporter name '.repeat(7),assigned_driver_first_name:'Long driver name '.repeat(6),vehicle_model:'Long vehicle model '.repeat(5),assigned_driver_phone:null,contact_phone:companyPhone};
  await page.route('**/api/public/capacity?**',(route:any)=>route.fulfill({json:{items:[truck],hasMore:false,nextCursor:null}}));
- await page.goto('/?q=truck-profile-layout-fixture');
- await closeCapacityFilters(page);
- await page.locator('.capacity-truck-map-marker').first().click({timeout:30000});
+ const loaded=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/public/capacity'&&response.request().method()==='GET');
+ await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(original.id)}`,{waitUntil:'domcontentloaded'});
+ const response=await loaded;expect(response.ok()).toBe(true);expect((await response.json()).items).toEqual([truck]);
+ // The selected ID is unchanged; Leaflet titles do not update with its data.
+ await expect(page.locator('.capacity-truck-map-marker.selected')).toBeVisible({timeout:30000});
  await page.locator('.map-info-bubble.truck').click();
  const sheet=page.locator('.truck-inspection'),content=page.locator('.capacity-info-content');
+ await expect(sheet.locator('.transporter strong')).toHaveText(truck.provider_name);
+ await expect(sheet.locator('.driver strong')).toHaveText(truck.assigned_driver_first_name);
+ await expect(sheet.locator('h3')).toHaveText(`${truck.vehicle_make} ${truck.vehicle_model}`);
  await expect(sheet.locator('.transporter a[href^="tel:"]')).toHaveAttribute('href',`tel:${companyPhone}`);
  await expect(sheet.locator('.driver a[href^="tel:"]')).toHaveCount(0);await expect(sheet.locator('.driver')).toContainText('Phone not published');
  expect(await content.evaluate((el:HTMLElement)=>el.scrollWidth-el.clientWidth)).toBe(0);

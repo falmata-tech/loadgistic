@@ -34,7 +34,8 @@ export async function auditIdentity(service:any,email:string){
 export async function auditLogin(page:any,email:string){
  const identity=await auditIdentity(localAuditService(),email);
  const {localSupportLogin}=await import('./provider-support-helper');
- await localSupportLogin(page,identity.id);await page.goto('/app/home');
+ const destination=identity.role==='ADMIN'?'/admin':identity.role==='SUPPORT'?'/support':'/app/home';
+ await localSupportLogin(page,identity.id);await page.goto(destination,{waitUntil:'domcontentloaded'});
  await expect(page).toHaveURL(identity.role==='ADMIN'?/\/admin$/:identity.role==='SUPPORT'?/\/support$/:/\/app\/home(?:\?.*)?$/,{timeout:30000});
  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
 }
@@ -93,7 +94,8 @@ export async function auditProof(service:any,shipmentId:string){
 
 export async function auditTrackingOwnerLogin(page:any,email:string){
  const {localMailpitNumericCode}=await import('./mailpit-helper');
- await page.goto('/track');await page.getByLabel('Email',{exact:true}).fill(email);
+ // The unlock form is usable before the decorative basemap tiles finish.
+ await page.goto('/track',{waitUntil:'domcontentloaded'});await page.getByLabel('Email',{exact:true}).fill(email);
  const since=Date.now();await page.getByRole('button',{name:'Email me a code',exact:true}).click();
  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code'));
  await page.getByRole('button',{name:'Open tracking',exact:true}).click();

@@ -22,9 +22,15 @@ function safeFailure(value:unknown):SafeFailure{
  return {code:identifier(error.code),status:typeof error.status==='number'&&Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null,name:identifier(error.name),constraint:identifier(error.constraint)};
 }
 
-async function webLogin(page:Page,email:string){
+async function webLogin(page:Page,email:string,expectedLanding:'/app/home'|'/admin/reviews'='/app/home'){
  await page.goto('/login');await page.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(page.getByTestId('email-code-form')).toBeVisible();
- await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.getByTestId('email-code-form')).toHaveCount(0);
+ await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));
+ // Trust-only Support finishes its /support redirect at the Review Center.
+ const landed=page.waitForURL(url=>url.pathname===expectedLanding,{waitUntil:'domcontentloaded'});
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await landed;
+ await expect(page.getByTestId('email-code-form')).toHaveCount(0);
+ if(expectedLanding==='/admin/reviews')await expect(page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();
+ else await expect(page.locator('.app-main')).toBeVisible();
 }
 async function nativeLogin(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible();
@@ -57,7 +63,7 @@ test('operating-licence expiry and financed-holder review persist, and Expo perm
   const request=checked(await service.from('verification_requests').select('id,subject_type,subject_id,related_vehicle_id,verification_type,status,expires_on,storage_path').eq('submitted_by',actorId).eq('subject_id',truckId).eq('document_name',name).single());requests.push(request.id);evidence();return request;
  }
  async function reviewRow(name:string){
-  await staff.goto(`/admin/reviews?tab=documents&status=ALL&q=${encodeURIComponent(name)}`);const row=staff.locator('.admin-review-row').filter({has:staff.getByText(name,{exact:true})});await expect(row).toHaveCount(1);return row;
+  await staff.goto(`/admin/reviews?tab=documents&status=ALL&q=${encodeURIComponent(name)}`,{waitUntil:'domcontentloaded'});const row=staff.locator('.admin-review-row').filter({has:staff.getByText(name,{exact:true})});await expect(row).toHaveCount(1);await expect(row).toBeVisible();return row;
  }
  try{
   const owner=await auditFleetProvider(service,'expiry-web');actors.push(owner);evidence();const truck=await makeTruck(owner,'FINANCED');
@@ -70,7 +76,7 @@ test('operating-licence expiry and financed-holder review persist, and Expo perm
   await checkpoint('CREATE_TRUST_IDENTITY');trustId=checked(await service.auth.admin.createUser({email:`expiry-trust-${nonce}@loadgistic.local`,email_confirm:true,app_metadata:{fixture_source:'loadgistic'}})).user.id;evidence();
   await checkpoint('TRUST_PROFILE_UPDATE');checked(await service.from('profiles').update({active:true,role:'SUPPORT',full_name:'Synthetic expiry reviewer'}).eq('id',trustId));
   await checkpoint('TRUST_PERMISSION_UPDATE');checked(await service.from('support_agent_profiles').insert({user_id:trustId,active:true,available:false,can_manage_support:false,can_manage_brokerage:false,can_manage_customers:false,can_manage_operations:false,can_manage_featured:false,can_manage_billing:false,can_manage_trust:true}));
-  await checkpoint('TRUST_LOGIN');await webLogin(staff,`expiry-trust-${nonce}@loadgistic.local`);
+  await checkpoint('TRUST_LOGIN');await webLogin(staff,`expiry-trust-${nonce}@loadgistic.local`,'/admin/reviews');
   await checkpoint('TRUST_PRIVATE_FILE');let row=await reviewRow(`Financed licence ${nonce}`);const source=await staff.request.get(`/api/files/verification/${licence.id}`);expect(source.status()).toBe(200);expect(digest(await source.body())).toBe(digest(bytes));
   await checkpoint('TRUST_DOCUMENT_APPROVAL');await row.getByRole('button',{name:'Review document',exact:true}).click();await row.getByLabel('Review note',{exact:true}).fill('Synthetic operating licence source reviewed for the named truck.');await row.getByRole('button',{name:'Approve',exact:true}).click();await expect(staff.locator('.alert.success')).toBeVisible();
   await checkpoint('TRUST_RELATIONSHIP_FORM');row=await reviewRow(`Financed licence ${nonce}`);await row.getByRole('button',{name:'Vehicle relationship',exact:true}).click();await row.getByLabel('What this document confirms',{exact:true}).selectOption('OPERATING_LICENCE');await row.getByLabel('Vehicle purchase',{exact:true}).selectOption('FINANCED');
@@ -82,11 +88,14 @@ test('operating-licence expiry and financed-holder review persist, and Expo perm
   }
   await confirmationLabel.click();await expect(confirmation).toBeChecked();await row.getByRole('region',{name:'Vehicle relationship review',exact:true}).screenshot({path:info.outputPath('provider-trust-licence-ready-to-confirm.png')});await row.getByRole('button',{name:'Confirm relationship',exact:true}).click();await expect(staff.locator('.alert.success')).toBeVisible();
   const reviewed=checked(await service.from('provider_vehicle_authority_reviews').select('id,fact_kind,holder_basis,expires_on,vehicle_id,source_request_id').eq('source_request_id',licence.id).single());reviews.push(reviewed.id);evidence();expect(reviewed).toMatchObject({fact_kind:'OPERATING_LICENCE',holder_basis:'FINANCED',expires_on:expiry,vehicle_id:truck,source_request_id:licence.id});
-  await checkpoint('WEB_FINANCED_BADGE');await page.goto(`/app/fleet/${truck}`);await expect(page.getByText('Financed · licence reviewed',{exact:true})).toBeVisible();await expect(page.getByText('Ownership verified',{exact:true})).toHaveCount(0);const financedSummary=page.locator('summary').filter({has:page.getByText('Financed · licence reviewed',{exact:true})});await financedSummary.click();await expect(financedSummary.locator('..').getByText('Expires '+expiry,{exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('provider-financed-licence-reviewed.png'),fullPage:true});
+  await checkpoint('WEB_FINANCED_BADGE');await page.goto(`/app/fleet/${truck}`,{waitUntil:'domcontentloaded'});
+  const detailsReady=page.waitForURL(url=>url.pathname===`/app/fleet/${truck}`&&url.searchParams.get('view')==='details',{waitUntil:'domcontentloaded'});
+  await page.getByRole('navigation',{name:'Vehicle',exact:true}).getByRole('link',{name:'Vehicle details',exact:true}).click();await detailsReady;
+  await expect(page.getByText('Financed · licence reviewed',{exact:true})).toBeVisible();await expect(page.getByText('Ownership verified',{exact:true})).toHaveCount(0);const financedSummary=page.locator('summary').filter({has:page.getByText('Financed · licence reviewed',{exact:true})});await financedSummary.click();await expect(financedSummary.locator('..').getByText('Expires '+expiry,{exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('provider-financed-licence-reviewed.png'),fullPage:true});
   if(info.project.name==='mobile-chromium'){
    await checkpoint('EXPO_SETUP');const nativeOwner=await auditFleetProvider(service,'expiry-native');actors.push(nativeOwner);evidence();const nativeTruck=await makeTruck(nativeOwner,'PERMISSION'),permissionName=`Native permission ${nonce}`;
    nativeContext=await browser.newContext({baseURL:preview,viewport:{width:390,height:844},isMobile:true,hasTouch:true,extraHTTPHeaders:{'x-forwarded-for':'127.0.0.249'}});boundActions(nativeContext);const native=await nativeContext.newPage();await checkpoint('EXPO_LOGIN');await nativeLogin(native,nativeOwner.email);
-   await checkpoint('EXPO_DOCUMENT_FORM');await native.goto(preview+'/fleet');await native.getByRole('button',{name:new RegExp('^Manage vehicle: .*'+escape(`EXPIRY-${nonce}-1`)+'$')}).click();await native.getByRole('tab',{name:'Documents',exact:true}).click();await native.getByRole('button',{name:'Submit a document',exact:true}).click();await native.getByRole('radio',{name:'Permission to use vehicle',exact:true}).click();
+   await checkpoint('EXPO_DOCUMENT_FORM');const fleetLoaded=native.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/fleet'&&response.request().method()==='GET');await native.goto(preview+'/fleet',{waitUntil:'domcontentloaded'});expect((await fleetLoaded).status()).toBe(200);await native.getByRole('button',{name:new RegExp('^Manage vehicle: .*'+escape(`EXPIRY-${nonce}-1`)+'$')}).click();await native.getByRole('tab',{name:'Documents',exact:true}).click();await native.getByRole('button',{name:'Submit a document',exact:true}).click();await native.getByRole('radio',{name:'Permission to use vehicle',exact:true}).click();
    await checkpoint('EXPO_PERMISSION_EXPIRY');await chooseNativeDate(native,'Permission expires',expiry);await native.getByLabel('Document name (optional)',{exact:true}).fill(permissionName);
    await checkpoint('EXPO_FILE_PICKER');const chooser=native.waitForEvent('filechooser');await native.getByRole('button',{name:'Choose file',exact:true}).click();await (await chooser).setFiles({name:'synthetic-native-permission.png',mimeType:'image/png',buffer:bytes});await expect(native.getByText('synthetic-native-permission.png',{exact:true})).toBeVisible();
    await checkpoint('EXPO_PERMISSION_SUBMIT');const submitted=native.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/verification'&&response.request().method()==='POST');await native.getByRole('button',{name:'Send for review',exact:true}).click();expect((await submitted).status()).toBe(200);

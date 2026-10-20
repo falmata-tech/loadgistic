@@ -1,5 +1,6 @@
 import {test,expect} from './browser-test';
 import {closeCapacityFilters} from './capacity-drawer-helper';
+import {randomUUID} from 'node:crypto';
 
 // Renderer stress fixture only: the local server supplies the selected truck;
 // its viewport response gets coincident geometry. No stored geography is changed.
@@ -10,21 +11,24 @@ test('coincident closed areas and routes remain separately tappable through zoom
   expect(original).toBeTruthy();
   const lat=Number(original.location_lat),lng=Number(original.location_lng);
   const points=Array.from({length:5},(_,i)=>({lat:lat+Math.sin(i*Math.PI*2/5)*.17,lng:lng+Math.cos(i*Math.PI*2/5)*.17,label:`Test boundary ${i+1}`,place_ref:`test-${i}`}));
-  let routeMode=false;
+  const rendererId=randomUUID();let routeMode=false;
   await page.route('**/api/public/capacity?**',(route:any)=>{
     const loop=[...points,points[0]],reverseLoop=[...loop].reverse();
-    const truck={...original,status:'EMPTY',current_signal_geometry_visible:true,location_precision_km:20,work_radius_km:20,
+    const truck={...original,id:rendererId,provider_name:'Synthetic overlap renderer',status:'EMPTY',current_signal_geometry_visible:true,location_precision_km:20,work_radius_km:20,
       availability_geometry:routeMode?'ROUTE':'RADIUS',capacity_area_boundary:routeMode?[]:points,current_route_points:routeMode?loop:[],
       recurring_corridors:[{id:'overlap-renderer-fixture',geometry:routeMode?'ROUTE':'RADIUS',area_boundary:[...points].reverse(),route_points:reverseLoop,area_center_label:'Synthetic overlap test'}]};
     return route.fulfill({json:{items:[truck],hasMore:false,nextCursor:null}});
   });
   for(const mode of ['area','closed-route']){
     routeMode=mode==='closed-route';
-    // Start empty, load the stress record through the normal viewport request,
-    // then select it. Bounds and accessibility metadata use that exact geometry.
-    await page.goto('/?q=overlap-renderer-fixture');
+    // A distinct renderer identity cannot reuse the initial Leaflet marker's
+    // immutable title. Verify the viewport fixture before selecting its marker.
+    const loaded=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/public/capacity'&&response.request().method()==='GET');
+    await page.goto('/',{waitUntil:'domcontentloaded'});
+    const response=await loaded;expect(response.ok()).toBe(true);
+    expect(await response.json()).toMatchObject({items:[{id:rendererId,provider_name:'Synthetic overlap renderer',availability_geometry:routeMode?'ROUTE':'RADIUS'}],hasMore:false,nextCursor:null});
     await closeCapacityFilters(page);
-    await page.locator('.capacity-truck-map-marker').click();
+    await page.locator('.capacity-truck-map-marker[title*="Synthetic overlap renderer"]').click();
     await closeCapacityFilters(page);
     await expect(page.locator('.map-regular-corridor')).toHaveAttribute('aria-label',/Test boundary/);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});

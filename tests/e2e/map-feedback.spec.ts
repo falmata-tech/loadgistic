@@ -3,6 +3,25 @@ import {test,expect} from './browser-test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
 
+async function selectVisibleVehicle(page:any){
+  // Explore the ordinary map so viewport changes continue to load capacity.
+  // A fixed truck deep link intentionally suppresses those refresh requests.
+  for(let attempt=0;attempt<7;attempt++){
+    await expect(page.locator('.capacity-truck-map-marker,.capacity-map-cluster').first()).toBeVisible({timeout:15000});
+    const markers=page.locator('.capacity-truck-map-marker');
+    const index=await markers.evaluateAll((elements:Element[])=>elements.findIndex(element=>{
+      const rect=element.getBoundingClientRect(),map=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
+      const x=rect.left+rect.width/2,y=rect.top+rect.height/2,hit=document.elementFromPoint(x,y);
+      return x>=map.left&&x<=map.right&&y>=map.top&&y<=map.bottom&&(hit===element||Boolean(hit&&element.contains(hit)));
+    }));
+    if(index>=0){await markers.nth(index).click();return;}
+    const picker=page.locator('.capacity-cluster-picker-content button');
+    if(await picker.count()){await picker.first().click();return;}
+    await page.locator('.capacity-map-cluster').first().click();
+  }
+  throw Error('VISIBLE_CAPACITY_VEHICLE_REQUIRED');
+}
+
 async function assertReadableFeedback(page:any,withFeedback=false){
   await expect(page.locator('.public-feed-overlay')).toHaveCount(withFeedback?1:0);
   if(withFeedback)await page.locator('.public-feed-overlay').scrollIntoViewIfNeeded();
@@ -30,15 +49,13 @@ test('selected truck feedback stays readable through location denial and refresh
   await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{configurable:true,value:{
     getCurrentPosition:(_success:unknown,failure:(error:object)=>void)=>failure({code:1,PERMISSION_DENIED:1,TIMEOUT:3,POSITION_UNAVAILABLE:2}),
   }}));
-  const response=await page.request.get('/api/public/capacity');
-  expect(response.ok()).toBe(true);
-  const truck=(await response.json()).items[0];
-  expect(truck).toBeTruthy();
-  await page.goto(`/?truck=${encodeURIComponent(truck.id)}`,{waitUntil:'domcontentloaded'});
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await closeCapacityFilters(page);await selectVisibleVehicle(page);
   await expect(page.locator('.map-info-bubble.truck')).toBeVisible({timeout:30000});
   await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
-  await closeCapacityFilters(page);await page.locator('.capacity-truck-map-marker').first().click();
+  await closeCapacityFilters(page);await selectVisibleVehicle(page);
+  const selectedTitle=await page.locator('.capacity-truck-map-marker.selected').getAttribute('title');expect(selectedTitle).toBeTruthy();
   const captures=info.outputPath('map-feedback');
   mkdirSync(captures,{recursive:true});
   const widths=info.project.name.includes('mobile')?[[760,900],[390,844],[320,640]]:[[761,900],[1024,768],[1280,720]];
@@ -68,6 +85,7 @@ test('selected truck feedback stays readable through location denial and refresh
     await expect.poll(()=>Boolean(release)).toBe(true);
     release!();
     await expect(page.getByTestId('capacity-feed-state')).toContainText('Capacity could not be loaded');
+    await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',selectedTitle!);
     await assertReadableFeedback(page,true);
     const retry=page.getByRole('button',{name:'Try again',exact:true});
     await expect(retry).toBeVisible();
@@ -80,6 +98,7 @@ test('selected truck feedback stays readable through location denial and refresh
     await page.mouse.move(0,0);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
     await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
+    await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',selectedTitle!);
     await assertReadableFeedback(page);
 
     await page.locator('.map-info-bubble.truck').click();

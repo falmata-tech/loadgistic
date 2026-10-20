@@ -109,7 +109,19 @@ test('combined view choices and locked email map remain readable in all language
  for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.locator('.language-picker select:visible').selectOption(locale);
-  for(const message of ['Keep your regular transporters together on a private map. Ask them to share with your email, then verify it to see their reported space, routes and approximate locations.',"Make your available space easier to find. Share your truck's routes and approximate location with your contacts, with everyone, or with one recipient.",'Explore signals open to the public, view those privately shared with you, or share your own truck availability.'])await expect(page.locator('main')).toContainText(messages[message]);
+  await expect(page.getByRole('heading',{level:1})).toHaveText(messages['Put your transport network to work.']);
+  const audiences=[
+   {label:'Brokers & shippers',heading:'Your regular vehicles, in one view.',facts:['Ask transporters to share with your email. Verify it to see their space, routes and approximate locations together.','Need another vehicle? Filter public capacity, then contact the transporter to confirm the job.','For agreed shipments, follow private progress updates and loading and unloading photos.'],action:'Find capacity',href:'/'},
+   {label:'Drivers & owners',heading:'Make your next load easier to find.',facts:['Keep your current vehicle, routes and approximate location up to date.','Share with your contacts, open to the public, do both or choose one recipient.','Submit your documents for review so customers can see what Loadgistic has checked.'],action:'Transporter login',href:'/login'},
+   {label:'Transport companies',heading:'Keep your fleet visible to your customers.',facts:['Keep assignments and available space together in your workspace.','Choose which vehicles each broker or customer can see on their private map.','Share private shipment updates, approximate location and proof photos once the work is agreed.'],action:'Transporter login',href:'/login'},
+  ];
+  for(const audience of audiences){
+   const tab=page.getByRole('tab',{name:messages[audience.label],exact:true});await tab.click();await expect(tab).toHaveAttribute('aria-selected','true');
+   const panel=page.getByRole('tabpanel',{name:messages[audience.label],exact:true});await expect(panel).toBeVisible();await expect(panel.getByRole('heading',{level:2})).toHaveText(messages[audience.heading]);
+   for(const message of audience.facts)await expect(panel).toContainText(messages[message]);
+   await expect(panel.getByRole('link',{name:messages[audience.action],exact:true})).toHaveAttribute('href',audience.href);
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
 });

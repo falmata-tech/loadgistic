@@ -11,7 +11,7 @@ test('configuration pictures support selection, keyboard navigation, apply and c
  for(const config of VEHICLE_CONFIGURATIONS){
   const option=picker.locator('label').filter({has:page.getByRole('checkbox',{name:config.name,exact:true})});
   await option.scrollIntoViewIfNeeded();
-  await expect(option.locator('img')).toHaveAttribute('src',new RegExp(encodeURIComponent(config.image)));
+  await expect(option.locator('img')).toHaveAttribute('src',config.image);
  }
  await expect.poll(()=>picker.locator('.capacity-configuration-options img').evaluateAll((images:Element[])=>images.every((image:Element)=>(image as HTMLImageElement).complete&&(image as HTMLImageElement).naturalWidth>0))).toBe(true);
  await summary.scrollIntoViewIfNeeded();const pickerBox=await picker.boundingBox(),summaryBox=await summary.boundingBox();expect(summaryBox!.width).toBeGreaterThan(pickerBox!.width*.95);await page.screenshot({path:info.outputPath('configuration-pictures.png'),scale:'css'});

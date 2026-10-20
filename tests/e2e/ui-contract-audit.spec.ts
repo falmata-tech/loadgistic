@@ -81,12 +81,19 @@ test('provider home displays authoritative counts and latest activity',async({pa
   const client=localAuditService();
   const owner=await auditIdentity(client,'transporter@loadgistic.local');
   const projection=await client.rpc('workspace_dashboard',{actor_user_id:owner.id});expect(projection.error).toBeNull();
+  const capacity=checked(await client.rpc('provider_capacity_workspace',{actor_user_id:owner.id}));
+  const driverPage=checked(await client.rpc('fleet_driver_page',{actor_user_id:owner.id,requested_offset:0,requested_limit:1}));
+  const driverTotal=Number(driverPage[0]?.total_count||0);
   await login(page,'transporter');
-  for(const [label,value] of Object.entries(projection.data.counts)){
-    await expect(page.locator('.stat').filter({has:page.getByText(label,{exact:true})}).locator('strong')).toHaveText(String(value));
-  }
+  // Approved owner Home is Fleet (home/page.tsx and provider-fleet-workspace.tsx).
+  // Its navigation shows all active vehicles and the full driver total, not a page length.
+  await expect(page.getByRole('heading',{name:'My Fleet',exact:true})).toBeVisible();
+  const fleet=page.getByRole('navigation',{name:'My Fleet',exact:true});
+  await expect(fleet.getByRole('link',{name:/^Vehicles/}).locator('span')).toHaveText(String(capacity.vehicles.length));
+  await expect(fleet.getByRole('link',{name:/^Drivers/}).locator('span')).toHaveText(String(driverTotal));
   await page.getByRole('link',{name:'Tracking',exact:true}).filter({visible:true}).first().click();
-  if(projection.data.recent.length)await expect(page.locator('a.tracking-row').filter({hasText:projection.data.recent[0].code})).toHaveAttribute('href',`/app/provider-shipments/${projection.data.recent[0].id}`);
+  if(projection.data.recent.length){const recent=page.locator('a.tracking-row').filter({hasText:projection.data.recent[0].code});await expect(recent).toBeVisible();await expect(recent).toHaveAttribute('href',`/app/provider-shipments/${projection.data.recent[0].id}`);}
+  else await expect(page.getByText('No Tracking sessions yet.',{exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
 });
 
@@ -97,7 +104,7 @@ test('admin stale pagination recovers and regular service areas remain areas',as
   await login(page);
   await page.goto('/admin/operations?view=USERS&q=a&page=999999');
   await expect(page.locator('.admin-record-list article').first()).toBeVisible();
-  await expect(page.getByRole('textbox',{name:'Search Users'})).toHaveValue('a');
+  await expect(page.getByRole('textbox',{name:'Search Accounts'})).toHaveValue('a');
   await expect(page.getByRole('navigation',{name:'Results pages'})).toContainText('Page 1 of');
   const invalid=await page.goto('/admin/operations?view=USERS&page=1.5');expect(invalid?.status()).toBe(200);
   await expect(page.locator('.admin-record-list article').first()).toBeVisible();

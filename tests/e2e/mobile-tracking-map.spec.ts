@@ -37,15 +37,16 @@ async function providerLogin(page:Page,email:string){
  const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
  await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,'Your Loadgistic sign-in code'));
  await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await expect(page.getByRole('button',{name:'Update capacity',exact:true})).toBeVisible({timeout:30000});
+ await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible({timeout:30000});
 }
-async function visitorLogin(page:Page,email:string){
+async function visitorLogin(page:Page,email:string,shipmentId:string){
  await page.goto(preview+'/about');await page.getByRole('tab',{name:'Track',exact:true}).click();
  await page.getByLabel('Your email',{exact:true}).fill(email);const since=Date.now();
  await page.getByRole('button',{name:'Send email code',exact:true}).click();
  await page.getByLabel('Email verification code',{exact:true}).fill(await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code'));
  await page.getByRole('button',{name:'Open private access',exact:true}).click();
- await page.getByRole('link',{name:'View updates',exact:true}).click();
+ const loaded=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/mobile/visitor/tracking/shipments/${shipmentId}`&&response.request().method()==='GET');
+ await page.getByRole('link',{name:'View updates',exact:true}).click();expect((await loaded).status()).toBe(200);
 }
 test('Expo phone Tracking uses a route-first map, existing progress and public contact modal that closes before profile navigation',async({page}:{page:Page},info:PreviewInfo)=>{
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(150000);
@@ -61,9 +62,10 @@ test('Expo phone Tracking uses a route-first map, existing progress and public c
   const rejection=await oldCreate.json();expect(rejection.error.code).toBe('UPDATE_REQUIRED');expect(rejection.error.message).toContain('loadgistic.com');
   const invalidRoute=await page.request.post(preview+'/api/mobile/shipments',{headers:{Authorization:authorization},data:{...legacy,passingPlaceRef:legacy.originPlaceRef}});expect(invalidRoute.status()).toBe(400);expect((await invalidRoute.json()).error.code).toBe('INVALID_INPUT');
   expect(checked(await data.service.from('provider_shipments').select('id').eq('provider_profile_id',data.actor.provider_profile_id))).toHaveLength(1);
-  await page.goto(`${preview}/shipment-detail?id=${data.shipment}`);
+  const loaded=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/mobile/shipments/${data.shipment}`&&response.request().method()==='GET');
+  await page.goto(`${preview}/shipment-detail?id=${data.shipment}`,{waitUntil:'domcontentloaded'});expect((await loaded).status()).toBe(200);
   const open=page.getByRole('button',{name:'Open shipment progress',exact:true});await expect(open).toBeVisible();
-  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3);
+  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});
   await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toHaveCount(0);
   const frame=await page.getByTestId('tracking-native-map-workspace').locator('.maplibregl-map').boundingBox();expect(frame?.height).toBeGreaterThan(page.viewportSize()!.height*.55);
   await open.click();await expect(page.getByRole('radio')).toHaveCount(5);await expect(page.getByText('Synthetic native Tracking map',{exact:true})).toBeVisible();
@@ -85,16 +87,19 @@ test('Expo phone verified Tracking shows only reported radius and opens private 
   const proof=await data.attachProof();
   checked(await data.service.from('provider_shipments').update({operational_status:'LOADING'}).eq('id',data.shipment));
   checked(await data.service.from('provider_shipment_events').insert([{shipment_id:data.shipment,status:'LOADING',event_type:'STATUS',note:'Synthetic private loading photo',proof_storage_path:proof.path,proof_original_name:proof.originalName,proof_mime_type:proof.mimeType,created_by:data.actor.id},{shipment_id:data.shipment,status:'LOADING',event_type:'LOCATION',note:'Synthetic obscured center',location_area:'Synthetic reported area',location_lat:9.02,location_lng:38.76,location_precision_km:3,location_source:'DEVICE_OBSCURED',created_by:data.actor.id}]));
-  await visitorLogin(page,data.email);
-  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3);await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toBeVisible();
+  await visitorLogin(page,data.email,data.shipment);
+  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toBeVisible();
   await expect(page.getByText('Approximate location · Within 3 km',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
-  const proofAction=page.getByRole('button',{name:'View photo proof',exact:true});await proofAction.click();
+  const proofAction=page.getByRole('button',{name:'View photo proof',exact:true});
+  const proofLoaded=page.waitForResponse(response=>new URL(response.url()).pathname.startsWith(`/api/mobile/visitor/tracking/shipments/${data.shipment}/proof/`)&&response.request().method()==='GET');
+  await proofAction.click();expect((await proofLoaded).status()).toBe(200);
   await expect(page.getByRole('img',{name:'Submitted document',exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath('native-tracking-private-proof.png')});
   await page.getByRole('button',{name:'Close document',exact:true}).click();
   checked(await data.service.from('provider_tracking_recipients').update({revoked_at:new Date().toISOString()}).eq('shipment_id',data.shipment));
-  await proofAction.click();await expect(page.getByText('This file is not available.',{exact:true})).toBeVisible();await expect(page.getByRole('img',{name:'Submitted document',exact:true})).toHaveCount(0);
+  const proofDenied=page.waitForResponse(response=>new URL(response.url()).pathname.startsWith(`/api/mobile/visitor/tracking/shipments/${data.shipment}/proof/`)&&response.request().method()==='GET');
+  await proofAction.click();expect((await proofDenied).status()).toBe(404);await expect(page.getByText('This file is not available.',{exact:true})).toBeVisible();await expect(page.getByRole('img',{name:'Submitted document',exact:true})).toHaveCount(0);
   await page.screenshot({path:info.outputPath('native-tracking-proof-denied.png')});
  }finally{await data.cleanup();}
 });
@@ -103,9 +108,9 @@ test('Expo phone Tracking fits the first reported area and preserves the camera 
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(150000);
  const data=await fixture('native-map-first-area','LOCATION_AND_STATUS');
  try{
-  await visitorLogin(page,data.email);
+  await visitorLogin(page,data.email,data.shipment);
   const map=page.getByTestId('tracking-native-map-workspace').locator('.maplibregl-map');
-  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3);
+  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});
   await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toHaveCount(0);
   const canvas=await map.locator('canvas').elementHandle();expect(canvas).not.toBeNull();
   // An authorized synthetic obscured area, deliberately outside the original city frame.

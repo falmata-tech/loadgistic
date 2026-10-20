@@ -1,3 +1,12 @@
+## October 20 physical Android testing arrangement
+
+The owner can connect an Android phone through wireless debugging when a
+hardware-specific check is ready. Ask for the connection at that point; then
+verify the exact device, installed Loadgistic package and build before testing.
+Pairing details are temporary and must not be retained in source or evidence.
+Browser/emulator checks remain separate from actual permission, background
+location, notification-delivery and installed-app acceptance.
+
 ## October 15 GPS and dashboard cleanup — local preview
 
 Expo Fleet now keeps truck/driver controls compact, provides direct Support,

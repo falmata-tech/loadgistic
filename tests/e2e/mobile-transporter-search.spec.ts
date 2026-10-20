@@ -1,6 +1,6 @@
 import {test,expect} from './browser-test';
 import type {Page,Locator} from 'playwright-core';
-import {readFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import sharp from 'sharp';
 import {translateMessage} from '../../src/lib/i18n/core';
 import {workflowRows} from '../../apps/mobile/src/localization/workflow-messages';
@@ -71,6 +71,16 @@ test('Expo transporter search clear targets remain usable in English and Amharic
 
 test('Expo transporter profiles remain independent of applied truck filters until Show trucks',async({page},info)=>{
  test.skip(info.project.name!=='mobile-chromium','One genuine phone workflow checks native profile/map separation.');test.setTimeout(120_000);
+ const loadStarted=Date.now(),seenCursors=new Set<string>(),mapLoads:Array<{status:number;elapsedMs:number;items:number|null;hasMore:boolean|null;hasCursor:boolean;repeatedCursor:boolean}>=[];
+ page.on('response',async response=>{
+  if(new URL(response.url()).pathname!=='/api/public/capacity'||mapLoads.length>=40)return;
+  const cursor=new URL(response.url()).searchParams.get('cursor')||'';
+  const row={status:response.status(),elapsedMs:Date.now()-loadStarted,items:null as number|null,hasMore:null as boolean|null,hasCursor:Boolean(cursor),repeatedCursor:Boolean(cursor)&&seenCursors.has(cursor)};
+  if(cursor)seenCursors.add(cursor);
+  mapLoads.push(row);
+  try{const body=await response.json();row.items=Array.isArray(body.items)?body.items.length:null;row.hasMore=typeof body.hasMore==='boolean'?body.hasMore:null;}catch{/* No response body or raw transport error is retained. */}
+  writeFileSync(info.outputPath('native-profile-map-load-counts.json'),JSON.stringify(mapLoads),{mode:0o600});
+ });
  const seedResponse=await page.request.get('/api/capacity-search?page=1');expect(seedResponse.ok()).toBe(true);const profiles=(await seedResponse.json()).items,profile=profiles.find((item:{kind:string})=>item.kind==='COMPANY');expect(profile).toBeTruthy();
  const searches:URL[]=[],maps:URL[]=[],errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/mobile/public/discovery')searches.push(url);if(url.pathname==='/api/public/capacity')maps.push(url);});
  await page.setViewportSize({width:390,height:844});await page.goto(preview+'/');await expect(page.getByRole('button',{name:'Transporter search',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);const initialMapCount=maps.length;
@@ -85,5 +95,7 @@ test('Expo transporter profiles remain independent of applied truck filters unti
  expect({items:current.items,total:current.total,page:current.page,hasMore:current.hasMore}).toEqual({items:baseline.items,total:baseline.total,page:baseline.page,hasMore:baseline.hasMore});expect(searches[1].search).toBe(searches[0].search);await expect(resultActions).toHaveCount(baseline.items.length);await expect(canvas).toHaveAttribute('data-search-map-proof','filtered-map-preserved');expect(maps).toHaveLength(filteredMapCount);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('native-independent-profile-search-390.png'),scale:'css'});
  const identity=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('provider')===profile.handle&&url.searchParams.get('status')==='PARTIAL'&&url.searchParams.get('vehicleCategory')==='Cargo van'&&!url.searchParams.has('q');});
- await page.getByText(profile.title,{exact:true}).first().locator('..').getByRole('button',{name:'Show vehicles on map',exact:true}).click();expect((await identity).ok()).toBe(true);await expect(input).toHaveCount(0);expect(errors).toEqual([]);
+ const matchingProfiles=current.items.filter((item:{key:string})=>item.key===profile.key);expect(matchingProfiles).toHaveLength(1);
+ const profileIndex=current.items.findIndex((item:{key:string})=>item.key===profile.key);expect(profileIndex).toBeGreaterThanOrEqual(0);
+ await resultActions.nth(profileIndex).click();expect((await identity).ok()).toBe(true);await expect(input).toHaveCount(0);expect(errors).toEqual([]);
 });

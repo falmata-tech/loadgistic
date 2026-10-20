@@ -46,7 +46,7 @@ test('truck document alternatives submit private evidence and show only its revi
   await badge.locator('summary').click();await expect(badge).toContainText('Review applies to this document category only.');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('truck-permission-reviewed.png'),fullPage:true});
-  await page.goto('/app/company-page');const owner=page.locator('#documents');await owner.locator(':scope>summary').click();
+  await page.goto('/app/more?tab=documents#documents');const owner=page.locator('#documents [data-subject-kind="PROVIDER_PROFILE"]');
   await expect(owner).toBeVisible();await expect(owner.locator('.verification-badge')).toHaveCount(2);await expect(owner).not.toContainText('Permission to use vehicle');
   await owner.screenshot({path:info.outputPath('owner-document-scope.png')});
  }finally{

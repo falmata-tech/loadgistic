@@ -11,6 +11,33 @@ installation and the current10 km maximum fixture.
 
 ## October20 browser-fixture and release-gate correction — local evidence
 
+FEAT-CAP-001 / FEAT-MKT-001: the mobile independent-transporter/filter workflow
+exposed an unscoped map timeout not covered by the selected-provider scale gate.
+The actual TypeScript public-map route now has bounded503/no-store containment;
+`tests/capacity-filter-http.test.mjs` reproduces the original rejection and passes
+5/5 with the repair, including pre-persistence400 and unchanged successful shape.
+The existing message is translated in both Amharic and Oromo. This is not a
+performance pass: a direct installed-body plan attributes3.767/3.931s to8,484
+assigned-driver calls. Four capped read-only comparisons rule out a meaningful
+JIT benefit. The ordinary-postgres rollback candidate retained exact JSON/order,
+with4198→259ms initial and4679→299ms filtered timings. Whole179 subsequently
+committed on the backed-up local preview; existing owners/ACL/counts/ledger were
+preserved. Its new rollback-only suite initially exposed two synthetic setup
+errors (Partial endpoint references and Draft lifecycle), both corrected against
+existing contracts. The complete23-provider parity/denial suite and all five
+requested SQL/security gates now pass, with zero retained fixtures and no179
+replay. Actual filtered API returns200/6; the previously failing Expo independent
+profile/filter flow passes1/1 with all initial cursor pages, no repeated cursors
+and no page errors. Expanded5,000-vehicle timing and complete browser CI remain
+pending. No179 hosted update or matching release is applied.
+The new rollback suite is `tests/sql/public-map-assigned-driver-cost.sql`, now
+in the required CI SQL loop; `scripts/market-scale-audit.mjs` adds genuine unscoped
+initial, occupancy/configuration and continuation queries at the unchanged5s
+limit, with actual return order, lookahead, no overlap and known-fixture interval
+completeness checks. Those larger timing calls are not credited until executed.
+The subsequent local quality run passes1007 tests, all source/spec checks and
+TypeScript; the expanded SQL/scale checks still need execution.
+
 BASE-DEP-001 / NR-21: `tests/e2e/fixture-contract-preflight.spec.ts` owns a
 disposable provider and verifies Draft/no-driver creation, explicit assignment
 and Live publication, Capacity save, and public API readback. The real local
@@ -30,15 +57,44 @@ cases unless explicitly opted in. `docs/GUARDRAILS.md` inventories their files;
 these skips are not covered workflows or release evidence. The new
 `scripts/ci-browser-shard.mjs` requires exact selected/completed test identity,
 at least one pass, no retries/flakes, and only the 55 exact reviewed skips in
-`tests/e2e/ci-allowed-skips.json`; static gate tests pass, CI execution remains
-pending. Focused workflow
+`tests/e2e/ci-allowed-skips.json`. Focused CI gate tests pass12/12 with zero
+skips or failures. Failure logs and GitHub Actions error annotations contain
+only fixed reasons, validated counts and bounded source filenames; hosted
+annotation delivery remains unverified. Complete same-commit CI execution
+remains pending. Focused workflow
 repairs continue. Same-commit remote CI, branch protection and release
 deployment remain pending. Three persistent Featured preparation tests run in
 separate fresh-database `featured-prepare` CI jobs instead of the shared browser
 shards. `scripts/ci-featured-prepare.mjs` requires desktop and phone passes with
 no skip, flake or error for each; the local static selection and gate tests pass,
-but those isolated browser jobs still need remote evidence. `docs/PROGRESS.md`
+and all three isolated jobs passed on18fbece in CI39417891018. Its ordinary
+browser shards failed; the uncommitted repairs still require new same-source
+CI. `docs/PROGRESS.md`
 is the release-status source.
+
+BASE-DEP-001: `scopeLocalRequest` in `tests/e2e/browser-test-headers.mjs`
+replaces thrown/rejected API transport errors with a fixed wrapped-method name
+and allowlisted reason, retaining rejection without retrying or copying the
+original message, headers, URL, body, custom fields or cause. HTTP responses,
+including denied and unsuccessful statuses, remain unchanged. The focused
+`node --test tests/browser-test-headers.test.mjs` passes 7/7 with zero skips or
+failures, including sentinel cookie, token, contact, body and cause checks for
+all seven wrapped methods. This unit evidence covers the test-harness boundary;
+it does not claim a new browser run or release pass.
+
+October20 focused follow-up: the owner approved the two phone CSS adjustments;
+`map-feedback`, `map-signal-overlap` and vehicle-details checks pass8/8. Local
+quality passes1006 tests plus source/spec/type checks and the web build. The
+backed-up local176–178 update passed all six SQL suites and both security gates;
+its existing-owner exception was explicitly approved for local176 only. The
+post-update strict fixture preflight passed on one controlled rerun after an
+unclassified initial HTTP failure. Admin More passes2/2, explicit-width public/
+private shells pass2/2, invalid-filter correction passes2/2, and both guarded
+web/Expo GPS/editor cases pass separately with restored source state. The ordinary
+menu/filter corrections do not weaken the separate five-second search gate.
+These are focused local results; exact-source full CI and hosted operations remain
+pending. Existing code9 Android bytes do not include the latest accessibility
+change and require a fresh build, not an equivalence claim.
 
 ## October19 provider-scoped map page cost — isolated candidate
 
@@ -57,8 +113,8 @@ service-only ACL. The test accounts and records roll back. A separate
 rollback-only5,000-vehicle probe returned15 correct map/route rows in10.04/
 10.78 seconds on contended Docker Desktop; the old saved map query exceeded
 30 seconds in that environment. These local timings are **not** a passing
-five-second gate. The clean CI scale run and any hosted migration review remain
-pending.
+five-second gate. The unchanged five-second scale gate passed in CI39417891018 on18fbece.
+Complete browser CI failed; hosted migration review remains pending.
 
 ## October19 Transporter search page cost — isolated candidate
 
@@ -81,8 +137,9 @@ At 5,000 synthetic Drivers, the actual `capacity_search_results` call returned
 5,001 profiles,15 page items and7,195 bytes in11.699 seconds on local Docker,
 versus119.57 seconds before the candidate. A prior EXPLAIN showed the uncached
 private producer consumed44.56 seconds and1.32 million shared-buffer hits.
-The strict5-second CI gate and
-hosted migration review remain pending; this is **not release evidence**.
+The strict5-second CI gate passed in CI39417891018 on18fbece. Complete
+browser CI failed and hosted migration review remains pending; this is
+**not release evidence**.
 
 ## October19 synthetic Play business isolation — isolated local rehearsal
 

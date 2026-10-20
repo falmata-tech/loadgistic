@@ -1,4 +1,38 @@
 import {test,expect} from './browser-test';
+import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
+import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {addProviderRegularCapacity,publishProviderCapacity,removeProviderRegularCapacity} from '../../src/lib/provider-capacity.js';
+
+async function currentPairModalFixture(page:any){
+ const db=localAuditService(),actor=await auditProvider(db,'truck-modal');let vehicleId='',routeId='';
+ const scope=()=>({vehicleId,expectedDriverId:actor.id});
+ const cleanup=async()=>{
+  if(routeId)await removeProviderRegularCapacity(actor,routeId,scope());
+  const capacities=vehicleId?checked(await db.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
+  const entities=[vehicleId,routeId,...capacities.map((row:{id:string})=>row.id)].filter(Boolean);
+  if(entities.length)checked(await db.from('audit_logs').delete().in('entity_id',entities));
+  if(vehicleId){checked(await db.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(db,'id',vehicleId));}
+  checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await db.auth.admin.deleteUser(actor.id));
+ };
+ try{
+  vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Synthetic',model:'Modal route',plate:`MOD-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  expect(checked(await db.from('vehicles').select('publication_status').eq('id',vehicleId).single()).publication_status).toBe('DRAFT');
+  expect(checked(await db.rpc('capacity_active_driver_id',{target_vehicle_id:vehicleId}))).toBeNull();
+  await auditAssignAndPublishSelfDrivenVehicle(db,actor,vehicleId);
+  checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
+  const places=checked(await db.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
+  const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
+  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:routePlaces});
+  routeId=await addProviderRegularCapacity(actor,{...scope(),geometry:'ROUTE',routePlaces,areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
+  const saved=checked(await db.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id,route_points_json').eq('id',routeId).single());
+  expect(saved).toMatchObject({assigned_vehicle_id:vehicleId,assigned_driver_user_id:actor.id});expect(saved.route_points_json).toHaveLength(2);
+  const response=await page.request.get(`/api/public/capacity?provider=${encodeURIComponent(`truck-modal-${actor.suffix}`)}&status=PARTIAL`);expect(response.ok()).toBe(true);
+  const result=await response.json();expect(result.items).toHaveLength(1);const truck=result.items[0];
+  expect(truck.vehicle_id).toBe(vehicleId);expect(truck.current_route_points).toHaveLength(2);expect(truck.recurring_corridors).toHaveLength(1);expect(truck.recurring_corridors[0].route_points).toHaveLength(2);
+  expect(JSON.stringify(result)).not.toMatch(/storage_path|original_name|supabase:\/\/verification/);
+  return {truck,cleanup};
+ }catch(error){await cleanup();throw error;}
+}
 
 // Leaflet's animation proxy encodes the projected center and zoom. Unlike
 // raster tiles it survives zoom transitions and does not depend on tile loading.
@@ -12,9 +46,9 @@ async function cameraView(page:any){
 
 test('selected truck has centered readable modals and a separate attached exit restoring filtered camera',async({page}:{page:any},info:any)=>{
  test.setTimeout(120000);
- const response=await page.request.get('/api/public/capacity?q=Merkato&status=PARTIAL');expect(response.ok()).toBe(true);
- const truck=(await response.json()).items.find((item:{vehicle_model:string;current_route_points:unknown[]})=>item.vehicle_model==='X200'&&item.current_route_points?.length===2);expect(truck).toBeTruthy();
- await page.goto(`/?q=Merkato&status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
+ const {truck,cleanup}=await currentPairModalFixture(page);
+ try{
+ await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
  const drawer=page.locator('#capacity-filter-drawer'),card=page.locator('.capacity-info-card'),marker=page.locator('.capacity-truck-map-marker.selected'),exit=page.locator('.capacity-truck-exit');
  await expect(marker).toBeVisible({timeout:30000});await expect(drawer).toBeHidden();await expect(card).toHaveCount(0);
  const truckControl=page.locator('.map-info-bubble.truck'),location=page.locator('.map-info-bubble.location'),regular=page.locator('.map-info-bubble.regular'),capacity=page.locator('.map-info-bubble.partial');
@@ -63,4 +97,5 @@ test('selected truck has centered readable modals and a separate attached exit r
   await expect.poll(()=>cameraView(page)).toEqual(camera);expect(page.url()).toBe(url);
  }
  await page.getByRole('button',{name:'Transporter search',exact:true}).click();await expect(search).toHaveValue('Unsubmitted draft');
+ }finally{await cleanup();}
 });

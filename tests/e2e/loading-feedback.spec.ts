@@ -27,8 +27,9 @@ test('map loading placeholder resembles the map before its client code arrives',
 
 test('map refresh uses a horizontal activity bar without hiding controls or announcing a percentage',async({page}:{page:any},info:any)=>{
   test.setTimeout(60000);mkdirSync(folder,{recursive:true});
+  const initialCapacity=page.waitForResponse((r:any)=>new URL(r.url()).pathname==='/api/public/capacity');
   await page.goto('/');
-  await page.waitForResponse((r:any)=>new URL(r.url()).pathname==='/api/public/capacity');
+  await initialCapacity;
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
   let release:()=>void=()=>{};let held=false;
   const ready=new Promise<void>(resolve=>{release=resolve;});
@@ -44,7 +45,7 @@ test('map refresh uses a horizontal activity bar without hiding controls or anno
     const box=await track.boundingBox();expect(box.width).toBeGreaterThan(box.height*10);
     expect(await feedback.locator('.sr-only').evaluate((el:HTMLElement)=>getComputedStyle(el).position)).toBe('absolute');
     const activity=await feedback.boundingBox();
-    for(const selector of ['.public-map-legend summary','.public-assistance-dock']){
+    for(const selector of ['.public-map-legend summary','.capacity-map-controls']){
       const control=await page.locator(selector).boundingBox();
       expect(activity.x+activity.width<=control.x||control.x+control.width<=activity.x||activity.y+activity.height<=control.y||control.y+control.height<=activity.y).toBe(true);
     }
@@ -70,7 +71,7 @@ test('search and place lookups show activity while preserving editable inputs',a
     await input.fill('Addis');await page.locator('.market-command-column').getByRole('button',{name:'Search',exact:true}).click();await openCapacityFilters(page);
     const loading=page.locator('.capacity-result-panel .loading-indicator');
     await expect(loading.locator('.loading-progress-track')).toBeVisible();
-    await expect(loading.getByText('Finding matches…')).toHaveClass('sr-only');
+    await expect(loading.getByText('Finding transporters',{exact:true})).toHaveClass('sr-only');
     await expect(input).toBeEditable();
     await page.screenshot({path:path.join(folder,`${info.project.name}-search-loading.png`),scale:'css'});
     const completed=page.waitForResponse((response:any)=>{const url=new URL(response.url());return url.pathname==='/api/capacity-search'&&url.searchParams.get('q')==='Addis';},{timeout:20000});

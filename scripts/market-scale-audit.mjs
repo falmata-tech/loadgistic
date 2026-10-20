@@ -112,6 +112,13 @@ declare
   profile_ms numeric;
   map_ms numeric;
   route_ms numeric;
+  unscoped_ms numeric; filtered_ms numeric; continuation_ms numeric;
+  unscoped_page jsonb; filtered_page jsonb; continuation_page jsonb; measured_page jsonb;
+  unscoped_bytes bigint; filtered_bytes bigint; continuation_bytes bigint;
+  cursor_stamp timestamptz; cursor_capacity_id uuid; tail_stamp timestamptz; tail_id uuid;
+  previous_stamp timestamptz; previous_id uuid; item_stamp timestamptz; item_id uuid; item jsonb;
+  expected_fixture_ids uuid[]; actual_fixture_ids uuid[]; fixture_page_counts integer[]:=array[]::integer[];
+  page_number integer;
   overview_ms numeric; overview_rows integer; overview_trucks bigint; overview_bytes bigint;
   profile_result jsonb; profile_total integer; profile_rows integer; profile_bytes bigint;
   map_rows integer; map_bytes bigint; map_provider_match boolean; map_fixture_match boolean;
@@ -162,6 +169,81 @@ begin
   if overview_ms>5000 then raise exception 'SCALE_OVERVIEW_TOO_SLOW:%',overview_ms;end if;
   raise notice 'LOADGISTIC_OVERVIEW_RESULT cells=% trucks=% bytes=% overview_ms=%',overview_rows,overview_trucks,overview_bytes,round(overview_ms,3);
 
+  -- Ordinary map requests must evaluate all providers. Keep each RPC genuinely
+  -- unscoped: no provider, vehicle IDs, capacity ID or synthetic text predicate.
+  -- Preserve returned ordinality so these checks cannot sort away an order bug.
+  started_at:=clock_timestamp();
+  select coalesce(jsonb_agg(payload order by ordinal),'[]'::jsonb) into unscoped_page
+  from public.public_capacity_page('{}'::jsonb,null,null,14) with ordinality as page(payload,ordinal);
+  unscoped_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
+  started_at:=clock_timestamp();
+  select coalesce(jsonb_agg(payload order by ordinal),'[]'::jsonb) into filtered_page
+  from public.public_capacity_page('{"status":"EMPTY","vehicle_category":"Cargo van"}'::jsonb,null,null,14)
+    with ordinality as page(payload,ordinal);
+  filtered_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
+  if jsonb_array_length(unscoped_page)<>15 or jsonb_array_length(filtered_page)<>15
+    then raise exception 'SCALE_UNSCOPED_FIRST_PAGE_INCOMPLETE';end if;
+  -- The HTTP adapter consumes fourteen rows; its fifteenth is lookahead.
+  -- Continue after row fourteen, so that lookahead must lead the next page.
+  cursor_stamp:=(filtered_page->13->>'updated_at')::timestamptz;
+  cursor_capacity_id:=(filtered_page->13->>'id')::uuid;
+  if cursor_stamp is null or cursor_capacity_id is null then raise exception 'SCALE_UNSCOPED_CURSOR_MISSING';end if;
+  started_at:=clock_timestamp();
+  select coalesce(jsonb_agg(payload order by ordinal),'[]'::jsonb) into continuation_page
+  from public.public_capacity_page('{"status":"EMPTY","vehicle_category":"Cargo van"}'::jsonb,
+    cursor_stamp,cursor_capacity_id,14) with ordinality as page(payload,ordinal);
+  continuation_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
+  if jsonb_array_length(continuation_page)<>15 then raise exception 'SCALE_UNSCOPED_NEXT_PAGE_INCOMPLETE';end if;
+  unscoped_bytes:=octet_length(unscoped_page::text);filtered_bytes:=octet_length(filtered_page::text);continuation_bytes:=octet_length(continuation_page::text);
+  if unscoped_bytes>1000000 or filtered_bytes>1000000 or continuation_bytes>1000000
+    then raise exception 'SCALE_UNSCOPED_PAYLOAD_TOO_LARGE';end if;
+  for page_number in 1..3 loop
+    measured_page:=case page_number when 1 then unscoped_page when 2 then filtered_page else continuation_page end;
+    previous_stamp:=null;previous_id:=null;
+    for item in select value from jsonb_array_elements(measured_page) with ordinality as entries(value,ordinal) order by ordinal loop
+      item_stamp:=(item->>'updated_at')::timestamptz;item_id:=(item->>'id')::uuid;
+      if item_stamp is null or item_id is null or item->>'vehicle_id' is null
+        then raise exception 'SCALE_UNSCOPED_IDENTITY_MISSING:page=%',page_number;end if;
+      if previous_stamp is not null and ((previous_stamp,previous_id)>(item_stamp,item_id)) is not true
+        then raise exception 'SCALE_UNSCOPED_ORDER_CHANGED:page=%',page_number;end if;
+      if page_number>1 and (item->>'status' is distinct from 'EMPTY' or item->>'cargo_configuration' is distinct from 'Cargo van')
+        then raise exception 'SCALE_UNSCOPED_FILTER_CHANGED:page=%',page_number;end if;
+      if page_number=3 and ((item_stamp,item_id)<(cursor_stamp,cursor_capacity_id)) is not true
+        then raise exception 'SCALE_UNSCOPED_CURSOR_NOT_ADVANCED';end if;
+      previous_stamp:=item_stamp;previous_id:=item_id;
+    end loop;
+    if (select count(distinct value->>'vehicle_id') from jsonb_array_elements(measured_page))<>15
+      or (select count(distinct value->>'id') from jsonb_array_elements(measured_page))<>15
+      then raise exception 'SCALE_UNSCOPED_VEHICLE_DUPLICATED:page=%',page_number;end if;
+    tail_stamp:=(measured_page->14->>'updated_at')::timestamptz;tail_id:=(measured_page->14->>'id')::uuid;
+    -- Pilot rows may legitimately lead or interleave. Compare every known
+    -- fixture ID within this actual page interval against direct fixture facts.
+    -- Neither the expected values nor this check narrows the timed RPC query.
+    select array_agg(capacity.id order by capacity.updated_at desc,capacity.id desc) into expected_fixture_ids
+    from generate_series(1,${requested}) series
+    join public.capacities capacity on capacity.id=md5('loadgistic-scale-capacity-'||series)::uuid
+    where (capacity.updated_at,capacity.id)>=(tail_stamp,tail_id)
+      and (page_number<>3 or (capacity.updated_at,capacity.id)<(cursor_stamp,cursor_capacity_id));
+    select array_agg((value->>'id')::uuid order by ordinal) into actual_fixture_ids
+    from jsonb_array_elements(measured_page) with ordinality as entries(value,ordinal)
+    where exists(select 1 from generate_series(1,${requested}) series
+      where (value->>'id')::uuid=md5('loadgistic-scale-capacity-'||series)::uuid);
+    if actual_fixture_ids is distinct from expected_fixture_ids
+      then raise exception 'SCALE_UNSCOPED_FIXTURE_PAGE_INCOMPLETE:page=%',page_number;end if;
+    fixture_page_counts:=array_append(fixture_page_counts,coalesce(array_length(actual_fixture_ids,1),0));
+  end loop;
+  if (filtered_page->14->>'id') is distinct from (continuation_page->0->>'id')
+    or (filtered_page->14->>'updated_at') is distinct from (continuation_page->0->>'updated_at')
+    then raise exception 'SCALE_UNSCOPED_LOOKAHEAD_LOST';end if;
+  if exists(select 1 from jsonb_array_elements(filtered_page) with ordinality as first_page(first_item,ordinal)
+    cross join jsonb_array_elements(continuation_page) as next_page(next_item)
+    where ordinal<=14 and (first_item->>'id'=next_item->>'id' or first_item->>'vehicle_id'=next_item->>'vehicle_id'))
+    then raise exception 'SCALE_UNSCOPED_PAGES_OVERLAP';end if;
+  if unscoped_ms>5000 or filtered_ms>5000 or continuation_ms>5000
+    then raise exception 'SCALE_UNSCOPED_QUERY_TOO_SLOW:initial=%,filtered=%,continuation=%',unscoped_ms,filtered_ms,continuation_ms;end if;
+  raise notice 'LOADGISTIC_UNSCOPED_SCALE_RESULT rows=15 filtered_rows=15 continuation_rows=15 bytes=% filtered_bytes=% continuation_bytes=% initial_ms=% filtered_ms=% continuation_ms=% fixture_rows=%',
+    unscoped_bytes,filtered_bytes,continuation_bytes,round(unscoped_ms,3),round(filtered_ms,3),round(continuation_ms,3),fixture_page_counts;
+
   if profile_total is distinct from (${requested}+1) or profile_rows is distinct from 15
     or map_rows is distinct from 15 or route_rows is distinct from 15
     or map_provider_match is distinct from true or route_provider_match is distinct from true
@@ -200,6 +282,7 @@ const result=spawnSync('docker',[
 const combined=`${result.stdout||''}\n${result.stderr||''}`;
 if(result.status!==0)throw new Error(`POSTGRES_SCALE_AUDIT_FAILED:${combined.slice(-2000)}`);
 if(!/LOADGISTIC_SCALE_RESULT/.test(combined))throw new Error('POSTGRES_SCALE_RESULT_MISSING');
+if(!/LOADGISTIC_UNSCOPED_SCALE_RESULT/.test(combined))throw new Error('POSTGRES_UNSCOPED_SCALE_RESULT_MISSING');
 if(!/LOADGISTIC_SCALE_REMAINING=0/.test(combined))throw new Error('POSTGRES_SCALE_ROLLBACK_FAILED');
 if(!/LOADGISTIC_SCALE_DRIVERS_REMAINING=0/.test(combined))throw new Error('POSTGRES_SCALE_DRIVER_ROLLBACK_FAILED');
 const planStart=combined.indexOf('[\n');
@@ -213,5 +296,7 @@ if(planStart>=0){
 }
 const overview=combined.split(/\r?\n/).find(line=>line.includes('LOADGISTIC_OVERVIEW_RESULT'))?.trim();
 if(overview)process.stdout.write(overview+'\n');
+const unscoped=combined.split(/\r?\n/).find(line=>line.includes('LOADGISTIC_UNSCOPED_SCALE_RESULT'))?.trim();
+if(unscoped)process.stdout.write(unscoped+'\n');
 const summary=combined.split(/\r?\n/).find(line=>line.includes('LOADGISTIC_SCALE_RESULT'))?.trim();
 process.stdout.write(`${summary}\nPostgreSQL scale transaction rolled back with zero synthetic trucks remaining.\n`);

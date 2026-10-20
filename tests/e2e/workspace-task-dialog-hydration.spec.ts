@@ -16,7 +16,17 @@ test('task triggers wait for hydration and Accounts directory uses human role la
   const response=await page.request.get('/admin/support?tab=team');expect(response.status()).toBe(200);
   const html=await response.text();const disabled=await page.evaluate(markup=>{const document=new DOMParser().parseFromString(markup,'text/html');const buttons=Array.from(document.querySelectorAll('button')).filter(button=>button.textContent?.trim()==='Add member');return buttons.length===1&&buttons[0].disabled;},html);expect(disabled).toBe(true);evidence.serverRenderedTriggerDisabled=true;
   await page.goto('/admin/support?tab=team');const trigger=page.getByRole('button',{name:'Add member',exact:true});await expect(trigger).toBeEnabled();evidence.hydratedTriggerEnabled=true;await expect(page.locator('input[name=email]')).toHaveCount(0);await trigger.click();const dialog=page.getByRole('dialog',{name:'Add member',exact:true});await expect(dialog).toBeVisible();evidence.explicitTaskOpened=true;await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(trigger).toBeFocused();evidence.cancelRestoredFocus=true;
-  await page.goto('/admin/operations?q=Samuel');await expect(page.getByRole('heading',{name:'Accounts',exact:true})).toBeVisible();const ownerRow=page.locator('.admin-record-list article').filter({has:page.locator(`a[href="/admin/operations/users/${owner.id}"]`)});await expect(ownerRow).toHaveCount(1);await expect(ownerRow.locator('small')).toContainText('Transport Provider');await expect(ownerRow.locator('small')).not.toContainText('TRANSPORTER');evidence.directoryRoleHumanized=true;
+  await page.goto('/admin/operations?q=Samuel');await expect(page.getByRole('heading',{name:'Accounts',exact:true})).toBeVisible();
+  const ownerPath=`/admin/operations/users/${owner.id}`;
+  const ownerRow=page.locator('.admin-record-list article').filter({has:page.locator(`a[href="${ownerPath}"],a[href^="${ownerPath}?"]`)});
+  await expect(ownerRow).toHaveCount(1);
+  const ownerHref=await ownerRow.getByRole('link',{name:'Open',exact:true}).getAttribute('href');expect(ownerHref).not.toBeNull();
+  const accountUrl=new URL(ownerHref!,page.url());expect(accountUrl.origin).toBe(new URL(page.url()).origin);expect(accountUrl.pathname).toBe(ownerPath);expect(accountUrl.hash).toBe('');
+  expect([...accountUrl.searchParams.keys()]).toEqual(['returnTo']);
+  const returnTo=accountUrl.searchParams.get('returnTo');expect(returnTo).toMatch(/^\/admin\/operations\?/);
+  const returnUrl=new URL(returnTo!,page.url());expect(returnUrl.origin).toBe(accountUrl.origin);expect(returnUrl.pathname).toBe('/admin/operations');expect(returnUrl.hash).toBe('');
+  expect([...returnUrl.searchParams.entries()].sort()).toEqual([['page','1'],['q','Samuel'],['view','USERS']]);
+  await expect(ownerRow.locator('small')).toContainText('Transport Provider');await expect(ownerRow.locator('small')).not.toContainText('TRANSPORTER');evidence.directoryRoleHumanized=true;
   const file=info.outputPath('accounts-directory-humanized.png');await page.screenshot({path:file,fullPage:true,animations:'disabled'});chmodSync(file,0o600);expect(evidence.domainWrites).toBe(0);
  }finally{await logout();writeFileSync(info.outputPath('hydration-and-directory-evidence.json'),JSON.stringify(evidence,null,2)+'\n',{mode:0o600});}
 });

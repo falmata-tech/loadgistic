@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
 import {inspectFixturePreflightResult} from '../scripts/ci-fixture-preflight.mjs';
 import {inspectFeaturedPrepareResult} from '../scripts/ci-featured-prepare.mjs';
-import {inspectBrowserShard,failedBrowserFiles} from '../scripts/ci-browser-shard.mjs';
+import {inspectBrowserShard,failedBrowserFiles,browserShardFailureSummary,reportBrowserShardFailure} from '../scripts/ci-browser-shard.mjs';
 const reviewedSkips=JSON.parse(readFileSync('tests/e2e/ci-allowed-skips.json','utf8')).allowed;
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const preflightRunner=readFileSync('scripts/ci-fixture-preflight.mjs','utf8');
@@ -100,6 +100,41 @@ test('failed browser report names only bounded source test files for diagnosis',
  ]};
  assert.deepEqual(failedBrowserFiles(report),['featured-operations-review.spec.ts']);
  assert.deepEqual(failedBrowserFiles(null),[]);
+ const many={suites:Array.from({length:12},(_,index)=>({file:`tests/e2e/case-${String(index).padStart(2,'0')}.spec.ts`,specs:[{tests:[{status:'unexpected'}]}]}))};
+ many.suites.push({file:`${'x'.repeat(121)}.spec.ts`,specs:[{tests:[{status:'unexpected'}]}]});
+ assert.deepEqual(failedBrowserFiles(many),Array.from({length:10},(_,index)=>`case-${String(index).padStart(2,'0')}.spec.ts`));
+ assert.deepEqual(failedBrowserFiles({suites:[many.suites.at(-1)]}),[]);
+});
+
+test('browser shard failure summary exposes only safe counts and source filenames',()=>{
+ const report={suites:[{file:'tests/e2e/ordinary.spec.ts',specs:[{
+  title:'PRIVATE_TITLE private@example.test',tests:[{status:'unexpected',error:{message:'PRIVATE_ASSERTION',headers:{Authorization:'PRIVATE_HEADER'}}}]
+ }]}],errors:[{message:'PRIVATE_REPORT'}],stats:{expected:12,skipped:2,unexpected:1,flaky:0}};
+ assert.equal(browserShardFailureSummary('PLAYWRIGHT_FAILED',3,report),
+  'CI_BROWSER_SHARD_PLAYWRIGHT_FAILED shard=3 passed=12 skipped=2 failed=1 flaky=0 failed_files=ordinary.spec.ts');
+ assert.equal(browserShardFailureSummary('TEST_LIST_UNAVAILABLE',8,null),
+  'CI_BROWSER_SHARD_TEST_LIST_UNAVAILABLE shard=8 passed=? skipped=? failed=? flaky=? failed_files=unknown');
+});
+
+test('browser shard diagnosis never stringifies malformed counts or untrusted reason and shard fields',()=>{
+ const unsafe=[undefined,null,'12','PRIVATE_COUNT\n::error::PRIVATE_ANNOTATION',{},['PRIVATE_ARRAY'],false,-1,.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1,
+  {toString(){throw Error('COUNTS_MUST_NOT_BE_STRINGIFIED');}}];
+ for(const value of unsafe){
+  assert.equal(browserShardFailureSummary('PLAYWRIGHT_FAILED',1,{stats:{expected:value,skipped:value,unexpected:value,flaky:value}}),
+   'CI_BROWSER_SHARD_PLAYWRIGHT_FAILED shard=1 passed=? skipped=? failed=? flaky=? failed_files=unknown');
+ }
+ assert.equal(browserShardFailureSummary('PRIVATE_REASON\n::error::PRIVATE_ANNOTATION','PRIVATE_SHARD',null),
+  'CI_BROWSER_SHARD_REPORT_UNAVAILABLE shard=? passed=? skipped=? failed=? flaky=? failed_files=unknown');
+});
+
+test('browser shard failures emit one GitHub error annotation matching the sanitized log summary',()=>{
+ for(const [reason,report] of [['TEST_LIST_UNAVAILABLE',null],['PLAYWRIGHT_FAILED',{stats:{expected:'PRIVATE\n::error::INJECTED',skipped:0,unexpected:1,flaky:0}}]]){
+  const chunks=[];reportBrowserShardFailure(reason,4,report,message=>chunks.push(message));
+  const summary=browserShardFailureSummary(reason,4,report);
+  assert.deepEqual(chunks,[`${summary}\n::error::${summary}\n`]);
+  assert.equal(chunks.join('').split('\n').filter(line=>line.startsWith('::error::')).length,1);
+  assert.doesNotMatch(chunks.join(''),/PRIVATE|INJECTED/);
+ }
 });
 
 test('fixture preflight rejects skipped, absent, flaky and failed browser evidence',()=>{

@@ -1,5 +1,19 @@
 # Web gaps found during mobile implementation
 
+## WEB-MOB-047 — Native action names disappear while saving
+
+Status: observed in the shared native Button; deferred product accessibility
+cleanup, not a repaired or deployed feature.
+
+`apps/mobile/src/components/ui.tsx` replaces a busy button's text with an activity
+indicator without retaining an accessible action name. The Fleet assignment
+test exposed this while intentionally holding a saved assignment's reread.
+That test must verify the original control, saved vehicle and actual pending
+read rather than wait for text the busy state deliberately removes. A later
+UI change should preserve the action's accessible name and announce busy state,
+with focused screen-reader/control regressions. This observation does not mean
+the assignment write failed or authorize bypassing its confirmed reread.
+
 ## WEB-MOB-046 — Legacy shipment examples have no active customer invitation
 
 Status: demo-coverage gap recorded; the owner test guide is corrected. No

@@ -7,7 +7,7 @@ test('public entry stays clear of retired transport chat and GPS needs an explic
  test.setTimeout(60000);
  await page.addInitScript(()=>{(window as Window&{geoCalls?:number}).geoCalls=0;Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(_success:unknown,fail:(e:object)=>void)=>{const w=window as Window&{geoCalls?:number};w.geoCalls=(w.geoCalls||0)+1;fail({code:1,PERMISSION_DENIED:1});}}});});
  await page.goto('/',{waitUntil:'domcontentloaded'});await expect(page.locator('.leaflet-container')).toBeVisible();
- await expect(page.getByRole('heading',{name:'Find space for your next load',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Transporter login'}).filter({visible:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Find space for your next load',exact:true})).toBeVisible();const accountEntry=page.getByRole('navigation',{name:'Switch view',exact:true}).getByRole('link',{name:'My workspace',exact:true});await expect(accountEntry).toBeVisible();await expect(accountEntry).toHaveAttribute('href','/login');
  expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(0);
  await expect(page.locator('.public-assistance-dock,.transport-request-form')).toHaveCount(0);
  await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();

@@ -90,11 +90,41 @@ permissions, route ownership, or another browser-visible workflow:
    current Capacity save, and public readback with disposable synthetic data.
    This preflight is a tripwire for the shared fixture contract, not a substitute
    for the affected desktop/phone workflows or their denial cases.
+   After a terminal/session interruption, recheck both the web service and the
+   Expo preview, including its actual app bundle, before resuming browser work.
+   A listening port alone is insufficient. Stop a group when its required
+   server is absent or unresponsive, classify the infrastructure failure and
+   resume from the first unverified workflow after scoped recovery; do not
+   count missing login controls on an unavailable preview as a product defect.
+   Verify that the active preview's required schema definitions match the source
+   under test, rather than borrowing receipts from a disposable rehearsal clone.
+   The known local ledger ends129 despite separately installed later SQL: it is
+   not authority to replay130 onward, reset records or rewrite the ledger. Use
+   pinned catalog definitions and the protected local backup/restore workflow
+   before applying any missing changes; hosted approval remains separate.
+   A restored database must also reproduce extension namespaces/versions and
+   extension-member RLS/grants: an archive alone does not prove those match.
+   Compare protected source metadata and keep security gates unchanged; repair
+   only the exact disposable clone through supported commands before crediting
+   rehearsal. Never relocate a production extension or edit catalogs to make a
+   local restore pass. Record original object owners and the intended migration
+   role before rehearsal: a no-owner clone cannot prove original-role authority.
+   SQL success does not replace the real configured application's post-update API
+   preflight. An ownership denial stops writes pending an exact reviewed remedy.
 3. Run focused browser tests for every changed workflow on both configured
    browser projects, including real saves and persisted state. Fix the product
    only for an observed product defect; fix obsolete test setup when the current
    accepted contract is working. Do not weaken expected authorization or skip
-   failures to make CI green.
+   failures to make CI green. Recheck the current role contract before sending
+   a supposed forbidden mutation: an old denial may now be an allowed action.
+   Denial cases must also verify unchanged saved state. Cleanup rereads final
+   authority and state even when an earlier restoration succeeded; a cached
+   restored flag must not hide a later accepted mutation or another actor's edit.
+   A selected-provider timing pass does not cover ordinary unfiltered discovery
+   or combined truck filters. Include the actual unscoped first/continuation
+   requests and complete mobile loading in performance regression evidence.
+   Diagnose the installed query plan before changing settings or budgets;
+   bounded error recovery is not proof that the underlying read is fast enough.
 4. Require every browser shard, validation, mobile and container job to finish
    successfully on the **same commit** before claiming a deployable artifact.
    A timeout, cancelled shard, skipped fixture preflight, or green unit/search

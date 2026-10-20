@@ -6,6 +6,8 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const manifest=JSON.parse(readFileSync(path.join(root,'tests/e2e/ci-allowed-skips.json'),'utf8'));
 const identity=({file,title,project})=>`${file}\u0000${title}\u0000${project}`;
+const failureReasons=new Set(['TEST_LIST_UNAVAILABLE','PLAYWRIGHT_FAILED','REPORT_UNAVAILABLE','NO_SELECTED_TESTS',
+ 'TEST_SELECTION_CHANGED','FAILED_OR_FLAKY_TESTS','SKIP_COUNT_MISMATCH','UNREVIEWED_OR_MISSING_SKIP','RESULT_COUNT_MISMATCH']);
 
 function cases(report){
  const rows=[];
@@ -21,7 +23,21 @@ function cases(report){
 
 export function failedBrowserFiles(report){
  return [...new Set(cases(report).filter(test=>test.status==='unexpected'||test.status==='flaky')
-  .map(test=>test.file).filter(file=>/^[A-Za-z0-9._-]+\.spec\.ts$/.test(file)))].sort().slice(0,10);
+  .map(test=>test.file).filter(file=>file.length<=128&&/^[A-Za-z0-9._-]+\.spec\.ts$/.test(file)))].sort().slice(0,10);
+}
+
+export function browserShardFailureSummary(failure,shard,report){
+ const reason=failureReasons.has(failure)?failure:'REPORT_UNAVAILABLE';
+ const shardNumber=Number.isInteger(shard)&&shard>=1&&shard<=8?shard:'?';
+ const count=value=>Number.isSafeInteger(value)&&value>=0?value:'?';
+ const stats=report?.stats||{};
+ const files=failedBrowserFiles(report).join(',')||'unknown';
+ return `CI_BROWSER_SHARD_${reason} shard=${shardNumber} passed=${count(stats.expected)} skipped=${count(stats.skipped)} failed=${count(stats.unexpected)} flaky=${count(stats.flaky)} failed_files=${files}`;
+}
+
+export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
+ const summary=browserShardFailureSummary(failure,shard,report);
+ write(`${summary}\n::error::${summary}\n`);
 }
 
 export function inspectBrowserShard(listResult,listReport,runResult,runReport,allowed=manifest.allowed){
@@ -60,13 +76,11 @@ function main(){
  if(!Number.isInteger(shard)||shard<1||shard>8)throw Error('CI_BROWSER_SHARD_NUMBER_REQUIRED');
  const args=[`--shard=${shard}/8`,'--grep-invert=@featured-prepare','--retries=0','--workers=1'];
  const listed=runJson([...args,'--list']);
- if(listed.result.status!==0||!listed.report){process.stderr.write('CI_BROWSER_SHARD_TEST_LIST_UNAVAILABLE\n');process.exitCode=1;return;}
+ if(listed.result.status!==0||!listed.report){reportBrowserShardFailure('TEST_LIST_UNAVAILABLE',shard,null);process.exitCode=1;return;}
  const executed=runJson(args);
  const failure=inspectBrowserShard(listed.result,listed.report,executed.result,executed.report);
  if(failure){
-  const stats=executed.report?.stats||{};
-  const failedFiles=failedBrowserFiles(executed.report).join(',')||'unknown';
-  process.stderr.write(`CI_BROWSER_SHARD_${failure} shard=${shard} passed=${stats.expected??'?'} skipped=${stats.skipped??'?'} failed=${stats.unexpected??'?'} flaky=${stats.flaky??'?'} failed_files=${failedFiles}\n`);
+  reportBrowserShardFailure(failure,shard,executed.report);
   process.exitCode=1;
   return;
  }

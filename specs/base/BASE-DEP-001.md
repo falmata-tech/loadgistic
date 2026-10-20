@@ -146,6 +146,21 @@ And a malformed or empty schema is rejected before reset.
 Verification: `tests/fixture-schema.test.mjs`. This diagnostic does not establish
 the cause of a past intermittent HTTP 500 or waive clean CI setup evidence.
 
+### Scenario: browser API transport failures do not expose request secrets
+
+Given a browser test uses the scoped Playwright API request context\
+When a wrapped request method throws or rejects before returning an HTTP response\
+Then the request remains rejected with only its fixed method name and an allowlisted transport reason in the error message\
+And an unrecognized failure uses one fixed unknown reason\
+And no raw URL, request headers, cookies, tokens, contacts, body, original message, custom error fields or cause is copied into the replacement error\
+And the wrapper neither retries the request nor converts failure to success\
+And successful and unsuccessful HTTP responses are returned unchanged.
+
+Verification: `tests/browser-test-headers.test.mjs` exercises sentinel request and
+error secrets, fixed transport reasons, rejected outcomes and unchanged responses.
+This is test-harness diagnosis only; it does not change application requests or
+waive browser workflow or release checks.
+
 ### Scenario: local development uses incremental compilation
 
 Given a developer starts Loadgistic with the documented development command\
@@ -290,6 +305,20 @@ Evidence: `.github/workflows/ci.yml`, `scripts/ci-browser-shard.mjs`,
 `tests/e2e/ci-allowed-skips.json`, `tests/ci-browser-gate.test.mjs`, and the
 exact-candidate CI run recorded in the release handoff. Sharding changes scheduling,
 not test selection or the required all-tests-pass release outcome.
+
+### Scenario: failed browser shards expose bounded safe diagnosis
+
+Given a browser shard cannot list its selected tests or fails its existing completed-report checks\
+When the runner reports the failed gate\
+Then it emits the same sanitized summary in its log and a GitHub Actions error annotation\
+And the summary contains only an existing static failure reason, the shard number, nonnegative safe-integer result counts, and at most ten source test filenames of at most 128 characters each using only letters, numbers, dots, underscores and hyphens\
+And unavailable or malformed count fields are replaced by `?` without stringifying their values\
+And no test title, assertion body, contact, header, payload or raw report enters the annotation\
+And the existing selection, retry, skip and pass/fail requirements remain authoritative.
+
+Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.
+This changes failure diagnosis only; rollback removes the annotation without
+relaxing the browser gate or exposing the raw report.
 
 ### Scenario: Featured Prepare browser writes are isolated and required
 

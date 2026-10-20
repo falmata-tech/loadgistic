@@ -1,5 +1,151 @@
 ## October20 release-test failure and correction
 
+Current step: build the final web source, commit/push the reviewed task files,
+then require every exact-source CI job before any rollout.
+
+- [x] Local179 backup, application, parity and security verification.
+- [x] Affected Expo profile/filter workflow and remaining edited desktop/phone
+  smoke checks. The first smoke group passed9/12; the three mismatches were old
+  country-specific contact/desktop-tab assertions. Exact published-contact and
+  real phone Overview→Tracking checks pass with both map refresh/retry cases
+  in the final6/6 follow-up. No skips, flaky retries or new UI changes.
+- [x] Fresh production web build, final source/spec/type checks and strict
+  disposable fixture/API preflight(1/1, zero skips).
+- [ ] Scoped commit/push and all16 same-source CI jobs, including expanded scale.
+- [ ] Fresh Android APK/AAB, artifact verification and exact signing review.
+- [ ] Additional hosted176–179 review, matching rollout and installed-phone test.
+
+No hosted update, web release, signing or Play update has occurred in this run.
+
+The public map repair179 is installed locally after a protected fresh backup.
+The actual filtered API returns200/6items in1.3s (including dev adapter work).
+The previously failing Expo independent-profile/filter workflow passes1/1:
+eight initial pages complete for101 signal items; filters return200/6 and the
+selected provider returns200/1, with no repeated cursors or page errors. The
+other typing/clear cases passed earlier2/2. Full browser CI remains pending.
+
+Diagnosis found8,484 repeated assigned-driver lookups consuming3.767/3.931s;
+JIT comparisons did not materially help.179 reuses the same authoritative Driver
+once per latest vehicle. Its ordinary-postgres rollback candidate preserved
+full JSON/order and reduced initial4198→259ms and filtered4679→299ms, with209
+cached evaluations. Protected candidate receipt:
+`0a68bfd819c9f9756c35137a05b36c47d2a27b910a5a92cbb2cf4343602c88af`.
+The23-provider parity/denial SQL and all five requested SQL/security gates pass;
+existing owners, ACLs, records and legacy ledger are preserved. Two invalid
+synthetic setups were corrected against existing constraints (Partial endpoint
+references and Live→signal→Draft), with failed receipts retained and no179 replay.
+Verification receipt:
+`cf4633cdfc83cff610bfaf5fa78ce343a00cb95a08953e3c6f7523c5c42b9338`.
+
+The separate public route failure boundary passes5/5 after reproducing its old
+uncaught rejection:503/no-store, no internal cause or fake empty success,
+unchanged400 validation and healthy result shape. Its message is already
+translated in Amharic/Oromo. Expanded unscoped initial/filter/cursor scale checks
+retain the five-second limit; actual5,000-vehicle execution still needs CI.
+Hosted176–179 remain unapproved and untouched.
+
+The owner approved the two small phone CSS fixes: the refresh-error notice
+leaves the zoom controls clear, and the ordinary vehicle detail card fits without
+its extra scroll. The focused map group passes8/8, including retry, preserved
+selection/camera, overlapping geometry, documents and long-content handling.
+Captures: `.local/ci-ui-20261020/`. No further visual change is included here.
+
+The current local quality gate passes1007 unit tests, specification/source checks
+and TypeScript. The previous web production build passed; a fresh build including
+the new public route boundary remains required. The final TypeScript
+check also passes after the licence-badge test correction. Focused follow-ups:
+
+- Retained payment denial/history, public profile/photo upload, private document
+  submission/category scope, public document privacy and provider counts/activity
+  pass(5/5 desktop). Photo assertions now wait for the real image response.
+- Independent moderation holds and retired Support pre-/post-hydration checks
+  pass(2/2 desktop). The earlier late moderation failure was not reproduced;
+  bounded stage/status evidence remains available rather than declaring a fix.
+- Financed operating-licence review and private evidence pass on desktop and
+  phone(2/2), including the Expo upload. The badge belongs on Vehicle details;
+  the old test looked on the default Capacity tab.
+- Tracking route/map and proof cases pass on desktop after waiting for the actual
+  hydrated map before checking the terminal vehicle-marker state. The phone
+  route/proof cases passed in the earlier focused run.
+- Assignment persistence, document review, ratings, Expo signup, Account/photo,
+  session recovery, review navigation, map/proof, confirmation and workspace
+  structure have focused passing evidence. These do not replace full CI.
+
+The guarded fictional GPS case initially used a stale employee-denial request:
+current assigned drivers may choose Manual/Phone, so its Manual request succeeded.
+Read-only comparison identified the exact synthetic change; a guarded one-time
+normal-API correction passed, letting that driver release Manual before its owner
+restored the retained GPS/1km setting. No customer or physical device was involved.
+The corrected negative request uses owner-only GPS selection and checks exact
+403/FORBIDDEN plus unchanged state on web/mobile. Cleanup now rereads final state
+even after earlier restoration. Its full web/Expo case passes. The saved-Manual
+editor now also passes(1/1): web/Expo save, reopen, accuracy-only change without
+replacing the point, reload, Cancel/no-write and final GPS restoration; zero
+page errors. Protected final receipt: `saved-manual-editor-evidence-final.json`. No physical-device or engine-control proof
+is claimed. Request wireless Android access only when hardware acceptance is
+ready; another project is using the phone.
+
+Local schema diagnosis found176–178 on disposable rehearsal clones but absent
+from the active preview. Its legacy ledger129 is intentionally incomplete: never
+replay130 onward, reset the preview or rewrite that ledger. Protected backup and
+V2 restore are retained under `.local/browser-repair-20261020/`. The clone now
+contains176–178. Extension restoration needed the exact original PostGIS
+namespace and source table-security metadata; those local clone corrections are
+recorded separately, without ownership/catalog changes or primary writes.
+An interrupted gate stopped with ETIMEDOUT; after normal Docker recovery, exact
+clone metadata and zero remaining sessions were verified without replaying
+restore/migrations. All six SQL suites and both security gates then passed;
+rehearsal receipt15ab63815976da304fb9ce24aacd59394978d0f732cdfc5916bfdc00a152945a.
+The normal local apply stopped42501 at176 because the existing provider-directory
+function belongs to the original local administrator. The complete transaction
+rolled back; catalog/counts match its fresh backup. The owner explicitly approved
+the exact local-only remedy in `local-admin-apply-owner-review.md`: existing admin
+for whole176, then normal postgres for whole177/178; fresh backup2, unchanged SQL,
+owner preservation and all gates remain required. That exact operation completed:
+all176–178 applied locally, all eight gates passed, legacy ledger and old function
+owners remain unchanged. Applied receipt:
+`c9a2ed34b5e21ef3e3c12bb07216ee5cf886894b3a75831f4d5038b14e383441`.
+Hosted176–178 remain unapproved and untouched.
+Web health, Expo HTML/actual bundle and strict one-pass/zero-skip fixture preflight
+passed after recovery. Phone sponsor and all Operations inventories passed; the
+More test exposed a stale strict single-grid selector against the three current
+menu groups. Its corrected shared-page/heading checks pass desktop and phone(2/2).
+The two public/private shell tests pass across their explicit screen widths;
+the two duplicate phone-project executions remain intentionally skipped.
+Invalid multi-option correction passes desktop and phone(2/2), retaining denial
+before explicit correction and duplicate-query denial. Next Form navigation now
+waits for its actual commit; the local desktop navigation measured9.275s, exceeding
+an ordinary five-second locator wait. The existing60s test budget and separate
+five-second SQL performance gate are unchanged. This does not establish Production
+navigation timing.
+The first post-update preflight failed its old response.ok assertion; its HTTP
+status was not captured, and no root cause is claimed. Direct public-map/search
+requests subsequently returned200. The one controlled strict preflight rerun,
+now asserting exact HTTP200, passed one test/zero skips. Read-only inspection found
+zero owner execution denials in43 reachable functions/87 static definer edges;
+no additional privilege or permission change was made.
+
+The scoped browser API wrapper replaces transport exceptions with fixed method/
+reason tokens rather than printing Playwright request cookies. Its7 focused
+regressions pass; the CI result/annotation unit tests pass12/12. This protects
+that harness boundary, not every possible browser exception.
+
+Remote CI39417891018 on18fbece passed validation(including the unchanged5,000-
+vehicle search gates), mobile, container and all three isolated Featured Prepare
+jobs. All eight ordinary browser shards failed:347 passed,55 inventoried skips,
+110 failed and zero flaky retries. This is a failed release gate. The current
+repairs are uncommitted and need exact-source CI after the remaining focused
+workflows pass. No hosted database change, web deployment, Android signing or
+Play update is claimed by this checkpoint.
+
+Android artifact check: the existing protected code9 manifest has538/540 current
+files identical. Mobile Capacity changed its duplicate progressbar accessibility
+wrapper; the other difference is the web-only Admin return-path helper. The old
+APK is therefore not exact current mobile source. Prepare a fresh isolated local
+APK/AAB while preserving the old artifacts and unused signing approval. No key
+retrieval/signing or Play upload is authorized by source equivalence; a concrete
+replacement signing review follows the verified new artifact and CI.
+
 CI run `39412965593` on commit `8da376b` passed validation, mobile and
 container, but failed the isolated Featured operations browser case and browser
 shards 1, 2, 4, 5, 7 and 8; shard 3 stopped during its isolated database startup.
@@ -92,7 +238,9 @@ requires a separate fresh-database job for each, with desktop and phone passes.
 Those jobs have not yet run remotely. Ordinary browser shards now require an
 exact selected/result identity match, at least one pass, no retries or flaky
 result, and only 55 explicitly inventoried intentional skips; the strict runner
-has unit tests but has not yet run in CI. Full release checks remain pending.
+has12 passing focused unit tests. Safe failure summaries now also produce
+GitHub Actions error annotations; hosted annotation delivery is not yet
+verified. Full release checks remain pending.
 
 ## Active release completion — October19
 
