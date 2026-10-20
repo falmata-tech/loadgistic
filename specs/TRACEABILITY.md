@@ -1,3 +1,16 @@
+October20 NR-60 / FEAT-SHR-001 / FEAT-FLT-001 local first-save correction:
+`tests/sql/personal-fleet-capacity-sharing.sql` reproduces the assigned-personal-
+employee denial before180 and passes with the narrow candidate. Protected local
+installation preserves records/owner/ACL and passes the new suite, provider-owner
+fleets, capacity-sharing-policy, catalog and DataAPI gates. Four sharing modes,
+foreign targets, revoked permission, inactive actor, ended membership/assignment
+and unchanged state/service-only access are covered. The complete employed-driver
+onboarding journey passes on desktop and phone in
+`.local/browser-repair-20261020/fleet180-final-focused-summary.json`; that
+interrupted mixed-source receipt also retains unrelated short-case failures and
+is not a full-matrix pass. FullCI/hosted rollout remain pending; see current
+PROGRESS and the protected180 receipt.
+
 October19 focused release correction — FEAT-IAM/FLT-001 / NR-40:
 `175_fleet_contact_preserve_personal_identity.sql` preserves structured first/last
 names during authorized legacy fleet contact edits. Before-fix rollback-only

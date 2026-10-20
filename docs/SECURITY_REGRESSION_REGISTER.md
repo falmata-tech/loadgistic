@@ -1,5 +1,31 @@
 # Security failures we must not repeat
 
+## NR-60 — Personal-fleet employee omitted from sharing authority
+
+The deep onboarding browser journey reached a real capacity-save denial: an
+assigned employed driver of a personal Transport Provider passed fleet capacity
+authorization but the older private-sharing predicate admitted employed drivers
+only for organization-owned vehicles. Current clients always submit sharing mode,
+so the save failed with NOT_FOUND. Earlier fleet SQL omitted that field and never
+exercised the combined command.
+
+Use the established persisted employer-scope predicate for both fleet anchors,
+retaining current assignment, active actor/vehicle, capacity permission and all
+owner branches. Do not infer authority from a client role or merely possessing
+a vehicle ID. The new rollback-only personal-fleet sharing suite reproduces the
+original denial and checks all four sharing modes, foreign-vehicle denial,
+revoked capacity permission, inactive driver, ended membership/assignment, saved
+state preservation and service-only execution. Run it in required CI alongside
+actual browser signup/assignment/first-save/revocation flows.
+
+Migration180 is a narrow additive function repair with private rollback copy;
+no record, role or grant rewrite. The backed-up local installation by the existing
+function owner passes the new regression, existing fleet/sharing suites and both
+catalog/DataAPI security gates. The complete employed-driver onboarding journey
+passes in desktop and phone Chrome through first capacity save and revocation.
+FullCI and separately reviewed hosted rollout remain pending. Owner:
+fleet/sharing maintainers.
+
 ## NR-59 — Synthetic Play workspace inherits real email shares
 
 A registered Play reviewer can use the normal business customer flow. Before

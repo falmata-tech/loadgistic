@@ -1,4 +1,3 @@
-import {openCapacityFilters} from './capacity-drawer-helper';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from './browser-test';
 import {auditLogin} from './audit-helpers';
@@ -166,12 +165,12 @@ test('administration and support workspaces have no serious accessibility violat
 
 test('public filters support keyboard entry, Escape, and trigger focus restoration', async ({ page }: { page: Page }) => {
   await page.goto('/');
-  await openCapacityFilters(page);
-  const trigger = page.getByRole('button', { name: /^Filters/ });
+  const trigger = page.getByRole('button', { name: /^Vehicle filters/ });
+  await expect(trigger).toBeEnabled({timeout:30_000});
   await trigger.focus();
   await expect(trigger).toBeFocused();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Filters' });
+  const dialog = page.getByRole('dialog', { name: 'Vehicle filters' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close filters' })).toBeFocused();
   await expectAccessible(page,'capacity filters');
@@ -208,7 +207,7 @@ test('public and Driver mobile shells reflow without page-level horizontal scrol
   await page.setViewportSize({ width: 320, height: 720 });
   await page.goto('/');
   await waitForPage(page);
-  await expect(page.locator('.public-session-compact').getByRole('link', { name: 'Transporter login' })).toBeVisible();
+  await expect(page.locator('.public-session-compact').getByRole('link', { name: 'Sign in', exact:true })).toBeVisible();
   const publicMetrics = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
   expect(publicMetrics.scroll).toBeLessThanOrEqual(publicMetrics.client + 1);
   const marketGutters=await page.locator('.home-market-shell').evaluate((section:any)=>{const box=section.getBoundingClientRect();return {left:box.left,right:document.documentElement.clientWidth-box.right};});

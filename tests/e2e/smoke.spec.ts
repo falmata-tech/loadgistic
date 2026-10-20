@@ -295,6 +295,12 @@ test('public search and filters use every multi-city route and Service-area poin
   expect(combinedRouteResponse.ok()).toBeTruthy();
   expect((await combinedRouteResponse.json()).items.some((item:any)=>item.id===routeSignal.id)).toBe(true);
   combinedRouteQuery.set('status',routeSignal.status==='EMPTY'?'PARTIAL':'EMPTY');
+  if(combinedRouteQuery.get('status')==='PARTIAL'&&combinedRouteQuery.get('loadType')==='FTL'){
+    const invalidCombination=await page.request.get(`/api/public/capacity?${combinedRouteQuery.toString()}`);
+    expect(invalidCombination.status()).toBe(400);
+    // Test status exclusion with a valid request, separately from validation.
+    combinedRouteQuery.delete('loadType');
+  }
   const contradictoryRouteResponse=await page.request.get(`/api/public/capacity?${combinedRouteQuery.toString()}`);
   expect(contradictoryRouteResponse.ok()).toBeTruthy();
   expect((await contradictoryRouteResponse.json()).items.some((item:any)=>item.id===routeSignal.id)).toBe(false);

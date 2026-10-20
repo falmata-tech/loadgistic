@@ -183,7 +183,7 @@
     },
     {
       "file": "public-card-presentation.spec.ts",
-      "title": "native card labels translate in four languages while public record content stays unchanged",
+      "title": "native card labels translate in Amharic and Oromo while public record content stays unchanged",
       "project": "desktop-chromium"
     },
     {

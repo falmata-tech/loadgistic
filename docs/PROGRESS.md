@@ -1,3 +1,156 @@
+## October20 release-only work resumed
+
+The owner explicitly renewed the request: deploy working web and build working
+mobile. Scope stays at release blockers, with one focused browser lane and no
+new features, redesign or broad test reruns before focused failures are resolved.
+Resume from the recorded failures and preserved artifacts; do not restart work
+already proved. The prior cost stop below is historical, not the current task.
+
+Current step: commit/push the focused repairs once for exact-source CI. All six
+fleet signup cases now pass on desktop and phone: the two long employed-driver
+journeys and four final-source OWNED/PERMISSION driving-provider journeys. The driver
+Manual/Phone save, owner publication, public attribution/filter and reload case
+passes (1/1). Four desktop/phone accessibility cases pass after correcting obsolete
+labels without changing the interface or assertions. Public card coverage passes
+7/7 executed cases (one reviewed duplicate-language skip): the two native Capacity
+cases now include the authoritative location-source/demo suffix in the exact
+vehicle marker name, preserving filter/selection/modal/profile assertions.
+Receipts: `.local/browser-repair-20261020/{driver-location-case-resumed,
+a11y-labels-resumed,public-capacity-card-source-label}-summary.json` and the
+previous public-card matrix for the other five cases. Compiled Netlify runtime
+verification also passes against schema179 after restoring seven exact clone-only
+private-function grants; no primary or hosted grant was changed. No deployment,
+signing or Play update has occurred. New test-only repairs do not change the
+approved interface or runtime source.
+
+## October20 first-save defect — narrow local repair
+
+The focused desktop matrix completed32/37 cases. Five failures were isolated:
+three onboarding cases (obsolete first action/return path, old20km default, and
+an actual personal-employer sharing denial), one invalid FTL+Partial test request,
+and the expected review/ordinary-account sharing boundary added by176. Tests now
+retain the accepted UI, valid negative filter requests, actual10km default and
+explicit reviewer/ordinary denial before the allowed synthetic share. The review
+and multi-city filter cases pass on rerun. No UI redesign was introduced.
+
+NR-60 / migration180 repairs only the old organization-only employee branch of
+`private_capacity_actor_controls_vehicle`, reusing persisted employer membership
+and retaining activity, capacity permission, current assignment and owner scope.
+The rollback-only regression reproduces the original denial and passes with the
+candidate across four sharing modes and revocation/foreign/state/ACL checks. Its
+first two disposable fixture attempts correctly stopped at driver-registration
+and policy-consent requirements; those records rolled back. The final fixture
+uses the real registration/consent contracts rather than bypassing either.
+
+The ordinary localpostgres installation has a fresh protected dump/rollback and
+passes five SQL/security gates, preserving owner/ACL/counts and the known legacy
+ledger129. Receipt: `.local/browser-repair-20261020/sharing180-local/verified.json`;
+SQL SHA256`5c28a59780ec26a35d917c3d67f0603ceb1c72a02503a664f15426a704a617d0`.
+The first local installer guard stopped before any file/write because the
+catalogOID is a string; the corrected explicit string check retains that guard.
+No migration replay, ledger rewrite or hosted operation occurred.
+Two failed local browser fixtures were removed only after proving their exact
+email nonces, owner/account name, vehicle plates and absence of shipments. The
+cleanup guard now checks the chosen Account name in company_pages, independently
+of private legacy business_name. The OWNED and PERMISSION driving-provider desktop journeys now pass, including
+publication and10km saved privacy. The complete employed-driver journey now
+passes on desktop and phone, including signup, explicit assignment, first save,
+reassignment, driver location, owner publication, permission revocation, duty
+changes, offboarding and exact fixture cleanup. The test helper now waits for
+each actual Fleet link destination before reading assignment context. The
+interrupted mixed-source run retains both passing long journeys and its earlier
+short-case failures; only a fresh final-source short run can close those cases.
+The final quality gate passes1014 tests, spec/source checks and typecheck.
+Final short-case receipt:
+`.local/browser-repair-20261020/fleet180-final-provider-ordinary-summary.json`
+(4/4, no skips/retries). A sandbox-only attempt could not launch Chrome and
+failed before any test step; the ordinary permitted launch then completed all
+four cases. The interrupted older-source failures are retained, not overwritten
+or credited as a clean matrix. Spec/source checks pass again after recording
+these results. Full remote CI remains required.
+
+Android incremental compilation finished successfully (1232seconds). All12 fresh
+artifact gates pass: package/version, permissions, bothABI ELF/RELRO,16KB
+alignment, production origin and private/local endpoint exclusion. The initially
+reported local API URL was two separately indexed strings sharing one physical
+Hermes byte-pool boundary. The matching Hermes compiler's logical string table
+and10 positive/negative parser cases prove that distinction; no scan was waived.
+Original failed receipts remain. Signing, installation, fullCI, additional hosted
+SQL approval and production deployment remain outstanding.
+
+The completed read-only hosted snapshot is preserved and validated without
+redumping or resetting its original age (17:52:25UTC). Two current read-only
+metadata comparisons still match the pinned ledger137 source. Backup receipt:
+`.local/release-20261020/fresh-hosted-backup-evidence-v2.json`. Isolated restore
+has not run: the archive also contains system-role default privileges which the
+ordinary application owner cannot restore. Exact prerequisite classification is
+being prepared; no broader credential use, primary change or hosted write is
+implied by the backup receipt.
+
+## October20 cost concern — further runs stopped
+
+The owner reported exhausted token budget. All three active agents were
+interrupted; no further CI, build or browser run is authorized by this checkpoint.
+Do not restart broad gates without an explicit owner request. Preserve the work.
+
+CI39455230902 is terminal FAILED:437 passed,55 reviewed skips,20 failed browser
+cases across all eight groups. Validation, Mobile boundaries, container and three
+Featured groups passed. The web artifact built and passed source/archive checks
+(1970 source files,6 functions), but compiled-runtime verification stopped before
+Auth/container execution on seven clone-only owner/grant differences. No web
+promotion, hosted SQL application, signing-key use or Play update occurred.
+
+The interrupted native build has no success receipt or verified new artifact.
+The interrupted driver/Play-policy reproduction and elevated accessibility run
+have no terminal result; do not count them as evidence. Local web3100 and Expo8084
+were restarted after the interruption and remain the only task-owned previews.
+
+Read-only accessibility source review identified two concrete outdated test
+labels: `Filters` versus current `Vehicle filters`, and `Transporter login`
+versus current `Sign in`. These are candidates for focused confirmation, not
+implemented fixes or proof that all20 failures are test-only.
+
+Uncommitted safe CI-location diagnostics have19 focused passing unit tests plus
+spec/source/syntax checks. Preserve those three task files and this progress
+record separately from the pre-existing `next-env.d.ts` and `apps/mobile/.claude/`
+changes. No commit or push was performed after13bb1175.
+
+## October20 exact-source release run — publication still blocked
+
+Source `13bb1175fb83bc60f26245c8a17586c1779c12c4` is committed and pushed.
+CI `39455230902` has passed validation (including the unchanged five-second
+5,000-vehicle gate), Mobile boundaries, container and all three isolated Featured
+groups. Browser group4 failed40 passed/21 reviewed skips/2 failures, naming
+`driver-manual-mobile-preview.spec.ts` and `play-policy-workflows.spec.ts`.
+Group5 has also failed; its bounded annotations are the next diagnostic input.
+No final CI success, production update, signing or Play update is claimed.
+
+- [ ] Reproduce the named browser files once locally and classify each failure
+  before changing behavior or tests. Keep privacy and workflow assertions intact.
+- [ ] Add safe test-file/line diagnostics without retaining browser reports,
+  message bodies, contacts or credentials; prove negative privacy cases.
+- [ ] Complete exact-source CI and packaging after the focused fixes pass.
+- [ ] Complete the existing additional SQL/signing review and matching rollout.
+
+Fresh isolated Android source539 files matches13bb1175. The missing locked public
+icon package was fetched into a private cache; the dependency install and CNG
+pass. Gradle's initial sandbox socket denial was classified and its unchanged
+offline build continued with ordinary execution permission. Android compilation
+and isolated Linux Netlify packaging are running; neither is a published build.
+Existing candidates, signing approvals and user changes remain untouched.
+
+Read-only hosted inspection confirms Loadgistic ledger137 and normal role
+postgres. A later metadata-only source-catalog query stopped without writes;
+its stale `capacity_updates` reference is being corrected against migration021's
+`capacities` rename before a controlled read-only retry. No backup/restore success
+is inferred from that stopped query. Protected receipts are under
+`.local/release-20261020/` and `.local/browser-repair-20261020/`.
+
+The existing disposable clone alone now also contains179. Its new regression,
+catalog and Data API checks pass; the preview and hosted database were untouched
+by this clone step. The compiled-artifact verifier is prepared against179 and
+requires the completed clone receipt before execution.
+
 ## October20 release-test failure and correction
 
 Current step: build the final web source, commit/push the reviewed task files,

@@ -11,6 +11,13 @@ rollout: Add service-role-only PostgreSQL workspace and atomic Driver-access com
 
 # Fleet driver access
 
+October20 local correction: FEAT-SHR-001 / NR-60 requires the same employer-scope,
+capacity permission and current assignment for employed drivers of both personal
+providers and organizations. Migration180 repairs the older sharing predicate;
+`tests/sql/personal-fleet-capacity-sharing.sql` and the real onboarding journey
+cover explicit sharing-mode saves rather than only legacy capacity payloads.
+No employee fleet-management or document-review permission is added.
+
 ## October18 courier configurations — planned local restoration
 
 The latest owner request supersedes the September25 courier retirement below.

@@ -38,6 +38,28 @@ historical and superseded for active Brokerage/LOADGISTIC behavior, not evidence
 of its continuing availability. No private history erasure is included.
 
 
+# October20 assigned personal-fleet driver correction — local repair
+
+Given an active provider has assigned a vehicle to an active employed driver\
+And that driver still belongs to the same provider and may manage capacity\
+When the driver saves capacity with Public, Private, Both or Exclusive sharing\
+Then the same persisted membership, current assignment and permission checks used
+for company-fleet drivers authorize the save and named sharing controls.
+
+Given capacity permission, membership, assignment or actor activity is revoked\
+When that actor attempts a sharing change or publication\
+Then it is denied and the saved policy, grants and capacity remain unchanged.
+Another provider's vehicle remains inaccessible. Owners retain current authority;
+no fleet, document, Tracking, staff or client execution permission is added.
+
+Migration180 patches only the old organization-only employee branch in the
+existing service-only sharing predicate to use the established fleet-scope
+membership predicate. Owner branches, activity, permission and assignment guards
+remain. Rollback restores the private pre180 definition and its unchanged ACL.
+Verification: rollback-only `tests/sql/personal-fleet-capacity-sharing.sql`, the
+existing provider-fleet/sharing SQL suites, and real desktop/phone onboarding
+save/readback/denial workflows. Hosted rollout requires separate exact SQL review.
+
 # Private capacity network
 
 ## Named private contacts — October 8 owner request
