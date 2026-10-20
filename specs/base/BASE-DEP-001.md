@@ -279,7 +279,7 @@ not installed provider-level enforcement.
 
 ### Scenario: all browser shards must pass before release
 
-Given the complete desktop and phone Playwright suite runs across four isolated CI runners\
+Given the complete desktop and phone Playwright suite runs across eight isolated CI runners\
 When any shard fails, is cancelled or is skipped\
 Then the aggregate `e2e` release gate fails\
 And each shard owns its Supabase fixtures and runs one worker without sharing mutable test data.

@@ -226,7 +226,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     # Every shard owns its database and retains one Playwright worker.
     timeout-minutes: 60
     env:
@@ -281,7 +281,7 @@ jobs:
           echo "$!" > ../../.local/ci-mobile-preview.pid
 
       - name: Run desktop and mobile browser workflows
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/8
 
       - name: Stop the task-owned Expo preview
         if: always()
