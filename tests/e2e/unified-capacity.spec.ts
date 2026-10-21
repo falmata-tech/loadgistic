@@ -81,7 +81,13 @@ test('private email code unlocks only its grants and retains private scope throu
   expect((await publicPage.json()).items.some((v:{id:string})=>v.id===capacity.id)).toBe(false);
   await choice(page).getByRole('link',{name:'Privately shared with you',exact:true}).click();
   await expect(page.getByRole('button',{name:'Log out',exact:true})).toBeVisible();
+  await expect(page.locator('.language-picker select:visible')).toBeEnabled();
+  const loggedOut=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/shared-capacity/session'&&response.request().method()==='DELETE');
+  const logoutNavigation=page.waitForResponse(response=>{const url=new URL(response.url());return response.request().isNavigationRequest()&&response.request().method()==='GET'&&url.pathname==='/'&&url.searchParams.get('view')==='private'&&url.searchParams.get('session')==='logout';});
   await page.getByRole('button',{name:'Log out',exact:true}).click();
+  expect((await loggedOut).status()).toBe(200);
+  const logoutDocument=await logoutNavigation;expect(logoutDocument.status()).toBe(200);await logoutDocument.finished();
+  await expect(page).toHaveURL((url:URL)=>url.pathname==='/'&&url.searchParams.get('view')==='private'&&url.searchParams.get('session')==='logout');
   await expect(page.locator('.locked-capacity-map')).toBeVisible();expect((await page.request.get('/api/shared-capacity')).status()).toBe(401);
   await page.goBack();await page.goBack();
   await expect(page.locator('.shared-capacity-session-workspace')).toHaveCount(0);
