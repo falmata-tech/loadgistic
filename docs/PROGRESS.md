@@ -8,15 +8,46 @@ do not read it as current instructions or restart work from its old pending item
 
 ## Objective and boundaries
 
-Finish the owner-requested whole-test audit, then ship the approved web/database
-release and Android Play test build. The first post-audit CI stopped at a
-randomly ordered GPS test fixture; its deterministic repair passes locally.
-All 84 tests in the exact local CI SQL group now pass. CI39511514293 then passed
-13 jobs; one browser action-order test failed, along with its two summary jobs.
-Its complete focused workflow now passes in44.4s without an app/UI change. Broader
-engineering housekeeping is ongoing: improve recurring cost
-and friction across code, tests, scripts, tooling, agents and shipping, rather
-than addressing today's incident alone.
+Current dependency: repair the newly observed mutable-search-path warning for
+`current_provider_vehicle_authority()` before web publication (FEAT-SEC-001,
+NR-66). CI39516069847 passed all16 required jobs on133bd08. The42 approved SQL
+updates are applied through180; the exact signed1.1.1/code9 build is installed
+on the approved phone. Web promotion, final native acceptance and Play upload
+are not complete. The owner questioned accepting the warning; no exception was
+approved. Production remains unchanged while the repair is prepared locally.
+
+Ordered security-repair steps:
+
+- [x] Verify the exact live warning and function authority read-only: SQL/STABLE,
+  invoker, postgres owner, no public/anon/authenticated/service EXECUTE, unchanged
+  body and no PUBLIC CREATE on its schema. Protected release receipts retain
+  both the failed strict scan and completed42SQL operation.
+- [x] Qualify the correctness and permissions of the search-path repair on the disposable
+  V11 restore, preserving authority, private results and5000-vehicle/map/search
+  gates. The first scale probe stopped for missing synthetic reviewed-owner
+  prerequisites; it is not performance evidence. Add that rollback-only fixture.
+  SET-only correctness checks pass, but its5000-vehicle profile search took
+  12.265s against the unchanged5s limit. Do not deploy it. The revised private
+  security-invoker view, three exact discovery substitutions and reused query
+  caches pass nine focused SQL suites,14 negative security fixtures and their
+  positive controls; all fixtures and schema changes roll back.
+- [x] Add a pre-release local function-search-path check and negative fixtures.
+- [ ] Current: complete final source/spec/quality checks and exact-source CI.
+  The5000-vehicle run passes all results/counts/payload/cursor assertions, profile
+  search4.707s and overview4.907s, but provider-map5.623s and route-map7.986s exceed
+  the unchanged5s gate locally. This is not a passing scale qualification. CI's
+  existing same-source timing gate remains required; no threshold is increased.
+- [ ] Obtain owner review of the exact additional SQL, fresh recoverable backup,
+  rehearsal and rollback before any hosted repair. Earlier SQL approval ends180.
+- [ ] Independently verify the hosted repair removes this warning, then resume
+  unchanged web-artifact publication, native acceptance and Play testing.
+
+Finish the approved web/database release and Android Play test build after the
+security repair. The whole-test audit and original133bd08 CI are complete; their
+verified evidence is retained below. The subsequent six-line private-Capacity
+test maintenance is committed as48464e1, with exact desktop/phone Chrome evidence
+and unchanged privacy assertions. Broader engineering housekeeping must not
+restart completed audits or hide the remaining delivery/security gates.
 
 - Audit baseline: `8df190de2ad83f5c473bf09b9b360410b3896ec2`,
   branch `feat/mobile-app`; CI39497266765 was cancelled for this audit.
@@ -24,10 +55,11 @@ than addressing today's incident alone.
   current head and protected receipts for subsequent exact-source CI status.
 - Preserve unrelated
   `next-env.d.ts` and `apps/mobile/.claude/` changes. Do not rewrite Git history.
-- No hosted database writes, signing, web publication or Play upload occurred
-  during this audit. The release is not yet complete.
-- Web preview: http://127.0.0.1:3100; Expo8084 is off. Verify responding process
-  and project before restarting either. Local Supabase is55321/55322.
+- Database updates through180 and signing/install are completed; web publication
+  and Play upload remain incomplete. No181 hosted write has occurred.
+- Loadgistic web3100 and Expo8084 previews were stopped under owner authority to
+  free local test resources. Other-app processes are untouched. Verify project
+  identity before restarting. Local Supabase remains55321/55322.
 
 ## Ordered remaining work
 
@@ -68,21 +100,22 @@ than addressing today's incident alone.
   retain the clearance assertion as a numeric gap, and await redirect completion.
   Full driver Expo/web/manual/phone/publication/public-map case passes in44.4s;
   no timeout increase or UI change. See NR-65.
-- [ ] Current: commit this bounded test/lesson repair, then run exact-source CI.
-  No new CI while another known finding remains unresolved.
+- [x] Commit the Go-live repair as133bd08 and finish CI39516069847: all16 required
+  jobs pass after one failed-jobs-only rerun. The observed hydration-before-logout
+  test problem is separately repaired in48464e1; exact Chrome cases pass2/2.
 - [x] Build and inspect the matching 2015 web package: 1989 source files and six
   function ZIPs verified; no hosted writes. A failed CI makes it unpromotable.
 - [x] Run its actual compiled runtime against local schema180: health, public
   capacity, synthetic provider sign-in/workspace and private document access/
   anonymous denial all pass. This is local runtime evidence, not production
   readiness or hosted publication.
-- [ ] Prove packaged web equality to the next tested source if changes remain
-  test/docs-only. Android offline
-  preflight confirms 534 identical manifest files, five reviewed non-native
-  deltas and 210 unchanged emitted project sources; no key read or signing.
-- [ ] Refresh short-lived backup/restore/security checks only after stable gates.
-  Bind the approved SQL and signing artifacts to the current execution plan;
-  apply the original target/digest/CI/approval rules without extending freshness.
+- [x] Prove packaged web/Android equality to tested133bd08; publish a verified
+  Netlify draft without switching live, sign approved code9 once and install/
+  byte-verify it. The final repair still needs current-source qualification.
+- [x] Complete fresh V11 backup/restore,37+5 SQL rehearsals and approved42SQL
+  execution through180. Preserve original receipts and their actual clocks.
+- [ ] Refresh181-specific backup/restore/security evidence after stable gates;
+  obtain exact additional SQL authority rather than reusing the through180 scope.
 - [ ] Complete the approved rollout, installed Android verification and Play
   testing submission; record actual hosted status and tester link. Request fresh
   phone Wi-Fi debugging only when device testing is ready.

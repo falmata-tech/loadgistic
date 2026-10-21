@@ -9,6 +9,15 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- FEAT-SEC-001 / NR-66: proposed181 pins the private authority helper's lookup
+  scope, preserves discovery through an owner-only security-invoker view and
+  reuses existing scoped query caches. Nine focused SQL suites and14 injected
+  negative catalog cases pass, with rollback verified. The new
+  [authority regression](../tests/sql/provider-authority-search-path.sql) covers
+  seven synthetic current/expired/revoked/changed/foreign facts, exact helper/
+  view multiset parity, hostile caller paths and role/column denial. The5000
+  result/cursor checks pass but two local map timings exceed5s; full CI and
+  exact additional hosted SQL approval remain required. No181 live fix is claimed.
 - October20 delivery-tooling changes (BASE-DEP-001):
   [`check-workflow.mjs`](../scripts/check-workflow.mjs) and
   [`workflow-quality.test.mjs`](../tests/workflow-quality.test.mjs) add a pinned,
@@ -81,7 +90,7 @@ Use the historical record only for a dated result or decision provenance.
 | [FEAT-PRV-001](features/FEAT-PRV-001.md) | Truck-linked public transporter microsites | [tests/public-provider-paging.test.mjs](../tests/public-provider-paging.test.mjs); [tests/sql/public-provider-paging.sql](../tests/sql/public-provider-paging.sql) |
 | [FEAT-PST-001](features/FEAT-PST-001.md) | Retired shared-demand discovery | See named ownership in the spec. |
 | [FEAT-REV-001](features/FEAT-REV-001.md) | Verified guest reviews for transport providers | [tests/sql/review-moderation-restrictions.sql](../tests/sql/review-moderation-restrictions.sql); [tests/e2e/tracking-completion-review.spec.ts](../tests/e2e/tracking-completion-review.spec.ts) |
-| [FEAT-SEC-001](features/FEAT-SEC-001.md) | Production security checks and limited agent authority | [tests/security-operations.test.mjs](../tests/security-operations.test.mjs); [tests/sql/security-boundaries.sql](../tests/sql/security-boundaries.sql) |
+| [FEAT-SEC-001](features/FEAT-SEC-001.md) | Production security checks and limited agent authority | [tests/security-operations.test.mjs](../tests/security-operations.test.mjs); [tests/sql/security-boundaries.sql](../tests/sql/security-boundaries.sql); [tests/sql/provider-authority-search-path.sql](../tests/sql/provider-authority-search-path.sql) |
 | [FEAT-SEO-001](features/FEAT-SEO-001.md) | Public search discovery without private workspace indexing | [tests/public-seo.test.mjs](../tests/public-seo.test.mjs); [tests/workspace-area-navigation.test.mjs](../tests/workspace-area-navigation.test.mjs) |
 | [FEAT-SHP-001](features/FEAT-SHP-001.md) | Provider-created Tracking sessions | See named ownership in the spec. |
 | [FEAT-SHR-001](features/FEAT-SHR-001.md) | Truck-scoped private capacity sharing | [src/lib/private-capacity.js](../src/lib/private-capacity.js); [tests/platform-brokerage-retirement.test.mjs](../tests/platform-brokerage-retirement.test.mjs); [tests/sql/platform-brokerage-retirement.sql](../tests/sql/platform-brokerage-retirement.sql) |

@@ -1,4 +1,18 @@
-## Current October 20 release authority — approved, pending gates
+## Current October 20 execution status
+
+All16 required jobs passed on133bd08 in CI39516069847. The42 approved migrations
+are applied through180 on Loadgistic only. The exact approved1.1.1/code9 signing
+was used once; temporary private signing material was removed. That signed APK
+is installed and byte-verified on the approved phone; final native acceptance
+and Play upload remain incomplete. These facts supersede the earlier pending/
+unused execution wording below, without changing its original approval scope.
+
+Web publication stopped at a new mutable-search-path warning. The owner did not
+approve an additional warning exception. Repair181 is being qualified locally;
+there is no authority to apply181, change Auth settings or publish through a
+failed remaining gate. Fresh exact SQL review and recovery evidence are required.
+
+## October 20 release authority — original approved scope
 
 The owner's additional answer, “Approve these final five database fixes after CI
 passes,” covers only migrations 176–180 on Loadgistic `tpwyyzoqijjmbvsmmvcm`, in

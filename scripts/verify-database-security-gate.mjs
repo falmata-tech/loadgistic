@@ -15,7 +15,10 @@ const cases=[
   ['RLS','create table public.security_boundary_table(id bigint);','PUBLIC_RLS_REQUIRED'],
   ['future table default','alter default privileges for role postgres in schema public grant select on tables to anon; create table public.security_future_table(id bigint); alter table public.security_future_table enable row level security;','APPLICATION_BROWSER_PRIVILEGES_FORBIDDEN'],
   ['future sequence default','alter default privileges for role postgres in schema public grant usage on sequences to authenticated; create sequence public.security_future_sequence;','APPLICATION_BROWSER_PRIVILEGES_FORBIDDEN'],
-  ['default definer execute','create function public.security_future_definer() returns integer language sql security definer as \'select 1\';','APPLICATION_BROWSER_DEFINER_FORBIDDEN']
+  ['default definer execute','create function public.security_future_definer() returns integer language sql security definer as \'select 1\';','APPLICATION_BROWSER_DEFINER_FORBIDDEN'],
+  ['private invoker search path',"create function public.security_private_invoker() returns integer language sql security invoker as 'select 1'; revoke all on function public.security_private_invoker() from public,anon,authenticated,service_role;",'APPLICATION_FUNCTION_SEARCH_PATH_REQUIRED'],
+  ['private definer search path',"create function public.security_private_definer() returns integer language sql security definer as 'select 1'; revoke all on function public.security_private_definer() from public,anon,authenticated,service_role;",'APPLICATION_FUNCTION_SEARCH_PATH_REQUIRED'],
+  ['removed search path','alter function public.current_provider_vehicle_authority() reset search_path;','APPLICATION_FUNCTION_SEARCH_PATH_REQUIRED']
 ];
 function check(sql){
   // Fixed isolated container and database: no remote URL, credential or CLI override.
@@ -37,4 +40,9 @@ for(const [name,sql,expected] of cases){
 const repaired=check(`grant select(full_name) on public.profiles to public;
 grant update(full_name) on public.profiles to authenticated;\n${migration}\n${gate}`);
 if(repaired.status!==0)throw new Error('COLUMN_REPAIR_OR_REPEATABILITY_FAILED');
-console.log('Explicit column repair and repeatable migration passed; all fixture changes rolled back.');
+const configured=check(`create function public.security_configured_invoker() returns integer
+language sql security invoker set search_path=pg_catalog as 'select 1';
+revoke all on function public.security_configured_invoker() from public,anon,authenticated,service_role;
+${gate}`);
+if(configured.status!==0)throw new Error('EXPLICIT_SEARCH_PATH_REJECTED');
+console.log('Explicit column repair, repeatable migration and configured private helper passed; all fixture changes rolled back.');

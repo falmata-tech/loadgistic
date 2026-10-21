@@ -44,3 +44,22 @@ begin
     raise exception 'AUTHENTICATED_OWN_IDENTITY_REQUIRED';
   end if;
 end $$;
+
+-- Mirror the function-configuration advisor before a hosted migration. Invoker
+-- and private helpers still need a fixed lookup scope; extension owners retain
+-- their separate boundary and are not altered by this application gate.
+do $$
+declare unsafe text;
+begin
+  select string_agg(p.oid::regprocedure::text,', ' order by p.oid::regprocedure::text)
+  into unsafe
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.prokind='f'
+    and not exists(select 1 from pg_depend d where d.classid='pg_proc'::regclass
+      and d.objid=p.oid and d.deptype='e')
+    and not exists(select 1 from unnest(p.proconfig) as config(setting)
+      where config.setting like 'search_path=%');
+  if unsafe is not null then
+    raise exception 'APPLICATION_FUNCTION_SEARCH_PATH_REQUIRED: %',unsafe;
+  end if;
+end $$;

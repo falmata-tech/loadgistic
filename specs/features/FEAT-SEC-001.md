@@ -11,6 +11,49 @@ rollout: Verify exact targets and approved encrypted backups; repair the provide
 
 # Security operations
 
+## Scenario: first-party functions cannot defer search-path warnings to production
+
+Given a migrated local or rehearsed database contains first-party public functions\
+When the database security gate runs\
+Then every such function has an explicit function-local search path\
+And extension-owned functions remain outside this application-owned check\
+And an invoker function with browser EXECUTE revoked still fails if its search
+path is mutable; private visibility does not waive hardening\
+And a transactionally injected missing setting fails before hosted rollout.
+
+Given the current vehicle-authority helper is hardened\
+When its configured search path becomes pg_catalog\
+Then its signature, SQL body, owner, invoker mode, volatility and execute ACLs
+remain unchanged\
+And expired/revoked/foreign facts and unapproved sources remain excluded\
+And caller-path shadowing cannot change results or execute the shadow function\
+And original map/search eligibility, complete result and scale gates still pass.
+
+Given a function-local setting prevents SQL query inlining\
+When the existing discovery helpers use an equivalent relational view instead\
+Then the view has exactly the original authority columns and row multiplicity,
+including current/expiry/revocation and beneficiary checks\
+And it uses security_invoker with owner-only relation and column access\
+And public, authenticated and service API roles cannot read it directly\
+And only the three named discovery helper bodies change their relation reference;
+their signatures, owners, ACLs, security modes and search paths stay unchanged\
+And other authority commands continue using the hardened helper\
+And two-way multiset comparisons and original performance gates remain required.
+
+The bounded discovery helpers are `provider_scope_can_publish`,
+`provider_vehicle_authority_state` and `provider_fleet_authority_summary`.
+The private profile-row producer additionally evaluates publication eligibility
+once per distinct vehicle-owned provider scope, using the existing178 map
+pattern; it must not substitute a capacity's declared beneficiary for its vehicle
+owner. The service-only cluster producer reuses the existing179 single-driver
+lookup pattern for the latest signal. Every matching predicate, route/geometry
+calculation, result field, count, ordering and original timing limit is preserved.
+Implementation and qualification are in progress (migration181, NR-66). Tests:
+`tests/sql/provider-authority-search-path.sql`,
+`scripts/verify-database-security-gate.mjs`, and the existing authority/map/search
+regressions. Applying181 requires separate exact production SQL review; the
+existing approval through180 and two-warning exception do not cover this repair.
+
 ## Scenario: a restored backup retains security as well as data
 
 Given a protected database snapshot has passed its source catalog checks\

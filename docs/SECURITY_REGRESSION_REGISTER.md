@@ -1,5 +1,32 @@
 # Security failures we must not repeat
 
+## NR-66 — Local catalog checks omit a function-security advisor condition
+
+**Observed October20:** after the approved42SQL rollout through180, the hosted
+advisor reported mutable `search_path` on the internal vehicle-authority helper.
+The local gate checked relation/RLS and executable definer exposure, but did not
+mirror this function-configuration rule. The function is SQL/STABLE/invoker and
+not directly executable by public, signed-in or service roles; those facts limit
+exposure but do not remove the warning or authorize a release exception.
+
+**Control being implemented:** check explicit search paths on every first-party
+public function locally, excluding extension-owned objects, with rolled-back
+unsafe invoker/definer fixtures. Harden only the affected helper; preserve its
+body, signature, owner, ACL and authority outcomes. Test caller-path shadowing
+and original5000-vehicle/map/search gates: function-local SET disables SQL
+inlining, so a one-line fix cannot be assumed performance-neutral.
+
+**Evidence and limits:** protected live metadata and failed strict scan are in
+`.local/release-20261020/`. The initial isolated scale attempt lacked a reviewed
+synthetic owner and stopped before timing; correctness probes alone are not
+scale qualification. The SET-only candidate passes nine focused SQL suites and
+14 negative gate fixtures, but5000-vehicle profile search took12.265s against5s.
+It is not deployable. The equivalent private security-invoker view candidate
+preserves exact predicates and permission scope and remains under qualification.
+No third-warning exception or181 hosted repair is approved.
+**Owner / next:** security and release maintainer; finish targeted regression,
+fresh exact SQL review and independent hosted postcheck before web publication.
+
 ## NR-65 — Browser actions run before their target screen is ready
 
 **Observed:** CI39511514293 passed 13 jobs; browser shard4 failed the owner
