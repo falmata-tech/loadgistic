@@ -70,12 +70,12 @@ async function expectAccessible(page: Page, label: string) {
   ).join('\n')}`).toEqual([]);
 }
 
-test('public release routes have no serious accessibility violations', async ({ page }: { page: Page }) => {
-  for (const route of ['/', '/shared-capacity', '/featured', '/about', '/privacy', '/terms', '/track', '/login', '/apply', '/@blueline-transport']) {
+for(const route of ['/', '/shared-capacity', '/featured', '/about', '/privacy', '/terms', '/track', '/login', '/apply', '/@blueline-transport']){
+  test(`public route ${route} has no serious accessibility violations`, async ({ page }: { page: Page }) => {
     await visitPublicRoute(page,route);
     await expectAccessible(page, route);
-  }
-});
+  });
+}
 
 test('unified account access keeps one responsive and touch-sized task',async({page}:{page:Page})=>{
   for(const viewport of [

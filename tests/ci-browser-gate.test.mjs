@@ -316,6 +316,23 @@ test('case annotations discard sentinel contact, credential and request context 
  assert.equal(chunks.join('').split('\n').filter(line=>line.startsWith('::error')).length,2);
 });
 
+test('public accessibility failures expose only reviewed route and axe rule IDs',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',project:'desktop-chromium',results:[{status:'failed',error:{
+  message:'/featured serious/critical accessibility violations:\ncolor-contrast: Elements must have sufficient color contrast\n  PRIVATE_CONTACT@example.test — PRIVATE_TOKEN\ntarget-size: Targets must have sufficient size\nPRIVATE_RULE: PRIVATE_SECRET',
+  stack:'Error\n    at source (/repo/tests/e2e/accessibility.spec.ts:70:7)'
+ }}]});
+ report.suites[0].specs[0].title='public route /featured has no serious accessibility violations';
+ const diagnostic=failedBrowserCaseDiagnostics(report)[0];
+ assert.deepEqual(diagnostic.a11y,{route:'/featured',rules:['color-contrast','target-size']});
+ const output=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',1,report,value=>output.push(value));
+ assert.match(output.at(-1),/^::error file=tests\/e2e\/accessibility.spec.ts,line=70::CI_BROWSER_A11Y route=\/featured rules=color-contrast,target-size\n$/);
+ assert.doesNotMatch(output.join(''),/PRIVATE|example\.test|TOKEN|SECRET/);
+ for(const title of ['public route /PRIVATE has no serious accessibility violations','PRIVATE contact@example.test']){
+  report.suites[0].specs[0].title=title;
+  assert.equal(failedBrowserCaseDiagnostics(report)[0].a11y,undefined);
+ }
+});
+
 test('case diagnostics are bounded per failed case without changing completed-report gate decisions',()=>{
  const report=diagnosticReport();
  const spec=report.suites[0].specs[0];
@@ -354,7 +371,8 @@ test('fixture preflight rejects skipped, absent, flaky and failed browser eviden
 });
 
 test('release branches start CI automatically and other branches keep PR or dispatch',()=>{
- assert.match(workflow,/on:\n\s+pull_request:\n\s+push:\n\s+branches: \[main, feat\/mobile-app, 'release\/\*\*'\]\n\s+workflow_dispatch:/);
+ assert.match(workflow,/on:\n\s+pull_request:\n\s+push:\n\s+branches: \[main, 'release\/\*\*'\]\n\s+workflow_dispatch:/);
+ assert.doesNotMatch(workflow,/branches: \[[^\]]*feat\/mobile-app/);
 });
 
 test('one release-ready job requires every same-commit boundary',()=>{

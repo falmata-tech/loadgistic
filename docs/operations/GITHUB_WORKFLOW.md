@@ -14,10 +14,11 @@ cannot certify current work. All existing branches report unprotected; the
 accessible ruleset list is empty. No provider setting was changed in this review.
 Protected metadata receipt: `.local/test-audit-20261020/github-workflow-inventory.json`.
 
-The working CI runs on all PRs and pushes to main, the temporary mobile branch
-and release branches, with per-ref cancellation. Opening a PR on those branches
-can also run a separate push build: per-ref cancellation does not deduplicate
-them. `release-ready` aggregates validation, browser/Featured, mobile and container
+The October 20 CI ran on all PRs and pushes to main, the temporary mobile branch
+and release branches, with per-ref cancellation. That temporary branch trigger
+could run the same full matrix twice after a PR was opened. Current CI runs on
+all PRs and pushes to main and release branches; the feature branch uses its PR
+run. `release-ready` aggregates validation, browser/Featured, mobile and container
 outcomes; it fails when a required dependency does not succeed. Keep those gates.
 
 `netlify.toml` sets the build and Node version. A separate read-only Netlify site
@@ -98,10 +99,9 @@ and available account features before a separately authorized apply.
 
 After the catch-up PR is selected, use PR checks for short task branches and
 main-push checks for the integrated result. A temporary release candidate without
-a PR can use one explicitly selected branch run/manual dispatch. Reconcile the
-legacy mobile/release push filters before normal PR adoption to avoid two long
-matrices for the same update. This adjustment is not installed by this document;
-it needs a tested trigger change, not skipping required jobs or weakening checks.
+a PR can use one explicitly selected release branch run/manual dispatch. The
+temporary `feat/mobile-app` push trigger was removed after PR16 opened, so one
+push produces one PR matrix; required jobs and thresholds are unchanged.
 
 ## Skills, VS Code and open-source adoption
 

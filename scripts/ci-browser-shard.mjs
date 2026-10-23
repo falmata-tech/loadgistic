@@ -2,6 +2,7 @@ import {spawnSync} from 'node:child_process';
 import {readFileSync,readdirSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import axe from 'axe-core';
 
 const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const manifest=JSON.parse(readFileSync(path.join(root,'tests/e2e/ci-allowed-skips.json'),'utf8'));
@@ -12,6 +13,8 @@ const sourceFiles=new Set(readdirSync(path.join(root,'tests/e2e'))
  .filter(file=>file.length<=128&&/^[A-Za-z0-9._-]+\.spec\.ts$/.test(file)));
 const projects=new Set(['desktop-chromium','mobile-chromium']);
 const resultCategories=new Map([['failed','FAILED'],['timedOut','TIMED_OUT'],['interrupted','INTERRUPTED'],['passed','UNEXPECTED_PASS']]);
+const knownAxeRules=new Set(axe.getRules().map(rule=>rule.ruleId));
+const publicA11yRoutes=new Set(['/','/shared-capacity','/featured','/about','/privacy','/terms','/track','/login','/apply','/@blueline-transport']);
 const sourceLine=value=>Number.isSafeInteger(value)&&value>0&&value<=1_000_000?value:null;
 
 function cases(report){
@@ -92,6 +95,23 @@ function layoutMeasurements(result,file){
  return rows;
 }
 
+function accessibilityFailure(result,file,title){
+ if(file!=='accessibility.spec.ts'||typeof title!=='string')return null;
+ const match=/^public route (\/[^\s]*) has no serious accessibility violations$/.exec(title);
+ if(!match||!publicA11yRoutes.has(match[1]))return null;
+ const errors=[result?.error,...(Array.isArray(result?.errors)?result.errors:[])];
+ const rules=new Set();
+ for(const error of errors){
+  const message=error?.message;
+  if(typeof message!=='string'||message.length>100_000||!message.includes('serious/critical accessibility violations:'))continue;
+  for(const line of message.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/)){
+   const rule=/^\s*([a-z][a-z0-9-]{1,80}):\s/.exec(line)?.[1];
+   if(knownAxeRules.has(rule))rules.add(rule);
+  }
+ }
+ return {route:match[1],rules:[...rules].sort().slice(0,12)};
+}
+
 export function failedBrowserCaseDiagnostics(report){
  const diagnostics=[];
  for(const test of cases(report)){
@@ -101,9 +121,10 @@ export function failedBrowserCaseDiagnostics(report){
   const results=Array.isArray(test.results)?test.results.filter(result=>result&&typeof result==='object'):[];
   const result=results.find(result=>result.status==='failed'||result.status==='timedOut'||result.status==='interrupted')||results.at(-1);
   const layout=layoutMeasurements(result,file);
+  const a11y=accessibilityFailure(result,file,test.title);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{})});
+   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -112,10 +133,11 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine,layout} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout,a11y} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
   if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
+  if(a11y)write(`::error ${location}::CI_BROWSER_A11Y route=${a11y.route} rules=${a11y.rules.join(',')||'unknown'}\n`);
  }
 }
 
