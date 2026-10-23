@@ -1,5 +1,21 @@
 # Security failures we must not repeat
 
+## NR-73 — A new critical framework advisory stops the release
+
+**Observed October 23:** exact-source CI run 39933232579 stopped at its required
+dependency audit. The lock held Next.js 15.5.25, which npm now reports under
+critical advisory GHSA-2464-fhr4-w9xw. Browser and container jobs were skipped;
+their earlier results cannot qualify this source. The published site still runs
+the older release.
+
+**Repair and control:** update only the web dependency lock to patched Next.js
+15.5.28 (with Sharp 0.35.5), retain the high-severity audit gate, and require
+fresh same-source quality, build, CI, packaging and live verification before
+publication. The local npm audit now reports zero advisories; 1,168 tests,
+typecheck and production build pass. Owner: web release maintainer. Next action:
+qualify the patched commit in CI, then deploy the reviewed artifact under the
+normal production gates. Do not describe the live site as patched until readback.
+
 ## NR-72 — Mobile email-code handoff claimed delivery after Auth denial
 
 **Observed October 22:** during the Expo broker sign-in check, the mobile Auth

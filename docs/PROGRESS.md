@@ -1,6 +1,6 @@
 # Current work and release status
 
-Updated October22. Work only in Loadgistic, even when the IDE displays Suqpage.
+Updated October23. Work only in Loadgistic, even when the IDE displays Suqpage.
 Start here, then read the applicable spec via [traceability](../specs/TRACEABILITY.md).
 The [product brief](PRODUCT_MASTER_PROMPT.md) explains current source behavior.
 The [preserved history](PROGRESS_HISTORY_20261020.md) contains earlier checkpoints;
@@ -69,8 +69,12 @@ grant. The verifier now snapshots and restores the policy through the normal
 owner command even after an error. A rollback-only clone proves the ordinary
 grant/revoke/restore commands return Public. The mixed local preview correctly
 refused the full verifier and changed zero sharing/Capacity rows. The exact
-fixture-only CI path still needs to prove this fix; no hosted database, web or
-Play write followed.
+fixture-only CI path still needs to prove this fix. Run 39933232579 stopped at a
+new critical Next.js advisory before browser jobs; it did not qualify the source.
+The root lock now uses patched Next.js 15.5.28 and Sharp 0.35.5. Local npm audit
+reports zero advisories. Local quality (1,168 pass, one skip) and the production
+build (156 static pages) pass; repeat exact-source CI before release;
+no hosted database, web or Play write followed.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.
